@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CargoMesh — Resultado de Asignación y Explicabilidad (Pantalla 4)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1E9;
+    --paper-raised: #FFFFFF;
+    --ink: #1A1812;
+    --text-secondary: #5B5748;
+    --text-muted: #928D79;
+    --line: #E4E0D2;
+    --brass: #8C6316;
+    --brass-mid: #A9791F;
+    --brass-bright: #C4901F;
+    --brass-fill-soft: #F1E1BB;
+    --green: #3F6B4A;
+    --green-bg: #E1EADD;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input { font-family: inherit; }
+
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--brass-mid);
+    outline-offset: 2px;
+  }
+
+  .cm-wrap { max-width: 1160px; margin: 0 auto; padding-bottom: 60px; }
+
+  /* Header */
+  .cm-header {
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .cm-brand-group { display: flex; align-items: center; gap: 18px; }
+  .cm-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+
+  .cm-logo {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .cm-title {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+  }
+
+  .cm-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    border-left: 1px solid var(--line);
+    padding-left: 18px;
+  }
+
+  .cm-breadcrumb a { color: var(--text-secondary); text-decoration: none; font-weight: 500; }
+  .cm-breadcrumb a:hover { color: var(--brass); }
+
+  .cm-badge-booked {
+    background: var(--green-bg);
+    color: var(--green);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Hero Section */
+  .cm-hero {
+    padding: 32px 28px 20px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .cm-hero-title {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 800;
+    font-size: clamp(24px, 3vw, 32px);
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .cm-hero-sub {
+    font-size: 14.5px;
+    color: var(--text-secondary);
+    margin: 0;
+    max-width: 650px;
+    line-height: 1.5;
+  }
+
+  .cm-meta-pill {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 1px 2px rgba(26,24,18,0.04);
+  }
+
+  .cm-meta-code {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--brass);
+    background: var(--brass-fill-soft);
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+  }
+
+  /* Main Two-Column Layout */
+  .cm-layout {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 24px;
+    padding: 0 28px;
+    align-items: start;
+  }
+
+  /* Winner Card */
+  .cm-winner-card {
+    background: var(--paper-raised);
+    border: 2px solid var(--brass-mid);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: 0 4px 20px rgba(169, 121, 31, 0.12);
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cm-winner-badge-top {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--brass-mid);
+    color: #211500;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 6px 16px;
+    border-bottom-left-radius: var(--radius-md);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .cm-winner-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+
+  .cm-winner-avatar {
+    width: 60px; height: 60px;
+    border-radius: var(--radius-md);
+    background: var(--ink);
+    color: var(--paper);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .cm-winner-avatar svg { width: 32px; height: 32px; color: var(--brass-bright); }
+
+  .cm-winner-info h2 {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+
+  .cm-winner-info p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  /* Key Metrics Grid */
+  .cm-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 22px;
+    padding: 16px;
+    background: var(--paper);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--line);
+  }
+
+  .cm-metric-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cm-metric-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .cm-metric-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .cm-metric-val.green { color: var(--green); }
+  .cm-metric-val.brass { color: var(--brass); }
+
+  /* Booking Details Row */
+  .cm-booking-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 12.5px;
+    color: var(--text-secondary);
+  }
+
+  .cm-ref-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--paper);
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--line);
+  }
+
+  /* Explainability Card */
+  .cm-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 26px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 2px rgba(26,24,18,0.04);
+  }
+
+  .cm-card:last-child { margin-bottom: 0; }
+
+  .cm-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .cm-card-title {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Bullet points */
+  .cm-bullets {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .cm-bullet-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+
+  .cm-bullet-icon {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--green-bg);
+    color: var(--green);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-weight: 700;
+    font-size: 11px;
+  }
+
+  /* Counterfactual Explanation Box (Sección 23.1) */
+  .cm-counterfactual-box {
+    background: var(--paper);
+    border-left: 3px solid var(--brass-mid);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    padding: 14px 16px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.45;
+  }
+
+  .cm-counterfactual-title {
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Candidate Comparison Matrix */
+  .cm-matrix-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .cm-cand-card {
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    background: var(--paper);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cm-cand-card.winner {
+    background: var(--brass-fill-soft);
+    border-color: var(--brass-mid);
+  }
+
+  .cm-cand-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .cm-cand-name { font-weight: 700; font-size: 13.5px; color: var(--ink); }
+
+  .cm-cand-rank {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: var(--radius-pill);
+  }
+
+  .cm-cand-card.winner .cm-cand-rank {
+    background: var(--brass-mid);
+    color: #211500;
+  }
+
+  .cm-cand-card:not(.winner) .cm-cand-rank {
+    background: var(--line);
+    color: var(--text-secondary);
+  }
+
+  .cm-cand-score {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .cm-cand-meta-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+  }
+
+  .cm-cand-meta-row {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .cm-cand-tradeoff {
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+    line-height: 1.35;
+  }
+
+  /* Right Column: Actions & Waybill Summary */
+  .cm-sidebar-sticky { position: sticky; top: 86px; }
+
+  .cm-action-card {
+    background: var(--paper-raised);
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(26,24,18,0.06);
+    margin-bottom: 20px;
+  }
+
+  .cm-action-title {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    margin: 0 0 16px;
+  }
+
+  .cm-btn-home-cta {
+    width: 100%;
+    background: var(--ink);
+    color: var(--paper);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 14.5px;
+    padding: 15px;
+    border-radius: var(--radius-pill);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.15s, transform 0.1s;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .cm-btn-home-cta:hover { background: #322D22; transform: translateY(-1px); }
+
+  .cm-btn-secondary {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 13px;
+    padding: 10px;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .cm-btn-secondary:hover { border-color: var(--brass-mid); color: var(--brass); }
+
+  /* WebMCP telemetry box */
+  .cm-telemetry-box {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.45;
+  }
+
+  .cm-telemetry-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  @media (max-width: 880px) {
+    .cm-layout { grid-template-columns: 1fr; }
+    .cm-metrics-grid, .cm-matrix-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cm-wrap">
+
+  <!-- Header -->
+  <header class="cm-header">
+    <div class="cm-brand-group">
+      <a href="cargomesh_home_mockup.html" class="cm-brand">
+        <div class="cm-logo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F3F1E9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="7" width="14" height="10" rx="1"></rect>
+            <path d="M15 10h4l3 3v4h-7z"></path>
+            <circle cx="6" cy="19" r="2"></circle>
+            <circle cx="18" cy="19" r="2"></circle>
+          </svg>
+        </div>
+        <span class="cm-title">CargoMesh</span>
+      </a>
+      <div class="cm-breadcrumb">
+        <a href="cargomesh_home_mockup.html">Home</a>
+        <span>/</span>
+        <a href="cargomesh_request_form_mockup.html">FR-1042</a>
+        <span>/</span>
+        <span style="color:var(--ink); font-weight:600;">Asignación confirmada</span>
+      </div>
+    </div>
+
+    <div class="cm-badge-booked">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      <span>Auto-Booking Confirmado</span>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="cm-hero">
+    <div>
+      <h1 class="cm-hero-title">
+        <span>Transporte asignado con éxito</span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:16px; color:var(--brass); font-weight:700;">FR-1042</span>
+      </h1>
+      <p class="cm-hero-sub">
+        El agente autónomo descubrió capacidades, aplicó la política <strong>Balanced</strong> y ejecutó la reserva vinculante con el transportista óptimo.
+      </p>
+    </div>
+
+    <div class="cm-meta-pill">
+      <span>Lima → Arequipa</span>
+      <span>•</span>
+      <span>8,000 kg (ROAD FTL)</span>
+      <span>•</span>
+      <span class="cm-meta-code">Balanced</span>
+    </div>
+  </section>
+
+  <!-- Main Layout -->
+  <div class="cm-layout">
+
+    <!-- Left Column: Winner Card & Explainability -->
+    <div>
+
+      <!-- Winner Card -->
+      <div class="cm-winner-card">
+        <div class="cm-winner-badge-top">
+          ★ Ganador Heurístico (Score: 89 / Confianza: 88%)
+        </div>
+
+        <div class="cm-winner-head">
+          <div class="cm-winner-avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="7" width="14" height="10" rx="1"></rect>
+              <path d="M15 10h4l3 3v4h-7z"></path>
+              <circle cx="6" cy="19" r="2"></circle>
+              <circle cx="18" cy="19" r="2"></circle>
+            </svg>
+          </div>
+          <div class="cm-winner-info">
+            <h2>Andes Freight</h2>
+            <p>Operador regional certificado · Especialista en corredor Andes Sur</p>
+          </div>
+        </div>
+
+        <!-- 4 Key Metrics -->
+        <div class="cm-metrics-grid">
+          <div class="cm-metric-item">
+            <span class="cm-metric-label">Tarifa Garantizada</span>
+            <span class="cm-metric-val brass">$760 USD</span>
+          </div>
+          <div class="cm-metric-item">
+            <span class="cm-metric-label">Cumplimiento SLA</span>
+            <span class="cm-metric-val green">96% On-Time</span>
+          </div>
+          <div class="cm-metric-item">
+            <span class="cm-metric-label">Tiempo Tránsito</span>
+            <span class="cm-metric-val">16 horas</span>
+          </div>
+          <div class="cm-metric-item">
+            <span class="cm-metric-label">Llegada Estimada</span>
+            <span class="cm-metric-val">Mañana, 18:00</span>
+          </div>
+        </div>
+
+        <div class="cm-booking-meta">
+          <div>
+            <span>Unidad asignada: </span>
+            <strong style="color:var(--ink);">Scania R450 Heavy Semi-Trailer (18t max)</strong>
+          </div>
+          <div>
+            <span>Referencia de reserva: </span>
+            <span class="cm-ref-tag">AND-BOOK-8821</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Explainability Panel (Sección 21.3 & 22.5) -->
+      <div class="cm-card">
+        <div class="cm-card-head">
+          <h3 class="cm-card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            ¿Por qué seleccionamos a Andes Freight? (Explicabilidad Heurística)
+          </h3>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:700; color:var(--green);">
+            96% Fiabilidad Histórica
+          </span>
+        </div>
+
+        <div class="cm-bullets">
+          <div class="cm-bullet-item">
+            <div class="cm-bullet-icon">✓</div>
+            <div>
+              <strong>96% de entregas exitosas a tiempo</strong> en el corredor Lima ↔ Arequipa sobre 42 operaciones completadas, con una demora promedio mínima de solo 1.2 horas.
+            </div>
+          </div>
+          <div class="cm-bullet-item">
+            <div class="cm-bullet-icon">✓</div>
+            <div>
+              <strong>Alta disponibilidad de flota:</strong> Andes Freight cuenta con 4 unidades activas listas en terminal Lima, garantizando el recojo dentro de la ventana de 2 horas.
+            </div>
+          </div>
+          <div class="cm-bullet-item">
+            <div class="cm-bullet-icon">✓</div>
+            <div>
+              <strong>Dentro de tu rango presupuestal:</strong> La cotización de $760 USD está perfectamente alineada con el histórico pagado por ACME Mining ($700 – $850 USD).
+            </div>
+          </div>
+          <div class="cm-bullet-item">
+            <div class="cm-bullet-icon">✓</div>
+            <div>
+              <strong>Relación comprobada:</strong> ACME Mining ha completado 9 envíos previos con este proveedor con 8 entregas impecables sin incidencias.
+            </div>
+          </div>
+        </div>
+
+        <!-- Counterfactual Explanation (Sección 23.1) -->
+        <div class="cm-counterfactual-box">
+          <div class="cm-counterfactual-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            Análisis Contrafactual de la Decisión
+          </div>
+          Si hubieras seleccionado la política <em>"Lowest Cost"</em>, Pacific Cargo habría ganado por $690 USD, pero con un historial de demora promedio 2.2 horas superior (86% SLA). Bajo tu política <em>Balanced</em>, Andes Freight ofrece la mejor relación costo-confiabilidad.
+        </div>
+      </div>
+
+      <!-- Candidate Ranking Comparison Matrix -->
+      <div class="cm-card">
+        <div class="cm-card-head">
+          <h3 class="cm-card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+            Matriz de Candidatos Evaluados (WebMCP)
+          </h3>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-muted);">
+            3 Proveedores Descubiertos
+          </span>
+        </div>
+
+        <div class="cm-matrix-grid">
+          <!-- Winner: Andes -->
+          <div class="cm-cand-card winner">
+            <div class="cm-cand-top">
+              <span class="cm-cand-name">Andes Freight</span>
+              <span class="cm-cand-rank">#1 Ganador</span>
+            </div>
+            <div class="cm-cand-score">89 pts</div>
+            <div class="cm-cand-meta-list">
+              <div class="cm-cand-meta-row">
+                <span>Cotización:</span>
+                <strong>$760 USD</strong>
+              </div>
+              <div class="cm-cand-meta-row">
+                <span>Confiabilidad:</span>
+                <strong style="color:var(--green);">96% SLA</strong>
+              </div>
+              <div class="cm-cand-meta-row">
+                <span>Demora prom:</span>
+                <strong>1.2 horas</strong>
+              </div>
+            </div>
+            <div class="cm-cand-tradeoff">
+              Balance óptimo de costo, SLA y unidades disponibles.
+            </div>
+          </div>
+
+          <!-- Rank 2: Inca -->
+          <div class="cm-cand-card">
+            <div class="cm-cand-top">
+              <span class="cm-cand-name">Inca Logistics</span>
+              <span class="cm-cand-rank">#2 Candidato</span>
+            </div>
+            <div class="cm-cand-score">84 pts</div>
+            <div class="cm-cand-meta-list">
+              <div class="cm-cand-meta-row">
+                <span>Cotización:</span>
+                <strong>$820 USD</strong>
+              </div>
+              <div class="cm-cand-meta-row">
+                <span>Confiabilidad:</span>
+                <strong style="color:var(--green);">98% SLA</strong>
+              </div>
+              <div class="cm-cand-meta-row">
+                <span>Demora prom:</span>
+                <strong>0.8 horas</strong>
+              </div>
+            </div>
+            <div class="cm-cand-tradeoff">
+              Tarifa premium ($820) sin valor diferencial para carga general.
+            </div>
+          </div>
+
+          <!-- Rank 3: Pacific -->
+          <div class="cm-cand-card">
+            <div class="cm-cand-top">
+              <span class="cm-cand-name">Pacific Cargo</span>
+              <span class="cm-cand-rank">#3 Candidato</span>
+            </div>
+            <div class="cm-cand-score">72 pts</div>
+            <div class="cm-cand-meta-list">
+              <div class="cm-cand-meta-row">
+                <span>Cotización:</span>
+                <strong>$690 USD</strong>
+              </div>
+              <div class="cm-cand-meta-row">
+                <span>Confiabilidad:</span>
+                <strong style="color:#C4901F;">86% SLA</strong>
+              </div>
+              <div class="cm-cand-meta-row">
+                <span>Demora prom:</span>
+                <strong>3.4 horas</strong>
+              </div>
+            </div>
+            <div class="cm-cand-tradeoff">
+              Precio más bajo pero penalizado por riesgo de demoras.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Navigation Actions & Telemetry -->
+    <div class="cm-sidebar-sticky">
+      <div class="cm-action-card">
+        <h3 class="cm-action-title">Próximos Pasos</h3>
+
+        <a href="cargomesh_home_mockup.html" class="cm-btn-home-cta">
+          <span>Volver al Home (Ver en curso)</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </a>
+
+        <button class="cm-btn-secondary" onclick="alert('Descargando comprobante de reserva y guía electrónica...')">
+          Descargar Comprobante / Waybill
+        </button>
+
+        <button class="cm-btn-secondary" onclick="alert('Abriendo telemetría en vivo del camión Scania R450...')">
+          Ver Telemetría en Vivo
+        </button>
+
+        <div style="margin-top:16px;" class="cm-telemetry-box">
+          <div class="cm-telemetry-head">
+            <span>Estado de Reserva</span>
+            <span style="color:var(--green); font-family:'IBM Plex Mono',monospace;">CONFIRMED</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px; font-size:11.5px;">
+            <div>Operador: <strong>Andes Freight S.A.</strong></div>
+            <div>Chofer asignado: <strong>Marco Valdivia</strong></div>
+            <div>Ventana de recojo: <strong>Mañana, 08:00 – 10:00 AM</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>
