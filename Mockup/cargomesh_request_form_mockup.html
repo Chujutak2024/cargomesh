@@ -990,7 +990,7 @@ function loadPreset(preset) {
 
 function handleFormSubmit(e) {
   e.preventDefault();
-  alert('Iniciando orquestación WebMCP para: ' + document.getElementById('input-origin').value + ' → ' + document.getElementById('input-destination').value + ' (' + document.getElementById('input-weight').value + ' kg)... Pasando a Pantalla 3: Smart Dispatch Status');
+  window.location.href = 'cargomesh_dispatch_status_mockup.html';
 }
 </script>
 

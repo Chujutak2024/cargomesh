@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CargoMesh — Smart Dispatch Status (Pantalla 3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1E9;
+    --paper-raised: #FFFFFF;
+    --ink: #1A1812;
+    --text-secondary: #5B5748;
+    --text-muted: #928D79;
+    --line: #E4E0D2;
+    --brass: #8C6316;
+    --brass-mid: #A9791F;
+    --brass-bright: #C4901F;
+    --brass-fill-soft: #F1E1BB;
+    --green: #3F6B4A;
+    --green-bg: #E1EADD;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input { font-family: inherit; }
+
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--brass-mid);
+    outline-offset: 2px;
+  }
+
+  .cm-wrap { max-width: 1160px; margin: 0 auto; padding-bottom: 60px; }
+
+  /* Header */
+  .cm-header {
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .cm-brand-group { display: flex; align-items: center; gap: 18px; }
+  .cm-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+
+  .cm-logo {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .cm-title {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+  }
+
+  .cm-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    border-left: 1px solid var(--line);
+    padding-left: 18px;
+  }
+
+  .cm-breadcrumb a { color: var(--text-secondary); text-decoration: none; font-weight: 500; }
+  .cm-breadcrumb a:hover { color: var(--brass); }
+
+  .cm-live-badge {
+    background: var(--brass-fill-soft);
+    color: var(--brass);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .cm-live-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--brass-mid);
+    box-shadow: 0 0 0 0 rgba(169, 121, 31, 0.7);
+    animation: pulse 1.6s infinite;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(169, 121, 31, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(169, 121, 31, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(169, 121, 31, 0); }
+  }
+
+  /* Hero bar */
+  .cm-hero {
+    padding: 32px 28px 20px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .cm-hero-title {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 800;
+    font-size: clamp(24px, 3vw, 30px);
+    margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .cm-hero-sub {
+    font-size: 14.5px;
+    color: var(--text-secondary);
+    margin: 0;
+    max-width: 680px;
+    line-height: 1.5;
+  }
+
+  .cm-meta-pill {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 1px 2px rgba(26,24,18,0.04);
+  }
+
+  .cm-meta-code {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--brass);
+    background: var(--brass-fill-soft);
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+  }
+
+  /* Main Layout */
+  .cm-layout {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 24px;
+    padding: 0 28px;
+    align-items: start;
+  }
+
+  /* Left Column: Live Checklist Card */
+  .cm-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 26px;
+    box-shadow: 0 1px 2px rgba(26,24,18,0.04);
+  }
+
+  .cm-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .cm-card-title {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cm-progress-bar-wrap {
+    height: 6px;
+    background: var(--line);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .cm-progress-bar-fill {
+    height: 100%;
+    background: var(--brass-mid);
+    border-radius: var(--radius-pill);
+    width: 20%;
+    transition: width 0.4s ease;
+  }
+
+  /* Checklist Steps */
+  .cm-step-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .cm-step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    background: var(--paper);
+    border: 1px solid transparent;
+    transition: all 0.25s ease;
+  }
+
+  .cm-step-item.pending {
+    opacity: 0.5;
+    background: transparent;
+    border-color: var(--line);
+  }
+
+  .cm-step-item.active {
+    background: var(--brass-fill-soft);
+    border-color: var(--brass-mid);
+    opacity: 1;
+  }
+
+  .cm-step-item.completed {
+    background: var(--green-bg);
+    border-color: rgba(63, 107, 74, 0.25);
+    opacity: 1;
+  }
+
+  .cm-step-icon {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .cm-step-item.pending .cm-step-icon {
+    background: var(--line);
+    color: var(--text-muted);
+  }
+
+  .cm-step-item.active .cm-step-icon {
+    background: var(--brass-mid);
+    color: #211500;
+    animation: spin-slow 2s linear infinite;
+  }
+
+  .cm-step-item.completed .cm-step-icon {
+    background: var(--green);
+    color: #FFFFFF;
+  }
+
+  @keyframes spin-slow {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .cm-step-content { flex: 1; min-width: 0; }
+
+  .cm-step-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 3px;
+  }
+
+  .cm-step-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .cm-step-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: var(--radius-pill);
+    text-transform: uppercase;
+  }
+
+  .cm-step-item.pending .cm-step-badge { background: var(--line); color: var(--text-muted); }
+  .cm-step-item.active .cm-step-badge { background: var(--brass-bright); color: #211500; }
+  .cm-step-item.completed .cm-step-badge { background: var(--green); color: #FFFFFF; }
+
+  .cm-step-desc {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  .cm-step-tool-call {
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: rgba(26,24,18,0.05);
+    border-radius: var(--radius-sm);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--brass);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Right Column: WebMCP Discovery Radar & Carrier Quotes */
+  .cm-sidebar-sticky { position: sticky; top: 86px; }
+
+  .cm-radar-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 2px rgba(26,24,18,0.04);
+  }
+
+  .cm-radar-title {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .cm-carrier-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .cm-carrier-card {
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    background: var(--paper);
+    transition: all 0.25s ease;
+  }
+
+  .cm-carrier-card.quoted {
+    background: var(--paper-raised);
+    border-color: var(--line);
+  }
+
+  .cm-carrier-card.winner {
+    background: var(--brass-fill-soft);
+    border-color: var(--brass-mid);
+    box-shadow: 0 2px 10px rgba(169, 121, 31, 0.18);
+  }
+
+  .cm-carrier-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .cm-carrier-name { font-weight: 700; font-size: 14px; color: var(--ink); }
+
+  .cm-carrier-status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: var(--radius-pill);
+    text-transform: uppercase;
+  }
+
+  .cm-carrier-card.winner .cm-carrier-status {
+    background: var(--brass-mid);
+    color: #211500;
+  }
+
+  .cm-carrier-metrics {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .cm-carrier-price {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--ink);
+  }
+
+  /* Completion Action Banner */
+  .cm-complete-banner {
+    display: none;
+    background: var(--green-bg);
+    border: 1.5px solid var(--green);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px;
+    margin-top: 24px;
+    box-shadow: 0 4px 20px rgba(63, 107, 74, 0.15);
+    animation: fadeIn 0.4s ease;
+  }
+
+  .cm-complete-banner.shown { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .cm-complete-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .cm-complete-title {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--green);
+    margin: 0;
+  }
+
+  .cm-complete-desc {
+    font-size: 13.5px;
+    color: #27442E;
+    line-height: 1.5;
+    margin: 0 0 18px;
+  }
+
+  .cm-btn-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .cm-btn-result {
+    background: var(--green);
+    color: #FFFFFF;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 12px 22px;
+    border-radius: var(--radius-pill);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.15s;
+  }
+
+  .cm-btn-result:hover { background: #32573B; }
+
+  .cm-btn-home {
+    background: var(--paper-raised);
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px 18px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--line);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cm-btn-home:hover { background: var(--paper); }
+
+  /* Demo control buttons */
+  .cm-sim-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    font-size: 12px;
+  }
+
+  .cm-sim-btn {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    padding: 5px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--ink);
+  }
+
+  .cm-sim-btn:hover { border-color: var(--brass-mid); color: var(--brass); }
+
+  @media (max-width: 880px) {
+    .cm-layout { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cm-wrap">
+
+  <!-- Header -->
+  <header class="cm-header">
+    <div class="cm-brand-group">
+      <a href="cargomesh_home_mockup.html" class="cm-brand">
+        <div class="cm-logo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F3F1E9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="7" width="14" height="10" rx="1"></rect>
+            <path d="M15 10h4l3 3v4h-7z"></path>
+            <circle cx="6" cy="19" r="2"></circle>
+            <circle cx="18" cy="19" r="2"></circle>
+          </svg>
+        </div>
+        <span class="cm-title">CargoMesh</span>
+      </a>
+      <div class="cm-breadcrumb">
+        <a href="cargomesh_home_mockup.html">Home</a>
+        <span>/</span>
+        <a href="cargomesh_request_form_mockup.html">Solicitud FR-1042</a>
+        <span>/</span>
+        <span style="color:var(--ink); font-weight:600;">Despacho en vivo</span>
+      </div>
+    </div>
+
+    <div class="cm-live-badge">
+      <span class="cm-live-dot"></span>
+      <span>Agente WebMCP Activo</span>
+    </div>
+  </header>
+
+  <!-- Hero Status -->
+  <section class="cm-hero">
+    <div>
+      <h1 class="cm-hero-title">
+        <span>Smart Dispatch Status</span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:16px; color:var(--brass); font-weight:700;">FR-1042</span>
+      </h1>
+      <p class="cm-hero-sub">
+        Orquestación autónoma en progreso: descubriendo capacidades de transporte vía WebMCP, aplicando restricciones duras y evaluando cotizaciones mediante heurísticas transparentes.
+      </p>
+    </div>
+
+    <div class="cm-meta-pill">
+      <span>Lima → Arequipa</span>
+      <span>•</span>
+      <span>8,000 kg (ROAD FTL)</span>
+      <span>•</span>
+      <span class="cm-meta-code">Balanced</span>
+    </div>
+  </section>
+
+  <!-- Main Layout -->
+  <div class="cm-layout">
+
+    <!-- Left: Live Checklist (Sección 21.2) -->
+    <div>
+      <div class="cm-card">
+        <div class="cm-card-head">
+          <h2 class="cm-card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            Checklist de Orquestación en Vivo
+          </h2>
+          <span id="step-counter" style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:var(--text-muted);">
+            Paso 1 de 6
+          </span>
+        </div>
+
+        <div class="cm-progress-bar-wrap">
+          <div class="cm-progress-bar-fill" id="progress-fill"></div>
+        </div>
+
+        <div class="cm-step-list">
+
+          <!-- Step 1: Validar ruta -->
+          <div class="cm-step-item active" id="step-1">
+            <div class="cm-step-icon">1</div>
+            <div class="cm-step-content">
+              <div class="cm-step-header">
+                <span class="cm-step-title">Validando solicitud y restricciones duras</span>
+                <span class="cm-step-badge">En curso</span>
+              </div>
+              <p class="cm-step-desc">Verificando corredor Lima ↔ Arequipa, peso (8,000 kg), volumen y política Balanced.</p>
+              <div class="cm-step-tool-call">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span>get_freight_request("fr-1042")</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Descubrir proveedores -->
+          <div class="cm-step-item pending" id="step-2">
+            <div class="cm-step-icon">2</div>
+            <div class="cm-step-content">
+              <div class="cm-step-header">
+                <span class="cm-step-title">Descubriendo proveedores vía WebMCP</span>
+                <span class="cm-step-badge">Pendiente</span>
+              </div>
+              <p class="cm-step-desc">Consultando capacidades operativas y cobertura en Andes, Pacific e Inca.</p>
+              <div class="cm-step-tool-call">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span>check_service_coverage & check_capacity</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Recolectar cotizaciones -->
+          <div class="cm-step-item pending" id="step-3">
+            <div class="cm-step-icon">3</div>
+            <div class="cm-step-content">
+              <div class="cm-step-header">
+                <span class="cm-step-title">Recolectando cotizaciones vinculantes</span>
+                <span class="cm-step-badge">Pendiente</span>
+              </div>
+              <p class="cm-step-desc">Solicitando tarifas garantizadas, tiempos de tránsito y asignación de unidades.</p>
+              <div class="cm-step-tool-call">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span>quote_freight(carrier_id, payload)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4: Desempeño histórico -->
+          <div class="cm-step-item pending" id="step-4">
+            <div class="cm-step-icon">4</div>
+            <div class="cm-step-content">
+              <div class="cm-step-header">
+                <span class="cm-step-title">Verificando desempeño histórico de corredor</span>
+                <span class="cm-step-badge">Pendiente</span>
+              </div>
+              <p class="cm-step-desc">Consultando tasa on-time (SLA), demoras promedio y viajes previos con ACME Mining.</p>
+              <div class="cm-step-tool-call">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span>get_carrier_metrics(carrier_id)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 5: Evaluando políticas & Heurística -->
+          <div class="cm-step-item pending" id="step-5">
+            <div class="cm-step-icon">5</div>
+            <div class="cm-step-content">
+              <div class="cm-step-header">
+                <span class="cm-step-title">Evaluando motor heurístico multicriterio</span>
+                <span class="cm-step-badge">Pendiente</span>
+              </div>
+              <p class="cm-step-desc">Calculando puntuación determinista (Costo 25%, SLA 25%, ETA 20%, Flota 10%).</p>
+              <div class="cm-step-tool-call">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span>evaluate_offers(request_id)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 6: Reservando proveedor -->
+          <div class="cm-step-item pending" id="step-6">
+            <div class="cm-step-icon">6</div>
+            <div class="cm-step-content">
+              <div class="cm-step-header">
+                <span class="cm-step-title">Ejecutando Auto-Booking vinculante</span>
+                <span class="cm-step-badge">Pendiente</span>
+              </div>
+              <p class="cm-step-desc">Transacción final confirmada vía WebMCP y persistida en base de datos.</p>
+              <div class="cm-step-tool-call">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span>book_freight(carrier_id, offer_id)</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Completion Banner (Pantalla 3 -> Pantalla 4) -->
+      <div class="cm-complete-banner" id="complete-banner">
+        <div class="cm-complete-top">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" color="var(--green)"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          <h3 class="cm-complete-title">¡Despacho Autónomo Completado con Éxito!</h3>
+        </div>
+        <p class="cm-complete-desc">
+          El Agente seleccionó y reservó automáticamente con <strong>Andes Freight</strong> ($760 USD, 96% SLA, Scania R450) tras superar el umbral de confianza con <strong>88%</strong>.
+        </p>
+        <div class="cm-btn-group">
+          <a href="cargomesh_result_mockup.html" class="cm-btn-result">
+            <span>Ver Resultado y Explicación Detallada (Pantalla 4)</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </a>
+          <a href="cargomesh_home_mockup.html" class="cm-btn-home">
+            Volver al Home
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: WebMCP Live Radar -->
+    <div class="cm-sidebar-sticky">
+      <div class="cm-radar-card">
+        <div class="cm-radar-title">
+          <span>Proveedores en Radar</span>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-muted);">WebMCP Network</span>
+        </div>
+
+        <div class="cm-carrier-cards">
+          <!-- Andes -->
+          <div class="cm-carrier-card" id="card-andes">
+            <div class="cm-carrier-top">
+              <span class="cm-carrier-name">Andes Freight</span>
+              <span class="cm-carrier-status" id="status-andes" style="background:var(--paper); color:var(--text-muted);">Conectando...</span>
+            </div>
+            <div class="cm-carrier-metrics">
+              <span id="desc-andes">Verificando flota Scania...</span>
+              <span class="cm-carrier-price" id="price-andes">-</span>
+            </div>
+          </div>
+
+          <!-- Inca -->
+          <div class="cm-carrier-card" id="card-inca">
+            <div class="cm-carrier-top">
+              <span class="cm-carrier-name">Inca Logistics</span>
+              <span class="cm-carrier-status" id="status-inca" style="background:var(--paper); color:var(--text-muted);">Conectando...</span>
+            </div>
+            <div class="cm-carrier-metrics">
+              <span id="desc-inca">Verificando flota Volvo...</span>
+              <span class="cm-carrier-price" id="price-inca">-</span>
+            </div>
+          </div>
+
+          <!-- Pacific -->
+          <div class="cm-carrier-card" id="card-pacific">
+            <div class="cm-carrier-top">
+              <span class="cm-carrier-name">Pacific Cargo</span>
+              <span class="cm-carrier-status" id="status-pacific" style="background:var(--paper); color:var(--text-muted);">Conectando...</span>
+            </div>
+            <div class="cm-carrier-metrics">
+              <span id="desc-pacific">Verificando tarifa low-cost...</span>
+              <span class="cm-carrier-price" id="price-pacific">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulation Speed Controller -->
+        <div class="cm-sim-controls">
+          <span style="color:var(--text-secondary); font-weight:600;">Control de simulación:</span>
+          <button class="cm-sim-btn" onclick="restartSimulation()">Reiniciar</button>
+          <button class="cm-sim-btn" onclick="fastForward()">Acelerar</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+var currentStep = 1;
+var simInterval = null;
+
+function setStepState(stepNum, state) {
+  var item = document.getElementById('step-' + stepNum);
+  if (!item) return;
+  item.classList.remove('pending', 'active', 'completed');
+  item.classList.add(state);
+
+  var badge = item.querySelector('.cm-step-badge');
+  if (state === 'active') badge.textContent = 'En curso';
+  if (state === 'completed') badge.textContent = 'Completado ✓';
+  if (state === 'pending') badge.textContent = 'Pendiente';
+}
+
+function advanceSimulation() {
+  if (currentStep === 1) {
+    setStepState(1, 'completed');
+    setStepState(2, 'active');
+    document.getElementById('progress-fill').style.width = '35%';
+    document.getElementById('step-counter').textContent = 'Paso 2 de 6';
+
+    document.getElementById('status-andes').textContent = 'Descubierto';
+    document.getElementById('status-andes').style.background = 'var(--brass-fill-soft)';
+    document.getElementById('status-andes').style.color = 'var(--brass)';
+    document.getElementById('status-inca').textContent = 'Descubierto';
+    document.getElementById('status-pacific').textContent = 'Descubierto';
+    currentStep = 2;
+  } else if (currentStep === 2) {
+    setStepState(2, 'completed');
+    setStepState(3, 'active');
+    document.getElementById('progress-fill').style.width = '55%';
+    document.getElementById('step-counter').textContent = 'Paso 3 de 6';
+
+    // Quotes received
+    document.getElementById('price-pacific').textContent = '$690 USD';
+    document.getElementById('status-pacific').textContent = 'Cotizado';
+    document.getElementById('desc-pacific').textContent = '86% SLA · 1 unidad';
+
+    document.getElementById('price-andes').textContent = '$760 USD';
+    document.getElementById('status-andes').textContent = 'Cotizado';
+    document.getElementById('desc-andes').textContent = '96% SLA · 4 unidades';
+
+    document.getElementById('price-inca').textContent = '$820 USD';
+    document.getElementById('status-inca').textContent = 'Cotizado';
+    document.getElementById('desc-inca').textContent = '98% SLA · 3 unidades';
+
+    document.getElementById('card-andes').classList.add('quoted');
+    document.getElementById('card-inca').classList.add('quoted');
+    document.getElementById('card-pacific').classList.add('quoted');
+    currentStep = 3;
+  } else if (currentStep === 3) {
+    setStepState(3, 'completed');
+    setStepState(4, 'active');
+    document.getElementById('progress-fill').style.width = '70%';
+    document.getElementById('step-counter').textContent = 'Paso 4 de 6';
+    currentStep = 4;
+  } else if (currentStep === 4) {
+    setStepState(4, 'completed');
+    setStepState(5, 'active');
+    document.getElementById('progress-fill').style.width = '85%';
+    document.getElementById('step-counter').textContent = 'Paso 5 de 6';
+    currentStep = 5;
+  } else if (currentStep === 5) {
+    setStepState(5, 'completed');
+    setStepState(6, 'active');
+    document.getElementById('progress-fill').style.width = '95%';
+    document.getElementById('step-counter').textContent = 'Paso 6 de 6';
+
+    // Winner highlighted
+    document.getElementById('card-andes').classList.add('winner');
+    document.getElementById('status-andes').textContent = 'Ganador (89 pts)';
+    document.getElementById('status-inca').textContent = '2do (84 pts)';
+    document.getElementById('status-pacific').textContent = '3ro (72 pts)';
+    currentStep = 6;
+  } else if (currentStep === 6) {
+    setStepState(6, 'completed');
+    document.getElementById('progress-fill').style.width = '100%';
+    document.getElementById('step-counter').textContent = '6 de 6 Completados';
+    document.getElementById('status-andes').textContent = 'RESERVADO ✓';
+
+    document.getElementById('complete-banner').classList.add('shown');
+    clearInterval(simInterval);
+  }
+}
+
+function startAutoSim(delay) {
+  clearInterval(simInterval);
+  simInterval = setInterval(advanceSimulation, delay || 1400);
+}
+
+function restartSimulation() {
+  clearInterval(simInterval);
+  currentStep = 1;
+  document.getElementById('progress-fill').style.width = '20%';
+  document.getElementById('step-counter').textContent = 'Paso 1 de 6';
+  document.getElementById('complete-banner').classList.remove('shown');
+
+  for (var i = 1; i <= 6; i++) {
+    setStepState(i, i === 1 ? 'active' : 'pending');
+  }
+
+  ['andes', 'inca', 'pacific'].forEach(function(c) {
+    var card = document.getElementById('card-' + c);
+    card.classList.remove('quoted', 'winner');
+    document.getElementById('status-' + c).textContent = 'Conectando...';
+    document.getElementById('status-' + c).style.background = 'var(--paper)';
+    document.getElementById('status-' + c).style.color = 'var(--text-muted)';
+    document.getElementById('price-' + c).textContent = '-';
+  });
+
+  startAutoSim(1400);
+}
+
+function fastForward() {
+  while (currentStep <= 6) {
+    advanceSimulation();
+  }
+}
+
+window.onload = function() {
+  startAutoSim(1300);
+};
+</script>
+
+</body>
+</html>
