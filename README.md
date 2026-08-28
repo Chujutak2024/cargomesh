@@ -22,6 +22,8 @@
 8. [WebMCP Tool Contract](#-webmcp-tool-contract)
 9. [Project Directory Structure](#-project-directory-structure)
 10. [Getting Started & Local Setup](#-getting-started--local-setup)
+11. [Built With & Technology Stack](#️-built-with--technology-stack)
+12. [Hackathon Team & Acknowledgments](#-hackathon-team--acknowledgments)
 
 ---
 
@@ -267,8 +269,24 @@ pnpm build
 
 ---
 
-## 👥 Hackathon Team & Credits
+## 🛠️ Built With & Technology Stack
+
+CargoMesh was engineered from the ground up for the **WebMCP Challenge 2026** utilizing a modern agent-native and full-stack toolchain:
+
+| Layer | Technologies & Tools | Purpose |
+|:---|:---|:---|
+| **Agent-Native Protocol** | **WebMCP Standard** (`document.modelContext`) | Carrier tool registration, zero-scraping structured discovery, and live browser tool execution. |
+| **Frontend & SSR** | **Next.js 14 (App Router)**, **React 18**, **TypeScript** | High-performance hybrid rendering, server actions, and type-safe domain models. |
+| **Styling & UI** | **Tailwind CSS**, **Lucide Icons** | Custom *Warm Editorial* logistics design system with responsive dashboards and JSON inspectors. |
+| **Database & Security** | **Supabase (PostgreSQL 15)** | Relational data persistence with 13 tables, **Row-Level Security (RLS)**, and numeric `CHECK` constraints. |
+| **AI Pair-Programming & Prototyping** | **Google Antigravity** & **Gemini 2.0 Models** | Accelerated architecture design, heuristic formula tuning, SQL migration generation, and contract validation. |
+| **Tooling & Package Manager** | **pnpm**, **PostCSS**, **ESLint** | Strict workspace dependency management and optimized production builds. |
+
+---
+
+## 👥 Hackathon Team & Acknowledgments
 
 - **Cristhian Chujutalli** — *Lead Architecture & Full-Stack Engineering*
 - **Built for**: Google WebMCP Challenge 2026
-- **License**: MIT License
+- **License**: [MIT License](https://opensource.org/licenses/MIT) *(Open Source software standard for public evaluation and community use)*
+
