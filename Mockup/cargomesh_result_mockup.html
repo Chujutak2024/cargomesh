@@ -44,6 +44,22 @@
     outline-offset: 2px;
   }
 
+  /* Top Staging / Protocol Banner */
+  .cm-staging-bar {
+    background: #11100C;
+    color: #C5BFB0;
+    font-size: 11.5px;
+    padding: 7px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid #28241C;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .cm-staging-bar strong { color: #F3F1E9; }
+
   .cm-wrap { max-width: 1160px; margin: 0 auto; padding-bottom: 60px; }
 
   /* Header */
@@ -104,7 +120,7 @@
 
   /* Hero Section */
   .cm-hero {
-    padding: 32px 28px 20px;
+    padding: 30px 28px 20px;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -198,7 +214,7 @@
   }
 
   .cm-winner-avatar {
-    width: 60px; height: 60px;
+    width: 56px; height: 56px;
     border-radius: var(--radius-md);
     background: var(--ink);
     color: var(--paper);
@@ -206,7 +222,7 @@
     flex-shrink: 0;
   }
 
-  .cm-winner-avatar svg { width: 32px; height: 32px; color: var(--brass-bright); }
+  .cm-winner-avatar svg { width: 30px; height: 30px; color: var(--brass-bright); }
 
   .cm-winner-info h2 {
     font-family: 'Overpass', sans-serif;
@@ -258,7 +274,7 @@
   .cm-metric-val.green { color: var(--green); }
   .cm-metric-val.brass { color: var(--brass); }
 
-  /* Booking Details Row */
+  /* Booking Details Row (Cleaned up: No Driver) */
   .cm-booking-meta {
     display: flex;
     align-items: center;
@@ -267,6 +283,8 @@
     border-top: 1px solid var(--line);
     font-size: 12.5px;
     color: var(--text-secondary);
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .cm-ref-tag {
@@ -435,7 +453,7 @@
     line-height: 1.35;
   }
 
-  /* Right Column: Actions & Waybill Summary */
+  /* Right Column: Actions & Booking Details */
   .cm-sidebar-sticky { position: sticky; top: 86px; }
 
   .cm-action-card {
@@ -460,8 +478,8 @@
     color: var(--paper);
     text-decoration: none;
     font-weight: 700;
-    font-size: 14.5px;
-    padding: 15px;
+    font-size: 14px;
+    padding: 14px;
     border-radius: var(--radius-pill);
     display: flex;
     align-items: center;
@@ -486,12 +504,15 @@
     cursor: pointer;
     text-align: center;
     margin-bottom: 8px;
+    display: block;
+    text-decoration: none;
+    transition: all 0.15s;
   }
 
   .cm-btn-secondary:hover { border-color: var(--brass-mid); color: var(--brass); }
 
-  /* WebMCP telemetry box */
-  .cm-telemetry-box {
+  /* Booking Status Box */
+  .cm-booking-status-box {
     background: var(--paper);
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
@@ -501,7 +522,7 @@
     line-height: 1.45;
   }
 
-  .cm-telemetry-head {
+  .cm-booking-status-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -517,6 +538,16 @@
 </style>
 </head>
 <body>
+
+<!-- Top Staging / Protocol Banner -->
+<div class="cm-staging-bar">
+  <div>
+    <strong>WebMCP Challenge Staging</strong> · Deterministic Multi-Criteria Engine · Org: <strong>ACME Mining</strong>
+  </div>
+  <div style="font-family:'IBM Plex Mono',monospace; color:#A9791F;">
+    <span>Confidence: 88% (&ge; 85% Auto-Booked)</span>
+  </div>
+</div>
 
 <div class="cm-wrap">
 
@@ -617,10 +648,11 @@
           </div>
         </div>
 
+        <!-- Booking Meta (Cleaned up: No Driver) -->
         <div class="cm-booking-meta">
           <div>
-            <span>Unidad asignada: </span>
-            <strong style="color:var(--ink);">Scania R450 Heavy Semi-Trailer (18t max)</strong>
+            <span>Unidad reportada por carrier: </span>
+            <strong style="color:var(--ink);">Scania R450 Heavy Semi-Trailer (18t)</strong>
           </div>
           <div>
             <span>Referencia de reserva: </span>
@@ -682,7 +714,7 @@
       <div class="cm-card">
         <div class="cm-card-head">
           <h3 class="cm-card-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="12" y1="11" x2="17" y2="11"></line></svg>
             Matriz de Candidatos Evaluados (WebMCP)
           </h3>
           <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-muted);">
@@ -773,7 +805,7 @@
 
     </div>
 
-    <!-- Right Column: Navigation Actions & Telemetry -->
+    <!-- Right Column: Navigation Actions & Booking Summary -->
     <div class="cm-sidebar-sticky">
       <div class="cm-action-card">
         <h3 class="cm-action-title">Próximos Pasos</h3>
@@ -783,22 +815,23 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
         </a>
 
-        <button class="cm-btn-secondary" onclick="alert('Descargando comprobante de reserva y guía electrónica...')">
-          Descargar Comprobante / Waybill
+        <button class="cm-btn-secondary" onclick="alert('Detalle de transporte: Origen Lima Norte, Destino Terminal Arequipa Sur. Recojo programado 08:00 AM.')">
+          Ver detalle del transporte
         </button>
 
-        <button class="cm-btn-secondary" onclick="alert('Abriendo telemetría en vivo del camión Scania R450...')">
-          Ver Telemetría en Vivo
+        <button class="cm-btn-secondary" onclick="window.print()">
+          Imprimir confirmación de reserva
         </button>
 
-        <div style="margin-top:16px;" class="cm-telemetry-box">
-          <div class="cm-telemetry-head">
+        <div style="margin-top:16px;" class="cm-booking-status-box">
+          <div class="cm-booking-status-head">
             <span>Estado de Reserva</span>
             <span style="color:var(--green); font-family:'IBM Plex Mono',monospace;">CONFIRMED</span>
           </div>
           <div style="display:flex; flex-direction:column; gap:4px; font-size:11.5px;">
-            <div>Operador: <strong>Andes Freight S.A.</strong></div>
-            <div>Chofer asignado: <strong>Marco Valdivia</strong></div>
+            <div>Carrier: <strong>Andes Freight S.A.</strong></div>
+            <div>Booking Ref: <strong>AND-BOOK-8821</strong></div>
+            <div>Unidad: <strong>Scania R450 Heavy (18t)</strong></div>
             <div>Ventana de recojo: <strong>Mañana, 08:00 – 10:00 AM</strong></div>
           </div>
         </div>
