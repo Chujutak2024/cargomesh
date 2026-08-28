@@ -48,6 +48,37 @@
     outline-offset: 2px;
   }
 
+  /* Top Staging / Protocol Banner */
+  .cm-staging-bar {
+    background: #11100C;
+    color: #C5BFB0;
+    font-size: 11.5px;
+    padding: 7px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid #28241C;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .cm-staging-bar strong { color: #F3F1E9; }
+
+  .cm-staging-links {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .cm-staging-link {
+    color: #A9791F;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .cm-staging-link:hover { color: #C4901F; text-decoration: underline; }
+
   .cm-wrap { max-width: 1160px; margin: 0 auto; padding-bottom: 60px; }
 
   /* Header */
@@ -81,20 +112,43 @@
     font-size: 17px;
   }
 
-  .cm-breadcrumb {
+  .cm-header-nav {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: var(--text-muted);
-    border-left: 1px solid var(--line);
-    padding-left: 18px;
+    gap: 6px;
   }
 
-  .cm-breadcrumb a { color: var(--text-secondary); text-decoration: none; font-weight: 500; }
-  .cm-breadcrumb a:hover { color: var(--brass); }
+  .cm-nav-link {
+    padding: 7px 14px;
+    border-radius: var(--radius-pill);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+
+  .cm-nav-link:hover { background: var(--paper); color: var(--ink); }
+  .cm-nav-link.active { background: var(--brass-fill-soft); color: var(--brass); }
 
   .cm-header-right { display: flex; align-items: center; gap: 10px; }
+
+  .cm-btn-how {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 12.5px;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+  }
+
+  .cm-btn-how:hover { border-color: var(--brass-mid); color: var(--brass); }
 
   .cm-badge-supervisor {
     background: var(--amber-bg);
@@ -122,7 +176,7 @@
 
   /* Hero Section */
   .cm-hero {
-    padding: 32px 28px 18px;
+    padding: 30px 28px 18px;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -373,6 +427,7 @@
   .cm-action-left {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
   }
 
   .cm-btn-approve {
@@ -423,6 +478,85 @@
 
   .cm-btn-reject:hover { border-color: var(--red); color: var(--red); }
 
+  /* Modal "How It Works" */
+  .cm-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(26, 24, 18, 0.65);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .cm-modal-overlay.shown { display: flex; }
+
+  .cm-modal-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    max-width: 680px;
+    width: 100%;
+    padding: 28px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    position: relative;
+  }
+
+  .cm-modal-close {
+    position: absolute;
+    top: 20px; right: 20px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+
+  .cm-modal-title {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+
+  .cm-modal-sub {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    margin: 0 0 20px;
+    line-height: 1.45;
+  }
+
+  .cm-how-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .cm-how-step {
+    display: flex;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--paper);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--line);
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+
+  .cm-how-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    background: var(--brass-mid);
+    color: #211500;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
   @media (max-width: 880px) {
     .cm-options-grid { grid-template-columns: 1fr; }
     .cm-action-bar { flex-direction: column; align-items: stretch; }
@@ -430,6 +564,18 @@
 </style>
 </head>
 <body>
+
+<!-- Top Staging / Protocol Banner -->
+<div class="cm-staging-bar">
+  <div>
+    <strong>WebMCP Challenge Staging</strong> · Human-in-the-Loop Governance · Supervisor Mode (P1)
+  </div>
+  <div class="cm-staging-links">
+    <span class="cm-staging-link" onclick="openModal()">¿Cómo funciona la orquestación?</span>
+    <span>•</span>
+    <a href="cargomesh_home_mockup.html" class="cm-staging-link">Volver a Vista Cliente</a>
+  </div>
+</div>
 
 <div class="cm-wrap">
 
@@ -447,17 +593,23 @@
         </div>
         <span class="cm-title">CargoMesh</span>
       </a>
-      <div class="cm-breadcrumb">
-        <a href="cargomesh_home_mockup.html">Home</a>
-        <span>/</span>
-        <span style="color:var(--ink); font-weight:600;">Bandeja de Excepciones</span>
-      </div>
+
+      <nav class="cm-header-nav">
+        <a href="cargomesh_home_mockup.html" class="cm-nav-link">Home</a>
+        <a href="cargomesh_providers_mockup.html" class="cm-nav-link">Carriers WebMCP</a>
+        <a href="cargomesh_exceptions_mockup.html" class="cm-nav-link active">Supervisor (P1)</a>
+      </nav>
     </div>
 
     <div class="cm-header-right">
+      <button class="cm-btn-how" onclick="openModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span>Cómo funciona</span>
+      </button>
+
       <div class="cm-badge-supervisor">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-        <span>Vista de Supervisor (P1)</span>
+        <span>Supervisión Activa</span>
       </div>
       <div class="cm-avatar">SV</div>
     </div>
@@ -483,7 +635,7 @@
     </div>
     <div class="cm-phil-stat">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
-      <div>Tiempo promedio de resolución humana: <strong>3.8 min</strong></div>
+      <div>Tiempo prom. resolución: <strong>3.8 min</strong></div>
     </div>
     <div class="cm-phil-stat">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
@@ -561,16 +713,16 @@
 
       <div class="cm-action-bar">
         <div class="cm-action-left">
-          <button class="cm-btn-approve" onclick="resolveExc('exc-1', 'Aprobado excepcionalmente con Inca Logistics ($1,150 USD)')">
+          <button class="cm-btn-approve" onclick="resolveExc('exc-1', 'Aprobado sobreprecio con Inca Logistics ($1,150 USD)')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            Aprobar $1,150 (Inca Logistics)
+            Autorizar Sobreprecio ($1,150)
           </button>
-          <button class="cm-btn-reassign" onclick="resolveExc('exc-1', 'Reasignado a Pacific Cargo ($920 USD)')">
+          <button class="cm-btn-reassign" onclick="resolveExc('exc-1', 'Programado con Pacific Cargo con espera de 24h ($920 USD)')">
             Esperar 24h por Pacific ($920)
           </button>
         </div>
-        <button class="cm-btn-reject" onclick="resolveExc('exc-1', 'Solicitud cancelada para renegociación.')">
-          Rechazar y renegociar
+        <button class="cm-btn-reject" onclick="resolveExc('exc-1', 'Solicitud cancelada para renegociación con proveedores.')">
+          Cancelar y Renegociar
         </button>
       </div>
     </div>
@@ -579,7 +731,7 @@
     <div class="cm-exc-card disruption" id="exc-2">
       <div class="cm-exc-top">
         <div class="cm-exc-code-group">
-          <span class="cm-exc-code">FR-1044 (Booking: bk-1044)</span>
+          <span class="cm-exc-code">FR-1044 (Booking: AND-BOOK-8820)</span>
           <span class="cm-exc-badge disruption">Avería en Tránsito</span>
         </div>
         <span style="font-size:12px; color:var(--text-muted);">Detectado hace 3 min</span>
@@ -587,7 +739,7 @@
 
       <div class="cm-exc-route">Lima, PE → Arequipa, PE</div>
       <div class="cm-exc-meta">
-        Transportista original: <strong>Andes Freight ($760 USD)</strong> · Unidad: AND-TRK-102
+        Transportista original: <strong>Andes Freight ($760 USD)</strong> · Unidad: Scania AND-TRK-102
       </div>
 
       <div class="cm-reason-box">
@@ -673,7 +825,7 @@
             <span class="cm-opt-price">$820 USD</span>
           </div>
           <div class="cm-opt-detail">
-            98% SLA · Flota Volvo preferida con telemetría satelital avanzada.
+            98% SLA · Flota Volvo preferida con mayor confiabilidad.
           </div>
         </div>
       </div>
@@ -692,6 +844,49 @@
 
   </div>
 
+</div>
+
+<!-- Modal "How It Works" for Judges -->
+<div class="cm-modal-overlay" id="how-modal" onclick="closeModal(event)">
+  <div class="cm-modal-card" onclick="event.stopPropagation()">
+    <button class="cm-modal-close" onclick="closeModal()">✕</button>
+    <h2 class="cm-modal-title">¿Cómo funciona la Gobernanza Human-in-the-Loop?</h2>
+    <p class="cm-modal-sub">
+      El agente autónomo maneja el 94% de las decisiones de despacho estándar. Solo cuando se detectan riesgos financieros o técnicos se involucra al supervisor.
+    </p>
+
+    <div class="cm-how-steps">
+      <div class="cm-how-step">
+        <div class="cm-how-num">1</div>
+        <div>
+          <strong>Detección de Anomalías (+30%):</strong><br>
+          Si una cotización excede el umbral histórico del corredor, el auto-booking se bloquea y se requiere autorización humana.
+        </div>
+      </div>
+
+      <div class="cm-how-step">
+        <div class="cm-how-num">2</div>
+        <div>
+          <strong>Compuerta de Confianza (&lt;85%):</strong><br>
+          Si dos opciones quedan en empate técnico, el agente solicita desempate al operador en lugar de elegir a ciegas.
+        </div>
+      </div>
+
+      <div class="cm-how-step">
+        <div class="cm-how-num">3</div>
+        <div>
+          <strong>Rescate ante Disrupción en Ruta:</strong><br>
+          Ante una avería, el agente descubre unidades de reemplazo vía WebMCP y le presenta la mejor opción de rescate al supervisor.
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:right;">
+      <button class="cm-btn-approve" style="margin:0; display:inline-flex;" onclick="closeModal()">
+        Entendido
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -715,6 +910,14 @@ function resolveExc(cardId, message) {
   card.style.opacity = '0.5';
   card.style.pointerEvents = 'none';
   card.innerHTML = '<div style="padding:18px; text-align:center; color:var(--green); font-weight:700; font-size:14px;">✓ ' + message + ' (Resuelto por el Supervisor)</div>';
+}
+
+function openModal() {
+  document.getElementById('how-modal').classList.add('shown');
+}
+
+function closeModal() {
+  document.getElementById('how-modal').classList.remove('shown');
 }
 </script>
 
