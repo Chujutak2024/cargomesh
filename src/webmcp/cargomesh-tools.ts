@@ -1,5 +1,5 @@
 import { dataStore } from "../features/freight/store";
-import { FreightDecision, FreightRequest } from "../features/freight/types";
+import { CarrierMetrics, FreightDecision, FreightRequest } from "../features/freight/types";
 import { WebMCPToolDefinition } from "./polyfill";
 import { validateHardConstraints } from "../features/decision-engine/hard-constraints";
 import { scoreOffers } from "../features/decision-engine/heuristic";
@@ -25,8 +25,8 @@ export async function executeGetFreightRequest(requestId: string): Promise<Freig
 }
 
 // 3. get_carrier_metrics
-export async function executeGetCarrierMetrics(carrierId: string) {
-  return dataStore.getMetrics(carrierId) || null;
+export async function executeGetCarrierMetrics(carrierId: string): Promise<CarrierMetrics | null> {
+  return dataStore.getMetricsForCarrier(carrierId);
 }
 
 // 4. evaluate_offers

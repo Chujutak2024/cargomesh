@@ -208,6 +208,15 @@ export interface CarrierOffer {
 
   price: number;
   currency: string;
+  price_breakdown?: {
+    base_freight: number;
+    border_handling?: number;
+    insurance?: number;
+    [key: string]: any;
+  };
+  customs_coordination_included?: boolean;
+  customs_notes?: string;
+  required_documents?: string[];
 
   estimated_pickup: string;
   estimated_delivery: string;
@@ -293,8 +302,46 @@ export interface Booking {
   delivery_window_end?: string;
   estimated_delivery?: string;
 
-  status: 'CONFIRMED' | 'IN_PROGRESS' | 'IN_TRANSIT' | 'COMPLETED' | 'CANCELLED' | 'RESCUED' | 'DISRUPTED';
+  current_location?: string;
+  updated_eta?: string;
+  updated_at?: string;
+
+  status:
+    | 'CONFIRMED'
+    | 'PICKUP_SCHEDULED'
+    | 'IN_PROGRESS'
+    | 'IN_TRANSIT'
+    | 'BORDER_PROCESSING'
+    | 'CUSTOMS_CLEARED'
+    | 'COMPLETED'
+    | 'DELIVERED'
+    | 'CANCELLED'
+    | 'RESCUED'
+    | 'DISRUPTED';
   booked_at: string;
+}
+
+export type BookingEventType =
+  | 'CONFIRMED'
+  | 'PICKUP_SCHEDULED'
+  | 'PICKED_UP'
+  | 'IN_TRANSIT'
+  | 'BORDER_PROCESSING'
+  | 'CUSTOMS_CLEARED'
+  | 'DELIVERED'
+  | 'EXCEPTION';
+
+export interface BookingEvent {
+  id: string;
+  booking_id: string;
+  event_type: BookingEventType | string;
+  occurred_at: string;
+  country_code: string;
+  city: string;
+  description: string;
+  source: string;
+  metadata?: Record<string, any>;
+  created_at?: string;
 }
 
 export interface DisruptionEvent {
@@ -334,6 +381,7 @@ export interface OrchestrationStep {
     | 'DECISION'
     | 'BOOKING'
     | 'BOOK'
+    | 'TRACKING'
     | 'EXCEPTION'
     | string;
   title: string;

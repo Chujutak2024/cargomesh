@@ -1,5 +1,7 @@
 import {
   Booking,
+  BookingEvent,
+  CarrierMetrics,
   CarrierOffer,
   DisruptionEvent,
   FreightDecision,
@@ -22,6 +24,7 @@ class CargoDataStore {
   private offers: Map<string, CarrierOffer[]> = new Map();
   private decisions: Map<string, FreightDecision> = new Map();
   private bookings: Map<string, Booking> = new Map();
+  private bookingEvents: Map<string, BookingEvent[]> = new Map();
   private disruptions: Map<string, DisruptionEvent> = new Map();
 
   constructor() {
@@ -33,28 +36,92 @@ class CargoDataStore {
     this.offers.clear();
     this.decisions.clear();
     this.bookings.clear();
+    this.bookingEvents.clear();
     this.disruptions.clear();
 
     INITIAL_FREIGHT_REQUESTS.forEach((req) => {
       this.requests.set(req.id, { ...req });
     });
 
-    // Seed an initial booking for FR-1044 (to test Disruption Recovery)
-    const fr1044Booking: Booking = {
-      id: "bk-1044",
-      freight_request_id: "fr-1044",
-      carrier_id: "car-andes",
-      carrier_name: "Andes Freight",
-      offer_id: "off-and-1044",
-      provider_reference: "AND-BOOK-9941",
-      price: 760,
+    // Seed initial booking for Golden Flow 1: FR-1042 Lima -> Santiago
+    const fr1042Booking: Booking = {
+      id: "80000000-0000-0000-0000-000000000001",
+      freight_request_id: "10000000-0000-0000-0000-000000001042",
+      carrier_id: "d0000000-0000-0000-0000-000000000001",
+      carrier_name: "Andes Freight S.A.",
+      offer_id: "70000000-0000-0000-0000-000000000001",
+      provider_reference: "AND-BOOK-8821",
+      price: 1760,
+      confirmed_price: 1760,
       currency: "USD",
-      estimated_delivery: new Date(Date.now() + 16 * 3600 * 1000).toISOString(),
+      estimated_delivery: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
+      current_location: "Complejo Fronterizo Santa Rosa (Tacna, PE) / Chacalluta (Arica, CL)",
+      updated_eta: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
       vehicle_brand: "Scania",
-      status: "IN_TRANSIT",
-      booked_at: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
+      status: "BORDER_PROCESSING",
+      booked_at: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
     };
-    this.bookings.set(fr1044Booking.id, fr1044Booking);
+    this.bookings.set(fr1042Booking.id, fr1042Booking);
+
+    // Seed initial milestones for AND-BOOK-8821
+    const initialEvents: BookingEvent[] = [
+      {
+        id: "e1000000-0000-0000-0000-000000000001",
+        booking_id: fr1042Booking.id,
+        event_type: "CONFIRMED",
+        occurred_at: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
+        country_code: "PE",
+        city: "Lima",
+        description: "Reserva vinculante confirmada mediante WebMCP con Andes Freight (AND-BOOK-8821).",
+        source: "CARGOMESH_AGENT",
+        metadata: { rate_usd: 1760, unit: "Scania R450 Heavy Semi-Trailer 18t" },
+      },
+      {
+        id: "e1000000-0000-0000-0000-000000000002",
+        booking_id: fr1042Booking.id,
+        event_type: "PICKUP_SCHEDULED",
+        occurred_at: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
+        country_code: "PE",
+        city: "Lima",
+        description: "Ventana de recojo programada en Almacén Central Callao (Puerta 4).",
+        source: "CARRIER_WEBMCP",
+        metadata: { dock: "Puerta 4", driver_ready: true },
+      },
+      {
+        id: "e1000000-0000-0000-0000-000000000003",
+        booking_id: fr1042Booking.id,
+        event_type: "PICKED_UP",
+        occurred_at: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
+        country_code: "PE",
+        city: "Lima (Callao)",
+        description: "Carga estibada exitosamente (8,000 kg en 12 bultos). Manifiesto de carga emitido.",
+        source: "CARRIER_WEBMCP",
+        metadata: { weight_verified_kg: 8000, seal_number: "AND-SL-9081" },
+      },
+      {
+        id: "e1000000-0000-0000-0000-000000000004",
+        booking_id: fr1042Booking.id,
+        event_type: "IN_TRANSIT",
+        occurred_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+        country_code: "PE",
+        city: "Panamericana Sur (Ica)",
+        description: "Unidad en tránsito hacia frontera sur. Condiciones mecánicas nominales.",
+        source: "CARRIER_WEBMCP",
+        metadata: { corridor: "Panamericana Sur PE", km: 300 },
+      },
+      {
+        id: "e1000000-0000-0000-0000-000000000005",
+        booking_id: fr1042Booking.id,
+        event_type: "BORDER_PROCESSING",
+        occurred_at: new Date().toISOString(),
+        country_code: "PE / CL",
+        city: "Tacna / Arica",
+        description: "Ingreso al Complejo Fronterizo Santa Rosa - Chacalluta. Trámite documental MIC/DTA en proceso.",
+        source: "CARRIER_WEBMCP",
+        metadata: { customs_status: "PROCESSING", docs_verified: ["commercial_invoice", "packing_list"] },
+      },
+    ];
+    this.bookingEvents.set(fr1042Booking.id, initialEvents);
   }
 
   public getOrganization() {
@@ -81,16 +148,25 @@ class CargoDataStore {
     return MOCK_SERVICES;
   }
 
-  public getVehicles() {
-    return MOCK_VEHICLES;
-  }
-
-  public getMetrics(carrierId: string) {
-    return MOCK_METRICS[carrierId] || null;
+  public getMetrics() {
+    return MOCK_METRICS;
   }
 
   public getAllMetrics() {
     return MOCK_METRICS;
+  }
+
+  public getMetricsForCarrier(carrierId: string): CarrierMetrics | null {
+    return (
+      MOCK_METRICS[carrierId] ||
+      MOCK_METRICS[`car-${carrierId}`] ||
+      Object.values(MOCK_METRICS).find((m) => carrierId.includes(m.carrier_id.replace("car-", ""))) ||
+      null
+    );
+  }
+
+  public getVehicles() {
+    return MOCK_VEHICLES;
   }
 
   public getFreightRequests(): FreightRequest[] {
@@ -103,9 +179,9 @@ class CargoDataStore {
     return this.requests.get(id) || null;
   }
 
-  public createFreightRequest(req: FreightRequest): FreightRequest {
-    this.requests.set(req.id, req);
-    return req;
+  public createFreightRequest(request: FreightRequest): FreightRequest {
+    this.requests.set(request.id, request);
+    return request;
   }
 
   public updateFreightRequest(id: string, patch: Partial<FreightRequest>): FreightRequest | null {
@@ -140,6 +216,21 @@ class CargoDataStore {
     if (req) {
       this.requests.set(req.id, { ...req, status: "ASSIGNED" });
     }
+
+    // Initialize tracking event
+    const initialEvent: BookingEvent = {
+      id: `ev-${Date.now()}`,
+      booking_id: booking.id,
+      event_type: "CONFIRMED",
+      occurred_at: new Date().toISOString(),
+      country_code: "PE",
+      city: "Lima",
+      description: `Reserva vinculante confirmada mediante WebMCP con referencia ${booking.provider_reference}.`,
+      source: "CARGOMESH_AGENT",
+      metadata: { rate_usd: booking.price || booking.confirmed_price, status: "CONFIRMED" },
+    };
+    this.bookingEvents.set(booking.id, [initialEvent]);
+
     return booking;
   }
 
@@ -147,6 +238,10 @@ class CargoDataStore {
     return Array.from(this.bookings.values()).sort(
       (a, b) => new Date(b.booked_at).getTime() - new Date(a.booked_at).getTime()
     );
+  }
+
+  public getBookingById(id: string): Booking | null {
+    return this.bookings.get(id) || null;
   }
 
   public getBookingByRequestId(freightRequestId: string): Booking | null {
@@ -162,6 +257,19 @@ class CargoDataStore {
     const updated = { ...existing, ...patch };
     this.bookings.set(id, updated);
     return updated;
+  }
+
+  public addBookingEvent(bookingId: string, event: BookingEvent): BookingEvent {
+    const events = this.bookingEvents.get(bookingId) || [];
+    events.push(event);
+    this.bookingEvents.set(bookingId, events);
+    return event;
+  }
+
+  public getBookingEvents(bookingId: string): BookingEvent[] {
+    return (this.bookingEvents.get(bookingId) || []).sort(
+      (a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime()
+    );
   }
 
   public createDisruption(event: DisruptionEvent): DisruptionEvent {

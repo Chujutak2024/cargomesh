@@ -101,7 +101,7 @@ export async function runAutonomousDispatchAgent(
   emitStep(
     "CONTEXT",
     "Retrieving Authorized Enterprise Context",
-    `Loaded context for ${orgContext.organization.name}: Auto-book policy: ${orgContext.preferences.allow_auto_booking ? "ENABLED" : "MANUAL"}, Confidence Threshold: ${orgContext.preferences.confidence_threshold}%, Default Budget: $${orgContext.preferences.budget_default || 850} USD.`,
+    `Loaded context for ${orgContext.organization.name}: Auto-book policy: ${orgContext.preferences.allow_auto_booking ? "ENABLED" : "MANUAL"}, Confidence Threshold: ${orgContext.preferences.confidence_threshold}%, Default Budget: $${orgContext.preferences.budget_default || 2000} USD.`,
     "get_organization_context",
     { organization_id: request.organization_id },
     orgContext
@@ -209,7 +209,7 @@ export async function runAutonomousDispatchAgent(
   dataStore.saveOffers(request.id, collectedOffers);
 
   // --- Step 5: Ingest Historical Corridor Metrics via WebMCP ---
-  const metricsMap = dataStore.getAllMetrics();
+  const metricsMap = dataStore.getMetrics();
   for (const carrier of eligibleCarriers) {
     const metrics = await executeGetCarrierMetrics(carrier.id);
     if (metrics) {

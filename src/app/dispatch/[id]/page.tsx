@@ -58,11 +58,11 @@ function SmartDispatchContent({
         payload: {
           request_id: params.id || "fr-1042",
           origin: searchParams.get("origin") || "Lima, Perú",
-          destination: searchParams.get("destination") || "Arequipa, Perú",
+          destination: searchParams.get("destination") || "Santiago, Chile",
           weight_kg: Number(searchParams.get("weight")) || 8000,
           strategy: searchParams.get("strategy") || "BALANCED",
-          budget_max: Number(searchParams.get("budget")) || 850,
-          hard_constraints: { max_weight_kg: 24000, mode: "ROAD" },
+          budget_max: Number(searchParams.get("budget")) || 2000,
+          hard_constraints: { max_weight_kg: 24000, mode: "ROAD", cross_border: true },
         },
       });
 
@@ -75,11 +75,13 @@ function SmartDispatchContent({
         toolName: "check_service_coverage & check_capacity",
         timestamp: new Date().toLocaleTimeString(),
         payload: {
-          corridor: "Lima, PE ↔ Arequipa, PE",
+          corridor: "Lima (PE) ↔ Santiago (CL) [3,300 km]",
+          cross_border: true,
+          customs_coordination: "MIC/DTA at Santa Rosa - Chacalluta",
           discovered_carriers: [
-            { id: "car-andes", name: "Andes Freight", units: 4, brand: "Scania R450" },
-            { id: "car-inca", name: "Inca Logistics", units: 3, brand: "Volvo FH" },
-            { id: "car-pacific", name: "Pacific Cargo", units: 1, brand: "Freightliner" },
+            { id: "car-andes", name: "Andes Freight", units: 4, brand: "Scania R450", customs_ready: true },
+            { id: "car-inca", name: "Inca Logistics", units: 3, brand: "Volvo FH", customs_ready: true },
+            { id: "car-pacific", name: "Pacific Cargo", units: 1, brand: "Freightliner", customs_ready: true },
           ],
         },
       });
@@ -101,17 +103,17 @@ function SmartDispatchContent({
         timestamp: new Date().toLocaleTimeString(),
         payload: {
           quotes: [
-            { carrier: "Andes Freight", price: 760, transit_h: 16, vehicle: "Scania R450" },
-            { carrier: "Inca Logistics", price: 820, transit_h: 14, vehicle: "Volvo FH" },
-            { carrier: "Pacific Cargo", price: 690, transit_h: 20, vehicle: "Freightliner" },
+            { carrier: "Andes Freight", price: 1760, transit_h: 48, vehicle: "Scania R450", customs_included: true },
+            { carrier: "Inca Logistics", price: 1920, transit_h: 44, vehicle: "Volvo FH", customs_included: true },
+            { carrier: "Pacific Cargo", price: 1590, transit_h: 60, vehicle: "Freightliner", customs_included: true },
           ],
         },
       });
 
       setCarrierStatus({
-        andes: { status: "Cotizado", price: "$760 USD", desc: "96% SLA · 4 unidades", quoted: true, winner: false },
-        inca: { status: "Cotizado", price: "$820 USD", desc: "98% SLA · 3 unidades", quoted: true, winner: false },
-        pacific: { status: "Cotizado", price: "$690 USD", desc: "86% SLA · 1 unidad", quoted: true, winner: false },
+        andes: { status: "Cotizado", price: "$1,760 USD", desc: "96% SLA · Scania R450 18t", quoted: true, winner: false },
+        inca: { status: "Cotizado", price: "$1,920 USD", desc: "98% SLA · Volvo FH 24t", quoted: true, winner: false },
+        pacific: { status: "Cotizado", price: "$1,590 USD", desc: "86% SLA · Freightliner 15t", quoted: true, winner: false },
       });
 
       await new Promise((r) => setTimeout(r, 1100));
@@ -142,7 +144,7 @@ function SmartDispatchContent({
         payload: {
           formula: "Balanced 100% (Cost 25%, SLA 25%, ETA 20%, Availability 10%, Route 10%, History 10%)",
           ranking: [
-            { carrier: "Andes Freight", score: 89, confidence: 0.88, winner: true },
+            { carrier: "Andes Freight", score: 89, confidence: 0.91, winner: true },
             { carrier: "Inca Logistics", score: 84, confidence: 0.84, winner: false },
             { carrier: "Pacific Cargo", score: 72, confidence: 0.72, winner: false },
           ],
@@ -164,11 +166,12 @@ function SmartDispatchContent({
         toolName: "book_freight",
         timestamp: new Date().toLocaleTimeString(),
         payload: {
-          booking_id: "bk-andes-8821",
+          booking_id: "80000000-0000-0000-0000-000000000001",
           provider_reference: "AND-BOOK-8821",
           carrier: "Andes Freight S.A.",
-          confirmed_price: 760,
-          vehicle: "Scania R450 Heavy (18t)",
+          confirmed_price: 1760,
+          vehicle: "Scania R450 Heavy Semi-Trailer (18t)",
+          corridor: "Lima (PE) -> Santiago (CL)",
           status: "CONFIRMED",
           booked_at: new Date().toISOString(),
         },

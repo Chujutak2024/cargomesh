@@ -197,22 +197,22 @@ export default function HomePage() {
           <div className="flex flex-col gap-2.5">
             {[
               {
-                route: "Lima → Arequipa",
-                meta: "12 envíos completados · Andes Freight (96% SLA)",
-                price: "$760 USD",
-                params: "origin=Lima%2C%20Per%C3%BA&destination=Arequipa%2C%20Per%C3%BA&weight=8000",
+                route: "Lima (PE) → Santiago (CL)",
+                meta: "12 despachos internacionales · Andes Freight (96% SLA)",
+                price: "$1,760 USD",
+                params: "origin=Lima%2C%20Per%C3%BA&destination=Santiago%2C%20Chile&weight=8000&budget=2000",
               },
               {
-                route: "Lima → Trujillo",
-                meta: "5 envíos completados · Inca Logistics (98% SLA)",
-                price: "$540 USD",
-                params: "origin=Lima%2C%20Per%C3%BA&destination=Trujillo%2C%20Per%C3%BA&weight=5000",
+                route: "Lima (PE) → Santiago (CL)",
+                meta: "8 despachos completados · Inca Logistics (98% SLA)",
+                price: "$1,920 USD",
+                params: "origin=Lima%2C%20Per%C3%BA&destination=Santiago%2C%20Chile&weight=8000&category=MACHINERY&budget=2000",
               },
               {
-                route: "Callao → Cusco",
-                meta: "3 envíos completados · Pacific Cargo ($690 USD)",
-                price: "$910 USD",
-                params: "origin=Callao%2C%20Per%C3%BA&destination=Cusco%2C%20Per%C3%BA&weight=12000",
+                route: "Callao (PE) → Arica (CL)",
+                meta: "4 despachos completados · Pacific Cargo ($1,250 USD)",
+                price: "$1,250 USD",
+                params: "origin=Callao%2C%20Per%C3%BA&destination=Arica%2C%20Chile&weight=12000",
               },
             ].map((c, i) => (
               <div
@@ -268,19 +268,25 @@ export default function HomePage() {
                   <span className="font-mono text-xs font-bold text-brass">
                     FR-1042
                   </span>
-                  <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-pill bg-green-bg text-green">
-                    EN RUTA
+                  <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-pill bg-brass-soft text-brass border border-brass-mid">
+                    ADUANA MIC/DTA
                   </span>
                 </div>
                 <div className="font-bold text-[13.5px] text-ink mb-0.5">
-                  Lima → Arequipa
+                  Lima (PE) → Santiago (CL)
                 </div>
-                <div className="text-xs text-text-secondary mb-2.5">
-                  Andes Freight · Scania R450 · ETA 18:00
+                <div className="text-xs text-text-secondary mb-2">
+                  Andes Freight · Scania R450 · Paso Sta Rosa
                 </div>
-                <div className="h-1.5 bg-line rounded-pill overflow-hidden">
-                  <div className="h-full bg-green rounded-pill w-[65%]" />
+                <div className="h-1.5 bg-line rounded-pill overflow-hidden mb-2.5">
+                  <div className="h-full bg-brass rounded-pill w-[70%]" />
                 </div>
+                <Link
+                  href="/tracking/80000000-0000-0000-0000-000000000001"
+                  className="block text-center bg-card hover:bg-canvas border border-line text-ink text-xs font-bold py-1.5 rounded-pill transition"
+                >
+                  Ver Tracking en Vivo
+                </Link>
               </div>
 
               <div className="border border-line rounded-md p-3.5 bg-paper">
@@ -293,7 +299,7 @@ export default function HomePage() {
                   </span>
                 </div>
                 <div className="font-bold text-[13.5px] text-ink mb-0.5">
-                  Lima → Trujillo
+                  Lima (PE) → Santiago (CL)
                 </div>
                 <div className="text-xs text-text-secondary mb-2.5">
                   Inca Logistics · Recojo en 2 horas

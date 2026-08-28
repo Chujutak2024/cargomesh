@@ -24,7 +24,7 @@ function NewFreightRequestForm() {
 
   // Form State
   const [origin, setOrigin] = useState("Lima, Perú");
-  const [destination, setDestination] = useState("Arequipa, Perú");
+  const [destination, setDestination] = useState("Santiago, Chile");
   const [transportMode, setTransportMode] = useState<"ROAD" | "AIR" | "SEA">("ROAD");
   const [category, setCategory] = useState("GENERAL");
   const [weightKg, setWeightKg] = useState(8000);
@@ -39,16 +39,16 @@ function NewFreightRequestForm() {
 
   // Strategy & Budget
   const [strategy, setStrategy] = useState<"BALANCED" | "LOWEST_COST" | "MOST_RELIABLE" | "FASTEST">("BALANCED");
-  const [budgetMax, setBudgetMax] = useState(850);
+  const [budgetMax, setBudgetMax] = useState(2000);
   const [maxPickupWaitHours, setMaxPickupWaitHours] = useState(2);
 
   // Preferences & Dates
   const [pickupDate, setPickupDate] = useState("2026-08-31T08:00");
-  const [deadlineDate, setDeadlineDate] = useState("2026-09-02T18:00");
+  const [deadlineDate, setDeadlineDate] = useState("2026-09-03T18:00");
   const [preferredCarrier, setPreferredCarrier] = useState("none");
   const [preferredBrand, setPreferredBrand] = useState("");
   const [instructions, setInstructions] = useState(
-    "Repuestos para perforadora minera en cajas de madera. Requiere montacargas estándar para estiba."
+    "Repuestos para perforadora minera en cajas de madera. Requiere montacargas estándar y trámite MIC/DTA en paso fronterizo Santa Rosa/Chacalluta."
   );
 
   // Load URL params & Golden Flow Presets
@@ -74,27 +74,27 @@ function NewFreightRequestForm() {
   const loadPreset = (preset: "golden1" | "golden2") => {
     if (preset === "golden1") {
       setOrigin("Lima, Perú");
-      setDestination("Arequipa, Perú");
+      setDestination("Santiago, Chile");
       setWeightKg(8000);
       setVolumeM3(18);
-      setBudgetMax(850);
+      setBudgetMax(2000);
       setCategory("GENERAL");
       setStrategy("BALANCED");
       setPreferredBrand("");
       setInstructions(
-        "Repuestos para perforadora minera en cajas de madera. Requiere montacargas estándar para estiba."
+        "Repuestos para perforadora minera en cajas de madera. Requiere montacargas estándar y trámite MIC/DTA en paso fronterizo Santa Rosa/Chacalluta."
       );
     } else if (preset === "golden2") {
       setOrigin("Lima, Perú");
-      setDestination("Arequipa, Perú");
+      setDestination("Santiago, Chile");
       setWeightKg(8000);
       setVolumeM3(20);
-      setBudgetMax(800);
+      setBudgetMax(2000);
       setCategory("MACHINERY");
       setStrategy("BALANCED");
       setPreferredBrand("Volvo");
       setInstructions(
-        "Bomba hidráulica de alta precisión. Preferencia blanda por camión marca Volvo."
+        "Bomba hidráulica de alta precisión. Preferencia blanda por unidad Volvo FH con coordinación aduanera."
       );
     }
   };

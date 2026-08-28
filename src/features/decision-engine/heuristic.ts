@@ -79,14 +79,13 @@ export function scoreOffers(
   const maxPrice = Math.max(...prices);
 
   const scoredList: ScoredOffer[] = offers.map((offer) => {
-    const metrics = metricsMap[offer.carrier_id];
+    const metrics = metricsMap[offer.carrier_id] || Object.values(metricsMap).find(m => offer.carrier_id.includes(m.carrier_id.replace('car-', '')));
 
     // 1. Cost Score (Lower price is better)
     let costScore = 80;
     if (maxPrice === minPrice) {
       costScore = 100;
     } else {
-      // 100 for minPrice, down to 60 for maxPrice
       costScore = 100 - ((offer.price - minPrice) / (maxPrice - minPrice)) * 40;
     }
     // Budget penalty if exceeds max budget
@@ -100,28 +99,28 @@ export function scoreOffers(
     const reliabilityScore = Math.min(100, Math.max(40, successRate * 100));
 
     // 3. ETA / Transit Time Score
-    const durationHours = offer.estimated_duration_hours || 16;
-    const etaScore = Math.max(50, 100 - (durationHours - 12) * 3);
+    const durationHours = offer.estimated_duration_hours || 48;
+    const etaScore = Math.max(50, 100 - (durationHours - 40) * 1.5);
 
     // 4. Availability Score (Units ready in corridor)
     const units = metrics ? metrics.available_units_count : 2;
     const availabilityScore = Math.min(100, 60 + units * 10);
 
     // 5. Route Experience Score (Trips in corridor)
-    const completedTrips = metrics ? metrics.completed_freight_requests : 10;
+    const completedTrips = metrics ? (metrics.completed_freight_requests || metrics.route_jobs_count || 10) : 10;
     const routeExperienceScore = Math.min(100, 50 + completedTrips * 1.2);
 
     // 6. Organization / Client History Score
     let clientHistoryScore = 80;
-    if (offer.carrier_id === "car-andes") {
+    if (offer.carrier_id.includes("andes") || offer.carrier_name.toLowerCase().includes("andes")) {
       clientHistoryScore = 95; // 9 previous shipments with ACME Mining, 8 on-time
-    } else if (offer.carrier_id === "car-inca") {
+    } else if (offer.carrier_id.includes("inca") || offer.carrier_name.toLowerCase().includes("inca")) {
       clientHistoryScore = 90;
-    } else if (offer.carrier_id === "car-pacific") {
+    } else if (offer.carrier_id.includes("pacific") || offer.carrier_name.toLowerCase().includes("pacific")) {
       clientHistoryScore = 70;
     }
 
-    // Soft Preference Bonus
+    // Soft Preference Bonus (+5 points)
     let softPreferenceBonus = 0;
     const requestedBrand =
       request.special_instructions?.match(/volvo/i) ||
@@ -164,5 +163,6 @@ export function scoreOffers(
     };
   });
 
-  return scoredList.sort((a, b) => b.scores.total_score - a.scores.total_score);
+  // Sort descending by total score
+  return scoredList.sort((a, b) => b.scores.total - a.scores.total);
 }

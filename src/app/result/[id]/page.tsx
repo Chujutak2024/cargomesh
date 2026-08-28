@@ -50,9 +50,9 @@ export default function ResultExplainabilityPage({
         </div>
 
         <div className="bg-paper-raised border border-line px-4 py-2 rounded-pill text-xs font-semibold text-ink flex items-center gap-2.5 shadow-sm">
-          <span>Lima → Arequipa</span>
+          <span>Lima (PE) → Santiago (CL)</span>
           <span>•</span>
-          <span>8,000 kg (ROAD FTL)</span>
+          <span>8,000 kg (ROAD FTL Internacional)</span>
           <span>•</span>
           <span className="font-mono text-brass bg-brass-soft px-2 py-0.5 rounded-pill text-[11.5px]">
             Balanced
@@ -67,7 +67,7 @@ export default function ResultExplainabilityPage({
           {/* Winner Card */}
           <div className="bg-paper-raised border-2 border-brass-mid rounded-lg p-6 shadow-md relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-brass-mid text-[#211500] font-mono font-bold text-[11px] px-4 py-1.5 rounded-bl-md uppercase tracking-wider">
-              ★ Ganador Heurístico (Score: 89 / Confianza: 88%)
+              ★ Ganador Heurístico (Score: 89 / Confianza: 91%)
             </div>
 
             <div className="flex items-center gap-4 mb-5">
@@ -79,7 +79,7 @@ export default function ResultExplainabilityPage({
                   Andes Freight S.A.
                 </h2>
                 <p className="text-xs text-text-secondary">
-                  Operador regional certificado · Especialista en corredor Andes Sur
+                  Operador internacional certificado · Especialista en corredor Lima–Santiago con gestión MIC/DTA
                 </p>
               </div>
             </div>
@@ -88,10 +88,10 @@ export default function ResultExplainabilityPage({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-paper rounded-md border border-line mb-5">
               <div className="flex flex-col">
                 <span className="text-[10.5px] font-bold text-text-muted uppercase">
-                  Tarifa Garantizada
+                  Tarifa Cerrada
                 </span>
                 <span className="font-mono text-base font-bold text-brass">
-                  $760 USD
+                  $1,760 USD
                 </span>
               </div>
               <div className="flex flex-col">
@@ -107,15 +107,15 @@ export default function ResultExplainabilityPage({
                   Tiempo Tránsito
                 </span>
                 <span className="font-mono text-base font-bold text-ink">
-                  16 horas
+                  48 horas
                 </span>
               </div>
               <div className="flex flex-col">
                 <span className="text-[10.5px] font-bold text-text-muted uppercase">
-                  Llegada Estimada
+                  Paso Fronterizo
                 </span>
                 <span className="font-mono text-base font-bold text-ink">
-                  Mañana, 18:00
+                  Santa Rosa / Chacalluta
                 </span>
               </div>
             </div>
@@ -151,19 +151,19 @@ export default function ResultExplainabilityPage({
               {[
                 {
                   bold: "96% de entregas exitosas a tiempo",
-                  text: "en el corredor Lima ↔ Arequipa sobre 42 operaciones completadas, con una demora promedio mínima de solo 1.2 horas.",
+                  text: "en el corredor internacional Lima ↔ Santiago sobre 42 tránsitos completados, con demora promedio mínima de 1.2 horas.",
                 },
                 {
-                  bold: "Alta disponibilidad de flota:",
-                  text: "Andes Freight cuenta con 4 unidades activas listas en terminal Lima, garantizando el recojo dentro de la ventana de 2 horas.",
+                  bold: "Coordinación aduanera MIC/DTA incluida:",
+                  text: "Andes Freight gestiona la transmisión del manifiesto internacional y acompañamiento documental en frontera Santa Rosa / Chacalluta.",
                 },
                 {
-                  bold: "Dentro de tu rango presupuestal:",
-                  text: "La cotización de $760 USD está perfectamente alineada con el histórico pagado por ACME Mining ($700 – $850 USD).",
+                  bold: "Dentro de tu presupuesto corporativo:",
+                  text: "La cotización de $1,760 USD está por debajo del presupuesto máximo de $2,000 USD fijado por ACME Mining.",
                 },
                 {
-                  bold: "Relación comprobada:",
-                  text: "ACME Mining ha completado 9 envíos previos con este proveedor con 8 entregas impecables sin incidencias.",
+                  bold: "Disponibilidad y flota lista:",
+                  text: "Unidad Scania R450 disponible de inmediato en terminal Callao para recojo dentro de la ventana requerida.",
                 },
               ].map((item, idx) => (
                 <div key={idx} className="flex items-start gap-2.5 text-xs text-ink leading-relaxed">
@@ -183,7 +183,7 @@ export default function ResultExplainabilityPage({
                 <Info className="w-3.5 h-3.5 text-brass" />
                 Análisis Contrafactual de la Decisión
               </div>
-              Si hubieras seleccionado la política <em>"Lowest Cost"</em>, Pacific Cargo habría ganado por $690 USD, pero con un historial de demora promedio 2.2 horas superior (86% SLA). Bajo tu política <em>Balanced</em>, Andes Freight ofrece la mejor relación costo-confiabilidad.
+              Si hubieras seleccionado la política <em>"Lowest Cost"</em>, Pacific Cargo habría ganado por $1,590 USD, pero con un historial de demora en frontera 2.2 horas superior (86% SLA). Bajo tu política <em>Balanced</em>, Andes Freight ofrece la mejor relación costo-confiabilidad.
             </div>
           </div>
 
@@ -212,7 +212,7 @@ export default function ResultExplainabilityPage({
                 <div className="flex flex-col gap-1 text-[11px] text-text-secondary">
                   <div className="flex justify-between">
                     <span>Cotización:</span>
-                    <strong className="text-ink">$760 USD</strong>
+                    <strong className="text-ink">$1,760 USD</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Confiabilidad:</span>
@@ -224,7 +224,7 @@ export default function ResultExplainabilityPage({
                   </div>
                 </div>
                 <div className="text-[10.5px] text-text-secondary pt-2 border-t border-line leading-tight">
-                  Balance óptimo de costo, SLA y unidades disponibles.
+                  Balance óptimo de flete internacional, SLA y gestión MIC/DTA.
                 </div>
               </div>
 
@@ -240,7 +240,7 @@ export default function ResultExplainabilityPage({
                 <div className="flex flex-col gap-1 text-[11px] text-text-secondary">
                   <div className="flex justify-between">
                     <span>Cotización:</span>
-                    <strong className="text-ink">$820 USD</strong>
+                    <strong className="text-ink">$1,920 USD</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Confiabilidad:</span>
@@ -252,7 +252,7 @@ export default function ResultExplainabilityPage({
                   </div>
                 </div>
                 <div className="text-[10.5px] text-text-secondary pt-2 border-t border-line leading-tight">
-                  Tarifa premium ($820) sin valor diferencial para carga general.
+                  Tarifa premium ($1,920) sin valor diferencial para carga general.
                 </div>
               </div>
 
@@ -268,7 +268,7 @@ export default function ResultExplainabilityPage({
                 <div className="flex flex-col gap-1 text-[11px] text-text-secondary">
                   <div className="flex justify-between">
                     <span>Cotización:</span>
-                    <strong className="text-ink">$690 USD</strong>
+                    <strong className="text-ink">$1,590 USD</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Confiabilidad:</span>
@@ -280,7 +280,7 @@ export default function ResultExplainabilityPage({
                   </div>
                 </div>
                 <div className="text-[10.5px] text-text-secondary pt-2 border-t border-line leading-tight">
-                  Precio más bajo pero penalizado por riesgo de demoras.
+                  Precio más bajo pero penalizado por mayor demora en frontera.
                 </div>
               </div>
             </div>
@@ -295,24 +295,19 @@ export default function ResultExplainabilityPage({
             </h3>
 
             <Link
-              href="/"
-              className="w-full bg-ink hover:bg-[#322D22] text-paper font-bold text-sm py-3.5 rounded-pill flex items-center justify-center gap-2 transition transform active:scale-95 shadow-sm mb-2.5 text-center"
+              href={`/tracking/${params.id || "80000000-0000-0000-0000-000000000001"}`}
+              className="w-full bg-brass-mid hover:bg-brass-bright text-[#211500] font-extrabold text-sm py-3.5 rounded-pill flex items-center justify-center gap-2 transition transform active:scale-95 shadow-sm mb-2.5 text-center"
             >
-              <span>Volver al Home (Ver en curso)</span>
+              <span>Ver Tracking del Envío</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
 
-            <button
-              type="button"
-              onClick={() =>
-                alert(
-                  "Detalle de transporte: Origen Lima Norte, Destino Terminal Arequipa Sur. Recojo programado 08:00 AM."
-                )
-              }
-              className="w-full bg-transparent hover:border-brass-mid text-text-secondary hover:text-ink text-xs font-semibold py-2.5 rounded-pill border border-line transition mb-2"
+            <Link
+              href="/"
+              className="w-full bg-transparent hover:border-brass-mid text-text-secondary hover:text-ink text-xs font-semibold py-2.5 rounded-pill border border-line transition mb-2 flex items-center justify-center text-center"
             >
-              Ver detalle del transporte
-            </button>
+              Volver al Home (Ver en curso)
+            </Link>
 
             <button
               type="button"
@@ -336,10 +331,13 @@ export default function ResultExplainabilityPage({
                   Booking Ref: <strong className="text-ink">AND-BOOK-8821</strong>
                 </div>
                 <div>
+                  Corredor: <strong className="text-ink">Lima (PE) → Santiago (CL)</strong>
+                </div>
+                <div>
                   Unidad: <strong className="text-ink">Scania R450 Heavy (18t)</strong>
                 </div>
                 <div>
-                  Ventana de recojo: <strong className="text-ink">Mañana, 08:00 – 10:00 AM</strong>
+                  Recojo: <strong className="text-ink">Mañana, 08:00 – 10:00 AM</strong>
                 </div>
               </div>
             </div>
