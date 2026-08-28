@@ -44,6 +44,46 @@
     outline-offset: 2px;
   }
 
+  /* Top Staging / Protocol Banner (Inspired by OpenAI Build Week Winners) */
+  .cm-staging-bar {
+    background: #11100C;
+    color: #C5BFB0;
+    font-size: 11.5px;
+    padding: 7px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid #28241C;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .cm-staging-bar strong { color: #F3F1E9; }
+
+  .cm-demo-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cm-demo-switch {
+    background: #242017;
+    border: 1px solid #423B2C;
+    color: #F1E1BB;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s;
+  }
+
+  .cm-demo-switch:hover { background: #383124; }
+  .cm-demo-switch.active { background: #A9791F; color: #211500; font-weight: 700; border-color: #C4901F; }
+
   .cm-wrap { max-width: 1160px; margin: 0 auto; padding-bottom: 60px; }
 
   /* Header */
@@ -125,7 +165,7 @@
 
   /* Hero bar */
   .cm-hero {
-    padding: 32px 28px 18px;
+    padding: 30px 28px 18px;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -145,17 +185,43 @@
     font-size: 14.5px;
     color: var(--text-secondary);
     margin: 0;
-    max-width: 650px;
+    max-width: 680px;
     line-height: 1.5;
+  }
+
+  /* Judge / Demo Mode Bar (Hidden by default in Normal Mode) */
+  .cm-judge-bar {
+    display: none;
+    background: var(--brass-fill-soft);
+    border: 1px solid var(--brass-mid);
+    border-radius: var(--radius-md);
+    padding: 12px 18px;
+    margin: 0 28px 20px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .cm-judge-bar.shown { display: flex; }
+
+  .cm-judge-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--brass);
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .cm-preset-btn {
     background: var(--paper-raised);
-    border: 1px solid var(--line);
+    border: 1px solid var(--brass);
     color: var(--ink);
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 600;
-    padding: 8px 14px;
+    padding: 6px 12px;
     border-radius: var(--radius-pill);
     cursor: pointer;
     display: flex;
@@ -165,9 +231,9 @@
   }
 
   .cm-preset-btn:hover {
-    border-color: var(--brass-mid);
-    background: var(--brass-fill-soft);
-    color: var(--brass);
+    background: var(--brass-mid);
+    color: #211500;
+    font-weight: 700;
   }
 
   /* Form Layout */
@@ -521,7 +587,7 @@
     font-family: 'IBM Plex Mono', monospace;
   }
 
-  /* WebMCP autonomous agent notice box */
+  /* Autonomous Agent Notice Box */
   .cm-agent-notice {
     background: var(--paper);
     border: 1px solid var(--line);
@@ -597,6 +663,19 @@
 </head>
 <body>
 
+<!-- Top Staging / Protocol Banner (Inspired by OpenAI Build Week Winners) -->
+<div class="cm-staging-bar">
+  <div>
+    <strong>WebMCP Challenge Staging</strong> · Deterministic Rules · Org: <strong>ACME Mining</strong>
+  </div>
+  <div class="cm-demo-toggle-wrap">
+    <button class="cm-demo-switch" id="demo-switch-btn" onclick="toggleDemoMode()">
+      <span>🧪 Modo Demo:</span>
+      <strong id="demo-mode-status">OFF</strong>
+    </button>
+  </div>
+</div>
+
 <div class="cm-wrap">
 
   <!-- Header -->
@@ -629,26 +708,31 @@
     </div>
   </header>
 
-  <!-- Hero & Presets -->
+  <!-- Hero Section -->
   <section class="cm-hero">
     <div>
       <h1 class="cm-hero-title">Nueva solicitud de transporte</h1>
       <p class="cm-hero-sub">
-        Expresa tu intención logística. El agente de CargoMesh descubrirá capacidades de transportistas vía WebMCP, validará restricciones duras y seleccionará la mejor alternativa de forma explicable.
+        Expresa tu intención logística. El motor inteligente de CargoMesh descubre capacidades de transporte, valida restricciones duras y optimiza el flete según tus políticas empresariales.
       </p>
     </div>
+  </section>
 
-    <div style="display:flex; gap:8px;">
-      <button class="cm-preset-btn" onclick="loadPreset('golden1')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-        Cargar Golden Flow 1 (8t Lima→Arequipa)
+  <!-- Judge / Demo Mode Bar (Visible only when Demo Mode is Active) -->
+  <div class="cm-judge-bar" id="judge-bar">
+    <div class="cm-judge-title">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+      <span>Herramientas de Demostración (Judge Mode):</span>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button type="button" class="cm-preset-btn" onclick="loadPreset('golden1')">
+        🌟 Precargar Golden Flow 1 (8t Lima→Arequipa)
       </button>
-      <button class="cm-preset-btn" onclick="loadPreset('golden2')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-        Golden Flow 2 (Pref. Volvo)
+      <button type="button" class="cm-preset-btn" onclick="loadPreset('golden2')">
+        ⚙️ Precargar Golden Flow 2 (Pref. Volvo)
       </button>
     </div>
-  </section>
+  </div>
 
   <!-- Main Form Grid -->
   <form class="cm-form-grid" onsubmit="handleFormSubmit(event)">
@@ -913,17 +997,17 @@
 
         <div class="cm-agent-notice">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>
-          <div>
-            <strong>Orquestación WebMCP:</strong> El agente consultará las herramientas expuestas por Andes, Pacific e Inca en tiempo real.
+          <div id="notice-text">
+            <strong>Orquestación Autónoma:</strong> El agente evaluará la red de transportistas calificados y ejecutará la reserva si la confianza supera el 85%.
           </div>
         </div>
 
         <button type="submit" class="cm-btn-dispatch">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-          <span>Buscar transporte con Agente</span>
+          <span>Despachar con Agente</span>
         </button>
 
-        <button type="button" class="cm-btn-draft" onclick="alert('Borrador guardado localmente.')">
+        <button type="button" class="cm-btn-draft" onclick="alert('Borrador guardado localmente en tu cuenta.')">
           Guardar borrador
         </button>
       </div>
@@ -934,8 +1018,29 @@
 </div>
 
 <script>
+var isDemoMode = false;
 var selectedStrategy = 'BALANCED';
 var selectedCategory = 'GENERAL';
+
+function toggleDemoMode() {
+  isDemoMode = !isDemoMode;
+  var btn = document.getElementById('demo-switch-btn');
+  var status = document.getElementById('demo-mode-status');
+  var bar = document.getElementById('judge-bar');
+  var notice = document.getElementById('notice-text');
+
+  if (isDemoMode) {
+    btn.classList.add('active');
+    status.textContent = 'ON';
+    bar.classList.add('shown');
+    notice.innerHTML = '<strong>Orquestación WebMCP:</strong> El agente consultará las herramientas expuestas por Andes, Pacific e Inca (<code>check_service_coverage</code>, <code>check_capacity</code>, <code>quote_freight</code>) en tiempo real.';
+  } else {
+    btn.classList.remove('active');
+    status.textContent = 'OFF';
+    bar.classList.remove('shown');
+    notice.innerHTML = '<strong>Orquestación Autónoma:</strong> El agente evaluará la red de transportistas calificados y ejecutará la reserva si la confianza supera el 85%.';
+  }
+}
 
 function selectCategory(el, code) {
   document.querySelectorAll('.cm-cat-btn').forEach(btn => btn.classList.remove('active'));
