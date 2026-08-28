@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CargoMesh — Home</title>
+<title>CargoMesh — Autonomous Freight Dispatch</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --paper: #F3F1E9;
@@ -23,6 +23,7 @@
     --green-bg: #E1EADD;
     --radius-lg: 20px;
     --radius-md: 14px;
+    --radius-sm: 10px;
     --radius-pill: 999px;
   }
 
@@ -36,14 +37,45 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  button, input { font-family: inherit; }
+  button, input, select { font-family: inherit; }
 
-  a:focus-visible, button:focus-visible, input:focus-visible {
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
     outline: 2px solid var(--brass-mid);
     outline-offset: 2px;
   }
 
-  .cm-wrap { max-width: 1160px; margin: 0 auto; padding-bottom: 40px; }
+  /* Top Staging / Protocol Banner (Inspired by OpenAI Build Week Winners) */
+  .cm-staging-bar {
+    background: #11100C;
+    color: #C5BFB0;
+    font-size: 11.5px;
+    padding: 7px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid #28241C;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .cm-staging-bar strong { color: #F3F1E9; }
+
+  .cm-staging-links {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .cm-staging-link {
+    color: #A9791F;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .cm-staging-link:hover { color: #C4901F; text-decoration: underline; }
+
+  .cm-wrap { max-width: 1160px; margin: 0 auto; padding-bottom: 50px; }
 
   /* Header */
   .cm-header {
@@ -56,10 +88,11 @@
     gap: 16px;
     position: sticky;
     top: 0;
-    z-index: 5;
+    z-index: 20;
   }
 
-  .cm-brand { display: flex; align-items: center; gap: 10px; }
+  .cm-brand-group { display: flex; align-items: center; gap: 18px; }
+  .cm-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
 
   .cm-logo {
     width: 34px; height: 34px;
@@ -75,177 +108,270 @@
     font-size: 17px;
   }
 
+  .cm-header-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cm-nav-link {
+    padding: 7px 14px;
+    border-radius: var(--radius-pill);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+
+  .cm-nav-link:hover { background: var(--paper); color: var(--ink); }
+  .cm-nav-link.active { background: var(--brass-fill-soft); color: var(--brass); }
+
   .cm-header-right { display: flex; align-items: center; gap: 10px; }
 
-  .cm-icon-btn {
-    width: 38px; height: 38px;
-    border-radius: 50%;
+  .cm-btn-how {
+    background: var(--paper);
     border: 1px solid var(--line);
-    background: var(--paper-raised);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
     color: var(--ink);
+    font-weight: 600;
+    font-size: 12.5px;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
   }
 
-  .cm-icon-btn:hover { background: var(--paper); }
-  .cm-icon-btn svg { width: 18px; height: 18px; }
-
-  .cm-avatar {
-    width: 38px; height: 38px;
-    border-radius: 50%;
-    background: var(--brass-fill-soft);
-    color: var(--brass);
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 500;
-    font-size: 13px;
-    display: flex; align-items: center; justify-content: center;
-  }
+  .cm-btn-how:hover { border-color: var(--brass-mid); color: var(--brass); }
 
   .cm-btn-new {
     background: var(--brass-mid);
     color: #211500;
     border: none;
     font-weight: 700;
-    font-size: 14px;
-    padding: 10px 18px;
+    font-size: 13.5px;
+    padding: 9px 18px;
     border-radius: var(--radius-pill);
     display: inline-flex;
     align-items: center;
     gap: 6px;
     cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 1px 3px rgba(169, 121, 31, 0.2);
   }
 
   .cm-btn-new:hover { background: var(--brass-bright); }
   .cm-btn-new svg { width: 16px; height: 16px; }
 
-  /* Hero / greeting */
-  .cm-hero { padding: 32px 28px 4px; }
+  .cm-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--brass-fill-soft);
+    color: var(--brass);
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Golden Flows Fast-Trigger Bar */
+  .cm-golden-bar {
+    padding: 16px 28px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+  }
+
+  .cm-golden-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  .cm-golden-pill {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  .cm-golden-pill:hover {
+    border-color: var(--brass-mid);
+    background: var(--brass-fill-soft);
+    color: var(--brass);
+  }
+
+  /* Hero Section */
+  .cm-hero { padding: 26px 28px 10px; }
 
   .cm-greeting {
     font-family: 'Overpass', sans-serif;
     font-weight: 800;
     font-size: clamp(24px, 3vw, 30px);
     margin: 0 0 4px;
+    letter-spacing: -0.01em;
   }
 
   .cm-greeting-sub {
     font-size: 14.5px;
     color: var(--text-secondary);
-    margin: 0 0 22px;
+    margin: 0 0 18px;
+    max-width: 680px;
+    line-height: 1.45;
   }
 
-  /* Quick request bar */
-  .cm-search-card {
+  /* Intent Creation Card (Autonomous Dispatch) */
+  .cm-intent-card {
     background: var(--paper-raised);
-    border: 1px solid var(--line);
+    border: 1.5px solid var(--line);
     border-radius: var(--radius-lg);
-    padding: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 1px 2px rgba(26,24,18,0.04);
-    flex-wrap: wrap;
+    padding: 18px 22px;
+    box-shadow: 0 2px 10px rgba(26,24,18,0.04);
   }
 
-  .cm-search-field {
-    flex: 1;
-    min-width: 140px;
+  .cm-intent-row-1 {
+    display: grid;
+    grid-template-columns: 1.2fr 1.2fr 1fr 1.2fr auto;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .cm-intent-field {
     display: flex;
     flex-direction: column;
-    padding: 6px 16px;
-    border-right: 1px solid var(--line);
+    gap: 4px;
   }
 
-  .cm-search-field:last-of-type { border-right: none; }
-
-  .cm-search-label {
+  .cm-intent-label {
     font-size: 11px;
     color: var(--text-muted);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.02em;
-    margin-bottom: 2px;
   }
 
-  .cm-search-field input {
-    border: none;
-    background: transparent;
-    font-size: 14.5px;
-    font-weight: 500;
+  .cm-intent-input, .cm-intent-select {
+    border: 1px solid var(--line);
+    background: var(--paper);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 13.5px;
+    font-weight: 600;
     color: var(--ink);
-    padding: 0;
     width: 100%;
+    transition: all 0.15s;
   }
 
-  .cm-search-field input::placeholder { color: var(--text-muted); font-weight: 400; }
-  .cm-search-field input:focus { outline: none; }
+  .cm-intent-input:focus, .cm-intent-select:focus {
+    background: var(--paper-raised);
+    border-color: var(--brass-mid);
+    outline: none;
+  }
 
-  .cm-search-btn {
+  .cm-intent-select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%235B5748' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  .cm-btn-dispatch-cta {
     background: var(--ink);
     color: var(--paper);
     border: none;
     font-weight: 700;
     font-size: 14px;
-    padding: 14px 22px;
+    padding: 12px 22px;
     border-radius: var(--radius-pill);
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
     white-space: nowrap;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.1s;
+    height: 42px;
+    margin-top: 18px;
   }
 
-  .cm-search-btn:hover { background: #322D22; }
-  .cm-search-btn svg { width: 16px; height: 16px; color: var(--brass-bright); }
-
-  /* Categories */
-  .cm-categories {
-    display: flex;
-    gap: 22px;
-    padding: 26px 28px 6px;
-    overflow-x: auto;
+  .cm-btn-dispatch-cta:hover {
+    background: #322D22;
+    transform: translateY(-1px);
   }
 
-  .cm-category {
+  .cm-btn-dispatch-cta svg { width: 16px; height: 16px; color: var(--brass-bright); }
+
+  /* Row 2: Requisitos Rápidos / Hard Constraints (Aligned with Database) */
+  .cm-req-row {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    flex-shrink: 0;
+    gap: 12px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    flex-wrap: wrap;
   }
 
-  .cm-category-icon {
-    width: 54px; height: 54px;
-    border-radius: 50%;
-    background: var(--paper-raised);
-    border: 1px solid var(--line);
-    display: flex; align-items: center; justify-content: center;
+  .cm-req-title {
+    font-size: 11.5px;
+    font-weight: 700;
     color: var(--text-secondary);
-    transition: border-color 0.15s, background 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
   }
 
-  .cm-category-icon svg { width: 22px; height: 22px; }
+  .cm-req-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
 
-  .cm-category.active .cm-category-icon {
+  .cm-req-toggle {
+    padding: 6px 14px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+    transition: all 0.15s;
+  }
+
+  .cm-req-toggle.active {
     background: var(--brass-fill-soft);
     border-color: var(--brass-mid);
     color: var(--brass);
   }
 
-  .cm-category-label {
-    font-size: 12.5px;
-    font-weight: 500;
-    color: var(--text-secondary);
-  }
+  .cm-req-toggle svg { width: 14px; height: 14px; }
 
-  .cm-category.active .cm-category-label { color: var(--ink); font-weight: 600; }
-
-  /* Two column layout */
+  /* Two Column Section */
   .cm-layout {
     display: grid;
     grid-template-columns: 1.5fr 1fr;
-    gap: 20px;
+    gap: 24px;
     padding: 24px 28px 0;
     align-items: start;
   }
@@ -267,10 +393,11 @@
     display: flex;
     align-items: center;
     gap: 14px;
+    box-shadow: 0 1px 2px rgba(26,24,18,0.03);
   }
 
   .cm-route-icon {
-    width: 44px; height: 44px;
+    width: 42px; height: 42px;
     border-radius: 50%;
     background: var(--paper);
     display: flex; align-items: center; justify-content: center;
@@ -278,24 +405,24 @@
     flex-shrink: 0;
   }
 
-  .cm-route-icon svg { width: 20px; height: 20px; }
-
+  .cm-route-icon svg { width: 18px; height: 18px; }
   .cm-route-info { flex: 1; min-width: 0; }
 
   .cm-route-cities {
-    font-weight: 600;
-    font-size: 14.5px;
+    font-weight: 700;
+    font-size: 14px;
     margin-bottom: 2px;
   }
 
   .cm-route-meta {
-    font-size: 12.5px;
+    font-size: 12px;
     color: var(--text-muted);
   }
 
   .cm-route-price {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 13px;
+    font-weight: 600;
     color: var(--text-secondary);
     margin-right: 4px;
   }
@@ -305,11 +432,13 @@
     border: 1px solid var(--line);
     color: var(--ink);
     font-weight: 600;
-    font-size: 13px;
-    padding: 8px 14px;
+    font-size: 12.5px;
+    padding: 7px 14px;
     border-radius: var(--radius-pill);
     cursor: pointer;
+    text-decoration: none;
     white-space: nowrap;
+    transition: all 0.15s;
   }
 
   .cm-btn-repeat:hover { border-color: var(--brass-mid); color: var(--brass); }
@@ -319,7 +448,8 @@
     background: var(--paper-raised);
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
-    padding: 20px;
+    padding: 22px;
+    box-shadow: 0 1px 2px rgba(26,24,18,0.04);
   }
 
   .cm-sidebar-head {
@@ -327,328 +457,460 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
   }
 
   .cm-sim-toggle {
-    background: none;
-    border: none;
+    font-size: 11px;
     color: var(--text-muted);
-    font-size: 12px;
-    text-decoration: underline;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    padding: 3px 9px;
     cursor: pointer;
-    padding: 0;
+    font-weight: 600;
   }
 
-  .cm-sim-toggle:hover { color: var(--brass); }
+  .cm-sim-toggle:hover { color: var(--ink); }
 
   .cm-shipment-card {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
-    padding: 14px 16px;
-    margin-bottom: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+    background: var(--paper);
   }
-
-  .cm-shipment-card:last-child { margin-bottom: 0; }
 
   .cm-shipment-top {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
+    align-items: center;
+    margin-bottom: 6px;
   }
 
   .cm-shipment-code {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 11.5px;
-    color: var(--text-muted);
-  }
-
-  .cm-status {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    padding: 3px 9px;
-    border-radius: var(--radius-pill);
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
+    color: var(--brass);
   }
 
-  .cm-status.transit { background: var(--brass-fill-soft); color: var(--brass); }
-  .cm-status.confirmed { background: var(--green-bg); color: var(--green); }
+  .cm-shipment-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: var(--radius-pill);
+    background: var(--green-bg);
+    color: var(--green);
+  }
 
   .cm-shipment-route {
-    font-weight: 600;
-    font-size: 14px;
-    margin-bottom: 4px;
+    font-weight: 700;
+    font-size: 13.5px;
+    margin-bottom: 2px;
   }
 
   .cm-shipment-carrier {
-    font-size: 12.5px;
+    font-size: 12px;
     color: var(--text-secondary);
     margin-bottom: 10px;
   }
 
-  .cm-progress-track {
+  .cm-track-bar {
     height: 5px;
     background: var(--line);
     border-radius: var(--radius-pill);
     overflow: hidden;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
 
-  .cm-progress-fill {
+  .cm-track-fill {
     height: 100%;
-    background: var(--brass-mid);
+    background: var(--green);
     border-radius: var(--radius-pill);
-  }
-
-  .cm-shipment-eta {
-    font-size: 12px;
-    color: var(--text-muted);
   }
 
   .cm-empty-state {
     display: none;
-    flex-direction: column;
-    align-items: center;
     text-align: center;
-    padding: 30px 10px 12px;
+    padding: 28px 14px;
   }
 
-  .cm-empty-icon {
-    width: 56px; height: 56px;
-    border-radius: 50%;
+  .cm-empty-state.shown { display: block; }
+
+  /* Modal "How It Works" */
+  .cm-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(26, 24, 18, 0.65);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .cm-modal-overlay.shown { display: flex; }
+
+  .cm-modal-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    max-width: 680px;
+    width: 100%;
+    padding: 28px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    position: relative;
+  }
+
+  .cm-modal-close {
+    position: absolute;
+    top: 20px; right: 20px;
     background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    width: 32px; height: 32px;
     display: flex; align-items: center; justify-content: center;
-    color: var(--text-muted);
-    margin-bottom: 16px;
-  }
-
-  .cm-empty-icon svg { width: 24px; height: 24px; }
-
-  .cm-empty-title {
-    font-weight: 700;
-    font-size: 14.5px;
-    margin-bottom: 6px;
-  }
-
-  .cm-empty-copy {
-    font-size: 13px;
-    color: var(--text-muted);
-    line-height: 1.55;
-    margin-bottom: 18px;
-    max-width: 230px;
-  }
-
-  .cm-empty-cta {
-    background: var(--brass-mid);
-    color: #211500;
-    border: none;
-    font-weight: 700;
-    font-size: 13.5px;
-    padding: 10px 18px;
-    border-radius: var(--radius-pill);
     cursor: pointer;
   }
 
-  .cm-empty-cta:hover { background: var(--brass-bright); }
+  .cm-modal-title {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
 
-  .cm-shipments-populated.hidden { display: none; }
-  .cm-empty-state.shown { display: flex; }
+  .cm-modal-sub {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    margin: 0 0 20px;
+    line-height: 1.45;
+  }
 
-  @media (max-width: 860px) {
+  .cm-how-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .cm-how-step {
+    display: flex;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--paper);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--line);
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+
+  .cm-how-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    background: var(--brass-mid);
+    color: #211500;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 920px) {
+    .cm-intent-row-1 { grid-template-columns: 1fr; }
     .cm-layout { grid-template-columns: 1fr; }
-    .cm-search-card { flex-direction: column; align-items: stretch; }
-    .cm-search-field { border-right: none; border-bottom: 1px solid var(--line); padding: 10px 6px; }
-    .cm-search-btn { width: 100%; justify-content: center; }
+    .cm-btn-dispatch-cta { margin-top: 0; }
   }
 </style>
 </head>
 <body>
 
+<!-- Top Staging / Protocol Banner (Inspired by OpenAI Build Week Winners) -->
+<div class="cm-staging-bar">
+  <div>
+    <strong>WebMCP Challenge Staging</strong> · Deterministic Multi-Criteria Engine · Org: <strong>ACME Mining</strong>
+  </div>
+  <div class="cm-staging-links">
+    <span class="cm-staging-link" onclick="openModal()">¿Cómo funciona la orquestación? (How it works)</span>
+    <span>•</span>
+    <a href="cargomesh_exceptions_mockup.html" class="cm-staging-link">Bandeja de Supervisor</a>
+  </div>
+</div>
+
 <div class="cm-wrap">
 
+  <!-- Header -->
   <header class="cm-header">
-    <div class="cm-brand">
-      <div class="cm-logo">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F3F1E9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="1" y="7" width="14" height="10" rx="1"></rect>
-          <path d="M15 10h4l3 3v4h-7z"></path>
-          <circle cx="6" cy="19" r="2"></circle>
-          <circle cx="18" cy="19" r="2"></circle>
-        </svg>
-      </div>
-      <span class="cm-title">CargoMesh</span>
+    <div class="cm-brand-group">
+      <a href="cargomesh_home_mockup.html" class="cm-brand">
+        <div class="cm-logo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F3F1E9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="7" width="14" height="10" rx="1"></rect>
+            <path d="M15 10h4l3 3v4h-7z"></path>
+            <circle cx="6" cy="19" r="2"></circle>
+            <circle cx="18" cy="19" r="2"></circle>
+          </svg>
+        </div>
+        <span class="cm-title">CargoMesh</span>
+      </a>
+
+      <nav class="cm-header-nav">
+        <a href="cargomesh_home_mockup.html" class="cm-nav-link active">Home</a>
+        <a href="cargomesh_providers_mockup.html" class="cm-nav-link">Carriers WebMCP</a>
+        <a href="cargomesh_exceptions_mockup.html" class="cm-nav-link">Supervisor (P1)</a>
+      </nav>
     </div>
 
     <div class="cm-header-right">
-      <a href="cargomesh_request_form_mockup.html" class="cm-btn-new" style="text-decoration:none;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
-        Nueva carga
-      </a>
-      <button class="cm-icon-btn" aria-label="Notificaciones">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 01-3.4 0"></path></svg>
+      <button class="cm-btn-how" onclick="openModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span>Cómo funciona</span>
       </button>
+
+      <a href="cargomesh_request_form_mockup.html" class="cm-btn-new">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+        <span>Nueva carga</span>
+      </a>
+
       <div class="cm-avatar">AM</div>
     </div>
   </header>
 
+  <!-- Golden Flows Quick-Trigger Bar for Judges -->
+  <div class="cm-golden-bar">
+    <span class="cm-golden-label">Flujos de Demostración:</span>
+    <a href="cargomesh_request_form_mockup.html" class="cm-golden-pill">
+      <span>🌟 Golden Flow 1: Auto-Booking (Lima → Arequipa, 8t, Balanced)</span>
+    </a>
+    <a href="cargomesh_request_form_mockup.html" class="cm-golden-pill">
+      <span>⚙️ Golden Flow 2: Preferencia de Marca (Filtro Volvo)</span>
+    </a>
+    <a href="cargomesh_exceptions_mockup.html" class="cm-golden-pill">
+      <span>🚨 Golden Flow 3: Avería en Ruta & Escalamiento</span>
+    </a>
+  </div>
+
+  <!-- Hero Section -->
   <section class="cm-hero">
     <h1 class="cm-greeting">Hola, ACME Mining</h1>
-    <p class="cm-greeting-sub">¿Qué carga necesitas mover hoy?</p>
+    <p class="cm-greeting-sub">
+      Expresa tu necesidad logística. El agente de CargoMesh descubre transportistas vía WebMCP, valida restricciones y resuelve el flete de forma autónoma y explicable.
+    </p>
 
-    <div class="cm-search-card">
-      <div class="cm-search-field">
-        <span class="cm-search-label">Origen</span>
-        <input type="text" value="Lima, Perú">
+    <!-- Intent Creation Card (Expresar Necesidad) -->
+    <div class="cm-intent-card">
+      <div class="cm-intent-row-1">
+        <div class="cm-intent-field">
+          <label class="cm-intent-label">Origen</label>
+          <input type="text" id="quick-origin" class="cm-intent-input" value="Lima, Perú">
+        </div>
+        <div class="cm-intent-field">
+          <label class="cm-intent-label">Destino</label>
+          <input type="text" id="quick-dest" class="cm-intent-input" value="Arequipa, Perú" placeholder="¿A dónde va tu carga?">
+        </div>
+        <div class="cm-intent-field">
+          <label class="cm-intent-label">Peso Total</label>
+          <input type="text" id="quick-weight" class="cm-intent-input" value="8,000 kg">
+        </div>
+        <div class="cm-intent-field">
+          <label class="cm-intent-label">Tipo de Carga</label>
+          <select id="quick-category" class="cm-intent-select">
+            <option value="GENERAL">General (Pallet / Cajas)</option>
+            <option value="FOOD">Alimentos / Perecibles</option>
+            <option value="MACHINERY">Maquinaria / Minería</option>
+            <option value="CONSTRUCTION">Construcción</option>
+            <option value="CHEMICALS">Químicos</option>
+          </select>
+        </div>
+        <div>
+          <!-- BUTTON CHANGED: Crear Solicitud (No "Buscar") -->
+          <a href="cargomesh_request_form_mockup.html" class="cm-btn-dispatch-cta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
+            <span>Crear solicitud</span>
+          </a>
+        </div>
       </div>
-      <div class="cm-search-field">
-        <span class="cm-search-label">Destino</span>
-        <input type="text" placeholder="¿A dónde va tu carga?">
+
+      <!-- Row 2: Requisitos Rápidos / Hard Constraints (Aligned with Database Schema) -->
+      <div class="cm-req-row">
+        <span class="cm-req-title">Requisitos Rápidos:</span>
+        <div class="cm-req-pills">
+          <div class="cm-req-toggle" onclick="toggleQuickReq(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="18" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h6"></path></svg>
+            <span>Refrigerado</span>
+          </div>
+          <div class="cm-req-toggle" onclick="toggleQuickReq(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg>
+            <span>Peligroso (HAZMAT)</span>
+          </div>
+          <div class="cm-req-toggle" onclick="toggleQuickReq(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15V9a1 1 0 011-1h9l6 4v3a1 1 0 01-1 1H5a1 1 0 01-1-1z"></path><circle cx="8" cy="18" r="1.6"></circle><circle cx="17" cy="18" r="1.6"></circle></svg>
+            <span>Sobredimensionado</span>
+          </div>
+          <div class="cm-req-toggle" onclick="toggleQuickReq(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>
+            <span>Urgente (&lt;24h)</span>
+          </div>
+        </div>
       </div>
-      <div class="cm-search-field">
-        <span class="cm-search-label">Peso</span>
-        <input type="text" placeholder="8,000 kg">
-      </div>
-      <button class="cm-search-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
-        Buscar transporte
-      </button>
     </div>
   </section>
 
-  <div class="cm-categories">
-    <div class="cm-category active">
-      <div class="cm-category-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V5a2 2 0 00-2-2H5a2 2 0 00-2 2v3M3 8h18M3 8v11a2 2 0 002 2h14a2 2 0 002-2V8"></path></svg>
-      </div>
-      <span class="cm-category-label">General</span>
-    </div>
-    <div class="cm-category">
-      <div class="cm-category-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6M12 22a7 7 0 007-7c0-3-3-5-7-11-4 6-7 8-7 11a7 7 0 007 7z" opacity="0"></path><rect x="6" y="3" width="12" height="18" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h6"></path></svg>
-      </div>
-      <span class="cm-category-label">Refrigerado</span>
-    </div>
-    <div class="cm-category">
-      <div class="cm-category-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg>
-      </div>
-      <span class="cm-category-label">Peligroso</span>
-    </div>
-    <div class="cm-category">
-      <div class="cm-category-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15V9a1 1 0 011-1h9l6 4v3a1 1 0 01-1 1H5a1 1 0 01-1-1z"></path><circle cx="8" cy="18" r="1.6"></circle><circle cx="17" cy="18" r="1.6"></circle></svg>
-      </div>
-      <span class="cm-category-label">Sobredimensionado</span>
-    </div>
-    <div class="cm-category">
-      <div class="cm-category-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>
-      </div>
-      <span class="cm-category-label">Urgente</span>
-    </div>
-  </div>
-
+  <!-- Two Column Layout -->
   <div class="cm-layout">
     <div>
-      <h2 class="cm-section-title">Tus rutas frecuentes</h2>
+      <h2 class="cm-section-title">Tus corredores frecuentes</h2>
       <div class="cm-route-list">
         <div class="cm-route-card">
           <div class="cm-route-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"></path></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
           </div>
           <div class="cm-route-info">
             <div class="cm-route-cities">Lima → Arequipa</div>
-            <div class="cm-route-meta">12 envíos anteriores · Andes Freight</div>
+            <div class="cm-route-meta">12 envíos completados · Andes Freight (96% SLA)</div>
           </div>
-          <span class="cm-route-price">desde $760</span>
-          <button class="cm-btn-repeat">Repetir solicitud</button>
+          <span class="cm-route-price">$760 USD</span>
+          <a href="cargomesh_request_form_mockup.html" class="cm-btn-repeat">Repetir solicitud</a>
         </div>
 
         <div class="cm-route-card">
           <div class="cm-route-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"></path></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
           </div>
           <div class="cm-route-info">
             <div class="cm-route-cities">Lima → Trujillo</div>
-            <div class="cm-route-meta">5 envíos anteriores · Inca Logistics</div>
+            <div class="cm-route-meta">5 envíos completados · Inca Logistics (98% SLA)</div>
           </div>
-          <span class="cm-route-price">desde $540</span>
-          <button class="cm-btn-repeat">Repetir solicitud</button>
+          <span class="cm-route-price">$540 USD</span>
+          <a href="cargomesh_request_form_mockup.html" class="cm-btn-repeat">Repetir solicitud</a>
         </div>
 
         <div class="cm-route-card">
           <div class="cm-route-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"></path></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
           </div>
           <div class="cm-route-info">
             <div class="cm-route-cities">Callao → Cusco</div>
-            <div class="cm-route-meta">3 envíos anteriores · Pacific Cargo</div>
+            <div class="cm-route-meta">3 envíos completados · Pacific Cargo ($690 USD)</div>
           </div>
-          <span class="cm-route-price">desde $910</span>
-          <button class="cm-btn-repeat">Repetir solicitud</button>
+          <span class="cm-route-price">$910 USD</span>
+          <a href="cargomesh_request_form_mockup.html" class="cm-btn-repeat">Repetir solicitud</a>
         </div>
       </div>
     </div>
 
+    <!-- Sidebar: Shipments in Transit -->
     <aside class="cm-sidebar">
       <div class="cm-sidebar-head">
         <h2 class="cm-section-title" style="margin:0;">Envíos en curso</h2>
         <button class="cm-sim-toggle" onclick="toggleShipments()">Simular vacío</button>
       </div>
 
-      <div class="cm-shipments-populated">
+      <div class="cm-shipments-populated" id="shipments-box">
         <div class="cm-shipment-card">
           <div class="cm-shipment-top">
             <span class="cm-shipment-code">FR-1042</span>
-            <span class="cm-status transit">En tránsito</span>
+            <span class="cm-shipment-badge">EN RUTA</span>
           </div>
           <div class="cm-shipment-route">Lima → Arequipa</div>
-          <div class="cm-shipment-carrier">Andes Freight · 8,000 kg</div>
-          <div class="cm-progress-track"><div class="cm-progress-fill" style="width: 62%;"></div></div>
-          <div class="cm-shipment-eta">Llega mañana, 18:00</div>
+          <div class="cm-shipment-carrier">Andes Freight · Scania R450 · ETA 18:00</div>
+          <div class="cm-track-bar">
+            <div class="cm-track-fill" style="width: 65%;"></div>
+          </div>
         </div>
 
         <div class="cm-shipment-card">
           <div class="cm-shipment-top">
             <span class="cm-shipment-code">FR-1039</span>
-            <span class="cm-status confirmed">Confirmado</span>
+            <span class="cm-shipment-badge">CONFIRMADO</span>
           </div>
           <div class="cm-shipment-route">Lima → Trujillo</div>
-          <div class="cm-shipment-carrier">Inca Logistics · 3,200 kg</div>
-          <div class="cm-progress-track"><div class="cm-progress-fill" style="width: 12%;"></div></div>
-          <div class="cm-shipment-eta">Recojo hoy, 15:00</div>
+          <div class="cm-shipment-carrier">Inca Logistics · Recojo en 2 horas</div>
+          <div class="cm-track-bar">
+            <div class="cm-track-fill" style="width: 25%;"></div>
+          </div>
         </div>
       </div>
 
-      <div class="cm-empty-state">
-        <div class="cm-empty-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"></rect><path d="M3 8l3-5h12l3 5"></path><path d="M3 13h18"></path></svg>
-        </div>
-        <div class="cm-empty-title">No tienes envíos en camino</div>
-        <div class="cm-empty-copy">Cuando reserves una carga, la verás aquí en tiempo real, con estado y ETA.</div>
-        <a href="cargomesh_request_form_mockup.html" class="cm-empty-cta" style="text-decoration:none;">Solicitar tu primera carga</a>
+      <div class="cm-empty-state" id="empty-box">
+        <div style="font-weight:700; font-size:14px; margin-bottom:4px;">No tienes envíos en camino</div>
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:14px;">Cuando reserves una carga, la verás aquí en tiempo real.</div>
+        <a href="cargomesh_request_form_mockup.html" class="cm-btn-new" style="display:inline-flex;">Crear primera carga</a>
       </div>
     </aside>
   </div>
 
 </div>
 
+<!-- Modal "How It Works" for Judges -->
+<div class="cm-modal-overlay" id="how-modal" onclick="closeModal(event)">
+  <div class="cm-modal-card" onclick="event.stopPropagation()">
+    <button class="cm-modal-close" onclick="closeModal()">✕</button>
+    <h2 class="cm-modal-title">¿Cómo funciona CargoMesh con WebMCP?</h2>
+    <p class="cm-modal-sub">
+      Una arquitectura orientada a agentes autónomos donde cada transportista expone sus herramientas y el motor heurístico toma decisiones transparentes.
+    </p>
+
+    <div class="cm-how-steps">
+      <div class="cm-how-step">
+        <div class="cm-how-num">1</div>
+        <div>
+          <strong>Expresión de Necesidad Logística (No Búsqueda):</strong><br>
+          El cliente define la carga, el corredor, las restricciones duras (refrigerado, peso) y su política (ej. <em>Balanced</em>).
+        </div>
+      </div>
+
+      <div class="cm-how-step">
+        <div class="cm-how-num">2</div>
+        <div>
+          <strong>Descubrimiento de Herramientas WebMCP:</strong><br>
+          El Agente consulta dinámicamente los sitios web de <em>Andes</em>, <em>Pacific</em> e <em>Inca</em> ejecutando <code>document.modelContext.registerTool()</code> (cobertura, capacidad y cotización).
+        </div>
+      </div>
+
+      <div class="cm-how-step">
+        <div class="cm-how-num">3</div>
+        <div>
+          <strong>Decisión Heurística + Auto-Booking:</strong><br>
+          Se calcula una puntuación multicriterio determinista (Costo, SLA %, ETA, Flota). Si la confianza supera el 85%, el agente reserva automáticamente y explica las razones.
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:right;">
+      <button class="cm-btn-dispatch-cta" style="margin:0; display:inline-flex;" onclick="closeModal()">
+        Entendido, ver demo
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
+function toggleQuickReq(el) {
+  el.classList.toggle('active');
+}
+
 function toggleShipments() {
-  var populated = document.querySelector('.cm-shipments-populated');
-  var empty = document.querySelector('.cm-empty-state');
-  var toggleBtn = document.querySelector('.cm-sim-toggle');
-  var isEmpty = empty.classList.contains('shown');
-  if (isEmpty) {
-    populated.classList.remove('hidden');
-    empty.classList.remove('shown');
-    toggleBtn.textContent = 'Simular vacío';
+  var pop = document.getElementById('shipments-box');
+  var emp = document.getElementById('empty-box');
+  if (pop.style.display === 'none') {
+    pop.style.display = 'block';
+    emp.classList.remove('shown');
   } else {
-    populated.classList.add('hidden');
-    empty.classList.add('shown');
-    toggleBtn.textContent = 'Simular con envíos';
+    pop.style.display = 'none';
+    emp.classList.add('shown');
   }
+}
+
+function openModal() {
+  document.getElementById('how-modal').classList.add('shown');
+}
+
+function closeModal() {
+  document.getElementById('how-modal').classList.remove('shown');
 }
 </script>
 
