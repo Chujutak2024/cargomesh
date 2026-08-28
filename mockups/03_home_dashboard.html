@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CargoMesh — Portal Corporativo B2B (Pantalla 3)</title>
+<title>CargoMesh — Portal Corporativo B2B (Dashboard)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -130,7 +130,6 @@
     padding: 0 24px;
   }
 
-  /* Welcome Banner */
   .cm-welcome-box {
     display: flex;
     justify-content: space-between;
@@ -152,7 +151,6 @@
     color: var(--text-secondary);
   }
 
-  /* KPI Grid */
   .cm-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -186,7 +184,15 @@
     color: var(--ink);
   }
 
-  /* Section Title */
+  .cm-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    margin-bottom: 28px;
+  }
+
   .cm-sec-head {
     display: flex;
     justify-content: space-between;
@@ -200,16 +206,6 @@
     font-weight: 800;
     margin: 0;
     color: var(--ink);
-  }
-
-  /* Active Requests Table Card */
-  .cm-card {
-    background: var(--paper-raised);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    padding: 24px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-    margin-bottom: 28px;
   }
 
   .cm-req-table {
@@ -235,7 +231,6 @@
   }
 
   .cm-req-table tr:last-child td { border-bottom: none; }
-
   .cm-req-table tr:hover { background: var(--paper); }
 
   .cm-pill {
@@ -250,7 +245,6 @@
   .cm-pill.pending { background: var(--brass-fill-soft); color: var(--brass); border: 1px solid var(--brass-mid); }
   .cm-pill.confirmed { background: var(--green-bg); color: var(--green); border: 1px solid var(--green); }
 
-  /* CTAs */
   .cm-btn {
     display: inline-flex;
     align-items: center;
@@ -286,10 +280,10 @@
 <!-- Staging Banner -->
 <div class="cm-staging-bar">
   <div>
-    <strong>🧪 CARGOMESH DEMO</strong> · Pantalla 3: Home Dashboard B2B
+    <strong>🧪 CARGOMESH B2B</strong> · Panel de Control de Transporte
   </div>
   <div style="display: flex; gap: 10px; align-items: center;">
-    <a href="15_judge_activity_drawer.html" style="color: #E6D0A6; text-decoration: none;" class="cm-staging-badge">
+    <a href="judge_drawer_component.html" style="color: #E6D0A6; text-decoration: none;" class="cm-staging-badge">
       ⚡ Abrir Judge Drawer
     </a>
   </div>
@@ -306,7 +300,7 @@
     <a href="03_home_dashboard.html" class="cm-nav-link active">Dashboard</a>
     <a href="04_new_freight_request.html" class="cm-nav-link">Nueva Carga</a>
     <a href="02_organization_profile.html" class="cm-nav-link">Perfil ACME 🔒</a>
-    <a href="14_provider_demo_pages.html" class="cm-nav-link">Carriers WebMCP</a>
+    <a href="08_supervisor_queue.html" class="cm-nav-link">Supervisión (P1)</a>
   </div>
 
   <div style="display: flex; align-items: center; gap: 10px;">
@@ -324,12 +318,6 @@
       <div class="cm-welcome-sub">
         Organización: <strong>ACME Mining Corp</strong> (RUC: 20491827361) · Administrador: Carlos Mendoza
       </div>
-    </div>
-
-    <div style="display: flex; gap: 10px;">
-      <a href="05_smart_dispatch_status.html" class="cm-btn cm-btn-primary">
-        <span>Ir a Golden Flow (FR-1042) →</span>
-      </a>
     </div>
   </div>
 
@@ -380,8 +368,8 @@
           <td style="font-family: 'IBM Plex Mono', monospace; font-weight: 700;">$2,000 USD</td>
           <td><span class="cm-pill pending">CONFIRMED (READY)</span></td>
           <td>
-            <a href="05_smart_dispatch_status.html" class="cm-btn cm-btn-sm" style="background: var(--brass-mid); color: #211500; font-weight: 700;">
-              Orquestar WebMCP ⚡
+            <a href="05_smart_dispatch_options.html" class="cm-btn cm-btn-sm" style="background: var(--brass-mid); color: #211500; font-weight: 700;">
+              Buscar opciones de transporte
             </a>
           </td>
         </tr>
@@ -394,7 +382,7 @@
           <td style="font-family: 'IBM Plex Mono', monospace;">$2,400 USD</td>
           <td><span class="cm-pill confirmed">IN_TRANSIT (Andes)</span></td>
           <td>
-            <a href="09_tracking_timeline.html" class="cm-btn cm-btn-sm">
+            <a href="07_tracking_timeline.html" class="cm-btn cm-btn-sm">
               Ver Tracking 📍
             </a>
           </td>

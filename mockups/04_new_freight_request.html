@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CargoMesh — Nueva Solicitud de Carga (Pantalla 4)</title>
+<title>CargoMesh — Nueva Solicitud de Carga (Formulario 5 Pasos)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -44,7 +44,6 @@
     outline-offset: 2px;
   }
 
-  /* Header */
   .cm-header {
     background: var(--paper-raised);
     border-bottom: 1px solid var(--line);
@@ -87,7 +86,7 @@
   }
 
   .cm-wrap {
-    max-width: 920px;
+    max-width: 900px;
     margin: 28px auto 60px auto;
     padding: 0 24px;
   }
@@ -103,20 +102,20 @@
 
   .cm-breadcrumb a { color: inherit; text-decoration: none; }
 
-  /* Stepper Header */
+  /* Interactive Stepper */
   .cm-stepper {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 30px;
+    margin-bottom: 28px;
     position: relative;
   }
 
   .cm-stepper::before {
     content: "";
     position: absolute;
-    top: 14px;
-    left: 40px;
-    right: 40px;
+    top: 15px;
+    left: 30px;
+    right: 30px;
     height: 2px;
     background: var(--line);
     z-index: 0;
@@ -129,11 +128,12 @@
     gap: 6px;
     position: relative;
     z-index: 1;
+    cursor: pointer;
   }
 
   .cm-step-circle {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: var(--paper-raised);
     border: 2px solid var(--line);
@@ -144,15 +144,17 @@
     font-size: 12px;
     font-weight: 700;
     color: var(--text-muted);
+    transition: all 0.15s ease;
   }
 
-  .cm-step-circle.active {
+  .cm-step-node.active .cm-step-circle {
     background: var(--brass-mid);
     border-color: var(--brass-mid);
     color: #211500;
+    box-shadow: 0 0 0 3px rgba(169, 121, 31, 0.2);
   }
 
-  .cm-step-circle.done {
+  .cm-step-node.done .cm-step-circle {
     background: var(--green-bg);
     border-color: var(--green);
     color: var(--green);
@@ -161,38 +163,57 @@
   .cm-step-label {
     font-size: 11.5px;
     font-weight: 700;
-    color: var(--text-secondary);
+    color: var(--text-muted);
   }
 
-  /* Form Card */
+  .cm-step-node.active .cm-step-label { color: var(--ink); }
+
+  /* Form Container */
   .cm-card {
     background: var(--paper-raised);
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     padding: 32px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  }
+
+  .cm-form-step { display: none; }
+  .cm-form-step.active { display: block; }
+
+  .cm-step-title {
+    font-family: 'Overpass', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+  }
+
+  .cm-step-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0 0 24px 0;
+  }
+
+  .cm-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
     margin-bottom: 24px;
+  }
+
+  @media (max-width: 650px) {
+    .cm-form-grid { grid-template-columns: 1fr; }
   }
 
   .cm-form-group {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    margin-bottom: 20px;
   }
 
-  .cm-form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-
-  @media (max-width: 650px) {
-    .cm-form-row { grid-template-columns: 1fr; }
-  }
+  .cm-form-group.full { grid-column: 1 / -1; }
 
   .cm-label {
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 700;
     color: var(--ink);
     text-transform: uppercase;
@@ -208,7 +229,7 @@
   }
 
   .cm-input:focus, .cm-select:focus {
-    border-color: var(--brass-mid);
+    outline: 2px solid var(--brass-mid);
     background: #FFF;
   }
 
@@ -221,31 +242,38 @@
     margin-bottom: 24px;
   }
 
-  .cm-summary-grid {
+  .cm-sum-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     font-size: 12.5px;
   }
 
-  @media (max-width: 650px) {
-    .cm-summary-grid { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 650px) { .cm-sum-grid { grid-template-columns: 1fr; } }
 
-  .cm-sum-item .title { font-weight: 700; color: var(--text-muted); font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
+  .cm-sum-item .lbl { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
   .cm-sum-item .val { font-weight: 700; color: var(--ink); font-family: 'IBM Plex Mono', monospace; }
 
-  /* CTAs */
+  /* Navigation Buttons */
+  .cm-nav-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+    margin-top: 20px;
+  }
+
   .cm-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 14px 24px;
+    padding: 12px 22px;
     border-radius: var(--radius-pill);
     font-family: 'Inter', sans-serif;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13.5px;
     text-decoration: none;
     cursor: pointer;
     border: none;
@@ -253,7 +281,7 @@
   }
 
   .cm-btn-primary { background: var(--brass-mid); color: #211500; }
-  .cm-btn-primary:hover { background: var(--brass-bright); transform: translateY(-1px); }
+  .cm-btn-primary:hover { background: var(--brass-bright); }
 
   .cm-btn-secondary { background: transparent; border: 1px solid var(--line); color: var(--text-secondary); }
   .cm-btn-secondary:hover { border-color: var(--brass-mid); color: var(--ink); }
@@ -279,84 +307,228 @@
     <span style="color: var(--brass); font-weight: 600;">Nueva Solicitud de Carga</span>
   </div>
 
-  <h1 style="font-family: 'Overpass', sans-serif; font-size: 24px; font-weight: 800; margin: 0 0 24px 0;">
-    Crear Solicitud de Transporte B2B (FreightRequest)
-  </h1>
-
-  <!-- 5-Step Stepper -->
+  <!-- Stepper Header -->
   <div class="cm-stepper">
-    <div class="cm-step-node">
-      <div class="cm-step-circle done">✓</div>
+    <div class="cm-step-node active" id="node-1" onclick="goToStep(1)">
+      <div class="cm-step-circle" id="circle-1">1</div>
       <div class="cm-step-label">1. Organización</div>
     </div>
-    <div class="cm-step-node">
-      <div class="cm-step-circle done">✓</div>
-      <div class="cm-step-label">2. Ruta PE-CL</div>
+    <div class="cm-step-node" id="node-2" onclick="goToStep(2)">
+      <div class="cm-step-circle" id="circle-2">2</div>
+      <div class="cm-step-label">2. Origen / Destino</div>
     </div>
-    <div class="cm-step-node">
-      <div class="cm-step-circle done">✓</div>
-      <div class="cm-step-label">3. Carga FTL</div>
+    <div class="cm-step-node" id="node-3" onclick="goToStep(3)">
+      <div class="cm-step-circle" id="circle-3">3</div>
+      <div class="cm-step-label">3. Carga</div>
     </div>
-    <div class="cm-step-node">
-      <div class="cm-step-circle done">✓</div>
-      <div class="cm-step-label">4. Políticas</div>
+    <div class="cm-step-node" id="node-4" onclick="goToStep(4)">
+      <div class="cm-step-circle" id="circle-4">4</div>
+      <div class="cm-step-label">4. Programación</div>
     </div>
-    <div class="cm-step-node">
-      <div class="cm-step-circle active">5</div>
-      <div class="cm-step-label" style="color: var(--brass);">5. Confirmar</div>
+    <div class="cm-step-node" id="node-5" onclick="goToStep(5)">
+      <div class="cm-step-circle" id="circle-5">5</div>
+      <div class="cm-step-label">5. Revisión</div>
     </div>
   </div>
 
-  <!-- Form Review Card -->
   <div class="cm-card">
-    <h2 style="font-family: 'Overpass', sans-serif; font-size: 18px; font-weight: 800; margin: 0 0 16px 0;">
-      Resumen de Solicitud (Golden Flow FR-1042)
-    </h2>
+    <!-- Step 1: Organization -->
+    <div class="cm-form-step active" id="step-1">
+      <h2 class="cm-step-title">Paso 1: Organización & Solicitante</h2>
+      <p class="cm-step-desc">Datos corporativos de la empresa emisora de la carga.</p>
 
-    <div class="cm-summary-box">
-      <div class="cm-summary-grid">
-        <div class="cm-sum-item">
-          <div class="title">Ruta Internacional</div>
-          <div class="val" style="font-family: 'Inter', sans-serif;">Callao/Lima (PE) → Santiago (CL)</div>
+      <div class="cm-form-grid">
+        <div class="cm-form-group">
+          <label class="cm-label">Empresa</label>
+          <input type="text" class="cm-input" value="ACME Mining Corp S.A." readonly>
         </div>
-        <div class="cm-sum-item">
-          <div class="title">Carga & Modalidad</div>
-          <div class="val">8,000 kg (10 Pallets FTL)</div>
+        <div class="cm-form-group">
+          <label class="cm-label">Identificador Empresarial</label>
+          <input type="text" class="cm-input" value="RUC: 20491827361" readonly style="font-family: 'IBM Plex Mono', monospace;">
         </div>
-        <div class="cm-sum-item">
-          <div class="title">Presupuesto Máximo</div>
-          <div class="val" style="color: var(--brass);">$2,000 USD</div>
+        <div class="cm-form-group">
+          <label class="cm-label">Solicitante Autorizado</label>
+          <input type="text" class="cm-input" value="Carlos Mendoza" readonly>
         </div>
-        <div class="cm-sum-item">
-          <div class="title">Categoría de Carga</div>
-          <div class="val" style="font-family: 'Inter', sans-serif;">Repuestos Mineros (Maquinaria)</div>
+        <div class="cm-form-group">
+          <label class="cm-label">Correo Corporativo</label>
+          <input type="email" class="cm-input" value="carlos.mendoza@acmemining.pe" readonly>
         </div>
-        <div class="cm-sum-item">
-          <div class="title">Estrategia de Selección</div>
-          <div class="val">BALANCED (P0)</div>
-        </div>
-        <div class="cm-sum-item">
-          <div class="title">Documentos Adjuntos</div>
-          <div class="val" style="color: var(--green);">Factura + Packing List ✓</div>
-        </div>
+      </div>
+
+      <div class="cm-nav-row">
+        <a href="03_home_dashboard.html" class="cm-btn cm-btn-secondary">Cancelar</a>
+        <button class="cm-btn cm-btn-primary" onclick="goToStep(2)">Siguiente: Origen y Destino →</button>
       </div>
     </div>
 
-    <!-- Hard Constraint Pre-Check -->
-    <div style="background: var(--green-bg); border: 1px solid rgba(63, 107, 74, 0.3); padding: 14px 18px; border-radius: var(--radius-sm); font-size: 12.5px; color: var(--green); margin-bottom: 24px; line-height: 1.5;">
-      <strong>✓ Validación de Restricciones Duras Superada:</strong> El peso (8,000 kg) cumple con la capacidad mínima de semi-trailers FTL, el corredor internacional está habilitado con aduana Santa Rosa/Chacalluta y el presupuesto corporativo es suficiente.
+    <!-- Step 2: Route -->
+    <div class="cm-form-step" id="step-2">
+      <h2 class="cm-step-title">Paso 2: Origen, Destino & Contactos</h2>
+      <p class="cm-step-desc">Corredor de transporte y detalles de recojo/entrega.</p>
+
+      <div class="cm-form-grid">
+        <div class="cm-form-group">
+          <label class="cm-label">Punto de Recojo (Origen)</label>
+          <input type="text" class="cm-input" value="Almacén Central Callao (Puerta 4), Lima, PE">
+        </div>
+        <div class="cm-form-group">
+          <label class="cm-label">Punto de Entrega (Destino)</label>
+          <input type="text" class="cm-input" value="CD San Bernardo, Santiago, CL">
+        </div>
+        <div class="cm-form-group">
+          <label class="cm-label">Contacto en Origen (Pickup)</label>
+          <input type="text" class="cm-input" value="Juan Díaz (+51 987 654 321)">
+        </div>
+        <div class="cm-form-group">
+          <label class="cm-label">Contacto en Destino (Receiver)</label>
+          <input type="text" class="cm-input" value="Rodrigo Soto (+56 9 8765 4321)">
+        </div>
+        <div class="cm-form-group full">
+          <label class="cm-label">Paso Fronterizo Habilitado</label>
+          <input type="text" class="cm-input" value="Santa Rosa (Tacna, PE) / Chacalluta (Arica, CL) — Manifiesto MIC/DTA" readonly>
+        </div>
+      </div>
+
+      <div class="cm-nav-row">
+        <button class="cm-btn cm-btn-secondary" onclick="goToStep(1)">← Anterior</button>
+        <button class="cm-btn cm-btn-primary" onclick="goToStep(3)">Siguiente: Especificaciones de Carga →</button>
+      </div>
     </div>
 
-    <div style="display: flex; gap: 14px; justify-content: flex-end;">
-      <a href="03_home_dashboard.html" class="cm-btn cm-btn-secondary">
-        Cancelar
-      </a>
-      <a href="05_smart_dispatch_status.html" class="cm-btn cm-btn-primary">
-        <span>Confirmar Solicitud y Orquestar con WebMCP →</span>
-      </a>
+    <!-- Step 3: Cargo -->
+    <div class="cm-form-step" id="step-3">
+      <h2 class="cm-step-title">Paso 3: Especificaciones de la Carga</h2>
+      <p class="cm-step-desc">Peso, bultos y dimensiones requeridas para transporte FTL.</p>
+
+      <div class="cm-form-grid">
+        <div class="cm-form-group">
+          <label class="cm-label">Categoría de Carga</label>
+          <select class="cm-select">
+            <option selected>Repuestos Mineros (Machinery & Spares)</option>
+            <option>Carga General Seca</option>
+            <option>Insumos Industriales</option>
+          </select>
+        </div>
+        <div class="cm-form-group">
+          <label class="cm-label">Modalidad de Transporte</label>
+          <input type="text" class="cm-input" value="ROAD / FTL (Camión Completo Dedicado)" readonly>
+        </div>
+        <div class="cm-form-group">
+          <label class="cm-label">Unidades de Embalaje</label>
+          <input type="text" class="cm-input" value="10 Pallets Estándar (1.2m x 1.0m)">
+        </div>
+        <div class="cm-form-group">
+          <label class="cm-label">Peso Total Normalizado</label>
+          <input type="text" class="cm-input" value="8,000 kg (800 kg / pallet)" style="font-family: 'IBM Plex Mono', monospace; font-weight: 700;">
+        </div>
+      </div>
+
+      <div class="cm-nav-row">
+        <button class="cm-btn cm-btn-secondary" onclick="goToStep(2)">← Anterior</button>
+        <button class="cm-btn cm-btn-primary" onclick="goToStep(4)">Siguiente: Programación & Políticas →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Schedule & Policy -->
+    <div class="cm-form-step" id="step-4">
+      <h2 class="cm-step-title">Paso 4: Programación, Presupuesto & Documentos</h2>
+      <p class="cm-step-desc">Ventana horaria y políticas de selección corporativa.</p>
+
+      <div class="cm-form-grid">
+        <div class="cm-form-group">
+          <label class="cm-label">Ventana de Recojo</label>
+          <input type="text" class="cm-input" value="Mañana 08:00 AM – 12:00 PM">
+        </div>
+        <div class="cm-form-group">
+          <label class="cm-label">Presupuesto Máximo</label>
+          <input type="text" class="cm-input" value="$2,000 USD" style="font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--brass);">
+        </div>
+        <div class="cm-form-group">
+          <label class="cm-label">Estrategia de Decisión</label>
+          <select class="cm-select">
+            <option selected>BALANCED (25% Costo, 25% SLA, 20% ETA, 10% Disp, 10% Ruta, 10% Historial)</option>
+            <option>FASTEST (50% ETA, 25% SLA, 25% Costo)</option>
+            <option>CHEAPEST (60% Costo, 20% SLA, 20% ETA)</option>
+          </select>
+        </div>
+        <div class="cm-form-group">
+          <label class="cm-label">Documentos Adjuntos Requeridos</label>
+          <input type="text" class="cm-input" value="Factura Comercial (INV-881) + Packing List (PL-881)" readonly>
+        </div>
+      </div>
+
+      <div class="cm-nav-row">
+        <button class="cm-btn cm-btn-secondary" onclick="goToStep(3)">← Anterior</button>
+        <button class="cm-btn cm-btn-primary" onclick="goToStep(5)">Siguiente: Revisar y Confirmar →</button>
+      </div>
+    </div>
+
+    <!-- Step 5: Review & Confirm -->
+    <div class="cm-form-step" id="step-5">
+      <h2 class="cm-step-title">Paso 5: Revisión de Solicitud (FR-1042)</h2>
+      <p class="cm-step-desc">Verifica la solicitud antes de iniciar la búsqueda de opciones de transporte.</p>
+
+      <div class="cm-summary-box">
+        <div class="cm-sum-grid">
+          <div class="cm-sum-item">
+            <div class="lbl">Corredor Internacional</div>
+            <div class="val" style="font-family: 'Inter', sans-serif;">Callao/Lima (PE) → Santiago (CL)</div>
+          </div>
+          <div class="cm-sum-item">
+            <div class="lbl">Carga FTL</div>
+            <div class="val">8,000 kg (10 Pallets)</div>
+          </div>
+          <div class="cm-sum-item">
+            <div class="lbl">Presupuesto</div>
+            <div class="val" style="color: var(--brass);">$2,000 USD</div>
+          </div>
+          <div class="cm-sum-item">
+            <div class="lbl">Estrategia</div>
+            <div class="val">BALANCED</div>
+          </div>
+          <div class="cm-sum-item">
+            <div class="lbl">Aduana de Paso</div>
+            <div class="val" style="font-family: 'Inter', sans-serif;">Santa Rosa / Chacalluta (MIC/DTA)</div>
+          </div>
+          <div class="cm-sum-item">
+            <div class="lbl">Documentos</div>
+            <div class="val" style="color: var(--green);">Factura + Packing List ✓</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: var(--green-bg); border: 1px solid rgba(63, 107, 74, 0.3); padding: 14px 18px; border-radius: var(--radius-sm); font-size: 12.5px; color: var(--green); margin-bottom: 24px; line-height: 1.5;">
+        <strong>✓ Solicitud completa y lista para evaluación:</strong> Todos los parámetros requeridos han sido ingresados correctamente. Al confirmar, el sistema consultará la disponibilidad de los transportistas en tiempo real.
+      </div>
+
+      <div class="cm-nav-row">
+        <button class="cm-btn cm-btn-secondary" onclick="goToStep(4)">← Anterior</button>
+        <a href="05_smart_dispatch_options.html" class="cm-btn cm-btn-primary">
+          <span>Confirmar y buscar opciones de transporte →</span>
+        </a>
+      </div>
     </div>
   </div>
 </div>
+
+<script>
+function goToStep(n) {
+  for (let i = 1; i <= 5; i++) {
+    document.getElementById(`step-${i}`).classList.remove('active');
+    document.getElementById(`node-${i}`).classList.remove('active');
+    if (i < n) {
+      document.getElementById(`node-${i}`).classList.add('done');
+      document.getElementById(`circle-${i}`).innerHTML = '✓';
+    } else {
+      document.getElementById(`node-${i}`).classList.remove('done');
+      document.getElementById(`circle-${i}`).innerHTML = i;
+    }
+  }
+  document.getElementById(`step-${n}`).classList.add('active');
+  document.getElementById(`node-${n}`).classList.add('active');
+}
+</script>
 
 </body>
 </html>

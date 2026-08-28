@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CargoMesh — Judge Activity Drawer (Componente Universal)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1E9;
+    --paper-raised: #FFFFFF;
+    --ink: #1A1812;
+    --text-secondary: #5B5748;
+    --text-muted: #928D79;
+    --line: #E4E0D2;
+    --brass: #8C6316;
+    --brass-mid: #A9791F;
+    --brass-bright: #C4901F;
+    --brass-fill-soft: #F1E1BB;
+    --green: #3F6B4A;
+    --green-bg: #E1EADD;
+    --red: #8B2500;
+    --red-bg: #F9EBE6;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: #0E0D09;
+    color: #F3F1E9;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .cm-wrap { max-width: 1100px; margin: 30px auto; padding: 0 24px; }
+
+  .cm-drawer-card {
+    background: #171510;
+    border: 1px solid #2B261D;
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .cm-btn-grid {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .cm-ctrl-btn {
+    background: #242017;
+    border: 1px solid #3A3323;
+    color: #E6D0A6;
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .cm-ctrl-btn:hover { background: #3A3323; border-color: var(--brass-bright); color: #FFF; }
+  .cm-ctrl-btn.primary { background: var(--brass-mid); color: #1A1812; border-color: var(--brass-mid); }
+  .cm-ctrl-btn.danger { background: #3B1209; border-color: #6E2211; color: #FFA291; }
+
+  .cm-stream-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 850px) { .cm-stream-grid { grid-template-columns: 1fr; } }
+
+  .cm-event-item {
+    background: #0E0D09;
+    border: 1px solid #2B261D;
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .cm-event-item:hover, .cm-event-item.active {
+    border-color: var(--brass-mid);
+    background: #14120C;
+  }
+
+  .cm-json-viewer {
+    background: #090805;
+    border: 1px solid #242017;
+    border-radius: var(--radius-md);
+    padding: 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: #E6D0A6;
+    line-height: 1.5;
+    overflow-x: auto;
+    max-height: 450px;
+  }
+</style>
+</head>
+<body>
+
+<div class="cm-wrap">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 32px; height: 32px; background: var(--brass-mid); color: #1A1812; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800;">⬡</div>
+      <h1 style="font-family: 'Overpass', sans-serif; font-size: 20px; font-weight: 800; margin: 0; color: #FFF;">
+        Judge Activity Drawer (Observabilidad & Fixtures)
+      </h1>
+    </div>
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--green);">● DB: orchestration_events</span>
+  </div>
+
+  <div class="cm-drawer-card">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 700; color: var(--brass-bright); margin-bottom: 10px;">
+      ⚡ Controles de Fixtures WebMCP para Jueces:
+    </div>
+
+    <div class="cm-btn-grid">
+      <button class="cm-ctrl-btn primary" onclick="alert('Iniciando orquestación...')">▶ Start Orchestration</button>
+      <button class="cm-ctrl-btn" onclick="alert('Fixture Andes: ACCEPT')">Fixture: Andes ACCEPT</button>
+      <button class="cm-ctrl-btn" onclick="alert('Fixture Andes: REJECT (Trigger Recovery)')">Fixture: Andes REJECT</button>
+      <button class="cm-ctrl-btn" onclick="alert('Fixture Andes: NO_RESPONSE')">Fixture: Andes NO_RESPONSE</button>
+      <button class="cm-ctrl-btn danger" onclick="alert('Reset Demo ejecutado.')">↺ Reset Demo Environment</button>
+    </div>
+
+    <div class="cm-stream-grid">
+      <div>
+        <div style="font-size: 12px; color: #928D79; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">
+          Event Stream (Live DB Ingestion)
+        </div>
+
+        <div class="cm-event-item active" onclick="showEvent(1)">
+          <div style="display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--brass-bright); font-weight: 700;">
+            <span>record_provider_result (quote_freight)</span>
+            <span style="color: #8C8472; font-size: 11px;">380 ms</span>
+          </div>
+          <div style="font-size: 11.5px; color: #928D79; font-family: 'IBM Plex Mono', monospace; margin-top: 4px;">
+            Andes Freight · Scania R450 · $1,760 USD
+          </div>
+        </div>
+
+        <div class="cm-event-item" onclick="showEvent(2)">
+          <div style="display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--brass-bright); font-weight: 700;">
+            <span>record_provider_result (quote_freight)</span>
+            <span style="color: #8C8472; font-size: 11px;">290 ms</span>
+          </div>
+          <div style="font-size: 11.5px; color: #928D79; font-family: 'IBM Plex Mono', monospace; margin-top: 4px;">
+            Inca Logistics · Volvo FH · $1,920 USD
+          </div>
+        </div>
+
+        <div class="cm-event-item" onclick="showEvent(3)">
+          <div style="display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--brass-bright); font-weight: 700;">
+            <span>book_freight</span>
+            <span style="color: #8C8472; font-size: 11px;">512 ms</span>
+          </div>
+          <div style="font-size: 11.5px; color: #928D79; font-family: 'IBM Plex Mono', monospace; margin-top: 4px;">
+            Andes Freight · Ref: AND-BOOK-8821 (PENDING)
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; color: #928D79; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">
+          JSON Payload Inspector
+        </div>
+        <pre class="cm-json-viewer" id="jsonBox">{
+  "tool_call_id": "call_andes_quote_001",
+  "tool_name": "quote_freight",
+  "carrier": "Andes Freight",
+  "duration_ms": 380,
+  "output": {
+    "provider_offer_reference": "AND-OFF-8821",
+    "price": 1760.00,
+    "currency": "USD",
+    "transit_hours": 31,
+    "vehicle": "Scania R450 18t",
+    "availability_class": "AVAILABLE_IN_WINDOW"
+  }
+}</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const events = {
+  1: `{
+  "tool_call_id": "call_andes_quote_001",
+  "tool_name": "quote_freight",
+  "carrier": "Andes Freight",
+  "duration_ms": 380,
+  "output": {
+    "provider_offer_reference": "AND-OFF-8821",
+    "price": 1760.00,
+    "currency": "USD",
+    "transit_hours": 31,
+    "vehicle": "Scania R450 18t",
+    "availability_class": "AVAILABLE_IN_WINDOW"
+  }
+}`,
+  2: `{
+  "tool_call_id": "call_inca_quote_002",
+  "tool_name": "quote_freight",
+  "carrier": "Inca Logistics",
+  "duration_ms": 290,
+  "output": {
+    "provider_offer_reference": "INC-OFF-9042",
+    "price": 1920.00,
+    "currency": "USD",
+    "transit_hours": 29,
+    "vehicle": "Volvo FH 24t",
+    "availability_class": "AVAILABLE_IN_WINDOW"
+  }
+}`,
+  3: `{
+  "tool_call_id": "call_book_001",
+  "tool_name": "book_freight",
+  "carrier": "Andes Freight",
+  "duration_ms": 512,
+  "output": {
+    "provider_reference": "AND-BOOK-8821",
+    "provider_booking_status": "PENDING_PROVIDER_CONFIRMATION",
+    "deadline": "2026-08-31T08:15:00Z"
+  }
+}`
+};
+
+function showEvent(id) {
+  document.getElementById('jsonBox').innerText = events[id];
+  const items = document.querySelectorAll('.cm-event-item');
+  items.forEach(i => i.classList.remove('active'));
+  items[id - 1].classList.add('active');
+}
+</script>
+
+</body>
+</html>

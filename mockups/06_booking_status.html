@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CargoMesh — Estado de Solicitud de Reserva</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1E9;
+    --paper-raised: #FFFFFF;
+    --ink: #1A1812;
+    --text-secondary: #5B5748;
+    --text-muted: #928D79;
+    --line: #E4E0D2;
+    --brass: #8C6316;
+    --brass-mid: #A9791F;
+    --brass-bright: #C4901F;
+    --brass-fill-soft: #F1E1BB;
+    --green: #3F6B4A;
+    --green-bg: #E1EADD;
+    --red: #8B2500;
+    --red-bg: #F9EBE6;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input { font-family: inherit; }
+
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--brass-mid);
+    outline-offset: 2px;
+  }
+
+  .cm-header {
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .cm-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
+  .cm-logo { width: 32px; height: 32px; border-radius: 8px; background: var(--ink); display: flex; align-items: center; justify-content: center; color: var(--brass-bright); font-size: 16px; font-weight: 800; }
+  .cm-brand-text { font-family: 'Overpass', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: -0.02em; }
+
+  .cm-wrap { max-width: 820px; margin: 36px auto 60px auto; padding: 0 24px; }
+
+  .cm-breadcrumb {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .cm-breadcrumb a { color: inherit; text-decoration: none; }
+
+  .cm-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    margin-bottom: 24px;
+  }
+
+  .cm-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .cm-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--brass-fill-soft);
+    border: 1px solid var(--brass-mid);
+    color: var(--ink);
+  }
+
+  .cm-pulse {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--brass-bright);
+    box-shadow: 0 0 0 3px rgba(196, 144, 31, 0.25);
+  }
+
+  /* Mini Timeline */
+  .cm-mini-timeline {
+    display: flex;
+    justify-content: space-between;
+    background: var(--paper);
+    border-radius: var(--radius-md);
+    padding: 18px 24px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  .cm-tl-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .cm-tl-step.done { color: var(--green); }
+  .cm-tl-step.active { color: var(--brass); font-weight: 700; }
+
+  .cm-tl-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--paper-raised);
+    border: 2px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+  }
+
+  .cm-tl-step.done .cm-tl-dot { background: var(--green-bg); border-color: var(--green); color: var(--green); font-weight: 700; }
+  .cm-tl-step.active .cm-tl-dot { background: var(--brass-fill-soft); border-color: var(--brass-mid); color: var(--brass); font-weight: 700; }
+
+  /* Info Grid */
+  .cm-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+    font-size: 12.5px;
+  }
+
+  @media (max-width: 600px) { .cm-info-grid { grid-template-columns: 1fr; } }
+
+  .cm-info-box .lbl { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
+  .cm-info-box .val { font-weight: 700; color: var(--ink); font-family: 'IBM Plex Mono', monospace; }
+
+  /* Recovery Inline Modal / Banner */
+  .cm-recovery-banner {
+    background: var(--red-bg);
+    border: 1px solid rgba(139, 37, 0, 0.3);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-top: 24px;
+    display: none;
+  }
+
+  .cm-recovery-banner.active { display: block; }
+
+  /* CTAs */
+  .cm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: var(--radius-pill);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 13.5px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+  }
+
+  .cm-btn-primary { background: var(--brass-mid); color: #211500; }
+  .cm-btn-primary:hover { background: var(--brass-bright); }
+  .cm-btn-secondary { background: transparent; border: 1px solid var(--line); color: var(--text-secondary); }
+</style>
+</head>
+<body>
+
+<header class="cm-header">
+  <a href="03_home_dashboard.html" class="cm-brand">
+    <div class="cm-logo">⬡</div>
+    <span class="cm-brand-text">CargoMesh</span>
+  </a>
+
+  <div style="font-size: 12px; color: var(--text-secondary);">
+    ACME Mining Corp · Carlos Mendoza
+  </div>
+</header>
+
+<div class="cm-wrap">
+  <div class="cm-breadcrumb">
+    <a href="03_home_dashboard.html">Home</a>
+    <span>/</span>
+    <a href="05_smart_dispatch_options.html">FR-1042</a>
+    <span>/</span>
+    <span style="color: var(--brass); font-weight: 600;">Estado de Reserva</span>
+  </div>
+
+  <div class="cm-card">
+    <div class="cm-status-row">
+      <div>
+        <h1 style="font-family: 'Overpass', sans-serif; font-size: 22px; font-weight: 800; margin: 0 0 4px 0;">
+          Solicitud enviada a Andes Freight S.A.
+        </h1>
+        <div style="font-size: 13px; color: var(--text-secondary);">
+          Referencia de Reserva: <strong style="font-family: 'IBM Plex Mono', monospace; color: var(--brass);">AND-BOOK-8821</strong>
+        </div>
+      </div>
+
+      <div class="cm-pill" id="statusPill">
+        <span class="cm-pulse"></span>
+        <span>Esperando confirmación</span>
+      </div>
+    </div>
+
+    <!-- Mini Timeline -->
+    <div class="cm-mini-timeline">
+      <div class="cm-tl-step done">
+        <div class="cm-tl-dot">✓</div>
+        <span>Carrier Seleccionado</span>
+      </div>
+      <div class="cm-tl-step done">
+        <div class="cm-tl-dot">✓</div>
+        <span>Solicitud Enviada</span>
+      </div>
+      <div class="cm-tl-step active" id="stepWaiting">
+        <div class="cm-tl-dot">●</div>
+        <span>Esperando Respuesta</span>
+      </div>
+      <div class="cm-tl-step" id="stepConfirmed">
+        <div class="cm-tl-dot">○</div>
+        <span>Reserva Confirmada</span>
+      </div>
+    </div>
+
+    <!-- Info Grid -->
+    <div class="cm-info-grid">
+      <div class="cm-info-box">
+        <div class="lbl">Ruta & Capacidad</div>
+        <div class="val" style="font-family: 'Inter', sans-serif;">Callao → Santiago (8,000 kg FTL)</div>
+      </div>
+      <div class="cm-info-box">
+        <div class="lbl">Tarifa Acordada</div>
+        <div class="val" style="color: var(--brass);">$1,760 USD (Net 30)</div>
+      </div>
+      <div class="cm-info-box">
+        <div class="lbl">Plazo de Respuesta</div>
+        <div class="val" style="color: var(--ink);">Tiempo restante: 14:32</div>
+      </div>
+    </div>
+
+    <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; padding: 14px; background: var(--paper); border-radius: var(--radius-sm); border: 1px solid var(--line);">
+      Andes Freight ha recibido los detalles del despacho y está asignando la unidad <strong>Scania R450 18t</strong> en terminal Callao para el recojo programado de mañana 08:00 AM.
+    </div>
+
+    <!-- Normal Actions -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;" id="normalActions">
+      <a href="05_smart_dispatch_options.html" class="cm-btn cm-btn-secondary">
+        ← Volver a Opciones
+      </a>
+      <a href="07_tracking_timeline.html" class="cm-btn cm-btn-primary" style="background: var(--green); color: #FFF;">
+        <span>Simular Confirmación → Ir a Tracking</span>
+      </a>
+    </div>
+
+    <!-- Inline Recovery Modal (Appears if Andes rejects) -->
+    <div class="cm-recovery-banner" id="recoveryBanner">
+      <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px;">
+        <div style="font-size: 20px;">⚠️</div>
+        <div>
+          <strong style="color: var(--red); font-size: 15px; font-family: 'Overpass', sans-serif;">
+            Andes Freight no pudo confirmar disponibilidad (Unidad en mantenimiento)
+          </strong>
+          <p style="font-size: 12.5px; color: #5A1E08; margin: 4px 0 0 0; line-height: 1.45;">
+            CargoMesh revalidó automáticamente las demás opciones en vivo mediante WebMCP.
+          </p>
+        </div>
+      </div>
+
+      <div style="background: #FFF; border: 1px solid rgba(139, 37, 0, 0.2); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+          <strong style="font-family: 'Overpass', sans-serif; font-size: 16px;">★ Reemplazo Recomendado: Inca Logistics</strong>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 700; color: var(--brass);">$1,920 USD</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary);">
+          Volvo FH 24t · 29 horas de tránsito (2h más rápido) · 98% Fiabilidad SLA · Disponible de inmediato
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <a href="05_smart_dispatch_options.html" class="cm-btn cm-btn-secondary" style="background: #FFF;">
+          Ver todas las opciones en Dispatch (v2)
+        </a>
+        <a href="07_tracking_timeline.html?carrier=inca" class="cm-btn cm-btn-primary" style="background: var(--brass-mid);">
+          Continuar con Inca Logistics ($1,920 USD) →
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

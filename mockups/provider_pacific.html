@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacific Cargo — Portal WebMCP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1E9;
+    --paper-raised: #FFFFFF;
+    --ink: #1A1812;
+    --text-secondary: #5B5748;
+    --text-muted: #928D79;
+    --line: #E4E0D2;
+    --brass: #8C6316;
+    --brass-mid: #A9791F;
+    --brass-bright: #C4901F;
+    --brass-fill-soft: #F1E1BB;
+    --green: #3F6B4A;
+    --green-bg: #E1EADD;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; }
+  .cm-wrap { max-width: 900px; margin: 40px auto; padding: 0 24px; }
+  .cm-card { background: var(--paper-raised); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+  .cm-code-box { background: #11100C; border: 1px solid #2B261D; border-radius: var(--radius-md); padding: 18px; color: #E6D0A6; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.5; overflow-x: auto; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<div class="cm-wrap">
+  <div class="cm-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 18px; margin-bottom: 20px;">
+      <div>
+        <h1 style="font-family: 'Overpass', sans-serif; font-size: 24px; font-weight: 800; margin: 0 0 4px 0;">Pacific Cargo</h1>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--brass);">https://cargomesh.network/providers/pacific</div>
+      </div>
+      <span style="background: var(--green-bg); color: var(--green); border: 1px solid var(--green); padding: 4px 12px; border-radius: var(--radius-pill); font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700;">
+        WebMCP Provider Online
+      </span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; background: var(--paper); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px; font-size: 12.5px;">
+      <div><strong>Flota Dedicada:</strong><br>Freightliner Flatbed 15t</div>
+      <div><strong>Cotización Callao-Stgo:</strong><br><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--brass);">$1,590 USD</span> (60h - Lowest Cost)</div>
+      <div><strong>Disponibilidad:</strong><br>LIMITED_WINDOW (60)</div>
+    </div>
+
+    <h2 style="font-family: 'Overpass', sans-serif; font-size: 16px; font-weight: 700; margin: 0 0 10px 0;">
+      Herramientas WebMCP Registradas en <code>document.modelContext</code>
+    </h2>
+    <div style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5;">
+      Al navegar a esta página, el navegador expone las herramientas nativas de Pacific Cargo al agente.
+    </div>
+
+    <div class="cm-code-box">
+// Registro en document.modelContext (/providers/pacific)
+document.modelContext.registerTool({
+  name: "quote_freight",
+  description: "Quote coastal freight for Pacific Cargo",
+  inputSchema: { type: "object", properties: { freight_request_id: { type: "string" }, origin: { type: "string" }, destination: { type: "string" }, cargo_weight_kg: { type: "number" } }, required: ["freight_request_id", "origin", "destination", "cargo_weight_kg"] },
+  execute: async (input) => ({
+    ok: true,
+    data: {
+      provider_offer_reference: "PAC-OFF-3319",
+      price: 1590.00,
+      currency: "USD",
+      transit_hours: 60,
+      vehicle: "Freightliner Flatbed 15t",
+      availability_class: "LIMITED_WINDOW",
+      customs_coordination_included: true
+    }
+  })
+});
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

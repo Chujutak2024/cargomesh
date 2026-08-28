@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CargoMesh — Registro de Organización B2B (Pantalla 1)</title>
+<title>CargoMesh — Registro de Organización B2B</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -94,7 +94,7 @@
     text-transform: uppercase;
   }
 
-  .cm-input {
+  .cm-input, .cm-select {
     padding: 12px 14px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--line);
@@ -103,7 +103,7 @@
     color: var(--ink);
   }
 
-  .cm-input:focus {
+  .cm-input:focus, .cm-select:focus {
     outline: 2px solid var(--brass-mid);
     background: #FFF;
   }
@@ -127,9 +127,7 @@
     transition: all 0.15s ease;
   }
 
-  .cm-btn:hover {
-    background: var(--brass-bright);
-  }
+  .cm-btn:hover { background: var(--brass-bright); }
 </style>
 </head>
 <body>
@@ -151,19 +149,23 @@
 
     <div class="cm-form-group">
       <label class="cm-label">País de Operación Principal</label>
-      <input type="text" class="cm-input" value="Perú (PE)">
+      <select class="cm-select">
+        <option selected>Perú (PE)</option>
+        <option>Chile (CL)</option>
+        <option>Colombia (CO)</option>
+      </select>
     </div>
 
     <div class="cm-form-group">
-      <label class="cm-label">Identificador Tributario (RUC / Tax ID)</label>
+      <label class="cm-label">Identificador Empresarial (RUC / RUT / Tax ID)</label>
       <input type="text" class="cm-input" value="20491827361" style="font-family: 'IBM Plex Mono', monospace;">
     </div>
 
     <div class="cm-form-group">
-      <label class="cm-label">Correo Corporativo Verificado 🔒</label>
+      <label class="cm-label">Correo Corporativo</label>
       <input type="email" class="cm-input" value="carlos.mendoza@acmemining.pe">
-      <span style="font-size: 11px; color: var(--green); font-weight: 600; margin-top: 2px;">
-        ✓ Dominio corporativo verificado para políticas y facturación
+      <span style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+        ✉️ Se enviará un enlace de verificación al correo corporativo para habilitar políticas y facturación.
       </span>
     </div>
 
