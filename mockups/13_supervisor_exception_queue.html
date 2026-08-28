@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CargoMesh — Bandeja de Excepciones del Supervisor (Pantalla 13)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1E9;
+    --paper-raised: #FFFFFF;
+    --ink: #1A1812;
+    --text-secondary: #5B5748;
+    --text-muted: #928D79;
+    --line: #E4E0D2;
+    --brass: #8C6316;
+    --brass-mid: #A9791F;
+    --brass-bright: #C4901F;
+    --brass-fill-soft: #F1E1BB;
+    --green: #3F6B4A;
+    --green-bg: #E1EADD;
+    --red: #8B2500;
+    --red-bg: #F9EBE6;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .cm-header {
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .cm-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
+  .cm-logo { width: 32px; height: 32px; border-radius: 8px; background: var(--ink); display: flex; align-items: center; justify-content: center; color: var(--brass-bright); font-size: 16px; font-weight: 800; }
+  .cm-brand-text { font-family: 'Overpass', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: -0.02em; }
+
+  .cm-wrap { max-width: 1160px; margin: 30px auto 60px auto; padding: 0 24px; }
+
+  .cm-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  }
+
+  .cm-exc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .cm-exc-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .cm-exc-table td {
+    padding: 14px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+
+  .cm-badge-tag {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .cm-badge-tag.warn { background: var(--brass-fill-soft); color: var(--brass); }
+  .cm-badge-tag.danger { background: var(--red-bg); color: var(--red); }
+
+  .cm-btn-action {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    color: var(--ink);
+  }
+
+  .cm-btn-action:hover { border-color: var(--brass-mid); }
+</style>
+</head>
+<body>
+
+<header class="cm-header">
+  <a href="03_home_dashboard.html" class="cm-brand">
+    <div class="cm-logo">⬡</div>
+    <span class="cm-brand-text">CargoMesh</span>
+  </a>
+
+  <div style="font-size: 12px; color: var(--text-secondary);">
+    Supervisor Exception Queue (P1)
+  </div>
+</header>
+
+<div class="cm-wrap">
+  <div style="margin-bottom: 24px;">
+    <h1 style="font-family: 'Overpass', sans-serif; font-size: 24px; font-weight: 800; margin: 0 0 6px 0;">
+      Cola de Excepciones & Supervisión Logística
+    </h1>
+    <div style="font-size: 13px; color: var(--text-secondary);">
+      Solicitudes y reservas que requieren intervención humana según las reglas de gobernanza del contrato técnico.
+    </div>
+  </div>
+
+  <div class="cm-card">
+    <table class="cm-exc-table">
+      <thead>
+        <tr>
+          <th>Tipo de Excepción</th>
+          <th>Solicitud / Booking</th>
+          <th>Detalle de la Alerta</th>
+          <th>Riesgo Detectado</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="cm-badge-tag danger">PROVIDER_REJECTION</span></td>
+          <td><strong style="font-family: 'IBM Plex Mono', monospace; color: var(--brass);">FR-1042</strong></td>
+          <td>Andes Freight reportó unidad en mantenimiento</td>
+          <td>Interrupción en ventana de recojo</td>
+          <td>
+            <a href="08_recovery_ui.html" class="cm-btn-action">
+              Ver Recovery (Inca $1,920) →
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td><span class="cm-badge-tag warn">PRICE_ANOMALY</span></td>
+          <td><span style="font-family: 'IBM Plex Mono', monospace;">FR-1089</span></td>
+          <td>Cotización de $2,600 USD (+42% vs promedio histórico $1,732)</td>
+          <td>Auto-booking bloqueado preventivamente</td>
+          <td>
+            <a href="#" class="cm-btn-action" onclick="alert('Revisando anomalia de precio FR-1089')">
+              Revisar Cotización
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td><span class="cm-badge-tag danger">SECURITY_REVIEW</span></td>
+          <td><span style="font-family: 'IBM Plex Mono', monospace;">FR-1102</span></td>
+          <td>El usuario reportó 'No reconozco esta solicitud'</td>
+          <td>Acciones automáticas congeladas</td>
+          <td>
+            <a href="11_unrecognized_request.html" class="cm-btn-action">
+              Ver Alerta de Seguridad →
+            </a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>

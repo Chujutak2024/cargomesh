@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CargoMesh — Páginas de Proveedores WebMCP (Pantalla 14)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1E9;
+    --paper-raised: #FFFFFF;
+    --ink: #1A1812;
+    --text-secondary: #5B5748;
+    --text-muted: #928D79;
+    --line: #E4E0D2;
+    --brass: #8C6316;
+    --brass-mid: #A9791F;
+    --brass-bright: #C4901F;
+    --brass-fill-soft: #F1E1BB;
+    --green: #3F6B4A;
+    --green-bg: #E1EADD;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input { font-family: inherit; }
+
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--brass-mid);
+    outline-offset: 2px;
+  }
+
+  /* Staging Banner */
+  .cm-staging-bar {
+    background: #11100C;
+    border-bottom: 1px solid #2B261D;
+    color: #F3F1E9;
+    padding: 8px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11.5px;
+  }
+
+  .cm-staging-badge {
+    background: #242017;
+    border: 1px solid #3A3323;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    color: #E6D0A6;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+  }
+
+  /* Header */
+  .cm-header {
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .cm-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .cm-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--brass-bright);
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .cm-brand-text {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+  }
+
+  .cm-wrap {
+    max-width: 1160px;
+    margin: 28px auto 60px auto;
+    padding: 0 24px;
+  }
+
+  .cm-breadcrumb {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .cm-breadcrumb a { color: inherit; text-decoration: none; }
+
+  /* Provider Navigation Tabs */
+  .cm-provider-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .cm-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-radius: var(--radius-pill);
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    color: var(--text-secondary);
+    font-family: 'Overpass', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .cm-tab-btn:hover {
+    border-color: var(--brass-mid);
+    color: var(--ink);
+  }
+
+  .cm-tab-btn.active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #FFF;
+  }
+
+  .cm-tab-btn.active .cm-tab-badge {
+    background: var(--brass-bright);
+    color: #1A1812;
+  }
+
+  .cm-tab-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: var(--radius-pill);
+    background: var(--paper);
+    color: var(--text-muted);
+  }
+
+  /* Provider Card View */
+  .cm-provider-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    margin-bottom: 24px;
+  }
+
+  .cm-provider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .cm-provider-title {
+    font-family: 'Overpass', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0 0 4px 0;
+    color: var(--ink);
+  }
+
+  .cm-provider-url {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--brass);
+  }
+
+  .cm-spec-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    background: var(--paper);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    margin-bottom: 28px;
+  }
+
+  @media (max-width: 700px) {
+    .cm-spec-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  .cm-spec-box .label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .cm-spec-box .val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  /* Registered Tools Section */
+  .cm-tools-title {
+    font-family: 'Overpass', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    margin: 0 0 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cm-tool-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  @media (max-width: 750px) {
+    .cm-tool-grid { grid-template-columns: 1fr; }
+  }
+
+  .cm-tool-item {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cm-tool-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--brass);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cm-tool-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.45;
+  }
+
+  /* Live Terminal Code Block */
+  .cm-code-terminal {
+    background: #11100C;
+    border: 1px solid #2B261D;
+    border-radius: var(--radius-md);
+    padding: 18px;
+    color: #F3F1E9;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+
+  .cm-terminal-head {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #2B261D;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    color: var(--brass-bright);
+    font-weight: 700;
+  }
+
+  .cm-code-terminal pre {
+    margin: 0;
+    color: #E6D0A6;
+    line-height: 1.55;
+    overflow-x: auto;
+  }
+</style>
+</head>
+<body>
+
+<!-- Staging Banner -->
+<div class="cm-staging-bar">
+  <div>
+    <strong>🧪 CARGOMESH JUDGE MODE</strong> · Pantalla 14: Provider WebMCP Demo Pages
+  </div>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <span class="cm-staging-badge">Protocol: document.modelContext.registerTool</span>
+    <span class="cm-staging-badge">Full Document Navigation</span>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="cm-header">
+  <a href="03_home_dashboard.html" class="cm-brand">
+    <div class="cm-logo">⬡</div>
+    <span class="cm-brand-text">CargoMesh</span>
+  </a>
+
+  <div style="font-size: 12px; color: var(--text-secondary);">
+    Inspección Técnica de Herramientas WebMCP
+  </div>
+</header>
+
+<div class="cm-wrap">
+  <!-- Breadcrumb -->
+  <div class="cm-breadcrumb">
+    <a href="03_home_dashboard.html">Home</a>
+    <span>/</span>
+    <a href="05_smart_dispatch_status.html">Smart Dispatch</a>
+    <span>/</span>
+    <span style="color: var(--brass); font-weight: 600;">Páginas de Proveedores (WebMCP)</span>
+  </div>
+
+  <h1 style="font-family: 'Overpass', sans-serif; font-size: 24px; font-weight: 800; margin: 0 0 6px 0;">
+    Registro de Capacidades WebMCP por Transportista
+  </h1>
+  <p style="font-size: 13px; color: var(--text-secondary); margin: 0 0 20px 0;">
+    Cada carrier corre en su propia URL y registra sus capacidades nativas mediante <code>document.modelContext.registerTool()</code>.
+  </p>
+
+  <!-- Provider Tabs -->
+  <div class="cm-provider-tabs">
+    <button class="cm-tab-btn active" onclick="switchProvider('andes')">
+      <span>Andes Freight S.A.</span>
+      <span class="cm-tab-badge">/providers/andes</span>
+    </button>
+    <button class="cm-tab-btn" onclick="switchProvider('inca')">
+      <span>Inca Logistics</span>
+      <span class="cm-tab-badge">/providers/inca</span>
+    </button>
+    <button class="cm-tab-btn" onclick="switchProvider('pacific')">
+      <span>Pacific Cargo</span>
+      <span class="cm-tab-badge">/providers/pacific</span>
+    </button>
+  </div>
+
+  <!-- Provider Card View -->
+  <div class="cm-provider-card" id="providerCard">
+    <div class="cm-provider-header">
+      <div>
+        <h2 class="cm-provider-title" id="pName">Andes Freight S.A.</h2>
+        <div class="cm-provider-url" id="pUrl">https://cargomesh.network/providers/andes</div>
+      </div>
+      <div style="text-align: right;">
+        <span style="display: inline-block; background: var(--green-bg); color: var(--green); border: 1px solid var(--green); padding: 4px 12px; border-radius: var(--radius-pill); font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 700;">
+          WebMCP Active (5 Tools)
+        </span>
+      </div>
+    </div>
+
+    <!-- Fixture Specs -->
+    <div class="cm-spec-grid" id="pSpecs">
+      <div class="cm-spec-box">
+        <div class="label">Cotización FTL</div>
+        <div class="val" style="color: var(--brass);">$1,760 USD</div>
+      </div>
+      <div class="cm-spec-box">
+        <div class="label">Tiempo Tránsito</div>
+        <div class="val">31 horas</div>
+      </div>
+      <div class="cm-spec-box">
+        <div class="label">Unidad & Capacidad</div>
+        <div class="val">Scania R450 · 18,000 kg</div>
+      </div>
+      <div class="cm-spec-box">
+        <div class="label">Disponibilidad</div>
+        <div class="val">AVAILABLE_IN_WINDOW (90)</div>
+      </div>
+    </div>
+
+    <!-- Registered Tools Grid -->
+    <div class="cm-tools-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--brass);"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="m9 12 2 2 4-4"></path></svg>
+      <span>Herramientas Registradas en <code>document.modelContext</code></span>
+    </div>
+
+    <div class="cm-tool-grid">
+      <div class="cm-tool-item">
+        <div class="cm-tool-name">
+          <span>⬡</span> <code>check_service_coverage</code>
+        </div>
+        <div class="cm-tool-desc">
+          Verifica cobertura de corredor (Callao/Lima → Santiago), modo carretero y coordinación aduanera MIC/DTA.
+        </div>
+      </div>
+
+      <div class="cm-tool-item">
+        <div class="cm-tool-name">
+          <span>⬡</span> <code>check_capacity</code>
+        </div>
+        <div class="cm-tool-desc">
+          Consulta unidades listas en terminal Callao y compatibilidad de peso/volumen para los 10 pallets (8,000 kg).
+        </div>
+      </div>
+
+      <div class="cm-tool-item">
+        <div class="cm-tool-name">
+          <span>⬡</span> <code>quote_freight</code>
+        </div>
+        <div class="cm-tool-desc">
+          Genera cotización formal con desglose de flete base, gestión fronteriza y seguro internacional.
+        </div>
+      </div>
+
+      <div class="cm-tool-item">
+        <div class="cm-tool-name">
+          <span>⬡</span> <code>book_freight</code>
+        </div>
+        <div class="cm-tool-desc">
+          Recibe solicitud de reserva y retorna <code>provider_reference</code> (ej. <code>AND-BOOK-8821</code>) en estado PENDING.
+        </div>
+      </div>
+
+      <div class="cm-tool-item">
+        <div class="cm-tool-name">
+          <span>⬡</span> <code>get_provider_booking_status</code>
+        </div>
+        <div class="cm-tool-desc">
+          Consulta estado del ciclo de vida (CONFIRMED, IN_TRANSIT, BORDER_PROCESSING) y timeline de hitos con <code>provider_event_id</code>.
+        </div>
+      </div>
+
+      <div class="cm-tool-item">
+        <div class="cm-tool-name">
+          <span>⬡</span> <code>get_booking_change_options</code> (P1)
+        </div>
+        <div class="cm-tool-desc">
+          Retorna opciones dinámicas de reprogramación o cancelación con costos y penalidades.
+        </div>
+      </div>
+    </div>
+
+    <!-- Registration Snippet -->
+    <div class="cm-code-terminal">
+      <div class="cm-terminal-head">
+        <span>Código Real de Registro WebMCP</span>
+        <span style="font-weight: normal; color: #928D79;">Andes Freight Frontend</span>
+      </div>
+      <pre id="codeSnippet">// Registro en el navegador al cargar /providers/andes
+document.modelContext.registerTool({
+  name: "quote_freight",
+  description: "Quote an international FTL freight request for Andes Freight network",
+  inputSchema: {
+    type: "object",
+    properties: {
+      freight_request_id: { type: "string" },
+      origin: { type: "string" },
+      destination: { type: "string" },
+      cargo_weight_kg: { type: "number" }
+    },
+    required: ["freight_request_id", "origin", "destination", "cargo_weight_kg"]
+  },
+  execute: async (input) => {
+    return {
+      ok: true,
+      data: {
+        provider_offer_reference: "AND-OFF-8821",
+        price: 1760.00,
+        currency: "USD",
+        transit_hours: 31,
+        availability_class: "AVAILABLE_IN_WINDOW",
+        reported_vehicle_type: "Scania R450 Heavy Semi-Trailer 18t",
+        customs_coordination_included: true
+      }
+    };
+  }
+});</pre>
+    </div>
+  </div>
+</div>
+
+<script>
+const providers = {
+  andes: {
+    name: "Andes Freight S.A.",
+    url: "https://cargomesh.network/providers/andes",
+    price: "$1,760 USD",
+    transit: "31 horas",
+    vehicle: "Scania R450 · 18,000 kg",
+    avail: "AVAILABLE_IN_WINDOW (90)",
+    snippet: `// Registro en el navegador al cargar /providers/andes
+document.modelContext.registerTool({
+  name: "quote_freight",
+  description: "Quote an international FTL freight request for Andes Freight network",
+  inputSchema: {
+    type: "object",
+    properties: {
+      freight_request_id: { type: "string" },
+      origin: { type: "string" },
+      destination: { type: "string" },
+      cargo_weight_kg: { type: "number" }
+    },
+    required: ["freight_request_id", "origin", "destination", "cargo_weight_kg"]
+  },
+  execute: async (input) => {
+    return {
+      ok: true,
+      data: {
+        provider_offer_reference: "AND-OFF-8821",
+        price: 1760.00,
+        currency: "USD",
+        transit_hours: 31,
+        availability_class: "AVAILABLE_IN_WINDOW",
+        reported_vehicle_type: "Scania R450 Heavy Semi-Trailer 18t",
+        customs_coordination_included: true
+      }
+    };
+  }
+});`
+  },
+  inca: {
+    name: "Inca Logistics",
+    url: "https://cargomesh.network/providers/inca",
+    price: "$1,920 USD",
+    transit: "29 horas (Fastest)",
+    vehicle: "Volvo FH Globetrotter · 24,000 kg",
+    avail: "AVAILABLE_IN_WINDOW (90)",
+    snippet: `// Registro en el navegador al cargar /providers/inca
+document.modelContext.registerTool({
+  name: "quote_freight",
+  description: "Quote an international FTL freight request for Inca Logistics enterprise fleet",
+  inputSchema: { ... },
+  execute: async (input) => {
+    return {
+      ok: true,
+      data: {
+        provider_offer_reference: "INC-OFF-9042",
+        price: 1920.00,
+        currency: "USD",
+        transit_hours: 29,
+        availability_class: "AVAILABLE_IN_WINDOW",
+        reported_vehicle_type: "Volvo FH Globetrotter 24t",
+        customs_coordination_included: true
+      }
+    };
+  }
+});`
+  },
+  pacific: {
+    name: "Pacific Cargo",
+    url: "https://cargomesh.network/providers/pacific",
+    price: "$1,590 USD (Lowest Cost)",
+    transit: "60 horas (Slow)",
+    vehicle: "Freightliner Flatbed · 15,000 kg",
+    avail: "LIMITED_WINDOW (60)",
+    snippet: `// Registro en el navegador al cargar /providers/pacific
+document.modelContext.registerTool({
+  name: "quote_freight",
+  description: "Quote competitive coastal freight for Pacific Cargo",
+  inputSchema: { ... },
+  execute: async (input) => {
+    return {
+      ok: true,
+      data: {
+        provider_offer_reference: "PAC-OFF-3319",
+        price: 1590.00,
+        currency: "USD",
+        transit_hours: 60,
+        availability_class: "LIMITED_WINDOW",
+        reported_vehicle_type: "Freightliner Flatbed 15t",
+        customs_coordination_included: true
+      }
+    };
+  }
+});`
+  }
+};
+
+function switchProvider(key) {
+  const p = providers[key];
+  document.getElementById('pName').innerText = p.name;
+  document.getElementById('pUrl').innerText = p.url;
+  document.getElementById('codeSnippet').innerText = p.snippet;
+
+  const specs = document.getElementById('pSpecs');
+  specs.innerHTML = `
+    <div class="cm-spec-box">
+      <div class="label">Cotización FTL</div>
+      <div class="val" style="color: var(--brass);">${p.price}</div>
+    </div>
+    <div class="cm-spec-box">
+      <div class="label">Tiempo Tránsito</div>
+      <div class="val">${p.transit}</div>
+    </div>
+    <div class="cm-spec-box">
+      <div class="label">Unidad & Capacidad</div>
+      <div class="val">${p.vehicle}</div>
+    </div>
+    <div class="cm-spec-box">
+      <div class="label">Disponibilidad</div>
+      <div class="val">${p.avail}</div>
+    </div>
+  `;
+
+  const buttons = document.querySelectorAll('.cm-tab-btn');
+  buttons.forEach(b => b.classList.remove('active'));
+  if (key === 'andes') buttons[0].classList.add('active');
+  if (key === 'inca') buttons[1].classList.add('active');
+  if (key === 'pacific') buttons[2].classList.add('active');
+}
+</script>
+
+</body>
+</html>

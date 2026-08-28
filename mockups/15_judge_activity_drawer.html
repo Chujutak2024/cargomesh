@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CargoMesh — Judge / Agent Activity Drawer (Pantalla 15)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1E9;
+    --paper-raised: #FFFFFF;
+    --ink: #1A1812;
+    --text-secondary: #5B5748;
+    --text-muted: #928D79;
+    --line: #E4E0D2;
+    --brass: #8C6316;
+    --brass-mid: #A9791F;
+    --brass-bright: #C4901F;
+    --brass-fill-soft: #F1E1BB;
+    --green: #3F6B4A;
+    --green-bg: #E1EADD;
+    --red: #8B2500;
+    --red-bg: #F9EBE6;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: #0E0D09;
+    color: #F3F1E9;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input { font-family: inherit; }
+
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--brass-mid);
+    outline-offset: 2px;
+  }
+
+  .cm-wrap {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 24px;
+  }
+
+  /* Header */
+  .cm-drawer-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #2B261D;
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .cm-brand-title {
+    font-family: 'Overpass', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: #FFF;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .cm-brand-logo {
+    width: 32px;
+    height: 32px;
+    background: var(--brass-mid);
+    color: #1A1812;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  /* Control Panel */
+  .cm-control-card {
+    background: #171510;
+    border: 1px solid #2B261D;
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 28px;
+  }
+
+  .cm-control-title {
+    font-family: 'Overpass', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--brass-bright);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cm-btn-grid {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .cm-ctrl-btn {
+    background: #242017;
+    border: 1px solid #3A3323;
+    color: #E6D0A6;
+    padding: 10px 18px;
+    border-radius: var(--radius-pill);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .cm-ctrl-btn:hover {
+    background: #3A3323;
+    border-color: var(--brass-bright);
+    color: #FFF;
+  }
+
+  .cm-ctrl-btn.primary {
+    background: var(--brass-mid);
+    color: #1A1812;
+    border-color: var(--brass-mid);
+  }
+
+  .cm-ctrl-btn.danger {
+    background: #3B1209;
+    border-color: #6E2211;
+    color: #FFA291;
+  }
+
+  /* Event Stream Grid */
+  .cm-stream-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 24px;
+  }
+
+  @media (max-width: 900px) {
+    .cm-stream-grid { grid-template-columns: 1fr; }
+  }
+
+  .cm-feed-box {
+    background: #171510;
+    border: 1px solid #2B261D;
+    border-radius: var(--radius-lg);
+    padding: 20px;
+  }
+
+  .cm-feed-title {
+    font-family: 'Overpass', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #FFF;
+    margin: 0 0 16px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Event List */
+  .cm-event-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cm-event-item {
+    background: #0E0D09;
+    border: 1px solid #2B261D;
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .cm-event-item:hover, .cm-event-item.selected {
+    border-color: var(--brass-mid);
+    background: #14120C;
+  }
+
+  .cm-event-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .cm-tool-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--brass-bright);
+  }
+
+  .cm-lat-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #8C8472;
+    background: #1E1B13;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .cm-event-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 11.5px;
+    color: #928D79;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* JSON Viewer Box */
+  .cm-json-box {
+    background: #171510;
+    border: 1px solid #2B261D;
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cm-json-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--brass-bright);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #2B261D;
+  }
+
+  .cm-json-viewer {
+    background: #090805;
+    border: 1px solid #242017;
+    border-radius: var(--radius-md);
+    padding: 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: #E6D0A6;
+    line-height: 1.55;
+    overflow-x: auto;
+    flex: 1;
+    max-height: 500px;
+  }
+
+  /* Causality Rule Callout */
+  .cm-causality-box {
+    background: #1F1B12;
+    border-left: 3px solid var(--brass-bright);
+    padding: 12px 16px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: 12px;
+    color: #E6D0A6;
+    line-height: 1.5;
+    margin-top: 24px;
+  }
+
+  .cm-causality-box strong { color: #FFF; }
+</style>
+</head>
+<body>
+
+<div class="cm-wrap">
+  <!-- Drawer Header -->
+  <div class="cm-drawer-head">
+    <div class="cm-brand-title">
+      <div class="cm-brand-logo">⬡</div>
+      <span>CargoMesh Judge Mode & Agent Observability</span>
+    </div>
+
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--green);">
+        ● Supabase DB Connected (16 Tables)
+      </span>
+      <a href="03_home_dashboard.html" style="color: #E6D0A6; font-size: 12px; text-decoration: none; border: 1px solid #3A3323; padding: 6px 12px; border-radius: var(--radius-pill);">
+        ✕ Cerrar Drawer
+      </a>
+    </div>
+  </div>
+
+  <!-- Interactive Control Panel -->
+  <div class="cm-control-card">
+    <div class="cm-control-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+      <span>Controles de Escenario para Jueces (Fixture State Machine)</span>
+    </div>
+
+    <div class="cm-btn-grid">
+      <button class="cm-ctrl-btn primary" onclick="alert('Iniciando corrida de orquestacion real: or-8821-init')">
+        ▶ Start Orchestration (FR-1042)
+      </button>
+      <button class="cm-ctrl-btn" onclick="alert('Fixture Andes configurado en: ACCEPT (Confirmara la reserva de inmediato)')">
+        Fixture: Andes ACCEPT
+      </button>
+      <button class="cm-ctrl-btn" onclick="alert('Fixture Andes configurado en: REJECT (Simulara mantenimiento de flota -> activara Recovery con Inca Logistics)')">
+        Fixture: Andes REJECT (Trigger Recovery)
+      </button>
+      <button class="cm-ctrl-btn" onclick="alert('Fixture Andes configurado en: NO_RESPONSE (Simulara timeout de 15m)')">
+        Fixture: Andes NO_RESPONSE
+      </button>
+      <button class="cm-ctrl-btn danger" onclick="alert('Restableciendo demo: FR-1042 reiniciado a PENDING; tablas de runtime vaciadas.')">
+        ↺ Reset Demo Environment
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Stream Grid -->
+  <div class="cm-stream-grid">
+    <!-- Left: Event Feed -->
+    <div class="cm-feed-box">
+      <div class="cm-feed-title">
+        <span>Eventos Reales WebMCP (<code>orchestration_events</code>)</span>
+        <span style="font-size: 11.5px; font-family: 'IBM Plex Mono', monospace; color: #8C8472;">5 Invocaciones Registradas</span>
+      </div>
+
+      <div class="cm-event-list">
+        <!-- Event 1 -->
+        <div class="cm-event-item selected" onclick="loadEvent(1)">
+          <div class="cm-event-top">
+            <span class="cm-tool-tag">record_provider_result (quote_freight)</span>
+            <span class="cm-lat-badge">380 ms</span>
+          </div>
+          <div class="cm-event-meta">
+            <span>Provider: Andes Freight</span>
+            <span>Status: COMPLETED</span>
+            <span>Price: $1,760 USD</span>
+          </div>
+        </div>
+
+        <!-- Event 2 -->
+        <div class="cm-event-item" onclick="loadEvent(2)">
+          <div class="cm-event-top">
+            <span class="cm-tool-tag">record_provider_result (quote_freight)</span>
+            <span class="cm-lat-badge">290 ms</span>
+          </div>
+          <div class="cm-event-meta">
+            <span>Provider: Inca Logistics</span>
+            <span>Status: COMPLETED</span>
+            <span>Price: $1,920 USD</span>
+          </div>
+        </div>
+
+        <!-- Event 3 -->
+        <div class="cm-event-item" onclick="loadEvent(3)">
+          <div class="cm-event-top">
+            <span class="cm-tool-tag">record_provider_result (quote_freight)</span>
+            <span class="cm-lat-badge">145 ms</span>
+          </div>
+          <div class="cm-event-meta">
+            <span>Provider: Pacific Cargo</span>
+            <span>Status: COMPLETED</span>
+            <span>Price: $1,590 USD</span>
+          </div>
+        </div>
+
+        <!-- Event 4 -->
+        <div class="cm-event-item" onclick="loadEvent(4)">
+          <div class="cm-event-top">
+            <span class="cm-tool-tag">book_freight</span>
+            <span class="cm-lat-badge">512 ms</span>
+          </div>
+          <div class="cm-event-meta">
+            <span>Provider: Andes Freight</span>
+            <span>Ref: AND-BOOK-8821</span>
+            <span>Status: PENDING</span>
+          </div>
+        </div>
+
+        <!-- Event 5 -->
+        <div class="cm-event-item" onclick="loadEvent(5)">
+          <div class="cm-event-top">
+            <span class="cm-tool-tag">get_provider_booking_status</span>
+            <span class="cm-lat-badge">180 ms</span>
+          </div>
+          <div class="cm-event-meta">
+            <span>Provider: Andes Freight</span>
+            <span>Status: BORDER_PROCESSING</span>
+            <span>MIC/DTA</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: JSON Payload Inspector -->
+    <div class="cm-json-box">
+      <div class="cm-json-title" id="jsonTitle">
+        Payload: record_provider_result (Andes Freight)
+      </div>
+      <pre class="cm-json-viewer" id="jsonViewer">{
+  "id": "evt-8821-001",
+  "orchestration_run_id": "or-8821-init",
+  "tool_call_id": "call_andes_quote_001",
+  "tool_name": "quote_freight",
+  "carrier_id": "car-andes",
+  "duration_ms": 380,
+  "status": "COMPLETED",
+  "created_at": "2026-08-31T08:02:15.120Z",
+  "input_payload": {
+    "freight_request_id": "fr-1042-uuid",
+    "origin": "Callao/Lima, PE",
+    "destination": "Santiago, CL",
+    "cargo_weight_kg": 8000
+  },
+  "output_payload": {
+    "provider_offer_reference": "AND-OFF-8821",
+    "price": 1760.00,
+    "currency": "USD",
+    "transit_hours": 31,
+    "vehicle": "Scania R450 18t",
+    "availability_class": "AVAILABLE_IN_WINDOW",
+    "customs_coordination_included": true
+  }
+}</pre>
+    </div>
+  </div>
+
+  <!-- Causality Rule Callout -->
+  <div class="cm-causality-box">
+    <strong>⚖️ Regla de Causalidad e Inmutabilidad (Contrato Técnico Sección 1.2):</strong>
+    Los eventos que ves aquí son registros reales en la tabla <code>orchestration_events</code> de Supabase. El botón <em>Reset Demo</em> restaura el estado inicial borrando ofertas, decisiones y reservas en runtime para permitir que el juez reproduzca el flujo de 0 a 100 sin estados prefabricados.
+  </div>
+</div>
+
+<script>
+const eventData = {
+  1: {
+    title: "Payload: record_provider_result (Andes Freight)",
+    json: `{
+  "id": "evt-8821-001",
+  "orchestration_run_id": "or-8821-init",
+  "tool_call_id": "call_andes_quote_001",
+  "tool_name": "quote_freight",
+  "carrier_id": "car-andes",
+  "duration_ms": 380,
+  "status": "COMPLETED",
+  "created_at": "2026-08-31T08:02:15.120Z",
+  "input_payload": {
+    "freight_request_id": "fr-1042-uuid",
+    "origin": "Callao/Lima, PE",
+    "destination": "Santiago, CL",
+    "cargo_weight_kg": 8000
+  },
+  "output_payload": {
+    "provider_offer_reference": "AND-OFF-8821",
+    "price": 1760.00,
+    "currency": "USD",
+    "transit_hours": 31,
+    "vehicle": "Scania R450 18t",
+    "availability_class": "AVAILABLE_IN_WINDOW",
+    "customs_coordination_included": true
+  }
+}`
+  },
+  2: {
+    title: "Payload: record_provider_result (Inca Logistics)",
+    json: `{
+  "id": "evt-8821-002",
+  "orchestration_run_id": "or-8821-init",
+  "tool_call_id": "call_inca_quote_002",
+  "tool_name": "quote_freight",
+  "carrier_id": "car-inca",
+  "duration_ms": 290,
+  "status": "COMPLETED",
+  "created_at": "2026-08-31T08:02:15.410Z",
+  "output_payload": {
+    "provider_offer_reference": "INC-OFF-9042",
+    "price": 1920.00,
+    "currency": "USD",
+    "transit_hours": 29,
+    "vehicle": "Volvo FH Globetrotter 24t",
+    "availability_class": "AVAILABLE_IN_WINDOW",
+    "customs_coordination_included": true
+  }
+}`
+  },
+  3: {
+    title: "Payload: record_provider_result (Pacific Cargo)",
+    json: `{
+  "id": "evt-8821-003",
+  "orchestration_run_id": "or-8821-init",
+  "tool_call_id": "call_pacific_quote_003",
+  "tool_name": "quote_freight",
+  "carrier_id": "car-pacific",
+  "duration_ms": 145,
+  "status": "COMPLETED",
+  "created_at": "2026-08-31T08:02:15.555Z",
+  "output_payload": {
+    "provider_offer_reference": "PAC-OFF-3319",
+    "price": 1590.00,
+    "currency": "USD",
+    "transit_hours": 60,
+    "vehicle": "Freightliner Flatbed 15t",
+    "availability_class": "LIMITED_WINDOW",
+    "customs_coordination_included": true
+  }
+}`
+  },
+  4: {
+    title: "Payload: book_freight (Andes Freight)",
+    json: `{
+  "id": "evt-8821-004",
+  "orchestration_run_id": "or-8821-init",
+  "tool_call_id": "call_book_001",
+  "tool_name": "book_freight",
+  "carrier_id": "car-andes",
+  "duration_ms": 512,
+  "status": "COMPLETED",
+  "output_payload": {
+    "provider_reference": "AND-BOOK-8821",
+    "provider_booking_status": "PENDING_PROVIDER_CONFIRMATION",
+    "deadline": "2026-08-31T08:15:00Z"
+  }
+}`
+  },
+  5: {
+    title: "Payload: get_provider_booking_status (Live Tracking)",
+    json: `{
+  "id": "evt-8821-005",
+  "orchestration_run_id": "or-8821-init",
+  "tool_call_id": "call_status_005",
+  "tool_name": "get_provider_booking_status",
+  "carrier_id": "car-andes",
+  "duration_ms": 180,
+  "status": "COMPLETED",
+  "output_payload": {
+    "provider_reference": "AND-BOOK-8821",
+    "provider_booking_status": "BORDER_PROCESSING",
+    "location": "Paso Santa Rosa / Chacalluta",
+    "customs_mic_dta": "TRANSMITTING"
+  }
+}`
+  }
+};
+
+function loadEvent(id) {
+  const ev = eventData[id];
+  document.getElementById('jsonTitle').innerText = ev.title;
+  document.getElementById('jsonViewer').innerText = ev.json;
+
+  const items = document.querySelectorAll('.cm-event-item');
+  items.forEach(i => i.classList.remove('selected'));
+  items[id - 1].classList.add('selected');
+}
+</script>
+
+</body>
+</html>

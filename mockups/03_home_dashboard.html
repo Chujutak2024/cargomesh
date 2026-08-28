@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CargoMesh — Portal Corporativo B2B (Pantalla 3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1E9;
+    --paper-raised: #FFFFFF;
+    --ink: #1A1812;
+    --text-secondary: #5B5748;
+    --text-muted: #928D79;
+    --line: #E4E0D2;
+    --brass: #8C6316;
+    --brass-mid: #A9791F;
+    --brass-bright: #C4901F;
+    --brass-fill-soft: #F1E1BB;
+    --green: #3F6B4A;
+    --green-bg: #E1EADD;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input { font-family: inherit; }
+
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--brass-mid);
+    outline-offset: 2px;
+  }
+
+  /* Staging Banner */
+  .cm-staging-bar {
+    background: #11100C;
+    border-bottom: 1px solid #2B261D;
+    color: #F3F1E9;
+    padding: 8px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11.5px;
+  }
+
+  .cm-staging-badge {
+    background: #242017;
+    border: 1px solid #3A3323;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    color: #E6D0A6;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+  }
+
+  /* Header */
+  .cm-header {
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .cm-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .cm-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--brass-bright);
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .cm-brand-text {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+  }
+
+  .cm-header-nav {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .cm-nav-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    transition: color 0.15s ease;
+  }
+
+  .cm-nav-link:hover, .cm-nav-link.active { color: var(--ink); }
+
+  .cm-wrap {
+    max-width: 1160px;
+    margin: 28px auto 60px auto;
+    padding: 0 24px;
+  }
+
+  /* Welcome Banner */
+  .cm-welcome-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .cm-welcome-title {
+    font-family: 'Overpass', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    margin: 0 0 4px 0;
+  }
+
+  .cm-welcome-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  /* KPI Grid */
+  .cm-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  @media (max-width: 800px) {
+    .cm-kpi-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  .cm-kpi-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 18px 20px;
+  }
+
+  .cm-kpi-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .cm-kpi-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  /* Section Title */
+  .cm-sec-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .cm-sec-title {
+    font-family: 'Overpass', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    margin: 0;
+    color: var(--ink);
+  }
+
+  /* Active Requests Table Card */
+  .cm-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    margin-bottom: 28px;
+  }
+
+  .cm-req-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .cm-req-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .cm-req-table td {
+    padding: 14px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+
+  .cm-req-table tr:last-child td { border-bottom: none; }
+
+  .cm-req-table tr:hover { background: var(--paper); }
+
+  .cm-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .cm-pill.pending { background: var(--brass-fill-soft); color: var(--brass); border: 1px solid var(--brass-mid); }
+  .cm-pill.confirmed { background: var(--green-bg); color: var(--green); border: 1px solid var(--green); }
+
+  /* CTAs */
+  .cm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: var(--radius-pill);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 13.5px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s ease;
+  }
+
+  .cm-btn-primary { background: var(--brass-mid); color: #211500; }
+  .cm-btn-primary:hover { background: var(--brass-bright); }
+
+  .cm-btn-sm {
+    padding: 6px 14px;
+    font-size: 12px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    color: var(--ink);
+  }
+
+  .cm-btn-sm:hover { border-color: var(--brass-mid); }
+</style>
+</head>
+<body>
+
+<!-- Staging Banner -->
+<div class="cm-staging-bar">
+  <div>
+    <strong>🧪 CARGOMESH DEMO</strong> · Pantalla 3: Home Dashboard B2B
+  </div>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <a href="15_judge_activity_drawer.html" style="color: #E6D0A6; text-decoration: none;" class="cm-staging-badge">
+      ⚡ Abrir Judge Drawer
+    </a>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="cm-header">
+  <a href="03_home_dashboard.html" class="cm-brand">
+    <div class="cm-logo">⬡</div>
+    <span class="cm-brand-text">CargoMesh</span>
+  </a>
+
+  <div class="cm-header-nav">
+    <a href="03_home_dashboard.html" class="cm-nav-link active">Dashboard</a>
+    <a href="04_new_freight_request.html" class="cm-nav-link">Nueva Carga</a>
+    <a href="02_organization_profile.html" class="cm-nav-link">Perfil ACME 🔒</a>
+    <a href="14_provider_demo_pages.html" class="cm-nav-link">Carriers WebMCP</a>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <a href="04_new_freight_request.html" class="cm-btn cm-btn-primary">
+      <span>+ Nueva Solicitud</span>
+    </a>
+  </div>
+</header>
+
+<div class="cm-wrap">
+  <!-- Welcome -->
+  <div class="cm-welcome-box">
+    <div>
+      <h1 class="cm-welcome-title">Panel de Control Logístico B2B</h1>
+      <div class="cm-welcome-sub">
+        Organización: <strong>ACME Mining Corp</strong> (RUC: 20491827361) · Administrador: Carlos Mendoza
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <a href="05_smart_dispatch_status.html" class="cm-btn cm-btn-primary">
+        <span>Ir a Golden Flow (FR-1042) →</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Grid -->
+  <div class="cm-kpi-grid">
+    <div class="cm-kpi-card">
+      <div class="cm-kpi-label">Solicitudes Activas</div>
+      <div class="cm-kpi-val">3</div>
+    </div>
+    <div class="cm-kpi-card">
+      <div class="cm-kpi-label">En Tránsito (FTL)</div>
+      <div class="cm-kpi-val">1</div>
+    </div>
+    <div class="cm-kpi-card">
+      <div class="cm-kpi-label">Esperando Decisión</div>
+      <div class="cm-kpi-val" style="color: var(--brass);">1</div>
+    </div>
+    <div class="cm-kpi-card">
+      <div class="cm-kpi-label">Tasa Cumplimiento SLA</div>
+      <div class="cm-kpi-val" style="color: var(--green);">97.4%</div>
+    </div>
+  </div>
+
+  <!-- Active Requests Table -->
+  <div class="cm-card">
+    <div class="cm-sec-head">
+      <h2 class="cm-sec-title">Solicitudes de Transporte & Despachos</h2>
+      <span style="font-size: 12px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace;">Corredores Internacionales & Nacionales</span>
+    </div>
+
+    <table class="cm-req-table">
+      <thead>
+        <tr>
+          <th>ID Solicitud</th>
+          <th>Corredor / Ruta</th>
+          <th>Carga & Modalidad</th>
+          <th>Presupuesto</th>
+          <th>Estado</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Golden Flow Row -->
+        <tr style="background: #FFFCF7;">
+          <td><strong style="font-family: 'IBM Plex Mono', monospace; color: var(--brass);">FR-1042</strong></td>
+          <td><strong>Callao/Lima (PE) → Santiago (CL)</strong><br><span style="font-size: 11px; color: var(--text-muted);">Paso Fronterizo Santa Rosa/Chacalluta</span></td>
+          <td>8,000 kg (10 pallets)<br><span style="font-size: 11px; color: var(--text-secondary);">Repuestos Mineros · Road FTL</span></td>
+          <td style="font-family: 'IBM Plex Mono', monospace; font-weight: 700;">$2,000 USD</td>
+          <td><span class="cm-pill pending">CONFIRMED (READY)</span></td>
+          <td>
+            <a href="05_smart_dispatch_status.html" class="cm-btn cm-btn-sm" style="background: var(--brass-mid); color: #211500; font-weight: 700;">
+              Orquestar WebMCP ⚡
+            </a>
+          </td>
+        </tr>
+
+        <!-- In Transit Row -->
+        <tr>
+          <td><span style="font-family: 'IBM Plex Mono', monospace;">FR-0988</span></td>
+          <td><strong>Arequipa (PE) → Antofagasta (CL)</strong></td>
+          <td>12,000 kg (Maquinaria) · Road FTL</td>
+          <td style="font-family: 'IBM Plex Mono', monospace;">$2,400 USD</td>
+          <td><span class="cm-pill confirmed">IN_TRANSIT (Andes)</span></td>
+          <td>
+            <a href="09_tracking_timeline.html" class="cm-btn cm-btn-sm">
+              Ver Tracking 📍
+            </a>
+          </td>
+        </tr>
+
+        <!-- Completed Row -->
+        <tr>
+          <td><span style="font-family: 'IBM Plex Mono', monospace;">FR-0941</span></td>
+          <td><strong>Lima (PE) → Tacna (PE)</strong></td>
+          <td>6,500 kg (Insumos) · Road FTL</td>
+          <td style="font-family: 'IBM Plex Mono', monospace;">$1,100 USD</td>
+          <td><span class="cm-pill confirmed" style="background: #EAE8E0; border-color: #D5D0BE; color: #5B5748;">DELIVERED</span></td>
+          <td>
+            <a href="#" class="cm-btn cm-btn-sm" style="opacity: 0.7;">Historial</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>

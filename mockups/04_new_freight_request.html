@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CargoMesh — Nueva Solicitud de Carga (Pantalla 4)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1E9;
+    --paper-raised: #FFFFFF;
+    --ink: #1A1812;
+    --text-secondary: #5B5748;
+    --text-muted: #928D79;
+    --line: #E4E0D2;
+    --brass: #8C6316;
+    --brass-mid: #A9791F;
+    --brass-bright: #C4901F;
+    --brass-fill-soft: #F1E1BB;
+    --green: #3F6B4A;
+    --green-bg: #E1EADD;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input, select, textarea { font-family: inherit; }
+
+  a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--brass-mid);
+    outline-offset: 2px;
+  }
+
+  /* Header */
+  .cm-header {
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .cm-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .cm-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--brass-bright);
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .cm-brand-text {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+  }
+
+  .cm-wrap {
+    max-width: 920px;
+    margin: 28px auto 60px auto;
+    padding: 0 24px;
+  }
+
+  .cm-breadcrumb {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .cm-breadcrumb a { color: inherit; text-decoration: none; }
+
+  /* Stepper Header */
+  .cm-stepper {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    position: relative;
+  }
+
+  .cm-stepper::before {
+    content: "";
+    position: absolute;
+    top: 14px;
+    left: 40px;
+    right: 40px;
+    height: 2px;
+    background: var(--line);
+    z-index: 0;
+  }
+
+  .cm-step-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cm-step-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--paper-raised);
+    border: 2px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+
+  .cm-step-circle.active {
+    background: var(--brass-mid);
+    border-color: var(--brass-mid);
+    color: #211500;
+  }
+
+  .cm-step-circle.done {
+    background: var(--green-bg);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .cm-step-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-secondary);
+  }
+
+  /* Form Card */
+  .cm-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    margin-bottom: 24px;
+  }
+
+  .cm-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .cm-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 650px) {
+    .cm-form-row { grid-template-columns: 1fr; }
+  }
+
+  .cm-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+  }
+
+  .cm-input, .cm-select {
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    background: var(--paper);
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+
+  .cm-input:focus, .cm-select:focus {
+    border-color: var(--brass-mid);
+    background: #FFF;
+  }
+
+  /* Summary Box */
+  .cm-summary-box {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .cm-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    font-size: 12.5px;
+  }
+
+  @media (max-width: 650px) {
+    .cm-summary-grid { grid-template-columns: 1fr; }
+  }
+
+  .cm-sum-item .title { font-weight: 700; color: var(--text-muted); font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
+  .cm-sum-item .val { font-weight: 700; color: var(--ink); font-family: 'IBM Plex Mono', monospace; }
+
+  /* CTAs */
+  .cm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 24px;
+    border-radius: var(--radius-pill);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s ease;
+  }
+
+  .cm-btn-primary { background: var(--brass-mid); color: #211500; }
+  .cm-btn-primary:hover { background: var(--brass-bright); transform: translateY(-1px); }
+
+  .cm-btn-secondary { background: transparent; border: 1px solid var(--line); color: var(--text-secondary); }
+  .cm-btn-secondary:hover { border-color: var(--brass-mid); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<header class="cm-header">
+  <a href="03_home_dashboard.html" class="cm-brand">
+    <div class="cm-logo">⬡</div>
+    <span class="cm-brand-text">CargoMesh</span>
+  </a>
+
+  <div style="font-size: 12px; color: var(--text-secondary);">
+    ACME Mining Corp · Carlos Mendoza
+  </div>
+</header>
+
+<div class="cm-wrap">
+  <div class="cm-breadcrumb">
+    <a href="03_home_dashboard.html">Home</a>
+    <span>/</span>
+    <span style="color: var(--brass); font-weight: 600;">Nueva Solicitud de Carga</span>
+  </div>
+
+  <h1 style="font-family: 'Overpass', sans-serif; font-size: 24px; font-weight: 800; margin: 0 0 24px 0;">
+    Crear Solicitud de Transporte B2B (FreightRequest)
+  </h1>
+
+  <!-- 5-Step Stepper -->
+  <div class="cm-stepper">
+    <div class="cm-step-node">
+      <div class="cm-step-circle done">✓</div>
+      <div class="cm-step-label">1. Organización</div>
+    </div>
+    <div class="cm-step-node">
+      <div class="cm-step-circle done">✓</div>
+      <div class="cm-step-label">2. Ruta PE-CL</div>
+    </div>
+    <div class="cm-step-node">
+      <div class="cm-step-circle done">✓</div>
+      <div class="cm-step-label">3. Carga FTL</div>
+    </div>
+    <div class="cm-step-node">
+      <div class="cm-step-circle done">✓</div>
+      <div class="cm-step-label">4. Políticas</div>
+    </div>
+    <div class="cm-step-node">
+      <div class="cm-step-circle active">5</div>
+      <div class="cm-step-label" style="color: var(--brass);">5. Confirmar</div>
+    </div>
+  </div>
+
+  <!-- Form Review Card -->
+  <div class="cm-card">
+    <h2 style="font-family: 'Overpass', sans-serif; font-size: 18px; font-weight: 800; margin: 0 0 16px 0;">
+      Resumen de Solicitud (Golden Flow FR-1042)
+    </h2>
+
+    <div class="cm-summary-box">
+      <div class="cm-summary-grid">
+        <div class="cm-sum-item">
+          <div class="title">Ruta Internacional</div>
+          <div class="val" style="font-family: 'Inter', sans-serif;">Callao/Lima (PE) → Santiago (CL)</div>
+        </div>
+        <div class="cm-sum-item">
+          <div class="title">Carga & Modalidad</div>
+          <div class="val">8,000 kg (10 Pallets FTL)</div>
+        </div>
+        <div class="cm-sum-item">
+          <div class="title">Presupuesto Máximo</div>
+          <div class="val" style="color: var(--brass);">$2,000 USD</div>
+        </div>
+        <div class="cm-sum-item">
+          <div class="title">Categoría de Carga</div>
+          <div class="val" style="font-family: 'Inter', sans-serif;">Repuestos Mineros (Maquinaria)</div>
+        </div>
+        <div class="cm-sum-item">
+          <div class="title">Estrategia de Selección</div>
+          <div class="val">BALANCED (P0)</div>
+        </div>
+        <div class="cm-sum-item">
+          <div class="title">Documentos Adjuntos</div>
+          <div class="val" style="color: var(--green);">Factura + Packing List ✓</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hard Constraint Pre-Check -->
+    <div style="background: var(--green-bg); border: 1px solid rgba(63, 107, 74, 0.3); padding: 14px 18px; border-radius: var(--radius-sm); font-size: 12.5px; color: var(--green); margin-bottom: 24px; line-height: 1.5;">
+      <strong>✓ Validación de Restricciones Duras Superada:</strong> El peso (8,000 kg) cumple con la capacidad mínima de semi-trailers FTL, el corredor internacional está habilitado con aduana Santa Rosa/Chacalluta y el presupuesto corporativo es suficiente.
+    </div>
+
+    <div style="display: flex; gap: 14px; justify-content: flex-end;">
+      <a href="03_home_dashboard.html" class="cm-btn cm-btn-secondary">
+        Cancelar
+      </a>
+      <a href="05_smart_dispatch_status.html" class="cm-btn cm-btn-primary">
+        <span>Confirmar Solicitud y Orquestar con WebMCP →</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

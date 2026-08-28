@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CargoMesh — Registro de Organización B2B (Pantalla 1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1E9;
+    --paper-raised: #FFFFFF;
+    --ink: #1A1812;
+    --text-secondary: #5B5748;
+    --text-muted: #928D79;
+    --line: #E4E0D2;
+    --brass: #8C6316;
+    --brass-mid: #A9791F;
+    --brass-bright: #C4901F;
+    --brass-fill-soft: #F1E1BB;
+    --green: #3F6B4A;
+    --green-bg: #E1EADD;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .cm-wrap {
+    max-width: 580px;
+    margin: 60px auto;
+    padding: 0 24px;
+  }
+
+  .cm-brand-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 28px;
+    text-align: center;
+  }
+
+  .cm-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--brass-bright);
+    font-size: 22px;
+    font-weight: 800;
+  }
+
+  .cm-title {
+    font-family: 'Overpass', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .cm-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  }
+
+  .cm-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+
+  .cm-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+  }
+
+  .cm-input {
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    background: var(--paper);
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+
+  .cm-input:focus {
+    outline: 2px solid var(--brass-mid);
+    background: #FFF;
+  }
+
+  .cm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 14px;
+    border-radius: var(--radius-pill);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    background: var(--brass-mid);
+    color: #211500;
+    margin-top: 10px;
+    transition: all 0.15s ease;
+  }
+
+  .cm-btn:hover {
+    background: var(--brass-bright);
+  }
+</style>
+</head>
+<body>
+
+<div class="cm-wrap">
+  <div class="cm-brand-center">
+    <div class="cm-logo">⬡</div>
+    <h1 class="cm-title">Alta de Empresa en CargoMesh</h1>
+    <div style="font-size: 13px; color: var(--text-secondary);">
+      Orquestación Agent-Native de Transporte de Carga B2B
+    </div>
+  </div>
+
+  <div class="cm-card">
+    <div class="cm-form-group">
+      <label class="cm-label">Razón Social de la Empresa</label>
+      <input type="text" class="cm-input" value="ACME Mining Corp S.A.">
+    </div>
+
+    <div class="cm-form-group">
+      <label class="cm-label">País de Operación Principal</label>
+      <input type="text" class="cm-input" value="Perú (PE)">
+    </div>
+
+    <div class="cm-form-group">
+      <label class="cm-label">Identificador Tributario (RUC / Tax ID)</label>
+      <input type="text" class="cm-input" value="20491827361" style="font-family: 'IBM Plex Mono', monospace;">
+    </div>
+
+    <div class="cm-form-group">
+      <label class="cm-label">Correo Corporativo Verificado 🔒</label>
+      <input type="email" class="cm-input" value="carlos.mendoza@acmemining.pe">
+      <span style="font-size: 11px; color: var(--green); font-weight: 600; margin-top: 2px;">
+        ✓ Dominio corporativo verificado para políticas y facturación
+      </span>
+    </div>
+
+    <div class="cm-form-group">
+      <label class="cm-label">Teléfono Corporativo</label>
+      <input type="text" class="cm-input" value="+51 1 619 4000">
+    </div>
+
+    <a href="02_organization_profile.html" class="cm-btn">
+      Registrar Organización y Configurar Políticas →
+    </a>
+  </div>
+</div>
+
+</body>
+</html>

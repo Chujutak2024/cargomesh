@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CargoMesh — Facturación y Pagos Corporativos (Pantalla 12)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1E9;
+    --paper-raised: #FFFFFF;
+    --ink: #1A1812;
+    --text-secondary: #5B5748;
+    --text-muted: #928D79;
+    --line: #E4E0D2;
+    --brass: #8C6316;
+    --brass-mid: #A9791F;
+    --brass-bright: #C4901F;
+    --brass-fill-soft: #F1E1BB;
+    --green: #3F6B4A;
+    --green-bg: #E1EADD;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .cm-wrap { max-width: 680px; margin: 50px auto; padding: 0 24px; }
+
+  .cm-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  .cm-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 18px;
+    margin-bottom: 22px;
+  }
+
+  .cm-title {
+    font-family: 'Overpass', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .cm-mode-card {
+    background: #FFFCF7;
+    border: 2px solid var(--brass-mid);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    margin-bottom: 20px;
+  }
+
+  .cm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 13px;
+    border-radius: var(--radius-pill);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    background: var(--brass-mid);
+    color: #211500;
+    border: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="cm-wrap">
+  <div class="cm-card">
+    <div class="cm-head">
+      <h1 class="cm-title">Facturación & Modalidad de Pago B2B</h1>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--brass); font-weight: 700;">FR-1042</span>
+    </div>
+
+    <!-- Mode 1: Corporate Account (P0 Default) -->
+    <div class="cm-mode-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <strong style="font-family: 'Overpass', sans-serif; font-size: 16px;">Cuenta Corporativa / Factura Mensual (P0)</strong>
+        <span style="background: var(--green-bg); color: var(--green); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-pill); font-family: 'IBM Plex Mono', monospace;">ACTIVA</span>
+      </div>
+      <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 12px 0;">
+        Los fletes contratados con Andes Freight ($1,760 USD) se liquidan contra la línea de crédito corporativa de ACME Mining Corp (Términos Net 30).
+      </p>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-secondary);">
+        RUC Facturación: <strong>20491827361</strong> · Moneda: <strong>USD ($)</strong>
+      </div>
+    </div>
+
+    <!-- Security Declaration -->
+    <div style="background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px; font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 22px;">
+      🔒 <strong>Garantía de Seguridad (Sección 21.12):</strong> CargoMesh nunca almacena ni captura datos de tarjetas de crédito o pasarelas financieras en sus servidores. Si un proveedor no afiliado exige pago inmediato, el agente redirige al checkout seguro del carrier.
+    </div>
+
+    <a href="07_booking_request_status.html?carrier=andes" class="cm-btn">
+      Continuar a Confirmación de Reserva →
+    </a>
+  </div>
+</div>
+
+</body>
+</html>

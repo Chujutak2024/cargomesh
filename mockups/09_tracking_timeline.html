@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CargoMesh — Seguimiento de Despacho Internacional FTL (Pantalla 9)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1E9;
+    --paper-raised: #FFFFFF;
+    --ink: #1A1812;
+    --text-secondary: #5B5748;
+    --text-muted: #928D79;
+    --line: #E4E0D2;
+    --brass: #8C6316;
+    --brass-mid: #A9791F;
+    --brass-bright: #C4901F;
+    --brass-fill-soft: #F1E1BB;
+    --green: #3F6B4A;
+    --green-bg: #E1EADD;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input { font-family: inherit; }
+
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--brass-mid);
+    outline-offset: 2px;
+  }
+
+  /* Staging Banner */
+  .cm-staging-bar {
+    background: #11100C;
+    border-bottom: 1px solid #2B261D;
+    color: #F3F1E9;
+    padding: 8px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11.5px;
+  }
+
+  .cm-staging-badge {
+    background: #242017;
+    border: 1px solid #3A3323;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    color: #E6D0A6;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+  }
+
+  /* Header */
+  .cm-header {
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .cm-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .cm-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--brass-bright);
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .cm-brand-text {
+    font-family: 'Overpass', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+  }
+
+  .cm-wrap {
+    max-width: 1120px;
+    margin: 28px auto 60px auto;
+    padding: 0 24px;
+  }
+
+  .cm-breadcrumb {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .cm-breadcrumb a { color: inherit; text-decoration: none; }
+
+  .cm-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .cm-title {
+    font-family: 'Overpass', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.02em;
+  }
+
+  .cm-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .cm-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--brass-fill-soft);
+    border: 1px solid var(--brass-mid);
+    color: var(--ink);
+  }
+
+  .cm-pulse {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--brass-bright);
+    box-shadow: 0 0 0 3px rgba(196, 144, 31, 0.3);
+  }
+
+  /* Grid Layout */
+  .cm-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 24px;
+  }
+
+  @media (max-width: 900px) {
+    .cm-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Card */
+  .cm-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  }
+
+  /* Key Trip Stats */
+  .cm-trip-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    background: var(--paper);
+    padding: 14px;
+    border-radius: var(--radius-md);
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 650px) {
+    .cm-trip-stats { grid-template-columns: 1fr 1fr; }
+  }
+
+  .cm-stat-box .label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .cm-stat-box .val {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+  }
+
+  .cm-stat-box .code { font-family: 'IBM Plex Mono', monospace; }
+
+  /* Timeline */
+  .cm-timeline {
+    position: relative;
+    border-left: 2px solid var(--line);
+    margin-left: 14px;
+    padding-left: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .cm-milestone {
+    position: relative;
+  }
+
+  .cm-node {
+    position: absolute;
+    left: -35px;
+    top: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 2px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .cm-node.done {
+    background: var(--brass);
+    border-color: var(--brass);
+    color: #FFF;
+  }
+
+  .cm-node.active {
+    background: var(--brass-bright);
+    border-color: var(--brass-mid);
+    color: #211500;
+    box-shadow: 0 0 0 4px var(--brass-fill-soft);
+  }
+
+  .cm-milestone-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+  }
+
+  .cm-milestone-title {
+    font-family: 'Overpass', sans-serif;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .cm-milestone-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .cm-milestone-desc {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    background: var(--paper);
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    line-height: 1.5;
+  }
+
+  .cm-milestone.active-item .cm-milestone-desc {
+    background: var(--brass-fill-soft);
+    border-color: var(--brass-mid);
+    color: #2E1F00;
+  }
+
+  /* Inspector */
+  .cm-inspector {
+    background: #11100C;
+    border: 1px solid #2B261D;
+    border-radius: var(--radius-md);
+    padding: 16px;
+    color: #F3F1E9;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    margin-bottom: 20px;
+  }
+
+  .cm-inspector-head {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #2B261D;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    color: var(--brass-bright);
+    font-weight: 700;
+  }
+
+  .cm-inspector pre {
+    margin: 0;
+    padding: 10px;
+    background: #090805;
+    border-radius: 4px;
+    color: #E6D0A6;
+    overflow-x: auto;
+    line-height: 1.5;
+    max-height: 280px;
+  }
+
+  /* Customs Card */
+  .cm-customs-box {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    font-size: 12px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+
+  .cm-customs-box strong { color: var(--ink); }
+
+  /* CTAs */
+  .cm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 18px;
+    border-radius: var(--radius-pill);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 13.5px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s ease;
+  }
+
+  .cm-btn-primary {
+    background: var(--brass-mid);
+    color: #211500;
+  }
+
+  .cm-btn-primary:hover { background: var(--brass-bright); }
+
+  .cm-btn-secondary {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    color: var(--text-secondary);
+    margin-top: 10px;
+  }
+
+  .cm-btn-secondary:hover { border-color: var(--brass-mid); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- Staging Banner -->
+<div class="cm-staging-bar">
+  <div>
+    <strong>🧪 CARGOMESH JUDGE MODE</strong> · Pantalla 9: Tracking & Hitos de Aduana (Post-Confirmación)
+  </div>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <span class="cm-staging-badge">Ref: AND-BOOK-8821</span>
+    <span class="cm-staging-badge">Tool: get_provider_booking_status</span>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="cm-header">
+  <a href="03_home_dashboard.html" class="cm-brand">
+    <div class="cm-logo">⬡</div>
+    <span class="cm-brand-text">CargoMesh</span>
+  </a>
+
+  <div style="font-size: 12px; color: var(--text-secondary);">
+    ACME Mining Corp · <strong>Lima, PE</strong>
+  </div>
+</header>
+
+<div class="cm-wrap">
+  <!-- Breadcrumb -->
+  <div class="cm-breadcrumb">
+    <a href="03_home_dashboard.html">Home</a>
+    <span>/</span>
+    <a href="07_booking_request_status.html">Reserva AND-BOOK-8821</a>
+    <span>/</span>
+    <span style="color: var(--brass); font-weight: 600;">Seguimiento en Vivo (Tracking)</span>
+  </div>
+
+  <!-- Title Row -->
+  <div class="cm-title-row">
+    <div>
+      <h1 class="cm-title">Seguimiento de Despacho Internacional FTL</h1>
+      <div class="cm-subtitle">
+        Andes Freight S.A. · Corredor Callao/Lima (PE) → Santiago (CL) · Scania R450 18t · FTL 8,000 kg
+      </div>
+    </div>
+
+    <div class="cm-status-pill">
+      <span class="cm-pulse"></span>
+      <span>BORDER_PROCESSING (MIC/DTA)</span>
+    </div>
+  </div>
+
+  <div class="cm-grid">
+    <!-- Left: Timeline -->
+    <div class="cm-card">
+      <div class="cm-trip-stats">
+        <div class="cm-stat-box">
+          <div class="label">Booking Ref</div>
+          <div class="val code" style="color: var(--brass);">AND-BOOK-8821</div>
+        </div>
+        <div class="cm-stat-box">
+          <div class="label">Unidad Asignada</div>
+          <div class="val">Scania R450 (18t)</div>
+        </div>
+        <div class="cm-stat-box">
+          <div class="label">Tarifa Cerrada</div>
+          <div class="val code">$1,760 USD</div>
+        </div>
+        <div class="cm-stat-box">
+          <div class="label">ETA Estimada</div>
+          <div class="val">31 horas (Mañana 15:00)</div>
+        </div>
+      </div>
+
+      <!-- Stepper Timeline -->
+      <h2 style="font-family: 'Overpass', sans-serif; font-size: 16px; font-weight: 700; margin: 0 0 20px 0;">
+        Hitos del Corredor Internacional (booking_events)
+      </h2>
+
+      <div class="cm-timeline">
+        <!-- Milestone 1: Confirmed -->
+        <div class="cm-milestone">
+          <div class="cm-node done">✓</div>
+          <div class="cm-milestone-head">
+            <span class="cm-milestone-title">1. Reserva Confirmada vía WebMCP</span>
+            <span class="cm-milestone-time">Ayer 10:05</span>
+          </div>
+          <div class="cm-milestone-desc">
+            Andes Freight confirmó la reserva mediante <code>get_provider_booking_status()</code>. Tarifa bloqueada en $1,760 USD.
+          </div>
+        </div>
+
+        <!-- Milestone 2: Pickup Scheduled -->
+        <div class="cm-milestone">
+          <div class="cm-node done">✓</div>
+          <div class="cm-milestone-head">
+            <span class="cm-milestone-title">2. Recojo Programado en Almacén Callao</span>
+            <span class="cm-milestone-time">Ayer 12:00</span>
+          </div>
+          <div class="cm-milestone-desc">
+            Ventana asignada en Almacén Central Callao (Puerta 4). Conductor asignado por el carrier: Unidad Scania R450 placa AND-TRK-101.
+          </div>
+        </div>
+
+        <!-- Milestone 3: Picked Up -->
+        <div class="cm-milestone">
+          <div class="cm-node done">✓</div>
+          <div class="cm-milestone-head">
+            <span class="cm-milestone-title">3. Carga Estibada & Manifiesto Emitido</span>
+            <span class="cm-milestone-time">Hoy 08:30</span>
+          </div>
+          <div class="cm-milestone-desc">
+            10 pallets estibados conforme (8,000 kg). Precinto de seguridad aduanero <strong>AND-SL-9081</strong> colocado.
+          </div>
+        </div>
+
+        <!-- Milestone 4: In Transit -->
+        <div class="cm-milestone">
+          <div class="cm-node done">✓</div>
+          <div class="cm-milestone-head">
+            <span class="cm-milestone-title">4. En Tránsito por Panamericana Sur</span>
+            <span class="cm-milestone-time">Hoy 11:15</span>
+          </div>
+          <div class="cm-milestone-desc">
+            Unidad en ruta nominal hacia el sur (Ica/Arequipa/Tacna). Condiciones mecánicas óptimas.
+          </div>
+        </div>
+
+        <!-- Milestone 5: Border Processing (ACTIVE) -->
+        <div class="cm-milestone active-item">
+          <div class="cm-node active">⬡</div>
+          <div class="cm-milestone-head">
+            <span class="cm-milestone-title" style="color: var(--brass);">5. Trámite Fronterizo MIC/DTA (En Curso)</span>
+            <span class="cm-milestone-time" style="color: var(--brass); font-weight: 700;">ACTUAL</span>
+          </div>
+          <div class="cm-milestone-desc">
+            Arribo al Complejo Fronterizo Santa Rosa (Tacna, PE) / Chacalluta (Arica, CL). El carrier coordina la transmisión electrónica del Manifiesto Internacional de Carga (MIC/DTA).
+          </div>
+        </div>
+
+        <!-- Milestone 6: Customs Cleared -->
+        <div class="cm-milestone">
+          <div class="cm-node">6</div>
+          <div class="cm-milestone-head">
+            <span class="cm-milestone-title" style="color: var(--text-muted);">6. Autorización Aduanera de Ingreso a Chile</span>
+            <span class="cm-milestone-time">Estimado 16:00</span>
+          </div>
+          <div class="cm-milestone-desc" style="opacity: 0.7;">
+            Evento reportado por el transportista tras la validación física y documental en Aduana de Arica.
+          </div>
+        </div>
+
+        <!-- Milestone 7: Delivered -->
+        <div class="cm-milestone">
+          <div class="cm-node">7</div>
+          <div class="cm-milestone-head">
+            <span class="cm-milestone-title" style="color: var(--text-muted);">7. Entrega Conforme en Santiago</span>
+            <span class="cm-milestone-time">Mañana 15:00</span>
+          </div>
+          <div class="cm-milestone-desc" style="opacity: 0.7;">
+            Recepción en Centro de Distribución Santiago con firma de guía de despacho.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Live WebMCP Inspector & Customs Notes -->
+    <div style="display: flex; flex-direction: column;">
+      <!-- WebMCP Live Inspector -->
+      <div class="cm-inspector">
+        <div class="cm-inspector-head">
+          <span>WebMCP: get_provider_booking_status</span>
+          <span style="color: #928D79; font-weight: normal;">AND-BOOK-8821</span>
+        </div>
+        <pre>{
+  "booking_id": "bk-8821-uuid-0001",
+  "provider_reference": "AND-BOOK-8821",
+  "provider_booking_status": "BORDER_PROCESSING",
+  "current_location": "Paso Santa Rosa / Chacalluta",
+  "customs_mic_dta": "TRANSMITTING",
+  "seal_number": "AND-SL-9081",
+  "required_documents": [
+    "commercial_invoice",
+    "packing_list"
+  ],
+  "updated_eta": "2026-09-01T15:00:00Z"
+}</pre>
+      </div>
+
+      <!-- Customs Coordination Callout -->
+      <div class="cm-card">
+        <h3 style="font-family: 'Overpass', sans-serif; font-size: 15px; font-weight: 700; margin: 0 0 10px 0;">
+          Coordinación Aduanera Cross-Border
+        </h3>
+
+        <div class="cm-customs-box">
+          <div><strong>Trámite:</strong> Manifiesto Internacional de Carga / Declaración de Tránsito Aduanero (MIC/DTA).</div>
+          <div style="margin-top: 4px;"><strong>Documentos Validados:</strong> Factura Comercial + Packing List adjuntos.</div>
+          <div style="margin-top: 4px;"><strong>Nota de Contrato:</strong> CargoMesh muestra los hitos reportados por Andes Freight; el carrier asume la gestión documental en frontera.</div>
+        </div>
+
+        <button type="button" onclick="alert('Descargando copia digital del manifiesto MIC/DTA...')" class="cm-btn cm-btn-primary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Descargar Manifiesto MIC/DTA</span>
+        </button>
+
+        <a href="06_carrier_offer_cards.html" class="cm-btn cm-btn-secondary">
+          Ver Decisión & Explicabilidad
+        </a>
+
+        <a href="03_home_dashboard.html" class="cm-btn cm-btn-secondary">
+          Volver al Home
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

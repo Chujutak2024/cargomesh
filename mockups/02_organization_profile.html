@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CargoMesh — Perfil Corporativo (Pantalla 2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1E9;
+    --paper-raised: #FFFFFF;
+    --ink: #1A1812;
+    --text-secondary: #5B5748;
+    --text-muted: #928D79;
+    --line: #E4E0D2;
+    --brass: #8C6316;
+    --brass-mid: #A9791F;
+    --brass-bright: #C4901F;
+    --brass-fill-soft: #F1E1BB;
+    --green: #3F6B4A;
+    --green-bg: #E1EADD;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .cm-header {
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .cm-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
+  .cm-logo { width: 32px; height: 32px; border-radius: 8px; background: var(--ink); display: flex; align-items: center; justify-content: center; color: var(--brass-bright); font-size: 16px; font-weight: 800; }
+  .cm-brand-text { font-family: 'Overpass', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: -0.02em; }
+
+  .cm-wrap { max-width: 1000px; margin: 30px auto 60px auto; padding: 0 24px; }
+
+  .cm-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    margin-bottom: 24px;
+  }
+
+  .cm-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 700px) { .cm-grid-2 { grid-template-columns: 1fr; } }
+
+  .cm-item .label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
+  .cm-item .val { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .cm-item .code { font-family: 'IBM Plex Mono', monospace; }
+
+  .cm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: var(--radius-pill);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 13.5px;
+    text-decoration: none;
+    cursor: pointer;
+    background: var(--brass-mid);
+    color: #211500;
+    border: none;
+  }
+</style>
+</head>
+<body>
+
+<header class="cm-header">
+  <a href="03_home_dashboard.html" class="cm-brand">
+    <div class="cm-logo">⬡</div>
+    <span class="cm-brand-text">CargoMesh</span>
+  </a>
+
+  <div style="font-size: 12px; color: var(--text-secondary);">
+    Perfil Corporativo Verificado 🔒
+  </div>
+</header>
+
+<div class="cm-wrap">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+      <h1 style="font-family: 'Overpass', sans-serif; font-size: 24px; font-weight: 800; margin: 0 0 4px 0;">
+        ACME Mining Corp S.A.
+      </h1>
+      <div style="font-size: 13px; color: var(--text-secondary);">
+        Cuenta Corporativa Verificada · RUC: 20491827361 · Perú (PE)
+      </div>
+    </div>
+
+    <a href="03_home_dashboard.html" class="cm-btn">
+      Ir al Dashboard →
+    </a>
+  </div>
+
+  <div class="cm-card">
+    <h2 style="font-family: 'Overpass', sans-serif; font-size: 17px; font-weight: 700; margin: 0 0 18px 0;">
+      Configuración de Seguridad & Políticas de Despacho
+    </h2>
+
+    <div class="cm-grid-2">
+      <div class="cm-item">
+        <div class="label">Correo Corporativo Verificado 🔒</div>
+        <div class="val code" style="color: var(--green);">carlos.mendoza@acmemining.pe (Verificado)</div>
+      </div>
+      <div class="cm-item">
+        <div class="label">Modo de Facturación</div>
+        <div class="val">Cuenta Corporativa / Factura Mensual (Net 30)</div>
+      </div>
+      <div class="cm-item">
+        <div class="label">Estrategia por Defecto</div>
+        <div class="val code">BALANCED (P0: Cost 25%, SLA 25%, ETA 20%)</div>
+      </div>
+      <div class="cm-item">
+        <div class="label">Umbral de Auto-Booking</div>
+        <div class="val code">Decision Confidence ≥ 85%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cm-card">
+    <h2 style="font-family: 'Overpass', sans-serif; font-size: 17px; font-weight: 700; margin: 0 0 18px 0;">
+      Miembros Autorizados de la Organización
+    </h2>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+      <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: var(--paper); border-radius: var(--radius-sm);">
+        <div><strong>Carlos Mendoza</strong> (carlos.mendoza@acmemining.pe)</div>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: var(--brass);">ADMIN / REQUESTER</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: var(--paper); border-radius: var(--radius-sm);">
+        <div><strong>Maria Ramos</strong> (maria.ramos@acmemining.pe)</div>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: var(--text-secondary);">FINANCE / AUDITOR</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
