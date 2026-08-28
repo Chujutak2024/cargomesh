@@ -1,292 +1,278 @@
 # CargoMesh ⬡
 
-> **Agent-Native Autonomous Freight Orchestration for Cross-Border B2B Logistics**  
-> *Built for the WebMCP Challenge 2026*
+> **Autonomous Agentic Freight Orchestration for Cross-Border B2B Logistics**  
+> *Technical Specification & Contract Freeze v5.4.0 — Google WebMCP Challenge 2026*
 
-[![WebMCP Challenge 2026](https://img.shields.io/badge/WebMCP_Challenge-2026-8C6316?style=for-the-badge&logo=google-chrome&logoColor=white)](https://github.com/Chujutak2024/cargomesh)
-[![Next.js 14](https://img.shields.io/badge/Next.js-14.2_App_Router-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL_RLS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-Warm_Editorial-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![WebMCP Challenge 2026](https://img.shields.io/badge/WebMCP_Challenge-2026_Official-8C6316?style=for-the-badge&logo=google-chrome&logoColor=white)](https://github.com/Chujutak2024/cargomesh)
+[![Contract Freeze v5.4.0](https://img.shields.io/badge/Contract_Freeze-v5.4.0_FINAL-3178C6?style=for-the-badge&logo=semantic-release&logoColor=white)](docs/CargoMesh_Planeacion_WebMCP_FINAL.md)
+[![Protocol](https://img.shields.io/badge/Protocol-Browser_Native_WebMCP-38B2AC?style=for-the-badge&logo=w3c&logoColor=white)](https://github.com/Chujutak2024/cargomesh)
+[![Backend](https://img.shields.io/badge/Backend-Supabase_PostgreSQL_RLS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+
+---
+
+## 📑 Specification Metadata
+
+| Parameter | Specification Value |
+|:---|:---|
+| **Project Name** | **CargoMesh Network** |
+| **Document Version** | `v5.4.0` *(Technical Contract Freeze — Product & Protocol Contract Frozen)* |
+| **Root Commercial Entity** | `FreightRequest` *(Dedicated B2B Freight Demand)* |
+| **Core Protocol** | **WebMCP Browser-Native API** (`document.modelContext.registerTool`) |
+| **Transport Mode & Service** | **ROAD / FTL** *(Full Truckload, Dedicated Capacity)* |
+| **Demo Corridor** | **Callao / Lima, Peru $\longrightarrow$ Santiago, Chile** *(International Cross-Border Pan-American Corridor)* |
+| **Operational Currency** | **USD ($)** |
 
 ---
 
 ## 📖 Table of Contents
-1. [Executive Summary](#-executive-summary)
-2. [The Problem in B2B Freight](#-the-problem-in-b2b-freight)
-3. [Why WebMCP? (The Agent-Native Shift)](#-why-webmcp-the-agent-native-shift)
-4. [System Architecture & Lifecycle Flow](#-system-architecture--lifecycle-flow)
-5. [Multi-Criteria Decision Engine](#-multi-criteria-decision-engine)
-6. [International Cross-Border Golden Flows](#-international-cross-border-golden-flows)
-7. [Database Design & Security Hardening](#-database-design--security-hardening)
-8. [WebMCP Tool Contract](#-webmcp-tool-contract)
-9. [Project Directory Structure](#-project-directory-structure)
-10. [Getting Started & Local Setup](#-getting-started--local-setup)
-11. [Built With & Technology Stack](#️-built-with--technology-stack)
-12. [Hackathon Team & Acknowledgments](#-hackathon-team--acknowledgments)
+1. [Executive Summary & Official North Star](#-executive-summary--official-north-star)
+2. [Canonical Transparency Declaration & Causality Rule](#-canonical-transparency-declaration--causality-rule)
+3. [Architectural Triad & Strict Separation of Concerns](#-architectural-triad--strict-separation-of-concerns)
+4. [The Four Data Classes](#-the-four-data-classes)
+5. [Transactional Decoupling & The Result Bridge](#-transactional-decoupling--the-result-bridge)
+6. [Deterministic Decision Engine & Balanced Formulas](#-deterministic-decision-engine--balanced-formulas)
+7. [Decision Confidence Score & Anomaly Guard](#-decision-confidence-score--anomaly-guard)
+8. [International Golden Flow Scenario Matrix](#-international-golden-flow-scenario-matrix)
+9. [Database Schema Architecture (14 Domain + 2 Observability Tables)](#-database-schema-architecture-14-domain--2-observability-tables)
+10. [WebMCP Tool Contract Specification](#-webmcp-tool-contract-specification)
+11. [73-Point Acceptance Test Summary](#-73-point-acceptance-test-summary)
+12. [Repository Structure Map](#-repository-structure-map)
 
 ---
 
-## ⚡ Executive Summary
+## ⚡ Executive Summary & Official North Star
 
-**CargoMesh** is an agent-native logistics control tower that automates commercial freight dispatch across South America (e.g., the **Lima, Peru → Santiago, Chile** international corridor). 
+**CargoMesh** is an agent-native B2B freight orchestration platform. Unlike e-commerce marketplaces (which start with a product, purchase, and consumer delivery), CargoMesh operates on **pre-existing B2B cargo** that needs heavy freight transport from origin to destination without monolithic human intermediation.
 
-Instead of forcing enterprise shippers to manually search load boards, call dispatchers, or scrape fragmented portals, CargoMesh transforms commercial transport into an autonomous, intent-driven experience:
-
-$$\text{Client Expresses Logistics Intent} \longrightarrow \text{WebMCP Discovery} \longrightarrow \text{Multi-Criteria Evaluation} \longrightarrow \text{Auto-Booking} \longrightarrow \text{Milestone Tracking}$$
-
-CargoMesh coordinates directly with carrier web interfaces via **WebMCP** (`document.modelContext.registerTool`), evaluates hard constraints and historical reliability, executes binding bookings, and tracks shipments through international border crossings—escalating to human supervisors only when genuine exceptions arise.
-
----
-
-## 🛑 The Problem in B2B Freight
-
-Traditional freight procurement is burdened by three critical bottlenecks:
-1. **Opaque & Fragmented Portals**: Every carrier maintains proprietary portals or dispatch desks. Shippers spend hours manually checking availability, entering identical data across 5+ sites, or relying on fragile browser scraping.
-2. **Superficial Price-Only Decisions**: Shippers often select the lowest sticker price, only to incur catastrophic delays, customs penalties, and cargo abandonment due to poor carrier SLA.
-3. **Cross-Border Bureaucracy**: International transit across Latin America requires strict customs coordination (e.g., Peru-Chile **MIC/DTA** transit manifests). Lack of verified carrier cross-border capabilities leads to border impoundment.
-
----
-
-## 🌐 Why WebMCP? (The Agent-Native Shift)
-
-WebMCP enables web applications to expose structured JavaScript tools directly to AI agents via the browser context.
+### The Official North Star:
+> *"An authenticated enterprise creates a `FreightRequest`; the AI agent navigates participating carrier websites via WebMCP, retrieves real structured responses from deterministic provider fixtures, CargoMesh validates and persists those results into its database, the customer selects an eligible alternative, the carrier confirms or rejects the booking, and the system maintains operational continuity through live milestone tracking or automated recovery."*
 
 ```mermaid
 graph TD
-    subgraph Carrier Web Page [Carrier Portal: Andes / Inca / Pacific]
-        A["document.modelContext.registerTool()"] --> B["check_service_coverage()"]
-        A --> C["check_capacity()"]
-        A --> D["quote_freight()"]
-        A --> E["book_freight()"]
-        A --> F["get_booking_status()"]
-    end
-
-    subgraph CargoMesh Orchestrator [CargoMesh Agent]
-        G["Orchestration Engine"] -->|Discover Tools| A
-        G -->|Structured Inputs| B
-        G -->|Structured Inputs| C
-        G -->|Structured Inputs| D
-        G -->|Execute Booking| E
-        G -->|Track Milestones| F
-    end
+    A["🏢 Authenticated Organization (ACME Mining)"] --> B["📋 Confirmed FreightRequest (FR-1042)"]
+    B --> C["🚀 Start Orchestration Run"]
+    C --> D["🌐 Agent Navigates Carrier Web Pages (Full Document Navigation)"]
+    D --> E["🛠️ WebMCP Provider Tools (Andes / Inca / Pacific)"]
+    E --> F["📦 Structured Provider Results"]
+    F --> G["🌉 CargoMesh Result Bridge (record_provider_result)"]
+    G --> H["💾 CarrierOffers Persisted (DB Runtime)"]
+    H --> I["⚖️ Deterministic Decision Engine (BALANCED)"]
+    I --> J["✨ OPTIONS_READY (Recommendations Presented)"]
+    J --> K["👤 Human Selection / Smart Auto Policy"]
+    K --> L["📑 book_freight() Provider Request"]
+    L --> M["⏳ PENDING_PROVIDER_CONFIRMATION"]
+    M -->|CONFIRMED| N["📍 Live Tracking & Customs Timeline (get_provider_booking_status)"]
+    M -->|REJECTED / EXPIRED| O["🔄 Automated Recovery Run (Fresh Provider Evaluation)"]
+    N --> P["🏁 DELIVERED (COMPLETED)"]
 ```
-
-### Key Advantages:
-- **Zero DOM Scraping**: Eliminates brittle CSS selectors; agents interact via validated JSON Schemas.
-- **Provider Autonomy**: Carriers retain control over dynamic pricing algorithms and fleet visibility.
-- **Bi-directional Capability**: The carrier web app provides structured responses while displaying real-time inspection feedback for judges and human supervisors.
 
 ---
 
-## 🏗️ System Architecture & Lifecycle Flow
+## 🛡️ Canonical Transparency Declaration & Causality Rule
 
-CargoMesh implements a 6-stage autonomous dispatch pipeline:
+### 1.1 Canonical Declaration of Transparency
+> **"Carrier base data and responses are deterministic demo fixtures residing in carrier web pages. WebMCP tool execution, structured result transfer, database persistence, mathematical scoring, human selection, booking lifecycle, provider acknowledgement, and recovery mechanisms are 100% real."**
+
+### 1.2 Strict Causality Rule (Anti-Fake Demo)
+In CargoMesh, the database seed initializes **only the baseline environment** (organization account, active member, cargo categories, carriers, services, and historical metrics).
+
+**The runtime commercial tables start completely empty for `FR-1042`:**
+```text
+carrier_offers       = EMPTY
+freight_decisions    = EMPTY
+bookings             = EMPTY
+booking_events       = EMPTY
+orchestration_runs   = EMPTY
+orchestration_events = EMPTY
+```
+These entities are **born strictly and exclusively** through the real runtime execution of the agent browsing carrier web pages and invoking WebMCP tools.
+
+---
+
+## 🏛️ Architectural Triad & Strict Separation of Concerns
+
+To prevent Large Language Model hallucinations in mission-critical commercial logistics, CargoMesh enforces a strict three-tier decoupled architecture:
+
+```mermaid
+flowchart LR
+    subgraph WebMCP ["🌐 WebMCP Layer (document.modelContext)"]
+        W1["Exposes structured capabilities directly from carrier web pages"]
+        W2["Answers: 'What can this web app do and how can an agent invoke it structuredly?'"]
+    end
+
+    subgraph Agent ["🤖 AI Agent Layer"]
+        A1["Natural language comprehension, missing data extraction, workflow synthesis"]
+        A2["Answers: 'What does the shipper need, what tools to visit, and how to communicate?'"]
+    end
+
+    subgraph Engine ["⚖️ Heuristic Decision Engine"]
+        E1["Strict mathematical hard constraint filtering, (0-100) normalization, scoring & confidence"]
+        E2["Answers: 'What is the objective, reproducible, and auditable ranking of eligible carriers?'"]
+    end
+
+    WebMCP <--> Agent
+    Agent <--> Engine
+```
+
+---
+
+## 📦 The Four Data Classes
+
+CargoMesh strictly segregates data origin and mutability into 4 isolated classes:
 
 ```text
-1. VALIDATE INTENT
-   └─ Parse origin, destination, cargo category, weight, and hard constraints.
-        ↓
-2. DISCOVER CAPABILITIES (WebMCP)
-   └─ Call check_service_coverage() & check_capacity() across registered carriers.
-        ↓
-3. COLLECT BINDING OFFERS (WebMCP)
-   └─ Call quote_freight() for itemized pricing (Base Freight + Border Handling + Insurance).
-        ↓
-4. INGEST HISTORICAL METRICS
-   └─ Query corridor SLA, on-time rate, average delay hours, and shipper history.
-        ↓
-5. MULTI-CRITERIA EVALUATION & EXPLAINABILITY
-   └─ Compute weighted score (Cost, SLA, ETA, Availability, Route History, Soft Fit).
-   └─ Run price anomaly detection & evaluate confidence threshold (>= 85%).
-        ↓
-6. AUTONOMOUS BOOKING & MILESTONE TRACKING
-   └─ High Confidence → book_freight() via WebMCP.
-   └─ Low Confidence / Anomaly → Escalate to Human Exception Queue.
-   └─ Post-booking lifecycle tracking via get_booking_status().
+1. BOOTSTRAP DATA
+   └── Registered Organization, Member, Cargo Categories, Carrier Profiles, Services, Historical Corridor Metrics.
+
+2. DEMO SCENARIO
+   └── Controlled initial state of FreightRequest FR-1042 (Callao/Lima, PE → Santiago, CL, 8,000 kg FTL, PENDING).
+
+3. PROVIDER FIXTURES
+   └── Deterministic browser-side responses residing in Andes Freight, Inca Logistics, and Pacific Cargo pages.
+
+4. RUNTIME DATA
+   └── Dynamically generated database rows: carrier_offers, freight_decisions, bookings, booking_events, orchestration_events.
 ```
 
 ---
 
-## 🧠 Multi-Criteria Decision Engine
+## 🔄 Transactional Decoupling & The Result Bridge
 
-CargoMesh does not simply pick the cheapest quote. It calculates a multi-dimensional weighted score:
+### 2.3 Transactional Decoupling Formula
+$$\text{recommended\_offer\_id} \neq \text{selected\_offer\_id} \neq \text{book\_freight()} \neq \text{get\_provider\_booking\_status() == CONFIRMED}$$
 
-$$\text{Total Score} = w_c \cdot S_{\text{cost}} + w_r \cdot S_{\text{reliability}} + w_e \cdot S_{\text{eta}} + w_a \cdot S_{\text{availability}} + w_h \cdot S_{\text{history}} + \text{Bonus}_{\text{pref}} - \text{Penalties}$$
+- `recommended_offer_id`: Computed deterministically by the Heuristic Engine.
+- `selected_offer_id`: Explicit commercial choice made by the authorized human shipper (or authorized policy).
+- `book_freight()`: Formal submission of a booking intent to the provider via WebMCP.
+- `get_provider_booking_status() == CONFIRMED`: Binding carrier acknowledgement that locks dedicated transport.
 
-### Policy Weights:
-
-| Optimization Strategy | Cost ($w_c$) | Reliability ($w_r$) | ETA ($w_e$) | Availability ($w_a$) | Route History ($w_h$) | Client History ($w_k$) |
-|:---|:---:|:---:|:---:|:---:|:---:|:---:|
-| **BALANCED (Default)** | **25%** | **25%** | **20%** | **10%** | **10%** | **10%** |
-| **LOWEST COST** | 50% | 20% | 10% | 10% | 5% | 5% |
-| **MOST RELIABLE** | 5% | 45% | 10% | 5% | 20% | 15% |
-| **FASTEST TRANSIT** | 5% | 20% | 45% | 20% | 5% | 5% |
-
-### Anomaly & Confidence Gates:
-- **Price Anomaly Detection**: Flags quotes deviating $> \pm 35\%$ from historical corridor averages.
-- **Confidence Gate**: Requires confidence score $\ge 85\%$ for auto-booking; otherwise prompts human review.
+### 3.2 Idempotent Ingestion: The Result Bridge (`record_provider_result`)
+WebMCP returns structured data to the agent in memory. CargoMesh implements a secure server-side bridge function `record_provider_result` to persist results:
+- Validates correlation between `orchestration_run_id`, `carrier_id`, and `schema_version`.
+- Guarantees strict idempotency via `tool_call_id UNIQUE` and `UNIQUE(orchestration_run_id, carrier_id, provider_offer_reference)`.
+- Simultaneously writes `orchestration_events` (for judge observability) and `carrier_offers` (for commercial evaluation).
 
 ---
 
-## 🏆 International Cross-Border Golden Flows
+## 🧮 Deterministic Decision Engine & Balanced Formulas
 
-CargoMesh demonstrates three core end-to-end evaluation scenarios:
+### 3.3 Canonical Normalization Formulas (BALANCED Strategy P0)
 
-### 🌟 Golden Flow 1: Autonomous Cross-Border FTL (Happy Path)
-- **Shipper**: ACME Mining Corp
-- **Corridor**: Lima, Peru (Callao Hub) $\rightarrow$ Santiago, Chile (3,300 km Road FTL)
-- **Cargo**: 8,000 kg, 12 crates (Mining Spare Parts), Non-refrigerated, Max Budget: $2,000 USD.
-- **WebMCP Quotes**:
-  - **Andes Freight**: **$1,760 USD** · 96% SLA · Scania R450 18t · Customs MIC/DTA included · **Score: 89 pts (WINNER)**.
-  - **Inca Logistics**: $1,920 USD · 98% SLA · Volvo FH 24t · Premium rate · Score: 84 pts.
-  - **Pacific Cargo**: $1,590 USD · 86% SLA · Freightliner 15t · 3.4h avg border delay · Score: 72 pts.
-- **Outcome**: Auto-booked with reference `AND-BOOK-8821`. Tracked through border processing at Santa Rosa / Chacalluta.
+$$\text{Final Score} = \text{round}\left( 0.25 \cdot S_{\text{cost}} + 0.25 \cdot S_{\text{reliability}} + 0.20 \cdot S_{\text{eta}} + 0.10 \cdot S_{\text{availability}} + 0.10 \cdot S_{\text{route}} + 0.10 \cdot S_{\text{history}}, 0 \right)$$
 
-### 🌟 Golden Flow 2: Soft Preference & Brand Affinity
-- **Cargo**: High-precision hydraulic pump.
-- **Preference**: Soft preference for Volvo FH heavy truck.
-- **Outcome**: Engine awards +5 points to compatible Volvo carriers, balancing brand preference against total cost.
-
-### 🌟 Golden Flow 3: Mechanical Breakdown & Human Exception Queue
-- **Scenario**: In-transit breakdown at Panamericana Km 142.
-- **Outcome**: WebMCP status updates to `DISRUPTED`. Request is pushed to `/exceptions` where an operator re-dispatches reserve capacity with a single click.
+| Dimension | Weight | Canonical Normalization Formula | Operational Meaning |
+|:---|:---:|:---|:---|
+| **Cost Score** ($S_{\text{cost}}$) | **25%** | $\frac{\text{lowest\_eligible\_price}}{\text{candidate\_price}} \times 100$ | Cheapest eligible carrier receives 100 pts. |
+| **Reliability Score** ($S_{\text{reliability}}$) | **25%** | $\text{success\_rate} = \frac{\text{successful\_trips}}{\text{completed\_trips}} \times 100$ | Derived directly from verified historical trip logs. |
+| **ETA Score** ($S_{\text{eta}}$) | **20%** | $\frac{\text{best\_transit\_hours}}{\text{candidate\_transit\_hours}} \times 100$ | Fastest transit time receives 100 pts. |
+| **Availability Score** ($S_{\text{availability}}$) | **10%** | $\text{AVAILABLE\_IN\_WINDOW} = 90 \;\vert\; \text{LIMITED\_WINDOW} = 60$ | Carrier fleet certainty class in origin hub. |
+| **Route Experience** ($S_{\text{route}}$) | **10%** | $\min(100, \text{completed\_route\_operations})$ | 1 point per completed operation, capped at 100. |
+| **Organization History** ($S_{\text{history}}$) | **10%** | $\text{org\_success\_rate} \;\vert\; 50 \text{ (neutral fallback)}$ | Neutral score (50) when no prior shipper history exists. |
 
 ---
 
-## 🗄️ Database Design & Security Hardening
+## 🎯 Decision Confidence Score & Anomaly Guard
 
-PostgreSQL schema hosted on **Supabase** with **Row-Level Security (RLS)** and integrity `CHECK` constraints:
+### 3.4 Decision Confidence Formula
+$$\text{Decision Confidence} = 0.25 \cdot \text{Completeness} + 0.20 \cdot \text{Certainty} + 0.20 \cdot \text{Evidence} + 0.15 \cdot \text{Separation} + 0.20 \cdot \text{Safety}$$
 
-```
-├── organizations                        # Shipper enterprises (ACME Mining)
-├── organization_preferences             # Optimization strategies, budget caps, thresholds
-├── users                                # Shipper operators and logistics managers
-├── cargo_categories                     # General, Machinery, Food, Pharma, HAZMAT
-├── carriers                             # Andes Freight, Inca Logistics, Pacific Cargo
-├── carrier_services                     # FTL corridor coverage & operational limits
-├── carrier_service_cargo_categories     # Category-level authorization
-├── vehicles                             # Fleet units (Scania R450, Volvo FH, Freightliner)
-├── carrier_metrics                      # Historical SLA, success rate, delay hours
-├── freight_requests                     # Client logistics intention & constraints
-├── carrier_offers                       # WebMCP itemized quotes & border coordination
-├── bookings                             # Confirmed reservations & references
-└── booking_events                       # Complete lifecycle milestone log
-```
+- **Data Completeness (100 pts)**: Verified presence of all mandatory request and provider fields.
+- **Constraint Certainty (100 pts)**: 100% of applicable hard constraints verified as `PASS`.
+- **Historical Evidence (96 pts)**: $\min(100, \text{operations}) \times \frac{\text{success\_rate}}{100} = 100 \times 0.96 = 96$.
+- **Candidate Separation (25.46 pts)**: $\min\left(100, \frac{\text{Top Score} - \text{Second Score}}{20} \times 100\right) = \frac{89.2949 - 84.2031}{20} \times 100 = 25.46$.
+- **Anomaly Safety (100 pts)**: Price deviation $\le +30\%$ against historical average.
+- **Golden Flow Decision Confidence Result**:
+  $$0.25(100) + 0.20(100) + 0.20(96) + 0.15(25.46) + 0.20(100) = \mathbf{88.02} \longrightarrow \mathbf{88 / 100}$$
 
-### Hardening Highlights:
-- **Numeric Checks**: `cargo_weight_kg > 0`, `price >= 0`, `success_rate BETWEEN 0 AND 1.0`, `confidence_score BETWEEN 0 AND 100`.
-- **Server-Side Mutation Model**: RLS policies enforce read access while mutations run through authenticated server-side handlers.
+### Price Anomaly Guard:
+$$\text{price\_deviation\_pct} = \frac{\text{quote\_price} - \text{historical\_avg}}{\text{historical\_avg}} \times 100$$
+If $\text{price\_deviation\_pct} > +30\% \implies \text{requires\_review} = \text{true}$, blocking autonomous execution.
 
 ---
 
-## 🛠️ WebMCP Tool Contract
+## 🏆 International Golden Flow Scenario Matrix
 
-Carriers register tools dynamically on their web interfaces:
+**Corridor**: Callao / Lima, Peru $\longrightarrow$ Santiago, Chile (3,300 km Road FTL)  
+**Cargo**: 10 Pallets $\times$ 800 kg = 8,000 kg (Mining Spare Parts), Budget: $2,000 USD, Strategy: `BALANCED`.
 
-| Tool Name | Scope | Description |
-|:---|:---|:---|
-| `check_service_coverage` | Provider | Verifies corridor (Lima $\rightarrow$ Santiago), transport mode (`ROAD`), and cross-border capability. |
-| `check_capacity` | Provider | Queries real-time fleet availability in origin terminal with payload verification. |
-| `quote_freight` | Provider | Emits binding FTL quotes with itemized breakdown (`base_freight`, `border_handling`, `insurance`). |
-| `book_freight` | Provider | Executes immediate reservation with carrier reference (e.g., `AND-BOOK-8821`). |
-| `get_booking_status` | Provider | Returns lifecycle status, current location, updated ETA, and milestone event timeline. |
-| `evaluate_offers` | Internal | Runs multi-criteria scoring algorithm and generates natural language explainability. |
+| Carrier Candidate | Vehicle / Capacity | WebMCP Quote & Transit | Historical SLA | Availability Class | Raw Score $\rightarrow$ Display Score |
+|:---|:---|:---|:---|:---|:---:|
+| 🥇 **Andes Freight** | **Scania R450 (18,000 kg)** | **$1,760 USD · 31h** | **100 trips · 96% SLA** | **AVAILABLE (90)** | **$89.29 \longrightarrow \mathbf{89}$ (WINNER)** |
+| 🥈 **Inca Logistics** | Volvo FH (24,000 kg) | $1,920 USD · 29h | 50 trips · 98% SLA | AVAILABLE (90) | $84.20 \longrightarrow \mathbf{84}$ |
+| 🥉 **Pacific Cargo** | Freightliner (15,000 kg) | $1,590 USD · 60h | 50 trips · 86% SLA | LIMITED (60) | $72.17 \longrightarrow \mathbf{72}$ |
 
 ---
 
-## 📁 Project Directory Structure
+## 🗄️ Database Schema Architecture (14 Domain + 2 Observability Tables)
 
 ```
 cargomesh/
-├── docs/                                # Project planning, design specs & architecture notes
-│   └── CargoMesh_Planeacion_WebMCP_v4.md
-├── mockups/                             # Standalone HTML UX contract mockups (7 screens)
-│   ├── cargomesh_home_mockup.html
-│   ├── cargomesh_request_form_mockup.html
-│   ├── cargomesh_dispatch_status_mockup.html
-│   ├── cargomesh_result_mockup.html
-│   ├── cargomesh_tracking_mockup.html
-│   ├── cargomesh_exceptions_mockup.html
-│   └── cargomesh_providers_mockup.html
-├── src/
-│   ├── app/                             # Next.js 14 App Router (15 routes)
-│   │   ├── page.tsx                     # B2B Home Dashboard & quick request
-│   │   ├── freight-request/new/         # 4-step intent capture wizard
-│   │   ├── dispatch/[id]/               # Live 6-step agent pipeline & JSON inspector
-│   │   ├── result/[id]/                 # Winner card, explainability & trade-offs
-│   │   ├── tracking/[id]/               # Cross-border milestone tracker
-│   │   ├── exceptions/                  # Human-in-the-Loop exception queue
-│   │   ├── providers/[carrier]/         # Carrier WebMCP inspection pages
-│   │   └── api/                         # Route handlers for dispatch, disruption & seed
-│   ├── features/                        # Domain logic & state
-│   │   ├── decision-engine/             # Heuristic scoring, anomaly detection, confidence
-│   │   ├── demo/                        # Judge mode & golden flow context
-│   │   ├── freight/                     # Types, domain entities & in-memory store
-│   │   └── providers/                   # Mock carrier data & corridor metrics
-│   └── webmcp/                          # WebMCP tools, polyfill & provider adapters
-├── supabase/                            # PostgreSQL migrations & seed data
-│   ├── migrations/
-│   │   ├── 001_initial_schema.sql       # 12 core tables & foreign keys
-│   │   └── 002_cross_border_tracking.sql# booking_events, cross-border fields & RLS
-│   └── seed.sql                         # Deterministic international seed
-├── package.json
-├── tailwind.config.ts                   # Warm Editorial design system
-└── tsconfig.json
+├── Business Domain Tables (14):
+│   ├── organizations                    # Shipper corporate profiles & verified emails
+│   ├── organization_members             # Authorized members & Supabase Auth bindings
+│   ├── organization_preferences         # Default strategies, thresholds, auto-recovery flags
+│   ├── cargo_categories                 # Standardized cargo taxonomy (General, Machinery, etc.)
+│   ├── freight_requests                 # Core freight intent, weights, dimensions & status
+│   ├── carriers                         # Registered transport providers (Andes, Inca, Pacific)
+│   ├── carrier_services                 # Corridor coverage, mode, capacity & customs support
+│   ├── carrier_service_cargo_categories # Authorized category compatibility map
+│   ├── vehicles                         # Fleet units (Scania R450, Volvo FH, Freightliner)
+│   ├── carrier_metrics                  # Global & organization-specific SLA statistics
+│   ├── carrier_offers                   # WebMCP runtime offers (born during orchestration)
+│   ├── freight_decisions                # Immutable evaluation snapshots & ranking versions
+│   ├── bookings                         # Binding reservations & provider references
+│   └── booking_events                   # Append-only milestone timeline with provider_event_id dedupe
+│
+└── Technical Observability Tables (2):
+    ├── orchestration_runs               # Execution run tracker (INITIAL, RECOVERY)
+    └── orchestration_events             # Raw WebMCP tool invocations, inputs, outputs & latencies
 ```
 
 ---
 
-## 🚀 Getting Started & Local Setup
+## 🛠️ WebMCP Tool Contract Specification
 
-### Prerequisites
-- Node.js 18+
-- `pnpm` (recommended) or `npm`
+All carrier WebMCP tools implement a strict common envelope:
+- **Success**: `{ "ok": true, "data": { ... } }`
+- **Technical Failure**: `{ "ok": false, "error": { "code": "...", "message": "...", "retryable": true } }`
+- **Commercial Rejection / Expiration**: Returns `{ "ok": true, "data": { "provider_booking_status": "REJECTED" } }` *(Commercial rejections are valid business responses, not execution crashes)*.
 
-### Installation
-```bash
-# 1. Clone repository
-git clone https://github.com/Chujutak2024/cargomesh.git
-cd cargomesh
-
-# 2. Install dependencies
-pnpm install
-
-# 3. Configure environment variables (optional for local mock store)
-cp .env.example .env.local
-
-# 4. Start development server
-pnpm dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) to launch the CargoMesh Dashboard.
-
-### Build Verification
-```bash
-pnpm build
-```
-*Expected: 15/15 routes compiled with 0 TypeScript/SSR errors.*
+### Provider Tools:
+1. `check_service_coverage`: Verifies corridor support (`Callao/Lima -> Santiago`), transport mode (`ROAD`), and cross-border capability.
+2. `check_capacity`: Confirms origin terminal fleet readiness and payload capability.
+3. `quote_freight`: Emits deterministic quote with itemized breakdown and customs notes.
+4. `book_freight`: Submits binding booking intent and returns `provider_reference` (e.g., `AND-BOOK-8821`).
+5. `get_provider_booking_status`: Returns current lifecycle state (`CONFIRMED`, `IN_TRANSIT`, `DELIVERED`, `REJECTED`, `EXPIRED`) and tracking events.
 
 ---
 
-## 🛠️ Built With & Technology Stack
+## ✅ 73-Point Acceptance Test Summary
 
-CargoMesh was engineered from the ground up for the **WebMCP Challenge 2026** utilizing a modern agent-native and full-stack toolchain:
-
-| Layer | Technologies & Tools | Purpose |
-|:---|:---|:---|
-| **Agent-Native Protocol** | **WebMCP Standard** (`document.modelContext`) | Carrier tool registration, zero-scraping structured discovery, and live browser tool execution. |
-| **Frontend & SSR** | **Next.js 14 (App Router)**, **React 18**, **TypeScript** | High-performance hybrid rendering, server actions, and type-safe domain models. |
-| **Styling & UI** | **Tailwind CSS**, **Lucide Icons** | Custom *Warm Editorial* logistics design system with responsive dashboards and JSON inspectors. |
-| **Database & Security** | **Supabase (PostgreSQL 15)** | Relational data persistence with 13 tables, **Row-Level Security (RLS)**, and numeric `CHECK` constraints. |
-| **AI Pair-Programming & Prototyping** | **Google Antigravity** & **Gemini 2.0 Models** | Accelerated architecture design, heuristic formula tuning, SQL migration generation, and contract validation. |
-| **Tooling & Package Manager** | **pnpm**, **PostCSS**, **ESLint** | Strict workspace dependency management and optimized production builds. |
+The v5.4.0 Technical Contract includes an exhaustive **73-point Acceptance Test** covering:
+- **1–6**: Real Supabase Auth demo session, active membership, RLS validation, and empty runtime tables.
+- **7–21**: Full document navigation across `/providers/andes`, `/providers/inca`, `/providers/pacific`, real WebMCP tool calls, and idempotent `record_provider_result` insertions.
+- **22–42**: Exact mathematical replication of BALANCED subscores (Andes 89, Inca 84, Pacific 72), Decision Confidence (88/100), immutable `FreightDecision v1`, and `OPTIONS_READY` halt.
+- **43–58**: Human selection click, `book_freight()` submission, separate CargoMesh UUID vs `provider_reference`, `PENDING_PROVIDER_CONFIRMATION`, carrier confirmation via `get_provider_booking_status`, and tracking event deduplication.
+- **59–70**: Resilient recovery scenario (`REJECTED` / `EXPIRED`), creation of `orchestration_run` (RECOVERY), versioned `FreightDecision v2`, and deterministic tie-breaking.
+- **71–73**: Server-scoped demo reset and zero `service_role` exposure in client bundles.
 
 ---
 
-## 👥 Hackathon Team & Acknowledgments
+## 📁 Repository Structure Map
 
-- **Cristhian Chujutalli** — *Lead Architecture & Full-Stack Engineering*
-- **Built for**: Google WebMCP Challenge 2026
-- **License**: [MIT License](https://opensource.org/licenses/MIT) *(Open Source software standard for public evaluation and community use)*
+```
+cargomesh/
+├── docs/
+│   └── CargoMesh_Planeacion_WebMCP_FINAL.md   # Complete frozen technical contract (v5.4.0)
+├── mockups/                                   # Standalone HTML UX mockups
+│   └── .gitkeep
+├── .gitignore                                 # Git configuration
+└── README.md                                  # Executive technical specification (This document)
+```
 
+---
+
+## ⚖️ North Star Anti-Scope Creep Filter
+
+> **"Does this modification directly demonstrate how WebMCP enables an AI agent to turn customer logistics intent into an autonomous, explainable, and recoverable transport operation?"**  
+> If the answer is **no**, it is excluded from the hackathon core.
