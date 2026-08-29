@@ -1,0 +1,173 @@
+.shell {
+  --paper: #f3f1e9;
+  --paper-raised: #ffffff;
+  --ink: #1a1812;
+  --text-secondary: #5b5748;
+  --text-muted: #928d79;
+  --line: #e4e0d2;
+  --brass: #8c6316;
+  --brass-mid: #a9791f;
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.skipLink {
+  position: fixed;
+  z-index: 100;
+  top: 0.75rem;
+  left: 0.75rem;
+  transform: translateY(-200%);
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--ink);
+  color: white;
+}
+
+.skipLink:focus { transform: translateY(0); }
+
+.sidebar {
+  position: fixed;
+  z-index: 40;
+  inset: 0 auto 0 0;
+  display: flex;
+  width: min(84vw, 17.5rem);
+  flex-direction: column;
+  transform: translateX(-102%);
+  border-right: 1px solid #302b21;
+  background: #17150f;
+  color: #f3f1e9;
+  transition: transform 180ms ease;
+}
+
+.sidebarOpen { transform: translateX(0); }
+
+.brandRow {
+  display: flex;
+  min-height: 4.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+  border-bottom: 1px solid #302b21;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: inherit;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.brandMark { color: #c4901f; font-size: 1.45rem; }
+
+.closeButton,
+.menuButton,
+.iconButton {
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.closeButton { color: #bdb6a5; }
+
+.workspace {
+  display: grid;
+  gap: 0.28rem;
+  margin: 1.1rem;
+  border: 1px solid #3a3323;
+  border-radius: 0.85rem;
+  padding: 0.9rem;
+  background: #242017;
+}
+
+.workspace strong { font-size: 0.88rem; }
+.workspace span { color: #aaa18d; font-size: 0.72rem; }
+.workspaceEyebrow { color: #d5b66f !important; text-transform: uppercase; letter-spacing: 0.08em; }
+
+.navigation { display: grid; gap: 0.3rem; padding: 0.4rem 0.75rem; }
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.7rem;
+  padding: 0.72rem 0.85rem;
+  color: #aaa18d;
+  font-size: 0.88rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.navLink:hover { background: #242017; color: #f3f1e9; }
+.navLinkActive { background: #332816; color: #e5bd68; }
+
+.sidebarFoot {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: auto;
+  padding: 1.15rem;
+  border-top: 1px solid #302b21;
+  color: #918a7a;
+  font-size: 0.7rem;
+}
+
+.environmentDot { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: #72a97d; box-shadow: 0 0 0 3px #27412e; }
+
+.backdrop { position: fixed; z-index: 30; inset: 0; border: 0; background: rgb(16 14 10 / 58%); }
+.contentColumn { min-width: 0; }
+
+.topbar {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: flex;
+  min-height: 4.75rem;
+  align-items: center;
+  gap: 0.85rem;
+  border-bottom: 1px solid var(--line);
+  padding: 0 1rem;
+  background: rgb(255 255 255 / 88%);
+  backdrop-filter: blur(14px);
+}
+
+.menuButton { width: 2.5rem; height: 2.5rem; border: 1px solid var(--line); border-radius: 0.7rem; background: white; }
+.context { display: grid; gap: 0.12rem; }
+.context span { color: var(--text-muted); font-size: 0.68rem; letter-spacing: 0.09em; text-transform: uppercase; }
+.context strong { font-size: 0.88rem; }
+.topbarActions { display: flex; align-items: center; gap: 0.6rem; margin-left: auto; }
+.iconButton { position: relative; width: 2.45rem; height: 2.45rem; border: 1px solid var(--line); border-radius: 50%; color: var(--text-secondary); }
+.notificationDot { position: absolute; top: 0.45rem; right: 0.4rem; width: 0.42rem; height: 0.42rem; border: 2px solid white; border-radius: 50%; background: #b14f34; }
+.avatar { display: grid; width: 2.35rem; height: 2.35rem; place-items: center; border-radius: 50%; background: var(--ink); color: #e5bd68; font-size: 0.68rem; font-weight: 800; }
+.userCopy { display: none; }
+.userCopy strong, .userCopy span { display: block; }
+.userCopy strong { font-size: 0.78rem; }
+.userCopy span { color: var(--text-muted); font-size: 0.68rem; }
+.main { padding: 1.25rem 1rem 3rem; }
+
+@media (min-width: 680px) {
+  .topbar { padding-inline: 1.5rem; }
+  .main { padding: 1.7rem 1.5rem 4rem; }
+  .userCopy { display: block; }
+}
+
+@media (min-width: 1040px) {
+  .sidebar { transform: none; width: 17.5rem; }
+  .closeButton, .menuButton, .backdrop { display: none; }
+  .contentColumn { margin-left: 17.5rem; }
+  .topbar { padding-inline: 2rem; }
+  .main { padding: 2rem clamp(2rem, 4vw, 4rem) 5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar, .navLink { transition: none; }
+}
+
