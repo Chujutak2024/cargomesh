@@ -1,7 +1,7 @@
 ﻿# CargoMesh — Backlog de Producto y Cronograma del Hackathon (MVP Scope)
 
 > **Proyecto:** CargoMesh (WebMCP Challenge 2026)  
-> **Versión:** 1.3.0 (Enfoque Pragmático y Acotado al Golden Flow Demo)  
+> **Versión:** 1.4.0 (Provider Registry Dinámico + Golden Flow Demo)
 > **Fecha límite de entrega:** 02 de Septiembre de 2026  
 > **Catálogo de Requisitos Asociado:** `docs/01-requirements/CargoMesh_Catalogo_Requisitos.md`
 
@@ -14,8 +14,8 @@
 │ VIERNES 28 AGOSTO: Base de Datos, Cimientos & Contratos (100% COMPLETADO ✅)                     │
 │ └── 11 Migraciones Supabase, RLS, pgTAP Tests (18/18 PASS), Seed Auth, Esqueleto y Docs (00-03).│
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ SÁBADO 29 AGOSTO: Auth Demo, UI Shell & Páginas Fixture WebMCP                                   │
-│ └── Login 1-click con Carlos Mendoza, Layout Dashboard y 3 páginas livianas de carriers.        │
+│ SÁBADO 29 AGOSTO: Auth Demo, UI Shell & Provider Registry WebMCP                                 │
+│ └── Login 1-click, Dashboard y plantilla provider dinámica con tres registros seed.             │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ DOMINGO 30 AGOSTO: Stepper FR-1042, Agente WebMCP & Motor de Scoring                             │
 │ └── Stepper interactivo de carga, agente runner que consulta los carriers y calcula notas (89/84/72) │
@@ -37,9 +37,9 @@
 Para no dispersar esfuerzos en pantallas innecesarias, el alcance se limita estrictamente a:
 
 1. **Autenticación:** 1 solo botón de acceso directo con el usuario demo pre-sembrado (`carlos.mendoza@acmemining.pe`). Sin pantallas complejas de recuperación de contraseña o registro masivo.
-2. **Páginas de Transportistas (`/providers/*`):** Son únicamente **páginas de aterrizaje livianas con fixtures** (reutilizando los diseños ya listos en `mockups/provider_*.html`) cuyo único fin es registrar las tools en `document.modelContext`. No son sistemas de gestión interna de flotas.
+2. **Provider Registry + plantilla (`/providers/[carrierSlug]`):** Los candidatos se consultan dinámicamente desde `carriers` y `carrier_services`. La demo aloja páginas livianas para los tres registros seed reutilizando `mockups/provider_*.html`, pero la lógica opera sobre `0..N` carriers y también admite un `provider_url` externo. No son sistemas de gestión interna de flotas.
 3. **Solicitud de Carga:** El formulario Stepper viene pre-llenado con los datos de **FR-1042** (10 pallets $\times$ 800 kg = 8,000 kg, 18 m³, Callao $\rightarrow$ Santiago) para avanzar la demo rápidamente.
-4. **Orquestación & Scoring:** Agente que llama a las 3 tools, aplica la fórmula BALANCED y guarda la decisión inmutable.
+4. **Orquestación & Scoring:** Agente que recorre todos los candidatos descubiertos, ejecuta sus tools, aplica BALANCED sobre las ofertas elegibles y guarda la decisión inmutable.
 5. **Booking & Tracking:** Simulación limpia de confirmación aduanera y timeline de hitos.
 6. **Recovery:** Modal contextual que ante rechazo de Andes ofrece a Inca Logistics en 1 clic.
 7. **Judge Drawer:** Panel lateral flotante para ver logs JSON y cambiar el switch `ACCEPT / REJECT`.
@@ -70,11 +70,11 @@ Para no dispersar esfuerzos en pantallas innecesarias, el alcance se limita estr
 | `CM-02` | **Layout B2B & Dashboard Base:** Sidebar y tabla de solicitudes mostrando `FR-1042` en estado `PENDING`. | ⚡ `EP-1` Auth & Shell | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
 | `CM-03` | **Stepper FR-1042 (5 Pasos):** Formulario pre-llenado con 10 pallets × 800 kg = 8,000 kg y 18 m³. | ⚡ `EP-2` Intake Carga | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
 | `CM-04` | **Validación & Normalización:** Cálculo automático de peso/volumen total y pre-check de integridad. | ⚡ `EP-2` Intake Carga | *Backend Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-05` | **3 Páginas Carrier Fixture (`/providers/*`):** Montar vistas Andes, Inca y Pacific basadas en mockups. | ⚡ `EP-3` WebMCP Tools | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-06` | **Registro WebMCP Tools:** Exponer `quote_freight` y `book_freight` deterministas en `document.modelContext`. | ⚡ `EP-3` WebMCP Tools | *Fullstack Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-07` | **Agente Runner & Result Bridge:** Script en Python que visita las 3 páginas e inserta ofertas en Supabase. | ⚡ `EP-4` Orquestación & AI | *Backend / AI Lead* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-08` | **Decision Engine BALANCED:** Cálculo exacto de scores (Andes 89, Inca 84, Pacific 72) y snapshot v1. | ⚡ `EP-4` Orquestación & AI | *Backend / AI Lead* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-09` | **Vista `/dispatch` Reactiva:** Pantalla que muestra "Buscando..." y luego las cards con Andes recomendada. | ⚡ `EP-4` Orquestación & AI | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-05` | **Provider Registry + plantilla dinámica:** Resolver candidatos desde Supabase y montar `/providers/[carrierSlug]`; Andes, Inca y Pacific son registros seed. | ⚡ `EP-3` WebMCP Tools | *Frontend / Data* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-06` | **Registro WebMCP Tools genérico:** Exponer `quote_freight` y `book_freight` desde la configuración del carrier actual, sin ramas por nombre. | ⚡ `EP-3` WebMCP Tools | *Fullstack Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-07` | **Browser Agent & Result Bridge:** Descubrir `CandidateProvider[0..N]`, navegar cada `provider_url` con WebMCP real y persistir resultados idempotentes. | ⚡ `EP-4` Orquestación & AI | *WebMCP / Data Lead* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-08` | **Decision Engine BALANCED genérico:** Rankear cualquier colección de ofertas elegibles; verificar 89/84/72 solo como caso Golden Flow. | ⚡ `EP-4` Orquestación & AI | *Backend / Data Lead* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-09` | **Vista `/dispatch` Reactiva 0..N:** Mostrar progreso y cards según candidatos/resultados runtime, incluida la ausencia de opciones. | ⚡ `EP-4` Orquestación & AI | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
 | `CM-10` | **Selección & Booking Request:** Clic en "Seleccionar Andes" y paso a espera con cronómetro de 15 min. | ⚡ `EP-5` Booking & Recovery | *Fullstack Dev* | 🔴 Alta | `[ ] Pendiente` |
 | `CM-11` | **Timeline de Tracking:** Vista `/tracking` con hito aduanero de frontera Santa Rosa/Chacalluta y placas. | ⚡ `EP-5` Booking & Recovery | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
 | `CM-12` | **Modal de Recovery:** Flujo de contingencia si Andes rechaza $\rightarrow$ sugerir Inca Logistics en 1 clic. | ⚡ `EP-5` Booking & Recovery | *Backend / AI Lead* | 🔴 Alta | `[ ] Pendiente` |
@@ -93,27 +93,36 @@ Para no dispersar esfuerzos en pantallas innecesarias, el alcance se limita estr
 
 ---
 
-### 📌 `CM-05` & `CM-06`: Páginas Fixture de Carriers y WebMCP
+### 📌 `CM-05` & `CM-06`: Provider Registry, plantilla dinámica y WebMCP
 * **Como** agente de IA,
-* **Quiero** navegar a `/providers/andes`, `/providers/inca` y `/providers/pacific` y ejecutar `quote_freight`,
-* **Para** obtener las cotizaciones estructuradas ($1,760, $1,920, $1,590) directamente desde la web del carrier.
-* **Alcance estricto:** Usar los HTMLs de `mockups/provider_*.html` como componentes React livianos que ejecutan `document.modelContext.registerTool`. **Cero gestión interna de flotas o portales pesados.**
+* **Quiero** recibir una lista variable de transportistas registrados y navegar al `provider_url` de cada candidato,
+* **Para** obtener cotizaciones estructuradas directamente desde sus páginas WebMCP sin depender de una lista fija.
+* **Alcance estricto:** Crear una plantilla React liviana `/providers/[carrierSlug]` que resuelve server-side `carrierSlug → carriers.code`, entrega solo configuración pública y ejecuta `document.modelContext.registerTool`. Los tres HTML existentes son referencias visuales del seed, no tres implementaciones separadas. `service_role` nunca llega al cliente. **Cero gestión interna de flotas o portales pesados.**
 
 ---
 
 ### 📌 `CM-07` & `CM-08`: Agente Runner & Decision Engine
 * **Como** núcleo de CargoMesh,
-* **Quiero** que el agente extraiga las 3 cotizaciones y calcule el ranking BALANCED,
-* **Para** persistir las ofertas en la base de datos y determinar que Andes Freight gana con 89 puntos.
-* **Alcance estricto:** Script en Python que simula la navegación / llamada a las tools de los providers y corre la fórmula matemática canónica.
+* **Quiero** que el agente descubra y consulte todos los candidatos compatibles y calcule el ranking BALANCED,
+* **Para** persistir y comparar un número variable de ofertas sin acoplar CargoMesh a proveedores específicos.
+* **Alcance estricto:** Navegación WebMCP real desde un agente de navegador compatible, Result Bridge server-side y motor TypeScript puro. El Golden Flow verifica que los tres registros seed producen Andes 89, Inca 84 y Pacific 72.
 
 ---
 
 ### 📌 `CM-09`: Vista `/dispatch` y Explicabilidad
 * **Como** cliente B2B,
-* **Quiero** ver cómo aparecen las 3 alternativas y por qué Andes es la recomendada,
+* **Quiero** ver las alternativas disponibles y entender por qué una es recomendada,
 * **Para** tomar una decisión informada basada en costo ($1,760), tiempo (31h) y confiabilidad (96%).
-* **Alcance estricto:** Vista que muestra tarjetas ordenadas: Andes (89 pts - Badge Recomendado), Inca (84 pts) y Pacific (72 pts) con botón de selección.
+* **Alcance estricto:** Vista basada en colecciones runtime `0..N`. En el Golden Flow muestra Andes (89), Inca (84) y Pacific (72), pero debe renderizar automáticamente cualquier carrier adicional registrado y un estado vacío cuando no existan opciones.
+
+---
+
+## 🔒 Regla transversal: no hardcodear proveedores
+
+- Prohibido usar arrays de nombres, IDs o URLs como fuente de candidatos.
+- `carriers` + `carrier_services` + compatibilidad de carga son la única fuente de discovery.
+- Andes, Inca y Pacific se permiten únicamente en seed, fixtures, pruebas y expectativas del Golden Flow.
+- Añadir un cuarto carrier compatible debe requerir datos/configuración, no cambios en el orquestador, scorer o UI.
 
 ---
 

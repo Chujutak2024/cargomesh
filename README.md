@@ -1,10 +1,10 @@
 # CargoMesh ⬡
 
 > **Autonomous Agentic Freight Orchestration for Cross-Border B2B Logistics**  
-> *Technical Specification v5.5.0 — Google WebMCP Challenge 2026*
+> *Technical Specification v5.6.0 — Google WebMCP Challenge 2026*
 
 [![WebMCP Challenge 2026](https://img.shields.io/badge/WebMCP_Challenge-2026_Official-8C6316?style=for-the-badge&logo=google-chrome&logoColor=white)](https://github.com/Chujutak2024/cargomesh)
-[![Contract v5.5.0](https://img.shields.io/badge/Contract-v5.5.0_FINAL-3178C6?style=for-the-badge&logo=semantic-release&logoColor=white)](docs/00-master/CargoMesh_Planeacion_WebMCP_FINAL.md)
+[![Contract v5.6.0](https://img.shields.io/badge/Contract-v5.6.0_FINAL-3178C6?style=for-the-badge&logo=semantic-release&logoColor=white)](docs/00-master/CargoMesh_Planeacion_WebMCP_FINAL.md)
 [![Protocol](https://img.shields.io/badge/Protocol-Browser_Native_WebMCP-38B2AC?style=for-the-badge&logo=w3c&logoColor=white)](https://github.com/Chujutak2024/cargomesh)
 [![Backend](https://img.shields.io/badge/Backend-Supabase_PostgreSQL_RLS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 
@@ -15,7 +15,7 @@
 | Parameter | Specification Value |
 |:---|:---|
 | **Project Name** | **CargoMesh Network** |
-| **Document Version** | `v5.5.0` *(B2B Organization + Cargo Profile Alignment)* |
+| **Document Version** | `v5.6.0` *(Dynamic Provider Registry Alignment)* |
 | **Root Commercial Entity** | `FreightRequest` *(Dedicated B2B Freight Demand)* |
 | **Core Protocol** | **WebMCP Browser-Native API** (`document.modelContext.registerTool`) |
 | **Transport Mode & Service** | **ROAD / FTL** *(Full Truckload, Dedicated Capacity)* |
@@ -44,6 +44,10 @@
 
 **CargoMesh** is an agent-native B2B freight orchestration platform. Unlike e-commerce marketplaces (which start with a product, purchase, and consumer delivery), CargoMesh operates on **pre-existing B2B cargo** that needs heavy freight transport from origin to destination without monolithic human intermediation.
 
+CargoMesh is designed as an open B2B trucking marketplace: any verified carrier can be added to the provider registry with its service coverage and WebMCP endpoint. The Golden Flow seeds three carriers to make the demo deterministic, but discovery, orchestration, ranking, selection, and booking always operate on a variable `0..N` candidate set.
+
+> **Architecture invariant:** Andes, Inca, and Pacific are demo fixtures—not a hardcoded provider list. See [ADR-001: Dynamic Provider Registry](docs/00-master/ADR-001_Dynamic_Provider_Registry.md).
+
 ### The Official North Star:
 > *"An authenticated enterprise creates a `FreightRequest`; the AI agent navigates participating carrier websites via WebMCP, retrieves real structured responses from deterministic provider fixtures, CargoMesh validates and persists those results into its database, the customer selects an eligible alternative, the carrier confirms or rejects the booking, and the system maintains operational continuity through live milestone tracking or automated recovery."*
 
@@ -51,19 +55,20 @@
 graph TD
     A["🏢 Authenticated Organization (ACME Mining)"] --> B["📋 Confirmed FreightRequest (FR-1042)"]
     B --> C["🚀 Start Orchestration Run"]
-    C --> D["🌐 Agent Navigates Carrier Web Pages (Full Document Navigation)"]
-    D --> E["🛠️ WebMCP Provider Tools (Andes / Inca / Pacific)"]
-    E --> F["📦 Structured Provider Results"]
-    F --> G["🌉 CargoMesh Result Bridge (record_provider_result)"]
-    G --> H["💾 CarrierOffers Persisted (DB Runtime)"]
-    H --> I["⚖️ Deterministic Decision Engine (BALANCED)"]
-    I --> J["✨ OPTIONS_READY (Recommendations Presented)"]
-    J --> K["👤 Human Selection / Smart Auto Policy"]
-    K --> L["📑 book_freight() Provider Request"]
-    L --> M["⏳ PENDING_PROVIDER_CONFIRMATION"]
-    M -->|CONFIRMED| N["📍 Live Tracking & Customs Timeline (get_provider_booking_status)"]
-    M -->|REJECTED / EXPIRED| O["🔄 Automated Recovery Run (Fresh Provider Evaluation)"]
-    N --> P["🏁 DELIVERED (COMPLETED)"]
+    C --> D["🔎 Discover Registered Compatible Carriers (0..N)"]
+    D --> E["🌐 Agent Navigates Discovered provider_url Endpoints"]
+    E --> F["🛠️ Provider WebMCP Tools"]
+    F --> G["📦 Structured Provider Results"]
+    G --> H["🌉 CargoMesh Result Bridge (record_provider_result)"]
+    H --> I["💾 CarrierOffers Persisted (DB Runtime)"]
+    I --> J["⚖️ Deterministic Decision Engine (BALANCED)"]
+    J --> K["✨ OPTIONS_READY (Recommendations Presented)"]
+    K --> L["👤 Human Selection / Smart Auto Policy"]
+    L --> M["📑 book_freight() Provider Request"]
+    M --> N["⏳ PENDING_PROVIDER_CONFIRMATION"]
+    N -->|CONFIRMED| O["📍 Live Tracking & Customs Timeline (get_provider_booking_status)"]
+    N -->|REJECTED / EXPIRED| P["🔄 Automated Recovery Run (Fresh Provider Evaluation)"]
+    O --> Q["🏁 DELIVERED (COMPLETED)"]
 ```
 
 ---
@@ -128,7 +133,7 @@ CargoMesh strictly segregates data origin and mutability into 4 isolated classes
    └── Controlled initial state of FreightRequest FR-1042 (Callao/Lima, PE → Santiago, CL, 8,000 kg FTL, PENDING).
 
 3. PROVIDER FIXTURES
-   └── Deterministic browser-side responses residing in Andes Freight, Inca Logistics, and Pacific Cargo pages.
+   └── Deterministic browser-side responses attached to registered demo carriers. Andes, Inca, and Pacific are the Golden Flow seed, not a platform limit.
 
 4. RUNTIME DATA
    └── Dynamically generated database rows: carrier_offers, freight_decisions, bookings, booking_events, orchestration_events.
@@ -215,7 +220,7 @@ cargomesh/
 │   ├── organization_cargo_profiles      # Frequent cargo templates and suggested vehicle classes
 │   ├── cargo_categories                 # Standardized cargo taxonomy (General, Machinery, etc.)
 │   ├── freight_requests                 # Core freight intent, weights, dimensions & status
-│   ├── carriers                         # Registered transport providers (Andes, Inca, Pacific)
+│   ├── carriers                         # Open registry of transport providers (0..N)
 │   ├── carrier_services                 # Corridor coverage, mode, capacity & customs support
 │   ├── carrier_service_cargo_categories # Authorized category compatibility map
 │   ├── vehicles                         # Fleet units (Scania R450, Volvo FH, Freightliner)
@@ -250,9 +255,9 @@ All carrier WebMCP tools implement a strict common envelope:
 
 ## ✅ 73-Point Acceptance Test Summary
 
-The v5.5.0 Technical Contract includes an exhaustive **73-point WebMCP Acceptance Test**, plus B2B identity and cargo-profile preconditions, covering:
+The v5.6.0 Technical Contract includes an exhaustive **73-point WebMCP Acceptance Test**, plus B2B identity and cargo-profile preconditions, covering:
 - **1–6**: Real Supabase Auth demo session, active membership, RLS validation, and empty runtime tables.
-- **7–21**: Full document navigation across `/providers/andes`, `/providers/inca`, `/providers/pacific`, real WebMCP tool calls, and idempotent `record_provider_result` insertions.
+- **7–21**: Dynamic discovery from the provider registry, full document navigation across the three seeded Golden Flow endpoints, real WebMCP tool calls, and idempotent `record_provider_result` insertions.
 - **22–42**: Exact mathematical replication of BALANCED subscores (Andes 89, Inca 84, Pacific 72), Decision Confidence (88/100), immutable `FreightDecision v1`, and `OPTIONS_READY` halt.
 - **43–58**: Human selection click, `book_freight()` submission, separate CargoMesh UUID vs `provider_reference`, `PENDING_PROVIDER_CONFIRMATION`, carrier confirmation via `get_provider_booking_status`, and tracking event deduplication.
 - **59–70**: Resilient recovery scenario (`REJECTED` / `EXPIRED`), creation of `orchestration_run` (RECOVERY), versioned `FreightDecision v2`, and deterministic tie-breaking.
@@ -265,8 +270,9 @@ The v5.5.0 Technical Contract includes an exhaustive **73-point WebMCP Acceptanc
 ```text
 cargomesh/
 ├── docs/                                      # Master documentation & technical contracts
-│   ├── 00-master/                             # Master product specification & WebMCP vision (v5.5.0)
-│   │   └── CargoMesh_Planeacion_WebMCP_FINAL.md
+│   ├── 00-master/                             # Master product specification & WebMCP vision (v5.6.0)
+│   │   ├── CargoMesh_Planeacion_WebMCP_FINAL.md
+│   │   └── ADR-001_Dynamic_Provider_Registry.md # 0..N carriers; demo fixtures are not a closed list
 │   ├── 01-requirements/                       # Functional requirements & sprint backlog
 │   │   ├── CargoMesh_Catalogo_Requisitos.md
 │   │   └── CargoMesh_Sprint_Backlog.md
@@ -285,14 +291,12 @@ cargomesh/
 │   ├── seed.sql                               # Demo Auth user & ACME OWNER seed
 │   ├── tests/                                 # Automated pgTAP database test suite
 │   └── snippets/                              # Standalone validation scripts
-├── frontend/                                  # 🚀 React / Next.js 15 App (B2B UI, Stepper, Tracking, Judge Drawer)
-│   ├── src/app/                               # App Router (Dashboard, Auth, Carrier Portals)
+├── frontend/                                  # 🚀 Next.js 15 full-stack MVP
+│   ├── src/app/                               # App Router, Route Handlers and /providers/[carrierSlug]
 │   ├── src/components/                        # Modular UI components
+│   ├── src/lib/                               # Provider discovery, WebMCP contracts, Supabase and Decision Engine
 │   └── package.json                           # Next.js 15, React 19, Tailwind CSS, Supabase SSR
-├── backend/                                   # 🐍 Python / FastAPI Service (OpenAI Agent & WebMCP Core)
-│   ├── app/                                   # Agent tools, scoring engine, services, API routes
-│   ├── requirements.txt                       # FastAPI, OpenAI, Supabase, Pydantic, Httpx
-│   └── tests/                                 # Pytest suite
+├── backend/                                   # Reserved for post-MVP services; not part of the hackathon critical path
 ├── .gitignore                                 # Git security exclusions (.env, node_modules, temp files)
 └── README.md                                  # Executive technical specification (This document)
 ```

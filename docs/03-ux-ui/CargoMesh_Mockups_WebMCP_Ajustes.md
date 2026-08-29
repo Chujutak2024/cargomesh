@@ -1,12 +1,12 @@
 # CargoMesh — Ajustes de Mockups para Evidencia WebMCP
 
 > **Estado:** definición de ajustes, sin modificar todavía los mockups existentes.  
-> **Fuente de verdad:** `CargoMesh_Planeacion_WebMCP_FINAL.md` v5.5.0.  
+> **Fuente de verdad:** `CargoMesh_Planeacion_WebMCP_FINAL.md` v5.6.0.
 > **Objetivo:** conservar la UX B2B actual y hacer visible ante el jurado la causalidad real de WebMCP.
 
 ## 1. Decisión de diseño
 
-La arquitectura consolidada de ocho pantallas principales, modales contextuales, tres páginas provider y un panel técnico es válida. No se requiere un rediseño general.
+La arquitectura consolidada de ocho pantallas principales, modales contextuales, una plantilla provider dinámica y un panel técnico es válida. No se requiere un rediseño general.
 
 El trabajo pendiente consiste en agregar estados y evidencia técnica para que la demo no pueda confundirse con un comparador de ofertas precargadas.
 
@@ -17,9 +17,10 @@ El trabajo pendiente consiste en agregar estados y evidencia técnica para que l
 La misma vista `/dispatch/[id]` debe representar dos estados reales:
 
 1. `EVALUATING`: navegación y consultas provider en curso.
-2. `OPTIONS_READY`: tres ofertas persistidas, decisión calculada y espera de selección humana.
+2. `OPTIONS_READY`: una o más ofertas persistidas, decisión calculada y espera de selección humana.
+3. `NO_MATCH`: la búsqueda terminó sin ofertas elegibles y ofrece ajustar la solicitud o reintentar.
 
-Durante `EVALUATING`, cada provider debe progresar por:
+Durante `EVALUATING`, cada provider descubierto debe progresar por:
 
 ```text
 PENDING
@@ -82,9 +83,11 @@ RUN_CREATED
 → OPTIONS_READY
 ```
 
-### 2.4 Provider pages
+### 2.4 Provider Registry y páginas dinámicas
 
-Las rutas `/providers/andes`, `/providers/inca` y `/providers/pacific` deben registrar tools WebMCP ejecutables. Mostrar el código como texto puede complementar la evidencia, pero no sustituye el registro real mediante `document.modelContext.registerTool`.
+La plantilla `/providers/[carrierSlug]` debe cargar el carrier registrado y ejecutar sus tools WebMCP. Para el Golden Flow genera `/providers/andes`, `/providers/inca` y `/providers/pacific`, pero la UI, navegación y contratos no pueden depender de esas tres rutas. También debe aceptarse un `provider_url` externo registrado.
+
+Mostrar el código como texto puede complementar la evidencia, pero no sustituye el registro real mediante `document.modelContext.registerTool`.
 
 Cada página provider debe incluir una declaración visible:
 

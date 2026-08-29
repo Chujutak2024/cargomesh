@@ -1,8 +1,8 @@
 ﻿# CargoMesh — Catálogo Oficial de Requisitos (Demo & Hackathon)
 
-> **Versión:** 1.0.0 (Consolidada para WebMCP Challenge 2026)  
+> **Versión:** 1.1.0 (Provider Registry Dinámico para WebMCP Challenge 2026)
 > **Estado:** Aprobado para implementación y asignación técnica  
-> **Fuente de verdad:** `docs/CargoMesh_Planeacion_WebMCP_FINAL.md` v5.5.0  
+> **Fuente de verdad:** `docs/CargoMesh_Planeacion_WebMCP_FINAL.md` v5.6.0
 > **Convención de redacción:**
 > - **El sistema debe:** Comportamiento del core de CargoMesh, backend y base de datos.
 > - **El agente WebMCP debe:** Acciones autónomas del agente de IA que navega e invoca tools en los navegadores.
@@ -69,12 +69,22 @@
 
 ---
 
-### Módulo 3: Portales de Transportistas & Exposición WebMCP
+### Módulo 3: Registro, Descubrimiento y Portales WebMCP de Transportistas
 
-#### [RF-08] Arquitectura Extensible de Portales de Transportistas
-* **Prioridad:** 🟡 **Media**
-* **Descripción:** El sistema debe implementar una arquitectura modular de portales web para transportistas bajo la ruta `/providers/[carrier_slug]`, conectada a la base de datos de flota y servicios de Supabase.
-* **Criterio de Aceptación:** La plataforma debe permitir navegar a las páginas de los transportistas habilitados en el sistema (ej. Andes Freight, Inca Logistics, Pacific Cargo y futuros operadores) cargando sus capacidades desde la base de datos.
+#### [RF-08A] Provider Registry y Descubrimiento Dinámico
+* **Prioridad:** 🔴 **Alta**
+* **Descripción:** El sistema debe resolver candidatos desde `carriers`, `carrier_services` y `carrier_service_cargo_categories`, sin listas de proveedores hardcodeadas. Solo son candidatos los transportistas activos, compatibles y con un `provider_url` WebMCP habilitado.
+* **Criterio de Aceptación:** Para una solicitud confirmada, `get_candidate_provider_pages(freight_request_id)` debe devolver una colección `0..N`. Registrar un cuarto carrier compatible debe incorporarlo al resultado sin modificar el frontend, el orquestador ni el Decision Engine.
+
+#### [RF-08B] Arquitectura Extensible de Portales de Transportistas
+* **Prioridad:** 🔴 **Alta**
+* **Descripción:** Los fixtures alojados por CargoMesh deben usar una plantilla modular `/providers/[carrierSlug]`. Un transportista registrado también puede declarar un `provider_url` externo propio.
+* **Criterio de Aceptación:** La misma implementación debe resolver server-side `carrierSlug → carriers.code`, cargar identidad, servicios y configuración pública del carrier actual desde Supabase y no exponer `service_role`. Andes, Inca y Pacific se consideran instancias seed del Golden Flow, no rutas codificadas en la lógica de negocio.
+
+#### [RF-08C] Alta y Activación de Transportistas
+* **Prioridad:** 🟡 **Media** *(P1; el Golden Flow usa registros seed)*
+* **Descripción:** CargoMesh debe permitir incorporar owner-operators, flotas pequeñas y carriers empresariales mediante un alta server-side validada de identidad, servicios y `provider_url`. Un registro nuevo permanece `INACTIVE` hasta completar su verificación.
+* **Criterio de Aceptación:** Al activar un carrier con al menos un servicio compatible, debe entrar automáticamente en `get_candidate_provider_pages`; al desactivarlo, debe dejar de descubrirse sin cambios de código.
 
 #### [RF-09] Registro y Exposición del Estándar WebMCP en Portales
 * **Prioridad:** 🔴 **Alta**
@@ -85,6 +95,8 @@
   3. `quote_freight(request_payload)`
   4. `book_freight(request_payload, offer_reference)`
   5. `get_provider_booking_status(provider_reference)`
+
+El contrato de tools es común para todos los carriers registrados; el nombre del proveedor no altera el schema de entrada o salida.
 
 #### [RF-10] Motor de Cotización Determinista en el Carrier
 * **Prioridad:** 🔴 **Alta**
@@ -97,8 +109,8 @@
 
 #### [RF-11] Gestión del Ciclo de Vida de Orquestación
 * **Prioridad:** 🔴 **Alta**
-* **Descripción:** El sistema debe registrar y administrar la ejecución de búsqueda (`orchestration_runs`), identificando si se trata de una búsqueda inicial (`INITIAL`) o una re-evaluación (`RECOVERY`).
-* **Criterio de Aceptación:** Al iniciar la búsqueda, el sistema debe crear un registro de corrida en estado `RUNNING` y actualizarlo a `OPTIONS_READY` o `FAILED` al concluir.
+* **Descripción:** El sistema debe registrar y administrar la ejecución de búsqueda (`orchestration_runs`), identificando si se trata de una búsqueda inicial (`INITIAL`) o una re-evaluación (`RECOVERY`) y recorriendo el conjunto dinámico de candidatos descubierto.
+* **Criterio de Aceptación:** Al iniciar la búsqueda, el sistema debe crear un registro `RUNNING`, procesar cada candidato sin asumir un conteo fijo y finalizar en `OPTIONS_READY`, `NO_MATCH` o `FAILED`.
 
 #### [RF-12] Result Bridge e Ingesta Idempotente de Ofertas
 * **Prioridad:** 🔴 **Alta**
@@ -112,7 +124,7 @@
 #### [RF-13] Evaluación Multicriterio y Scoring Normalizado
 * **Prioridad:** 🔴 **Alta**
 * **Descripción:** El motor de decisión debe evaluar todas las ofertas elegibles y calcular una puntuación global normalizada (0 a 100) según la estrategia seleccionada (ej. `BALANCED`: costo 25%, confiabilidad 25%, ETA 20%, disponibilidad 10%, experiencia en ruta 10%, historial de organización 10%).
-* **Criterio de Aceptación:** El cálculo debe ser determinista y auditable, asignando el ranking de mayor a menor puntuación.
+* **Criterio de Aceptación:** El cálculo debe ser determinista y auditable para una colección variable de ofertas elegibles, asignando el ranking de mayor a menor puntuación sin ramas por carrier. Los scores 89/84/72 son una expectativa del Golden Flow, no constantes del motor.
 
 #### [RF-14] Cálculo de Confianza de Decisión y Detección de Anomalías
 * **Prioridad:** 🔴 **Alta**

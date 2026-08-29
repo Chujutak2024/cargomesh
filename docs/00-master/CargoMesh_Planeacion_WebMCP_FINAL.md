@@ -1,6 +1,6 @@
 # CargoMesh — Plan Maestro FINAL para WebMCP Challenge 2026
 
-> **Versión:** FINAL v5.5.0 — B2B Organization + Cargo Profile Alignment
+> **Versión:** FINAL v5.6.0 — Dynamic Provider Registry Alignment
 > **Estado:** lógica de producto y contrato técnico congelados para implementación y validación E2E  
 > **MVP:** B2B · ROAD · FTL · Domestic + Cross-Border · Golden Flow Callao/Lima, Perú → Santiago, Chile  
 > **Moneda operativa del MVP:** USD, mostrada al usuario como `$`  
@@ -68,7 +68,7 @@ DEMO SCENARIO
 = estado inicial controlado de FR-1042
 
 PROVIDER FIXTURES
-= respuestas deterministas propias de Andes / Inca / Pacific
+= respuestas deterministas asociadas a carriers registrados para el escenario Golden Flow
 
 RUNTIME DATA
 = offers, decisions, selection, bookings, events, orchestration trace
@@ -77,9 +77,18 @@ RUNTIME DATA
 Regla:
 
 ```text
-Provider fixture may know that Andes quotes $1,760.
-CargoMesh database must not contain that CarrierOffer
+Provider fixture may know its deterministic quote.
+CargoMesh database must not contain the corresponding CarrierOffer
 until quote_freight actually returns it and CargoMesh records it.
+```
+
+Los nombres comerciales usados en escenarios, fórmulas y pruebas pertenecen exclusivamente al dataset seed del Golden Flow. **No son reglas del producto.** La arquitectura productiva descubre `0..N` carriers desde `carriers` y `carrier_services`; no existe una lista fija de proveedores en código.
+
+Regla normativa del documento:
+
+```text
+Architecture / orchestration / UI / scoring / booking = carrier-agnostic
+Named carriers = demo fixtures and acceptance-test inputs only
 ```
 
 ## 0.3 Transparencia de la demo
@@ -1601,7 +1610,15 @@ Regional carriers
 Enterprise carriers
 ```
 
-Para el MVP, los tres proveedores simulados se comportan como carriers gestionados dentro de una sola codebase.
+Para el MVP, tres proveedores seed se comportan como carriers gestionados dentro de una sola codebase. Esto es una decisión de fixture, no una restricción de producto: cualquier transportista registrado con servicios compatibles y un `provider_url` WebMCP puede entrar al proceso sin cambios de código.
+
+Regla de implementación:
+
+```text
+candidate providers
+= query(carriers + carrier_services + cargo compatibility)
+!= ['ANDES', 'INCA', 'PACIFIC']
+```
 
 ---
 
@@ -2705,7 +2722,18 @@ Ejecuta una opción autorizada de modificación/cancelación.
 
 ### `get_candidate_provider_pages`
 
-Devuelve identificación + URL.
+Consulta `carriers`, `carrier_services` y compatibilidad de carga para devolver una colección variable `CandidateProvider[0..N]` con identificación, `provider_url` y servicio compatible.
+
+Filtra como mínimo:
+
+```text
+carrier.status = ACTIVE
+supports_webmcp = true
+provider_url IS NOT NULL
+service.active = true
+route / mode / service type potentially compatible
+cargo category supported
+```
 
 Nunca devuelve quotes precalculados.
 
@@ -2908,14 +2936,15 @@ Confirmed FreightRequest
         ▼
 Browser / AI Agent
         │
-        │ FULL DOCUMENT NAVIGATION
-        ├───────────────┬───────────────┐
-        ▼               ▼               ▼
-/providers/andes  /providers/inca  /providers/pacific
-        │               │               │
-     WebMCP           WebMCP           WebMCP
-        │               │               │
-        └──── structured results ───────┘
+        │ get_candidate_provider_pages(freight_request_id)
+        ▼
+Registered compatible providers [0..N]
+        │
+        │ for each provider_url: FULL DOCUMENT NAVIGATION
+        ▼
+Provider WebMCP endpoint
+        │
+        └──── structured result ─────────┐
                         │
                         ▼
                  Agent returns
@@ -2969,15 +2998,25 @@ Las páginas provider no escriben directamente las tablas comerciales de CargoMe
 
 CargoMesh valida y persiste los resultados obtenidos por el agente.
 
-# 15. Navegación multi-provider para la demo
+# 15. Descubrimiento y navegación multi-provider
 
-Provider pages:
+La fuente de candidatos es el Provider Registry en Supabase. CargoMesh filtra carriers activos con WebMCP y servicios potencialmente compatibles; el agente valida cobertura, capacidad y precio en el endpoint del carrier.
+
+Contrato conceptual:
 
 ```text
-/providers/andes
-/providers/inca
-/providers/pacific
+get_candidate_provider_pages(freight_request_id)
+→ CandidateProvider[0..N]
+→ { carrier_id, carrier_name, provider_url, matching_service_id }
 ```
+
+Para los fixtures alojados dentro de CargoMesh se utiliza una sola plantilla dinámica:
+
+```text
+/providers/[carrierSlug]
+```
+
+El Golden Flow crea tres instancias seed (`andes`, `inca`, `pacific`). Un carrier real puede apuntar a un `provider_url` externo y no necesita vivir en la codebase de CargoMesh.
 
 ## 15.1 Full document navigation
 
@@ -2997,26 +3036,15 @@ Esto evita depender de una transición SPA donde tools de un provider anterior p
 
 ```text
 1. CargoMesh creates INITIAL orchestration_run
-2. Agent obtains provider URLs
-
-3. Full navigate Andes
-4. coverage / capacity / quote
-5. Full navigate back CargoMesh
-6. record_provider_result
-
-7. Full navigate Inca
-8. coverage / capacity / quote
-9. Full navigate back
-10. record_provider_result
-
-11. Full navigate Pacific
-12. coverage / capacity / quote
-13. Full navigate back
-14. record_provider_result
-
-15. evaluate_offers
-16. persist INITIAL FreightDecision
-17. FreightRequest → OPTIONS_READY
+2. CargoMesh resolves CandidateProvider[0..N] from the registry
+3. For each candidate: full navigate provider_url
+4. Execute coverage / capacity / quote
+5. Full navigate back to CargoMesh
+6. record_provider_result idempotently
+7. Continue until candidates finish, fail or time out
+8. evaluate_offers over every eligible runtime offer
+9. With offers: persist INITIAL FreightDecision, orchestration_run → OPTIONS_READY and FreightRequest → AWAITING_SELECTION
+10. Without offers: do not create a decision; orchestration_run → NO_MATCH and show the controlled empty state
 ```
 
 ## 15.3 Human selection
@@ -5313,9 +5341,8 @@ cargomesh/
 │   │   ├── freight/
 │   │   ├── exceptions/
 │   │   └── providers/
-│   │       ├── andes/
-│   │       ├── pacific/
-│   │       └── inca/
+│   │       └── [carrierSlug]/
+│   │           └── page.tsx
 │   │
 │   ├── features/
 │   │   ├── orchestration/
@@ -5364,6 +5391,8 @@ vehicles
 
 global carrier_metrics
 ```
+
+Los tres carriers anteriores son el dataset seed del Golden Flow. El esquema, discovery, UI y motor de decisión deben aceptar un conjunto variable de transportistas registrados.
 
 Matriz congelada:
 
@@ -5649,23 +5678,24 @@ provider fixtures
 runtime tables empty
 ```
 
-## Fase 3 — One-provider vertical slice
+## Fase 3 — Corte vertical con un carrier registrado
 
 ```text
 CargoMesh
-→ Andes page
+→ get_candidate_provider_pages
+→ first compatible registered provider_url
 → real WebMCP quote
 → record_provider_result
 → CarrierOffer persisted
 → orchestration_event persisted
 ```
 
-No avanzar a tres providers hasta probar esta cadena.
+No agregar más fixtures de demostración hasta probar esta cadena genérica.
 
 ## Fase 4 — Multi-provider decision
 
 ```text
-Andes + Inca + Pacific
+all discovered CandidateProvider[0..N]
 → persistent offers
 → exact normalizations
 → FreightDecision
@@ -5712,10 +5742,11 @@ Solo después se dedica tiempo a pulido visual/video.
 - RLS validado.
 - Runtime FR-1042 vacío después del reset.
 
-## 31.2 One Provider
+## 31.2 Un carrier registrado
 
 ```text
-full navigate Andes
+discover one compatible carrier
+→ full navigate its provider_url
 → WebMCP quote
 → record_provider_result
 → CarrierOffer
@@ -5726,7 +5757,7 @@ Todo debe ser verificable en BD.
 
 ## 31.3 Multi-provider
 
-Tres provider results nacen por tres ejecuciones reales.
+Cada provider result nace de una ejecución WebMCP real. El flujo debe funcionar con `0..N` candidatos; el Golden Flow usa tres únicamente para demostrar comparación y ranking.
 
 ## 31.4 Decision
 
@@ -6001,10 +6032,10 @@ Orden:
 2. Implement organization registration and server-side member invitation
 3. Implement cargo profile suggestion in the intake form
 4. Move quotes/accept-reject behavior to provider fixtures
-5. Implement one Andes WebMCP vertical slice
+5. Implement dynamic provider registry query + one registered-carrier WebMCP vertical slice
 6. Implement record_provider_result
 7. Verify CarrierOffer appears only after tool execution
-8. Extend to Inca + Pacific
+8. Add the remaining Golden Flow seed records through the same generic flow
 9. Implement exact scoring and persist INITIAL decision
 10. Implement human selection and booking pending
 11. Implement provider confirmation/rejection and recovery versioning

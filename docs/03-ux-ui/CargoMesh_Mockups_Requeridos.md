@@ -1,6 +1,6 @@
 # CargoMesh — Arquitectura UX y Mockups Requeridos
 
-> **Versión:** 2.1 (Consolidada y Alineada al Contrato Técnico v5.5.0)
+> **Versión:** 2.1 (Consolidada y Alineada al Contrato Técnico v5.6.0)
 > **Propósito:** Definir la estructura real de navegación de producto, reduciendo la fragmentación de pantallas mediante la fusión de estados en vistas reactivas, modales de contexto y un Drawer de Jueces desacoplado de la experiencia del cliente.
 
 ---
@@ -34,9 +34,9 @@ graph TD
     end
 
     subgraph Technical ["🧪 Infraestructura WebMCP & Jueces"]
-        T1["/providers/andes (Página real WebMCP)"]
-        T2["/providers/inca (Página real WebMCP)"]
-        T3["/providers/pacific (Página real WebMCP)"]
+        T1["/providers/[carrierSlug] (Plantilla WebMCP dinámica)"]
+        T2["Provider Registry (0..N candidatos)"]
+        T3["3 fixtures seed del Golden Flow"]
         T4["Judge Activity Drawer (Overlay Universal)"]
     end
 
@@ -110,9 +110,9 @@ graph TD
 - **Estados de la Vista:**
   - **Estado A — Buscando Opciones (Live Dispatching):**
     - Indicador de estado: *"Buscando opciones de transporte en tiempo real..."*
-    - Progreso por carrier: Andes Freight (*Consultando...*), Inca Logistics (*Consultando...*), Pacific Cargo (*Pendiente...*).
+    - Progreso generado desde los carriers descubiertos. Golden Flow: Andes Freight (*Consultando...*), Inca Logistics (*Consultando...*), Pacific Cargo (*Pendiente...*).
   - **Estado B — Opciones Listas (OPTIONS_READY):**
-    - Despliegue de las 3 tarjetas de transportistas elegibles:
+    - Despliegue de `0..N` tarjetas de transportistas elegibles. En el Golden Flow aparecen:
       1. **Andes Freight:** **$1,760 USD** · 31h · Scania R450 18t · 96% SLA · **89 pts** · Badge `★ Recomendado por CargoMesh` · Botón `Seleccionar Andes Freight`.
       2. **Inca Logistics:** **$1,920 USD** · 29h · Volvo FH 24t · 98% SLA · **84 pts** · Botón `Seleccionar Inca Logistics`.
       3. **Pacific Cargo:** **$1,590 USD** · 60h · Freightliner 15t · 86% SLA · **72 pts** · Botón `Seleccionar Pacific Cargo`.
@@ -203,10 +203,12 @@ graph TD
 ## 🧪 3. Infraestructura WebMCP & Panel de Jueces
 
 ### Páginas Reales de Carriers (WebMCP Endpoints)
-Cada carrier debe ser una página web independiente en su propia ruta para garantizar la correcta separación de orígenes y registros en `document.modelContext`:
+Los fixtures alojados por CargoMesh se renderizan con la plantilla `/providers/[carrierSlug]`. Cada navegación carga un documento y registra únicamente las tools del carrier actual. Las tres instancias de la demo son:
 - `/providers/andes` — Registra tools de Andes Freight (`quote_freight`, `book_freight`, etc.) con fixture de Scania R450 ($1,760 USD).
 - `/providers/inca` — Registra tools de Inca Logistics con fixture de Volvo FH ($1,920 USD).
 - `/providers/pacific` — Registra tools de Pacific Cargo con fixture de Freightliner ($1,590 USD).
+
+Un transportista adicional se incorpora mediante el Provider Registry y su `provider_url`, sin crear ramas nuevas en dispatch, scoring o booking.
 
 ---
 
@@ -233,5 +235,5 @@ Cada carrier debe ser una página web independiente en su propia ruta para garan
 | **Booking Status** | Mezclaba controles de demo, JSON y simulación | **Vista limpia de cliente** (cronómetro de 15m y mini-timeline) |
 | **Recovery** | Pantalla separada desconectada del flujo | **Modal / Banner contextual** en Booking Status $\rightarrow$ Dispatch v2 |
 | **Modificar / Seguridad** | Páginas enteras artificiales | **Modales contextuales** sobre Tracking y Booking |
-| **Páginas de Carriers** | Una sola página con tabs simuladas | **3 páginas reales independientes** (`/providers/andes`, `/inca`, `/pacific`) |
+| **Páginas de Carriers** | Una sola página con tabs simuladas | **Plantilla dinámica** `/providers/[carrierSlug]` + URLs externas registradas; tres instancias seed en la demo |
 | **Herramientas de Juez** | Repartidas e incrustadas en la UI de cliente | **Judge Activity Drawer universal desacoplado** |

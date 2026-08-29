@@ -3,7 +3,7 @@
 > **Proyecto remoto:** `cargomesh` (`tokvzfrefwqobzqgbfoj`)  
 > **Fecha:** 2026-08-29  
 > **Estado:** 17 tablas públicas, RLS completo y Golden Flow bootstrap alineado.  
-> **Documento general de producto:** `CargoMesh_Planeacion_WebMCP_FINAL.md` v5.5.0.
+> **Documento general de producto:** `CargoMesh_Planeacion_WebMCP_FINAL.md` v5.6.0.
 
 ## 1. Objetivo
 

@@ -3,7 +3,7 @@
 > **Proyecto remoto auditado:** `cargomesh` (`tokvzfrefwqobzqgbfoj`)  
 > **Fecha de auditoría:** 2026-08-28  
 > **Estado:** contrato remoto, modelo B2B, perfiles de carga, Golden Flow canónico y RLS aplicados y verificados.  
-> **Fuente de verdad:** `CargoMesh_Planeacion_WebMCP_FINAL.md` v5.5.0.
+> **Fuente de verdad:** `CargoMesh_Planeacion_WebMCP_FINAL.md` v5.6.0.
 
 ## 1. Resumen ejecutivo
 
@@ -25,7 +25,7 @@ La conexión directa con Supabase funciona y el proyecto está `ACTIVE_HEALTHY` 
 
 El esquema contiene 17 tablas y los contratos de identidad, perfiles empresariales de carga, intención logística, observabilidad, versionado de decisiones, idempotencia y booking lifecycle. Las 17 tablas tienen RLS habilitado, 22 políticas organization-scoped y cero privilegios de tabla para `anon`.
 
-Las tres ofertas precargadas de FR-1042 fueron eliminadas. La solicitud, organización, perfil de carga, transportistas, servicios, vehículos y métricas corresponden ahora al Golden Flow v5.5.0. Los avisos `unused_index` son informativos y esperables mientras las tablas runtime estén vacías; el Security Advisor no reporta hallazgos.
+Las tres ofertas precargadas de FR-1042 fueron eliminadas. La solicitud, organización, perfil de carga, transportistas, servicios, vehículos y métricas corresponden ahora al Golden Flow v5.6.0. Los tres carriers son fixtures seed reproducibles, no un límite del esquema: `carriers` y `carrier_services` forman un Provider Registry abierto a `0..N` transportistas. Los avisos `unused_index` son informativos y esperables mientras las tablas runtime estén vacías; el Security Advisor no reporta hallazgos.
 
 En el entorno local y en `seed.sql` ya existe el usuario demo en `auth.users` (`carlos.mendoza@acmemining.pe`) con su membresía activa como `OWNER` de ACME Mining en `organization_members`. Las pruebas automatizadas con pgTAP (`npx supabase test db`) y el reset reproducible (`npx supabase db reset`) están 100% operativos.
 
@@ -38,9 +38,9 @@ En el entorno local y en `seed.sql` ya existe el usuario demo en `auth.users` (`
 | `organization_preferences` | 1 | Bootstrap | modo asistido; auto-booking deshabilitado |
 | `cargo_categories` | 8 | Bootstrap | orientación dinámica de intake y flota |
 | `freight_requests` | 1 | Demo Scenario | FR-1042 existe en `PENDING` |
-| `carriers` | 3 | Bootstrap | Andes, Inca y Pacific existen |
-| `carrier_services` | 3 | Bootstrap | PE→CL, FTL y cross-border configurados |
-| `carrier_service_cargo_categories` | 9 | Bootstrap | incluye Machinery para los tres carriers |
+| `carriers` | 3 | Bootstrap demo | Andes, Inca y Pacific son registros seed; la cardinalidad productiva es 0..N |
+| `carrier_services` | 3 | Bootstrap demo | servicios seed PE→CL; discovery consulta cualquier servicio activo compatible |
+| `carrier_service_cargo_categories` | 9 | Bootstrap demo | compatibilidad seed; no existe una lista cerrada de carriers |
 | `carrier_metrics` | 3 | Bootstrap | valores canónicos |
 | `vehicles` | 3 | Bootstrap | vehículos canónicos |
 | `carrier_offers` | 0 | Runtime | nace de WebMCP |
