@@ -214,10 +214,13 @@ function roundCurrency(value: number): number {
 
 function deterministicTimeline(input: QuoteFreightInput, transitHours: number) {
   const seed = stableHash(input.freight_request_id);
-  const issuedAt = new Date(Date.UTC(2026, 7, 29, 12, seed % 60));
+  const fallbackIssuedAt = new Date(Date.UTC(2026, 7, 29, 12, seed % 60));
   const requestedPickup = input.pickup_window_start
     ? new Date(input.pickup_window_start)
-    : new Date(issuedAt.getTime() + 24 * 60 * 60 * 1000);
+    : new Date(fallbackIssuedAt.getTime() + 24 * 60 * 60 * 1000);
+  const issuedAt = input.pickup_window_start
+    ? new Date(requestedPickup.getTime() - 24 * 60 * 60 * 1000)
+    : fallbackIssuedAt;
   const estimatedDelivery = new Date(
     requestedPickup.getTime() + transitHours * 60 * 60 * 1000,
   );
