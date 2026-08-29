@@ -1,333 +1,124 @@
-﻿# CargoMesh — Backlog de Producto y Cronograma del Hackathon
+﻿# CargoMesh — Backlog de Producto y Cronograma del Hackathon (MVP Scope)
 
 > **Proyecto:** CargoMesh (WebMCP Challenge 2026)  
-> **Versión:** 1.2.0 (Consolidado con Épica 0 Completada + Tareas Pendientes)  
+> **Versión:** 1.3.0 (Enfoque Pragmático y Acotado al Golden Flow Demo)  
+> **Fecha límite de entrega:** 02 de Septiembre de 2026  
 > **Catálogo de Requisitos Asociado:** `docs/01-requirements/CargoMesh_Catalogo_Requisitos.md`
 
 ---
 
-## ⏳ Cronograma de Ejecución (Plan de 5 Días para Hackathon)
+## ⏳ Cronograma Real hacia la Entrega (29 Ago — 02 Sep)
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ DÍA 1: Cimientos, Base de Datos & Contratos (100% COMPLETADO HOY ✅)                             │
+│ VIERNES 28 AGOSTO: Base de Datos, Cimientos & Contratos (100% COMPLETADO ✅)                     │
 │ └── 11 Migraciones Supabase, RLS, pgTAP Tests (18/18 PASS), Seed Auth, Esqueleto y Docs (00-03).│
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ DÍA 2: Core Express & Lógica Dura (SIGUIENTE PASO 🚀)                                           │
-│ └── Portales WebMCP, Decision Engine (Scoring BALANCED), Result Bridge y Clientes Supabase SSR. │
+│ SÁBADO 29 AGOSTO: Auth Demo, UI Shell & Páginas Fixture WebMCP                                   │
+│ └── Login 1-click con Carlos Mendoza, Layout Dashboard y 3 páginas livianas de carriers.        │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ DÍA 3: Integración End-to-End (Frontend ↔ Backend ↔ Supabase)                                    │
-│ └── Conexión del Stepper FR-1042, llamadas WebMCP en vivo, persistencia y estado de booking.     │
+│ DOMINGO 30 AGOSTO: Stepper FR-1042, Agente WebMCP & Motor de Scoring                             │
+│ └── Stepper interactivo de carga, agente runner que consulta los carriers y calcula notas (89/84/72) │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ DÍA 4: UI/UX, Judge Drawer & Pulido Visual                                                       │
-│ └── Judge Activity Drawer flotante, animaciones de búsqueda, badges, timeline y manejo visual.  │
+│ LUNES 31 AGOSTO: Booking, Timeline de Tracking, Recovery & Judge Drawer                         │
+│ └── Selección humana, confirmación/rechazo, re-evaluación a Inca y Drawer de Jueces en vivo.    │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ DÍA 5: Congelamiento de Código, Ensayo del Golden Flow & Pitch                                  │
-│ └── Cero cambios de código; ensayo de demo y validación con los 73 puntos de aceptación.        │
+│ MARTES 01 SEPTIEMBRE: Pulido E2E, Ensayo General de Demo & Grabación de Video                   │
+│ └── Congelamiento de código, validación de los 73 puntos de aceptación y preparación de entrega. │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ MIÉRCOLES 02 SEPTIEMBRE: CIERRE Y ENTREGA OFICIAL DEL HACKATHON 🏆                              │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📊 Tablero General del Backlog (Jira / Linear View)
+## 🎯 Alcance Estricto del Demo (Sin Sobreingeniería)
 
-### ✅ Épica 0: Cimientos, Base de Datos, RLS y Entorno (Día 1 — 100% COMPLETADO)
+Para no dispersar esfuerzos en pantallas innecesarias, el alcance se limita estrictamente a:
 
-| Clave | Actividad / Entregable | Responsable | Prioridad | Estado |
-|:---:|---|:---:|:---:|:---:|
-| `CM-00A` | Migración Baseline Legacy (12 tablas originales) | *DB Lead* | 🔴 Alta | `[✅ Completado]` |
-| `CM-00B` | Secuencia de 11 Migraciones PostgreSQL 17 + Domain Constraints | *DB Lead* | 🔴 Alta | `[✅ Completado]` |
-| `CM-00C` | Seguridad y Aislamiento Multi-Tenant con RLS (17 tablas, anon bloqueado) | *Security Lead* | 🔴 Alta | `[✅ Completado]` |
-| `CM-00D` | Seed de Usuario Demo (`carlos.mendoza@acmemining.pe` como OWNER) | *DB Lead* | 🔴 Alta | `[✅ Completado]` |
-| `CM-00E` | Suite Oficial de Pruebas pgTAP (`npx supabase test db` 18/18 PASS) | *QA / DB Lead* | 🔴 Alta | `[✅ Completado]` |
-| `CM-00F` | Scaffolding Modular: `frontend/` (Next.js 15), `backend/` (FastAPI) | *Fullstack Lead* | 🔴 Alta | `[✅ Completado]` |
-| `CM-00G` | Reorganización de Docs (`00-03`) y Catálogo de 29 Requisitos | *Product Lead* | 🔴 Alta | `[✅ Completado]` |
+1. **Autenticación:** 1 solo botón de acceso directo con el usuario demo pre-sembrado (`carlos.mendoza@acmemining.pe`). Sin pantallas complejas de recuperación de contraseña o registro masivo.
+2. **Páginas de Transportistas (`/providers/*`):** Son únicamente **páginas de aterrizaje livianas con fixtures** (reutilizando los diseños ya listos en `mockups/provider_*.html`) cuyo único fin es registrar las tools en `document.modelContext`. No son sistemas de gestión interna de flotas.
+3. **Solicitud de Carga:** El formulario Stepper viene pre-llenado con los datos de **FR-1042** (10 pallets $\times$ 800 kg = 8,000 kg, 18 m³, Callao $\rightarrow$ Santiago) para avanzar la demo rápidamente.
+4. **Orquestación & Scoring:** Agente que llama a las 3 tools, aplica la fórmula BALANCED y guarda la decisión inmutable.
+5. **Booking & Tracking:** Simulación limpia de confirmación aduanera y timeline de hitos.
+6. **Recovery:** Modal contextual que ante rechazo de Andes ofrece a Inca Logistics en 1 clic.
+7. **Judge Drawer:** Panel lateral flotante para ver logs JSON y cambiar el switch `ACCEPT / REJECT`.
 
 ---
 
-### 🚀 Épicas de Desarrollo de la Aplicación (Días 2 a 4 — PENDIENTES DE CODIFICAR)
+## 📊 Tablero General de Tareas (Jira / Linear View)
 
-| Clave | Actividad / Historia de Usuario | Épica Padre | Asignado a | Prioridad | Estado |
+### ✅ Épica 0: Cimientos y Base de Datos (COMPLETADO EL 28 AGOSTO)
+
+| Clave | Tarea Entregada | Responsable | Estado |
+|:---:|---|:---:|:---:|
+| `CM-00A` | Baseline Legacy (12 tablas) con `supabase db reset` reproducible | *DB Lead* | `[✅ Completado]` |
+| `CM-00B` | 11 Migraciones PostgreSQL 17 + Domain Constraints | *DB Lead* | `[✅ Completado]` |
+| `CM-00C` | Seguridad RLS en 17 tablas (anon bloqueado con `42501`) | *Security Lead* | `[✅ Completado]` |
+| `CM-00D` | Seed Demo Auth (`carlos.mendoza@acmemining.pe` como OWNER) | *DB Lead* | `[✅ Completado]` |
+| `CM-00E` | Suite Oficial pgTAP (`npx supabase test db` 18/18 PASS) | *QA / DB Lead* | `[✅ Completado]` |
+| `CM-00F` | Esqueleto de carpetas: `frontend/` (Next.js) y `backend/` (FastAPI) | *Fullstack Lead* | `[✅ Completado]` |
+| `CM-00G` | Jerarquía Docs (`00-03`) y Catálogo Oficial de Requisitos | *Product Lead* | `[✅ Completado]` |
+
+---
+
+### 🚀 Tareas de Desarrollo Acotadas (29 Ago — 01 Sep)
+
+| Clave | Actividad (Alcance Demo) | Épica Padre | Asignado a | Prioridad | Estado |
 |:---:|---|---|:---:|:---:|:---:|
-| `CM-01` | Autenticación y Carga Dinámica de Organización | ⚡ `EP-1` Auth & Tenant | *Fullstack Lead* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-02` | Políticas de Despacho y Perfiles de Carga | ⚡ `EP-1` Auth & Tenant | *Frontend Dev* | 🟡 Media | `[ ] Pendiente` |
-| `CM-03` | Stepper de Intake de 5 Pasos | ⚡ `EP-2` Intake & Carga | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-04` | Normalización Matemática Unitizada y Pre-check | ⚡ `EP-2` Intake & Carga | *Backend Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-05` | Portales Web de Carriers y Exposición WebMCP | ⚡ `EP-3` WebMCP & Carriers | *Fullstack Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-06` | Fixtures y Cotizaciones Deterministas | ⚡ `EP-3` WebMCP & Carriers | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-07` | Agente Runner y Result Bridge Idempotente | ⚡ `EP-4` Orquestación & AI | *Backend / AI Lead* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-08` | Decision Engine Heurístico y Snapshots | ⚡ `EP-4` Orquestación & AI | *Backend / AI Lead* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-09` | Vista Reactiva de Despacho `/dispatch` | ⚡ `EP-4` Orquestación & AI | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-10` | Selección Humana y Solicitud de Booking | ⚡ `EP-5` Booking & Recovery | *Fullstack Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-11` | Confirmación y Timeline de Seguimiento | ⚡ `EP-5` Booking & Recovery | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-12` | Circuito de Recuperación Operacional (Recovery) | ⚡ `EP-5` Booking & Recovery | *Backend / AI Lead* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-13` | Judge Activity Drawer en Tiempo Real | ⚡ `EP-6` Jueces & Observabilidad | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-14` | Inyección de Fixtures y Reset de Demostración | ⚡ `EP-6` Jueces & Observabilidad | *Backend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-01` | **Login 1-Click & Supabase SSR Client:** Botón de acceso directo con Carlos Mendoza y contexto de ACME. | ⚡ `EP-1` Auth & Shell | *Fullstack Lead* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-02` | **Layout B2B & Dashboard Base:** Sidebar y tabla de solicitudes mostrando `FR-1042` en estado `PENDING`. | ⚡ `EP-1` Auth & Shell | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-03` | **Stepper FR-1042 (5 Pasos):** Formulario pre-llenado con 10 pallets × 800 kg = 8,000 kg y 18 m³. | ⚡ `EP-2` Intake Carga | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-04` | **Validación & Normalización:** Cálculo automático de peso/volumen total y pre-check de integridad. | ⚡ `EP-2` Intake Carga | *Backend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-05` | **3 Páginas Carrier Fixture (`/providers/*`):** Montar vistas Andes, Inca y Pacific basadas en mockups. | ⚡ `EP-3` WebMCP Tools | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-06` | **Registro WebMCP Tools:** Exponer `quote_freight` y `book_freight` deterministas en `document.modelContext`. | ⚡ `EP-3` WebMCP Tools | *Fullstack Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-07` | **Agente Runner & Result Bridge:** Script en Python que visita las 3 páginas e inserta ofertas en Supabase. | ⚡ `EP-4` Orquestación & AI | *Backend / AI Lead* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-08` | **Decision Engine BALANCED:** Cálculo exacto de scores (Andes 89, Inca 84, Pacific 72) y snapshot v1. | ⚡ `EP-4` Orquestación & AI | *Backend / AI Lead* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-09` | **Vista `/dispatch` Reactiva:** Pantalla que muestra "Buscando..." y luego las cards con Andes recomendada. | ⚡ `EP-4` Orquestación & AI | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-10` | **Selección & Booking Request:** Clic en "Seleccionar Andes" y paso a espera con cronómetro de 15 min. | ⚡ `EP-5` Booking & Recovery | *Fullstack Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-11` | **Timeline de Tracking:** Vista `/tracking` con hito aduanero de frontera Santa Rosa/Chacalluta y placas. | ⚡ `EP-5` Booking & Recovery | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-12` | **Modal de Recovery:** Flujo de contingencia si Andes rechaza $\rightarrow$ sugerir Inca Logistics en 1 clic. | ⚡ `EP-5` Booking & Recovery | *Backend / AI Lead* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-13` | **Judge Activity Drawer:** Overlay flotante con streaming de eventos, latencias y visor JSON para jueces. | ⚡ `EP-6` Jueces & Demo | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-14` | **Controles de Fixture & Reset:** Switch `ACCEPT/REJECT` y botón para reiniciar la demo en 1 segundo. | ⚡ `EP-6` Jueces & Demo | *Backend Dev* | 🔴 Alta | `[ ] Pendiente` |
 
 ---
 
-## ⚡ ÉPICA 0: Cimientos, Base de Datos, RLS y Entorno (COMPLETADA HOY)
+## ⚡ Detalle de Historias Acotadas al MVP
 
-* **`CM-00A` — Baseline Legacy:** Creación de `20260828200000_baseline_legacy_schema.sql` para levantar las 12 tablas heredadas desde cero con `npx supabase db reset`. `[✅]`
-* **`CM-00B` — 11 Migraciones PostgreSQL 17:** Aplicación en orden estricto de tablas de identidad, observabilidad, perfiles de carga y constraints de dominio. `[✅]`
-* **`CM-00C` — RLS & Multi-tenant:** 17 tablas aseguradas con RLS, aislamiento total entre tenants y bloqueo 100% a `anon` (código `42501`). `[✅]`
-* **`CM-00D` — Seed Auth:** Usuario `carlos.mendoza@acmemining.pe` (`CargoMesh2026!`) vinculado a ACME Mining como `OWNER`. `[✅]`
-* **`CM-00E` — Suite pgTAP:** Archivo `supabase/tests/01_cargomesh_rls_and_golden_flow.test.sql` con 18/18 pruebas en verde (`PASS`). `[✅]`
-* **`CM-00F` — Scaffolding:** Estructura modular `frontend/` (Next.js 15, React 19, Tailwind) y `backend/` (FastAPI, OpenAI). `[✅]`
-* **`CM-00G` — Jerarquía Docs:** Reorganización `docs/00` a `docs/03` y catálogo de 29 requisitos (RF/RNF). `[✅]`
+### 📌 `CM-01`: Login 1-Click y Cliente Supabase SSR
+* **Como** presentador de la demo,
+* **Quiero** iniciar sesión con un solo clic en "Acceso Demo ACME Mining",
+* **Para** ingresar inmediatamente a la plataforma sin perder tiempo escribiendo contraseñas.
+* **Alcance estricto:** Botón en `/login` que llama a `signInWithPassword` con el usuario ya sembrado y redirige al dashboard.
 
 ---
 
-## ⚡ ÉPICA 1: Autenticación, Gobernanza y Contexto B2B (`EP-1`)
-
-### 📌 `CM-01`: Autenticación y Carga Dinámica de Organización
-* **Persona asignada:** *Fullstack Lead*
-* **Prioridad:** 🔴 Alta (P0)
-* **Estado:** `[ ] Pendiente`
-* **Estructura de Usuario:**
-  * **Como** representante logístico de una empresa (ej. Carlos Mendoza de ACME Mining),
-  * **Quiero** iniciar sesión y que el sistema resuelva automáticamente mi organización y rol,
-  * **Para** gestionar operaciones de carga bajo el contexto y permisos de mi empresa de forma segura.
-* **Lo que se necesita principalmente:**
-  * Configurar Supabase SSR Client en `frontend/src/lib/supabase/`.
-  * Pantalla de Login en `frontend/src/app/(auth)/login/` con botón de acceso rápido para demo.
-  * Hook `useOrganizationContext` para resolver `organization_id`, `legal_name`, `country` y rol activo sin hardcodear datos.
-* **Criterios de Aceptación:**
-  1. Al iniciar sesión con `carlos.mendoza@acmemining.pe`, se carga la sesión JWT válida.
-  2. El contexto global resuelve `organization_id` y rol `OWNER` directamente desde `organization_members`.
+### 📌 `CM-05` & `CM-06`: Páginas Fixture de Carriers y WebMCP
+* **Como** agente de IA,
+* **Quiero** navegar a `/providers/andes`, `/providers/inca` y `/providers/pacific` y ejecutar `quote_freight`,
+* **Para** obtener las cotizaciones estructuradas ($1,760, $1,920, $1,590) directamente desde la web del carrier.
+* **Alcance estricto:** Usar los HTMLs de `mockups/provider_*.html` como componentes React livianos que ejecutan `document.modelContext.registerTool`. **Cero gestión interna de flotas o portales pesados.**
 
 ---
 
-### 📌 `CM-02`: Políticas de Despacho y Perfiles Habituales de Carga
-* **Persona asignada:** *Frontend Dev*
-* **Prioridad:** 🟡 Media (P1)
-* **Estado:** `[ ] Pendiente`
-* **Estructura de Usuario:**
-  * **Como** administrador logístico (OWNER / SUPERVISOR),
-  * **Quiero** consultar y gestionar las políticas de despacho y plantillas de carga frecuente,
-  * **Para** estandarizar los requerimientos de transporte y agilizar la creación de nuevas solicitudes.
-* **Lo que se necesita principalmente:**
-  * Vista de configuración en `frontend/src/app/(dashboard)/` para ver políticas (`BALANCED`, umbral $\ge 85\%$).
-  * Selector de plantillas (`organization_cargo_profiles`) para autocompletar formularios.
-* **Criterios de Aceptación:**
-  1. Los roles `OWNER` y `SUPERVISOR` pueden modificar las preferencias; `REQUESTER` solo lectura.
-  2. La selección del perfil "Repuestos mineros" precarga categoría `MACHINERY` y vehículo `TRACTOR_TRAILER`.
+### 📌 `CM-07` & `CM-08`: Agente Runner & Decision Engine
+* **Como** núcleo de CargoMesh,
+* **Quiero** que el agente extraiga las 3 cotizaciones y calcule el ranking BALANCED,
+* **Para** persistir las ofertas en la base de datos y determinar que Andes Freight gana con 89 puntos.
+* **Alcance estricto:** Script en Python que simula la navegación / llamada a las tools de los providers y corre la fórmula matemática canónica.
 
 ---
 
-## ⚡ ÉPICA 2: Captura e Intake de Carga Logística (`EP-2`)
-
-### 📌 `CM-03`: Stepper de Intake de 5 Pasos
-* **Persona asignada:** *Frontend Dev*
-* **Prioridad:** 🔴 Alta (P0)
-* **Estado:** `[ ] Pendiente`
-* **Estructura de Usuario:**
-  * **Como** despachador B2B,
-  * **Quiero** un formulario guiado e interactivo de 5 pasos,
-  * **Para** ingresar rutas, características de la carga, ventanas de recojo y presupuesto sin omitir datos críticos.
-* **Lo que se necesita principalmente:**
-  * Componente Stepper en `frontend/src/components/stepper/` (Paso 1: Organización, Paso 2: Ruta Callao $\rightarrow$ Santiago, Paso 3: Carga, Paso 4: Políticas, Paso 5: Resumen).
-  * Validaciones visuales por paso para habilitar el botón "Siguiente".
-* **Criterios de Aceptación:**
-  1. Navegación fluida entre pasos con guardado de estado local.
-  2. El Paso 5 muestra el resumen consolidado y botón *"Confirmar y buscar opciones de transporte"*.
+### 📌 `CM-09`: Vista `/dispatch` y Explicabilidad
+* **Como** cliente B2B,
+* **Quiero** ver cómo aparecen las 3 alternativas y por qué Andes es la recomendada,
+* **Para** tomar una decisión informada basada en costo ($1,760), tiempo (31h) y confiabilidad (96%).
+* **Alcance estricto:** Vista que muestra tarjetas ordenadas: Andes (89 pts - Badge Recomendado), Inca (84 pts) y Pacific (72 pts) con botón de selección.
 
 ---
 
-### 📌 `CM-04`: Normalización Matemática Unitizada y Pre-check
-* **Persona asignada:** *Backend Dev*
-* **Prioridad:** 🔴 Alta (P0)
-* **Estado:** `[ ] Pendiente`
-* **Estructura de Usuario:**
-  * **Como** sistema inteligente de fletes,
-  * **Quiero** normalizar matemáticamente el peso y volumen total y validar restricciones duras,
-  * **Para** garantizar que la solicitud sea físicamente viable antes de consultar a los transportistas.
-* **Lo que se necesita principalmente:**
-  * Hook de cálculo unitizado en frontend ($10 \times 800\text{ kg} = 8,000\text{ kg}$, $1.2 \times 1.0 \times 1.5\text{ m} \times 10 = 18\text{ m³}$).
-  * Endpoint / validador Pydantic en backend que rechace pesos $\le 0$, presupuestos negativos o fechas incongruentes.
-* **Criterios de Aceptación:**
-  1. Al cambiar la cantidad de pallets o dimensiones, el peso y volumen total se recalculan en tiempo real.
-  2. Solicitudes con inconsistencias matemáticas son rechazadas antes de crear el registro en Supabase.
-
----
-
-## ⚡ ÉPICA 3: Infraestructura de Transportistas y WebMCP (`EP-3`)
-
-### 📌 `CM-05`: Portales Web de Carriers y Exposición WebMCP
-* **Persona asignada:** *Fullstack Dev*
-* **Prioridad:** 🔴 Alta (P0)
-* **Estado:** `[ ] Pendiente`
-* **Estructura de Usuario:**
-  * **Como** transportista participante de la red (Andes, Inca, Pacific),
-  * **Quiero** una página web pública que exponga herramientas WebMCP estructuradas,
-  * **Para** que agentes de IA puedan consultar mi cobertura, flota y tarifas de manera autónoma.
-* **Lo que se necesita principalmente:**
-  * Páginas web en `frontend/src/app/providers/[carrier]/page.tsx` conectadas a las tablas `carriers`, `vehicles` y `carrier_metrics` de Supabase.
-  * Registro de herramientas en el navegador mediante `document.modelContext.registerTool` (`check_service_coverage`, `check_capacity`, `quote_freight`, `book_freight`, `get_provider_booking_status`).
-* **Criterios de Aceptación:**
-  1. Cada portal renderiza su identidad visual corporativa y flota real desde la BD.
-  2. Las herramientas WebMCP están registradas y son invocables programáticamente.
-
----
-
-### 📌 `CM-06`: Fixtures y Cotizaciones Deterministas
-* **Persona asignada:** *Frontend Dev*
-* **Prioridad:** 🔴 Alta (P0)
-* **Estado:** `[ ] Pendiente`
-* **Estructura de Usuario:**
-  * **Como** motor de tarificación del carrier,
-  * **Quiero** responder a la herramienta `quote_freight` con una cotización estructurada y determinista,
-  * **Para** proporcionar al agente información precisa de precio, tiempo de tránsito y disponibilidad.
-* **Lo que se necesita principalmente:**
-  * Implementación de la lógica de respuesta para el escenario Golden Flow:
-    * **Andes:** $1,760 USD · 31h · Scania R450 18t · 96% SLA.
-    * **Inca:** $1,920 USD · 29h · Volvo FH 24t · 98% SLA.
-    * **Pacific:** $1,590 USD · 60h · Freightliner 15t · 86% SLA.
-* **Criterios de Aceptación:**
-  1. Las respuestas JSON contienen desglose de costos, notas aduaneras y tiempos en horas.
-  2. Ante cambios de fixture (desde el Judge Drawer), la respuesta se adapta (`ACCEPT` vs `REJECT`).
-
----
-
-## ⚡ ÉPICA 4: Orquestación Agent-Native y Motor de Decisión (`EP-4`)
-
-### 📌 `CM-07`: Agente Runner y Result Bridge Idempotente
-* **Persona asignada:** *Backend / AI Lead*
-* **Prioridad:** 🔴 Alta (P0)
-* **Estado:** `[ ] Pendiente`
-* **Estructura de Usuario:**
-  * **Como** agente orquestador de CargoMesh,
-  * **Quiero** navegar por los portales de los carriers, invocar sus herramientas y persistir los resultados válidos,
-  * **Para** alimentar el proceso de decisión cumpliendo estrictamente la regla de causalidad.
-* **Lo que se necesita principalmente:**
-  * Agente en Python (`backend/app/agent/`) que gestione `orchestration_runs`.
-  * **Result Bridge** que valide las cotizaciones recibidas e inserte en `carrier_offers` y `orchestration_events` usando `tool_call_id` único.
-* **Criterios de Aceptación:**
-  1. Las ofertas solo existen en la base de datos tras la ejecución de la herramienta WebMCP.
-  2. Llamadas repetidas no generan ofertas duplicadas (idempotencia estricta).
-
----
-
-### 📌 `CM-08`: Decision Engine Heurístico y Snapshots Inmutables
-* **Persona asignada:** *Backend / AI Lead*
-* **Prioridad:** 🔴 Alta (P0)
-* **Estado:** `[ ] Pendiente`
-* **Estructura de Usuario:**
-  * **Como** motor de decisión matemática,
-  * **Quiero** evaluar las ofertas con la fórmula BALANCED y congelar un snapshot inmutable,
-  * **Para** entregar un ranking objetivo, auditable y con nivel de confianza cuantificado.
-* **Lo que se necesita principalmente:**
-  * Motor de scoring en `backend/app/engine/` con las 6 dimensiones (Costo 25%, SLA 25%, ETA 20%, Disponibilidad 10%, Ruta 10%, Historial 10%).
-  * Cálculo de Decision Confidence Score (88/100) y alerta de anomalías (>+30%).
-  * Persistencia en `freight_decisions` (`v1`) con ranking completo y subscores.
-* **Criterios de Aceptación:**
-  1. Puntuaciones exactas calculadas: Andes 89 pts (Ganador), Inca 84 pts, Pacific 72 pts.
-  2. El registro en `freight_decisions` es inmutable y no se sobreescribe.
-
----
-
-### 📌 `CM-09`: Vista Reactiva de Despacho `/dispatch/[id]`
-* **Persona asignada:** *Frontend Dev*
-* **Prioridad:** 🔴 Alta (P0)
-* **Estado:** `[ ] Pendiente`
-* **Estructura de Usuario:**
-  * **Como** despachador B2B,
-  * **Quiero** ver el progreso en tiempo real de la consulta a los carriers y las tarjetas de ofertas resultantes,
-  * **Para** comprender la recomendación y seleccionar la mejor opción de transporte.
-* **Lo que se necesita principalmente:**
-  * Vista reactiva en `frontend/src/app/(dashboard)/dispatch/[id]/` (estados `EVALUATING` $\rightarrow$ `OPTIONS_READY`).
-  * Tarjetas de transportistas con badges (`★ Recomendado por CargoMesh`), precios y tiempos.
-  * Sección expandible de explicabilidad técnica con desglose de subscores.
-* **Criterios de Aceptación:**
-  1. La interfaz muestra el progreso en vivo y se detiene en `OPTIONS_READY`.
-  2. La tarjeta de Andes Freight muestra 89 pts y el botón "Seleccionar Andes Freight".
-
----
-
-## ⚡ ÉPICA 5: Booking, Tracking y Recuperación Operacional (`EP-5`)
-
-### 📌 `CM-10`: Selección Humana y Solicitud de Booking
-* **Persona asignada:** *Fullstack Dev*
-* **Prioridad:** 🔴 Alta (P0)
-* **Estado:** `[ ] Pendiente`
-* **Estructura de Usuario:**
-  * **Como** despachador B2B,
-  * **Quiero** seleccionar formalmente una oferta y que el sistema emita la reserva al carrier,
-  * **Para** asegurar la capacidad del camión e iniciar el proceso de despacho.
-* **Lo que se necesita principalmente:**
-  * Registrar `selected_offer_id` en Supabase.
-  * Invocar `book_freight()` en el portal del carrier y pasar a `PENDING_PROVIDER_CONFIRMATION` con cronómetro de 15 min.
-* **Criterios de Aceptación:**
-  1. La solicitud pasa a estado de espera con cuenta regresiva visible.
-  2. Se genera un registro en `bookings` asociado al `provider_reference` (ej. `AND-BOOK-8821`).
-
----
-
-### 📌 `CM-11`: Confirmación y Timeline de Seguimiento
-* **Persona asignada:** *Frontend Dev*
-* **Prioridad:** 🔴 Alta (P0)
-* **Estado:** `[ ] Pendiente`
-* **Estructura de Usuario:**
-  * **Como** despachador B2B,
-  * **Quiero** recibir la confirmación del carrier y rastrear los hitos del viaje,
-  * **Para** supervisar el tránsito internacional y los trámites fronterizos en tiempo real.
-* **Lo que se necesita principalmente:**
-  * Transición automática a `/tracking/[id]` al confirmarse la reserva (`CONFIRMED`).
-  * Timeline de hitos aduaneros (`BORDER_PROCESSING` en Santa Rosa / Chacalluta), unidad asignada, placa y precinto.
-* **Criterios de Aceptación:**
-  1. Vista de tracking renderiza datos reales de viaje (`Scania R450`, placa `AND-TRK-101`).
-  2. Línea de tiempo alimentada por eventos de `booking_events`.
-
----
-
-### 📌 `CM-12`: Circuito de Recuperación Operacional (Recovery Run)
-* **Persona asignada:** *Backend / AI Lead*
-* **Prioridad:** 🔴 Alta (P0)
-* **Estado:** `[ ] Pendiente`
-* **Estructura de Usuario:**
-  * **Como** sistema resiliente de orquestación,
-  * **Quiero** re-evaluar automáticamente alternativas si el carrier rechaza o expira la reserva,
-  * **Para** ofrecer inmediatamente un reemplazo garantizado sin perder la operación.
-* **Lo que se necesita principalmente:**
-  * Manejo del evento `REJECTED` / `EXPIRED` disparando corrida `RECOVERY` en `orchestration_runs`.
-  * Generación de `FreightDecision v2` con las alternativas refrescadas.
-  * Modal en frontend que sugiera a Inca Logistics ($1,920 USD / 29h / 98% SLA) con confirmación en 1 clic.
-* **Criterios de Aceptación:**
-  1. Ante rechazo de Andes, la UI no se bloquea y presenta la opción de reemplazo inmediatamente.
-  2. Al confirmar Inca, se emite un nuevo booking con su propio `provider_reference`.
-
----
-
-## ⚡ ÉPICA 6: Observabilidad y Panel para Jueces (`EP-6`)
-
-### 📌 `CM-13`: Judge Activity Drawer en Tiempo Real
-* **Persona asignada:** *Frontend Dev*
-* **Prioridad:** 🔴 Alta (P0)
-* **Estado:** `[ ] Pendiente`
-* **Estructura de Usuario:**
-  * **Como** juez técnico del WebMCP Challenge,
-  * **Quiero** abrir un panel lateral flotante de trazabilidad en cualquier momento,
-  * **Para** verificar la causalidad real de las llamadas a tools, tiempos de respuesta y payloads JSON.
-* **Lo que se necesita principalmente:**
-  * Componente `JudgeDrawer` flotante con acceso mediante botón `🧪 Judge Mode`.
-  * Stream en vivo de `orchestration_events` con timestamps, duración en ms e inspección de JSON.
-* **Criterios de Aceptación:**
-  1. El Drawer se puede abrir y cerrar sobre cualquier pantalla sin interrumpir la experiencia.
-  2. Los payloads de `quote_freight`, `record_provider_result` y `book_freight` son legibles y formateados.
-
----
-
-### 📌 `CM-14`: Inyección de Fixtures y Reset de Demostración
-* **Persona asignada:** *Backend Dev*
-* **Prioridad:** 🔴 Alta (P0)
-* **Estado:** `[ ] Pendiente`
-* **Estructura de Usuario:**
-  * **Como** juez o presentador de la demo,
-  * **Quiero** configurar el comportamiento de los carriers (`ACCEPT`, `REJECT`, `NO_RESPONSE`) y reiniciar la demo,
-  * **Para** evaluar tanto el flujo exitoso como el flujo de recuperación de forma repetible y controlada.
-* **Lo que se necesita principalmente:**
-  * Controles en el Judge Drawer para cambiar el fixture del transportista.
-  * Endpoint / función de reset que restaure `FR-1042` a `PENDING` y vacíe las tablas de runtime.
-* **Criterios de Aceptación:**
-  1. Cambiar el switch a `REJECT` hace que el carrier responda con rechazo en la siguiente llamada sin alterar la BD.
-  2. El botón *Reset Demo* deja la base de datos limpia y lista para una nueva corrida en menos de 2 segundos.
+### 📌 `CM-13` & `CM-14`: Judge Activity Drawer y Reset
+* **Como** juez evaluador,
+* **Quiero** ver la traza técnica de los eventos y poder resetear la demo,
+* **Para** comprobar que los datos no son falsos y probar escenarios de éxito y contingencia (recovery).
+* **Alcance estricto:** Drawer lateral flotante con visor de eventos JSON y switch para forzar rechazo de Andes.
