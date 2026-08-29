@@ -261,18 +261,32 @@ The v5.5.0 Technical Contract includes an exhaustive **73-point WebMCP Acceptanc
 
 ## 📁 Repository Structure Map
 
-```
+```text
 cargomesh/
-├── docs/
-│   ├── CargoMesh_Planeacion_WebMCP_FINAL.md   # General product/WebMCP contract (v5.5.0)
-│   └── CargoMesh_Supabase_Schema_Contract.md  # Database and RLS contract
-├── supabase/
-│   ├── migrations/                            # Remote-synchronized migration history
-│   ├── current_public_schema.sql              # Current public schema snapshot
-│   └── database.types.ts                      # Generated TypeScript types
-├── mockups/                                   # Standalone HTML UX mockups
-│   └── .gitkeep
-├── .gitignore                                 # Git configuration
+├── docs/                                      # Master documentation & technical contracts
+│   ├── CargoMesh_Planeacion_WebMCP_FINAL.md   # General product & WebMCP master contract (v5.5.0)
+│   ├── CargoMesh_Supabase_Schema_Contract.md  # Database architecture & RLS specification
+│   ├── CargoMesh_Supabase_Data_Contract.md    # Data classification, bootstrap inventory & alignment
+│   ├── CargoMesh_Mockups_Requeridos.md        # Consolidated UX architecture & screen flow
+│   └── CargoMesh_Mockups_WebMCP_Ajustes.md    # WebMCP evidence requirements & judge activity drawer
+├── mockups/                                   # Standalone UX/UI HTML mockups & provider pages
+├── supabase/                                  # Database migrations, seed, tests, and config
+│   ├── config.toml                            # Local Supabase stack configuration
+│   ├── migrations/                            # 11 synchronized migrations (including baseline legacy)
+│   ├── current_public_schema.sql              # Schema reference dump
+│   ├── database.types.ts                      # Generated TypeScript database types
+│   ├── seed.sql                               # Demo Auth user & ACME OWNER seed
+│   ├── tests/                                 # Automated pgTAP database test suite
+│   └── snippets/                              # Standalone validation scripts
+├── frontend/                                  # 🚀 React / Next.js 15 App (B2B UI, Stepper, Tracking, Judge Drawer)
+│   ├── src/app/                               # App Router (Dashboard, Auth, Carrier Portals)
+│   ├── src/components/                        # Modular UI components
+│   └── package.json                           # Next.js 15, React 19, Tailwind CSS, Supabase SSR
+├── backend/                                   # 🐍 Python / FastAPI Service (OpenAI Agent & WebMCP Core)
+│   ├── app/                                   # Agent tools, scoring engine, services, API routes
+│   ├── requirements.txt                       # FastAPI, OpenAI, Supabase, Pydantic, Httpx
+│   └── tests/                                 # Pytest suite
+├── .gitignore                                 # Git security exclusions (.env, node_modules, temp files)
 └── README.md                                  # Executive technical specification (This document)
 ```
 

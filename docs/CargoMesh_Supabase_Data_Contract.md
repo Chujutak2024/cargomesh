@@ -7,34 +7,34 @@
 
 ## 1. Resumen ejecutivo
 
-La conexión directa con Supabase funciona y el proyecto está `ACTIVE_HEALTHY` sobre PostgreSQL 17.
-
-Entre el 2026-08-28 y el 2026-08-29 se aplicaron diez migraciones remotas auditables:
+La conexión directa con Supabase funciona y el proyecto está `ACTIVE_HEALTHY` sobre PostgreSQL 17. Entre el 2026-08-28 y el 2026-08-29 se consolidaron once migraciones auditables (incluyendo la migración baseline legacy fundacional):
 
 ```text
-add_cargomesh_identity_and_intent_contract
-add_cargomesh_observability_and_booking_events
-add_cargomesh_runtime_contract
-add_cargomesh_domain_constraints
-add_carrier_offers_carrier_fk_index
-align_golden_flow_and_reset_runtime
-secure_cargomesh_data_api_with_rls
-add_organization_cargo_profiles_and_unitized_intake
-add_freight_request_org_cargo_profile_fk_index
-add_cargo_category_intake_guidance
+20260828200000 baseline_legacy_schema
+20260828233233 add_cargomesh_identity_and_intent_contract
+20260828233302 add_cargomesh_observability_and_booking_events
+20260828233343 add_cargomesh_runtime_contract
+20260828233435 add_cargomesh_domain_constraints
+20260828233524 add_carrier_offers_carrier_fk_index
+20260829003215 align_golden_flow_and_reset_runtime
+20260829003327 secure_cargomesh_data_api_with_rls
+20260829005625 add_organization_cargo_profiles_and_unitized_intake
+20260829010551 add_freight_request_org_cargo_profile_fk_index
+20260829011002 add_cargo_category_intake_guidance
 ```
 
 El esquema contiene 17 tablas y los contratos de identidad, perfiles empresariales de carga, intención logística, observabilidad, versionado de decisiones, idempotencia y booking lifecycle. Las 17 tablas tienen RLS habilitado, 22 políticas organization-scoped y cero privilegios de tabla para `anon`.
 
 Las tres ofertas precargadas de FR-1042 fueron eliminadas. La solicitud, organización, perfil de carga, transportistas, servicios, vehículos y métricas corresponden ahora al Golden Flow v5.5.0. Los avisos `unused_index` son informativos y esperables mientras las tablas runtime estén vacías; el Security Advisor no reporta hallazgos.
 
-Todavía no existen usuarios en `auth.users` ni filas en `organization_members`. Por ello el cliente autenticado no verá datos hasta completar signup/onboarding y crear su membresía desde un contexto servidor autorizado.
+En el entorno local y en `seed.sql` ya existe el usuario demo en `auth.users` (`carlos.mendoza@acmemining.pe`) con su membresía activa como `OWNER` de ACME Mining en `organization_members`. Las pruebas automatizadas con pgTAP (`npx supabase test db`) y el reset reproducible (`npx supabase db reset`) están 100% operativos.
 
-## 2. Inventario remoto actual
+## 2. Inventario actual de datos base
 
 | Tabla | Filas | Clase esperada | Observación |
 |---|---:|---|---|
 | `organizations` | 1 | Bootstrap | ACME Mining reconciliada |
+| `organization_members` | 1 | Identidad | Carlos Mendoza (OWNER, ACTIVE) |
 | `organization_preferences` | 1 | Bootstrap | modo asistido; auto-booking deshabilitado |
 | `cargo_categories` | 8 | Bootstrap | orientación dinámica de intake y flota |
 | `freight_requests` | 1 | Demo Scenario | FR-1042 existe en `PENDING` |
@@ -46,7 +46,6 @@ Todavía no existen usuarios en `auth.users` ni filas en `organization_members`.
 | `carrier_offers` | 0 | Runtime | nace de WebMCP |
 | `freight_decisions` | 0 | Runtime | nace de orquestación |
 | `bookings` | 0 | Runtime | nace tras selección |
-| `organization_members` | 0 | Identidad | pendiente de signup/onboarding |
 | `organization_cargo_profiles` | 1 | Bootstrap | perfil canónico de ACME Mining |
 | `orchestration_runs` | 0 | Runtime | nace de WebMCP |
 | `orchestration_events` | 0 | Observabilidad | nace de WebMCP |
