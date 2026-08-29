@@ -43,6 +43,14 @@ type FreightRequestRow = {
   package_count: number | null;
   cargo_entry_method: string | null;
   cross_border: boolean;
+  transport_mode: string;
+  service_type: string;
+  requires_refrigeration: boolean;
+  temperature_min_c: number | null;
+  temperature_max_c: number | null;
+  is_hazardous: boolean;
+  is_fragile: boolean;
+  is_oversized: boolean;
 };
 
 type CarrierWithServicesRow = {
@@ -53,10 +61,20 @@ type CarrierWithServicesRow = {
   carrier_services: {
     id: string;
     origin_country: string;
+    origin_region: string | null;
     destination_country: string;
+    destination_region: string | null;
+    transport_mode: string;
+    service_type: string;
     max_capacity_kg: number;
     max_volume_m3: number | null;
     supports_cross_border: boolean;
+    supports_refrigerated: boolean;
+    temperature_min_c: number | null;
+    temperature_max_c: number | null;
+    supports_hazardous: boolean;
+    supports_fragile: boolean;
+    supports_oversized: boolean;
     active: boolean;
     carrier_service_cargo_categories: { cargo_category_id: string }[];
   }[];
@@ -79,7 +97,7 @@ export async function get_candidate_provider_pages(
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
   const requestQuery = supabase
     .from("freight_requests")
-    .select("id,code,organization_id,cargo_category_id,origin_country,origin_city,destination_country,destination_city,cargo_weight_kg,cargo_volume_m3,package_count,cargo_entry_method,cross_border");
+    .select("id,code,organization_id,cargo_category_id,origin_country,origin_city,destination_country,destination_city,cargo_weight_kg,cargo_volume_m3,package_count,cargo_entry_method,cross_border,transport_mode,service_type,requires_refrigeration,temperature_min_c,temperature_max_c,is_hazardous,is_fragile,is_oversized");
 
   const { data: requestData, error: requestError } = isUuid
     ? await requestQuery.eq("id", identifier).maybeSingle()
@@ -98,8 +116,10 @@ export async function get_candidate_provider_pages(
     .select(`
       id, name, code, provider_url,
       carrier_services (
-        id, origin_country, destination_country, max_capacity_kg, max_volume_m3,
-        supports_cross_border, active,
+        id, origin_country, origin_region, destination_country, destination_region,
+        transport_mode, service_type, max_capacity_kg, max_volume_m3,
+        supports_cross_border, supports_refrigerated, temperature_min_c, temperature_max_c,
+        supports_hazardous, supports_fragile, supports_oversized, active,
         carrier_service_cargo_categories ( cargo_category_id )
       )
     `)
@@ -122,10 +142,20 @@ export async function get_candidate_provider_pages(
       services: (carrier.carrier_services ?? []).map((service) => ({
         id: service.id,
         originCountry: service.origin_country,
+        originRegion: service.origin_region,
         destinationCountry: service.destination_country,
+        destinationRegion: service.destination_region,
+        transportMode: service.transport_mode,
+        serviceType: service.service_type,
         maxCapacityKg: service.max_capacity_kg,
         maxVolumeM3: service.max_volume_m3,
         supportsCrossBorder: service.supports_cross_border,
+        supportsRefrigerated: service.supports_refrigerated,
+        temperatureMinC: service.temperature_min_c,
+        temperatureMaxC: service.temperature_max_c,
+        supportsHazardous: service.supports_hazardous,
+        supportsFragile: service.supports_fragile,
+        supportsOversized: service.supports_oversized,
         active: service.active,
         cargoCategoryIds: (service.carrier_service_cargo_categories ?? []).map(
           (category) => category.cargo_category_id,
@@ -154,10 +184,21 @@ export async function get_candidate_provider_pages(
       {
         cargoCategoryId: freightRequest.cargo_category_id,
         originCountry: freightRequest.origin_country,
+        // FreightRequest has city fields; they are the current operational region granularity.
+        originRegion: freightRequest.origin_city,
         destinationCountry: freightRequest.destination_country,
+        destinationRegion: freightRequest.destination_city,
         cargoWeightKg: freightRequest.cargo_weight_kg,
         cargoVolumeM3: freightRequest.cargo_volume_m3,
         crossBorder: freightRequest.cross_border,
+        transportMode: freightRequest.transport_mode,
+        serviceType: freightRequest.service_type,
+        requiresRefrigeration: freightRequest.requires_refrigeration,
+        temperatureMinC: freightRequest.temperature_min_c,
+        temperatureMaxC: freightRequest.temperature_max_c,
+        isHazardous: freightRequest.is_hazardous,
+        isFragile: freightRequest.is_fragile,
+        isOversized: freightRequest.is_oversized,
       },
       carriers,
     ),
