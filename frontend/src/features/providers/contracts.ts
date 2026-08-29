@@ -8,6 +8,7 @@ export type CandidateProvider = {
 
 export type ProviderPageConfig = CandidateProvider & {
   service: {
+    providerServiceCode: string;
     transportMode: string;
     serviceType: string;
     maxCapacityKg: number;

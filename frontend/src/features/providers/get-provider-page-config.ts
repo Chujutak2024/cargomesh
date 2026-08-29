@@ -14,6 +14,7 @@ type CarrierRow = {
 
 type CarrierServiceRow = {
   id: string;
+  provider_service_code: string | null;
   transport_mode: string;
   service_type: string;
   max_capacity_kg: number;
@@ -74,10 +75,11 @@ export const getProviderPageConfig = cache(async function getProviderPageConfig(
   const { data: serviceData, error: serviceError } = await supabase
     .from("carrier_services")
     .select(
-      "id,transport_mode,service_type,max_capacity_kg,max_volume_m3,supports_cross_border",
+      "id,provider_service_code,transport_mode,service_type,max_capacity_kg,max_volume_m3,supports_cross_border",
     )
     .eq("carrier_id", carrier.id)
     .eq("active", true)
+    .not("provider_service_code", "is", null)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -88,6 +90,10 @@ export const getProviderPageConfig = cache(async function getProviderPageConfig(
 
   const service = serviceData as CarrierServiceRow;
 
+  if (!service.provider_service_code) {
+    return null;
+  }
+
   return {
     carrierId: carrier.id,
     carrierCode: carrier.code,
@@ -95,6 +101,7 @@ export const getProviderPageConfig = cache(async function getProviderPageConfig(
     providerUrl: carrier.provider_url,
     matchingServiceId: service.id,
     service: {
+      providerServiceCode: service.provider_service_code,
       transportMode: service.transport_mode,
       serviceType: service.service_type,
       maxCapacityKg: service.max_capacity_kg,
