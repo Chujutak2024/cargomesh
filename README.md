@@ -139,7 +139,7 @@ CargoMesh strictly segregates data origin and mutability into 4 isolated classes
 ## 🔄 Transactional Decoupling & The Result Bridge
 
 ### 2.3 Transactional Decoupling Formula
-$$\text{recommended\_offer\_id} \neq \text{selected\_offer\_id} \neq \text{book\_freight()} \neq \text{get\_provider\_booking\_status() == CONFIRMED}$$
+$$\text{recommended\_offer\_id} \neq \text{selected\_offer\_id} \neq \text{book\_freight}() \neq (\text{get\_provider\_booking\_status}() = \text{CONFIRMED})$$
 
 - `recommended_offer_id`: Computed deterministically by the Heuristic Engine.
 - `selected_offer_id`: Explicit commercial choice made by the authorized human shipper (or authorized policy).
@@ -162,12 +162,12 @@ $$\text{Final Score} = \text{round}\left( 0.25 \cdot S_{\text{cost}} + 0.25 \cdo
 
 | Dimension | Weight | Canonical Normalization Formula | Operational Meaning |
 |:---|:---:|:---|:---|
-| **Cost Score** ($S_{\text{cost}}$) | **25%** | $\frac{\text{lowest\_eligible\_price}}{\text{candidate\_price}} \times 100$ | Cheapest eligible carrier receives 100 pts. |
-| **Reliability Score** ($S_{\text{reliability}}$) | **25%** | $\text{success\_rate} = \frac{\text{successful\_trips}}{\text{completed\_trips}} \times 100$ | Derived directly from verified historical trip logs. |
-| **ETA Score** ($S_{\text{eta}}$) | **20%** | $\frac{\text{best\_transit\_hours}}{\text{candidate\_transit\_hours}} \times 100$ | Fastest transit time receives 100 pts. |
-| **Availability Score** ($S_{\text{availability}}$) | **10%** | $\text{AVAILABLE\_IN\_WINDOW} = 90 \;\vert\; \text{LIMITED\_WINDOW} = 60$ | Carrier fleet certainty class in origin hub. |
-| **Route Experience** ($S_{\text{route}}$) | **10%** | $\min(100, \text{completed\_route\_operations})$ | 1 point per completed operation, capped at 100. |
-| **Organization History** ($S_{\text{history}}$) | **10%** | $\text{org\_success\_rate} \;\vert\; 50 \text{ (neutral fallback)}$ | Neutral score (50) when no prior shipper history exists. |
+| **Cost Score** ($S_{\text{cost}}$) | **25%** | `(lowest_eligible_price / candidate_price) * 100` | Cheapest eligible carrier receives 100 pts. |
+| **Reliability Score** ($S_{\text{reliability}}$) | **25%** | `(successful_trips / completed_trips) * 100` | Derived directly from verified historical trip logs. |
+| **ETA Score** ($S_{\text{eta}}$) | **20%** | `(best_transit_hours / candidate_transit_hours) * 100` | Fastest transit time receives 100 pts. |
+| **Availability Score** ($S_{\text{availability}}$) | **10%** | `AVAILABLE (90) | LIMITED (60)` | Carrier fleet certainty class in origin hub. |
+| **Route Experience** ($S_{\text{route}}$) | **10%** | `min(100, completed_route_operations)` | 1 point per completed operation, capped at 100. |
+| **Organization History** ($S_{\text{history}}$) | **10%** | `org_success_rate | 50 (neutral fallback)` | Neutral score (50) when no prior shipper history exists. |
 
 ---
 
@@ -178,7 +178,7 @@ $$\text{Decision Confidence} = 0.25 \cdot \text{Completeness} + 0.20 \cdot \text
 
 - **Data Completeness (100 pts)**: Verified presence of all mandatory request and provider fields.
 - **Constraint Certainty (100 pts)**: 100% of applicable hard constraints verified as `PASS`.
-- **Historical Evidence (96 pts)**: $\min(100, \text{operations}) \times \frac{\text{success\_rate}}{100} = 100 \times 0.96 = 96$.
+- **Historical Evidence (96 pts)**: $\min(100, \text{operations}) \times (\text{success\_rate} / 100) = 100 \times 0.96 = 96$.
 - **Candidate Separation (25.46 pts)**: $\min\left(100, \frac{\text{Top Score} - \text{Second Score}}{20} \times 100\right) = \frac{89.2949 - 84.2031}{20} \times 100 = 25.46$.
 - **Anomaly Safety (100 pts)**: Price deviation $\le +30\%$ against historical average.
 - **Golden Flow Decision Confidence Result**:
@@ -186,6 +186,7 @@ $$\text{Decision Confidence} = 0.25 \cdot \text{Completeness} + 0.20 \cdot \text
 
 ### Price Anomaly Guard:
 $$\text{price\_deviation\_pct} = \frac{\text{quote\_price} - \text{historical\_avg}}{\text{historical\_avg}} \times 100$$
+
 If $\text{price\_deviation\_pct} > +30\% \implies \text{requires\_review} = \text{true}$, blocking autonomous execution.
 
 ---
