@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { getProviderPageConfig } from "@/features/providers/get-provider-page-config";
+import {
+  getProviderServiceId,
+  type ProviderSearchParams,
+} from "@/features/providers/provider-route-params";
 
 import { ProviderWebMcpHost } from "./provider-webmcp-host";
 import styles from "./provider.module.css";
@@ -10,11 +14,18 @@ export const dynamic = "force-dynamic";
 
 type ProviderPageProps = {
   params: Promise<{ carrierSlug: string }>;
+  searchParams: Promise<ProviderSearchParams>;
 };
 
-export async function generateMetadata({ params }: ProviderPageProps): Promise<Metadata> {
-  const { carrierSlug } = await params;
-  const provider = await getProviderPageConfig(carrierSlug);
+export async function generateMetadata({
+  params,
+  searchParams,
+}: ProviderPageProps): Promise<Metadata> {
+  const [{ carrierSlug }, resolvedSearchParams] = await Promise.all([params, searchParams]);
+  const serviceId = getProviderServiceId(resolvedSearchParams);
+  const provider = serviceId
+    ? await getProviderPageConfig(carrierSlug, serviceId)
+    : null;
 
   if (!provider) {
     return { title: "Provider no encontrado | CargoMesh" };
@@ -26,9 +37,15 @@ export async function generateMetadata({ params }: ProviderPageProps): Promise<M
   };
 }
 
-export default async function ProviderPage({ params }: ProviderPageProps) {
-  const { carrierSlug } = await params;
-  const provider = await getProviderPageConfig(carrierSlug);
+export default async function ProviderPage({ params, searchParams }: ProviderPageProps) {
+  const [{ carrierSlug }, resolvedSearchParams] = await Promise.all([params, searchParams]);
+  const serviceId = getProviderServiceId(resolvedSearchParams);
+
+  if (!serviceId) {
+    notFound();
+  }
+
+  const provider = await getProviderPageConfig(carrierSlug, serviceId);
 
   if (!provider) {
     notFound();
