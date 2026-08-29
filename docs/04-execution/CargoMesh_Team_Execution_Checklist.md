@@ -266,23 +266,23 @@ Estado al publicar esta versión: A inició `A-01` en una rama separada. Ese ava
 
 ### Día 1 — Contratos y corte vertical
 
-- [ ] **SH-00. Normalizar baseline y congelar contrato v1**
+- [x] **SH-00. Normalizar baseline y congelar contrato v1**
   - **Owner:** C; revisan A + B.
   - **Depende de:** nada.
   - **Qué construir:** integrar la documentación vigente, resolver contradicciones de contratos/estados y publicar los tipos compartidos canónicos considerando el spike existente de A.
   - **Aceptación:** existe una sola definición por contrato; A y B confirman que pueden implementar sin inventar campos; ningún trabajo existente se descarta sin evaluación.
   - **Verificar:** revisión cruzada A/B, búsqueda de estados/enums contradictorios y registro del commit integrado.
 
-- [ ] **SH-01. Materializar contratos y preparar el workspace Next.js**
+- [x] **SH-01. Materializar contratos y preparar el workspace Next.js**
   - **Owner:** A + B + C; integra C.
   - **Depende de:** `SH-00`.
   - **Qué construir:** estructura mínima de Next.js, variables de entorno de ejemplo, módulo de tipos compartidos y límites de ownership.
   - **Aceptación:** `npm install`, `npm run dev` y `npm run build` funcionan; los contratos de la sección 4 están disponibles sin datos comerciales runtime hardcodeados.
   - **Verificar:** `cd frontend && npm run build`.
 
-- [ ] **A-01. Crear la plantilla dinámica de página provider**
+- [x] **A-01. Crear la plantilla dinámica de página provider**
   - **Owner:** A.
-  - **Estado inicial:** `in-progress / provisional` en rama separada.
+  - **Estado inicial:** `done` (PR #2 mergeado con squash).
   - **Depende de:** puede desarrollarse como spike; requiere `SH-00` y `SH-01` antes de integrarse.
   - **Qué construir:** `/providers/[carrierSlug]` como Server Component, resolución server-side `carrierSlug → carrierCode`, página `404` y Client Component para WebMCP.
   - **Aceptación:** cualquier carrier registrado/configurado usa la misma página; no existen directorios ni condiciones por nombre comercial; `service_role` no aparece en el bundle cliente.
@@ -517,13 +517,15 @@ Agregar una fila únicamente después de integrar a `main`.
 
 | Fecha/hora | Task ID | Integrante | Commit/PR | Verificación | Siguiente desbloqueado |
 |---|---|---|---|---|---|
-| — | — | — | — | — | — |
+| 2026-08-29 02:13 | `SH-00` | C | `45435ae` | Revisión cruzada de contratos y ADR-001 | `SH-01` |
+| 2026-08-29 02:54 | `SH-01` | C | `95f898d` (#1) | `npm run build` y setup Next.js | `A-01`, `B-01`, `C-01` |
+| 2026-08-29 03:17 | `A-01` | A | `37eb5e8` (#2) | Slug dinámico y `not-found.tsx` | `A-02` |
 
 ## 9. Bloqueos y decisiones pendientes
 
 | Fecha | Task ID | Bloqueo/decisión | Responsable de resolver | Estado |
 |---|---|---|---|---|
-| 2026-08-29 | `SH-00` | A inició `A-01` en rama separada; normalizar su output sin detener ni reescribir el spike | C + A | En curso |
+| 2026-08-29 | `SH-00` | A inició `A-01` en rama separada; normalizar su output sin detener ni reescribir el spike | C + A | Resuelto en PR #2 |
 | 2026-08-29 | `SH-00` | Congelar navegador/build WebMCP, flags y firma observada de `executeTool()` | A + C | Pendiente |
 
 ## 10. Estrategia Git y GitHub recomendada
