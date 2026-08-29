@@ -210,7 +210,7 @@ unique (organization_id, auth_user_id)
 id uuid PK
 freight_request_id uuid FK
 run_type INITIAL | RECOVERY
-status RUNNING | OPTIONS_READY | FAILED | CANCELLED
+status RUNNING | OPTIONS_READY | NO_MATCH | FAILED | CANCELLED
 previous_run_id uuid nullable FK
 started_at timestamptz
 completed_at timestamptz nullable
@@ -448,7 +448,8 @@ freight_decisions v1 = 1
 recommended_offer = Andes
 selected_offer = null
 bookings = 0
-FreightRequest = OPTIONS_READY
+orchestration_run = OPTIONS_READY
+FreightRequest = AWAITING_SELECTION
 ```
 
 ## 13. Integración Next.js
