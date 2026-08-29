@@ -4,7 +4,7 @@
 > *Technical Specification v5.5.0 — Google WebMCP Challenge 2026*
 
 [![WebMCP Challenge 2026](https://img.shields.io/badge/WebMCP_Challenge-2026_Official-8C6316?style=for-the-badge&logo=google-chrome&logoColor=white)](https://github.com/Chujutak2024/cargomesh)
-[![Contract v5.5.0](https://img.shields.io/badge/Contract-v5.5.0_FINAL-3178C6?style=for-the-badge&logo=semantic-release&logoColor=white)](docs/CargoMesh_Planeacion_WebMCP_FINAL.md)
+[![Contract v5.5.0](https://img.shields.io/badge/Contract-v5.5.0_FINAL-3178C6?style=for-the-badge&logo=semantic-release&logoColor=white)](docs/00-master/CargoMesh_Planeacion_WebMCP_FINAL.md)
 [![Protocol](https://img.shields.io/badge/Protocol-Browser_Native_WebMCP-38B2AC?style=for-the-badge&logo=w3c&logoColor=white)](https://github.com/Chujutak2024/cargomesh)
 [![Backend](https://img.shields.io/badge/Backend-Supabase_PostgreSQL_RLS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 
@@ -264,11 +264,17 @@ The v5.5.0 Technical Contract includes an exhaustive **73-point WebMCP Acceptanc
 ```text
 cargomesh/
 ├── docs/                                      # Master documentation & technical contracts
-│   ├── CargoMesh_Planeacion_WebMCP_FINAL.md   # General product & WebMCP master contract (v5.5.0)
-│   ├── CargoMesh_Supabase_Schema_Contract.md  # Database architecture & RLS specification
-│   ├── CargoMesh_Supabase_Data_Contract.md    # Data classification, bootstrap inventory & alignment
-│   ├── CargoMesh_Mockups_Requeridos.md        # Consolidated UX architecture & screen flow
-│   └── CargoMesh_Mockups_WebMCP_Ajustes.md    # WebMCP evidence requirements & judge activity drawer
+│   ├── 00-master/                             # Master product specification & WebMCP vision (v5.5.0)
+│   │   └── CargoMesh_Planeacion_WebMCP_FINAL.md
+│   ├── 01-requirements/                       # Functional requirements & sprint backlog
+│   │   ├── CargoMesh_Catalogo_Requisitos.md
+│   │   └── CargoMesh_Sprint_Backlog.md
+│   ├── 02-database/                           # Schema contracts, RLS rules & data alignment
+│   │   ├── CargoMesh_Supabase_Schema_Contract.md
+│   │   └── CargoMesh_Supabase_Data_Contract.md
+│   └── 03-ux-ui/                              # UX architecture, screen flows & WebMCP evidence
+│       ├── CargoMesh_Mockups_Requeridos.md
+│       └── CargoMesh_Mockups_WebMCP_Ajustes.md
 ├── mockups/                                   # Standalone UX/UI HTML mockups & provider pages
 ├── supabase/                                  # Database migrations, seed, tests, and config
 │   ├── config.toml                            # Local Supabase stack configuration
