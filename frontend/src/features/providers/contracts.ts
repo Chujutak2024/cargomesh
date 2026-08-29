@@ -17,6 +17,46 @@ export type ProviderPageConfig = CandidateProvider & {
   };
 };
 
+export type AvailabilityClass =
+  | "EXACT_CONFIRMED_SLOT"
+  | "AVAILABLE_IN_WINDOW"
+  | "LIMITED_WINDOW"
+  | "WAITLIST"
+  | "UNAVAILABLE";
+
+export type QuoteFreightInput = {
+  freight_request_id: string;
+  origin: string;
+  destination: string;
+  cargo_weight_kg: number;
+  cargo_volume_m3?: number;
+  cargo_category?: string;
+  pickup_mode?: "ASAP" | "SCHEDULED";
+  pickup_window_start?: string;
+  pickup_window_end?: string;
+  delivery_deadline?: string;
+  available_documents?: string[];
+};
+
+export type ProviderQuote = {
+  schemaVersion: "1.0";
+  freightRequestId: string;
+  providerOfferReference: string;
+  price: number;
+  currency: "USD";
+  priceBreakdown: Record<string, number>;
+  estimatedPickup: string;
+  estimatedDelivery: string;
+  transitHours: number;
+  availableCapacityKg: number;
+  availabilityClass: AvailabilityClass;
+  crossBorderSupported: boolean;
+  customsCoordinationIncluded: boolean;
+  requiredDocuments: string[];
+  borderHandlingNotes: string | null;
+  validUntil: string;
+};
+
 export type ProviderToolEnvelope<T> =
   | { ok: true; data: T }
   | {
