@@ -94,6 +94,12 @@
   font-size: 1.35rem;
 }
 
+.webmcp h2 code {
+  color: var(--accent);
+  font-family: "IBM Plex Mono", "Cascadia Code", Consolas, monospace;
+  font-size: 0.9em;
+}
+
 .status {
   max-width: 360px;
   margin: 0;
@@ -101,11 +107,12 @@
   line-height: 1.5;
 }
 
-.status[data-status="available"] {
+.status[data-status="registered"] {
   color: var(--success);
 }
 
-.status[data-status="unavailable"] {
+.status[data-status="unavailable"],
+.status[data-status="error"] {
   color: var(--danger);
 }
 
