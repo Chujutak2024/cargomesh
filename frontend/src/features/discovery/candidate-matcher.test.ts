@@ -132,11 +132,46 @@ test("treats null service regions as wildcards and rejects a defined incompatibl
   assert.deepEqual(discover({}, [carrier({ services: [service({ originRegion: "Lima" })] })]), []);
 });
 
-test("rejects empty, relative and unsafe provider URLs", () => {
-  for (const providerUrl of ["", "  ", "/providers/carrier", "javascript:alert(1)", "data:text/plain,nope"]) {
+test("accepts only safe internal provider routes or absolute HTTP(S) URLs", () => {
+  for (const providerUrl of [
+    "",
+    "  ",
+    "providers/carrier",
+    "/requests/new",
+    "/providers/",
+    "//evil.example/providers/carrier",
+    "javascript:alert(1)",
+    "data:text/plain,nope",
+  ]) {
     assert.equal(isNavigableProviderUrl(providerUrl), false);
     assert.deepEqual(discover({}, [carrier({ providerUrl })]), []);
   }
+
+  assert.equal(isNavigableProviderUrl("/providers/registered-carrier"), true);
+  assert.equal(isNavigableProviderUrl("https://carrier.example/providers/registered-carrier"), true);
+});
+
+test("accepts every Golden Flow provider path as data, without carrier-specific matching", () => {
+  const goldenFlowProviderUrls = ["/providers/andes", "/providers/inca", "/providers/pacific"];
+  const candidates = discover({}, goldenFlowProviderUrls.map((providerUrl, index) => carrier({
+    id: `carrier-${index + 1}`,
+    code: `GOLDEN_${index + 1}`,
+    displayName: `Golden provider ${index + 1}`,
+    providerUrl,
+    services: [service({ id: `service-${index + 1}` })],
+  })));
+
+  assert.deepEqual(candidates.map((candidate) => candidate.providerUrl), goldenFlowProviderUrls);
+  assert.deepEqual(
+    candidates.map((candidate) =>
+      buildProviderNavigationUrl(candidate, "https://cargomesh.example"),
+    ),
+    [
+      "https://cargomesh.example/providers/andes?serviceId=service-1",
+      "https://cargomesh.example/providers/inca?serviceId=service-2",
+      "https://cargomesh.example/providers/pacific?serviceId=service-3",
+    ],
+  );
 });
 
 test("selects the actually compatible service and preserves matchingServiceId for navigation", () => {
@@ -148,6 +183,8 @@ test("selects the actually compatible service and preserves matchingServiceId fo
   })]);
 
   assert.equal(candidates[0]?.matchingServiceId, "service-b");
-  const navigationUrl = new URL(buildProviderNavigationUrl(candidates[0]!));
+  const navigationUrl = new URL(
+    buildProviderNavigationUrl(candidates[0]!, "https://cargomesh.example"),
+  );
   assert.equal(navigationUrl.searchParams.get("serviceId"), "service-b");
 });

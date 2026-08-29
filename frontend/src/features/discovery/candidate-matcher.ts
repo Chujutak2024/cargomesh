@@ -94,9 +94,19 @@ function matchesFreightRequest(
   return service.cargoCategoryIds.includes(freightRequest.cargoCategoryId);
 }
 
-/** Accepts only absolute, browser-navigable HTTP(S) provider endpoints. */
+/**
+ * Accepts CargoMesh-hosted provider routes and external HTTP(S) endpoints.
+ * Internal paths are deliberately restricted to the dynamic provider namespace,
+ * so protocol-relative and arbitrary relative paths can never escape the app.
+ */
 export function isNavigableProviderUrl(providerUrl: string | null): providerUrl is string {
-  if (!providerUrl || !providerUrl.trim()) return false;
+  if (!providerUrl || providerUrl !== providerUrl.trim()) return false;
+
+  if (/^\/providers\/[a-z0-9]+(?:-[a-z0-9]+)*(?:[?#][^\\]*)?$/i.test(providerUrl)) {
+    return true;
+  }
+
+  if (!/^https?:\/\//i.test(providerUrl)) return false;
 
   try {
     const url = new URL(providerUrl);

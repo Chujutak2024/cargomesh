@@ -54,8 +54,8 @@ Las referencias de `service_role` solo son aceptables en módulos `server-only`,
 Discovery conserva `matchingServiceId` y entrega la URL mediante:
 
 ```ts
-buildProviderNavigationUrl(candidate)
-// https://provider.example/providers/andes?serviceId=<matchingServiceId>
+buildProviderNavigationUrl(candidate, "https://cargomesh.example")
+// https://cargomesh.example/providers/andes?serviceId=<matchingServiceId>
 ```
 
 Durante `INT-01`, A debe hacer un cambio aditivo en sus archivos propios:
@@ -71,4 +71,9 @@ No cambia `CandidateProvider` ni `ProviderPageConfig`.
 
 `freight_requests` no tiene columnas de región; C-01 usa `origin_city` y `destination_city` como la granularidad regional actual. Un `origin_region` o `destination_region` nulo en `carrier_services` es wildcard; uno definido debe coincidir.
 
-El discovery acepta solo `provider_url` HTTP(S) absoluto. Los fixtures de base que aún tengan rutas relativas (`/providers/...`) deben convertirse a URLs absolutas del entorno antes de ejecutar el Golden Flow.
+El discovery acepta dos formas seguras de `provider_url`:
+
+- rutas internas de CargoMesh bajo `/providers/<carrier-slug>`;
+- URLs externas absolutas HTTP(S).
+
+Rechaza valores vacíos, `//host`, `javascript:`, `data:` y rutas relativas fuera de `/providers/`. La navegación interna requiere un `baseUrl` explícito, por lo que los fixtures oficiales `/providers/andes`, `/providers/inca` y `/providers/pacific` funcionan tanto en local como en despliegues sin guardar un dominio en Supabase.
