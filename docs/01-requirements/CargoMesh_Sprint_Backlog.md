@@ -1,7 +1,7 @@
 ﻿# CargoMesh — Backlog de Producto y Cronograma del Hackathon
 
 > **Proyecto:** CargoMesh (WebMCP Challenge 2026)  
-> **Versión:** 1.1.0 (Formato Ágil / Jira-Style con Cronograma de 5 Días)  
+> **Versión:** 1.2.0 (Consolidado con Épica 0 Completada + Tareas Pendientes)  
 > **Catálogo de Requisitos Asociado:** `docs/01-requirements/CargoMesh_Catalogo_Requisitos.md`
 
 ---
@@ -10,20 +10,20 @@
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ DÍA 1: Definición, Mockups & Base de Datos (100% COMPLETADO)                                    │
-│ └── Migraciones Supabase, RLS, Seed Demo, Contratos de Datos y Esqueleto de Carpetas.           │
+│ DÍA 1: Cimientos, Base de Datos & Contratos (100% COMPLETADO HOY ✅)                             │
+│ └── 11 Migraciones Supabase, RLS, pgTAP Tests (18/18 PASS), Seed Auth, Esqueleto y Docs (00-03).│
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ DÍA 2: Core Express & Lógica Dura (EN CURSO)                                                    │
+│ DÍA 2: Core Express & Lógica Dura (SIGUIENTE PASO 🚀)                                           │
 │ └── Portales WebMCP, Decision Engine (Scoring BALANCED), Result Bridge y Clientes Supabase SSR. │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ DÍA 3: Integración End-to-End (Frontend ↔ Backend ↔ Supabase)                                    │
-│ └── Conexión del Stepper FR-1042, invocación WebMCP en vivo, persistencia y booking state.      │
+│ └── Conexión del Stepper FR-1042, llamadas WebMCP en vivo, persistencia y estado de booking.     │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ DÍA 4: UI/UX, Judge Drawer & Pulido Visual                                                       │
-│ └── Judge Activity Drawer flotante, animaciones de búsqueda, badges, timeline y manejo de temas. │
+│ └── Judge Activity Drawer flotante, animaciones de búsqueda, badges, timeline y manejo visual.  │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ DÍA 5: Congelamiento de Código, Ensayo de Golden Flow & Pitch                                   │
-│ └── 0 modificaciones de código; grabación de video de demo y validación con los 73 puntos.       │
+│ DÍA 5: Congelamiento de Código, Ensayo del Golden Flow & Pitch                                  │
+│ └── Cero cambios de código; ensayo de demo y validación con los 73 puntos de aceptación.        │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -31,22 +31,50 @@
 
 ## 📊 Tablero General del Backlog (Jira / Linear View)
 
+### ✅ Épica 0: Cimientos, Base de Datos, RLS y Entorno (Día 1 — 100% COMPLETADO)
+
+| Clave | Actividad / Entregable | Responsable | Prioridad | Estado |
+|:---:|---|:---:|:---:|:---:|
+| `CM-00A` | Migración Baseline Legacy (12 tablas originales) | *DB Lead* | 🔴 Alta | `[✅ Completado]` |
+| `CM-00B` | Secuencia de 11 Migraciones PostgreSQL 17 + Domain Constraints | *DB Lead* | 🔴 Alta | `[✅ Completado]` |
+| `CM-00C` | Seguridad y Aislamiento Multi-Tenant con RLS (17 tablas, anon bloqueado) | *Security Lead* | 🔴 Alta | `[✅ Completado]` |
+| `CM-00D` | Seed de Usuario Demo (`carlos.mendoza@acmemining.pe` como OWNER) | *DB Lead* | 🔴 Alta | `[✅ Completado]` |
+| `CM-00E` | Suite Oficial de Pruebas pgTAP (`npx supabase test db` 18/18 PASS) | *QA / DB Lead* | 🔴 Alta | `[✅ Completado]` |
+| `CM-00F` | Scaffolding Modular: `frontend/` (Next.js 15), `backend/` (FastAPI) | *Fullstack Lead* | 🔴 Alta | `[✅ Completado]` |
+| `CM-00G` | Reorganización de Docs (`00-03`) y Catálogo de 29 Requisitos | *Product Lead* | 🔴 Alta | `[✅ Completado]` |
+
+---
+
+### 🚀 Épicas de Desarrollo de la Aplicación (Días 2 a 4 — PENDIENTES DE CODIFICAR)
+
 | Clave | Actividad / Historia de Usuario | Épica Padre | Asignado a | Prioridad | Estado |
 |:---:|---|---|:---:|:---:|:---:|
-| `CM-01` | Autenticación y Carga Dinámica de Organización | ⚡ `EP-1` Auth & Tenant | *Fullstack Lead* | 🔴 Alta | [ ] Pendiente |
-| `CM-02` | Políticas de Despacho y Perfiles de Carga | ⚡ `EP-1` Auth & Tenant | *Frontend Dev* | 🟡 Media | [ ] Pendiente |
-| `CM-03` | Stepper de Intake de 5 Pasos | ⚡ `EP-2` Intake & Carga | *Frontend Dev* | 🔴 Alta | [ ] Pendiente |
-| `CM-04` | Normalización Matemática Unitizada y Pre-check | ⚡ `EP-2` Intake & Carga | *Backend Dev* | 🔴 Alta | [ ] Pendiente |
-| `CM-05` | Portales Web de Carriers y Exposición WebMCP | ⚡ `EP-3` WebMCP & Carriers | *Fullstack Dev* | 🔴 Alta | [ ] Pendiente |
-| `CM-06` | Fixtures y Cotizaciones Deterministas | ⚡ `EP-3` WebMCP & Carriers | *Frontend Dev* | 🔴 Alta | [ ] Pendiente |
-| `CM-07` | Agente Runner y Result Bridge Idempotente | ⚡ `EP-4` Orquestación & AI | *Backend / AI Lead* | 🔴 Alta | [ ] Pendiente |
-| `CM-08` | Decision Engine Heurístico y Snapshots | ⚡ `EP-4` Orquestación & AI | *Backend / AI Lead* | 🔴 Alta | [ ] Pendiente |
-| `CM-09` | Vista Reactiva de Despacho `/dispatch` | ⚡ `EP-4` Orquestación & AI | *Frontend Dev* | 🔴 Alta | [ ] Pendiente |
-| `CM-10` | Selección Humana y Solicitud de Booking | ⚡ `EP-5` Booking & Recovery | *Fullstack Dev* | 🔴 Alta | [ ] Pendiente |
-| `CM-11` | Confirmación y Timeline de Seguimiento | ⚡ `EP-5` Booking & Recovery | *Frontend Dev* | 🔴 Alta | [ ] Pendiente |
-| `CM-12` | Circuito de Recuperación Operacional (Recovery) | ⚡ `EP-5` Booking & Recovery | *Backend / AI Lead* | 🔴 Alta | [ ] Pendiente |
-| `CM-13` | Judge Activity Drawer en Tiempo Real | ⚡ `EP-6` Jueces & Observabilidad | *Frontend Dev* | 🔴 Alta | [ ] Pendiente |
-| `CM-14` | Inyección de Fixtures y Reset de Demostración | ⚡ `EP-6` Jueces & Observabilidad | *Backend Dev* | 🔴 Alta | [ ] Pendiente |
+| `CM-01` | Autenticación y Carga Dinámica de Organización | ⚡ `EP-1` Auth & Tenant | *Fullstack Lead* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-02` | Políticas de Despacho y Perfiles de Carga | ⚡ `EP-1` Auth & Tenant | *Frontend Dev* | 🟡 Media | `[ ] Pendiente` |
+| `CM-03` | Stepper de Intake de 5 Pasos | ⚡ `EP-2` Intake & Carga | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-04` | Normalización Matemática Unitizada y Pre-check | ⚡ `EP-2` Intake & Carga | *Backend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-05` | Portales Web de Carriers y Exposición WebMCP | ⚡ `EP-3` WebMCP & Carriers | *Fullstack Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-06` | Fixtures y Cotizaciones Deterministas | ⚡ `EP-3` WebMCP & Carriers | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-07` | Agente Runner y Result Bridge Idempotente | ⚡ `EP-4` Orquestación & AI | *Backend / AI Lead* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-08` | Decision Engine Heurístico y Snapshots | ⚡ `EP-4` Orquestación & AI | *Backend / AI Lead* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-09` | Vista Reactiva de Despacho `/dispatch` | ⚡ `EP-4` Orquestación & AI | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-10` | Selección Humana y Solicitud de Booking | ⚡ `EP-5` Booking & Recovery | *Fullstack Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-11` | Confirmación y Timeline de Seguimiento | ⚡ `EP-5` Booking & Recovery | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-12` | Circuito de Recuperación Operacional (Recovery) | ⚡ `EP-5` Booking & Recovery | *Backend / AI Lead* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-13` | Judge Activity Drawer en Tiempo Real | ⚡ `EP-6` Jueces & Observabilidad | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-14` | Inyección de Fixtures y Reset de Demostración | ⚡ `EP-6` Jueces & Observabilidad | *Backend Dev* | 🔴 Alta | `[ ] Pendiente` |
+
+---
+
+## ⚡ ÉPICA 0: Cimientos, Base de Datos, RLS y Entorno (COMPLETADA HOY)
+
+* **`CM-00A` — Baseline Legacy:** Creación de `20260828200000_baseline_legacy_schema.sql` para levantar las 12 tablas heredadas desde cero con `npx supabase db reset`. `[✅]`
+* **`CM-00B` — 11 Migraciones PostgreSQL 17:** Aplicación en orden estricto de tablas de identidad, observabilidad, perfiles de carga y constraints de dominio. `[✅]`
+* **`CM-00C` — RLS & Multi-tenant:** 17 tablas aseguradas con RLS, aislamiento total entre tenants y bloqueo 100% a `anon` (código `42501`). `[✅]`
+* **`CM-00D` — Seed Auth:** Usuario `carlos.mendoza@acmemining.pe` (`CargoMesh2026!`) vinculado a ACME Mining como `OWNER`. `[✅]`
+* **`CM-00E` — Suite pgTAP:** Archivo `supabase/tests/01_cargomesh_rls_and_golden_flow.test.sql` con 18/18 pruebas en verde (`PASS`). `[✅]`
+* **`CM-00F` — Scaffolding:** Estructura modular `frontend/` (Next.js 15, React 19, Tailwind) y `backend/` (FastAPI, OpenAI). `[✅]`
+* **`CM-00G` — Jerarquía Docs:** Reorganización `docs/00` a `docs/03` y catálogo de 29 requisitos (RF/RNF). `[✅]`
 
 ---
 
@@ -55,6 +83,7 @@
 ### 📌 `CM-01`: Autenticación y Carga Dinámica de Organización
 * **Persona asignada:** *Fullstack Lead*
 * **Prioridad:** 🔴 Alta (P0)
+* **Estado:** `[ ] Pendiente`
 * **Estructura de Usuario:**
   * **Como** representante logístico de una empresa (ej. Carlos Mendoza de ACME Mining),
   * **Quiero** iniciar sesión y que el sistema resuelva automáticamente mi organización y rol,
@@ -62,7 +91,7 @@
 * **Lo que se necesita principalmente:**
   * Configurar Supabase SSR Client en `frontend/src/lib/supabase/`.
   * Pantalla de Login en `frontend/src/app/(auth)/login/` con botón de acceso rápido para demo.
-  * Hook `useOrganizationContext` para exponer `organization_id`, `legal_name`, `country` y rol activo sin hardcodear datos.
+  * Hook `useOrganizationContext` para resolver `organization_id`, `legal_name`, `country` y rol activo sin hardcodear datos.
 * **Criterios de Aceptación:**
   1. Al iniciar sesión con `carlos.mendoza@acmemining.pe`, se carga la sesión JWT válida.
   2. El contexto global resuelve `organization_id` y rol `OWNER` directamente desde `organization_members`.
@@ -72,6 +101,7 @@
 ### 📌 `CM-02`: Políticas de Despacho y Perfiles Habituales de Carga
 * **Persona asignada:** *Frontend Dev*
 * **Prioridad:** 🟡 Media (P1)
+* **Estado:** `[ ] Pendiente`
 * **Estructura de Usuario:**
   * **Como** administrador logístico (OWNER / SUPERVISOR),
   * **Quiero** consultar y gestionar las políticas de despacho y plantillas de carga frecuente,
@@ -90,6 +120,7 @@
 ### 📌 `CM-03`: Stepper de Intake de 5 Pasos
 * **Persona asignada:** *Frontend Dev*
 * **Prioridad:** 🔴 Alta (P0)
+* **Estado:** `[ ] Pendiente`
 * **Estructura de Usuario:**
   * **Como** despachador B2B,
   * **Quiero** un formulario guiado e interactivo de 5 pasos,
@@ -106,6 +137,7 @@
 ### 📌 `CM-04`: Normalización Matemática Unitizada y Pre-check
 * **Persona asignada:** *Backend Dev*
 * **Prioridad:** 🔴 Alta (P0)
+* **Estado:** `[ ] Pendiente`
 * **Estructura de Usuario:**
   * **Como** sistema inteligente de fletes,
   * **Quiero** normalizar matemáticamente el peso y volumen total y validar restricciones duras,
@@ -124,6 +156,7 @@
 ### 📌 `CM-05`: Portales Web de Carriers y Exposición WebMCP
 * **Persona asignada:** *Fullstack Dev*
 * **Prioridad:** 🔴 Alta (P0)
+* **Estado:** `[ ] Pendiente`
 * **Estructura de Usuario:**
   * **Como** transportista participante de la red (Andes, Inca, Pacific),
   * **Quiero** una página web pública que exponga herramientas WebMCP estructuradas,
@@ -140,6 +173,7 @@
 ### 📌 `CM-06`: Fixtures y Cotizaciones Deterministas
 * **Persona asignada:** *Frontend Dev*
 * **Prioridad:** 🔴 Alta (P0)
+* **Estado:** `[ ] Pendiente`
 * **Estructura de Usuario:**
   * **Como** motor de tarificación del carrier,
   * **Quiero** responder a la herramienta `quote_freight` con una cotización estructurada y determinista,
@@ -160,6 +194,7 @@
 ### 📌 `CM-07`: Agente Runner y Result Bridge Idempotente
 * **Persona asignada:** *Backend / AI Lead*
 * **Prioridad:** 🔴 Alta (P0)
+* **Estado:** `[ ] Pendiente`
 * **Estructura de Usuario:**
   * **Como** agente orquestador de CargoMesh,
   * **Quiero** navegar por los portales de los carriers, invocar sus herramientas y persistir los resultados válidos,
@@ -176,6 +211,7 @@
 ### 📌 `CM-08`: Decision Engine Heurístico y Snapshots Inmutables
 * **Persona asignada:** *Backend / AI Lead*
 * **Prioridad:** 🔴 Alta (P0)
+* **Estado:** `[ ] Pendiente`
 * **Estructura de Usuario:**
   * **Como** motor de decisión matemática,
   * **Quiero** evaluar las ofertas con la fórmula BALANCED y congelar un snapshot inmutable,
@@ -193,6 +229,7 @@
 ### 📌 `CM-09`: Vista Reactiva de Despacho `/dispatch/[id]`
 * **Persona asignada:** *Frontend Dev*
 * **Prioridad:** 🔴 Alta (P0)
+* **Estado:** `[ ] Pendiente`
 * **Estructura de Usuario:**
   * **Como** despachador B2B,
   * **Quiero** ver el progreso en tiempo real de la consulta a los carriers y las tarjetas de ofertas resultantes,
@@ -212,6 +249,7 @@
 ### 📌 `CM-10`: Selección Humana y Solicitud de Booking
 * **Persona asignada:** *Fullstack Dev*
 * **Prioridad:** 🔴 Alta (P0)
+* **Estado:** `[ ] Pendiente`
 * **Estructura de Usuario:**
   * **Como** despachador B2B,
   * **Quiero** seleccionar formalmente una oferta y que el sistema emita la reserva al carrier,
@@ -228,6 +266,7 @@
 ### 📌 `CM-11`: Confirmación y Timeline de Seguimiento
 * **Persona asignada:** *Frontend Dev*
 * **Prioridad:** 🔴 Alta (P0)
+* **Estado:** `[ ] Pendiente`
 * **Estructura de Usuario:**
   * **Como** despachador B2B,
   * **Quiero** recibir la confirmación del carrier y rastrear los hitos del viaje,
@@ -244,6 +283,7 @@
 ### 📌 `CM-12`: Circuito de Recuperación Operacional (Recovery Run)
 * **Persona asignada:** *Backend / AI Lead*
 * **Prioridad:** 🔴 Alta (P0)
+* **Estado:** `[ ] Pendiente`
 * **Estructura de Usuario:**
   * **Como** sistema resiliente de orquestación,
   * **Quiero** re-evaluar automáticamente alternativas si el carrier rechaza o expira la reserva,
@@ -263,6 +303,7 @@
 ### 📌 `CM-13`: Judge Activity Drawer en Tiempo Real
 * **Persona asignada:** *Frontend Dev*
 * **Prioridad:** 🔴 Alta (P0)
+* **Estado:** `[ ] Pendiente`
 * **Estructura de Usuario:**
   * **Como** juez técnico del WebMCP Challenge,
   * **Quiero** abrir un panel lateral flotante de trazabilidad en cualquier momento,
@@ -279,6 +320,7 @@
 ### 📌 `CM-14`: Inyección de Fixtures y Reset de Demostración
 * **Persona asignada:** *Backend Dev*
 * **Prioridad:** 🔴 Alta (P0)
+* **Estado:** `[ ] Pendiente`
 * **Estructura de Usuario:**
   * **Como** juez o presentador de la demo,
   * **Quiero** configurar el comportamiento de los carriers (`ACCEPT`, `REJECT`, `NO_RESPONSE`) y reiniciar la demo,
