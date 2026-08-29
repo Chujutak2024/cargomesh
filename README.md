@@ -1,10 +1,10 @@
 # CargoMesh ⬡
 
 > **Autonomous Agentic Freight Orchestration for Cross-Border B2B Logistics**  
-> *Technical Specification & Contract Freeze v5.4.0 — Google WebMCP Challenge 2026*
+> *Technical Specification v5.5.0 — Google WebMCP Challenge 2026*
 
 [![WebMCP Challenge 2026](https://img.shields.io/badge/WebMCP_Challenge-2026_Official-8C6316?style=for-the-badge&logo=google-chrome&logoColor=white)](https://github.com/Chujutak2024/cargomesh)
-[![Contract Freeze v5.4.0](https://img.shields.io/badge/Contract_Freeze-v5.4.0_FINAL-3178C6?style=for-the-badge&logo=semantic-release&logoColor=white)](docs/CargoMesh_Planeacion_WebMCP_FINAL.md)
+[![Contract v5.5.0](https://img.shields.io/badge/Contract-v5.5.0_FINAL-3178C6?style=for-the-badge&logo=semantic-release&logoColor=white)](docs/CargoMesh_Planeacion_WebMCP_FINAL.md)
 [![Protocol](https://img.shields.io/badge/Protocol-Browser_Native_WebMCP-38B2AC?style=for-the-badge&logo=w3c&logoColor=white)](https://github.com/Chujutak2024/cargomesh)
 [![Backend](https://img.shields.io/badge/Backend-Supabase_PostgreSQL_RLS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 
@@ -15,7 +15,7 @@
 | Parameter | Specification Value |
 |:---|:---|
 | **Project Name** | **CargoMesh Network** |
-| **Document Version** | `v5.4.0` *(Technical Contract Freeze — Product & Protocol Contract Frozen)* |
+| **Document Version** | `v5.5.0` *(B2B Organization + Cargo Profile Alignment)* |
 | **Root Commercial Entity** | `FreightRequest` *(Dedicated B2B Freight Demand)* |
 | **Core Protocol** | **WebMCP Browser-Native API** (`document.modelContext.registerTool`) |
 | **Transport Mode & Service** | **ROAD / FTL** *(Full Truckload, Dedicated Capacity)* |
@@ -33,7 +33,7 @@
 6. [Deterministic Decision Engine & Balanced Formulas](#-deterministic-decision-engine--balanced-formulas)
 7. [Decision Confidence Score & Anomaly Guard](#-decision-confidence-score--anomaly-guard)
 8. [International Golden Flow Scenario Matrix](#-international-golden-flow-scenario-matrix)
-9. [Database Schema Architecture (14 Domain + 2 Observability Tables)](#-database-schema-architecture-14-domain--2-observability-tables)
+9. [Database Schema Architecture (15 Domain + 2 Observability Tables)](#-database-schema-architecture-15-domain--2-observability-tables)
 10. [WebMCP Tool Contract Specification](#-webmcp-tool-contract-specification)
 11. [73-Point Acceptance Test Summary](#-73-point-acceptance-test-summary)
 12. [Repository Structure Map](#-repository-structure-map)
@@ -122,7 +122,7 @@ CargoMesh strictly segregates data origin and mutability into 4 isolated classes
 
 ```text
 1. BOOTSTRAP DATA
-   └── Registered Organization, Member, Cargo Categories, Carrier Profiles, Services, Historical Corridor Metrics.
+   └── Registered Organization, Members, Organization Cargo Profiles, Cargo Categories, Carrier Profiles, Services, Historical Corridor Metrics.
 
 2. DEMO SCENARIO
    └── Controlled initial state of FreightRequest FR-1042 (Callao/Lima, PE → Santiago, CL, 8,000 kg FTL, PENDING).
@@ -203,14 +203,15 @@ If $\text{price\_deviation\_pct} > +30\% \implies \text{requires\_review} = \tex
 
 ---
 
-## 🗄️ Database Schema Architecture (14 Domain + 2 Observability Tables)
+## 🗄️ Database Schema Architecture (15 Domain + 2 Observability Tables)
 
 ```
 cargomesh/
-├── Business Domain Tables (14):
+├── Business Domain Tables (15):
 │   ├── organizations                    # Shipper corporate profiles & verified emails
 │   ├── organization_members             # Authorized members & Supabase Auth bindings
 │   ├── organization_preferences         # Default strategies, thresholds, auto-recovery flags
+│   ├── organization_cargo_profiles      # Frequent cargo templates and suggested vehicle classes
 │   ├── cargo_categories                 # Standardized cargo taxonomy (General, Machinery, etc.)
 │   ├── freight_requests                 # Core freight intent, weights, dimensions & status
 │   ├── carriers                         # Registered transport providers (Andes, Inca, Pacific)
@@ -248,7 +249,7 @@ All carrier WebMCP tools implement a strict common envelope:
 
 ## ✅ 73-Point Acceptance Test Summary
 
-The v5.4.0 Technical Contract includes an exhaustive **73-point Acceptance Test** covering:
+The v5.5.0 Technical Contract includes an exhaustive **73-point WebMCP Acceptance Test**, plus B2B identity and cargo-profile preconditions, covering:
 - **1–6**: Real Supabase Auth demo session, active membership, RLS validation, and empty runtime tables.
 - **7–21**: Full document navigation across `/providers/andes`, `/providers/inca`, `/providers/pacific`, real WebMCP tool calls, and idempotent `record_provider_result` insertions.
 - **22–42**: Exact mathematical replication of BALANCED subscores (Andes 89, Inca 84, Pacific 72), Decision Confidence (88/100), immutable `FreightDecision v1`, and `OPTIONS_READY` halt.
@@ -263,7 +264,12 @@ The v5.4.0 Technical Contract includes an exhaustive **73-point Acceptance Test*
 ```
 cargomesh/
 ├── docs/
-│   └── CargoMesh_Planeacion_WebMCP_FINAL.md   # Complete frozen technical contract (v5.4.0)
+│   ├── CargoMesh_Planeacion_WebMCP_FINAL.md   # General product/WebMCP contract (v5.5.0)
+│   └── CargoMesh_Supabase_Schema_Contract.md  # Database and RLS contract
+├── supabase/
+│   ├── migrations/                            # Remote-synchronized migration history
+│   ├── current_public_schema.sql              # Current public schema snapshot
+│   └── database.types.ts                      # Generated TypeScript types
 ├── mockups/                                   # Standalone HTML UX mockups
 │   └── .gitkeep
 ├── .gitignore                                 # Git configuration

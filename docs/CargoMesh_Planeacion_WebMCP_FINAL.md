@@ -1,6 +1,6 @@
 # CargoMesh — Plan Maestro FINAL para WebMCP Challenge 2026
 
-> **Versión:** FINAL — Technical Contract Freeze  
+> **Versión:** FINAL v5.5.0 — B2B Organization + Cargo Profile Alignment
 > **Estado:** lógica de producto y contrato técnico congelados para implementación y validación E2E  
 > **MVP:** B2B · ROAD · FTL · Domestic + Cross-Border · Golden Flow Callao/Lima, Perú → Santiago, Chile  
 > **Moneda operativa del MVP:** USD, mostrada al usuario como `$`  
@@ -62,7 +62,7 @@ CargoMesh separa explícitamente:
 
 ```text
 BOOTSTRAP DATA
-= organización, miembro, catálogos, carriers, services, metrics
+= organización, miembros, perfiles de carga, catálogos, carriers, services, metrics
 
 DEMO SCENARIO
 = estado inicial controlado de FR-1042
@@ -365,6 +365,33 @@ El `verified_corporate_email` de la organización:
 
 No sustituye la autenticación individual de miembros.
 
+### 2.3.1 Organización B2B, miembros e invitaciones
+
+La organización es el cliente contractual y el tenant de datos. No es una identidad que inicia sesión. Las identidades humanas son sus miembros:
+
+```text
+Organization / tenant
+└── OWNER
+    ├── REQUESTER
+    └── SUPERVISOR
+```
+
+Flujo mínimo de onboarding:
+
+```text
+persona registra empresa
+→ organization INSERT
+→ Supabase Auth identity
+→ organization_members OWNER + ACTIVE
+→ OWNER invita por correo
+→ Supabase Auth invite
+→ organization_members INVITED
+→ aceptación
+→ organization_members ACTIVE
+```
+
+La invitación se ejecuta únicamente desde servidor. Para la hackathon no se requiere una entidad adicional de invitaciones: Supabase Auth mantiene la identidad invitada y `organization_members.status` mantiene el estado empresarial.
+
 ## 2.4 FreightRequest Intake
 
 La solicitud contiene:
@@ -401,11 +428,20 @@ receiver_phone
 ### Cargo
 
 ```text
+cargo_profile_id optional
 cargo_category
 cargo_description
 
 cargo_entry_method =
-TOTAL_WEIGHT | UNITS | PACKAGES | PALLETS | LOTS
+TOTAL_WEIGHT | UNITS | PACKAGES | PALLETS | LOTS | SACKS
+
+entry_quantity
+entry_unit_weight_kg
+units_per_entry
+entry_length_cm
+entry_width_cm
+entry_height_cm
+cargo_specifications
 ```
 
 La entrada se normaliza a:
@@ -415,6 +451,44 @@ cargo_weight_kg
 cargo_volume_m3
 package_count
 ```
+
+Reglas de normalización:
+
+```text
+normalized weight
+= entry_quantity × entry_unit_weight_kg × units_per_entry
+
+normalized volume m³
+= entry_quantity × units_per_entry
+  × length_cm × width_cm × height_cm / 1,000,000
+```
+
+Los campos normalizados alimentan las hard constraints de los carriers. `cargo_specifications` conserva requisitos variables de categoría sin convertir el MVP en un modelo EAV complejo.
+
+Separación semántica:
+
+```text
+cargo category   = qué se transporta
+entry method     = cómo se cuenta o agrupa
+requirements     = cómo debe manipularse
+```
+
+`cargo_categories` aporta orientación dinámica de intake: métodos recomendados, campos sugeridos, requisitos a consultar y clases de vehículo candidatas. Estas últimas son recomendaciones internas sujetas a validación WebMCP.
+
+### Organization Cargo Profile
+
+Durante onboarding la empresa puede registrar uno o más tipos habituales de carga. Esto es un **perfil logístico**, no una skill WebMCP:
+
+```text
+cargo category
+default entry method
+typical quantity / weight / dimensions
+default requirements
+preferred vehicle classes
+priority
+```
+
+Al crear una solicitud, CargoMesh puede sugerir una plantilla y una clase de flota. El miembro siempre puede revisar los valores antes de confirmar.
 
 ### Schedule
 
@@ -920,7 +994,10 @@ La organización define:
 - transportistas preferidos o restringidos;
 - prioridades por costo, rapidez o confiabilidad;
 - límites de riesgo;
-- canal corporativo de confirmación.
+- canal corporativo de confirmación;
+- perfiles habituales de carga;
+- requisitos recurrentes por categoría;
+- clases de vehículo preferidas como preferencias blandas.
 
 ## 4.2 Organization Member
 
@@ -932,7 +1009,8 @@ Puede:
 - quedar como responsable de una FreightRequest;
 - seleccionar otro miembro autorizado como responsable;
 - revisar resultados;
-- recibir contexto operacional según su organización.
+- recibir contexto operacional según su organización;
+- aceptar una invitación corporativa y operar con su rol.
 
 Roles mínimos:
 
@@ -3043,6 +3121,7 @@ organizations
 organization_members
 organization_preferences
 cargo_categories
+organization_cargo_profiles
 freight_requests
 carriers
 carrier_services
@@ -3065,7 +3144,7 @@ orchestration_events
 Total público:
 
 ```text
-14 business-domain tables
+15 business-domain tables
 + 2 technical observability tables
 + auth.users managed by Supabase Auth
 ```
@@ -3155,6 +3234,47 @@ code TEXT UNIQUE
 name TEXT
 description TEXT NULL
 active BOOLEAN
+recommended_entry_methods JSONB
+intake_specification_schema JSONB
+suggested_requirements JSONB
+recommended_vehicle_classes JSONB
+updated_at TIMESTAMPTZ
+```
+
+## 16.4.1 `organization_cargo_profiles`
+
+Plantillas de carga habituales de una organización. Son contexto interno de CargoMesh y no tools WebMCP.
+
+```text
+id UUID PK
+organization_id UUID FK → organizations
+cargo_category_id UUID FK → cargo_categories
+profile_name TEXT
+default_entry_method TEXT
+
+typical_entry_quantity NUMERIC NULL
+typical_unit_weight_kg NUMERIC NULL
+typical_units_per_entry INTEGER
+typical_length_cm NUMERIC NULL
+typical_width_cm NUMERIC NULL
+typical_height_cm NUMERIC NULL
+
+default_requirements JSONB
+preferred_vehicle_classes JSONB
+priority SMALLINT
+active BOOLEAN
+created_at TIMESTAMPTZ
+updated_at TIMESTAMPTZ
+
+UNIQUE (organization_id, profile_name)
+```
+
+Acceso:
+
+```text
+ACTIVE member      → SELECT
+OWNER / SUPERVISOR → INSERT / UPDATE
+anon               → no privileges
 ```
 
 ## 16.5 `freight_requests`
@@ -3165,6 +3285,7 @@ organization_id UUID FK
 requested_by_member_id UUID FK → organization_members
 
 cargo_category_id UUID FK
+cargo_profile_id UUID NULL
 code TEXT UNIQUE
 
 status TEXT
@@ -3193,6 +3314,10 @@ cargo_entry_method TEXT
 entry_quantity NUMERIC NULL
 entry_unit_weight_kg NUMERIC NULL
 units_per_entry INTEGER NULL
+entry_length_cm NUMERIC NULL
+entry_width_cm NUMERIC NULL
+entry_height_cm NUMERIC NULL
+cargo_specifications JSONB NOT NULL DEFAULT '{}'::jsonb
 
 cargo_weight_kg NUMERIC
 cargo_volume_m3 NUMERIC NULL
@@ -3243,6 +3368,11 @@ pickup_mode = 'SCHEDULED'
 
 pickup_window_end > pickup_window_start
 delivery_deadline IS NULL OR delivery_deadline > pickup_window_start
+
+unitized entries require quantity + unit weight + units per entry
+normalized weight must match cargo_weight_kg
+dimensions, when present, must match cargo_volume_m3
+cargo profile must belong to the same organization as the request
 ```
 
 Golden Flow documents:
@@ -4812,6 +4942,19 @@ before Friday, prioritizing reliability."
 
 CargoMesh transforma esa intención en una operación logística.
 
+### 22.1.1 Organization-aware cargo intake
+
+CargoMesh reutiliza el contexto empresarial sin obligar al usuario a reconstruir cada solicitud desde cero:
+
+```text
+organization cargo profile
++ current request changes
+→ suggested unitization and vehicle class
+→ human-reviewed FreightRequest
+```
+
+La sugerencia reduce fricción, pero no reemplaza la validación WebMCP. La capacidad real solo se conoce al ejecutar las tools de los carriers.
+
 ## 22.2 Agent-native discovery through WebMCP
 
 Las aplicaciones de carriers exponen capacidades estructuradas que el agente puede descubrir y ejecutar.
@@ -4866,6 +5009,8 @@ current carrier offers
 historical route performance
 +
 organization preferences
++
+organization cargo profiles
 +
 business constraints
 ```
@@ -5187,6 +5332,8 @@ cargomesh/
 │
 └── supabase/
     ├── migrations/
+    ├── current_public_schema.sql
+    ├── database.types.ts
     └── seed.sql
 ```
 
@@ -5206,6 +5353,7 @@ Puede crear:
 ACME Mining
 Demo Auth User + organization_members
 organization_preferences
+organization_cargo_profiles
 
 cargo_categories
 
@@ -5630,6 +5778,16 @@ Reset deja el escenario listo y runtime vacío con fechas futuras.
 
 # 32. Acceptance Test principal — Golden Flow E2E
 
+Precondiciones de identidad e intake:
+
+- [ ] La organización es el tenant y no una identidad de login.
+- [ ] El usuario demo pertenece a ACME mediante `organization_members`.
+- [ ] El dashboard solo muestra solicitudes de la organización activa.
+- [ ] ACME posee el perfil `Repuestos y maquinaria minera`.
+- [ ] La UI propone 10 pallets × 800 kg desde el perfil y permite edición humana.
+- [ ] Peso y volumen normalizados coinciden con los valores persistidos.
+- [ ] La sugerencia de `TRACTOR_TRAILER` no sustituye `check_capacity` WebMCP.
+
 - [ ] 1. Existe usuario demo real en Supabase Auth.
 - [ ] 2. `organization_members.auth_user_id` referencia ese usuario.
 - [ ] 3. RLS permite leer solo la organización demo correspondiente.
@@ -5804,6 +5962,13 @@ RLS                         = organization scoped
 Grants                      = explicit
 Critical writes             = server-side
 
+Tenant                      = organization
+Human identity              = auth.users + organization_members
+Member invitation           = server-side Supabase Auth invite
+Cargo templates             = organization_cargo_profiles
+Unitized intake             = quantity × unit weight × units per entry
+Variable cargo detail       = cargo_specifications JSONB
+
 Dates                       = relative on reset
 Reset                       = server-only + demo scoped
 
@@ -5832,28 +5997,19 @@ No construir más lógica de negocio.
 Orden:
 
 ```text
-1. Inspect actual repository + deployed schema
-2. Determine real next migration number
-3. Implement v5.4 alignment migration
-4. Create real Supabase Auth demo user
-5. Implement RLS + grants + indexes
-6. Replace old seed with bootstrap-only seed
-7. Implement safe FR-1042 reset
-8. Move quotes/accept-reject behavior to provider fixtures
-9. Implement orchestration_runs/events
-10. Implement one Andes WebMCP vertical slice
-11. Implement record_provider_result
-12. Verify CarrierOffer appears only after tool execution
-13. Extend to Inca + Pacific
-14. Implement exact scoring
-15. Persist INITIAL decision
-16. Human selection
-17. Booking pending
-18. Provider confirmation/rejection
-19. Recovery versioning
-20. Tracking
-21. Judge evidence drawer
-22. Run Acceptance Test
+1. Create real Supabase Auth demo user + OWNER membership
+2. Implement organization registration and server-side member invitation
+3. Implement cargo profile suggestion in the intake form
+4. Move quotes/accept-reject behavior to provider fixtures
+5. Implement one Andes WebMCP vertical slice
+6. Implement record_provider_result
+7. Verify CarrierOffer appears only after tool execution
+8. Extend to Inca + Pacific
+9. Implement exact scoring and persist INITIAL decision
+10. Implement human selection and booking pending
+11. Implement provider confirmation/rejection and recovery versioning
+12. Implement tracking and Judge evidence drawer
+13. Run Acceptance Test
 ```
 
 Milestone crítico:

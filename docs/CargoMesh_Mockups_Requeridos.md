@@ -1,6 +1,6 @@
 # CargoMesh — Arquitectura UX y Mockups Requeridos
 
-> **Versión:** 2.0 (Consolidada y Alineada al Contrato Técnico Congelado v5.4.0)  
+> **Versión:** 2.1 (Consolidada y Alineada al Contrato Técnico v5.5.0)
 > **Propósito:** Definir la estructura real de navegación de producto, reduciendo la fragmentación de pantallas mediante la fusión de estados en vistas reactivas, modales de contexto y un Drawer de Jueces desacoplado de la experiencia del cliente.
 
 ---
@@ -71,9 +71,11 @@ graph TD
   - Empresa (`ACME Mining Corp S.A.`).
   - País (`Perú`) e Identificador empresarial (`20491827361`).
   - Correo corporativo verificado 🔒 (`carlos.mendoza@acmemining.pe`).
-  - Miembros con roles canónicos de CargoMesh (`ADMIN / REQUESTER`, `FINANCE / AUDITOR`).
+  - Miembros e invitados con roles canónicos (`OWNER`, `REQUESTER`, `SUPERVISOR`) y estados `INVITED / ACTIVE`.
+  - Acción `Invitar representante`, ejecutada desde servidor mediante Supabase Auth.
   - Políticas de despacho por defecto: Estrategia `BALANCED`, umbral de auto-booking `Confidence ≥ 85%`.
   - Modo de facturación: Cuenta Corporativa / Facturación Mensual (Net 30).
+  - Perfiles logísticos habituales: categoría, unidad de carga, requisitos recurrentes y clase de vehículo sugerida.
 
 ---
 
@@ -94,7 +96,7 @@ graph TD
 - **Estructura del Stepper Interactivo:**
   1. **Paso 1 — Organización & Solicitante:** Datos autocompletados de ACME Mining y Carlos Mendoza.
   2. **Paso 2 — Origen & Destino:** Dirección de recojo (Callao/Lima), dirección de entrega (Santiago), contactos de entrega y paso fronterizo habilitado (Santa Rosa / Chacalluta).
-  3. **Paso 3 — Carga:** Tipo de carga (Repuestos Mineros / Machinery Parts), 10 pallets $\times$ 800 kg = 8,000 kg, modalidad FTL Road.
+  3. **Paso 3 — Carga:** Sugerencia desde el perfil `Repuestos y maquinaria minera`; captura dinámica por peso total, unidades, paquetes, pallets, lotes o sacos; cantidad, peso y dimensiones por unidad; normalización visible a peso/volumen total. Golden Flow: 10 pallets $\times$ 800 kg = 8,000 kg y 18 m³, con `TRACTOR_TRAILER` como preferencia pendiente de validación WebMCP.
   4. **Paso 4 — Programación & Políticas:** Ventana de recojo programada, presupuesto máximo de **$2,000 USD**, estrategia **BALANCED**, documentos adjuntos (Factura Comercial y Packing List).
   5. **Paso 5 — Revisión & Confirmación:** Resumen consolidado. Mensaje de pre-check: *"✓ Solicitud completa y lista para evaluación"* (sin afirmar indebidamente que las hard constraints del carrier pasaron antes de consultar WebMCP).
 - **CTA Final:** **"Confirmar y buscar opciones de transporte →"**
