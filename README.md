@@ -48,6 +48,8 @@ CargoMesh is designed as an open B2B trucking marketplace: any verified carrier 
 
 > **Architecture invariant:** Andes, Inca, and Pacific are demo fixtures—not a hardcoded provider list. See [ADR-001: Dynamic Provider Registry](docs/00-master/ADR-001_Dynamic_Provider_Registry.md).
 
+> **Team coordination:** Ownership, build milestones, verification checkpoints, and the multi-AI handoff protocol live in [CargoMesh Team Execution Checklist](docs/04-execution/CargoMesh_Team_Execution_Checklist.md).
+
 ### The Official North Star:
 > *"An authenticated enterprise creates a `FreightRequest`; the AI agent navigates participating carrier websites via WebMCP, retrieves real structured responses from deterministic provider fixtures, CargoMesh validates and persists those results into its database, the customer selects an eligible alternative, the carrier confirms or rejects the booking, and the system maintains operational continuity through live milestone tracking or automated recovery."*
 
@@ -279,9 +281,11 @@ cargomesh/
 │   ├── 02-database/                           # Schema contracts, RLS rules & data alignment
 │   │   ├── CargoMesh_Supabase_Schema_Contract.md
 │   │   └── CargoMesh_Supabase_Data_Contract.md
-│   └── 03-ux-ui/                              # UX architecture, screen flows & WebMCP evidence
+│   ├── 03-ux-ui/                              # UX architecture, screen flows & WebMCP evidence
 │       ├── CargoMesh_Mockups_Requeridos.md
 │       └── CargoMesh_Mockups_WebMCP_Ajustes.md
+│   └── 04-execution/                          # Team ownership, checklist and multi-AI handoffs
+│       └── CargoMesh_Team_Execution_Checklist.md
 ├── mockups/                                   # Standalone UX/UI HTML mockups & provider pages
 ├── supabase/                                  # Database migrations, seed, tests, and config
 │   ├── config.toml                            # Local Supabase stack configuration
