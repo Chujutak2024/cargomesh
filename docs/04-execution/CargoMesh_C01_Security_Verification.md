@@ -1,5 +1,7 @@
 # C-01 — Verificación reproducible de seguridad y discovery
 
+**SHA verificado:** `76792c8` (`fix(data): support safe internal provider routes`).
+
 Ejecutar desde `frontend/` después de levantar el frontend local y Supabase local.
 
 ```powershell
@@ -43,11 +45,11 @@ Resultados esperados: anónimo denegado, miembro ACME ve `FR-1042`, usuario sin 
 ## Revisión de secretos
 
 ```powershell
-rg -n "SUPABASE_SERVICE_ROLE_KEY|service_role" frontend/src
-rg -n "SUPABASE_SERVICE_ROLE_KEY|service_role" frontend/.next/static
+rg -n "SUPABASE_SERVICE_ROLE_KEY|service_role" src
+rg -n "SUPABASE_SERVICE_ROLE_KEY|service_role" .next/static
 ```
 
-Las referencias de `service_role` solo son aceptables en módulos `server-only`, como `src/lib/supabase/admin.ts`; `frontend/.next/static` debe devolver cero coincidencias. El módulo discovery no importa `createAdminClient`.
+Las referencias de `service_role` solo son aceptables en módulos `server-only`, como `src/lib/supabase/admin.ts`; `.next/static` debe devolver cero coincidencias. El módulo discovery no importa `createAdminClient`.
 
 ## Handoff para A — INT-01
 
