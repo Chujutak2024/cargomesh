@@ -719,7 +719,7 @@ La cancelación depende del estado.
 ### Before booking request
 
 ```text
-FreightRequest PENDING / EVALUATING
+FreightRequest PENDING / ORCHESTRATING
 → CargoMesh cancels internally
 → no provider tool required
 ```
@@ -3044,7 +3044,7 @@ Esto evita depender de una transición SPA donde tools de un provider anterior p
 7. Continue until candidates finish, fail or time out
 8. evaluate_offers over every eligible runtime offer
 9. With offers: persist INITIAL FreightDecision, orchestration_run → OPTIONS_READY and FreightRequest → AWAITING_SELECTION
-10. Without offers: do not create a decision; orchestration_run → NO_MATCH and show the controlled empty state
+10. Without offers: do not create a decision; orchestration_run → NO_MATCH, FreightRequest → PENDING for edit/retry and show the controlled empty state
 ```
 
 ## 15.3 Human selection
@@ -3679,24 +3679,28 @@ status TEXT
 created_at TIMESTAMPTZ
 ```
 
-Offer lifecycle only:
+Offer lifecycle persisted in P0:
 
 ```text
-QUOTED
+RECEIVED
+ELIGIBLE
+INELIGIBLE
+SELECTED
 EXPIRED
-WITHDRAWN
-ACCEPTED
-REJECTED
+SUPERSEDED
 ```
 
-No se usa:
+La recomendación se conserva en `freight_decisions.recommended_offer_id`; la selección humana cambia la oferta elegida a `SELECTED` y se conserva además en `freight_decisions.selected_offer_id`.
+
+No se usan en `CarrierOffer.status`:
 
 ```text
 RECOMMENDED
-SELECTED
+QUOTED
+ACCEPTED
+REJECTED
+WITHDRAWN
 ```
-
-como `CarrierOffer.status`.
 
 Constraints:
 
@@ -4042,34 +4046,25 @@ El reset no preinserta offers, decisions, bookings ni events.
 
 # 17. Estados principales
 
-## FreightRequest
+## FreightRequest — estados persistidos P0
 
 ```text
 DRAFT
-→ SUBMITTED
-→ AWAITING_CONFIRMATION
 → PENDING
-→ EVALUATING
-→ OPTIONS_READY
-→ BOOKING_PENDING
+→ ORCHESTRATING
+→ AWAITING_SELECTION
+→ BOOKING
 → BOOKED
-→ IN_TRANSIT
-→ DELIVERED
 ```
 
 Branches:
 
 ```text
-BOOKING_PENDING
-→ RECOVERY_REQUIRED
-→ EVALUATING
-→ OPTIONS_READY
+ORCHESTRATING + orchestration_run NO_MATCH
+→ PENDING para editar o reintentar
 
-ANY PRE-DELIVERY STATE
-→ SECURITY_REVIEW
-
-PENDING / EVALUATING / OPTIONS_READY
-→ CANCELLED
+PENDING / ORCHESTRATING / AWAITING_SELECTION / BOOKING
+→ FAILED / CANCELLED
 ```
 
 ## OrchestrationRun
@@ -4077,7 +4072,7 @@ PENDING / EVALUATING / OPTIONS_READY
 ```text
 RUNNING
 → OPTIONS_READY
-→ COMPLETED
+→ NO_MATCH
 ```
 
 Alternatives:
@@ -4090,16 +4085,16 @@ RUNNING → CANCELLED
 ## CarrierOffer
 
 ```text
-QUOTED
-→ ACCEPTED
+RECEIVED
+→ ELIGIBLE / INELIGIBLE
+→ SELECTED / EXPIRED / SUPERSEDED
 ```
 
 Alternatives:
 
 ```text
-QUOTED → EXPIRED
-QUOTED → WITHDRAWN
-QUOTED → REJECTED
+RECEIVED → INELIGIBLE
+ELIGIBLE → SELECTED / EXPIRED / SUPERSEDED
 ```
 
 Recommendation and selection are stored only in `freight_decisions`.
@@ -4237,7 +4232,7 @@ status = RUNNING
 FreightRequest:
 
 ```text
-PENDING → EVALUATING
+PENDING → ORCHESTRATING
 ```
 
 ## Paso 2 — Andes
@@ -4392,7 +4387,7 @@ selected_offer_id = NULL
 FreightRequest:
 
 ```text
-EVALUATING → OPTIONS_READY
+ORCHESTRATING → AWAITING_SELECTION
 ```
 
 ## Paso 6 — Decision Confidence
@@ -4462,7 +4457,7 @@ provider_reference = AND-BOOK-8821
 FreightRequest:
 
 ```text
-OPTIONS_READY → BOOKING_PENDING
+AWAITING_SELECTION → BOOKING
 ```
 
 ## Paso 9A — Provider accepts
@@ -5859,7 +5854,7 @@ Precondiciones de identidad e intake:
 - [ ] 38. `candidate_snapshot` permite recomputar scoring y confidence.
 - [ ] 39. `FreightDecision INITIAL v1` se inserta.
 - [ ] 40. Antes del click `selected_offer_id IS NULL`.
-- [ ] 41. FreightRequest queda `OPTIONS_READY`.
+- [ ] 41. `orchestration_run` queda `OPTIONS_READY` y FreightRequest queda `AWAITING_SELECTION`.
 - [ ] 42. Judge/Agent Drawer muestra eventos desde BD.
 - [ ] 43. Usuario hace click en Andes.
 - [ ] 44. `record_selection` persiste Andes + member.

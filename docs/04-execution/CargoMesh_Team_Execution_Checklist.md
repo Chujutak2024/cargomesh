@@ -57,6 +57,22 @@ Named carriers = demo fixtures and acceptance-test inputs only
 | **B** | Producto y frontend | login, dashboard, intake, dispatch `0..N`, selección, booking UI, Judge Drawer | consultas privilegiadas, scoring, lógica interna provider |
 | **C** | Datos y Decision Engine | Supabase server-side, discovery, Result Bridge, scoring, booking persistence, reset y deploy | UI provider y diseño de pantallas |
 
+### Liderazgo técnico e integración
+
+El Integrante C actúa además como **Technical Lead** e **Integration Owner**. Su función es desbloquear e integrar el trabajo de A y B, no absorber silenciosamente su ownership.
+
+C es responsable de:
+
+- congelar y versionar contratos compartidos;
+- resolver el orden de integración según dependencias;
+- revisar todo PR que afecte contratos, Supabase, seguridad o estados persistidos;
+- ejecutar las verificaciones de cada gate antes de marcar una tarea como integrada;
+- actualizar este checklist y el registro de avances;
+- coordinar incompatibilidades entre consumidores sin reescribir unilateralmente módulos de A o B;
+- realizar el despliegue y validar el entorno final.
+
+Los PR críticos de C sobre RLS, funciones privilegiadas o persistencia deben recibir revisión de A o B. C revisa los PR de A o B que cambien contratos o fronteras de integración.
+
 ### Archivos por integrante
 
 ```text
@@ -84,7 +100,7 @@ Los archivos compartidos (`package.json`, layouts raíz, tipos compartidos y var
 
 ## 4. Contratos que deben congelarse primero
 
-Antes de trabajar en paralelo, los tres integrantes acuerdan estos tipos:
+Antes de integrar trabajo paralelo, los tres integrantes acuerdan estos tipos. A puede desarrollar un spike en su rama antes del freeze, pero no integrarlo a `main`.
 
 ```ts
 type CandidateProvider = {
@@ -97,12 +113,39 @@ type CandidateProvider = {
 
 type ProviderPageConfig = CandidateProvider & {
   service: {
+    providerServiceCode: string;
     transportMode: string;
     serviceType: string;
     maxCapacityKg: number;
     maxVolumeM3: number | null;
     supportsCrossBorder: boolean;
   };
+};
+
+type AvailabilityClass =
+  | "EXACT_CONFIRMED_SLOT"
+  | "AVAILABLE_IN_WINDOW"
+  | "LIMITED_WINDOW"
+  | "WAITLIST"
+  | "UNAVAILABLE";
+
+type ProviderQuote = {
+  schemaVersion: "1.0";
+  freightRequestId: string;
+  providerOfferReference: string;
+  price: number;
+  currency: "USD";
+  priceBreakdown: Record<string, number>;
+  estimatedPickup: string;
+  estimatedDelivery: string;
+  transitHours: number;
+  availableCapacityKg: number;
+  availabilityClass: AvailabilityClass;
+  crossBorderSupported: boolean;
+  customsCoordinationIncluded: boolean;
+  requiredDocuments: string[];
+  borderHandlingNotes: string | null;
+  validUntil: string;
 };
 
 type ProviderToolEnvelope<T> =
@@ -116,7 +159,29 @@ type ProviderToolEnvelope<T> =
       };
     };
 
-type RecordedOffer = {
+type RecordProviderResultInput = {
+  toolCallId: string;
+  orchestrationRunId: string;
+  freightRequestId: string;
+  carrierId: string;
+  providerUrl: string;
+  toolName: string;
+  toolInput: unknown;
+  toolOutput: ProviderToolEnvelope<unknown>;
+  startedAt: string;
+  completedAt: string;
+  schemaVersion: "1.0";
+};
+
+type RecordProviderResultResult = {
+  eventId: string;
+  recordId: string | null;
+  recordType: "CARRIER_OFFER" | "BOOKING" | "BOOKING_EVENT" | null;
+  status: "INSERTED" | "DEDUPLICATED" | "REJECTED";
+  deduplicated: boolean;
+};
+
+type CarrierOffer = {
   offerId: string;
   orchestrationRunId: string;
   carrierId: string;
@@ -126,24 +191,99 @@ type RecordedOffer = {
   transitHours: number;
   status: "RECEIVED" | "ELIGIBLE" | "INELIGIBLE";
 };
+
+type FreightRanking = {
+  orchestrationRunId: string;
+  strategy: "BALANCED";
+  recommendedOfferId: string | null;
+  decisionConfidence: number;
+  options: Array<{
+    offerId: string;
+    rank: number;
+    rawScore: number;
+    roundedScore: number;
+    eligible: boolean;
+    reasons: string[];
+  }>;
+};
+
+type BookingRequest = {
+  freightRequestId: string;
+  offerId: string;
+  idempotencyKey: string;
+};
+
+type BookingResult = {
+  bookingId: string;
+  providerReference: string;
+  providerBookingStatus:
+    | "PENDING_PROVIDER_CONFIRMATION"
+    | "CONFIRMED"
+    | "REJECTED"
+    | "EXPIRED";
+  providerResponseDeadline: string;
+  idempotentReplay: boolean;
+};
 ```
 
-Si cambia uno de estos contratos, el PR debe incluir la actualización de consumidores o dejar un bloqueo explícito.
+Fronteras de ownership:
+
+```text
+C → A: CandidateProvider / ProviderPageConfig
+A → C: ProviderToolEnvelope<ProviderQuote | BookingResult>
+C → B: CarrierOffer / FreightRanking
+B → C: BookingRequest
+```
+
+`CandidateProvider` y `ProviderPageConfig` nunca contienen precio, tránsito ni disponibilidad runtime. Los fixtures comerciales pertenecen a la implementación provider y solo se convierten en datos CargoMesh después de una ejecución WebMCP y `record_provider_result`.
+
+Si cambia uno de estos contratos, el PR debe actualizar consumidores o declarar un bloqueo explícito. No se aceptan enums equivalentes con nombres distintos entre módulos.
+
+### 4.1 Máquina de estados persistida
+
+| Entidad | En proceso | Con opciones | Sin opciones | Error |
+|---|---|---|---|---|
+| `freight_requests` | `ORCHESTRATING` | `AWAITING_SELECTION` | `PENDING` para editar/reintentar | `FAILED` |
+| `orchestration_runs` | `RUNNING` | `OPTIONS_READY` | `NO_MATCH` | `FAILED` |
+| `carrier_offers` | `RECEIVED` | `ELIGIBLE` | `INELIGIBLE` | no se crea si el payload es inválido |
+| `bookings` | `PENDING_PROVIDER_CONFIRMATION` | `CONFIRMED` | `REJECTED` / `EXPIRED` | `FAILED` |
+
+`OPTIONS_READY` y `NO_MATCH` son estados de `orchestration_runs`; `AWAITING_SELECTION` es el estado persistido de `freight_requests` cuando existen alternativas.
+
+### 4.2 Trabajo provisional iniciado antes del freeze
+
+Una tarea puede comenzar como `PROVISIONAL` o `SPIKE`, pero:
+
+- no puede marcarse `[x]` ni integrarse antes de `SH-00`;
+- no puede modificar contratos compartidos sin revisión de C;
+- debe entregar rama, commit, archivos, input/output real, enums, fixtures y pruebas;
+- se priorizan adapters pequeños antes que reescrituras completas;
+- su autor corrige incompatibilidades con el contrato congelado antes del merge.
+
+Estado al publicar esta versión: A inició `A-01` en una rama separada. Ese avance es válido como spike y no requiere detenerse.
 
 ## 5. Checklist de construcción
 
 ### Día 1 — Contratos y corte vertical
 
-- [ ] **SH-01. Congelar contratos y preparar el workspace Next.js**
-  - **Owner:** A + B + C; integra C.
+- [ ] **SH-00. Normalizar baseline y congelar contrato v1**
+  - **Owner:** C; revisan A + B.
   - **Depende de:** nada.
-  - **Qué construir:** estructura mínima de Next.js, variables de entorno de ejemplo, tipos compartidos y límites de ownership.
-  - **Aceptación:** `npm install`, `npm run dev` y `npm run build` funcionan; los cuatro tipos compartidos están disponibles sin datos comerciales hardcodeados.
+  - **Qué construir:** integrar la documentación vigente, resolver contradicciones de contratos/estados y publicar los tipos compartidos canónicos considerando el spike existente de A.
+  - **Aceptación:** existe una sola definición por contrato; A y B confirman que pueden implementar sin inventar campos; ningún trabajo existente se descarta sin evaluación.
+  - **Verificar:** revisión cruzada A/B, búsqueda de estados/enums contradictorios y registro del commit integrado.
+
+- [ ] **SH-01. Materializar contratos y preparar el workspace Next.js**
+  - **Owner:** A + B + C; integra C.
+  - **Depende de:** `SH-00`.
+  - **Qué construir:** estructura mínima de Next.js, variables de entorno de ejemplo, módulo de tipos compartidos y límites de ownership.
+  - **Aceptación:** `npm install`, `npm run dev` y `npm run build` funcionan; los contratos de la sección 4 están disponibles sin datos comerciales runtime hardcodeados.
   - **Verificar:** `cd frontend && npm run build`.
 
 - [ ] **A-01. Crear la plantilla dinámica de página provider**
   - **Owner:** A.
-  - **Depende de:** `SH-01` y contrato `ProviderPageConfig`.
+  - **Estado inicial:** `in-progress / provisional` en rama separada.
+  - **Depende de:** puede desarrollarse como spike; requiere `SH-00` y `SH-01` antes de integrarse.
   - **Qué construir:** `/providers/[carrierSlug]` como Server Component, resolución server-side `carrierSlug → carrierCode`, página `404` y Client Component para WebMCP.
   - **Aceptación:** cualquier carrier registrado/configurado usa la misma página; no existen directorios ni condiciones por nombre comercial; `service_role` no aparece en el bundle cliente.
   - **Verificar:** abrir un slug válido y uno inexistente; ejecutar `rg -n "if.*(ANDES|INCA|PACIFIC)|switch.*carrier" frontend/src` y esperar cero coincidencias de lógica.
@@ -166,8 +306,8 @@ Si cambia uno de estos contratos, el PR debe incluir la actualización de consum
   - **Owner:** C.
   - **Depende de:** `SH-01`.
   - **Qué construir:** clientes Supabase seguros y `get_candidate_provider_pages(freight_request_id)` sobre `carriers`, `carrier_services` y categorías compatibles.
-  - **Aceptación:** devuelve `CandidateProvider[0..N]`, filtra carriers inactivos/sin WebMCP y nunca devuelve cotizaciones precalculadas.
-  - **Verificar:** prueba con 0, 1 y más de 1 candidato; `service_role` solo existe en módulos server-only.
+  - **Aceptación:** devuelve `CandidateProvider[0..N]`, filtra carriers inactivos/sin WebMCP y nunca devuelve cotizaciones precalculadas; el cliente privilegiado está aislado con `server-only` y valida usuario/membresía en operaciones sensibles.
+  - **Verificar:** prueba con 0, 1 y más de 1 candidato; prueba organization-scoped; búsqueda de secretos en bundle; `service_role` solo existe en módulos server-only.
 
 - [ ] **INT-01. Completar el primer corte vertical real**
   - **Owner:** A + C; valida B.
@@ -196,8 +336,8 @@ Si cambia uno de estos contratos, el PR debe incluir la actualización de consum
   - **Owner:** C.
   - **Depende de:** `C-01` y envelope acordado con A.
   - **Qué construir:** `record_provider_result`, idempotencia, creación de `CarrierOffer`, `orchestration_event` y ranking BALANCED TypeScript sobre `0..N` ofertas.
-  - **Aceptación:** una tool call repetida no duplica filas; cero ofertas produce `NO_MATCH`; una o N ofertas producen resultado explicable; los scores del Golden Flow se reproducen desde datos.
-  - **Verificar:** tests unitarios del scorer y prueba de doble ingestión con la misma idempotency key.
+  - **Aceptación:** mismo `tool_call_id` + mismo payload deduplica; mismo ID + payload diferente produce conflicto; cero ofertas produce `NO_MATCH`; una o N ofertas producen resultado explicable; los scores del Golden Flow se reproducen desde datos.
+  - **Verificar:** tests unitarios del scorer, prueba de doble ingestión, conflicto idempotente, `db lint`, pgTAP y revisión RLS.
 
 - [ ] **INT-02. Integrar búsqueda completa y ranking**
   - **Owner:** A + B + C.
@@ -262,6 +402,27 @@ Si cambia uno de estos contratos, el PR debe incluir la actualización de consum
 | Cierre del día | Actualizar checklist, registro de avances y handoff para las IAs |
 
 Nunca acumulen todo el trabajo hasta la noche del Día 3.
+
+### 6.1 Gates controlados por C
+
+| Gate | Resultado obligatorio | Cierra |
+|---|---|---|
+| `G0` Contratos | tipos, estados, ownership y navegador objetivo congelados | C con aprobación A/B |
+| `G1` Vertical WebMCP | discovery → provider registrado → `quote_freight` observable | C + A; valida B |
+| `G2` Decisión | ofertas idempotentes → BALANCED → cards `0..N` | C; validan A/B |
+| `G3` Booking | selección → booking → confirmación/rechazo → reset repetible | C; validan A/B |
+| `G4` Release | build, DB tests, seguridad, navegador objetivo y URL pública | C |
+
+Una tarea terminada en una rama no cierra un gate. El gate se cierra únicamente después de integración y verificación conjunta.
+
+### 6.2 Plan de continuación inmediato
+
+1. A continúa `A-01` en su rama y entrega su handoff provisional; no integra todavía.
+2. C integra `SH-00`, publica contratos/estados y comunica el commit a A/B.
+3. A adapta su spike al contrato congelado; B puede avanzar shell/login con fixtures UI explícitos.
+4. Tras `SH-01`, A-01, B-01 y C-01 avanzan en paralelo.
+5. C integra primero `INT-01`; ningún formato provisional de A llega directamente a B.
+6. Después de `G1`, el equipo avanza a Result Bridge, ranking y dispatch completo.
 
 ## 7. Protocolo para trabajar con distintas IAs
 
@@ -330,9 +491,25 @@ Copiar este bloque en la descripción del PR y en el chat del equipo:
 ```text
 PR abierto       → la casilla permanece [ ]
 PR en review     → la casilla permanece [ ]
-PR integrado     → marcar [x] y registrar commit
+PR integrado     → C ejecuta la verificación; la casilla sigue [ ] hasta aprobarla
+Verificación OK  → C marca [x] y registra commit
+Verificación KO  → permanece [ ] y se registra bloqueo
 PR revertido     → volver a [ ] y explicar motivo
 ```
+
+Solo C modifica casillas y el registro de avances para evitar conflictos de edición. A y B reportan estado mediante Issues, PR y handoff.
+
+### 7.5 Definition of Done
+
+Una tarea está `done` únicamente cuando:
+
+- está integrada en `main`;
+- respeta contratos y ownership;
+- compila y pasa sus pruebas;
+- no expone secretos;
+- incluye handoff y evidencia de verificación;
+- C ejecutó el criterio de aceptación;
+- los cambios críticos de C recibieron revisión cruzada.
 
 ## 8. Registro de avances integrados
 
@@ -346,7 +523,8 @@ Agregar una fila únicamente después de integrar a `main`.
 
 | Fecha | Task ID | Bloqueo/decisión | Responsable de resolver | Estado |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| 2026-08-29 | `SH-00` | A inició `A-01` en rama separada; normalizar su output sin detener ni reescribir el spike | C + A | En curso |
+| 2026-08-29 | `SH-00` | Congelar navegador/build WebMCP, flags y firma observada de `executeTool()` | A + C | Pendiente |
 
 ## 10. Estrategia Git y GitHub recomendada
 
