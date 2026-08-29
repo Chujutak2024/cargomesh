@@ -288,7 +288,7 @@ Estado al publicar esta versión: A inició `A-01` en una rama separada. Ese ava
   - **Aceptación:** cualquier carrier registrado/configurado usa la misma página; no existen directorios ni condiciones por nombre comercial; `service_role` no aparece en el bundle cliente.
   - **Verificar:** abrir un slug válido y uno inexistente; ejecutar `rg -n "if.*(ANDES|INCA|PACIFIC)|switch.*carrier" frontend/src` y esperar cero coincidencias de lógica.
 
-- [ ] **A-02. Registrar y ejecutar `quote_freight`**
+- [x] **A-02. Registrar y ejecutar `quote_freight`**
   - **Owner:** A.
   - **Depende de:** `A-01`.
   - **Qué construir:** tool imperativa con JSON Schema, envelope común, `readOnlyHint`, cancelación mediante `AbortSignal` y limpieza al desmontar el componente.
@@ -521,6 +521,7 @@ Agregar una fila únicamente después de integrar a `main`.
 | 2026-08-29 02:54 | `SH-01` | C | `95f898d` (#1) | `npm run build` y setup Next.js | `A-01`, `B-01`, `C-01` |
 | 2026-08-29 03:17 | `A-01` | A | `37eb5e8` (#2) | Slug dinámico y `not-found.tsx` | `A-02` |
 | 2026-08-29 | `C-01` | C | `6503c95` (#6) | Aprobación cruzada A; discovery 10/10, typecheck y build en `main` | `INT-01` con A-02 integrado; `C-02` cuando exista el envelope final |
+| 2026-08-29 | `A-02` | A | `5ac1448` (#5) | Revisión C de compatibilidad con C-01; typecheck y build en `main` | `INT-01` |
 
 ## 9. Bloqueos y decisiones pendientes
 
