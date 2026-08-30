@@ -119,7 +119,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {open ? <button className={styles.backdrop} type="button" aria-label="Cerrar navegación" onClick={() => setOpen(false)} /> : null}
+      {open ? <div className={styles.backdrop} aria-hidden="true" onClick={() => setOpen(false)} /> : null}
 
       <div className={styles.contentColumn}>
         <header className={styles.topbar}>

@@ -3,11 +3,21 @@ import type { TrackingMapModel } from "@/features/freight-ui/view-models";
 import styles from "./live-tracking-map.module.css";
 
 export function LiveTrackingMap({ model }: { model: TrackingMapModel }) {
+  const vehicleCount = model.vehicles.length;
+  const unitsInRoute = `${vehicleCount} ${vehicleCount === 1 ? "unidad" : "unidades"} en ruta`;
+  const hubLabels = model.hubs.map((hub) => hub.label);
+  const hubContext = hubLabels.length > 1
+    ? `entre ${hubLabels.slice(0, -1).join(", ")} y ${hubLabels[hubLabels.length - 1]}`
+    : hubLabels.length === 1
+      ? `en ${hubLabels[0]}`
+      : "";
+  const mapDescription = `Mapa operativo con ${unitsInRoute}${hubContext ? ` ${hubContext}` : ""}`;
+
   return (
-    <div className={styles.map} role="img" aria-label="Mapa operativo con dos vehículos en ruta entre Callao, Arequipa y Tacna">
+    <div className={styles.map} role="img" aria-label={mapDescription}>
       <div className={styles.mapMeta}>
         <span><span className={styles.liveDot} aria-hidden="true" /> Actualización en vivo</span>
-        <span>2 unidades en ruta</span>
+        <span>{unitsInRoute}</span>
       </div>
 
       <svg className={styles.canvas} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
