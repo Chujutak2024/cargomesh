@@ -274,7 +274,7 @@ Una tarea puede comenzar como `PROVISIONAL` o `SPIKE`, pero:
 - se priorizan adapters pequeños antes que reescrituras completas;
 - su autor corrige incompatibilidades con el contrato congelado antes del merge.
 
-Estado actual: `SH-00`, `SH-01`, A-01, A-02, A-03, B-01, C-01, `INT-01 / G1` y C-02 están integrados; `INT-02A` se encuentra en diseño/implementación headless y permanece abierto. Todo trabajo provisional pendiente debe seguir las reglas anteriores antes de integrarse.
+Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 están integrados; A-03 permanece en review en el PR #9. Todo trabajo provisional pendiente debe seguir las reglas anteriores antes de integrarse.
 
 ## 5. Checklist de construcción
 
