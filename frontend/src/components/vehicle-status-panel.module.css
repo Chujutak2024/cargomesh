@@ -1,0 +1,20 @@
+.list { display: grid; }
+.vehicle { padding: 0.9rem 1rem; border-bottom: 1px solid #e8ecea; }
+.vehicle:last-child { border-bottom: 0; }
+.vehicleTop { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.6rem; }
+.icon { display: grid; width: 2.3rem; height: 2.3rem; place-items: center; border-radius: 0.65rem; background: #edf5f2; color: #185c55; }
+.identity { display: grid; gap: 0.12rem; min-width: 0; }
+.identity small { color: #7d8987; font-size: 0.57rem; }
+.identity strong { color: #1f2928; font-size: 0.77rem; }
+.badge { border-radius: 999px; padding: 0.28rem 0.48rem; font-size: 0.55rem; font-weight: 800; white-space: nowrap; }
+.ACTIVE { background: #ddf3ea; color: #185c55; }
+.AVAILABLE { background: #e8f4f1; color: #257a70; }
+.MAINTENANCE { background: #fff4d9; color: #80601d; }
+.vehicle p { margin: 0.65rem 0 0.45rem; color: #52605e; font-size: 0.66rem; font-weight: 650; }
+.meta { display: flex; justify-content: space-between; gap: 0.5rem; color: #7b8785; font-size: 0.59rem; }
+.meta span { display: inline-flex; align-items: center; gap: 0.25rem; }
+.load { margin-top: 0.65rem; }
+.load > span { display: flex; justify-content: space-between; color: #7b8785; font-size: 0.56rem; }
+.load > span strong { color: #185c55; }
+.load > div { height: 0.28rem; margin-top: 0.3rem; overflow: hidden; border-radius: 999px; background: #e8edeb; }
+.load i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #185c55, #2bae9a); }

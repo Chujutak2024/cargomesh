@@ -1,29 +1,70 @@
-.page { display: grid; gap: 1.35rem; max-width: 90rem; margin: 0 auto; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
-.hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.25rem; }
-.hero h1 { margin: 0.3rem 0 0.45rem; color: #1a1812; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.8rem, 4vw, 2.75rem); font-weight: 500; letter-spacing: -0.035em; }
-.hero p { max-width: 42rem; margin: 0; color: #5b5748; font-size: 0.88rem; line-height: 1.65; }
-.eyebrow { color: #8c6316; font-size: 0.67rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
-.primaryAction { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 0.45rem; border-radius: 999px; padding: 0.72rem 1rem; background: #a9791f; color: #211500; font-size: 0.78rem; font-weight: 850; text-decoration: none; box-shadow: 0 8px 24px rgb(140 99 22 / 18%); }
-.primaryAction:hover { background: #c4901f; }
-.metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
-.metricCard { position: relative; display: grid; min-height: 8.5rem; align-content: space-between; border: 1px solid #e4e0d2; border-radius: 1rem; padding: 1rem; background: white; overflow: hidden; }
-.metricCard::after { content: ""; position: absolute; right: -1.5rem; bottom: -2rem; width: 5rem; height: 5rem; border-radius: 50%; background: #f1e1bb; opacity: 0.48; }
-.metricIcon { display: grid; width: 2.1rem; height: 2.1rem; place-items: center; border-radius: 0.65rem; background: #f3f1e9; color: #8c6316; }
-.metricCard span { margin-top: 0.85rem; color: #928d79; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
-.metricCard strong { color: #1a1812; font-family: Georgia, "Times New Roman", serif; font-size: 1.65rem; font-weight: 500; }
-.panel { overflow: hidden; border: 1px solid #e4e0d2; border-radius: 1.15rem; background: white; box-shadow: 0 18px 48px rgb(44 37 22 / 5%); }
-.panelHeader { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.1rem; border-bottom: 1px solid #e4e0d2; }
-.panelHeader h2 { margin: 0.2rem 0 0; color: #1a1812; font-size: 1rem; }
-.panelHeader a { display: inline-flex; align-items: center; gap: 0.35rem; color: #8c6316; font-size: 0.75rem; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.page { display: grid; gap: 1rem; width: 100%; max-width: 100rem; margin: 0 auto; }
+.hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding: 0.25rem 0 0.15rem; }
+.hero h1 { margin: 0.25rem 0 0.32rem; color: #123c3a; font-size: clamp(1.65rem, 3vw, 2.2rem); font-weight: 760; letter-spacing: -0.04em; line-height: 1.1; }
+.hero p { max-width: 38rem; margin: 0; color: #687573; font-size: 0.78rem; line-height: 1.55; }
+.eyebrow { color: #2b7d72; font-size: 0.58rem; font-weight: 850; letter-spacing: 0.12em; text-transform: uppercase; }
+.primaryAction {
+  display: inline-flex;
+  min-height: 3rem;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.55rem;
+  border: 0;
+  border-radius: 0.78rem;
+  padding: 0.6rem 0.85rem;
+  background: #d9e3df;
+  color: #71807d;
+  font-family: inherit;
+  text-align: left;
+  cursor: not-allowed;
+}
+.primaryAction > span { display: grid; gap: 0.05rem; font-size: 0.72rem; font-weight: 800; }
+.primaryAction small { font-size: 0.52rem; font-weight: 600; }
+
+.metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem; }
+.metricCard {
+  display: grid;
+  min-width: 0;
+  min-height: 8.6rem;
+  align-content: space-between;
+  gap: 0.55rem;
+  border: 1px solid #dde3e0;
+  border-radius: 0.9rem;
+  padding: 0.9rem;
+  background: #ffffff;
+  box-shadow: 0 0.4rem 1.5rem rgb(18 60 58 / 4%);
+}
+.metricTop { display: flex; align-items: center; justify-content: space-between; gap: 0.35rem; }
+.metricIcon { display: grid; width: 2.05rem; height: 2.05rem; place-items: center; border-radius: 0.58rem; }
+.turquoise { color: #176f66; background: #ddf3ea; }
+.green { color: #ffffff; background: #185c55; }
+.cream { color: #755c26; background: #fff4d9; }
+.positive { color: #ffffff; background: #2bae9a; }
+.trend { display: none; align-items: center; gap: 0.2rem; color: #2b7d72; font-size: 0.53rem; font-weight: 750; }
+.metricCard > strong { color: #1f2928; font-size: clamp(1.55rem, 3vw, 2rem); letter-spacing: -0.045em; }
+.metricCard > div:last-child { display: grid; gap: 0.18rem; }
+.metricCard > div:last-child span { color: #34413f; font-size: 0.68rem; font-weight: 750; }
+.metricCard > div:last-child small { color: #7a8784; font-size: 0.56rem; }
+
+.operationsGrid, .dataGrid { display: grid; min-width: 0; gap: 1rem; }
+.panel { min-width: 0; overflow: hidden; border: 1px solid #dde3e0; border-radius: 1rem; background: #ffffff; box-shadow: 0 0.6rem 2rem rgb(18 60 58 / 4%); }
+.panelHeader { display: flex; min-height: 4rem; align-items: center; justify-content: space-between; gap: 0.8rem; padding: 0.85rem 1rem; border-bottom: 1px solid #e4e9e6; }
+.panelHeader > div { display: grid; gap: 0.16rem; }
+.panelHeader h2 { margin: 0; color: #1f2928; font-size: 0.83rem; letter-spacing: -0.012em; }
+.update { display: inline-flex; align-items: center; gap: 0.28rem; color: #7b8785; font-size: 0.57rem; white-space: nowrap; }
+.counter { display: grid; min-width: 1.65rem; height: 1.65rem; place-items: center; border-radius: 0.52rem; background: #edf5f2; color: #185c55; font-size: 0.65rem; font-weight: 850; }
 
 @media (max-width: 620px) {
   .hero { align-items: flex-start; flex-direction: column; }
   .primaryAction { width: 100%; justify-content: center; }
+  .update { display: none; }
 }
-
-@media (min-width: 760px) {
+@media (min-width: 620px) { .trend { display: inline-flex; } }
+@media (min-width: 880px) {
+  .operationsGrid { grid-template-columns: minmax(0, 2.05fr) minmax(16rem, 0.95fr); }
+  .dataGrid { grid-template-columns: minmax(0, 2.15fr) minmax(15rem, 0.85fr); }
+}
+@media (min-width: 1180px) {
   .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .metricCard { min-height: 9.25rem; padding: 1.2rem; }
-  .panelHeader { padding: 1.25rem 1.35rem; }
+  .metricCard { min-height: 9rem; padding: 1rem; }
 }
-
