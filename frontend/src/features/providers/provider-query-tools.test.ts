@@ -99,7 +99,7 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
     },
     async executeTool(
       tool: WebMCP.RegisteredTool,
-      inputObject: Record<string, unknown> = {},
+      inputJson = "{}",
       options?: WebMCP.ModelContextExecuteToolOptions,
     ) {
       const registeredTool = registeredTools.get(tool.name);
@@ -107,9 +107,10 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
         throw new Error(`Tool '${tool.name}' is not registered.`);
       }
 
-      return registeredTool.execute(inputObject, {
+      const result = await registeredTool.execute(JSON.parse(inputJson), {
         signal: options?.signal ?? new AbortController().signal,
       });
+      return JSON.stringify(result);
     },
   } as WebMCP.ModelContext;
   const registrationController = new AbortController();
@@ -131,10 +132,12 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
     (tool) => tool.name === "check_service_coverage",
   );
   assert.ok(coverageTool);
-  const coverageResult = (await modelContext.executeTool(
-    coverageTool,
-    compatibleCoverageInput,
-  )) as ProviderToolEnvelope<ServiceCoverageResult>;
+  const coverageResult = JSON.parse(
+    (await modelContext.executeTool(
+      coverageTool,
+      JSON.stringify(compatibleCoverageInput),
+    )) as string,
+  ) as ProviderToolEnvelope<ServiceCoverageResult>;
   assert.equal(coverageResult.ok && coverageResult.data.supported, true);
 
   registrationController.abort();
