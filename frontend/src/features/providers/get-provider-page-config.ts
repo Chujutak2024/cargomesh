@@ -4,6 +4,7 @@ import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import type { ProviderPageConfig } from "./contracts";
+import { isProviderServiceId } from "./provider-route-params";
 
 type CarrierRow = {
   id: string;
@@ -34,10 +35,11 @@ function carrierSlugToCode(carrierSlug: string): string | null {
 
 export const getProviderPageConfig = cache(async function getProviderPageConfig(
   carrierSlug: string,
+  serviceId: string,
 ): Promise<ProviderPageConfig | null> {
   const carrierCode = carrierSlugToCode(carrierSlug);
 
-  if (!carrierCode) {
+  if (!carrierCode || !isProviderServiceId(serviceId)) {
     return null;
   }
 
@@ -67,11 +69,10 @@ export const getProviderPageConfig = cache(async function getProviderPageConfig(
     .select(
       "id,provider_service_code,transport_mode,service_type,max_capacity_kg,max_volume_m3,supports_cross_border",
     )
+    .eq("id", serviceId)
     .eq("carrier_id", carrier.id)
     .eq("active", true)
     .not("provider_service_code", "is", null)
-    .order("created_at", { ascending: true })
-    .limit(1)
     .maybeSingle();
 
   if (serviceError || !serviceData || !carrier.provider_url) {
