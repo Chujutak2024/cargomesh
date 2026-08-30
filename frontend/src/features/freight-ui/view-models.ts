@@ -56,3 +56,95 @@ export type TrackingMapModel = {
     eta: string;
   };
 };
+
+export type FreightIntakeModel = {
+  requestId: string;
+  organization: string;
+  requester: string;
+  cargoProfile: string;
+  origin: string;
+  destination: string;
+  pickupContact: string;
+  deliveryContact: string;
+  borderCrossing: string;
+  cargoCategory: string;
+  entryMethod: string;
+  quantity: number;
+  unitWeightKg: number;
+  lengthCm: number;
+  widthCm: number;
+  heightCm: number;
+  pickupDate: string;
+  budgetMaxUsd: number;
+  strategy: "BALANCED";
+  documents: string[];
+};
+
+export type CandidateProgressStatus =
+  | "PENDING"
+  | "NAVIGATING"
+  | "COVERAGE_CHECKED"
+  | "CAPACITY_CHECKED"
+  | "QUOTED"
+  | "RECORDED";
+
+export type DispatchCandidate = {
+  candidateId: string;
+  displayName: string;
+  status: CandidateProgressStatus;
+};
+
+export type DispatchOffer = {
+  offerId: string;
+  carrierId: string;
+  displayName: string;
+  totalPrice: number;
+  currency: "USD";
+  transitHours: number;
+  reportedVehicle: string;
+  capacityKg: number;
+  reliabilityPercent: number;
+  pickupWindow: string;
+  crossBorderSupported: boolean;
+  roundedScore: number;
+  reasons: string[];
+  recommended: boolean;
+};
+
+export type DispatchRequestSummary = {
+  requestId: string;
+  origin: string;
+  destination: string;
+  cargo: string;
+  pickupDate: string;
+  budget: string;
+};
+
+type DispatchBase = {
+  request: DispatchRequestSummary;
+  candidates: DispatchCandidate[];
+};
+
+export type DispatchViewModel =
+  | (DispatchBase & { state: "LOADING" })
+  | (DispatchBase & { state: "EVALUATING" })
+  | (DispatchBase & {
+      state: "ERROR";
+      error: { title: string; message: string; retryable: boolean };
+    })
+  | (DispatchBase & { state: "NO_MATCH"; offers: [] })
+  | (DispatchBase & {
+      state: "OPTIONS_READY";
+      offers: DispatchOffer[];
+      strategy: "BALANCED";
+      decisionConfidence: number;
+    });
+
+export type DispatchFixtureScenario =
+  | "loading"
+  | "evaluating"
+  | "error"
+  | "no-match"
+  | "one"
+  | "three"
+  | "four";

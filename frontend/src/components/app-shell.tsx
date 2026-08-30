@@ -33,7 +33,7 @@ const navigation = [
     label: "Principal",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, disabled: false },
-      { href: "/requests/new", label: "Nueva carga", icon: PackagePlus, disabled: true },
+      { href: "/freight-request/new", label: "Nueva carga", icon: PackagePlus, disabled: false },
       { href: "/requests", label: "Mis cargas", icon: ClipboardList, disabled: true },
       { href: "/tracking", label: "Seguimiento", icon: MapPinned, disabled: true },
       { href: "/dispatch", label: "Despachos", icon: Route, disabled: true },
@@ -63,6 +63,11 @@ const navigation = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const pageContext = pathname.startsWith("/freight-request/new")
+    ? { title: "Nueva carga", subtitle: "Intake guiado de FreightRequest" }
+    : pathname.startsWith("/dispatch/")
+      ? { title: "Smart Dispatch", subtitle: "Evaluación dinámica de opciones" }
+      : { title: "Dashboard", subtitle: "Vista general de operaciones" };
 
   if (pathname === "/login") {
     return <>{children}</>;
@@ -127,8 +132,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Menu size={20} />
           </button>
           <div className={styles.context}>
-            <strong>Dashboard</strong>
-            <span>Vista general de operaciones</span>
+            <strong>{pageContext.title}</strong>
+            <span>{pageContext.subtitle}</span>
           </div>
           <div className={styles.topbarActions}>
             <label className={styles.search}>

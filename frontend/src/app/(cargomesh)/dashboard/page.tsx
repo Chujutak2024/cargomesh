@@ -7,6 +7,7 @@ import {
   Truck,
   Warehouse,
 } from "lucide-react";
+import Link from "next/link";
 import { CapacityPanel } from "@/components/capacity-panel";
 import { LiveTrackingMap } from "@/components/live-tracking-map";
 import { RequestTable } from "@/components/request-table";
@@ -66,10 +67,10 @@ export default function DashboardPage() {
           <h1>Control de operaciones</h1>
           <p>Supervisa cargas, flota y capacidad logística desde una sola vista.</p>
         </div>
-        <button className={styles.primaryAction} type="button" disabled title="Disponible en B-02">
+        <Link className={styles.primaryAction} href="/freight-request/new">
           <Plus size={17} aria-hidden="true" />
-          <span>Nueva carga<small>Disponible en B-02</small></span>
-        </button>
+          <span>Nueva carga<small>Crear solicitud</small></span>
+        </Link>
       </section>
 
       <section className={styles.metrics} aria-label="Indicadores operativos">
