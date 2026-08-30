@@ -309,7 +309,7 @@ Estado al publicar esta versión: A inició `A-01` en una rama separada. Ese ava
   - **Aceptación:** devuelve `CandidateProvider[0..N]`, filtra carriers inactivos/sin WebMCP y nunca devuelve cotizaciones precalculadas; el cliente privilegiado está aislado con `server-only` y valida usuario/membresía en operaciones sensibles.
   - **Verificar:** prueba con 0, 1 y más de 1 candidato; prueba organization-scoped; búsqueda de secretos en bundle; `service_role` solo existe en módulos server-only.
 
-- [ ] **INT-01. Completar el primer corte vertical real**
+- [x] **INT-01. Completar el primer corte vertical real**
   - **Owner:** A + C; valida B.
   - **Depende de:** `A-02`, `C-01`.
   - **Qué construir:** discovery → navegación a un carrier registrado → ejecución real de `quote_freight` → resultado observable.
@@ -523,6 +523,7 @@ Agregar una fila únicamente después de integrar a `main`.
 | 2026-08-29 | `C-01` | C | `6503c95` (#6) | Aprobación cruzada A; discovery 10/10, typecheck y build en `main` | `INT-01` con A-02 integrado; `C-02` cuando exista el envelope final |
 | 2026-08-29 | `A-02` | A | `5ac1448` (#5) | Revisión C de compatibilidad con C-01; typecheck y build en `main` | `INT-01` |
 | 2026-08-30 | `B-01` | B | `3639940` (#4) | C: `npm install`, typecheck y build en `main`; recorrido `/login` → `/dashboard`, navegación móvil y P1 de rutas 404 corregido | Validación visual de B para `G1`; `B-02` según el plan del Día 2 |
+| 2026-08-30 | `INT-01 / G1` | A + C; valida B | `13b76d8` (#8) | C: discovery 10/10, parámetros de ruta 3/3, typecheck, build, WebMCP/404/cleanup y bundle sin secretos; B: validación visual desktop/móvil aprobada | `A-03`, `B-02`, `C-02` |
 
 ## 9. Bloqueos y decisiones pendientes
 
