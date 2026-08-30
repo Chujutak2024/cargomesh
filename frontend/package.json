@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test:discovery": "tsx --test src/features/discovery/candidate-matcher.test.ts"
+    "test:discovery": "tsx --test src/features/discovery/candidate-matcher.test.ts",
+    "test:c02": "tsx --test src/features/decision-engine/balanced.test.ts src/features/result-bridge/validation.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

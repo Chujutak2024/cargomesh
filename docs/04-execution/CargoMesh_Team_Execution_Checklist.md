@@ -1,6 +1,6 @@
 # CargoMesh — Team Execution Checklist
 
-> **Versión:** 1.0.0  
+> **Versión:** 1.1.0
 > **Contrato técnico:** v5.6.0  
 > **Duración:** 4 días  
 > **Equipo:** 3 integrantes trabajando en entornos e IAs independientes  
@@ -97,6 +97,20 @@ supabase/**
 ```
 
 Los archivos compartidos (`package.json`, layouts raíz, tipos compartidos y variables de entorno) requieren aviso en el chat del equipo antes de modificarse.
+
+### 3.1 Ajuste temporal por disponibilidad de B — 2026-08-30
+
+El Integrante B no está disponible hoy y puede regresar mañana. Este ajuste cambia únicamente la secuencia inmediata; no transfiere ownership ni autoriza a A o C a editar archivos de B.
+
+Reglas temporales:
+
+- `B-02` y `B-03` continúan asignadas exclusivamente a B;
+- A y C trabajan solo en sus módulos y en fronteras server-side ya acordadas;
+- A o C no modifican dashboard, dispatch, `RequestTable`, componentes visuales ni archivos bajo ownership de B;
+- C puede diseñar y probar `INT-02A` headless, pero no implementar dependencias del contrato A-03 hasta que dicho contrato esté integrado;
+- completar `INT-02A` no completa `INT-02`, `INT-02B` ni el gate visual `G2`;
+- ningún gate que requiera validación visual puede cerrarse sin B, salvo una decisión posterior, explícita y registrada por el equipo;
+- si la ausencia de B se extiende, el equipo acuerda un nuevo plan; no existe reasignación implícita.
 
 ## 4. Contratos que deben congelarse primero
 
@@ -260,7 +274,7 @@ Una tarea puede comenzar como `PROVISIONAL` o `SPIKE`, pero:
 - se priorizan adapters pequeños antes que reescrituras completas;
 - su autor corrige incompatibilidades con el contrato congelado antes del merge.
 
-Estado al publicar esta versión: A inició `A-01` en una rama separada. Ese avance es válido como spike y no requiere detenerse.
+Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 están integrados; A-03 permanece en review en el PR #9. Todo trabajo provisional pendiente debe seguir las reglas anteriores antes de integrarse.
 
 ## 5. Checklist de construcción
 
@@ -320,31 +334,48 @@ Estado al publicar esta versión: A inició `A-01` en una rama separada. Ese ava
 
 - [ ] **A-03. Completar tools provider de consulta**
   - **Owner:** A.
+  - **Estado actual:** `review`; PR #9 abierto en `feat/a-webmcp-a03` sobre `7d3ff0e`.
   - **Depende de:** `A-02`.
   - **Qué construir:** `check_service_coverage` y `check_capacity` con schemas compartidos, validaciones y errores accionables.
   - **Aceptación:** las tools funcionan para cualquier `ProviderPageConfig`; una solicitud incompatible devuelve una respuesta comercial válida, no una excepción genérica.
-  - **Verificar:** ejecutar manualmente casos compatible, incompatible y payload inválido.
+  - **Verificar:** ejecutar casos compatible, incompatible, payload inválido, cancelación, `getTools()`, `executeTool()` y cleanup; ejecutar typecheck/build y entregar evidencia WebMCP a C.
 
-- [ ] **B-02. Construir intake y dispatch dinámico**
-  - **Owner:** B.
-  - **Depende de:** `B-01` y tipos compartidos.
-  - **Qué construir:** formulario prellenado editable y `/dispatch/[id]` con estados `EVALUATING`, `OPTIONS_READY` y `NO_MATCH`.
-  - **Aceptación:** renderiza `0..N` candidatos/ofertas; no asume tres cards; distingue candidato consultado de oferta persistida.
-  - **Verificar:** fixtures UI con cero, una, tres y cuatro ofertas.
-
-- [ ] **C-02. Implementar Result Bridge y Decision Engine**
+- [x] **C-02. Implementar Result Bridge y Decision Engine**
   - **Owner:** C.
   - **Depende de:** `C-01` y envelope acordado con A.
   - **Qué construir:** `record_provider_result`, idempotencia, creación de `CarrierOffer`, `orchestration_event` y ranking BALANCED TypeScript sobre `0..N` ofertas.
   - **Aceptación:** mismo `tool_call_id` + mismo payload deduplica; mismo ID + payload diferente produce conflicto; cero ofertas produce `NO_MATCH`; una o N ofertas producen resultado explicable; los scores del Golden Flow se reproducen desde datos.
   - **Verificar:** tests unitarios del scorer, prueba de doble ingestión, conflicto idempotente, `db lint`, pgTAP y revisión RLS.
 
-- [ ] **INT-02. Integrar búsqueda completa y ranking**
+- [ ] **INT-02A. Integrar búsqueda completa y ranking headless**
+  - **Owner:** A + C; coordina C.
+  - **Depende de:** `A-03` y `C-02`. Antes de integrar A-03, C solo prepara diseño, harness, contratos de consumo y pruebas que no dependan de su implementación.
+  - **Qué construir:** un flujo server-side reproducible `FreightRequest → discovery → CandidateProvider[0..N] → matchingServiceId → provider exacto → tools WebMCP → ProviderToolEnvelope → record_provider_result → CarrierOffer[0..N] → BALANCED → FreightRanking`, sin UI de B.
+  - **Aceptación:** funciona con 0, 1 y N providers; conserva `matchingServiceId`; registra resultados idempotentemente; reproduce `89/84/72`; mantiene RLS y secretos fuera del cliente; entrega un JSON/ViewModel estable con estados `loading`, `error`, `NO_MATCH` y `success` para consumo de B.
+  - **Verificar:** pruebas headless 0/1/N, Golden Flow, caso adicional con cuarto provider o configuración equivalente, replay idempotente, typecheck/build, pruebas DB y búsqueda de secretos. El PR debe incluir script o endpoint reproducible y ejemplos JSON.
+
+  En `INT-02A`, *headless* significa «sin la interfaz CargoMesh propiedad de B». La ejecución provider continúa ocurriendo mediante WebMCP en un navegador/runner compatible; C no debe sustituir `document.modelContext` por una llamada directa a la implementación interna de la tool ni fabricar el resultado desde el servidor.
+
+- [ ] **B-02. Construir intake y dispatch dinámico**
+  - **Owner:** B. La ausencia temporal no cambia este ownership.
+  - **Depende de:** `B-01` y tipos compartidos; la conexión con datos reales consume el ViewModel estable de `INT-02A`.
+  - **Qué construir:** formulario prellenado editable y `/dispatch/[id]` con estados visuales `loading/EVALUATING`, `error`, `OPTIONS_READY` y `NO_MATCH`.
+  - **Aceptación:** renderiza `0..N` candidatos/ofertas; no asume tres cards; distingue candidato consultado de oferta persistida; no requiere que A o C reescriban su interfaz.
+  - **Verificar:** fixtures UI con cero, una, tres y cuatro ofertas; luego conectar los ejemplos JSON entregados por `INT-02A`.
+
+- [ ] **INT-02B. Integrar visualmente el ranking headless**
+  - **Owner:** B; apoyan A + C sin asumir ownership visual.
+  - **Depende de:** `B-02` e `INT-02A`.
+  - **Qué construir:** consumir el ViewModel estable y conectar intake/dispatch con los estados y ofertas ordenadas del flujo headless.
+  - **Aceptación:** `loading`, `error`, `NO_MATCH` y `success` se distinguen visualmente; las cards muestran `0..N` ofertas persistidas y ordenadas; ningún componente contiene reglas por carrier.
+  - **Verificar:** recorrido visual desktop/móvil con 0, 1, 3 y 4 ofertas, usando el script o endpoint de `INT-02A`.
+
+- [ ] **INT-02. Cerrar búsqueda completa, ranking y presentación**
   - **Owner:** A + B + C.
-  - **Depende de:** `A-03`, `B-02`, `C-02`.
-  - **Qué construir:** recorrer todos los candidatos descubiertos, persistir resultados y mostrar cards ordenadas.
-  - **Aceptación:** añadir un carrier compatible mediante datos/configuración lo incorpora sin modificar orquestador, scorer o UI.
-  - **Verificar:** ejecutar el Golden Flow y una prueba adicional con un cuarto carrier o configuración equivalente.
+  - **Depende de:** `INT-02A` e `INT-02B`.
+  - **Qué construir:** validar como un solo corte la ejecución headless y su presentación visual, sin duplicar lógica server-side en componentes.
+  - **Aceptación:** añadir un carrier compatible mediante datos/configuración lo incorpora sin modificar orquestador, scorer o UI; B confirma la integración visual.
+  - **Verificar:** Golden Flow completo y prueba adicional con un cuarto carrier o configuración equivalente; `INT-02A` por sí sola no permite marcar esta tarea.
 
 ### Día 3 — Booking, evidencia y recuperación
 
@@ -357,7 +388,7 @@ Estado al publicar esta versión: A inició `A-01` en una rama separada. Ese ava
 
 - [ ] **B-03. Completar selección, booking UI y Judge Drawer**
   - **Owner:** B.
-  - **Depende de:** `B-02`.
+  - **Depende de:** `B-02` e `INT-02B`.
   - **Qué construir:** selección humana, espera de confirmación, resultado de booking y drawer de eventos JSON.
   - **Aceptación:** recomendar no selecciona automáticamente; el drawer muestra navegación, tool, persistencia y decisión; no contiene botones que escriban directamente estados comerciales.
   - **Verificar:** recorrido manual desde `OPTIONS_READY` hasta confirmación/rechazo.
@@ -409,20 +440,48 @@ Nunca acumulen todo el trabajo hasta la noche del Día 3.
 |---|---|---|
 | `G0` Contratos | tipos, estados, ownership y navegador objetivo congelados | C con aprobación A/B |
 | `G1` Vertical WebMCP | discovery → provider registrado → `quote_freight` observable | C + A; valida B |
-| `G2` Decisión | ofertas idempotentes → BALANCED → cards `0..N` | C; validan A/B |
+| `G2A` Checkpoint headless | providers `0..N` → tools → ofertas idempotentes → BALANCED → ViewModel JSON | C + A; no cierra `G2` |
+| `G2` Decisión visual | ViewModel estable → estados visuales → cards `0..N` | C + B; valida A |
 | `G3` Booking | selección → booking → confirmación/rechazo → reset repetible | C; validan A/B |
 | `G4` Release | build, DB tests, seguridad, navegador objetivo y URL pública | C |
 
 Una tarea terminada en una rama no cierra un gate. El gate se cierra únicamente después de integración y verificación conjunta.
 
+Durante la ausencia temporal de B, `G2A` puede verificarse como checkpoint técnico. `G2` permanece abierto hasta completar `INT-02B` y recibir validación visual de B o una decisión posterior explícita del equipo.
+
 ### 6.2 Plan de continuación inmediato
 
-1. A continúa `A-01` en su rama y entrega su handoff provisional; no integra todavía.
-2. C integra `SH-00`, publica contratos/estados y comunica el commit a A/B.
-3. A adapta su spike al contrato congelado; B puede avanzar shell/login con fixtures UI explícitos.
-4. Tras `SH-01`, A-01, B-01 y C-01 avanzan en paralelo.
-5. C integra primero `INT-01`; ningún formato provisional de A llega directamente a B.
-6. Después de `G1`, el equipo avanza a Result Bridge, ranking y dispatch completo.
+1. A revisa el estado real de `feat/a-webmcp-a03`, completa pruebas/evidencia, actualiza el PR #9 y entrega handoff a C sin modificar archivos de B.
+2. C confirma C-02 en `main` y prepara el diseño, contratos de consumo, estados, harness y scripts headless de `INT-02A` que no dependan de código A-03 aún no integrado.
+3. Cuando A-03 esté integrado y verificado, A y C conectan `INT-02A` en una rama de integración; A valida ejecución/cleanup WebMCP y C valida persistencia, idempotencia, ranking y seguridad.
+4. C publica el ViewModel, ejemplos JSON, endpoint o script reproducible y handoff para B. Aunque `G2A` pase, `INT-02` y `G2` permanecen abiertos.
+5. B-02 y B-03 quedan reservadas y sin cambios mientras B está ausente; A y C no implementan placeholders visuales en sus archivos.
+6. Cuando B regrese, actualiza su rama desde `main` sin sobrescribir trabajo local, continúa B-02/B-03 y consume el ViewModel de `INT-02A`.
+7. B implementa/valida `INT-02B` con apoyo de A/C; solo entonces el equipo puede cerrar `INT-02` y `G2`.
+
+### 6.3 Trabajo paralelo permitido durante la ausencia temporal de B
+
+| Integrante | Trabajo exacto permitido hoy | Límites |
+|---|---|---|
+| **A** | completar y publicar A-03; preparar su parte de `INT-02A`; documentar registro, ejecución, cancelación y cleanup de tools WebMCP; entregar handoff a C | no modificar dashboard, dispatch, `RequestTable`, componentes ni fixtures visuales de B |
+| **C** | verificar C-02 en `main`; diseñar orquestador headless; preparar contratos de consumo, estados, pruebas E2E, scripts, fixtures y evidencia; revisar RLS, idempotencia y secretos | no modificar archivos de B ni implementar código que dependa del contrato A-03 antes de su integración; no cambiar contratos congelados sin coordinación |
+| **B** | sin trabajo requerido mientras esté ausente; conserva B-02, B-03 e `INT-02B` | su ausencia no autoriza reasignación ni sustitución de su UI |
+
+### 6.4 Handoff obligatorio de INT-02A para B
+
+Antes de pedir a B que conecte la interfaz, A y C deben entregar:
+
+- contrato versionado del ViewModel y significado de cada campo;
+- ejemplos JSON de `loading`, `error`, `NO_MATCH` y `success`, incluyendo 0, 1 y N ofertas;
+- distinción explícita entre `CandidateProvider`, resultado WebMCP, `CarrierOffer` y opción rankeada;
+- endpoint o script reproducible, precondiciones y comando exacto para probarlo;
+- estados HTTP/aplicación, errores esperados y comportamiento de retry/idempotencia;
+- commit/PR integrado y resultados de typecheck, build, pruebas DB, Golden Flow y búsqueda de secretos;
+- lista de archivos que B puede modificar y lista de fronteras server-side que no debe duplicar;
+- criterios visuales desktop/móvil para loading, error, `NO_MATCH` y success;
+- riesgos, deuda y bloqueos pendientes para `INT-02B`.
+
+B debe actualizar su rama desde `main` con un flujo no destructivo, preservar cualquier trabajo local y usar este handoff como contrato de consumo. A y C apoyan la conexión sin apropiarse de la interfaz.
 
 ## 7. Protocolo para trabajar con distintas IAs
 
@@ -524,6 +583,7 @@ Agregar una fila únicamente después de integrar a `main`.
 | 2026-08-29 | `A-02` | A | `5ac1448` (#5) | Revisión C de compatibilidad con C-01; typecheck y build en `main` | `INT-01` |
 | 2026-08-30 | `B-01` | B | `3639940` (#4) | C: `npm install`, typecheck y build en `main`; recorrido `/login` → `/dashboard`, navegación móvil y P1 de rutas 404 corregido | Validación visual de B para `G1`; `B-02` según el plan del Día 2 |
 | 2026-08-30 | `INT-01 / G1` | A + C; valida B | `13b76d8` (#8) | C: discovery 10/10, parámetros de ruta 3/3, typecheck, build, WebMCP/404/cleanup y bundle sin secretos; B: validación visual desktop/móvil aprobada | `A-03`, `B-02`, `C-02` |
+| 2026-08-30 02:02 | `C-02` | C; revisa A | `b11ce1e` (#10) | Aprobación cruzada sobre `da109eb`; C-02 12/12, discovery 10/10, pgTAP 49/49, db lint, typecheck y build en `main`; Golden Flow 89/84/72 y bundle sin secretos | `INT-02A` cuando A-03 esté integrado; diseño/harness headless puede adelantarse sin UI de B; `C-03` cuando exista el contrato A-04 |
 
 ## 9. Bloqueos y decisiones pendientes
 
@@ -531,6 +591,7 @@ Agregar una fila únicamente después de integrar a `main`.
 |---|---|---|---|---|
 | 2026-08-29 | `SH-00` | A inició `A-01` en rama separada; normalizar su output sin detener ni reescribir el spike | C + A | Resuelto en PR #2 |
 | 2026-08-29 | `SH-00` | Congelar navegador/build WebMCP, flags y firma observada de `executeTool()` | A + C | Pendiente |
+| 2026-08-30 | `INT-02` | B no está disponible hoy; preservar B-02/B-03 y adelantar solo `INT-02A` headless | A + C preparan handoff; B retoma su ownership al regresar | Temporal; `INT-02B` y `G2` permanecen pendientes |
 
 ## 10. Estrategia Git y GitHub recomendada
 

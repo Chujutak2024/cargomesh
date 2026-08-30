@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   public: {
     Tables: {
       booking_events: {
@@ -62,6 +57,7 @@ export type Database = {
           cancelled_at: string | null
           carrier_id: string
           confirmed_at: string | null
+          created_at: string
           expired_at: string | null
           freight_decision_id: string
           freight_request_id: string
@@ -88,6 +84,7 @@ export type Database = {
           cancelled_at?: string | null
           carrier_id: string
           confirmed_at?: string | null
+          created_at?: string
           expired_at?: string | null
           freight_decision_id: string
           freight_request_id: string
@@ -114,6 +111,7 @@ export type Database = {
           cancelled_at?: string | null
           carrier_id?: string
           confirmed_at?: string | null
+          created_at?: string
           expired_at?: string | null
           freight_decision_id?: string
           freight_request_id?: string
@@ -183,6 +181,7 @@ export type Database = {
         Row: {
           active: boolean
           code: string
+          created_at: string
           description: string | null
           id: string
           intake_specification_schema: Json
@@ -195,6 +194,7 @@ export type Database = {
         Insert: {
           active?: boolean
           code: string
+          created_at?: string
           description?: string | null
           id?: string
           intake_specification_schema?: Json
@@ -207,6 +207,7 @@ export type Database = {
         Update: {
           active?: boolean
           code?: string
+          created_at?: string
           description?: string | null
           id?: string
           intake_specification_schema?: Json
@@ -227,6 +228,7 @@ export type Database = {
           cargo_category_id: string | null
           carrier_id: string
           completed_freight_requests: number
+          created_at: string
           destination_city: string
           destination_country: string
           id: string
@@ -249,6 +251,7 @@ export type Database = {
           cargo_category_id?: string | null
           carrier_id: string
           completed_freight_requests?: number
+          created_at?: string
           destination_city: string
           destination_country: string
           id?: string
@@ -271,6 +274,7 @@ export type Database = {
           cargo_category_id?: string | null
           carrier_id?: string
           completed_freight_requests?: number
+          created_at?: string
           destination_city?: string
           destination_country?: string
           id?: string
@@ -478,6 +482,7 @@ export type Database = {
         Row: {
           active: boolean
           carrier_id: string
+          created_at: string
           customs_coordination_included: boolean
           destination_country: string
           destination_region: string | null
@@ -501,6 +506,7 @@ export type Database = {
         Insert: {
           active?: boolean
           carrier_id: string
+          created_at?: string
           customs_coordination_included?: boolean
           destination_country: string
           destination_region?: string | null
@@ -524,6 +530,7 @@ export type Database = {
         Update: {
           active?: boolean
           carrier_id?: string
+          created_at?: string
           customs_coordination_included?: boolean
           destination_country?: string
           destination_region?: string | null
@@ -627,7 +634,7 @@ export type Database = {
           freight_request_id: string
           heuristic_score?: number | null
           id?: string
-          optimization_strategy: string
+          optimization_strategy?: string
           orchestration_run_id: string
           previous_decision_id?: string | null
           ranking_snapshot?: Json
@@ -918,48 +925,60 @@ export type Database = {
       orchestration_events: {
         Row: {
           carrier_id: string | null
+          completed_at: string | null
           created_at: string
           duration_ms: number | null
           event_type: string
           id: string
+          idempotency_payload: Json | null
           input_payload: Json | null
           orchestration_run_id: string
           output_payload: Json | null
           persisted_entity_id: string | null
           persisted_entity_type: string | null
           provider_url: string | null
+          schema_version: string | null
+          started_at: string | null
           status: string
           tool_call_id: string | null
           tool_name: string | null
         }
         Insert: {
           carrier_id?: string | null
+          completed_at?: string | null
           created_at?: string
           duration_ms?: number | null
           event_type: string
           id?: string
+          idempotency_payload?: Json | null
           input_payload?: Json | null
           orchestration_run_id: string
           output_payload?: Json | null
           persisted_entity_id?: string | null
           persisted_entity_type?: string | null
           provider_url?: string | null
+          schema_version?: string | null
+          started_at?: string | null
           status?: string
           tool_call_id?: string | null
           tool_name?: string | null
         }
         Update: {
           carrier_id?: string | null
+          completed_at?: string | null
           created_at?: string
           duration_ms?: number | null
           event_type?: string
           id?: string
+          idempotency_payload?: Json | null
           input_payload?: Json | null
           orchestration_run_id?: string
           output_payload?: Json | null
           persisted_entity_id?: string | null
           persisted_entity_type?: string | null
           provider_url?: string | null
+          schema_version?: string | null
+          started_at?: string | null
           status?: string
           tool_call_id?: string | null
           tool_name?: string | null
@@ -1172,6 +1191,7 @@ export type Database = {
           billing_mode: string
           budget_default: number | null
           confidence_threshold: number
+          created_at: string
           default_strategy: string
           id: string
           max_pickup_wait_hours: number
@@ -1188,6 +1208,7 @@ export type Database = {
           billing_mode?: string
           budget_default?: number | null
           confidence_threshold?: number
+          created_at?: string
           default_strategy?: string
           id?: string
           max_pickup_wait_hours?: number
@@ -1204,6 +1225,7 @@ export type Database = {
           billing_mode?: string
           budget_default?: number | null
           confidence_threshold?: number
+          created_at?: string
           default_strategy?: string
           id?: string
           max_pickup_wait_hours?: number
@@ -1215,17 +1237,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_preferred_carrier"
-            columns: ["preferred_carrier_id"]
-            isOneToOne: false
-            referencedRelation: "carriers"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "organization_preferences_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_preferences_preferred_carrier_id_fkey"
+            columns: ["preferred_carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
             referencedColumns: ["id"]
           },
         ]
@@ -1348,7 +1370,46 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      persist_balanced_decision: {
+        Args: {
+          p_anomaly_evidence: Json
+          p_candidate_snapshot: Json
+          p_confidence_components: Json
+          p_confidence_score: number
+          p_freight_request_id: string
+          p_orchestration_run_id: string
+          p_ranking: Json
+          p_recommended_offer_id: string
+          p_requires_review: boolean
+          p_subscores: Json
+        }
+        Returns: {
+          decision_id: string
+          run_status: string
+        }[]
+      }
+      record_provider_result: {
+        Args: {
+          p_carrier_id: string
+          p_completed_at: string
+          p_freight_request_id: string
+          p_orchestration_run_id: string
+          p_provider_url: string
+          p_schema_version: string
+          p_started_at: string
+          p_tool_call_id: string
+          p_tool_input: Json
+          p_tool_name: string
+          p_tool_output: Json
+        }
+        Returns: {
+          deduplicated: boolean
+          event_id: string
+          record_id: string
+          record_type: string
+          result_status: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -1481,4 +1542,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
