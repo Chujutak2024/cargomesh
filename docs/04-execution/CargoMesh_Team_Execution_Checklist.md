@@ -332,7 +332,7 @@ Estado al publicar esta versión: A inició `A-01` en una rama separada. Ese ava
   - **Aceptación:** renderiza `0..N` candidatos/ofertas; no asume tres cards; distingue candidato consultado de oferta persistida.
   - **Verificar:** fixtures UI con cero, una, tres y cuatro ofertas.
 
-- [ ] **C-02. Implementar Result Bridge y Decision Engine**
+- [x] **C-02. Implementar Result Bridge y Decision Engine**
   - **Owner:** C.
   - **Depende de:** `C-01` y envelope acordado con A.
   - **Qué construir:** `record_provider_result`, idempotencia, creación de `CarrierOffer`, `orchestration_event` y ranking BALANCED TypeScript sobre `0..N` ofertas.
@@ -524,6 +524,7 @@ Agregar una fila únicamente después de integrar a `main`.
 | 2026-08-29 | `A-02` | A | `5ac1448` (#5) | Revisión C de compatibilidad con C-01; typecheck y build en `main` | `INT-01` |
 | 2026-08-30 | `B-01` | B | `3639940` (#4) | C: `npm install`, typecheck y build en `main`; recorrido `/login` → `/dashboard`, navegación móvil y P1 de rutas 404 corregido | Validación visual de B para `G1`; `B-02` según el plan del Día 2 |
 | 2026-08-30 | `INT-01 / G1` | A + C; valida B | `13b76d8` (#8) | C: discovery 10/10, parámetros de ruta 3/3, typecheck, build, WebMCP/404/cleanup y bundle sin secretos; B: validación visual desktop/móvil aprobada | `A-03`, `B-02`, `C-02` |
+| 2026-08-30 02:02 | `C-02` | C; revisa A | `b11ce1e` (#10) | Aprobación cruzada sobre `da109eb`; C-02 12/12, discovery 10/10, pgTAP 49/49, db lint, typecheck y build en `main`; Golden Flow 89/84/72 y bundle sin secretos | `INT-02` cuando `A-03` y `B-02` estén disponibles; `C-03` cuando exista el contrato A-04 |
 
 ## 9. Bloqueos y decisiones pendientes
 
