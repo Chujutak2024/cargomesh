@@ -1,0 +1,8 @@
+.list { display: grid; gap: 1rem; padding: 1rem; }
+.list article { display: grid; gap: 0.45rem; }
+.heading { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.heading span { display: inline-flex; align-items: center; gap: 0.4rem; color: #34413f; font-size: 0.68rem; font-weight: 700; }
+.heading strong { color: #123c3a; font-size: 0.69rem; }
+.track { height: 0.55rem; overflow: hidden; border-radius: 999px; background: repeating-linear-gradient(135deg, #edf0ee 0 5px, #f7f8f7 5px 10px); }
+.track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #123c3a, #2bae9a); }
+.list p { margin: 0; color: #7a8684; font-size: 0.59rem; }

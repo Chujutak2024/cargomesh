@@ -17,4 +17,3 @@ export function StatusBadge({ status }: { status: FreightRequestStatus }) {
     </span>
   );
 }
-

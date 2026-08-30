@@ -1,42 +1,17 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.35rem;
   width: max-content;
   border: 1px solid transparent;
   border-radius: 999px;
-  padding: 0.35rem 0.65rem;
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.035em;
-  text-transform: uppercase;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.025em;
   white-space: nowrap;
 }
-
-.dot {
-  width: 0.42rem;
-  height: 0.42rem;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.PENDING,
-.AWAITING_SELECTION {
-  color: #79520d;
-  background: #f1e1bb;
-  border-color: #d8b766;
-}
-
-.BOOKED,
-.IN_TRANSIT {
-  color: #245a66;
-  background: #dcecef;
-  border-color: #9fc3ca;
-}
-
-.DELIVERED {
-  color: #365d40;
-  background: #e1eadd;
-  border-color: #a8c0a4;
-}
-
+.dot { width: 0.36rem; height: 0.36rem; border-radius: 50%; background: currentColor; }
+.PENDING, .AWAITING_SELECTION { color: #775818; background: #fff4d9; border-color: #efd69d; }
+.BOOKED, .IN_TRANSIT { color: #185c55; background: #ddf3ea; border-color: #b8dfd3; }
+.DELIVERED { color: #246c55; background: #e3f4ec; border-color: #b9dfcf; }
