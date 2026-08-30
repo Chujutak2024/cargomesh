@@ -1,8 +1,9 @@
 # INT-02A WebMCP runner (A)
 
-Este módulo implementa únicamente la frontera browser-side de A para
-`INT-02A`. No crea orchestration runs, no persiste resultados y no ejecuta
-BALANCED.
+Este módulo implementa la frontera browser-side de A para `INT-02A`.
+`runProviderCollection` conserva el runner WebMCP puro, mientras
+`runInt02aOrchestration` lo conecta con las APIs server-side de C sin importar
+ni ejecutar sus implementaciones internas.
 
 ## Invariantes
 
@@ -66,3 +67,24 @@ modifica `RecordProviderResultInput`. Las tres tools se enviarán al mismo
 `POST /api/orchestration/record-result`: coverage/capacity crean solo eventos;
 una quote exitosa también puede crear `CarrierOffer`; un error técnico crea un
 evento fallido y nunca una oferta.
+
+## Flujo HTTP de integración
+
+`runInt02aOrchestration` ejecuta el corte headless acordado:
+
+1. `POST /api/orchestration/runs` con `freightRequestId` e `idempotencyKey`;
+2. congela y usa exclusivamente `data.runId` y `data.candidates`;
+3. delega navegación, `getTools()`, `executeTool()` y cleanup en
+   `runProviderCollection`;
+4. envía cada record, sin modificarlo, a
+   `POST /api/orchestration/record-result`;
+5. llama `POST /api/orchestration/evaluate-offers` cuando todos los records
+   fueron aceptados;
+6. lee `GET /api/orchestration/runs/:runId` y devuelve su ViewModel dentro de
+   la evidencia de la ejecución.
+
+Todas las llamadas usan la sesión same-origin. Un rechazo HTTP o un envelope
+inválido detiene el flujo antes del ranking y queda identificado por etapa en
+`Int02aApiError`. El coordinador acepta `fetcher` inyectable para pruebas, pero
+en navegador usa `fetch` y las APIs públicas reales; nunca llama handlers
+provider ni funciones server-only directamente.
