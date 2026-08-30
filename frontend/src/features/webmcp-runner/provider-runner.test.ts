@@ -77,14 +77,16 @@ function createModelContext(
     },
     async executeTool(
       tool: WebMCP.RegisteredTool,
-      input: Record<string, unknown>,
+      inputJson: string,
       options?: WebMCP.ModelContextExecuteToolOptions,
     ) {
       executionOrder.push(tool.name);
       const behavior = behaviors[tool.name as Int02aProviderToolName];
-      return behavior
+      const input = JSON.parse(inputJson) as Record<string, unknown>;
+      const output = behavior
         ? behavior(input, options?.signal ?? new AbortController().signal)
         : { ok: true, data: { accepted: true } };
+      return JSON.stringify(await output);
     },
   } as WebMCP.ModelContext;
 

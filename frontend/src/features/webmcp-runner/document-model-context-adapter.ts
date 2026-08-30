@@ -47,7 +47,13 @@ export function createDocumentModelContextAdapter(
         );
       }
 
-      return modelContext.executeTool(tool, input, { signal });
+      const outputJson = await modelContext.executeTool(
+        tool,
+        JSON.stringify(input),
+        { signal },
+      );
+
+      return outputJson === null ? null : JSON.parse(outputJson);
     },
   };
 }
