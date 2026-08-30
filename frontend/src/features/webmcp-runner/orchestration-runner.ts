@@ -30,14 +30,31 @@ export type ResultBridgeEvidence = {
   data: unknown;
 };
 
-export type Int02aOrchestrationEvidence = {
+type Int02aOrchestrationEvidenceBase = {
   schemaVersion: "1.0";
   start: StartedOrchestrationRun;
+  viewModel: unknown;
+};
+
+export type Int02aExecutedOrchestrationEvidence =
+  Int02aOrchestrationEvidenceBase & {
+  mode: "EXECUTED";
   providerCollection: ProviderCollectionResult;
   resultBridge: ResultBridgeEvidence[];
   evaluation: unknown;
-  viewModel: unknown;
 };
+
+export type Int02aPersistedReplayEvidence =
+  Int02aOrchestrationEvidenceBase & {
+  mode: "PERSISTED_REPLAY";
+  providerCollection: null;
+  resultBridge: [];
+  evaluation: null;
+};
+
+export type Int02aOrchestrationEvidence =
+  | Int02aExecutedOrchestrationEvidence
+  | Int02aPersistedReplayEvidence;
 
 export type RunInt02aOrchestrationOptions = {
   freightRequestId: string;
@@ -243,6 +260,28 @@ function jsonRequest(body: unknown, signal?: AbortSignal): RequestInit {
   };
 }
 
+async function readCorrelatedViewModel(
+  fetcher: Int02aFetch,
+  baseUrl: string,
+  start: StartedOrchestrationRun,
+  signal?: AbortSignal,
+): Promise<unknown> {
+  const viewModel = await requestData(
+    "READ_VIEW_MODEL",
+    fetcher,
+    new URL(`/api/orchestration/runs/${encodeURIComponent(start.runId)}`, baseUrl),
+    {
+      method: "GET",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+      signal,
+    },
+  );
+  assertViewModelIdentity(viewModel, start.runId, start.freightRequestId);
+  return structuredClone(viewModel);
+}
+
 /**
  * Connects A's browser-native WebMCP runner to C's public orchestration API.
  * It never imports server-only implementations or calls provider handlers.
@@ -282,6 +321,25 @@ export async function runInt02aOrchestration(
   );
   const start = parseStartedRun(startData, options.freightRequestId);
 
+  if (start.deduplicated && start.status !== "RUNNING") {
+    const viewModel = await readCorrelatedViewModel(
+      fetcher,
+      options.baseUrl,
+      start,
+      options.signal,
+    );
+
+    return {
+      schemaVersion: "1.0",
+      mode: "PERSISTED_REPLAY",
+      start,
+      providerCollection: null,
+      resultBridge: [],
+      evaluation: null,
+      viewModel,
+    };
+  }
+
   const providerCollection = await runProviderCollection({
     candidates: start.candidates,
     baseUrl: options.baseUrl,
@@ -319,26 +377,20 @@ export async function runInt02aOrchestration(
     jsonRequest({ orchestrationRunId: start.runId }, options.signal),
   );
 
-  const viewModel = await requestData(
-    "READ_VIEW_MODEL",
+  const viewModel = await readCorrelatedViewModel(
     fetcher,
-    new URL(`/api/orchestration/runs/${encodeURIComponent(start.runId)}`, options.baseUrl),
-    {
-      method: "GET",
-      credentials: "same-origin",
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-      signal: options.signal,
-    },
+    options.baseUrl,
+    start,
+    options.signal,
   );
-  assertViewModelIdentity(viewModel, start.runId, start.freightRequestId);
 
   return {
     schemaVersion: "1.0",
+    mode: "EXECUTED",
     start,
     providerCollection,
     resultBridge,
     evaluation: structuredClone(evaluation),
-    viewModel: structuredClone(viewModel),
+    viewModel,
   };
 }

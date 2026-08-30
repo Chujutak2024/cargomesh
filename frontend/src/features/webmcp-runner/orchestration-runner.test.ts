@@ -113,7 +113,12 @@ function parseBody(init?: RequestInit): unknown {
 function createApi(
   candidates: CandidateProvider[],
   calls: FetchCall[],
-  failRecord = false,
+  scenario: {
+    failRecord?: boolean;
+    startStatus?: "RUNNING" | "OPTIONS_READY" | "NO_MATCH" | "FAILED" | "CANCELLED";
+    deduplicated?: boolean;
+    viewStatus?: "loading" | "success" | "NO_MATCH" | "error";
+  } = {},
 ): Int02aFetch {
   return async (input, init) => {
     const url = new URL(String(input));
@@ -127,14 +132,14 @@ function createApi(
         data: {
           runId: RUN_ID,
           freightRequestId: REQUEST_ID,
-          status: "RUNNING",
-          deduplicated: false,
+          status: scenario.startStatus ?? "RUNNING",
+          deduplicated: scenario.deduplicated ?? false,
           candidates,
         },
       }, 201);
     }
     if (method === "POST" && url.pathname === "/api/orchestration/record-result") {
-      if (failRecord) {
+      if (scenario.failRecord) {
         return json(
           {
             ok: false,
@@ -163,7 +168,7 @@ function createApi(
           schemaVersion: "1.0",
           runId: RUN_ID,
           freightRequestId: REQUEST_ID,
-          status: candidates.length ? "success" : "NO_MATCH",
+          status: scenario.viewStatus ?? (candidates.length ? "success" : "NO_MATCH"),
           offers: [],
         },
       });
@@ -193,6 +198,7 @@ test("runs the 0-provider flow and still evaluates and stores the ViewModel evid
     fetcher: createApi([], fetchCalls),
   });
 
+  assert.equal(result.mode, "EXECUTED");
   assert.equal(result.start.candidates.length, 0);
   assert.equal(Object.isFrozen(result.start.candidates), true);
   assert.equal(result.providerCollection.candidateCount, 0);
@@ -228,6 +234,7 @@ test("uses the immutable N-provider server snapshot and records every WebMCP cal
     fetcher: createApi([candidate(1), candidate(2)], fetchCalls),
   });
 
+  assert.equal(result.mode, "EXECUTED");
   assert.equal(Object.isFrozen(result.start), true);
   assert.equal(Object.isFrozen(result.start.candidates), true);
   assert.equal(result.start.candidates.every(Object.isFrozen), true);
@@ -283,7 +290,7 @@ test("stops before evaluation when Result Bridge rejects a record", async () => 
       baseUrl: BASE_URL,
       navigation: createNavigation(browser),
       createInputs: () => inputs,
-      fetcher: createApi([candidate(1)], fetchCalls, true),
+      fetcher: createApi([candidate(1)], fetchCalls, { failRecord: true }),
     }),
     (error: unknown) => {
       assert.ok(error instanceof Int02aApiError);
@@ -300,4 +307,50 @@ test("stops before evaluation when Result Bridge rejects a record", async () => 
     false,
   );
   assert.equal(fetchCalls.some((call) => call.method === "GET"), false);
+});
+
+async function assertClosedReplay(
+  startStatus: "OPTIONS_READY" | "NO_MATCH",
+  viewStatus: "success" | "NO_MATCH",
+) {
+  const fetchCalls: FetchCall[] = [];
+  const browser = runnerEvidence();
+  const result = await runInt02aOrchestration({
+    freightRequestId: REQUEST_ID,
+    idempotencyKey: `demo:replay:${startStatus}`,
+    baseUrl: BASE_URL,
+    navigation: createNavigation(browser),
+    createInputs: () => inputs,
+    fetcher: createApi([candidate(1)], fetchCalls, {
+      startStatus,
+      deduplicated: true,
+      viewStatus,
+    }),
+  });
+
+  assert.equal(result.mode, "PERSISTED_REPLAY");
+  assert.equal(result.start.deduplicated, true);
+  assert.equal(result.start.status, startStatus);
+  assert.equal(result.providerCollection, null);
+  assert.deepEqual(result.resultBridge, []);
+  assert.equal(result.evaluation, null);
+  assert.deepEqual(browser.opened, []);
+  assert.deepEqual(browser.executed, []);
+  assert.deepEqual(browser.cleanup, []);
+  assert.deepEqual(
+    fetchCalls.map((call) => `${call.method} ${new URL(call.url).pathname}`),
+    [
+      "POST /api/orchestration/runs",
+      `GET /api/orchestration/runs/${RUN_ID}`,
+    ],
+  );
+  assert.equal((result.viewModel as { status: string }).status, viewStatus);
+}
+
+test("replays a closed OPTIONS_READY run from its persisted ViewModel only", async () => {
+  await assertClosedReplay("OPTIONS_READY", "success");
+});
+
+test("replays a closed NO_MATCH run from its persisted ViewModel only", async () => {
+  await assertClosedReplay("NO_MATCH", "NO_MATCH");
 });

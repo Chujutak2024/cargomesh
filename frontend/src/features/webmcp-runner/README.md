@@ -83,6 +83,12 @@ evento fallido y nunca una oferta.
 6. lee `GET /api/orchestration/runs/:runId` y devuelve su ViewModel dentro de
    la evidencia de la ejecución.
 
+Si `POST /runs` devuelve un replay deduplicado ya cerrado (`OPTIONS_READY`,
+`NO_MATCH`, `FAILED` o `CANCELLED`), el coordinador entra en modo
+`PERSISTED_REPLAY`: no navega, no ejecuta WebMCP, no reenvía records y no
+evalúa nuevamente. Solo lee el ViewModel persistido del run. Esto evita crear
+timestamps distintos para los mismos `toolCallId` y evita `RUN_NOT_ACTIVE`.
+
 Todas las llamadas usan la sesión same-origin. Un rechazo HTTP o un envelope
 inválido detiene el flujo antes del ranking y queda identificado por etapa en
 `Int02aApiError`. El coordinador acepta `fetcher` inyectable para pruebas, pero
