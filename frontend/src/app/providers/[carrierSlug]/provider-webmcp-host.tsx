@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 
 import type { ProviderPageConfig } from "@/features/providers/contracts";
 import {
-  createQuoteFreightTool,
-  QUOTE_FREIGHT_TOOL_NAME,
-} from "@/features/providers/quote-freight-tool";
+  registerProviderTools,
+  REQUIRED_PROVIDER_TOOL_NAMES,
+} from "@/features/providers/provider-tool-registration";
 
 import styles from "./provider.module.css";
 
@@ -32,24 +32,16 @@ export function ProviderWebMcpHost({ provider }: ProviderWebMcpHostProps) {
 
     setBrowserStatus("registering");
 
-    void modelContext
-      .registerTool(createQuoteFreightTool(provider), {
-        signal: registrationController.signal,
-      })
-      .then(async () => {
-        const tools = await modelContext.getTools();
-
+    void registerProviderTools(modelContext, provider, registrationController.signal)
+      .then((allToolsRegistered) => {
         if (mounted) {
-          setBrowserStatus(
-            tools.some((tool) => tool.name === QUOTE_FREIGHT_TOOL_NAME)
-              ? "registered"
-              : "error",
-          );
+          setBrowserStatus(allToolsRegistered ? "registered" : "error");
         }
       })
       .catch((error: unknown) => {
         if (mounted && !registrationController.signal.aborted) {
-          console.error("CargoMesh could not register quote_freight", error);
+          registrationController.abort();
+          console.error("CargoMesh could not register its provider tools", error);
           setBrowserStatus("error");
         }
       });
@@ -64,17 +56,19 @@ export function ProviderWebMcpHost({ provider }: ProviderWebMcpHostProps) {
     <section className={styles.webmcp} data-carrier-id={provider.carrierId}>
       <div>
         <p className={styles.eyebrow}>WebMCP host</p>
-        <h2>Tool disponible: <code>{QUOTE_FREIGHT_TOOL_NAME}</code></h2>
+        <h2>
+          Tools disponibles: <code>{REQUIRED_PROVIDER_TOOL_NAMES.join(", ")}</code>
+        </h2>
       </div>
       <p className={styles.status} data-status={browserStatus}>
         {browserStatus === "checking" && "Comprobando compatibilidad del navegador…"}
-        {browserStatus === "registering" && "WebMCP disponible. Registrando la tool…"}
+        {browserStatus === "registering" && "WebMCP disponible. Registrando las tools…"}
         {browserStatus === "registered" &&
-          "quote_freight está registrada y visible para el agente del navegador."}
+          "Las tres tools provider están registradas y visibles para el agente del navegador."}
         {browserStatus === "unavailable" &&
           "Este navegador no expone document.modelContext. Usa un entorno WebMCP compatible."}
         {browserStatus === "error" &&
-          "WebMCP está disponible, pero quote_freight no pudo registrarse."}
+          "WebMCP está disponible, pero las tools provider no pudieron registrarse."}
       </p>
     </section>
   );
