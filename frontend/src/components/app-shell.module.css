@@ -37,13 +37,14 @@
   width: min(84vw, 15.5rem);
   flex-direction: column;
   transform: translateX(-102%);
+  visibility: hidden;
   border-right: 1px solid #d5dcda;
   background: #fbfcfa;
   color: var(--ink);
   box-shadow: 1rem 0 3rem rgb(18 60 58 / 8%);
-  transition: transform 180ms ease;
+  transition: transform 180ms ease, visibility 180ms ease;
 }
-.sidebarOpen { transform: translateX(0); }
+.sidebarOpen { transform: translateX(0); visibility: visible; }
 
 .brandRow {
   display: flex;
@@ -198,7 +199,7 @@
 }
 @media (min-width: 860px) { .search { display: flex; } }
 @media (min-width: 1080px) {
-  .sidebar { width: 15.5rem; transform: none; box-shadow: none; }
+  .sidebar { width: 15.5rem; transform: none; visibility: visible; box-shadow: none; }
   .closeButton, .menuButton, .backdrop { display: none; }
   .contentColumn { margin-left: 15.5rem; }
   .topbar { padding-inline: 1.5rem; }
