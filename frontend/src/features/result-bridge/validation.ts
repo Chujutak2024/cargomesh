@@ -2,6 +2,7 @@ import type { CapacityResult } from "@/features/providers/check-capacity-tool";
 import type { ServiceCoverageResult } from "@/features/providers/check-service-coverage-tool";
 import type { AvailabilityClass, ProviderQuote, ProviderToolEnvelope } from "@/features/providers/contracts";
 import { isNavigableProviderUrl } from "@/features/discovery/candidate-matcher";
+import { buildRegisteredProviderNavigationUrl } from "@/features/discovery/provider-navigation";
 import {
   ResultBridgeError,
   type ProviderToolTechnicalError,
@@ -196,7 +197,33 @@ function validateExecutionEvidence<T>(
   }
 }
 
-function parseNavigationUrl(value: string, matchingServiceId: string): string {
+function parseCargoMeshOrigin(value: string): string {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    invalid("CargoMesh origin must be an absolute HTTP(S) URL.");
+  }
+  if (
+    !["http:", "https:"].includes(url.protocol) ||
+    !url.hostname ||
+    url.username ||
+    url.password ||
+    url.pathname !== "/" ||
+    url.search ||
+    url.hash
+  ) {
+    invalid("CargoMesh origin must be an absolute HTTP(S) URL without credentials.");
+  }
+  return url.origin;
+}
+
+function parseNavigationUrl(
+  value: string,
+  providerUrl: string,
+  matchingServiceId: string,
+  cargomeshOrigin: string,
+): string {
   let url: URL;
   try {
     url = new URL(value);
@@ -206,10 +233,27 @@ function parseNavigationUrl(value: string, matchingServiceId: string): string {
   if (!["http:", "https:"].includes(url.protocol) || !url.hostname || url.username || url.password) {
     invalid("navigationUrl must be an absolute HTTP(S) URL without credentials.");
   }
-  if (url.searchParams.get("serviceId") !== matchingServiceId) {
+  if (
+    url.searchParams.getAll("serviceId").length !== 1 ||
+    url.searchParams.get("serviceId") !== matchingServiceId
+  ) {
     invalid("navigationUrl must preserve the discovered matchingServiceId.");
   }
-  return url.toString();
+
+  let expectedNavigationUrl: string;
+  try {
+    expectedNavigationUrl = buildRegisteredProviderNavigationUrl(
+      providerUrl,
+      matchingServiceId,
+      parseCargoMeshOrigin(cargomeshOrigin),
+    );
+  } catch {
+    invalid("navigationUrl cannot be resolved from the discovered providerUrl.");
+  }
+  if (url.toString() !== expectedNavigationUrl) {
+    invalid("navigationUrl must match the discovered provider origin, pathname and base parameters.");
+  }
+  return expectedNavigationUrl;
 }
 
 function parseCoverageInput(value: unknown): Record<string, unknown> {
@@ -243,7 +287,10 @@ function parseQuoteInput(value: unknown, freightRequestId: string): Record<strin
   return value as Record<string, unknown> & { freight_request_id: string };
 }
 
-export function parseRecordProviderResultInput(value: unknown): ValidatedRecordProviderResultInput {
+export function parseRecordProviderResultInput(
+  value: unknown,
+  cargomeshOrigin: string,
+): ValidatedRecordProviderResultInput {
   if (!isRecord(value)) invalid("Request body must be an object.");
   const unknownField = Object.keys(value).find((field) => !RECORD_FIELDS.has(field));
   if (unknownField) invalid(`Unknown Result Bridge field: ${unknownField}.`);
@@ -280,7 +327,12 @@ export function parseRecordProviderResultInput(value: unknown): ValidatedRecordP
 
   const toolName = value.toolName as RecordableProviderToolName;
   const matchingServiceId = value.matchingServiceId as string;
-  const navigationUrl = parseNavigationUrl(value.navigationUrl as string, matchingServiceId);
+  const navigationUrl = parseNavigationUrl(
+    value.navigationUrl as string,
+    value.providerUrl as string,
+    matchingServiceId,
+    cargomeshOrigin,
+  );
   const expectedToolCallId = [
     "cm:int02a:v1", value.orchestrationRunId, value.freightRequestId,
     value.carrierId, matchingServiceId, toolName, value.attemptNumber,

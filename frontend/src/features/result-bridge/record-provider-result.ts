@@ -47,6 +47,7 @@ function mapDatabaseError(message: string): ResultBridgeError {
 
 async function persistProviderResult(
   input: ValidatedRecordProviderResultInput,
+  cargomeshOrigin: string,
 ): Promise<RecordProviderResultResult> {
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("record_provider_result", {
@@ -66,6 +67,7 @@ async function persistProviderResult(
     p_duration_ms: input.durationMs,
     p_execution_status: input.status,
     p_technical_error: input.technicalError as unknown as Json,
+    p_cargomesh_origin: cargomeshOrigin,
     p_schema_version: input.schemaVersion,
   });
 
@@ -91,8 +93,9 @@ async function persistProviderResult(
 
 export async function record_provider_result(
   rawInput: unknown,
+  cargomeshOrigin: string,
 ): Promise<RecordProviderResultResult> {
-  const input = parseRecordProviderResultInput(rawInput);
+  const input = parseRecordProviderResultInput(rawInput, cargomeshOrigin);
   await requireAuthenticatedMember();
   const sessionClient = await createServerSupabaseClient();
   const { data: runData, error: runError } = await sessionClient
@@ -149,7 +152,7 @@ export async function record_provider_result(
       500,
     );
   }
-  if (replayEvent) return persistProviderResult(input);
+  if (replayEvent) return persistProviderResult(input, cargomeshOrigin);
 
   if (run.status !== "RUNNING") {
     throw new ResultBridgeError("RUN_NOT_ACTIVE", "Orchestration run must be RUNNING.", 409);
@@ -178,7 +181,7 @@ export async function record_provider_result(
     );
   }
 
-  return persistProviderResult(input);
+  return persistProviderResult(input, cargomeshOrigin);
 }
 
 export const recordProviderResult = record_provider_result;

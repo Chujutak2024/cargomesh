@@ -1,16 +1,16 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
-select plan(14);
+select plan(17);
 
 select ok(
-  to_regprocedure('public.record_provider_result(text,uuid,uuid,uuid,uuid,text,text,text,integer,jsonb,jsonb,timestamp with time zone,timestamp with time zone,integer,text,jsonb,text)') is not null,
+  to_regprocedure('public.record_provider_result(text,uuid,uuid,uuid,uuid,text,text,text,integer,jsonb,jsonb,timestamp with time zone,timestamp with time zone,integer,text,jsonb,text,text)') is not null,
   'INT-02A Result Bridge overload exists'
 );
 select ok(
   not has_function_privilege(
     'authenticated',
-    'public.record_provider_result(text,uuid,uuid,uuid,uuid,text,text,text,integer,jsonb,jsonb,timestamp with time zone,timestamp with time zone,integer,text,jsonb,text)',
+    'public.record_provider_result(text,uuid,uuid,uuid,uuid,text,text,text,integer,jsonb,jsonb,timestamp with time zone,timestamp with time zone,integer,text,jsonb,text,text)',
     'EXECUTE'
   ),
   'authenticated cannot execute the INT-02A Result Bridge directly'
@@ -45,6 +45,7 @@ select results_eq(
       120,
       'COMPLETED',
       null,
+      'http://localhost:3000',
       '1.0'
     )
   $$,
@@ -77,7 +78,7 @@ select results_eq(
       'check_service_coverage', 1,
       '{"origin":"Callao, PE","destination":"Santiago, CL","transport_mode":"ROAD","service_type":"FTL","cargo_category":"MACHINERY"}'::jsonb,
       '{"ok":true,"data":{"schemaVersion":"1.0","providerServiceCode":"ANDES-PECL-FTL","supported":true,"crossBorderSupported":true,"corridor":{"origin":"Callao, PE","destination":"Santiago, CL"},"customsCoordinationAvailable":true,"serviceNotes":["Compatible"]}}'::jsonb,
-      '2026-08-30T12:00:00Z', '2026-08-30T12:00:00.120Z', 120, 'COMPLETED', null, '1.0'
+      '2026-08-30T12:00:00Z', '2026-08-30T12:00:00.120Z', 120, 'COMPLETED', null, 'http://localhost:3000', '1.0'
     )
   $$,
   $$ values ('DEDUPLICATED'::text, true) $$,
@@ -94,7 +95,7 @@ select throws_ok(
       'check_service_coverage', 1,
       '{"origin":"Lima, PE","destination":"Santiago, CL","transport_mode":"ROAD","service_type":"FTL","cargo_category":"MACHINERY"}'::jsonb,
       '{"ok":true,"data":{"schemaVersion":"1.0","providerServiceCode":"ANDES-PECL-FTL","supported":true,"crossBorderSupported":true,"corridor":{"origin":"Callao, PE","destination":"Santiago, CL"},"customsCoordinationAvailable":true,"serviceNotes":["Compatible"]}}'::jsonb,
-      '2026-08-30T12:00:00Z', '2026-08-30T12:00:00.120Z', 120, 'COMPLETED', null, '1.0'
+      '2026-08-30T12:00:00Z', '2026-08-30T12:00:00.120Z', 120, 'COMPLETED', null, 'http://localhost:3000', '1.0'
     )
   $$,
   'P0001', null,
@@ -111,11 +112,62 @@ select throws_ok(
       'check_capacity', 1,
       '{"origin":"Callao, PE","destination":"Santiago, CL","cargo_weight_kg":8000,"cargo_category":"MACHINERY","pickup_mode":"ASAP"}'::jsonb,
       null, '2026-08-30T12:01:00Z', '2026-08-30T12:01:00.100Z', 100,
-      'TECHNICAL_ERROR', '{"code":"TIMEOUT","message":"Timed out","retryable":true}'::jsonb, '1.0'
+      'TECHNICAL_ERROR', '{"code":"TIMEOUT","message":"Timed out","retryable":true}'::jsonb, 'http://localhost:3000', '1.0'
     )
   $$,
   '22023', null,
   'a service belonging to another carrier is rejected'
+);
+
+select throws_ok(
+  $$
+    select * from public.record_provider_result(
+      'cm:int02a:v1:90000000-0000-0000-0000-000000000004:f2000000-0000-0000-0000-000000000001:b0000000-0000-0000-0000-000000000001:d0000000-0000-0000-0000-000000000001:check_service_coverage:2',
+      '90000000-0000-0000-0000-000000000004', 'f2000000-0000-0000-0000-000000000001',
+      'b0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001',
+      '/providers/andes', 'https://unrelated.example/providers/andes?serviceId=d0000000-0000-0000-0000-000000000001',
+      'check_service_coverage', 2,
+      '{"origin":"Callao, PE","destination":"Santiago, CL","transport_mode":"ROAD","service_type":"FTL","cargo_category":"MACHINERY"}'::jsonb,
+      null, '2026-08-30T12:03:00Z', '2026-08-30T12:03:00.100Z', 100,
+      'TECHNICAL_ERROR', '{"code":"TIMEOUT","message":"Timed out","retryable":true}'::jsonb, 'http://localhost:3000', '1.0'
+    )
+  $$,
+  '22023', null,
+  'a provider navigation URL on another origin is rejected'
+);
+
+select throws_ok(
+  $$
+    select * from public.record_provider_result(
+      'cm:int02a:v1:90000000-0000-0000-0000-000000000004:f2000000-0000-0000-0000-000000000001:b0000000-0000-0000-0000-000000000001:d0000000-0000-0000-0000-000000000001:check_service_coverage:3',
+      '90000000-0000-0000-0000-000000000004', 'f2000000-0000-0000-0000-000000000001',
+      'b0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001',
+      '/providers/andes', 'http://localhost:3000/providers/not-andes?serviceId=d0000000-0000-0000-0000-000000000001',
+      'check_service_coverage', 3,
+      '{"origin":"Callao, PE","destination":"Santiago, CL","transport_mode":"ROAD","service_type":"FTL","cargo_category":"MACHINERY"}'::jsonb,
+      null, '2026-08-30T12:03:00Z', '2026-08-30T12:03:00.100Z', 100,
+      'TECHNICAL_ERROR', '{"code":"TIMEOUT","message":"Timed out","retryable":true}'::jsonb, 'http://localhost:3000', '1.0'
+    )
+  $$,
+  '22023', null,
+  'a provider navigation URL on another pathname is rejected'
+);
+
+select throws_ok(
+  $$
+    select * from public.record_provider_result(
+      'cm:int02a:v1:90000000-0000-0000-0000-000000000004:f2000000-0000-0000-0000-000000000001:b0000000-0000-0000-0000-000000000001:d0000000-0000-0000-0000-000000000001:check_service_coverage:4',
+      '90000000-0000-0000-0000-000000000004', 'f2000000-0000-0000-0000-000000000001',
+      'b0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001',
+      '/providers/andes', 'http://localhost:3000/providers/andes?serviceId=d0000000-0000-0000-0000-000000000001&serviceId=d0000000-0000-0000-0000-000000000001',
+      'check_service_coverage', 4,
+      '{"origin":"Callao, PE","destination":"Santiago, CL","transport_mode":"ROAD","service_type":"FTL","cargo_category":"MACHINERY"}'::jsonb,
+      null, '2026-08-30T12:03:00Z', '2026-08-30T12:03:00.100Z', 100,
+      'TECHNICAL_ERROR', '{"code":"TIMEOUT","message":"Timed out","retryable":true}'::jsonb, 'http://localhost:3000', '1.0'
+    )
+  $$,
+  '22023', null,
+  'a provider navigation URL with duplicate serviceId is rejected'
 );
 
 select results_eq(
@@ -129,7 +181,7 @@ select results_eq(
       'check_capacity', 1,
       '{"origin":"Callao, PE","destination":"Santiago, CL","cargo_weight_kg":8000,"cargo_category":"MACHINERY","pickup_mode":"ASAP"}'::jsonb,
       null, '2026-08-30T12:01:00Z', '2026-08-30T12:01:00.100Z', 100,
-      'TECHNICAL_ERROR', '{"code":"TIMEOUT","message":"Timed out","retryable":true}'::jsonb, '1.0'
+      'TECHNICAL_ERROR', '{"code":"TIMEOUT","message":"Timed out","retryable":true}'::jsonb, 'http://localhost:3000', '1.0'
     )
   $$,
   $$ values ('INSERTED'::text, null::text) $$,
@@ -156,7 +208,7 @@ select results_eq(
       'quote_freight', 1,
       '{"freight_request_id":"f2000000-0000-0000-0000-000000000001"}'::jsonb,
       '{"ok":true,"data":{"schemaVersion":"1.0","freightRequestId":"f2000000-0000-0000-0000-000000000001","providerOfferReference":"AND-OFF-INT02A","price":1760,"currency":"USD","priceBreakdown":{"lineHaul":1500,"handling":115,"customsCoordination":145},"estimatedPickup":"2026-08-30T12:00:00Z","estimatedDelivery":"2026-08-31T19:00:00Z","transitHours":31,"availableCapacityKg":10000,"availabilityClass":"AVAILABLE_IN_WINDOW","crossBorderSupported":true,"customsCoordinationIncluded":true,"requiredDocuments":["commercial_invoice","packing_list"],"borderHandlingNotes":"Included","validUntil":"2026-08-30T18:00:00Z"}}'::jsonb,
-      '2026-08-30T12:02:00Z', '2026-08-30T12:02:00.120Z', 120, 'COMPLETED', null, '1.0'
+      '2026-08-30T12:02:00Z', '2026-08-30T12:02:00.120Z', 120, 'COMPLETED', null, 'http://localhost:3000', '1.0'
     )
   $$,
   $$ values ('INSERTED'::text, 'CARRIER_OFFER'::text) $$,

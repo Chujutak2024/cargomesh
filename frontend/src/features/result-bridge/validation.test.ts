@@ -3,6 +3,12 @@ import test from "node:test";
 import { ResultBridgeError } from "./contracts";
 import { parseRecordProviderResultInput } from "./validation";
 
+const CARGOMESH_ORIGIN = "http://localhost:3000";
+
+function parse(input: unknown) {
+  return parseRecordProviderResultInput(input, CARGOMESH_ORIGIN);
+}
+
 const BASE_INPUT = {
   toolCallId:
     "cm:int02a:v1:90000000-0000-0000-0000-000000000001:f0000000-0000-0000-0000-000000000001:b0000000-0000-0000-0000-000000000001:40000000-0000-4000-8000-000000000001:quote_freight:1",
@@ -46,13 +52,13 @@ const BASE_INPUT = {
 } as const;
 
 test("accepts the frozen ProviderToolEnvelope<ProviderQuote> contract", () => {
-  const parsed = parseRecordProviderResultInput(BASE_INPUT);
+  const parsed = parse(BASE_INPUT);
   assert.equal(parsed.toolName, "quote_freight");
   assert.equal(parsed.toolOutput?.ok, true);
 });
 
 test("accepts a valid technical error envelope without creating fake quote data", () => {
-  const parsed = parseRecordProviderResultInput({
+  const parsed = parse({
     ...BASE_INPUT,
     status: "TECHNICAL_ERROR",
     technicalError: { code: "PROVIDER_TIMEOUT", message: "Timed out", retryable: true },
@@ -66,7 +72,7 @@ test("accepts a valid technical error envelope without creating fake quote data"
 });
 
 test("accepts a nullable output for a technical WebMCP failure", () => {
-  const parsed = parseRecordProviderResultInput({
+  const parsed = parse({
     ...BASE_INPUT,
     status: "TECHNICAL_ERROR",
     technicalError: { code: "WEBMCP_EXECUTION_FAILED", message: "Browser failed", retryable: true },
@@ -78,7 +84,7 @@ test("accepts a nullable output for a technical WebMCP failure", () => {
 });
 
 test("accepts coverage and capacity records without fabricating offers", () => {
-  const coverage = parseRecordProviderResultInput({
+  const coverage = parse({
     ...BASE_INPUT,
     toolCallId: BASE_INPUT.toolCallId.replace("quote_freight", "check_service_coverage"),
     toolName: "check_service_coverage",
@@ -104,7 +110,7 @@ test("accepts coverage and capacity records without fabricating offers", () => {
   });
   assert.equal(coverage.toolName, "check_service_coverage");
 
-  const capacity = parseRecordProviderResultInput({
+  const capacity = parse({
     ...BASE_INPUT,
     toolCallId: BASE_INPUT.toolCallId.replace("quote_freight", "check_capacity"),
     toolName: "check_capacity",
@@ -136,9 +142,9 @@ test("accepts coverage and capacity records without fabricating offers", () => {
 });
 
 test("rejects a canonical toolCallId or navigation service mismatch", () => {
-  assert.throws(() => parseRecordProviderResultInput({ ...BASE_INPUT, toolCallId: "tool-call-1" }));
+  assert.throws(() => parse({ ...BASE_INPUT, toolCallId: "tool-call-1" }));
   assert.throws(() =>
-    parseRecordProviderResultInput({
+    parse({
       ...BASE_INPUT,
       navigationUrl:
         "http://localhost:3000/providers/demo?serviceId=40000000-0000-4000-8000-000000000099",
@@ -146,21 +152,56 @@ test("rejects a canonical toolCallId or navigation service mismatch", () => {
   );
 });
 
-test("accepts an HTTPS provider page when it preserves the discovered service", () => {
-  const parsed = parseRecordProviderResultInput({
+test("accepts an HTTPS provider page when it preserves registered base parameters", () => {
+  const parsed = parse({
     ...BASE_INPUT,
-    providerUrl: "https://provider.example/quote",
+    providerUrl: "https://provider.example/quote?account=registered&locale=es",
     navigationUrl:
-      "https://provider.example/quote?serviceId=40000000-0000-4000-8000-000000000001",
+      "https://provider.example/quote?account=registered&locale=es&serviceId=40000000-0000-4000-8000-000000000001",
   });
 
-  assert.equal(parsed.navigationUrl, "https://provider.example/quote?serviceId=40000000-0000-4000-8000-000000000001");
+  assert.equal(
+    parsed.navigationUrl,
+    "https://provider.example/quote?account=registered&locale=es&serviceId=40000000-0000-4000-8000-000000000001",
+  );
+});
+
+test("rejects navigation URLs that do not belong to the discovered provider", () => {
+  assert.throws(() =>
+    parse({
+      ...BASE_INPUT,
+      navigationUrl:
+        "https://unrelated.example/providers/demo?serviceId=40000000-0000-4000-8000-000000000001",
+    }),
+  );
+  assert.throws(() =>
+    parse({
+      ...BASE_INPUT,
+      navigationUrl:
+        "http://localhost:3000/providers/other?serviceId=40000000-0000-4000-8000-000000000001",
+    }),
+  );
+  assert.throws(() =>
+    parse({
+      ...BASE_INPUT,
+      navigationUrl:
+        "http://localhost:3000/providers/demo?serviceId=40000000-0000-4000-8000-000000000001&serviceId=40000000-0000-4000-8000-000000000001",
+    }),
+  );
+  assert.throws(() =>
+    parse({
+      ...BASE_INPUT,
+      providerUrl: "https://provider.example/quote?account=registered",
+      navigationUrl:
+        "https://provider.example/quote?account=altered&serviceId=40000000-0000-4000-8000-000000000001",
+    }),
+  );
 });
 
 test("rejects a ProviderQuote FreightRequest correlation mismatch", () => {
   assert.throws(
     () =>
-      parseRecordProviderResultInput({
+      parse({
         ...BASE_INPUT,
         toolOutput: {
           ...BASE_INPUT.toolOutput,
@@ -177,7 +218,7 @@ test("rejects a ProviderQuote FreightRequest correlation mismatch", () => {
 test("rejects a quote_freight toolInput correlated to another FreightRequest", () => {
   assert.throws(
     () =>
-      parseRecordProviderResultInput({
+      parse({
         ...BASE_INPUT,
         toolInput: { freight_request_id: "f0000000-0000-0000-0000-000000000099" },
       }),
@@ -189,9 +230,9 @@ test("rejects a quote_freight toolInput correlated to another FreightRequest", (
 });
 
 test("rejects unsafe provider URLs and malformed commercial totals", () => {
-  assert.throws(() => parseRecordProviderResultInput({ ...BASE_INPUT, providerUrl: "//evil.com" }));
+  assert.throws(() => parse({ ...BASE_INPUT, providerUrl: "//evil.com" }));
   assert.throws(() =>
-    parseRecordProviderResultInput({
+    parse({
       ...BASE_INPUT,
       toolOutput: {
         ...BASE_INPUT.toolOutput,

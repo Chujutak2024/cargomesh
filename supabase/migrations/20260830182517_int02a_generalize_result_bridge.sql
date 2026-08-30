@@ -47,6 +47,7 @@ create or replace function public.record_provider_result(
   p_duration_ms integer,
   p_execution_status text,
   p_technical_error jsonb,
+  p_cargomesh_origin text,
   p_schema_version text
 )
 returns table (
@@ -68,6 +69,10 @@ declare
   v_legacy_result record;
   v_idempotency_payload jsonb;
   v_output_ok boolean;
+  v_registered_navigation_base text;
+  v_navigation_base text;
+  v_navigation_fragment text;
+  v_expected_navigation_url text;
 begin
   if p_tool_call_id is null or btrim(p_tool_call_id) = '' then
     raise exception 'INVALID_ARGUMENT: tool_call_id is required' using errcode = '22023';
@@ -112,17 +117,6 @@ begin
   if p_execution_status = 'TECHNICAL_ERROR' and p_technical_error is null then
     raise exception 'INVALID_EXECUTION_RESULT: technical errors require evidence'
       using errcode = '22023';
-  end if;
-  if p_provider_url is null or btrim(p_provider_url) = ''
-    or p_navigation_url is null or btrim(p_navigation_url) = ''
-    or p_navigation_url !~ '^https?://'
-    or p_navigation_url !~ ('[?&]serviceId=' || p_carrier_service_id::text || '([&#]|$)')
-    or (
-      select count(*)
-      from pg_catalog.regexp_matches(p_navigation_url, '[?&]serviceId=', 'g')
-    ) <> 1
-  then
-    raise exception 'INVALID_PROVIDER_NAVIGATION' using errcode = '22023';
   end if;
   if jsonb_typeof(p_tool_input) <> 'object' then
     raise exception 'INVALID_TOOL_INPUT' using errcode = '22023';
@@ -216,6 +210,53 @@ begin
 
   if not found then
     raise exception 'CARRIER_SERVICE_MISMATCH' using errcode = '22023';
+  end if;
+
+  -- Rebuild the expected URL from the registered provider URL. Internal
+  -- providers must resolve against CargoMesh itself; external providers keep
+  -- their own origin, pathname and every registered base query parameter.
+  if p_provider_url is null
+    or btrim(p_provider_url) = ''
+    or v_carrier.provider_url is null
+    or p_cargomesh_origin is null
+    or p_cargomesh_origin !~ '^https?://[^/?#]+$'
+    or p_navigation_url is null
+    or btrim(p_navigation_url) = ''
+    or p_navigation_url !~ '^https?://'
+    or v_carrier.provider_url ~ '[?&]serviceId='
+  then
+    raise exception 'INVALID_PROVIDER_NAVIGATION' using errcode = '22023';
+  end if;
+
+  v_registered_navigation_base := case
+    when left(v_carrier.provider_url, 1) = '/'
+      then p_cargomesh_origin || v_carrier.provider_url
+    else v_carrier.provider_url
+  end;
+  if v_registered_navigation_base ~ '^https?://[^/?#]+([?#]|$)' then
+    v_registered_navigation_base := pg_catalog.regexp_replace(
+      v_registered_navigation_base,
+      '^(https?://[^/?#]+)([?#]|$)',
+      E'\\1/\\2'
+    );
+  end if;
+  v_navigation_fragment := coalesce(
+    substring(v_registered_navigation_base from '(#.*)$'),
+    ''
+  );
+  v_navigation_base := split_part(v_registered_navigation_base, '#', 1);
+  v_expected_navigation_url := v_navigation_base
+    || case when position('?' in v_navigation_base) > 0 then '&' else '?' end
+    || 'serviceId=' || p_carrier_service_id::text
+    || v_navigation_fragment;
+
+  if p_navigation_url <> v_expected_navigation_url
+    or (
+      select count(*)
+      from pg_catalog.regexp_matches(p_navigation_url, '[?&]serviceId=', 'g')
+    ) <> 1
+  then
+    raise exception 'INVALID_PROVIDER_NAVIGATION' using errcode = '22023';
   end if;
 
   if p_tool_output is not null then
@@ -326,9 +367,9 @@ $$;
 
 revoke execute on function public.record_provider_result(
   text, uuid, uuid, uuid, uuid, text, text, text, integer,
-  jsonb, jsonb, timestamptz, timestamptz, integer, text, jsonb, text
+  jsonb, jsonb, timestamptz, timestamptz, integer, text, jsonb, text, text
 ) from public, anon, authenticated;
 grant execute on function public.record_provider_result(
   text, uuid, uuid, uuid, uuid, text, text, text, integer,
-  jsonb, jsonb, timestamptz, timestamptz, integer, text, jsonb, text
+  jsonb, jsonb, timestamptz, timestamptz, integer, text, jsonb, text, text
 ) to service_role;

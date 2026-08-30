@@ -562,7 +562,7 @@ $$;
 ALTER FUNCTION "public"."record_provider_result"("p_tool_call_id" "text", "p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_carrier_id" "uuid", "p_provider_url" "text", "p_tool_name" "text", "p_tool_input" "jsonb", "p_tool_output" "jsonb", "p_started_at" timestamp with time zone, "p_completed_at" timestamp with time zone, "p_schema_version" "text") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."record_provider_result"("p_tool_call_id" "text", "p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_carrier_id" "uuid", "p_carrier_service_id" "uuid", "p_provider_url" "text", "p_navigation_url" "text", "p_tool_name" "text", "p_attempt_number" integer, "p_tool_input" "jsonb", "p_tool_output" "jsonb", "p_started_at" timestamp with time zone, "p_completed_at" timestamp with time zone, "p_duration_ms" integer, "p_execution_status" "text", "p_technical_error" "jsonb", "p_schema_version" "text") RETURNS TABLE("event_id" "uuid", "record_id" "uuid", "record_type" "text", "result_status" "text", "deduplicated" boolean)
+CREATE OR REPLACE FUNCTION "public"."record_provider_result"("p_tool_call_id" "text", "p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_carrier_id" "uuid", "p_carrier_service_id" "uuid", "p_provider_url" "text", "p_navigation_url" "text", "p_tool_name" "text", "p_attempt_number" integer, "p_tool_input" "jsonb", "p_tool_output" "jsonb", "p_started_at" timestamp with time zone, "p_completed_at" timestamp with time zone, "p_duration_ms" integer, "p_execution_status" "text", "p_technical_error" "jsonb", "p_cargomesh_origin" "text", "p_schema_version" "text") RETURNS TABLE("event_id" "uuid", "record_id" "uuid", "record_type" "text", "result_status" "text", "deduplicated" boolean)
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
     AS $_$
@@ -574,6 +574,10 @@ declare
   v_legacy_result record;
   v_idempotency_payload jsonb;
   v_output_ok boolean;
+  v_registered_navigation_base text;
+  v_navigation_base text;
+  v_navigation_fragment text;
+  v_expected_navigation_url text;
 begin
   if p_tool_call_id is null or btrim(p_tool_call_id) = '' then
     raise exception 'INVALID_ARGUMENT: tool_call_id is required' using errcode = '22023';
@@ -618,17 +622,6 @@ begin
   if p_execution_status = 'TECHNICAL_ERROR' and p_technical_error is null then
     raise exception 'INVALID_EXECUTION_RESULT: technical errors require evidence'
       using errcode = '22023';
-  end if;
-  if p_provider_url is null or btrim(p_provider_url) = ''
-    or p_navigation_url is null or btrim(p_navigation_url) = ''
-    or p_navigation_url !~ '^https?://'
-    or p_navigation_url !~ ('[?&]serviceId=' || p_carrier_service_id::text || '([&#]|$)')
-    or (
-      select count(*)
-      from pg_catalog.regexp_matches(p_navigation_url, '[?&]serviceId=', 'g')
-    ) <> 1
-  then
-    raise exception 'INVALID_PROVIDER_NAVIGATION' using errcode = '22023';
   end if;
   if jsonb_typeof(p_tool_input) <> 'object' then
     raise exception 'INVALID_TOOL_INPUT' using errcode = '22023';
@@ -722,6 +715,53 @@ begin
 
   if not found then
     raise exception 'CARRIER_SERVICE_MISMATCH' using errcode = '22023';
+  end if;
+
+  -- Rebuild the expected URL from the registered provider URL. Internal
+  -- providers must resolve against CargoMesh itself; external providers keep
+  -- their own origin, pathname and every registered base query parameter.
+  if p_provider_url is null
+    or btrim(p_provider_url) = ''
+    or v_carrier.provider_url is null
+    or p_cargomesh_origin is null
+    or p_cargomesh_origin !~ '^https?://[^/?#]+$'
+    or p_navigation_url is null
+    or btrim(p_navigation_url) = ''
+    or p_navigation_url !~ '^https?://'
+    or v_carrier.provider_url ~ '[?&]serviceId='
+  then
+    raise exception 'INVALID_PROVIDER_NAVIGATION' using errcode = '22023';
+  end if;
+
+  v_registered_navigation_base := case
+    when left(v_carrier.provider_url, 1) = '/'
+      then p_cargomesh_origin || v_carrier.provider_url
+    else v_carrier.provider_url
+  end;
+  if v_registered_navigation_base ~ '^https?://[^/?#]+([?#]|$)' then
+    v_registered_navigation_base := pg_catalog.regexp_replace(
+      v_registered_navigation_base,
+      '^(https?://[^/?#]+)([?#]|$)',
+      E'\\1/\\2'
+    );
+  end if;
+  v_navigation_fragment := coalesce(
+    substring(v_registered_navigation_base from '(#.*)$'),
+    ''
+  );
+  v_navigation_base := split_part(v_registered_navigation_base, '#', 1);
+  v_expected_navigation_url := v_navigation_base
+    || case when position('?' in v_navigation_base) > 0 then '&' else '?' end
+    || 'serviceId=' || p_carrier_service_id::text
+    || v_navigation_fragment;
+
+  if p_navigation_url <> v_expected_navigation_url
+    or (
+      select count(*)
+      from pg_catalog.regexp_matches(p_navigation_url, '[?&]serviceId=', 'g')
+    ) <> 1
+  then
+    raise exception 'INVALID_PROVIDER_NAVIGATION' using errcode = '22023';
   end if;
 
   if p_tool_output is not null then
@@ -831,7 +871,7 @@ end;
 $_$;
 
 
-ALTER FUNCTION "public"."record_provider_result"("p_tool_call_id" "text", "p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_carrier_id" "uuid", "p_carrier_service_id" "uuid", "p_provider_url" "text", "p_navigation_url" "text", "p_tool_name" "text", "p_attempt_number" integer, "p_tool_input" "jsonb", "p_tool_output" "jsonb", "p_started_at" timestamp with time zone, "p_completed_at" timestamp with time zone, "p_duration_ms" integer, "p_execution_status" "text", "p_technical_error" "jsonb", "p_schema_version" "text") OWNER TO "postgres";
+ALTER FUNCTION "public"."record_provider_result"("p_tool_call_id" "text", "p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_carrier_id" "uuid", "p_carrier_service_id" "uuid", "p_provider_url" "text", "p_navigation_url" "text", "p_tool_name" "text", "p_attempt_number" integer, "p_tool_input" "jsonb", "p_tool_output" "jsonb", "p_started_at" timestamp with time zone, "p_completed_at" timestamp with time zone, "p_duration_ms" integer, "p_execution_status" "text", "p_technical_error" "jsonb", "p_cargomesh_origin" "text", "p_schema_version" "text") OWNER TO "postgres";
 
 SET default_tablespace = '';
 
@@ -2058,8 +2098,8 @@ GRANT ALL ON FUNCTION "public"."record_provider_result"("p_tool_call_id" "text",
 
 
 
-REVOKE ALL ON FUNCTION "public"."record_provider_result"("p_tool_call_id" "text", "p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_carrier_id" "uuid", "p_carrier_service_id" "uuid", "p_provider_url" "text", "p_navigation_url" "text", "p_tool_name" "text", "p_attempt_number" integer, "p_tool_input" "jsonb", "p_tool_output" "jsonb", "p_started_at" timestamp with time zone, "p_completed_at" timestamp with time zone, "p_duration_ms" integer, "p_execution_status" "text", "p_technical_error" "jsonb", "p_schema_version" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."record_provider_result"("p_tool_call_id" "text", "p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_carrier_id" "uuid", "p_carrier_service_id" "uuid", "p_provider_url" "text", "p_navigation_url" "text", "p_tool_name" "text", "p_attempt_number" integer, "p_tool_input" "jsonb", "p_tool_output" "jsonb", "p_started_at" timestamp with time zone, "p_completed_at" timestamp with time zone, "p_duration_ms" integer, "p_execution_status" "text", "p_technical_error" "jsonb", "p_schema_version" "text") TO "service_role";
+REVOKE ALL ON FUNCTION "public"."record_provider_result"("p_tool_call_id" "text", "p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_carrier_id" "uuid", "p_carrier_service_id" "uuid", "p_provider_url" "text", "p_navigation_url" "text", "p_tool_name" "text", "p_attempt_number" integer, "p_tool_input" "jsonb", "p_tool_output" "jsonb", "p_started_at" timestamp with time zone, "p_completed_at" timestamp with time zone, "p_duration_ms" integer, "p_execution_status" "text", "p_technical_error" "jsonb", "p_cargomesh_origin" "text", "p_schema_version" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."record_provider_result"("p_tool_call_id" "text", "p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_carrier_id" "uuid", "p_carrier_service_id" "uuid", "p_provider_url" "text", "p_navigation_url" "text", "p_tool_name" "text", "p_attempt_number" integer, "p_tool_input" "jsonb", "p_tool_output" "jsonb", "p_started_at" timestamp with time zone, "p_completed_at" timestamp with time zone, "p_duration_ms" integer, "p_execution_status" "text", "p_technical_error" "jsonb", "p_cargomesh_origin" "text", "p_schema_version" "text") TO "service_role";
 
 
 

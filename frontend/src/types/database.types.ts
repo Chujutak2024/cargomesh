@@ -1425,6 +1425,7 @@ export type Database = {
           p_attempt_number: number
           p_carrier_id: string
           p_carrier_service_id: string
+          p_cargomesh_origin: string
           p_completed_at: string
           p_duration_ms: number
           p_execution_status: string
