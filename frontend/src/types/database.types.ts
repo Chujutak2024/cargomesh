@@ -1034,6 +1034,7 @@ export type Database = {
       }
       orchestration_runs: {
         Row: {
+          candidate_snapshot: Json
           completed_at: string | null
           created_at: string
           created_by_member_id: string | null
@@ -1041,12 +1042,15 @@ export type Database = {
           error_message: string | null
           freight_request_id: string
           id: string
+          idempotency_key: string | null
           previous_run_id: string | null
+          result_snapshot: Json | null
           run_type: string
           started_at: string
           status: string
         }
         Insert: {
+          candidate_snapshot?: Json
           completed_at?: string | null
           created_at?: string
           created_by_member_id?: string | null
@@ -1054,12 +1058,15 @@ export type Database = {
           error_message?: string | null
           freight_request_id: string
           id?: string
+          idempotency_key?: string | null
           previous_run_id?: string | null
+          result_snapshot?: Json | null
           run_type: string
           started_at?: string
           status?: string
         }
         Update: {
+          candidate_snapshot?: Json
           completed_at?: string | null
           created_at?: string
           created_by_member_id?: string | null
@@ -1067,7 +1074,9 @@ export type Database = {
           error_message?: string | null
           freight_request_id?: string
           id?: string
+          idempotency_key?: string | null
           previous_run_id?: string | null
+          result_snapshot?: Json | null
           run_type?: string
           started_at?: string
           status?: string
@@ -1447,6 +1456,21 @@ export type Database = {
           record_id: string
           record_type: string
           result_status: string
+        }[]
+      }
+      start_orchestration_run: {
+        Args: {
+          p_candidate_snapshot: Json
+          p_created_by_member_id: string
+          p_freight_request_id: string
+          p_idempotency_key: string
+        }
+        Returns: {
+          candidate_snapshot: Json
+          deduplicated: boolean
+          freight_request_id: string
+          orchestration_run_id: string
+          status: string
         }[]
       }
     }
