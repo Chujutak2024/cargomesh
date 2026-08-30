@@ -97,6 +97,20 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
         name: tool.name,
       })) as WebMCP.RegisteredTool[];
     },
+    async executeTool(
+      tool: WebMCP.RegisteredTool,
+      inputObject: Record<string, unknown> = {},
+      options?: WebMCP.ModelContextExecuteToolOptions,
+    ) {
+      const registeredTool = registeredTools.get(tool.name);
+      if (!registeredTool) {
+        throw new Error(`Tool '${tool.name}' is not registered.`);
+      }
+
+      return registeredTool.execute(inputObject, {
+        signal: options?.signal ?? new AbortController().signal,
+      });
+    },
   } as WebMCP.ModelContext;
   const registrationController = new AbortController();
 
@@ -112,6 +126,16 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
     (await modelContext.getTools()).map((tool) => tool.name),
     ["check_service_coverage", "check_capacity", "quote_freight"],
   );
+
+  const coverageTool = (await modelContext.getTools()).find(
+    (tool) => tool.name === "check_service_coverage",
+  );
+  assert.ok(coverageTool);
+  const coverageResult = (await modelContext.executeTool(
+    coverageTool,
+    compatibleCoverageInput,
+  )) as ProviderToolEnvelope<ServiceCoverageResult>;
+  assert.equal(coverageResult.ok && coverageResult.data.supported, true);
 
   registrationController.abort();
 
