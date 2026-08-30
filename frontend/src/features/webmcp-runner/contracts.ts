@@ -119,7 +119,7 @@ export type ProviderPageSession = {
    * Abandons the provider document and returns the tool names exposed by the
    * newly active document. A valid cleanup has no INT-02A provider tools.
    */
-  leaveAndGetActiveToolNames(): Promise<string[]>;
+  leaveAndGetActiveToolNames(cleanupUrl: string): Promise<string[]>;
 };
 
 export type ProviderNavigationAdapter = {

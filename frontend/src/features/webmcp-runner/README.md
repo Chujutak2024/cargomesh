@@ -29,8 +29,9 @@ de navegador debe:
 2. construir el runtime de la página activa con
    `createDocumentModelContextAdapter(document)`;
 3. devolver ese runtime al runner;
-4. en `leaveAndGetActiveToolNames`, abandonar la página provider y consultar
-   `getTools()` en el documento que quedó activo.
+4. en `leaveAndGetActiveToolNames(cleanupUrl)`, navegar mediante documento
+   completo a `new URL("/", baseUrl).toString()` y consultar `getTools()` en la
+   raíz de CargoMesh.
 
 No se admite una implementación que llame directamente a
 `createCheckServiceCoverageTool`, `createCheckCapacityTool`,
@@ -48,11 +49,20 @@ Cada `ProviderToolCallRecord` entrega:
 - `attemptNumber`, `startedAt`, `completedAt` y `durationMs`;
 - fallo técnico separado cuando no existe un envelope válido.
 
-La fábrica `createToolCallId` es obligatoria e inyectable. C debe congelar con A
-su forma determinista antes de conectar Result Bridge. Un retry exacto debe
-reutilizar el mismo paquete y timestamps; un intento nuevo incrementa
-`attemptNumber`.
+`createInt02aToolCallId` implementa la identidad canónica acordada:
+
+```text
+cm:int02a:v1:<orchestrationRunId>:<freightRequestId>:<carrierId>:<matchingServiceId>:<toolName>:<attemptNumber>
+```
+
+La fábrica continúa siendo inyectable para pruebas, pero el runner usa esa
+implementación por defecto. Un intento nuevo incrementa `attemptNumber` y crea
+otro ID y timestamps. `replayProviderToolCallRecord` no vuelve a navegar ni a
+ejecutar WebMCP: reenvía un clon exacto del record original, incluidos ID,
+input, output y timestamps.
 
 `ProviderToolCallRecord` es un payload de handoff del runner, no reemplaza ni
-modifica `RecordProviderResultInput`. C decide qué tools producen solo eventos y
-cuándo una quote exitosa se envía al Result Bridge.
+modifica `RecordProviderResultInput`. Las tres tools se enviarán al mismo
+`POST /api/orchestration/record-result`: coverage/capacity crean solo eventos;
+una quote exitosa también puede crear `CarrierOffer`; un error técnico crea un
+evento fallido y nunca una oferta.

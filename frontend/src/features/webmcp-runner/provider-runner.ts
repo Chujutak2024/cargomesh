@@ -17,6 +17,7 @@ import {
   type ProviderToolCallRecord,
   type WebMcpRuntimeAdapter,
 } from "./contracts";
+import { createInt02aToolCallId } from "./tool-call-id";
 
 type RunnerClock = () => Date;
 
@@ -28,7 +29,7 @@ export type ExecuteProviderCandidateOptions = {
   attemptNumber: number;
   inputs: ProviderRunnerInputs;
   runtime: WebMcpRuntimeAdapter;
-  createToolCallId: ProviderToolCallIdFactory;
+  createToolCallId?: ProviderToolCallIdFactory;
   signal?: AbortSignal;
   now?: RunnerClock;
 };
@@ -40,7 +41,7 @@ export type RunProviderCollectionOptions = {
   freightRequestId: string;
   navigation: ProviderNavigationAdapter;
   createInputs(candidate: CandidateProvider): ProviderRunnerInputs;
-  createToolCallId: ProviderToolCallIdFactory;
+  createToolCallId?: ProviderToolCallIdFactory;
   getAttemptNumber?(candidate: CandidateProvider): number;
   signal?: AbortSignal;
   now?: RunnerClock;
@@ -157,7 +158,9 @@ async function executeAndRecordTool(
     toolName,
     attemptNumber: options.attemptNumber,
   } as const;
-  const toolCallId = options.createToolCallId(identity).trim();
+  const toolCallId = (options.createToolCallId ?? createInt02aToolCallId)(
+    identity,
+  ).trim();
 
   if (!toolCallId) {
     throw new Error("INVALID_TOOL_CALL_ID: createToolCallId returned an empty value.");
@@ -399,6 +402,7 @@ export async function runProviderCollection(
 ): Promise<ProviderCollectionResult> {
   const attempts: ProviderAttemptResult[] = [];
   const collectionWarnings: ProviderRunnerWarning[] = [];
+  const cleanupUrl = new URL("/", options.baseUrl).toString();
   const candidates = options.candidates.map((candidate) =>
     Object.freeze({ ...candidate }),
   );
@@ -459,7 +463,7 @@ export async function runProviderCollection(
     }
 
     try {
-      const activeToolNames = await session.leaveAndGetActiveToolNames();
+      const activeToolNames = await session.leaveAndGetActiveToolNames(cleanupUrl);
       const cleanup = cleanupEvidence(activeToolNames);
       attempt = { ...attempt, cleanup };
 

@@ -5,7 +5,9 @@ import type { CandidateProvider } from "@/features/providers/contracts";
 
 import {
   createDocumentModelContextAdapter,
+  createInt02aToolCallId,
   INT02A_PROVIDER_TOOL_NAMES,
+  replayProviderToolCallRecord,
   runProviderCollection,
   type Int02aProviderToolName,
   type ProviderNavigationAdapter,
@@ -122,7 +124,12 @@ function createNavigation(
   behaviorFactory: (candidate: CandidateProvider) => Partial<
     Record<Int02aProviderToolName, ToolBehavior>
   >,
-  evidence: { urls: string[]; executionOrder: string[]; cleanupCount: number },
+  evidence: {
+    urls: string[];
+    cleanupUrls: string[];
+    executionOrder: string[];
+    cleanupCount: number;
+  },
   leaveToolsBehind = false,
 ): ProviderNavigationAdapter {
   return {
@@ -137,8 +144,9 @@ function createNavigation(
         runtime: createDocumentModelContextAdapter({
           modelContext: documentRuntime.modelContext,
         }),
-        async leaveAndGetActiveToolNames() {
+        async leaveAndGetActiveToolNames(cleanupUrl) {
           evidence.cleanupCount += 1;
+          evidence.cleanupUrls.push(cleanupUrl);
           if (!leaveToolsBehind) documentRuntime.clearTools();
           return documentRuntime.getActiveToolNames();
         },
@@ -162,8 +170,36 @@ function createToolCallId(identity: {
 }
 
 function evidence() {
-  return { urls: [] as string[], executionOrder: [] as string[], cleanupCount: 0 };
+  return {
+    urls: [] as string[],
+    cleanupUrls: [] as string[],
+    executionOrder: [] as string[],
+    cleanupCount: 0,
+  };
 }
+
+test("creates the canonical deterministic toolCallId", () => {
+  const identity = {
+    orchestrationRunId: RUN_ID,
+    freightRequestId: REQUEST_ID,
+    carrierId: candidate(1).carrierId,
+    matchingServiceId: candidate(1).matchingServiceId,
+    toolName: "quote_freight" as const,
+    attemptNumber: 1,
+  };
+  const expected = [
+    "cm:int02a:v1",
+    RUN_ID,
+    REQUEST_ID,
+    candidate(1).carrierId,
+    candidate(1).matchingServiceId,
+    "quote_freight",
+    "1",
+  ].join(":");
+
+  assert.equal(createInt02aToolCallId(identity), expected);
+  assert.equal(createInt02aToolCallId({ ...identity }), expected);
+});
 
 test("processes zero candidates without opening a provider document", async () => {
   const observed = evidence();
@@ -209,6 +245,7 @@ test("uses document.modelContext for one candidate and preserves matchingService
   assert.match(result.attempts[0]?.calls[0]?.toolCallId ?? "", /check_service_coverage/);
   assert.equal(result.attempts[0]?.cleanup.verified, true);
   assert.equal(observed.cleanupCount, 1);
+  assert.deepEqual(observed.cleanupUrls, ["http://localhost:3000/"]);
 });
 
 test("processes N providers without carrier-specific branches", async () => {
@@ -232,6 +269,11 @@ test("processes N providers without carrier-specific branches", async () => {
     "QUOTED",
   ]);
   assert.equal(observed.cleanupCount, 3);
+  assert.deepEqual(observed.cleanupUrls, [
+    "https://cargomesh.example/",
+    "https://cargomesh.example/",
+    "https://cargomesh.example/",
+  ]);
   assert.equal(observed.executionOrder.length, 9);
   assert.equal(
     result.attempts.every(
@@ -241,6 +283,62 @@ test("processes N providers without carrier-specific branches", async () => {
     ),
     true,
   );
+});
+
+test("increments attemptNumber for a new real execution", async () => {
+  const observed = evidence();
+  const selectedCandidate = candidate(1);
+  const commonOptions = {
+    candidates: [selectedCandidate],
+    baseUrl: "http://localhost:3000",
+    orchestrationRunId: RUN_ID,
+    freightRequestId: REQUEST_ID,
+    navigation: createNavigation(() => successfulBehaviors(), observed),
+    createInputs: () => inputs,
+  };
+
+  const first = await runProviderCollection({
+    ...commonOptions,
+    getAttemptNumber: () => 1,
+  });
+  const second = await runProviderCollection({
+    ...commonOptions,
+    getAttemptNumber: () => 2,
+  });
+  const firstCall = first.attempts[0]?.calls[0];
+  const secondCall = second.attempts[0]?.calls[0];
+
+  assert.equal(firstCall?.attemptNumber, 1);
+  assert.equal(secondCall?.attemptNumber, 2);
+  assert.match(firstCall?.toolCallId ?? "", /:1$/);
+  assert.match(secondCall?.toolCallId ?? "", /:2$/);
+  assert.notEqual(firstCall?.toolCallId, secondCall?.toolCallId);
+});
+
+test("replays the complete original record without executing WebMCP again", async () => {
+  const observed = evidence();
+  const result = await runProviderCollection({
+    candidates: [candidate(1)],
+    baseUrl: "http://localhost:3000",
+    orchestrationRunId: RUN_ID,
+    freightRequestId: REQUEST_ID,
+    navigation: createNavigation(() => successfulBehaviors(), observed),
+    createInputs: () => inputs,
+  });
+  const original = result.attempts[0]?.calls[2];
+  assert.ok(original);
+  const executionsBeforeReplay = observed.executionOrder.length;
+  let delivered = null as typeof original | null;
+
+  const replayResult = await replayProviderToolCallRecord(original, (record) => {
+    delivered = record;
+    return "DEDUPLICATED" as const;
+  });
+
+  assert.equal(replayResult, "DEDUPLICATED");
+  assert.deepEqual(delivered, original);
+  assert.notEqual(delivered, original);
+  assert.equal(observed.executionOrder.length, executionsBeforeReplay);
 });
 
 test("records a commercial coverage rejection and skips capacity and quote", async () => {
