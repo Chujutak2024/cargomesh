@@ -1,5 +1,4 @@
-import { ArrowRight, Clock3, PackageCheck, Plus, Route, ShieldCheck } from "lucide-react";
-import Link from "next/link";
+import { Clock3, PackageCheck, Route, ShieldCheck } from "lucide-react";
 import { RequestTable } from "@/components/request-table";
 import {
   dashboardSummaryFixture,
@@ -23,10 +22,6 @@ export default function DashboardPage() {
           <h1>Buenos días, Carlos.</h1>
           <p>Supervisa tus solicitudes, decisiones y operaciones internacionales desde un solo lugar.</p>
         </div>
-        <Link className={styles.primaryAction} href="/requests/new">
-          <Plus size={17} aria-hidden="true" />
-          Nueva solicitud
-        </Link>
       </section>
 
       <section className={styles.metrics} aria-label="Resumen operativo">
@@ -45,7 +40,6 @@ export default function DashboardPage() {
             <span className={styles.eyebrow}>Actividad reciente</span>
             <h2>Solicitudes de transporte</h2>
           </div>
-          <Link href="/requests">Ver todas <ArrowRight size={15} /></Link>
         </div>
         <RequestTable requests={freightRequestsFixture} />
       </section>

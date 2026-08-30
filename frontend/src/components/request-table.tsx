@@ -1,5 +1,4 @@
-import { ArrowUpRight, PackageOpen } from "lucide-react";
-import Link from "next/link";
+import { PackageOpen } from "lucide-react";
 import type { FreightRequestListItem } from "@/features/freight-ui/view-models";
 import { StatusBadge } from "./status-badge";
 import styles from "./request-table.module.css";
@@ -11,7 +10,6 @@ export function RequestTable({ requests }: { requests: FreightRequestListItem[] 
         <PackageOpen size={28} strokeWidth={1.5} aria-hidden="true" />
         <strong>No hay solicitudes todavía</strong>
         <p>Crea una carga para iniciar el descubrimiento de transportistas.</p>
-        <Link href="/requests/new">Crear solicitud</Link>
       </div>
     );
   }
@@ -26,7 +24,6 @@ export function RequestTable({ requests }: { requests: FreightRequestListItem[] 
             <th>Carga</th>
             <th>Recojo</th>
             <th>Estado</th>
-            <th><span className={styles.srOnly}>Acciones</span></th>
           </tr>
         </thead>
         <tbody>
@@ -40,11 +37,6 @@ export function RequestTable({ requests }: { requests: FreightRequestListItem[] 
               <td data-label="Carga"><strong>{request.cargoSummary}</strong><span>{request.cargoDetail}</span></td>
               <td data-label="Recojo">{request.pickupDate}</td>
               <td data-label="Estado"><StatusBadge status={request.status} /></td>
-              <td className={styles.actionCell}>
-                <Link className={styles.action} href={`/requests/${request.id}`} aria-label={`Abrir ${request.id}`}>
-                  <ArrowUpRight size={17} aria-hidden="true" />
-                </Link>
-              </td>
             </tr>
           ))}
         </tbody>

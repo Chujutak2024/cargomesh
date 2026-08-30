@@ -2,12 +2,8 @@
 
 import {
   Bell,
-  ClipboardList,
   LayoutDashboard,
   Menu,
-  PackagePlus,
-  Route,
-  Truck,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -17,10 +13,6 @@ import styles from "./app-shell.module.css";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/requests/new", label: "Nueva carga", icon: PackagePlus },
-  { href: "/dispatch", label: "Despachos", icon: Route },
-  { href: "/tracking", label: "Seguimiento", icon: Truck },
-  { href: "/requests", label: "Solicitudes", icon: ClipboardList },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
