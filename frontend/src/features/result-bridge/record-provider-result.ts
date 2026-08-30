@@ -9,6 +9,7 @@ import {
   ResultBridgeError,
   type RecordProviderResultResult,
   type RecordProviderResultRpcRow,
+  type ValidatedRecordProviderResultInput,
 } from "./contracts";
 import { parseRecordProviderResultInput } from "./validation";
 
@@ -16,6 +17,11 @@ type OrchestrationRunRow = {
   id: string;
   freight_request_id: string;
   status: string;
+};
+
+type FreightRequestRow = {
+  id: string;
+  organization_id: string;
 };
 
 function mapDatabaseError(message: string): ResultBridgeError {
@@ -39,56 +45,9 @@ function mapDatabaseError(message: string): ResultBridgeError {
   return new ResultBridgeError("RESULT_BRIDGE_UNAVAILABLE", message, 500);
 }
 
-export async function record_provider_result(
-  rawInput: unknown,
+async function persistProviderResult(
+  input: ValidatedRecordProviderResultInput,
 ): Promise<RecordProviderResultResult> {
-  const input = parseRecordProviderResultInput(rawInput);
-  const member = await requireAuthenticatedMember();
-  const discovery = await get_candidate_provider_pages(input.freightRequestId);
-
-  if (!discovery) {
-    throw new ResultBridgeError("FREIGHT_REQUEST_NOT_FOUND", "FreightRequest not found.", 404);
-  }
-
-  await requireAuthenticatedMember({ organizationId: member.organizationId });
-
-  const candidate = discovery.candidates.find(
-    (item) => item.carrierId === input.carrierId && item.providerUrl === input.providerUrl,
-  );
-  if (!candidate) {
-    throw new ResultBridgeError(
-      "CANDIDATE_MISMATCH",
-      "Carrier and providerUrl are not part of the compatible candidate set.",
-      422,
-    );
-  }
-
-  const sessionClient = await createServerSupabaseClient();
-  const { data: runData, error: runError } = await sessionClient
-    .from("orchestration_runs")
-    .select("id,freight_request_id,status")
-    .eq("id", input.orchestrationRunId)
-    .maybeSingle();
-
-  if (runError) {
-    throw new ResultBridgeError("RUN_LOOKUP_FAILED", "Unable to load orchestration run.", 500);
-  }
-  if (!runData) {
-    throw new ResultBridgeError("RUN_NOT_FOUND", "Orchestration run not found.", 404);
-  }
-
-  const run = runData as OrchestrationRunRow;
-  if (run.freight_request_id !== input.freightRequestId) {
-    throw new ResultBridgeError(
-      "CORRELATION_ERROR",
-      "Orchestration run does not belong to the FreightRequest.",
-      422,
-    );
-  }
-  if (run.status !== "RUNNING") {
-    throw new ResultBridgeError("RUN_NOT_ACTIVE", "Orchestration run must be RUNNING.", 409);
-  }
-
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("record_provider_result", {
     p_tool_call_id: input.toolCallId,
@@ -122,6 +81,95 @@ export async function record_provider_result(
     status: row.result_status,
     deduplicated: row.deduplicated,
   };
+}
+
+export async function record_provider_result(
+  rawInput: unknown,
+): Promise<RecordProviderResultResult> {
+  const input = parseRecordProviderResultInput(rawInput);
+  await requireAuthenticatedMember();
+  const sessionClient = await createServerSupabaseClient();
+  const { data: runData, error: runError } = await sessionClient
+    .from("orchestration_runs")
+    .select("id,freight_request_id,status")
+    .eq("id", input.orchestrationRunId)
+    .maybeSingle();
+
+  if (runError) {
+    throw new ResultBridgeError("RUN_LOOKUP_FAILED", "Unable to load orchestration run.", 500);
+  }
+  if (!runData) {
+    throw new ResultBridgeError("RUN_NOT_FOUND", "Orchestration run not found.", 404);
+  }
+
+  const run = runData as OrchestrationRunRow;
+  if (run.freight_request_id !== input.freightRequestId) {
+    throw new ResultBridgeError(
+      "CORRELATION_ERROR",
+      "Orchestration run does not belong to the FreightRequest.",
+      422,
+    );
+  }
+
+  const { data: requestData, error: requestError } = await sessionClient
+    .from("freight_requests")
+    .select("id,organization_id")
+    .eq("id", input.freightRequestId)
+    .maybeSingle();
+
+  if (requestError) {
+    throw new ResultBridgeError("REQUEST_LOOKUP_FAILED", "Unable to load FreightRequest.", 500);
+  }
+  if (!requestData) {
+    throw new ResultBridgeError("FREIGHT_REQUEST_NOT_FOUND", "FreightRequest not found.", 404);
+  }
+
+  const freightRequest = requestData as FreightRequestRow;
+  await requireAuthenticatedMember({ organizationId: freightRequest.organization_id });
+
+  // Replays are resolved before checking mutable run/candidate state. RLS has
+  // already proven that the caller belongs to the run's organization; the
+  // RPC compares the canonical payload and returns either dedupe or conflict.
+  const { data: replayEvent, error: replayLookupError } = await sessionClient
+    .from("orchestration_events")
+    .select("id")
+    .eq("tool_call_id", input.toolCallId)
+    .maybeSingle();
+
+  if (replayLookupError) {
+    throw new ResultBridgeError(
+      "REPLAY_LOOKUP_FAILED",
+      "Unable to resolve Result Bridge replay.",
+      500,
+    );
+  }
+  if (replayEvent) return persistProviderResult(input);
+
+  if (run.status !== "RUNNING") {
+    throw new ResultBridgeError("RUN_NOT_ACTIVE", "Orchestration run must be RUNNING.", 409);
+  }
+
+  const discovery = await get_candidate_provider_pages(input.freightRequestId);
+  if (!discovery) {
+    throw new ResultBridgeError(
+      "FREIGHT_REQUEST_NOT_FOUND",
+      "FreightRequest not found.",
+      404,
+    );
+  }
+
+  const candidate = discovery.candidates.find(
+    (item) => item.carrierId === input.carrierId && item.providerUrl === input.providerUrl,
+  );
+  if (!candidate) {
+    throw new ResultBridgeError(
+      "CANDIDATE_MISMATCH",
+      "Carrier and providerUrl are not part of the compatible candidate set.",
+      422,
+    );
+  }
+
+  return persistProviderResult(input);
 }
 
 export const recordProviderResult = record_provider_result;

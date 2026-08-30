@@ -19,9 +19,10 @@ export type RecordProviderResultInput = {
 
 export type ValidatedRecordProviderResultInput = Omit<
   RecordProviderResultInput,
-  "toolOutput"
+  "toolInput" | "toolOutput"
 > & {
   toolName: "quote_freight";
+  toolInput: Record<string, unknown> & { freight_request_id: string };
   toolOutput: ProviderToolEnvelope<ProviderQuote>;
 };
 

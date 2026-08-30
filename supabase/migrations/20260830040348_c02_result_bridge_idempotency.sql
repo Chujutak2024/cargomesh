@@ -79,6 +79,18 @@ begin
   if p_completed_at < p_started_at then
     raise exception 'INVALID_TIMELINE: completed_at precedes started_at' using errcode = '22023';
   end if;
+  if jsonb_typeof(p_tool_input) <> 'object'
+    or p_tool_input ->> 'freight_request_id' is distinct from p_freight_request_id::text
+  then
+    raise exception 'CORRELATION_ERROR: tool input does not belong to freight request'
+      using errcode = '22023';
+  end if;
+
+  -- Serialize the same tool call so a concurrent retry always observes the
+  -- first committed event before mutable run state is evaluated.
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(p_tool_call_id, 0)
+  );
 
   select * into v_run
   from public.orchestration_runs
@@ -90,29 +102,12 @@ begin
   if v_run.freight_request_id <> p_freight_request_id then
     raise exception 'CORRELATION_ERROR: run does not belong to freight request' using errcode = '22023';
   end if;
-  if v_run.status <> 'RUNNING' then
-    raise exception 'RUN_NOT_ACTIVE: orchestration run must be RUNNING' using errcode = '55000';
-  end if;
-
   select * into v_request
   from public.freight_requests
   where id = p_freight_request_id;
 
   if not found then
     raise exception 'FREIGHT_REQUEST_NOT_FOUND' using errcode = 'P0002';
-  end if;
-
-  select * into v_carrier
-  from public.carriers
-  where id = p_carrier_id
-    and status = 'ACTIVE'
-    and supports_webmcp = true;
-
-  if not found then
-    raise exception 'CARRIER_NOT_AVAILABLE' using errcode = 'P0002';
-  end if;
-  if v_carrier.provider_url is distinct from p_provider_url then
-    raise exception 'PROVIDER_URL_MISMATCH' using errcode = '22023';
   end if;
 
   v_idempotency_payload := jsonb_build_object(
@@ -128,6 +123,44 @@ begin
     'completedAt', p_completed_at,
     'schemaVersion', p_schema_version
   );
+
+  -- Idempotency is stable across the run lifecycle. An exact retry must keep
+  -- succeeding after OPTIONS_READY/NO_MATCH; a changed payload must conflict.
+  select * into v_event
+  from public.orchestration_events
+  where tool_call_id = p_tool_call_id;
+
+  if found then
+    if v_event.idempotency_payload = v_idempotency_payload then
+      return query select
+        v_event.id,
+        v_event.persisted_entity_id,
+        v_event.persisted_entity_type,
+        'DEDUPLICATED'::text,
+        true;
+      return;
+    end if;
+
+    raise exception 'IDEMPOTENCY_CONFLICT: tool_call_id was already used with a different payload'
+      using errcode = 'P0001';
+  end if;
+
+  if v_run.status <> 'RUNNING' then
+    raise exception 'RUN_NOT_ACTIVE: orchestration run must be RUNNING' using errcode = '55000';
+  end if;
+
+  select * into v_carrier
+  from public.carriers
+  where id = p_carrier_id
+    and status = 'ACTIVE'
+    and supports_webmcp = true;
+
+  if not found then
+    raise exception 'CARRIER_NOT_AVAILABLE' using errcode = 'P0002';
+  end if;
+  if v_carrier.provider_url is distinct from p_provider_url then
+    raise exception 'PROVIDER_URL_MISMATCH' using errcode = '22023';
+  end if;
 
   v_duration_ms := greatest(
     0,

@@ -1,5 +1,5 @@
 begin;
-select plan(29);
+select plan(31);
 
 select ok(
   to_regprocedure('public.record_provider_result(text,uuid,uuid,uuid,text,text,jsonb,jsonb,timestamp with time zone,timestamp with time zone,text)') is not null,
@@ -48,6 +48,27 @@ insert into public.orchestration_runs (
   'INITIAL',
   'RUNNING',
   'e0000000-0000-0000-0000-000000000001'
+);
+
+select throws_ok(
+  $$
+    select * from public.record_provider_result(
+      'c02-mismatched-tool-input',
+      '90000000-0000-0000-0000-000000000001',
+      'f2000000-0000-0000-0000-000000000001',
+      'b0000000-0000-0000-0000-000000000001',
+      '/providers/andes',
+      'quote_freight',
+      '{"freight_request_id":"f2000000-0000-0000-0000-000000000099"}'::jsonb,
+      '{"ok":false,"error":{"code":"PROVIDER_TIMEOUT","message":"Timed out","retryable":true}}'::jsonb,
+      '2026-08-29T11:59:00Z',
+      '2026-08-29T11:59:00.120Z',
+      '1.0'
+    )
+  $$,
+  '22023',
+  null,
+  'tool input must correlate to the top-level FreightRequest'
 );
 
 select results_eq(
@@ -218,6 +239,31 @@ select results_eq(
   $$,
   $$ values ('OPTIONS_READY'::text, 'AWAITING_SELECTION'::text) $$,
   'successful ranking updates run and request states atomically'
+);
+
+select results_eq(
+  $$
+    select
+      result_status,
+      deduplicated,
+      (select count(*)::integer from public.carrier_offers),
+      (select count(*)::integer from public.orchestration_events)
+    from public.record_provider_result(
+      'c02-tool-call-1',
+      '90000000-0000-0000-0000-000000000001',
+      'f2000000-0000-0000-0000-000000000001',
+      'b0000000-0000-0000-0000-000000000001',
+      '/providers/andes',
+      'quote_freight',
+      '{"freight_request_id":"f2000000-0000-0000-0000-000000000001"}'::jsonb,
+      '{"ok":true,"data":{"schemaVersion":"1.0","freightRequestId":"f2000000-0000-0000-0000-000000000001","providerOfferReference":"AND-OFF-C02","price":1760,"currency":"USD","priceBreakdown":{"lineHaul":1500,"handling":115,"customsCoordination":145},"estimatedPickup":"2026-08-30T12:00:00Z","estimatedDelivery":"2026-08-31T19:00:00Z","transitHours":31,"availableCapacityKg":10000,"availabilityClass":"AVAILABLE_IN_WINDOW","crossBorderSupported":true,"customsCoordinationIncluded":true,"requiredDocuments":["commercial_invoice","packing_list"],"borderHandlingNotes":"Included","validUntil":"2026-08-30T18:00:00Z"}}'::jsonb,
+      '2026-08-29T12:00:00Z',
+      '2026-08-29T12:00:00.120Z',
+      '1.0'
+    )
+  $$,
+  $$ values ('DEDUPLICATED'::text, true, 1, 2) $$,
+  'exact replay remains idempotent after the run reaches OPTIONS_READY'
 );
 
 set local role authenticated;

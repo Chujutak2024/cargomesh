@@ -123,6 +123,20 @@ function parseToolOutput(value: unknown): ProviderToolEnvelope<ProviderQuote> {
   return value.ok ? { ok: true, data: parseQuote(value.data) } : parseErrorEnvelope(value);
 }
 
+function parseToolInput(
+  value: unknown,
+  freightRequestId: string,
+): Record<string, unknown> & { freight_request_id: string } {
+  if (!isRecord(value)) invalid("toolInput must be a quote_freight input object.");
+  if (!isNonEmptyString(value.freight_request_id)) {
+    invalid("toolInput.freight_request_id is required.");
+  }
+  if (value.freight_request_id !== freightRequestId) {
+    invalid("toolInput.freight_request_id does not match freightRequestId.");
+  }
+  return value as Record<string, unknown> & { freight_request_id: string };
+}
+
 export function parseRecordProviderResultInput(
   value: unknown,
 ): ValidatedRecordProviderResultInput {
@@ -154,6 +168,8 @@ export function parseRecordProviderResultInput(
     invalid("completedAt cannot precede startedAt.");
   }
 
+  const freightRequestId = value.freightRequestId as string;
+  const toolInput = parseToolInput(value.toolInput, freightRequestId);
   const toolOutput = parseToolOutput(value.toolOutput);
   if (toolOutput.ok && toolOutput.data.freightRequestId !== value.freightRequestId) {
     invalid("ProviderQuote freightRequestId does not match the Result Bridge input.");
@@ -166,7 +182,7 @@ export function parseRecordProviderResultInput(
     carrierId: value.carrierId as string,
     providerUrl: value.providerUrl as string,
     toolName: "quote_freight",
-    toolInput: value.toolInput,
+    toolInput,
     toolOutput,
     startedAt: value.startedAt as string,
     completedAt: value.completedAt as string,

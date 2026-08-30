@@ -55,14 +55,34 @@ test("accepts a valid technical error envelope without creating fake quote data"
   assert.equal(parsed.toolOutput.ok, false);
 });
 
-test("rejects a FreightRequest correlation mismatch", () => {
+test("rejects a ProviderQuote FreightRequest correlation mismatch", () => {
   assert.throws(
     () =>
       parseRecordProviderResultInput({
         ...BASE_INPUT,
-        freightRequestId: "f0000000-0000-0000-0000-000000000099",
+        toolOutput: {
+          ...BASE_INPUT.toolOutput,
+          data: {
+            ...BASE_INPUT.toolOutput.data,
+            freightRequestId: "f0000000-0000-0000-0000-000000000099",
+          },
+        },
       }),
     (error) => error instanceof ResultBridgeError && error.code === "INVALID_PROVIDER_RESULT",
+  );
+});
+
+test("rejects a quote_freight toolInput correlated to another FreightRequest", () => {
+  assert.throws(
+    () =>
+      parseRecordProviderResultInput({
+        ...BASE_INPUT,
+        toolInput: { freight_request_id: "f0000000-0000-0000-0000-000000000099" },
+      }),
+    (error) =>
+      error instanceof ResultBridgeError &&
+      error.code === "INVALID_PROVIDER_RESULT" &&
+      /toolInput\.freight_request_id/.test(error.message),
   );
 });
 
