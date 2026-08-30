@@ -332,9 +332,9 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 es
 
 ### Día 2 — Ofertas y decisión
 
-- [ ] **A-03. Completar tools provider de consulta**
+- [x] **A-03. Completar tools provider de consulta**
   - **Owner:** A.
-  - **Estado actual:** `review`; PR #9 abierto en `feat/a-webmcp-a03` sobre `7d3ff0e`.
+  - **Estado actual:** integrado y verificado en `main`; PR #9, commit `8a0a5a5`.
   - **Depende de:** `A-02`.
   - **Qué construir:** `check_service_coverage` y `check_capacity` con schemas compartidos, validaciones y errores accionables.
   - **Aceptación:** las tools funcionan para cualquier `ProviderPageConfig`; una solicitud incompatible devuelve una respuesta comercial válida, no una excepción genérica.
@@ -584,6 +584,7 @@ Agregar una fila únicamente después de integrar a `main`.
 | 2026-08-30 | `B-01` | B | `3639940` (#4) | C: `npm install`, typecheck y build en `main`; recorrido `/login` → `/dashboard`, navegación móvil y P1 de rutas 404 corregido | Validación visual de B para `G1`; `B-02` según el plan del Día 2 |
 | 2026-08-30 | `INT-01 / G1` | A + C; valida B | `13b76d8` (#8) | C: discovery 10/10, parámetros de ruta 3/3, typecheck, build, WebMCP/404/cleanup y bundle sin secretos; B: validación visual desktop/móvil aprobada | `A-03`, `B-02`, `C-02` |
 | 2026-08-30 02:02 | `C-02` | C; revisa A | `b11ce1e` (#10) | Aprobación cruzada sobre `da109eb`; C-02 12/12, discovery 10/10, pgTAP 49/49, db lint, typecheck y build en `main`; Golden Flow 89/84/72 y bundle sin secretos | `INT-02A` cuando A-03 esté integrado; diseño/harness headless puede adelantarse sin UI de B; `C-03` cuando exista el contrato A-04 |
+| 2026-08-30 10:51 | `A-03` | A; revisa C | `8a0a5a5` (#9) | Aprobación sobre `324ba358`; A-03/discovery/INT-01 24/24, C-02 12/12, typecheck y build en `main`; `getTools()`, ejecución real de coverage/capacity y cleanup WebMCP; bundle sin secretos | `INT-02A` con A + C; `A-04` |
 
 ## 9. Bloqueos y decisiones pendientes
 
