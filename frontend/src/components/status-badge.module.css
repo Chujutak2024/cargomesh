@@ -1,0 +1,42 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: max-content;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.PENDING,
+.AWAITING_SELECTION {
+  color: #79520d;
+  background: #f1e1bb;
+  border-color: #d8b766;
+}
+
+.BOOKED,
+.IN_TRANSIT {
+  color: #245a66;
+  background: #dcecef;
+  border-color: #9fc3ca;
+}
+
+.DELIVERED {
+  color: #365d40;
+  background: #e1eadd;
+  border-color: #a8c0a4;
+}
+

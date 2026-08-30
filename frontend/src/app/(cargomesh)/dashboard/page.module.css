@@ -1,0 +1,29 @@
+.page { display: grid; gap: 1.35rem; max-width: 90rem; margin: 0 auto; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+.hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.25rem; }
+.hero h1 { margin: 0.3rem 0 0.45rem; color: #1a1812; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.8rem, 4vw, 2.75rem); font-weight: 500; letter-spacing: -0.035em; }
+.hero p { max-width: 42rem; margin: 0; color: #5b5748; font-size: 0.88rem; line-height: 1.65; }
+.eyebrow { color: #8c6316; font-size: 0.67rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+.primaryAction { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 0.45rem; border-radius: 999px; padding: 0.72rem 1rem; background: #a9791f; color: #211500; font-size: 0.78rem; font-weight: 850; text-decoration: none; box-shadow: 0 8px 24px rgb(140 99 22 / 18%); }
+.primaryAction:hover { background: #c4901f; }
+.metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+.metricCard { position: relative; display: grid; min-height: 8.5rem; align-content: space-between; border: 1px solid #e4e0d2; border-radius: 1rem; padding: 1rem; background: white; overflow: hidden; }
+.metricCard::after { content: ""; position: absolute; right: -1.5rem; bottom: -2rem; width: 5rem; height: 5rem; border-radius: 50%; background: #f1e1bb; opacity: 0.48; }
+.metricIcon { display: grid; width: 2.1rem; height: 2.1rem; place-items: center; border-radius: 0.65rem; background: #f3f1e9; color: #8c6316; }
+.metricCard span { margin-top: 0.85rem; color: #928d79; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.metricCard strong { color: #1a1812; font-family: Georgia, "Times New Roman", serif; font-size: 1.65rem; font-weight: 500; }
+.panel { overflow: hidden; border: 1px solid #e4e0d2; border-radius: 1.15rem; background: white; box-shadow: 0 18px 48px rgb(44 37 22 / 5%); }
+.panelHeader { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.1rem; border-bottom: 1px solid #e4e0d2; }
+.panelHeader h2 { margin: 0.2rem 0 0; color: #1a1812; font-size: 1rem; }
+.panelHeader a { display: inline-flex; align-items: center; gap: 0.35rem; color: #8c6316; font-size: 0.75rem; font-weight: 800; text-decoration: none; white-space: nowrap; }
+
+@media (max-width: 620px) {
+  .hero { align-items: flex-start; flex-direction: column; }
+  .primaryAction { width: 100%; justify-content: center; }
+}
+
+@media (min-width: 760px) {
+  .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .metricCard { min-height: 9.25rem; padding: 1.2rem; }
+  .panelHeader { padding: 1.25rem 1.35rem; }
+}
+

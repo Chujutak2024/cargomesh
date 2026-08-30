@@ -1,0 +1,155 @@
+.page {
+  display: grid;
+  min-height: 100svh;
+  grid-template-columns: minmax(20rem, 0.9fr) minmax(28rem, 1.1fr);
+  color: #f8f3e9;
+  background: #0e2f28;
+}
+
+.brandPanel {
+  position: relative;
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: clamp(2rem, 6vw, 4.5rem);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(201, 154, 66, 0.28), transparent 28rem),
+    linear-gradient(145deg, #123c32 0%, #08231f 100%);
+}
+
+.brandPanel::after {
+  position: absolute;
+  right: -8rem;
+  bottom: -9rem;
+  width: 22rem;
+  height: 22rem;
+  border: 1px solid rgba(226, 201, 151, 0.18);
+  border-radius: 50%;
+  box-shadow: 0 0 0 4rem rgba(226, 201, 151, 0.035), 0 0 0 8rem rgba(226, 201, 151, 0.025);
+  content: "";
+}
+
+.brand {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.brandMark {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid rgba(238, 213, 164, 0.42);
+  border-radius: 0.7rem;
+  color: #e6c781;
+}
+
+.brandCopy {
+  position: relative;
+  z-index: 1;
+  max-width: 34rem;
+  margin: clamp(5rem, 18vh, 10rem) 0;
+}
+
+.eyebrow {
+  color: #dfc78f;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.brandCopy h2 {
+  max-width: 32rem;
+  margin: 1rem 0 1.25rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.2rem, 4.5vw, 4.35rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+}
+
+.brandCopy p {
+  max-width: 29rem;
+  margin: 0;
+  color: rgba(244, 237, 222, 0.7);
+  font-size: clamp(0.95rem, 1.5vw, 1.08rem);
+  line-height: 1.7;
+}
+
+.signal {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: rgba(244, 237, 222, 0.7);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.signal span {
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 50%;
+  background: #61c69a;
+  box-shadow: 0 0 0 0.25rem rgba(97, 198, 154, 0.12);
+}
+
+.formPanel {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 1rem;
+  padding: clamp(1rem, 5vw, 4rem);
+  color: #201b14;
+  background:
+    linear-gradient(rgba(140, 99, 22, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(140, 99, 22, 0.045) 1px, transparent 1px),
+    #f1eadf;
+  background-size: 2rem 2rem;
+}
+
+.footer {
+  margin: 0;
+  color: #82796b;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 52rem) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .brandPanel {
+    min-height: auto;
+    padding: 1.5rem;
+  }
+
+  .brandCopy {
+    margin: 3rem 0 2.5rem;
+  }
+
+  .brandCopy h2 {
+    max-width: 38rem;
+    font-size: clamp(2rem, 8vw, 3.25rem);
+  }
+
+  .formPanel {
+    min-height: 31rem;
+    padding: 2rem 1rem;
+  }
+}
+
