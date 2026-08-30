@@ -22,6 +22,512 @@ ALTER SCHEMA "public" OWNER TO "pg_database_owner";
 COMMENT ON SCHEMA "public" IS 'standard public schema';
 
 
+
+CREATE OR REPLACE FUNCTION "public"."persist_balanced_decision"("p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_ranking" "jsonb", "p_candidate_snapshot" "jsonb", "p_confidence_score" numeric, "p_confidence_components" "jsonb", "p_subscores" "jsonb", "p_anomaly_evidence" "jsonb", "p_recommended_offer_id" "uuid", "p_requires_review" boolean) RETURNS TABLE("decision_id" "uuid", "run_status" "text")
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+declare
+  v_run public.orchestration_runs%rowtype;
+  v_existing_decision public.freight_decisions%rowtype;
+  v_decision public.freight_decisions%rowtype;
+  v_previous_decision public.freight_decisions%rowtype;
+  v_decision_version integer;
+  v_top_raw_score numeric(8,4);
+  v_option jsonb;
+begin
+  select * into v_run
+  from public.orchestration_runs
+  where id = p_orchestration_run_id;
+
+  if not found then
+    raise exception 'ORCHESTRATION_RUN_NOT_FOUND' using errcode = 'P0002';
+  end if;
+  if v_run.freight_request_id <> p_freight_request_id then
+    raise exception 'CORRELATION_ERROR: run does not belong to freight request' using errcode = '22023';
+  end if;
+
+  select * into v_existing_decision
+  from public.freight_decisions
+  where orchestration_run_id = p_orchestration_run_id;
+
+  if found then
+    return query select v_existing_decision.id, 'OPTIONS_READY'::text;
+    return;
+  end if;
+
+  if jsonb_typeof(p_ranking) <> 'object'
+    or jsonb_typeof(p_ranking -> 'options') <> 'array'
+  then
+    raise exception 'INVALID_RANKING_PAYLOAD' using errcode = '22023';
+  end if;
+
+  for v_option in select value from jsonb_array_elements(p_ranking -> 'options')
+  loop
+    update public.carrier_offers
+    set
+      final_score = (v_option ->> 'rawScore')::numeric,
+      status = case when (v_option ->> 'eligible')::boolean then 'ELIGIBLE' else 'INELIGIBLE' end,
+      compatibility_status = case when (v_option ->> 'eligible')::boolean then 'ELIGIBLE' else 'INELIGIBLE' end
+    where id = (v_option ->> 'offerId')::uuid
+      and orchestration_run_id = p_orchestration_run_id;
+
+    if not found then
+      raise exception 'RANKING_OFFER_MISMATCH' using errcode = '22023';
+    end if;
+  end loop;
+
+  if p_recommended_offer_id is null then
+    update public.orchestration_runs
+    set status = 'NO_MATCH', completed_at = now(), error_code = null, error_message = null
+    where id = p_orchestration_run_id;
+
+    update public.freight_requests
+    set status = 'PENDING', updated_at = now()
+    where id = p_freight_request_id;
+
+    return query select null::uuid, 'NO_MATCH'::text;
+    return;
+  end if;
+
+  if not exists (
+    select 1
+    from public.carrier_offers
+    where id = p_recommended_offer_id
+      and orchestration_run_id = p_orchestration_run_id
+      and status = 'ELIGIBLE'
+  ) then
+    raise exception 'RECOMMENDED_OFFER_MISMATCH' using errcode = '22023';
+  end if;
+
+  select * into v_previous_decision
+  from public.freight_decisions
+  where freight_request_id = p_freight_request_id
+  order by decision_version desc
+  limit 1;
+
+  v_decision_version := coalesce(v_previous_decision.decision_version, 0) + 1;
+  v_top_raw_score := (p_ranking -> 'options' -> 0 ->> 'rawScore')::numeric;
+
+  insert into public.freight_decisions (
+    freight_request_id,
+    orchestration_run_id,
+    previous_decision_id,
+    decision_version,
+    decision_type,
+    recommended_offer_id,
+    optimization_strategy,
+    heuristic_score,
+    confidence_score,
+    decision_reason,
+    candidate_snapshot,
+    ranking_snapshot,
+    subscores,
+    confidence_components,
+    anomaly_evidence,
+    requires_review
+  ) values (
+    p_freight_request_id,
+    p_orchestration_run_id,
+    v_previous_decision.id,
+    v_decision_version,
+    v_run.run_type,
+    p_recommended_offer_id,
+    'BALANCED',
+    v_top_raw_score,
+    p_confidence_score,
+    'Deterministic BALANCED ranking over eligible runtime offers.',
+    p_candidate_snapshot,
+    p_ranking -> 'options',
+    p_subscores,
+    p_confidence_components,
+    p_anomaly_evidence,
+    p_requires_review
+  )
+  returning * into v_decision;
+
+  update public.orchestration_runs
+  set status = 'OPTIONS_READY', completed_at = now(), error_code = null, error_message = null
+  where id = p_orchestration_run_id;
+
+  update public.freight_requests
+  set status = 'AWAITING_SELECTION', updated_at = now()
+  where id = p_freight_request_id;
+
+  return query select v_decision.id, 'OPTIONS_READY'::text;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."persist_balanced_decision"("p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_ranking" "jsonb", "p_candidate_snapshot" "jsonb", "p_confidence_score" numeric, "p_confidence_components" "jsonb", "p_subscores" "jsonb", "p_anomaly_evidence" "jsonb", "p_recommended_offer_id" "uuid", "p_requires_review" boolean) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."record_provider_result"("p_tool_call_id" "text", "p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_carrier_id" "uuid", "p_provider_url" "text", "p_tool_name" "text", "p_tool_input" "jsonb", "p_tool_output" "jsonb", "p_started_at" timestamp with time zone, "p_completed_at" timestamp with time zone, "p_schema_version" "text") RETURNS TABLE("event_id" "uuid", "record_id" "uuid", "record_type" "text", "result_status" "text", "deduplicated" boolean)
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+declare
+  v_run public.orchestration_runs%rowtype;
+  v_request public.freight_requests%rowtype;
+  v_carrier public.carriers%rowtype;
+  v_event public.orchestration_events%rowtype;
+  v_existing_offer public.carrier_offers%rowtype;
+  v_offer public.carrier_offers%rowtype;
+  v_idempotency_payload jsonb;
+  v_quote jsonb;
+  v_duration_ms integer;
+  v_availability_score numeric(5,2);
+  v_reliability_score numeric(5,2) := 0;
+  v_route_operations integer := 0;
+  v_organization_history_score numeric(5,2) := 50;
+  v_historical_average numeric(14,2);
+  v_org_completed integer := 0;
+  v_org_successful integer := 0;
+begin
+  if p_tool_call_id is null or btrim(p_tool_call_id) = '' then
+    raise exception 'INVALID_ARGUMENT: tool_call_id is required' using errcode = '22023';
+  end if;
+  if p_schema_version <> '1.0' then
+    raise exception 'UNSUPPORTED_SCHEMA_VERSION: expected 1.0' using errcode = '22023';
+  end if;
+  if p_tool_name <> 'quote_freight' then
+    raise exception 'UNSUPPORTED_TOOL: only quote_freight is accepted by C-02' using errcode = '22023';
+  end if;
+  if p_completed_at < p_started_at then
+    raise exception 'INVALID_TIMELINE: completed_at precedes started_at' using errcode = '22023';
+  end if;
+
+  select * into v_run
+  from public.orchestration_runs
+  where id = p_orchestration_run_id;
+
+  if not found then
+    raise exception 'ORCHESTRATION_RUN_NOT_FOUND' using errcode = 'P0002';
+  end if;
+  if v_run.freight_request_id <> p_freight_request_id then
+    raise exception 'CORRELATION_ERROR: run does not belong to freight request' using errcode = '22023';
+  end if;
+  if v_run.status <> 'RUNNING' then
+    raise exception 'RUN_NOT_ACTIVE: orchestration run must be RUNNING' using errcode = '55000';
+  end if;
+
+  select * into v_request
+  from public.freight_requests
+  where id = p_freight_request_id;
+
+  if not found then
+    raise exception 'FREIGHT_REQUEST_NOT_FOUND' using errcode = 'P0002';
+  end if;
+
+  select * into v_carrier
+  from public.carriers
+  where id = p_carrier_id
+    and status = 'ACTIVE'
+    and supports_webmcp = true;
+
+  if not found then
+    raise exception 'CARRIER_NOT_AVAILABLE' using errcode = 'P0002';
+  end if;
+  if v_carrier.provider_url is distinct from p_provider_url then
+    raise exception 'PROVIDER_URL_MISMATCH' using errcode = '22023';
+  end if;
+
+  v_idempotency_payload := jsonb_build_object(
+    'toolCallId', p_tool_call_id,
+    'orchestrationRunId', p_orchestration_run_id,
+    'freightRequestId', p_freight_request_id,
+    'carrierId', p_carrier_id,
+    'providerUrl', p_provider_url,
+    'toolName', p_tool_name,
+    'toolInput', coalesce(p_tool_input, 'null'::jsonb),
+    'toolOutput', coalesce(p_tool_output, 'null'::jsonb),
+    'startedAt', p_started_at,
+    'completedAt', p_completed_at,
+    'schemaVersion', p_schema_version
+  );
+
+  v_duration_ms := greatest(
+    0,
+    floor(extract(epoch from (p_completed_at - p_started_at)) * 1000)::integer
+  );
+
+  begin
+    insert into public.orchestration_events (
+      orchestration_run_id,
+      carrier_id,
+      provider_url,
+      event_type,
+      tool_name,
+      tool_call_id,
+      input_payload,
+      output_payload,
+      status,
+      duration_ms,
+      schema_version,
+      started_at,
+      completed_at,
+      idempotency_payload
+    ) values (
+      p_orchestration_run_id,
+      p_carrier_id,
+      p_provider_url,
+      'PROVIDER_TOOL_RESULT_RECORDED',
+      p_tool_name,
+      p_tool_call_id,
+      p_tool_input,
+      p_tool_output,
+      case when coalesce((p_tool_output ->> 'ok')::boolean, false) then 'SUCCEEDED' else 'FAILED' end,
+      v_duration_ms,
+      p_schema_version,
+      p_started_at,
+      p_completed_at,
+      v_idempotency_payload
+    )
+    returning * into v_event;
+  exception when unique_violation then
+    select * into v_event
+    from public.orchestration_events
+    where tool_call_id = p_tool_call_id;
+
+    if found and v_event.idempotency_payload = v_idempotency_payload then
+      return query select
+        v_event.id,
+        v_event.persisted_entity_id,
+        v_event.persisted_entity_type,
+        'DEDUPLICATED'::text,
+        true;
+      return;
+    end if;
+
+    raise exception 'IDEMPOTENCY_CONFLICT: tool_call_id was already used with a different payload'
+      using errcode = 'P0001';
+  end;
+
+  if jsonb_typeof(p_tool_output) <> 'object' or not (p_tool_output ? 'ok') then
+    raise exception 'INVALID_TOOL_ENVELOPE' using errcode = '22023';
+  end if;
+
+  if not (p_tool_output ->> 'ok')::boolean then
+    return query select v_event.id, null::uuid, null::text, 'INSERTED'::text, false;
+    return;
+  end if;
+
+  v_quote := p_tool_output -> 'data';
+  if jsonb_typeof(v_quote) <> 'object'
+    or v_quote ->> 'schemaVersion' <> p_schema_version
+    or v_quote ->> 'freightRequestId' <> p_freight_request_id::text
+    or coalesce(v_quote ->> 'providerOfferReference', '') = ''
+    or coalesce(v_quote ->> 'currency', '') <> 'USD'
+    or (v_quote ->> 'price')::numeric <= 0
+    or (v_quote ->> 'transitHours')::numeric <= 0
+    or (v_quote ->> 'availableCapacityKg')::numeric < 0
+    or v_quote ->> 'availabilityClass' not in (
+      'EXACT_CONFIRMED_SLOT',
+      'AVAILABLE_IN_WINDOW',
+      'LIMITED_WINDOW',
+      'WAITLIST',
+      'UNAVAILABLE'
+    )
+  then
+    raise exception 'INVALID_PROVIDER_QUOTE' using errcode = '22023';
+  end if;
+
+  if (v_quote ->> 'estimatedDelivery')::timestamptz < (v_quote ->> 'estimatedPickup')::timestamptz then
+    raise exception 'INVALID_PROVIDER_QUOTE_TIMELINE' using errcode = '22023';
+  end if;
+
+  v_availability_score := case v_quote ->> 'availabilityClass'
+    when 'EXACT_CONFIRMED_SLOT' then 100
+    when 'AVAILABLE_IN_WINDOW' then 90
+    when 'LIMITED_WINDOW' then 60
+    when 'WAITLIST' then 30
+    else 0
+  end;
+
+  select
+    cm.success_rate,
+    cm.route_completed_freight_requests,
+    coalesce(cm.average_route_cost, cm.avg_cost)
+  into
+    v_reliability_score,
+    v_route_operations,
+    v_historical_average
+  from public.carrier_metrics cm
+  where cm.carrier_id = p_carrier_id
+    and cm.organization_id is null
+    and cm.transport_mode = v_request.transport_mode
+    and cm.origin_country = v_request.origin_country
+    and cm.origin_city = v_request.origin_city
+    and cm.destination_country = v_request.destination_country
+    and cm.destination_city = v_request.destination_city
+    and (cm.cargo_category_id is null or cm.cargo_category_id = v_request.cargo_category_id)
+  order by (cm.cargo_category_id = v_request.cargo_category_id) desc
+  limit 1;
+
+  v_reliability_score := coalesce(v_reliability_score, 0);
+  v_route_operations := coalesce(v_route_operations, 0);
+
+  select
+    cm.organization_completed_freight_requests,
+    cm.organization_successful_freight_requests
+  into v_org_completed, v_org_successful
+  from public.carrier_metrics cm
+  where cm.carrier_id = p_carrier_id
+    and cm.organization_id = v_request.organization_id
+    and cm.transport_mode = v_request.transport_mode
+    and cm.origin_country = v_request.origin_country
+    and cm.origin_city = v_request.origin_city
+    and cm.destination_country = v_request.destination_country
+    and cm.destination_city = v_request.destination_city
+    and (cm.cargo_category_id is null or cm.cargo_category_id = v_request.cargo_category_id)
+  order by (cm.cargo_category_id = v_request.cargo_category_id) desc
+  limit 1;
+
+  if coalesce(v_org_completed, 0) > 0 then
+    v_organization_history_score := least(
+      100,
+      greatest(0, v_org_successful::numeric / v_org_completed::numeric * 100)
+    );
+  end if;
+
+  select * into v_existing_offer
+  from public.carrier_offers
+  where orchestration_run_id = p_orchestration_run_id
+    and carrier_id = p_carrier_id
+    and provider_offer_reference = v_quote ->> 'providerOfferReference';
+
+  if found then
+    if v_existing_offer.price = (v_quote ->> 'price')::numeric
+      and v_existing_offer.currency = v_quote ->> 'currency'
+      and v_existing_offer.transit_hours = (v_quote ->> 'transitHours')::numeric
+      and v_existing_offer.availability_class = v_quote ->> 'availabilityClass'
+      and v_existing_offer.quote_breakdown = coalesce(v_quote -> 'priceBreakdown', '{}'::jsonb)
+    then
+      update public.orchestration_events
+      set persisted_entity_type = 'CARRIER_OFFER', persisted_entity_id = v_existing_offer.id
+      where id = v_event.id;
+
+      return query select
+        v_event.id,
+        v_existing_offer.id,
+        'CARRIER_OFFER'::text,
+        'DEDUPLICATED'::text,
+        true;
+      return;
+    end if;
+
+    raise exception 'PROVIDER_OFFER_CONFLICT: provider reference was reused with different commercial data'
+      using errcode = 'P0001';
+  end if;
+
+  begin
+    insert into public.carrier_offers (
+    freight_request_id,
+    carrier_id,
+    orchestration_run_id,
+    tool_call_id,
+    provider_offer_reference,
+    transport_mode,
+    service_type,
+    price,
+    currency,
+    quote_breakdown,
+    estimated_pickup,
+    estimated_delivery,
+    transit_hours,
+    available_capacity_kg,
+    valid_until,
+    availability_class,
+    availability_score,
+    reliability_score,
+    route_operations,
+    organization_history_score,
+    compatibility_status,
+    compatibility_notes,
+    status
+  ) values (
+    p_freight_request_id,
+    p_carrier_id,
+    p_orchestration_run_id,
+    p_tool_call_id,
+    v_quote ->> 'providerOfferReference',
+    v_request.transport_mode,
+    v_request.service_type,
+    (v_quote ->> 'price')::numeric,
+    v_quote ->> 'currency',
+    coalesce(v_quote -> 'priceBreakdown', '{}'::jsonb),
+    (v_quote ->> 'estimatedPickup')::timestamptz,
+    (v_quote ->> 'estimatedDelivery')::timestamptz,
+    (v_quote ->> 'transitHours')::numeric,
+    (v_quote ->> 'availableCapacityKg')::numeric,
+    (v_quote ->> 'validUntil')::timestamptz,
+    v_quote ->> 'availabilityClass',
+    v_availability_score,
+    v_reliability_score,
+    v_route_operations,
+    v_organization_history_score,
+    'ELIGIBLE',
+    jsonb_build_object(
+      'schemaVersion', p_schema_version,
+      'crossBorderSupported', coalesce((v_quote ->> 'crossBorderSupported')::boolean, false),
+      'customsCoordinationIncluded', coalesce((v_quote ->> 'customsCoordinationIncluded')::boolean, false),
+      'requiredDocuments', coalesce(v_quote -> 'requiredDocuments', '[]'::jsonb),
+      'borderHandlingNotes', v_quote -> 'borderHandlingNotes',
+      'historicalAverageRouteCost', to_jsonb(v_historical_average)
+    ),
+    'RECEIVED'
+    )
+    returning * into v_offer;
+  exception when unique_violation then
+    -- A concurrent retry can pass the pre-check before the first transaction commits.
+    -- Resolve the winning row using the same commercial-payload rule instead of
+    -- leaking a database uniqueness error or creating a second offer.
+    select * into v_existing_offer
+    from public.carrier_offers
+    where orchestration_run_id = p_orchestration_run_id
+      and carrier_id = p_carrier_id
+      and provider_offer_reference = v_quote ->> 'providerOfferReference';
+
+    if found
+      and v_existing_offer.price = (v_quote ->> 'price')::numeric
+      and v_existing_offer.currency = v_quote ->> 'currency'
+      and v_existing_offer.transit_hours = (v_quote ->> 'transitHours')::numeric
+      and v_existing_offer.availability_class = v_quote ->> 'availabilityClass'
+      and v_existing_offer.quote_breakdown = coalesce(v_quote -> 'priceBreakdown', '{}'::jsonb)
+    then
+      update public.orchestration_events
+      set persisted_entity_type = 'CARRIER_OFFER', persisted_entity_id = v_existing_offer.id
+      where id = v_event.id;
+
+      return query select
+        v_event.id,
+        v_existing_offer.id,
+        'CARRIER_OFFER'::text,
+        'DEDUPLICATED'::text,
+        true;
+      return;
+    end if;
+
+    raise exception 'PROVIDER_OFFER_CONFLICT: provider reference was reused with different commercial data'
+      using errcode = 'P0001';
+  end;
+
+  update public.orchestration_events
+  set persisted_entity_type = 'CARRIER_OFFER', persisted_entity_id = v_offer.id
+  where id = v_event.id;
+
+  return query select
+    v_event.id,
+    v_offer.id,
+    'CARRIER_OFFER'::text,
+    'INSERTED'::text,
+    false;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."record_provider_result"("p_tool_call_id" "text", "p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_carrier_id" "uuid", "p_provider_url" "text", "p_tool_name" "text", "p_tool_input" "jsonb", "p_tool_output" "jsonb", "p_started_at" timestamp with time zone, "p_completed_at" timestamp with time zone, "p_schema_version" "text") OWNER TO "postgres";
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
@@ -51,6 +557,7 @@ CREATE TABLE IF NOT EXISTS "public"."bookings" (
     "provider_reference" "text",
     "status" "text" DEFAULT 'PENDING_PROVIDER_CONFIRMATION'::"text" NOT NULL,
     "booked_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "freight_decision_id" "uuid" NOT NULL,
     "provider_booking_status" "text" DEFAULT 'PENDING_PROVIDER_CONFIRMATION'::"text" NOT NULL,
     "idempotency_key" "text" NOT NULL,
@@ -85,6 +592,7 @@ CREATE TABLE IF NOT EXISTS "public"."cargo_categories" (
     "name" "text" NOT NULL,
     "description" "text",
     "active" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "recommended_entry_methods" "jsonb" DEFAULT '["TOTAL_WEIGHT"]'::"jsonb" NOT NULL,
     "intake_specification_schema" "jsonb" DEFAULT '{"fields": []}'::"jsonb" NOT NULL,
     "suggested_requirements" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
@@ -115,6 +623,7 @@ CREATE TABLE IF NOT EXISTS "public"."carrier_metrics" (
     "avg_cost" numeric(14,2),
     "avg_delay_hours" numeric(10,2),
     "cancellation_rate" numeric(5,2) DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "organization_id" "uuid",
     "route_completed_freight_requests" integer DEFAULT 0 NOT NULL,
@@ -160,7 +669,6 @@ CREATE TABLE IF NOT EXISTS "public"."carrier_offers" (
     "organization_history_score" numeric(5,2) DEFAULT 50 NOT NULL,
     "final_score" numeric(8,4),
     "supersedes_offer_id" "uuid",
-    CONSTRAINT "carrier_offers_compatibility_status_check" CHECK (("compatibility_status" = ANY (ARRAY['ELIGIBLE'::"text", 'INELIGIBLE'::"text"]))),
     CONSTRAINT "carrier_offers_route_operations_nonnegative" CHECK (("route_operations" >= 0)),
     CONSTRAINT "carrier_offers_scores_range" CHECK (((("availability_score" IS NULL) OR (("availability_score" >= (0)::numeric) AND ("availability_score" <= (100)::numeric))) AND (("reliability_score" IS NULL) OR (("reliability_score" >= (0)::numeric) AND ("reliability_score" <= (100)::numeric))) AND (("organization_history_score" >= (0)::numeric) AND ("organization_history_score" <= (100)::numeric)) AND (("final_score" IS NULL) OR (("final_score" >= (0)::numeric) AND ("final_score" <= (100)::numeric))))),
     CONSTRAINT "carrier_offers_status_check" CHECK (("status" = ANY (ARRAY['RECEIVED'::"text", 'ELIGIBLE'::"text", 'INELIGIBLE'::"text", 'SELECTED'::"text", 'EXPIRED'::"text", 'SUPERSEDED'::"text"]))),
@@ -198,6 +706,7 @@ CREATE TABLE IF NOT EXISTS "public"."carrier_services" (
     "supports_fragile" boolean DEFAULT false NOT NULL,
     "supports_oversized" boolean DEFAULT false NOT NULL,
     "active" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "supports_cross_border" boolean DEFAULT false NOT NULL,
     "customs_coordination_included" boolean DEFAULT false NOT NULL,
     "provider_service_code" "text",
@@ -230,7 +739,7 @@ CREATE TABLE IF NOT EXISTS "public"."freight_decisions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "freight_request_id" "uuid" NOT NULL,
     "selected_offer_id" "uuid",
-    "optimization_strategy" "text" NOT NULL,
+    "optimization_strategy" "text" DEFAULT 'BALANCED'::"text" NOT NULL,
     "heuristic_score" numeric(6,2),
     "confidence_score" numeric(6,2),
     "decision_reason" "text",
@@ -349,8 +858,14 @@ CREATE TABLE IF NOT EXISTS "public"."orchestration_events" (
     "persisted_entity_type" "text",
     "persisted_entity_id" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "schema_version" "text",
+    "started_at" timestamp with time zone,
+    "completed_at" timestamp with time zone,
+    "idempotency_payload" "jsonb",
     CONSTRAINT "orchestration_events_duration_check" CHECK ((("duration_ms" IS NULL) OR ("duration_ms" >= 0))),
-    CONSTRAINT "orchestration_events_status_check" CHECK (("status" = ANY (ARRAY['STARTED'::"text", 'SUCCEEDED'::"text", 'FAILED'::"text", 'SKIPPED'::"text"])))
+    CONSTRAINT "orchestration_events_schema_version_check" CHECK ((("schema_version" IS NULL) OR ("schema_version" = '1.0'::"text"))),
+    CONSTRAINT "orchestration_events_status_check" CHECK (("status" = ANY (ARRAY['STARTED'::"text", 'SUCCEEDED'::"text", 'FAILED'::"text", 'SKIPPED'::"text"]))),
+    CONSTRAINT "orchestration_events_tool_timeline_check" CHECK ((("started_at" IS NULL) OR ("completed_at" IS NULL) OR ("completed_at" >= "started_at")))
 );
 
 
@@ -437,6 +952,7 @@ CREATE TABLE IF NOT EXISTS "public"."organization_preferences" (
     "budget_default" numeric(14,2),
     "allow_auto_booking" boolean DEFAULT true NOT NULL,
     "confidence_threshold" numeric(5,2) DEFAULT 85 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "allow_auto_recovery" boolean DEFAULT false NOT NULL,
     "anomaly_threshold_pct" numeric(5,2) DEFAULT 30 NOT NULL,
     "billing_mode" "text" DEFAULT 'INVOICE'::"text" NOT NULL,
@@ -842,7 +1358,7 @@ ALTER TABLE ONLY "public"."booking_events"
 
 
 ALTER TABLE ONLY "public"."bookings"
-    ADD CONSTRAINT "bookings_carrier_id_fkey" FOREIGN KEY ("carrier_id") REFERENCES "public"."carriers"("id");
+    ADD CONSTRAINT "bookings_carrier_id_fkey" FOREIGN KEY ("carrier_id") REFERENCES "public"."carriers"("id") ON DELETE CASCADE;
 
 
 
@@ -857,7 +1373,7 @@ ALTER TABLE ONLY "public"."bookings"
 
 
 ALTER TABLE ONLY "public"."bookings"
-    ADD CONSTRAINT "bookings_offer_id_fkey" FOREIGN KEY ("offer_id") REFERENCES "public"."carrier_offers"("id");
+    ADD CONSTRAINT "bookings_offer_id_fkey" FOREIGN KEY ("offer_id") REFERENCES "public"."carrier_offers"("id") ON DELETE CASCADE;
 
 
 
@@ -887,7 +1403,7 @@ ALTER TABLE ONLY "public"."carrier_metrics"
 
 
 ALTER TABLE ONLY "public"."carrier_offers"
-    ADD CONSTRAINT "carrier_offers_carrier_id_fkey" FOREIGN KEY ("carrier_id") REFERENCES "public"."carriers"("id");
+    ADD CONSTRAINT "carrier_offers_carrier_id_fkey" FOREIGN KEY ("carrier_id") REFERENCES "public"."carriers"("id") ON DELETE CASCADE;
 
 
 
@@ -923,11 +1439,6 @@ ALTER TABLE ONLY "public"."carrier_service_cargo_categories"
 
 ALTER TABLE ONLY "public"."carrier_services"
     ADD CONSTRAINT "carrier_services_carrier_id_fkey" FOREIGN KEY ("carrier_id") REFERENCES "public"."carriers"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."organization_preferences"
-    ADD CONSTRAINT "fk_preferred_carrier" FOREIGN KEY ("preferred_carrier_id") REFERENCES "public"."carriers"("id");
 
 
 
@@ -1033,6 +1544,11 @@ ALTER TABLE ONLY "public"."organization_members"
 
 ALTER TABLE ONLY "public"."organization_preferences"
     ADD CONSTRAINT "organization_preferences_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."organization_preferences"
+    ADD CONSTRAINT "organization_preferences_preferred_carrier_id_fkey" FOREIGN KEY ("preferred_carrier_id") REFERENCES "public"."carriers"("id");
 
 
 
@@ -1201,52 +1717,62 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
+REVOKE ALL ON FUNCTION "public"."persist_balanced_decision"("p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_ranking" "jsonb", "p_candidate_snapshot" "jsonb", "p_confidence_score" numeric, "p_confidence_components" "jsonb", "p_subscores" "jsonb", "p_anomaly_evidence" "jsonb", "p_recommended_offer_id" "uuid", "p_requires_review" boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."persist_balanced_decision"("p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_ranking" "jsonb", "p_candidate_snapshot" "jsonb", "p_confidence_score" numeric, "p_confidence_components" "jsonb", "p_subscores" "jsonb", "p_anomaly_evidence" "jsonb", "p_recommended_offer_id" "uuid", "p_requires_review" boolean) TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."record_provider_result"("p_tool_call_id" "text", "p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_carrier_id" "uuid", "p_provider_url" "text", "p_tool_name" "text", "p_tool_input" "jsonb", "p_tool_output" "jsonb", "p_started_at" timestamp with time zone, "p_completed_at" timestamp with time zone, "p_schema_version" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."record_provider_result"("p_tool_call_id" "text", "p_orchestration_run_id" "uuid", "p_freight_request_id" "uuid", "p_carrier_id" "uuid", "p_provider_url" "text", "p_tool_name" "text", "p_tool_input" "jsonb", "p_tool_output" "jsonb", "p_started_at" timestamp with time zone, "p_completed_at" timestamp with time zone, "p_schema_version" "text") TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."booking_events" TO "service_role";
 GRANT SELECT ON TABLE "public"."booking_events" TO "authenticated";
 
 
 
-GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."bookings" TO "service_role";
+GRANT ALL ON TABLE "public"."bookings" TO "service_role";
 GRANT SELECT ON TABLE "public"."bookings" TO "authenticated";
 
 
 
-GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."cargo_categories" TO "service_role";
+GRANT ALL ON TABLE "public"."cargo_categories" TO "service_role";
 GRANT SELECT ON TABLE "public"."cargo_categories" TO "authenticated";
 
 
 
-GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."carrier_metrics" TO "service_role";
+GRANT ALL ON TABLE "public"."carrier_metrics" TO "service_role";
 GRANT SELECT ON TABLE "public"."carrier_metrics" TO "authenticated";
 
 
 
-GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."carrier_offers" TO "service_role";
+GRANT ALL ON TABLE "public"."carrier_offers" TO "service_role";
 GRANT SELECT ON TABLE "public"."carrier_offers" TO "authenticated";
 
 
 
-GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."carrier_service_cargo_categories" TO "service_role";
+GRANT ALL ON TABLE "public"."carrier_service_cargo_categories" TO "service_role";
 GRANT SELECT ON TABLE "public"."carrier_service_cargo_categories" TO "authenticated";
 
 
 
-GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."carrier_services" TO "service_role";
+GRANT ALL ON TABLE "public"."carrier_services" TO "service_role";
 GRANT SELECT ON TABLE "public"."carrier_services" TO "authenticated";
 
 
 
-GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."carriers" TO "service_role";
+GRANT ALL ON TABLE "public"."carriers" TO "service_role";
 GRANT SELECT ON TABLE "public"."carriers" TO "authenticated";
 
 
 
-GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."freight_decisions" TO "service_role";
+GRANT ALL ON TABLE "public"."freight_decisions" TO "service_role";
 GRANT SELECT ON TABLE "public"."freight_decisions" TO "authenticated";
 
 
 
-GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."freight_requests" TO "service_role";
+GRANT ALL ON TABLE "public"."freight_requests" TO "service_role";
 GRANT SELECT,INSERT,UPDATE ON TABLE "public"."freight_requests" TO "authenticated";
 
 
@@ -1271,22 +1797,25 @@ GRANT SELECT ON TABLE "public"."organization_members" TO "authenticated";
 
 
 
-GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."organization_preferences" TO "service_role";
+GRANT ALL ON TABLE "public"."organization_preferences" TO "service_role";
 GRANT SELECT,UPDATE ON TABLE "public"."organization_preferences" TO "authenticated";
 
 
 
-GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."organizations" TO "service_role";
+GRANT ALL ON TABLE "public"."organizations" TO "service_role";
 GRANT SELECT ON TABLE "public"."organizations" TO "authenticated";
 
 
 
-GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."vehicles" TO "service_role";
+GRANT ALL ON TABLE "public"."vehicles" TO "service_role";
 GRANT SELECT ON TABLE "public"."vehicles" TO "authenticated";
 
 
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "service_role";
 
 
 
@@ -1294,6 +1823,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQ
 
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "service_role";
 
 
 
@@ -1301,7 +1831,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUN
 
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLES TO "service_role";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
 
 
 
