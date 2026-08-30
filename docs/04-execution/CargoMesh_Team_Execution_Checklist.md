@@ -295,7 +295,7 @@ Estado al publicar esta versión: A inició `A-01` en una rama separada. Ese ava
   - **Aceptación:** `document.modelContext.getTools()` descubre `quote_freight`; `executeTool()` devuelve un envelope JSON válido; abandonar la página elimina la tool.
   - **Verificar:** prueba manual en navegador WebMCP compatible y captura del resultado JSON.
 
-- [ ] **B-01. Construir shell, login demo y dashboard mínimo**
+- [x] **B-01. Construir shell, login demo y dashboard mínimo**
   - **Owner:** B.
   - **Depende de:** `SH-01`.
   - **Qué construir:** layout B2B, navegación, login demo y tabla de solicitudes.
@@ -522,6 +522,7 @@ Agregar una fila únicamente después de integrar a `main`.
 | 2026-08-29 03:17 | `A-01` | A | `37eb5e8` (#2) | Slug dinámico y `not-found.tsx` | `A-02` |
 | 2026-08-29 | `C-01` | C | `6503c95` (#6) | Aprobación cruzada A; discovery 10/10, typecheck y build en `main` | `INT-01` con A-02 integrado; `C-02` cuando exista el envelope final |
 | 2026-08-29 | `A-02` | A | `5ac1448` (#5) | Revisión C de compatibilidad con C-01; typecheck y build en `main` | `INT-01` |
+| 2026-08-30 | `B-01` | B | `3639940` (#4) | C: `npm install`, typecheck y build en `main`; recorrido `/login` → `/dashboard`, navegación móvil y P1 de rutas 404 corregido | Validación visual de B para `G1`; `B-02` según el plan del Día 2 |
 
 ## 9. Bloqueos y decisiones pendientes
 
