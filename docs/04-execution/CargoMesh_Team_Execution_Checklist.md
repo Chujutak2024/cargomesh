@@ -383,7 +383,7 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, A-03, B-01, B-02, C-01, C-02, `INT-
 
 ### Día 3 — Booking, evidencia y recuperación
 
-- [ ] **A-04. Implementar tools provider de booking**
+- [x] **A-04. Implementar tools provider de booking**
   - **Owner:** A.
   - **Depende de:** `A-03`.
   - **Qué construir:** `book_freight`, `get_provider_booking_status`, idempotencia provider-side y fixture controls `ACCEPT`, `REJECT`, `NO_RESPONSE`.
@@ -397,7 +397,7 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, A-03, B-01, B-02, C-01, C-02, `INT-
   - **Aceptación:** recomendar no selecciona automáticamente; el drawer muestra navegación, tool, persistencia y decisión; no contiene botones que escriban directamente estados comerciales.
   - **Verificar:** recorrido manual desde `OPTIONS_READY` hasta confirmación/rechazo.
 
-- [ ] **C-03. Persistir booking, reset y recuperación mínima**
+- [x] **C-03. Persistir booking, reset y recuperación mínima**
   - **Owner:** C.
   - **Depende de:** `C-02`, contrato de `A-04`.
   - **Qué construir:** booking interno, provider reference, eventos deduplicados, reset server-side y recuperación sobre carriers restantes.
@@ -588,6 +588,7 @@ Agregar una fila únicamente después de integrar a `main`.
 | 2026-08-30 10:51 | `A-03` | A; revisa C | `8a0a5a5` (#9) | Aprobación sobre `324ba358`; A-03/discovery/INT-01 24/24, C-02 12/12, typecheck y build en `main`; `getTools()`, ejecución real de coverage/capacity y cleanup WebMCP; bundle sin secretos | `INT-02A` con A + C; `A-04` |
 | 2026-08-30 20:00 | `INT-02A / G2A` | A + C | `6011755` (#14), `6fdf7b7` (#17), `9ccbdbe` (#12) | WebMCP real con 3 providers y cleanup; Result Bridge 9 eventos/3 ofertas; replay cerrado e idempotencia; BALANCED 89/84/72, confianza 88; 66/66 pruebas, pgTAP 80/80, db lint, typecheck/build y bundle sin secretos en `main` | B-02 contra ViewModel estable; `INT-02B`; A-04 y diseño de C-03 en paralelo |
 | 2026-08-31 | `B-02 / INT-02B / INT-02 / G2` | B; validan A + C | `3159a58` (#21), `2950cd7` (#16) | Intake consume `execution-intent` persistido; corrida cross-origin con 3 providers externos y 9/9 tools; 9 eventos, 3 ofertas elegibles, BALANCED 89/84/72, confianza 88, cleanup y replay cerrado sin nuevas tools; 55/55 pruebas relevantes, typecheck y build | Día 3: A-04, C-03 y B-03 |
+| 2026-08-31 | `A-04 / C-03` | A + C; revisión cruzada | `0cebad1` (#20), `9bd8891` (#23) | Cinco tools provider WebMCP y cleanup real; Booking Bridge server-side con contexto multi-organización, idempotencia, eventos deduplicados, recovery y reset demo; A-04 25/25, booking 8/8, pgTAP 118/118, db lint/advisor, typecheck y build en `main` | B rebasea PR #24, consume `BookingViewModel v1` y completa B-03; después `INT-03` |
 
 ## 9. Bloqueos y decisiones pendientes
 
