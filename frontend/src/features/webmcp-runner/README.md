@@ -38,6 +38,40 @@ No se admite una implementación que llame directamente a
 `createCheckServiceCoverageTool`, `createCheckCapacityTool`,
 `createQuoteFreightTool` o sus callbacks `execute`.
 
+### Providers externos
+
+Un `iframe` solo permite obtener `contentDocument` cuando el provider comparte
+origen con CargoMesh. WebMCP permite consultar tools de un iframe cross-origin
+sin leer ese documento si ambas partes habilitan explícitamente la relación.
+Para un `providerUrl` externo registrado se usa
+`createExternalProviderNavigationAdapter`:
+
+```ts
+const navigation = createExternalProviderNavigationAdapter({
+  baseUrl: window.location.origin,
+  frame: runnerFrame,
+});
+```
+
+El adapter añade la Permissions Policy `allow="tools"` al iframe y llama
+`document.modelContext.getTools({ fromOrigins: [providerOrigin] })`. El provider
+externo debe registrar sus tools con
+`{ exposedTo: [cargoMeshOrigin] }`; sin esa autorización bilateral la ejecución
+falla de forma segura.
+
+El runner enlaza automáticamente el snapshot inmutable de candidatos devuelto
+por el servidor. Antes de navegar, el adapter exige que `carrierId`,
+`providerUrl` y `matchingServiceId` coincidan con ese snapshot y que la URL
+efectiva sea exactamente la construida por `buildProviderNavigationUrl`.
+Después de navegar filtra las tools por el origen registrado y por el
+`WindowProxy` exacto del iframe antes de ejecutar `getTools()` o
+`executeTool()`.
+
+No lee un `contentDocument` cross-origin, no llama handlers internos y no
+acepta una URL propuesta únicamente por la UI. Para el cleanup, el adapter
+navega el iframe a la raíz de CargoMesh y comprueba que las tools provider hayan
+desaparecido.
+
 ## Frontera con C
 
 Cada `ProviderToolCallRecord` entrega:
