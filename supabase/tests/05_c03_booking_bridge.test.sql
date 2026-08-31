@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
-select plan(38);
+select plan(40);
 
 select ok(
   to_regprocedure('public.prepare_booking_authorization(uuid,uuid,uuid,text,text)') is not null,
@@ -186,6 +186,29 @@ select results_eq(
   $$ values ('DEDUPLICATED'::text, true) $$,
   'same bridge call and canonical payload deduplicates after booking exists'
 );
+select results_eq(
+  $$
+    select result_status, deduplicated
+    from public.record_provider_booking_result(
+      'cm:booking:v1:call-1:provider-replay',
+      (select id from public.booking_authorizations where booking_idempotency_key = 'c03-booking-key-1'),
+      pg_temp.c03_book_payload(
+        (select id from public.booking_authorizations where booking_idempotency_key = 'c03-booking-key-1'),
+        (select provider_response_deadline from public.bookings),
+        true
+      ),
+      'AND-BOOK-C03', 'PENDING_PROVIDER_CONFIRMATION',
+      (select provider_response_deadline from public.bookings), false, null, true
+    )
+  $$,
+  $$ values ('DEDUPLICATED'::text, true) $$,
+  'provider replay with a distinct bridge call deduplicates against the existing booking'
+);
+select is(
+  (select count(*)::integer from public.bookings),
+  1,
+  'provider replay with a distinct bridge call never creates a duplicate booking'
+);
 select throws_ok(
   $$
     select * from public.record_provider_booking_result(
@@ -232,7 +255,7 @@ select is((select count(*)::integer from public.booking_events), 2, 'provider ev
 select ok(not has_table_privilege('authenticated', 'public.booking_authorizations', 'SELECT'), 'authorization contexts stay server-only');
 select ok(not has_table_privilege('authenticated', 'public.booking_bridge_calls', 'SELECT'), 'booking bridge audit payloads stay server-only');
 select ok(not has_function_privilege('authenticated', 'public.record_provider_booking_status(text,uuid,uuid,jsonb,text,text,text,jsonb)', 'EXECUTE'), 'authenticated cannot record provider status directly');
-select is((select count(*)::integer from public.booking_bridge_calls), 2, 'service role retained two independent bridge audit calls');
+select is((select count(*)::integer from public.booking_bridge_calls), 3, 'service role retained three independent bridge audit calls');
 
 set local role service_role;
 insert into public.carrier_offers (
