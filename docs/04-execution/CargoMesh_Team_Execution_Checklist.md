@@ -98,9 +98,9 @@ supabase/**
 
 Los archivos compartidos (`package.json`, layouts raíz, tipos compartidos y variables de entorno) requieren aviso en el chat del equipo antes de modificarse.
 
-### 3.1 Ajuste temporal por disponibilidad de B — 2026-08-30
+### 3.1 Ajuste temporal por disponibilidad de B — 2026-08-30 (cerrado)
 
-El Integrante B no está disponible hoy y puede regresar mañana. Este ajuste cambia únicamente la secuencia inmediata; no transfiere ownership ni autoriza a A o C a editar archivos de B.
+El Integrante B estuvo temporalmente ausente. B retomó su ownership y publicó B-02 en el PR #16; este registro se conserva como antecedente y nunca transfirió ownership a A o C.
 
 Reglas temporales:
 
@@ -274,7 +274,7 @@ Una tarea puede comenzar como `PROVISIONAL` o `SPIKE`, pero:
 - se priorizan adapters pequeños antes que reescrituras completas;
 - su autor corrige incompatibilidades con el contrato congelado antes del merge.
 
-Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 están integrados; A-03 permanece en review en el PR #9. Todo trabajo provisional pendiente debe seguir las reglas anteriores antes de integrarse.
+Estado actual: `SH-00`, `SH-01`, A-01, A-02, A-03, B-01, C-01, C-02, `INT-01 / G1` e `INT-02A / G2A` están integrados y verificados en `main`. B-02 permanece en Draft en el PR #16; `INT-02B`, `INT-02` y `G2` continúan abiertos.
 
 ## 5. Checklist de construcción
 
@@ -347,8 +347,9 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 es
   - **Aceptación:** mismo `tool_call_id` + mismo payload deduplica; mismo ID + payload diferente produce conflicto; cero ofertas produce `NO_MATCH`; una o N ofertas producen resultado explicable; los scores del Golden Flow se reproducen desde datos.
   - **Verificar:** tests unitarios del scorer, prueba de doble ingestión, conflicto idempotente, `db lint`, pgTAP y revisión RLS.
 
-- [ ] **INT-02A. Integrar búsqueda completa y ranking headless**
+- [x] **INT-02A. Integrar búsqueda completa y ranking headless**
   - **Owner:** A + C; coordina C.
+  - **Estado actual:** integrado y verificado en `main` mediante PR #14 (`6011755`), PR #17 (`6fdf7b7`) y PR #12 (`9ccbdbe`). `G2A` aprobado; no cierra `INT-02` ni `G2`.
   - **Depende de:** `A-03` y `C-02`. Antes de integrar A-03, C solo prepara diseño, harness, contratos de consumo y pruebas que no dependan de su implementación.
   - **Qué construir:** un flujo server-side reproducible `FreightRequest → discovery → CandidateProvider[0..N] → matchingServiceId → provider exacto → tools WebMCP → ProviderToolEnvelope → record_provider_result → CarrierOffer[0..N] → BALANCED → FreightRanking`, sin UI de B.
   - **Aceptación:** funciona con 0, 1 y N providers; conserva `matchingServiceId`; registra resultados idempotentemente; reproduce `89/84/72`; mantiene RLS y secretos fuera del cliente; entrega un JSON/ViewModel estable con estados `loading`, `error`, `NO_MATCH` y `success` para consumo de B.
@@ -447,25 +448,24 @@ Nunca acumulen todo el trabajo hasta la noche del Día 3.
 
 Una tarea terminada en una rama no cierra un gate. El gate se cierra únicamente después de integración y verificación conjunta.
 
-Durante la ausencia temporal de B, `G2A` puede verificarse como checkpoint técnico. `G2` permanece abierto hasta completar `INT-02B` y recibir validación visual de B o una decisión posterior explícita del equipo.
+`G2A` quedó aprobado después de integrar y verificar el flujo headless en `main`. `G2` permanece abierto hasta completar `INT-02B` y recibir validación visual de B.
 
 ### 6.2 Plan de continuación inmediato
 
-1. A revisa el estado real de `feat/a-webmcp-a03`, completa pruebas/evidencia, actualiza el PR #9 y entrega handoff a C sin modificar archivos de B.
-2. C confirma C-02 en `main` y prepara el diseño, contratos de consumo, estados, harness y scripts headless de `INT-02A` que no dependan de código A-03 aún no integrado.
-3. Cuando A-03 esté integrado y verificado, A y C conectan `INT-02A` en una rama de integración; A valida ejecución/cleanup WebMCP y C valida persistencia, idempotencia, ranking y seguridad.
-4. C publica el ViewModel, ejemplos JSON, endpoint o script reproducible y handoff para B. Aunque `G2A` pase, `INT-02` y `G2` permanecen abiertos.
-5. B-02 y B-03 quedan reservadas y sin cambios mientras B está ausente; A y C no implementan placeholders visuales en sus archivos.
-6. Cuando B regrese, actualiza su rama desde `main` sin sobrescribir trabajo local, continúa B-02/B-03 y consume el ViewModel de `INT-02A`.
-7. B implementa/valida `INT-02B` con apoyo de A/C; solo entonces el equipo puede cerrar `INT-02` y `G2`.
+1. A entrega a B el handoff final del runner WebMCP y del contrato del ViewModel ya integrado.
+2. B actualiza el PR #16 desde `main` sin sobrescribir su trabajo y completa B-02 contra el contrato estable de `INT-02A`.
+3. B implementa `INT-02B`; A y C apoyan la conexión sin modificar archivos bajo ownership visual de B.
+4. El equipo verifica desktop/móvil con `loading`, `error`, `NO_MATCH` y `success`, además de colecciones de 0, 1, 3 y 4 ofertas.
+5. Solo después de esa validación se cierran `INT-02` y `G2`.
+6. En paralelo, A puede iniciar A-04; C prepara C-03 sin adelantarse al contrato provider-side de booking.
 
-### 6.3 Trabajo paralelo permitido durante la ausencia temporal de B
+### 6.3 Trabajo paralelo después de G2A
 
 | Integrante | Trabajo exacto permitido hoy | Límites |
 |---|---|---|
-| **A** | completar y publicar A-03; preparar su parte de `INT-02A`; documentar registro, ejecución, cancelación y cleanup de tools WebMCP; entregar handoff a C | no modificar dashboard, dispatch, `RequestTable`, componentes ni fixtures visuales de B |
-| **C** | verificar C-02 en `main`; diseñar orquestador headless; preparar contratos de consumo, estados, pruebas E2E, scripts, fixtures y evidencia; revisar RLS, idempotencia y secretos | no modificar archivos de B ni implementar código que dependa del contrato A-03 antes de su integración; no cambiar contratos congelados sin coordinación |
-| **B** | sin trabajo requerido mientras esté ausente; conserva B-02, B-03 e `INT-02B` | su ausencia no autoriza reasignación ni sustitución de su UI |
+| **A** | entregar el handoff de `INT-02A` a B e iniciar A-04 en una rama separada | no modificar dashboard, dispatch, `RequestTable`, componentes ni fixtures visuales de B |
+| **C** | apoyar `INT-02B`, verificar fronteras server-side y preparar C-03 | no duplicar lógica de ranking en UI ni implementar booking antes de congelar el contrato A-04 |
+| **B** | completar B-02 e implementar `INT-02B` consumiendo el ViewModel estable | no modificar runner WebMCP, Result Bridge, Supabase, RLS ni Decision Engine |
 
 ### 6.4 Handoff obligatorio de INT-02A para B
 
@@ -585,14 +585,15 @@ Agregar una fila únicamente después de integrar a `main`.
 | 2026-08-30 | `INT-01 / G1` | A + C; valida B | `13b76d8` (#8) | C: discovery 10/10, parámetros de ruta 3/3, typecheck, build, WebMCP/404/cleanup y bundle sin secretos; B: validación visual desktop/móvil aprobada | `A-03`, `B-02`, `C-02` |
 | 2026-08-30 02:02 | `C-02` | C; revisa A | `b11ce1e` (#10) | Aprobación cruzada sobre `da109eb`; C-02 12/12, discovery 10/10, pgTAP 49/49, db lint, typecheck y build en `main`; Golden Flow 89/84/72 y bundle sin secretos | `INT-02A` cuando A-03 esté integrado; diseño/harness headless puede adelantarse sin UI de B; `C-03` cuando exista el contrato A-04 |
 | 2026-08-30 10:51 | `A-03` | A; revisa C | `8a0a5a5` (#9) | Aprobación sobre `324ba358`; A-03/discovery/INT-01 24/24, C-02 12/12, typecheck y build en `main`; `getTools()`, ejecución real de coverage/capacity y cleanup WebMCP; bundle sin secretos | `INT-02A` con A + C; `A-04` |
+| 2026-08-30 20:00 | `INT-02A / G2A` | A + C | `6011755` (#14), `6fdf7b7` (#17), `9ccbdbe` (#12) | WebMCP real con 3 providers y cleanup; Result Bridge 9 eventos/3 ofertas; replay cerrado e idempotencia; BALANCED 89/84/72, confianza 88; 66/66 pruebas, pgTAP 80/80, db lint, typecheck/build y bundle sin secretos en `main` | B-02 contra ViewModel estable; `INT-02B`; A-04 y diseño de C-03 en paralelo |
 
 ## 9. Bloqueos y decisiones pendientes
 
 | Fecha | Task ID | Bloqueo/decisión | Responsable de resolver | Estado |
 |---|---|---|---|---|
 | 2026-08-29 | `SH-00` | A inició `A-01` en rama separada; normalizar su output sin detener ni reescribir el spike | C + A | Resuelto en PR #2 |
-| 2026-08-29 | `SH-00` | Congelar navegador/build WebMCP, flags y firma observada de `executeTool()` | A + C | Pendiente |
-| 2026-08-30 | `INT-02` | B no está disponible hoy; preservar B-02/B-03 y adelantar solo `INT-02A` headless | A + C preparan handoff; B retoma su ownership al regresar | Temporal; `INT-02B` y `G2` permanecen pendientes |
+| 2026-08-29 | `SH-00` | Congelar navegador/build WebMCP, flags y firma observada de `executeTool()` | A + C | Resuelto: Chrome recibe y devuelve argumentos JSON serializados; adapter integrado en PR #12 |
+| 2026-08-30 | `INT-02` | B no estuvo disponible temporalmente; preservar B-02/B-03 y adelantar solo `INT-02A` headless | A + C preparan handoff; B conserva ownership visual | Resuelto el bloqueo de disponibilidad; `INT-02B` y `G2` permanecen pendientes |
 
 ## 10. Estrategia Git y GitHub recomendada
 
