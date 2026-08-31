@@ -10,7 +10,24 @@ export function buildProviderNavigationUrl(
   candidate: CandidateProvider,
   baseUrl: string,
 ): string {
-  if (!isNavigableProviderUrl(candidate.providerUrl)) {
+  return buildRegisteredProviderNavigationUrl(
+    candidate.providerUrl,
+    candidate.matchingServiceId,
+    baseUrl,
+  );
+}
+
+/**
+ * Resolves the only URL that may represent a discovered provider service.
+ * It intentionally preserves the registered path and base query parameters,
+ * while replacing any stale serviceId with the discovered matching service.
+ */
+export function buildRegisteredProviderNavigationUrl(
+  providerUrl: string,
+  matchingServiceId: string,
+  baseUrl: string,
+): string {
+  if (!isNavigableProviderUrl(providerUrl)) {
     throw new Error("INVALID_PROVIDER_URL: candidate providerUrl is not navigable.");
   }
 
@@ -19,7 +36,7 @@ export function buildProviderNavigationUrl(
     throw new Error("INVALID_BASE_URL: baseUrl must use HTTP(S).");
   }
 
-  const providerUrl = new URL(candidate.providerUrl, base);
-  providerUrl.searchParams.set("serviceId", candidate.matchingServiceId);
-  return providerUrl.toString();
+  const resolvedProviderUrl = new URL(providerUrl, base);
+  resolvedProviderUrl.searchParams.set("serviceId", matchingServiceId);
+  return resolvedProviderUrl.toString();
 }

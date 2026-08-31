@@ -2,29 +2,61 @@ import type {
   ProviderQuote,
   ProviderToolEnvelope,
 } from "@/features/providers/contracts";
+import type { CapacityResult } from "@/features/providers/check-capacity-tool";
+import type { ServiceCoverageResult } from "@/features/providers/check-service-coverage-tool";
+
+export type RecordableProviderToolName =
+  | "check_service_coverage"
+  | "check_capacity"
+  | "quote_freight";
+
+export type ProviderToolTechnicalError = {
+  code: string;
+  message: string;
+  retryable: boolean;
+};
 
 export type RecordProviderResultInput = {
   toolCallId: string;
   orchestrationRunId: string;
   freightRequestId: string;
   carrierId: string;
+  matchingServiceId: string;
   providerUrl: string;
-  toolName: string;
+  navigationUrl: string;
+  toolName: RecordableProviderToolName;
+  attemptNumber: number;
   toolInput: unknown;
-  toolOutput: ProviderToolEnvelope<unknown>;
+  toolOutput: ProviderToolEnvelope<unknown> | null;
   startedAt: string;
   completedAt: string;
+  durationMs: number;
+  status: "COMPLETED" | "TECHNICAL_ERROR";
+  technicalError: ProviderToolTechnicalError | null;
   schemaVersion: "1.0";
 };
 
-export type ValidatedRecordProviderResultInput = Omit<
+type ValidatedProviderToolCallBase = Omit<
   RecordProviderResultInput,
-  "toolInput" | "toolOutput"
-> & {
-  toolName: "quote_freight";
-  toolInput: Record<string, unknown> & { freight_request_id: string };
-  toolOutput: ProviderToolEnvelope<ProviderQuote>;
-};
+  "toolName" | "toolInput" | "toolOutput"
+>;
+
+export type ValidatedRecordProviderResultInput =
+  | (ValidatedProviderToolCallBase & {
+      toolName: "check_service_coverage";
+      toolInput: Record<string, unknown>;
+      toolOutput: ProviderToolEnvelope<ServiceCoverageResult> | null;
+    })
+  | (ValidatedProviderToolCallBase & {
+      toolName: "check_capacity";
+      toolInput: Record<string, unknown>;
+      toolOutput: ProviderToolEnvelope<CapacityResult> | null;
+    })
+  | (ValidatedProviderToolCallBase & {
+      toolName: "quote_freight";
+      toolInput: Record<string, unknown> & { freight_request_id: string };
+      toolOutput: ProviderToolEnvelope<ProviderQuote> | null;
+    });
 
 export type RecordProviderResultResult = {
   eventId: string;

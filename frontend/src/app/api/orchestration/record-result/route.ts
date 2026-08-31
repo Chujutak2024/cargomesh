@@ -8,7 +8,10 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const result = await record_provider_result(await request.json());
+    const result = await record_provider_result(
+      await request.json(),
+      request.nextUrl.origin,
+    );
     return NextResponse.json({ ok: true, data: result });
   } catch (error) {
     if (error instanceof ResultBridgeError) {
