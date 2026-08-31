@@ -79,6 +79,7 @@
 .offerCard li svg { flex: 0 0 auto; color: #2b7d72; }
 .offerCard button { display: grid; min-height: 2.8rem; place-items: center; gap: 0.05rem; margin-top: auto; border: 0; border-radius: 0.7rem; background: #dce4e1; color: #71807d; font-family: inherit; font-size: 0.67rem; font-weight: 800; cursor: not-allowed; }
 .offerCard button small { font-size: 0.5rem; font-weight: 650; }
+.offerSelect { display: inline-flex; min-height: 2.8rem; align-items: center; justify-content: center; margin-top: auto; border-radius: 0.7rem; padding: 0 0.8rem; background: #185c55; color: #fff; font-size: 0.67rem; font-weight: 800; text-align: center; text-decoration: none; }
 .explanation { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.8rem; padding: 1rem; }
 .explanationIcon { display: grid; width: 2.7rem; height: 2.7rem; place-items: center; border-radius: 0.8rem; background: #ddf3ea; color: #185c55; }
 .explanation h2 { margin: 0.18rem 0 0.25rem; color: #1f2928; font-size: 0.9rem; }
@@ -93,7 +94,7 @@
 .warnings svg { flex: 0 0 auto; }
 .warnings strong { font-size: 0.7rem; }
 .warnings p { margin: 0.25rem 0 0; font-size: 0.63rem; line-height: 1.45; }
-.backLink:focus-visible, .primaryLink:focus-visible, .secondaryLink:focus-visible, .explanation summary:focus-visible { outline: 3px solid #2bae9a; outline-offset: 2px; }
+.backLink:focus-visible, .primaryLink:focus-visible, .secondaryLink:focus-visible, .offerSelect:focus-visible, .explanation summary:focus-visible { outline: 3px solid #2bae9a; outline-offset: 2px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes shimmer { to { background-position: -200% 0; } }
 @media (min-width: 760px) { .requestSummary { grid-template-columns: repeat(4, minmax(0, 1fr)); } .evaluatingGrid, .noMatchGrid { grid-template-columns: minmax(0, 1.7fr) minmax(16rem, 0.8fr); } }

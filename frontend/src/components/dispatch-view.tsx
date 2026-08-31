@@ -14,6 +14,8 @@ import {
   isRetryableOrchestrationError,
   shouldPollOrchestration,
 } from "@/features/freight-ui/dispatch-policies";
+import { createBookingPreviewHref } from "@/features/freight-ui/booking-ui-fixtures";
+import type { DispatchFixtureScenario } from "@/features/freight-ui/view-models";
 import { takeCachedInt02aViewModel } from "@/features/freight-ui/int02a-client";
 import styles from "./dispatch-view.module.css";
 
@@ -115,7 +117,7 @@ export function DispatchView({ model, onRetry, fixtureScenario }: DispatchViewPr
       {model.status === "loading" ? <EvaluatingState model={model} /> : null}
       {model.status === "error" ? <ErrorState model={model} onRetry={onRetry} fixtureScenario={fixtureScenario} /> : null}
       {model.status === "NO_MATCH" ? <NoMatchState model={model} /> : null}
-      {model.status === "success" ? <SuccessState model={model} /> : null}
+      {model.status === "success" ? <SuccessState model={model} fixtureScenario={fixtureScenario} /> : null}
     </div>
   );
 }
@@ -214,7 +216,10 @@ function NoMatchState({ model }: { model: Extract<OrchestrationViewModel, { stat
   );
 }
 
-function SuccessState({ model }: { model: Extract<OrchestrationViewModel, { status: "success" }> }) {
+function SuccessState({ model, fixtureScenario }: {
+  model: Extract<OrchestrationViewModel, { status: "success" }>;
+  fixtureScenario?: string;
+}) {
   const recommended = model.offers.find((offer) => offer.recommended);
   return (
     <>
@@ -224,7 +229,7 @@ function SuccessState({ model }: { model: Extract<OrchestrationViewModel, { stat
       </section>
       {model.offers.length ? (
         <section className={styles.offerGrid} aria-label="Ofertas de transporte ordenadas">
-          {model.offers.map((offer) => <OfferCard key={offer.offerId} offer={offer} />)}
+          {model.offers.map((offer) => <OfferCard key={offer.offerId} offer={offer} requestCode={model.requestCode} fixtureScenario={fixtureScenario} />)}
         </section>
       ) : (
         <section className={styles.statePanel}><span className={styles.largeIcon}><Boxes size={27} aria-hidden="true" /></span><h2>No hay ofertas para mostrar</h2><p>La evaluación terminó correctamente, pero su colección de ofertas está vacía.</p></section>
@@ -241,7 +246,12 @@ function SuccessState({ model }: { model: Extract<OrchestrationViewModel, { stat
   );
 }
 
-function OfferCard({ offer }: { offer: RankedOfferView }) {
+function OfferCard({ offer, requestCode, fixtureScenario }: {
+  offer: RankedOfferView;
+  requestCode: string;
+  fixtureScenario?: string;
+}) {
+  const offerSet = toBookingOfferSet(fixtureScenario);
   return (
     <article className={`${styles.offerCard} ${offer.recommended ? styles.offerRecommended : ""}`}>
       <header><span className={styles.rank}>#{offer.rank}</span>{offer.recommended ? <span className={styles.recommended}><Sparkles size={13} aria-hidden="true" /> Recomendado</span> : null}</header>
@@ -249,9 +259,23 @@ function OfferCard({ offer }: { offer: RankedOfferView }) {
       <div className={styles.price}><strong>${offer.totalPrice.toLocaleString("en-US")}</strong><span>{offer.currency} · total</span></div>
       <dl><div><dt><Clock3 size={14} aria-hidden="true" /> Tránsito</dt><dd>{offer.transitHours} h</dd></div><div><dt><CheckCircle2 size={14} aria-hidden="true" /> Elegibilidad</dt><dd>{offer.eligible ? "Elegible" : "No elegible"}</dd></div></dl>
       <ul>{offer.reasons.map((reason) => <li key={reason}><CheckCircle2 size={13} aria-hidden="true" /> {reason}</li>)}</ul>
-      <button type="button" disabled={!B02_OFFER_SELECTION_ENABLED} title="Disponible en B-03">Seleccionar esta opción <small>Disponible en B-03</small></button>
+      {offerSet ? (
+        <Link className={styles.offerSelect} href={createBookingPreviewHref(requestCode, offer.offerId, offerSet)}>
+          Seleccionar {offer.displayName}
+        </Link>
+      ) : (
+        <button type="button" disabled={!B02_OFFER_SELECTION_ENABLED} title="Pendiente de BookingViewModel v1">
+          Seleccionar esta opción <small>Pendiente de integración real</small>
+        </button>
+      )}
     </article>
   );
+}
+
+function toBookingOfferSet(scenario?: string): "one" | "three" | "four" | null {
+  return (["one", "three", "four"] as DispatchFixtureScenario[]).includes(scenario as DispatchFixtureScenario)
+    ? scenario as "one" | "three" | "four"
+    : null;
 }
 
 function Warnings({ warnings }: { warnings: string[] }) {
