@@ -100,6 +100,10 @@ type ParsedInput =
   | { ok: true; value: QuoteFreightInput }
   | { ok: false; message: string };
 
+export type QuoteFreightToolOptions = {
+  now?: () => Date;
+};
+
 const allowedInputKeys = new Set([
   "freight_request_id",
   "origin",
@@ -212,15 +216,14 @@ function roundCurrency(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-function deterministicTimeline(input: QuoteFreightInput, transitHours: number) {
-  const seed = stableHash(input.freight_request_id);
-  const fallbackIssuedAt = new Date(Date.UTC(2026, 7, 29, 12, seed % 60));
+function deterministicTimeline(
+  input: QuoteFreightInput,
+  transitHours: number,
+  issuedAt: Date,
+) {
   const requestedPickup = input.pickup_window_start
     ? new Date(input.pickup_window_start)
-    : new Date(fallbackIssuedAt.getTime() + 24 * 60 * 60 * 1000);
-  const issuedAt = input.pickup_window_start
-    ? new Date(requestedPickup.getTime() - 24 * 60 * 60 * 1000)
-    : fallbackIssuedAt;
+    : new Date(issuedAt.getTime() + 24 * 60 * 60 * 1000);
   const estimatedDelivery = new Date(
     requestedPickup.getTime() + transitHours * 60 * 60 * 1000,
   );
@@ -251,6 +254,7 @@ function createErrorEnvelope(
 function buildProviderQuote(
   provider: ProviderPageConfig,
   input: QuoteFreightInput,
+  issuedAt: Date,
 ): ProviderToolEnvelope<ProviderQuote> {
   if (input.cargo_weight_kg > provider.service.maxCapacityKg) {
     return createErrorEnvelope(
@@ -283,7 +287,7 @@ function buildProviderQuote(
   };
   const price = roundCurrency(Object.values(priceBreakdown).reduce((total, item) => total + item, 0));
   const transitHours = fixtureOverride?.transitHours ?? 28 + (fixtureSeed % 25);
-  const timeline = deterministicTimeline(input, transitHours);
+  const timeline = deterministicTimeline(input, transitHours, issuedAt);
   const referenceSuffix = stableHash(
     `${provider.service.providerServiceCode}:${input.freight_request_id}`,
   )
@@ -341,7 +345,12 @@ function waitForQuote(signal: AbortSignal): Promise<void> {
   });
 }
 
-export function createQuoteFreightTool(provider: ProviderPageConfig): WebMCP.ModelContextTool {
+export function createQuoteFreightTool(
+  provider: ProviderPageConfig,
+  options: QuoteFreightToolOptions = {},
+): WebMCP.ModelContextTool {
+  const now = options.now ?? (() => new Date());
+
   return {
     name: QUOTE_FREIGHT_TOOL_NAME,
     title: "Quote freight",
@@ -362,7 +371,11 @@ export function createQuoteFreightTool(provider: ProviderPageConfig): WebMCP.Mod
       await waitForQuote(signal);
       signal.throwIfAborted();
 
-      return buildProviderQuote(provider, parsedInput.value);
+      // Snapshot the clock once so every timestamp in this execution derives
+      // from the same immutable instant.
+      const issuedAt = new Date(now().getTime());
+
+      return buildProviderQuote(provider, parsedInput.value, issuedAt);
     },
   };
 }
