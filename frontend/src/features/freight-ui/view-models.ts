@@ -78,7 +78,9 @@ export type FreightIntakeModel = {
   lengthCm: number;
   widthCm: number;
   heightCm: number;
-  pickupDate: string;
+  pickupWindowStart: string;
+  pickupWindowEnd: string;
+  deliveryDeadline: string;
   budgetMaxUsd: number;
   strategy: "BALANCED";
   documents: string[];

@@ -126,32 +126,56 @@ export const trackingMapFixture: TrackingMapModel = {
   },
 };
 
-export const freightIntakeFixture: FreightIntakeModel = {
-  freightRequestId: "f2000000-0000-0000-0000-000000000001",
-  requestId: "FR-1042",
-  organization: "ACME Mining Perú",
-  requester: "Carlos Mendoza",
-  cargoProfile: "Repuestos y maquinaria minera",
-  origin: "Callao / Lima, PE",
-  destination: "Santiago, CL",
-  pickupContact: "María Paredes · +51 999 210 440",
-  deliveryContact: "Tomás Rojas · +56 9 6123 4010",
-  borderCrossing: "Santa Rosa / Chacalluta",
-  cargoCategory: "Repuestos mineros",
-  cargoCategoryCode: "MACHINERY",
-  transportMode: "ROAD",
-  serviceType: "FTL",
-  entryMethod: "Pallets",
-  quantity: 10,
-  unitWeightKg: 800,
-  lengthCm: 120,
-  widthCm: 100,
-  heightCm: 150,
-  pickupDate: "2026-09-02T09:00",
-  budgetMaxUsd: 2000,
-  strategy: "BALANCED",
-  documents: ["Factura comercial", "Packing list"],
-};
+function toLocalDateTimeInput(value: Date) {
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`;
+}
+
+function atDemoDay(reference: Date, dayOffset: number, hour: number) {
+  const value = new Date(reference);
+  value.setHours(0, 0, 0, 0);
+  value.setDate(value.getDate() + dayOffset);
+  value.setHours(hour);
+  return toLocalDateTimeInput(value);
+}
+
+/** Mirrors the FR-1042 reset contract without freezing the demo to a calendar date. */
+export function createFr1042DemoSchedule(reference = new Date()) {
+  return {
+    pickupWindowStart: atDemoDay(reference, 1, 13),
+    pickupWindowEnd: atDemoDay(reference, 1, 17),
+    deliveryDeadline: atDemoDay(reference, 4, 13),
+  };
+}
+
+export function createFreightIntakeFixture(reference = new Date()): FreightIntakeModel {
+  return {
+    freightRequestId: "f2000000-0000-0000-0000-000000000001",
+    requestId: "FR-1042",
+    organization: "ACME Mining Perú",
+    requester: "Carlos Mendoza",
+    cargoProfile: "Repuestos y maquinaria minera",
+    origin: "Callao / Lima, PE",
+    destination: "Santiago, CL",
+    pickupContact: "María Paredes · +51 999 210 440",
+    deliveryContact: "Tomás Rojas · +56 9 6123 4010",
+    borderCrossing: "Santa Rosa / Chacalluta",
+    cargoCategory: "Repuestos mineros",
+    cargoCategoryCode: "MACHINERY",
+    transportMode: "ROAD",
+    serviceType: "FTL",
+    entryMethod: "Pallets",
+    quantity: 10,
+    unitWeightKg: 800,
+    lengthCm: 120,
+    widthCm: 100,
+    heightCm: 150,
+    ...createFr1042DemoSchedule(reference),
+    budgetMaxUsd: 2000,
+    strategy: "BALANCED",
+    documents: ["Factura comercial", "Packing list"],
+  };
+}
 
 const candidateFixtures = [
   {

@@ -33,7 +33,7 @@ export function takeCachedInt02aViewModel(runId: string): unknown {
 export function buildProviderRunnerInputs(model: FreightIntakeModel): ProviderRunnerInputs {
   const cargoWeightKg = model.quantity * model.unitWeightKg;
   const cargoVolumeM3 = model.quantity * model.lengthCm * model.widthCm * model.heightCm / 1_000_000;
-  const pickupWindowStart = new Date(model.pickupDate).toISOString();
+  const schedule = parseScheduledWindow(model);
 
   return {
     check_service_coverage: {
@@ -50,7 +50,7 @@ export function buildProviderRunnerInputs(model: FreightIntakeModel): ProviderRu
       cargo_volume_m3: cargoVolumeM3,
       cargo_category: model.cargoCategoryCode,
       pickup_mode: "SCHEDULED",
-      pickup_window_start: pickupWindowStart,
+      ...schedule,
     },
     quote_freight: {
       freight_request_id: model.freightRequestId,
@@ -60,8 +60,35 @@ export function buildProviderRunnerInputs(model: FreightIntakeModel): ProviderRu
       cargo_volume_m3: cargoVolumeM3,
       cargo_category: model.cargoCategoryCode,
       pickup_mode: "SCHEDULED",
-      pickup_window_start: pickupWindowStart,
+      ...schedule,
       available_documents: [...model.documents],
     },
+  };
+}
+
+function parseScheduledWindow(model: FreightIntakeModel) {
+  const fields = [
+    model.pickupWindowStart,
+    model.pickupWindowEnd,
+    model.deliveryDeadline,
+  ];
+  const [pickupWindowStart, pickupWindowEnd, deliveryDeadline] = fields.map((value) =>
+    value.trim() && Number.isFinite(Date.parse(value)) ? new Date(value) : null,
+  );
+
+  if (!pickupWindowStart || !pickupWindowEnd) {
+    throw new Error("SCHEDULED requiere inicio y fin de la ventana de recojo.");
+  }
+  if (pickupWindowEnd.getTime() <= pickupWindowStart.getTime()) {
+    throw new Error("El fin de la ventana de recojo debe ser posterior al inicio.");
+  }
+  if (!deliveryDeadline || deliveryDeadline.getTime() <= pickupWindowStart.getTime()) {
+    throw new Error("El deadline de entrega debe ser posterior al inicio del recojo.");
+  }
+
+  return {
+    pickup_window_start: pickupWindowStart.toISOString(),
+    pickup_window_end: pickupWindowEnd.toISOString(),
+    delivery_deadline: deliveryDeadline.toISOString(),
   };
 }

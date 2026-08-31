@@ -183,7 +183,9 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
             <>
               <FormHeading id="step-title-3" title="Programación y políticas" description="Configura la ventana, el presupuesto y los documentos disponibles." />
               <div className={styles.fieldGrid}>
-                <Field label="Fecha y hora de recojo"><input required type="datetime-local" value={form.pickupDate} onChange={(event) => update("pickupDate", event.target.value)} /></Field>
+                <Field label="Inicio de ventana de recojo"><input required type="datetime-local" value={form.pickupWindowStart} onChange={(event) => update("pickupWindowStart", event.target.value)} /></Field>
+                <Field label="Fin de ventana de recojo"><input min={form.pickupWindowStart} required type="datetime-local" value={form.pickupWindowEnd} onChange={(event) => update("pickupWindowEnd", event.target.value)} /></Field>
+                <Field label="Deadline de entrega"><input min={form.pickupWindowEnd} required type="datetime-local" value={form.deliveryDeadline} onChange={(event) => update("deliveryDeadline", event.target.value)} /></Field>
                 <Field label="Presupuesto máximo (USD)"><input min="1" required type="number" value={form.budgetMaxUsd} onChange={(event) => update("budgetMaxUsd", Number(event.target.value))} /></Field>
                 <Field label="Estrategia"><input value={form.strategy} readOnly /></Field>
               </div>
@@ -203,6 +205,8 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
                 <ReviewItem label="Organización" value={`${form.organization} · ${form.requester}`} />
                 <ReviewItem label="Ruta" value={`${form.origin} → ${form.destination}`} />
                 <ReviewItem label="Carga" value={`${form.quantity} ${form.entryMethod.toLowerCase()} · ${totals.weightKg.toLocaleString("es-PE")} kg · ${totals.volumeM3.toFixed(1)} m³`} />
+                <ReviewItem label="Ventana de recojo" value={`${form.pickupWindowStart.replace("T", " ")} → ${form.pickupWindowEnd.replace("T", " ")}`} />
+                <ReviewItem label="Deadline de entrega" value={form.deliveryDeadline.replace("T", " ")} />
                 <ReviewItem label="Política" value={`${form.strategy} · Presupuesto $${form.budgetMaxUsd.toLocaleString("en-US")} USD`} />
                 <ReviewItem label="Documentos" value={form.documents.length ? form.documents.join(", ") : "Sin documentos adjuntos"} />
               </div>
