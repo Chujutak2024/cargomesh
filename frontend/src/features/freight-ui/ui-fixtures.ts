@@ -141,8 +141,11 @@ function atDemoDay(reference: Date, dayOffset: number, hour: number) {
 
 /** Mirrors the FR-1042 reset contract without freezing the demo to a calendar date. */
 export function createFr1042DemoSchedule(reference = new Date()) {
+  const pickupWindowStart = atDemoDay(reference, 1, 13);
   return {
-    pickupWindowStart: atDemoDay(reference, 1, 13),
+    pickupMode: "SCHEDULED" as const,
+    requiredPickup: pickupWindowStart,
+    pickupWindowStart,
     pickupWindowEnd: atDemoDay(reference, 1, 17),
     deliveryDeadline: atDemoDay(reference, 4, 13),
   };

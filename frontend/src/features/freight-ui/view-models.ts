@@ -78,6 +78,8 @@ export type FreightIntakeModel = {
   lengthCm: number;
   widthCm: number;
   heightCm: number;
+  pickupMode: "ASAP" | "SCHEDULED";
+  requiredPickup: string;
   pickupWindowStart: string;
   pickupWindowEnd: string;
   deliveryDeadline: string;

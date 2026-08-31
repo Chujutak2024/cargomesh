@@ -13,14 +13,16 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
+  applyExecutionIntentToIntake,
   buildProviderRunnerInputs,
   buildRealDispatchPath,
   cacheInt02aViewModel,
   createInt02aIdempotencyKey,
 } from "@/features/freight-ui/int02a-client";
 import type { FreightIntakeModel } from "@/features/freight-ui/view-models";
+import { fetchFreightRequestExecutionIntent } from "@/features/freight-requests/execution-intent-client";
 import { createExternalProviderNavigationAdapter } from "@/features/webmcp-runner";
 import { runInt02aOrchestration } from "@/features/webmcp-runner/orchestration-runner";
 import styles from "./freight-intake-form.module.css";
@@ -42,6 +44,18 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const runnerFrameRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    void fetchFreightRequestExecutionIntent(initialValue.freightRequestId)
+      .then((executionIntent) => {
+        if (active) setForm((current) => applyExecutionIntentToIntake(current, executionIntent));
+      })
+      .catch(() => {
+        // The submit performs a fresh authenticated read and exposes any error to the user.
+      });
+    return () => { active = false; };
+  }, [initialValue.freightRequestId]);
 
   const totals = useMemo(() => ({
     weightKg: form.quantity * form.unitWeightKg,
@@ -76,6 +90,8 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
     setSubmitting(true);
     setSubmitError(null);
     try {
+      const executionIntent = await fetchFreightRequestExecutionIntent(form.freightRequestId);
+      setForm((current) => applyExecutionIntentToIntake(current, executionIntent));
       const evidence = await runInt02aOrchestration({
         freightRequestId: form.freightRequestId,
         idempotencyKey: createInt02aIdempotencyKey(form.freightRequestId),
@@ -84,7 +100,7 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
           frame: runnerFrame,
           baseUrl: window.location.origin,
         }),
-        createInputs: () => buildProviderRunnerInputs(form),
+        createInputs: () => buildProviderRunnerInputs(form, executionIntent),
       });
       cacheInt02aViewModel(evidence.start.runId, evidence.viewModel);
       router.push(buildRealDispatchPath(evidence.start.runId));
@@ -181,14 +197,17 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
 
           {step === 3 ? (
             <>
-              <FormHeading id="step-title-3" title="Programación y políticas" description="Configura la ventana, el presupuesto y los documentos disponibles." />
+              <FormHeading id="step-title-3" title="Programación y políticas" description="Revisa la ventana persistida y configura el presupuesto y los documentos disponibles." />
               <div className={styles.fieldGrid}>
-                <Field label="Inicio de ventana de recojo"><input required type="datetime-local" value={form.pickupWindowStart} onChange={(event) => update("pickupWindowStart", event.target.value)} /></Field>
-                <Field label="Fin de ventana de recojo"><input min={form.pickupWindowStart} required type="datetime-local" value={form.pickupWindowEnd} onChange={(event) => update("pickupWindowEnd", event.target.value)} /></Field>
-                <Field label="Deadline de entrega"><input min={form.pickupWindowEnd} required type="datetime-local" value={form.deliveryDeadline} onChange={(event) => update("deliveryDeadline", event.target.value)} /></Field>
+                <Field label="Modo de recojo"><input readOnly value={form.pickupMode} /></Field>
+                <Field label="Recojo requerido"><input readOnly value={form.requiredPickup} /></Field>
+                <Field label="Inicio de ventana de recojo"><input readOnly value={form.pickupWindowStart || "No aplica"} /></Field>
+                <Field label="Fin de ventana de recojo"><input readOnly value={form.pickupWindowEnd || "No aplica"} /></Field>
+                <Field label="Deadline de entrega"><input readOnly value={form.deliveryDeadline || "No definido"} /></Field>
                 <Field label="Presupuesto máximo (USD)"><input min="1" required type="number" value={form.budgetMaxUsd} onChange={(event) => update("budgetMaxUsd", Number(event.target.value))} /></Field>
                 <Field label="Estrategia"><input value={form.strategy} readOnly /></Field>
               </div>
+              <InfoBox>La programación se sincroniza con el FreightRequest persistido y no se recalcula desde el navegador.</InfoBox>
               <fieldset className={styles.documentFieldset}>
                 <legend>Documentos disponibles</legend>
                 {documentOptions.map((document) => (

@@ -4,8 +4,10 @@ import test from "node:test";
 import { createCheckCapacityTool, type CapacityResult } from "@/features/providers/check-capacity-tool";
 import type { ProviderPageConfig, ProviderQuote, ProviderToolEnvelope } from "@/features/providers/contracts";
 import { createQuoteFreightTool } from "@/features/providers/quote-freight-tool";
-import { createFreightIntakeFixture, createFr1042DemoSchedule } from "./ui-fixtures";
+import { parseFreightRequestExecutionIntent } from "@/features/freight-requests/execution-intent-contracts";
+import { createFreightIntakeFixture } from "./ui-fixtures";
 import {
+  applyExecutionIntentToIntake,
   buildProviderRunnerInputs,
   buildRealDispatchPath,
   createInt02aIdempotencyKey,
@@ -13,6 +15,18 @@ import {
 
 const referenceDate = new Date(2026, 7, 30, 10);
 const freightIntakeFixture = createFreightIntakeFixture(referenceDate);
+const persistedIntent = parseFreightRequestExecutionIntent({
+  schemaVersion: "1.0",
+  freightRequestId: freightIntakeFixture.freightRequestId,
+  requestCode: "FR-1042",
+  status: "PENDING",
+  pickupMode: "SCHEDULED",
+  requiredPickup: "2026-08-31T13:00:00+00:00",
+  pickupWindowStart: "2026-08-31T13:00:00+00:00",
+  pickupWindowEnd: "2026-08-31T17:00:00+00:00",
+  deliveryDeadline: "2026-09-03T13:00:00+00:00",
+  updatedAt: "2026-08-30T20:00:00+00:00",
+});
 
 const andesProvider: ProviderPageConfig = {
   carrierId: "carrier-a",
@@ -31,7 +45,7 @@ const andesProvider: ProviderPageConfig = {
 };
 
 test("maps the B-02 intake into the public INT-02A runner inputs", () => {
-  const inputs = buildProviderRunnerInputs(freightIntakeFixture);
+  const inputs = buildProviderRunnerInputs(freightIntakeFixture, persistedIntent);
 
   assert.equal(inputs.check_service_coverage.transport_mode, "ROAD");
   assert.equal(inputs.check_service_coverage.service_type, "FTL");
@@ -43,28 +57,69 @@ test("maps the B-02 intake into the public INT-02A runner inputs", () => {
 
 test("rejects an incomplete SCHEDULED pickup window", () => {
   assert.throws(
-    () => buildProviderRunnerInputs({ ...freightIntakeFixture, pickupWindowEnd: "" }),
+    () => buildProviderRunnerInputs(
+      freightIntakeFixture,
+      { ...persistedIntent, pickupWindowEnd: null },
+    ),
     /SCHEDULED requiere inicio y fin/,
   );
 });
 
-test("builds the documented FR-1042 reset window and deadline", () => {
-  const schedule = createFr1042DemoSchedule(referenceDate);
-  const inputs = buildProviderRunnerInputs(freightIntakeFixture);
+test("uses the persisted FR-1042 reset window and deadline", () => {
+  const inputs = buildProviderRunnerInputs(freightIntakeFixture, persistedIntent);
 
-  assert.deepEqual(schedule, {
-    pickupWindowStart: "2026-08-31T13:00",
-    pickupWindowEnd: "2026-08-31T17:00",
-    deliveryDeadline: "2026-09-03T13:00",
-  });
-  assert.ok(Date.parse(inputs.check_capacity.pickup_window_end!) > Date.parse(inputs.check_capacity.pickup_window_start!));
-  assert.ok(Date.parse(inputs.check_capacity.delivery_deadline!) > Date.parse(inputs.check_capacity.pickup_window_end!));
+  assert.equal(inputs.check_capacity.pickup_mode, persistedIntent.pickupMode);
+  assert.equal(inputs.check_capacity.pickup_window_start, persistedIntent.pickupWindowStart);
+  assert.equal(inputs.check_capacity.pickup_window_end, persistedIntent.pickupWindowEnd);
+  assert.equal(inputs.check_capacity.delivery_deadline, persistedIntent.deliveryDeadline);
   assert.equal(inputs.quote_freight.pickup_window_end, inputs.check_capacity.pickup_window_end);
   assert.equal(inputs.quote_freight.delivery_deadline, inputs.check_capacity.delivery_deadline);
 });
 
+test("server intent prevails when the browser day and timezone differ", () => {
+  const intentAcrossDayBoundary = parseFreightRequestExecutionIntent({
+    ...persistedIntent,
+    requiredPickup: "2026-09-01T00:30:00+14:00",
+    pickupWindowStart: "2026-09-01T00:30:00+14:00",
+    pickupWindowEnd: "2026-09-01T04:30:00+14:00",
+    deliveryDeadline: "2026-09-04T00:30:00+14:00",
+  });
+  const browserModel = {
+    ...freightIntakeFixture,
+    pickupWindowStart: "2030-01-01T08:00",
+    pickupWindowEnd: "2030-01-01T12:00",
+    deliveryDeadline: "2030-01-04T08:00",
+  };
+  const synchronizedModel = applyExecutionIntentToIntake(
+    browserModel,
+    intentAcrossDayBoundary,
+  );
+  const inputs = buildProviderRunnerInputs(browserModel, intentAcrossDayBoundary);
+
+  assert.deepEqual(
+    {
+      pickupMode: synchronizedModel.pickupMode,
+      requiredPickup: synchronizedModel.requiredPickup,
+      pickupWindowStart: synchronizedModel.pickupWindowStart,
+      pickupWindowEnd: synchronizedModel.pickupWindowEnd,
+      deliveryDeadline: synchronizedModel.deliveryDeadline,
+    },
+    {
+      pickupMode: intentAcrossDayBoundary.pickupMode,
+      requiredPickup: intentAcrossDayBoundary.requiredPickup,
+      pickupWindowStart: intentAcrossDayBoundary.pickupWindowStart,
+      pickupWindowEnd: intentAcrossDayBoundary.pickupWindowEnd,
+      deliveryDeadline: intentAcrossDayBoundary.deliveryDeadline,
+    },
+  );
+  assert.equal(inputs.check_capacity.pickup_window_start, "2026-08-31T10:30:00.000Z");
+  assert.equal(inputs.check_capacity.pickup_window_end, "2026-08-31T14:30:00.000Z");
+  assert.equal(inputs.check_capacity.delivery_deadline, "2026-09-03T10:30:00.000Z");
+  assert.notEqual(inputs.check_capacity.pickup_window_start, browserModel.pickupWindowStart);
+});
+
 test("produces an eligible capacity and quote for the FR-1042 demo window", async () => {
-  const inputs = buildProviderRunnerInputs(freightIntakeFixture);
+  const inputs = buildProviderRunnerInputs(freightIntakeFixture, persistedIntent);
   const signal = new AbortController().signal;
   const capacity = await createCheckCapacityTool(andesProvider).execute(inputs.check_capacity, { signal }) as ProviderToolEnvelope<CapacityResult>;
   const quote = await createQuoteFreightTool(andesProvider, { now: () => referenceDate }).execute(inputs.quote_freight, { signal }) as ProviderToolEnvelope<ProviderQuote>;
