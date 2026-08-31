@@ -58,6 +58,7 @@ export type TrackingMapModel = {
 };
 
 export type FreightIntakeModel = {
+  freightRequestId: string;
   requestId: string;
   organization: string;
   requester: string;
@@ -68,6 +69,9 @@ export type FreightIntakeModel = {
   deliveryContact: string;
   borderCrossing: string;
   cargoCategory: string;
+  cargoCategoryCode: string;
+  transportMode: string;
+  serviceType: string;
   entryMethod: string;
   quantity: number;
   unitWeightKg: number;

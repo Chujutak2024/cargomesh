@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import type {
   OrchestrationViewModel, ProviderAttemptView, RankedOfferView,
 } from "@/features/orchestration/contracts";
+import { takeCachedInt02aViewModel } from "@/features/freight-ui/int02a-client";
 import styles from "./dispatch-view.module.css";
 
 const progressCopy: Record<ProviderAttemptView["status"], string> = {
@@ -29,33 +30,61 @@ export function OrchestrationDispatch({ runId }: { runId: string }) {
   const [model, setModel] = useState<OrchestrationViewModel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/orchestration/runs/${encodeURIComponent(runId)}`, {
-        cache: "no-store",
-        credentials: "same-origin",
-      });
-      const payload: unknown = await response.json();
-      if (!response.ok || !isSuccessfulEnvelope(payload)) {
-        throw new Error(readEnvelopeError(payload) ?? "No fue posible consultar la evaluación.");
-      }
-      setModel(payload.data);
-    } catch (reason) {
-      setModel(null);
-      setError(reason instanceof Error ? reason.message : "No fue posible consultar la evaluación.");
-    } finally {
+  const retry = useCallback(() => setRefreshKey((current) => current + 1), []);
+
+  useEffect(() => {
+    let active = true;
+    let pollTimer: number | undefined;
+    const cached = takeCachedInt02aViewModel(runId);
+    const cachedModel = isOrchestrationViewModel(cached) ? cached : null;
+    let hasModel = cachedModel !== null;
+
+    if (cachedModel) {
+      setModel(cachedModel);
       setLoading(false);
+    } else {
+      setLoading(true);
     }
-  }, [runId]);
+    setError(null);
 
-  useEffect(() => { void load(); }, [load]);
+    async function poll() {
+      try {
+        const response = await fetch(`/api/orchestration/runs/${encodeURIComponent(runId)}`, {
+          cache: "no-store",
+          credentials: "same-origin",
+        });
+        const payload: unknown = await response.json();
+        if (!response.ok || !isSuccessfulEnvelope(payload)) {
+          throw new Error(readEnvelopeError(payload) ?? "No fue posible consultar la evaluación.");
+        }
+        if (!active) return;
+        hasModel = true;
+        setModel(payload.data);
+        setError(null);
+        setLoading(false);
+        if (payload.data.status === "loading") {
+          pollTimer = window.setTimeout(() => { void poll(); }, 1_500);
+        }
+      } catch (reason) {
+        if (!active || hasModel) return;
+        setModel(null);
+        setError(reason instanceof Error ? reason.message : "No fue posible consultar la evaluación.");
+        setLoading(false);
+      }
+    }
+
+    void poll();
+    return () => {
+      active = false;
+      if (pollTimer !== undefined) window.clearTimeout(pollTimer);
+    };
+  }, [refreshKey, runId]);
 
   if (loading) return <TransportState title="Cargando evaluación" message="Consultando la evidencia persistida del proceso." busy />;
-  if (error || !model) return <TransportState title="No pudimos abrir la evaluación" message={error ?? "La respuesta no contiene una evaluación válida."} onRetry={load} />;
-  return <DispatchView model={model} onRetry={load} />;
+  if (error || !model) return <TransportState title="No pudimos abrir la evaluación" message={error ?? "La respuesta no contiene una evaluación válida."} onRetry={retry} />;
+  return <DispatchView model={model} onRetry={retry} />;
 }
 
 export function DispatchView({ model, onRetry, fixtureScenario }: DispatchViewProps) {
@@ -237,12 +266,16 @@ function TransportState({ title, message, busy = false, onRetry }: { title: stri
   );
 }
 
+function isOrchestrationViewModel(value: unknown): value is OrchestrationViewModel {
+  if (!value || typeof value !== "object") return false;
+  const data = value as { schemaVersion?: unknown; status?: unknown };
+  return data.schemaVersion === "1.0" && ["loading", "error", "NO_MATCH", "success"].includes(String(data.status));
+}
+
 function isSuccessfulEnvelope(value: unknown): value is { ok: true; data: OrchestrationViewModel } {
   if (!value || typeof value !== "object") return false;
   const envelope = value as { ok?: unknown; data?: unknown };
-  if (envelope.ok !== true || !envelope.data || typeof envelope.data !== "object") return false;
-  const data = envelope.data as { schemaVersion?: unknown; status?: unknown };
-  return data.schemaVersion === "1.0" && ["loading", "error", "NO_MATCH", "success"].includes(String(data.status));
+  return envelope.ok === true && isOrchestrationViewModel(envelope.data);
 }
 
 function readEnvelopeError(value: unknown) {

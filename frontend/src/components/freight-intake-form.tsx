@@ -13,8 +13,16 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  buildProviderRunnerInputs,
+  buildRealDispatchPath,
+  cacheInt02aViewModel,
+  createIframeNavigationAdapter,
+  createInt02aIdempotencyKey,
+} from "@/features/freight-ui/int02a-client";
 import type { FreightIntakeModel } from "@/features/freight-ui/view-models";
+import { runInt02aOrchestration } from "@/features/webmcp-runner/orchestration-runner";
 import styles from "./freight-intake-form.module.css";
 
 const steps = [
@@ -31,6 +39,9 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(initialValue);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const runnerFrameRef = useRef<HTMLIFrameElement>(null);
 
   const totals = useMemo(() => ({
     weightKg: form.quantity * form.unitWeightKg,
@@ -50,13 +61,34 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
     }));
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (step < steps.length - 1) {
       setStep((current) => current + 1);
       return;
     }
-    router.push(`/dispatch/${encodeURIComponent(form.requestId)}?scenario=three`);
+    const runnerFrame = runnerFrameRef.current;
+    if (!runnerFrame) {
+      setSubmitError("No fue posible preparar el navegador para evaluar los providers.");
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const evidence = await runInt02aOrchestration({
+        freightRequestId: form.freightRequestId,
+        idempotencyKey: createInt02aIdempotencyKey(form.freightRequestId),
+        baseUrl: window.location.origin,
+        navigation: createIframeNavigationAdapter(runnerFrame, window.location.origin),
+        createInputs: () => buildProviderRunnerInputs(form),
+      });
+      cacheInt02aViewModel(evidence.start.runId, evidence.viewModel);
+      router.push(buildRealDispatchPath(evidence.start.runId));
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "No fue posible completar la evaluación.");
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -78,6 +110,7 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
               className={`${styles.step} ${index === step ? styles.stepActive : ""} ${index < step ? styles.stepDone : ""}`}
               aria-current={index === step ? "step" : undefined}
               onClick={() => setStep(index)}
+              disabled={submitting}
             >
               <span>{index < step ? <Check size={16} aria-hidden="true" /> : <Icon size={16} aria-hidden="true" />}</span>
               <small>Paso {index + 1}</small>
@@ -87,7 +120,7 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
         ))}
       </ol>
 
-      <form className={styles.formLayout} onSubmit={submit}>
+      <form className={styles.formLayout} onSubmit={submit} aria-busy={submitting}>
         <section className={styles.formCard} aria-labelledby={`step-title-${step}`}>
           {step === 0 ? (
             <>
@@ -175,8 +208,9 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
           ) : null}
 
           <footer className={styles.actions}>
-            <button type="button" className={styles.secondaryButton} disabled={step === 0} onClick={() => setStep((current) => current - 1)}><ArrowLeft size={17} aria-hidden="true" /> Anterior</button>
-            <button type="submit" className={styles.primaryButton}>{step === steps.length - 1 ? "Confirmar y buscar opciones" : "Continuar"}<ArrowRight size={17} aria-hidden="true" /></button>
+            {submitError ? <p className={styles.submitError} role="alert">{submitError}</p> : null}
+            <button type="button" className={styles.secondaryButton} disabled={step === 0 || submitting} onClick={() => setStep((current) => current - 1)}><ArrowLeft size={17} aria-hidden="true" /> Anterior</button>
+            <button type="submit" className={styles.primaryButton} disabled={submitting}>{submitting ? "Evaluando providers…" : step === steps.length - 1 ? "Confirmar y buscar opciones" : "Continuar"}<ArrowRight size={17} aria-hidden="true" /></button>
           </footer>
         </section>
 
@@ -192,6 +226,7 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
           <p><ShieldCheck size={16} aria-hidden="true" /> Los datos son fixtures editables de B-02; no se realizan consultas privilegiadas.</p>
         </aside>
       </form>
+      <iframe ref={runnerFrameRef} className={styles.runnerFrame} src="/" title="Ejecución WebMCP de providers" aria-hidden="true" tabIndex={-1} />
     </div>
   );
 }

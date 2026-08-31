@@ -127,6 +127,7 @@ export const trackingMapFixture: TrackingMapModel = {
 };
 
 export const freightIntakeFixture: FreightIntakeModel = {
+  freightRequestId: "f2000000-0000-0000-0000-000000000001",
   requestId: "FR-1042",
   organization: "ACME Mining Perú",
   requester: "Carlos Mendoza",
@@ -137,6 +138,9 @@ export const freightIntakeFixture: FreightIntakeModel = {
   deliveryContact: "Tomás Rojas · +56 9 6123 4010",
   borderCrossing: "Santa Rosa / Chacalluta",
   cargoCategory: "Repuestos mineros",
+  cargoCategoryCode: "MACHINERY",
+  transportMode: "ROAD",
+  serviceType: "FTL",
   entryMethod: "Pallets",
   quantity: 10,
   unitWeightKg: 800,
