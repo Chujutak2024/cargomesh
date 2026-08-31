@@ -34,8 +34,57 @@ export const REQUIRED_PROVIDER_TOOL_NAMES = [
   GET_PROVIDER_BOOKING_STATUS_TOOL_NAME,
 ] as const;
 
+const DEFAULT_CARGOMESH_TOOL_CALLER_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+] as const;
+
+function parseCargoMeshToolCallerOrigins(value?: string): string[] {
+  const candidates = value
+    ? value.split(",").map((origin) => origin.trim())
+    : [...DEFAULT_CARGOMESH_TOOL_CALLER_ORIGINS];
+
+  if (candidates.length === 0 || candidates.some((origin) => origin.length === 0)) {
+    throw new Error("CargoMesh tool caller origins must not be empty.");
+  }
+
+  return [...new Set(candidates.map((candidate) => {
+    if (candidate.includes("*")) {
+      throw new Error("CargoMesh tool caller origins must not contain wildcards.");
+    }
+
+    const parsed = new URL(candidate);
+    const isLoopback =
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "127.0.0.1" ||
+      parsed.hostname === "[::1]";
+
+    if (
+      (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && isLoopback)) ||
+      parsed.username ||
+      parsed.password ||
+      (parsed.pathname !== "/" && parsed.pathname !== "") ||
+      parsed.search ||
+      parsed.hash
+    ) {
+      throw new Error(
+        "CargoMesh tool caller entries must be secure HTTP(S) origins without credentials, paths, queries, or fragments.",
+      );
+    }
+
+    return parsed.origin;
+  }))];
+}
+
+export const CARGOMESH_TOOL_CALLER_ORIGINS = Object.freeze(
+  parseCargoMeshToolCallerOrigins(
+    process.env.NEXT_PUBLIC_CARGOMESH_TOOL_CALLER_ORIGINS,
+  ),
+);
+
 export type ProviderToolRegistrationOptions = {
   bookingStorage?: ProviderBookingStorage;
+  exposedTo?: readonly string[];
   now?: () => Date;
 };
 
@@ -85,9 +134,13 @@ export async function registerProviderTools(
   signal: AbortSignal,
   options: ProviderToolRegistrationOptions = {},
 ): Promise<boolean> {
+  const exposedTo = parseCargoMeshToolCallerOrigins(
+    (options.exposedTo ?? CARGOMESH_TOOL_CALLER_ORIGINS).join(","),
+  );
+
   await Promise.all(
     createProviderTools(provider, options).map((tool) =>
-      modelContext.registerTool(tool, { signal }),
+      modelContext.registerTool(tool, { exposedTo: [...exposedTo], signal }),
     ),
   );
 

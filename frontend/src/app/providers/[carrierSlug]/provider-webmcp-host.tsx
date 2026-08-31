@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import type { ProviderPageConfig } from "@/features/providers/contracts";
 import {
+  CARGOMESH_TOOL_CALLER_ORIGINS,
   registerProviderTools,
   REQUIRED_PROVIDER_TOOL_NAMES,
 } from "@/features/providers/provider-tool-registration";
@@ -32,7 +33,12 @@ export function ProviderWebMcpHost({ provider }: ProviderWebMcpHostProps) {
 
     setBrowserStatus("registering");
 
-    void registerProviderTools(modelContext, provider, registrationController.signal)
+    void registerProviderTools(
+      modelContext,
+      provider,
+      registrationController.signal,
+      { exposedTo: CARGOMESH_TOOL_CALLER_ORIGINS },
+    )
       .then((allToolsRegistered) => {
         if (mounted) {
           setBrowserStatus(allToolsRegistered ? "registered" : "error");

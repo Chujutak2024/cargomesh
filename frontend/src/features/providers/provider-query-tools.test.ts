@@ -20,6 +20,7 @@ import {
 } from "./provider-booking-runtime";
 import { createQuoteFreightTool } from "./quote-freight-tool";
 import {
+  CARGOMESH_TOOL_CALLER_ORIGINS,
   createProviderTools,
   registerProviderTools,
 } from "./provider-tool-registration";
@@ -110,36 +111,47 @@ test("the provider exposes all five expected tool definitions", () => {
   );
 });
 
-test("registration exposes all tools and the shared signal cleans them up", async () => {
-  const registeredTools = new Map<string, WebMCP.ModelContextTool>();
+test("registration exposes all five tools cross-origin and the shared signal cleans them up", async () => {
+  const registeredTools = new Map<
+    string,
+    {
+      options: WebMCP.ModelContextRegisterToolOptions;
+      tool: WebMCP.ModelContextTool;
+    }
+  >();
   const modelContext = {
     async registerTool(
       tool: WebMCP.ModelContextTool,
       options?: WebMCP.ModelContextRegisterToolOptions,
     ) {
-      registeredTools.set(tool.name, tool);
+      registeredTools.set(tool.name, { options: options ?? {}, tool });
       options?.signal?.addEventListener(
         "abort",
         () => registeredTools.delete(tool.name),
         { once: true },
       );
     },
-    async getTools() {
-      return [...registeredTools.values()].map((tool) => ({
-        name: tool.name,
-      })) as WebMCP.RegisteredTool[];
+    async getTools(options?: WebMCP.ModelContextGetToolOptions) {
+      return [...registeredTools.values()]
+        .filter(({ options: registrationOptions }) =>
+          !options?.fromOrigins?.length ||
+          options.fromOrigins.some((origin) =>
+            registrationOptions.exposedTo?.includes(origin),
+          ),
+        )
+        .map(({ tool }) => ({ name: tool.name })) as WebMCP.RegisteredTool[];
     },
     async executeTool(
       tool: WebMCP.RegisteredTool,
       inputJson = "{}",
       options?: WebMCP.ModelContextExecuteToolOptions,
     ) {
-      const registeredTool = registeredTools.get(tool.name);
-      if (!registeredTool) {
+      const registration = registeredTools.get(tool.name);
+      if (!registration) {
         throw new Error(`Tool '${tool.name}' is not registered.`);
       }
 
-      const result = await registeredTool.execute(JSON.parse(inputJson), {
+      const result = await registration.tool.execute(JSON.parse(inputJson), {
         signal: options?.signal ?? new AbortController().signal,
       });
       return JSON.stringify(result);
@@ -170,8 +182,28 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
       "get_provider_booking_status",
     ],
   );
+  assert.equal(registeredTools.size, 5);
+  for (const { options } of registeredTools.values()) {
+    assert.deepEqual(options.exposedTo, CARGOMESH_TOOL_CALLER_ORIGINS);
+    assert.equal(options.signal, registrationController.signal);
+  }
 
-  const coverageTool = (await modelContext.getTools()).find(
+  const cargoMeshOrigin = "http://localhost:3001";
+  const crossOriginTools = await modelContext.getTools({
+    fromOrigins: [cargoMeshOrigin],
+  });
+  assert.deepEqual(
+    crossOriginTools.map((tool) => tool.name),
+    [
+      "check_service_coverage",
+      "check_capacity",
+      "quote_freight",
+      "book_freight",
+      "get_provider_booking_status",
+    ],
+  );
+
+  const coverageTool = crossOriginTools.find(
     (tool) => tool.name === "check_service_coverage",
   );
   assert.ok(coverageTool);
@@ -183,7 +215,7 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
   ) as ProviderToolEnvelope<ServiceCoverageResult>;
   assert.equal(coverageResult.ok && coverageResult.data.supported, true);
 
-  const bookTool = (await modelContext.getTools()).find(
+  const bookTool = crossOriginTools.find(
     (tool) => tool.name === "book_freight",
   );
   assert.ok(bookTool);
@@ -209,7 +241,7 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
     seededProvider.service.providerServiceCode,
     bookingStorage,
   ).setNextResponse(bookResult.data.providerReference, "ACCEPT");
-  const statusTool = (await modelContext.getTools()).find(
+  const statusTool = crossOriginTools.find(
     (tool) => tool.name === "get_provider_booking_status",
   );
   assert.ok(statusTool);
@@ -226,7 +258,35 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
 
   registrationController.abort();
 
-  assert.deepEqual(await modelContext.getTools(), []);
+  assert.deepEqual(
+    await modelContext.getTools({ fromOrigins: [cargoMeshOrigin] }),
+    [],
+  );
+});
+
+test("registration rejects wildcard and query-based caller authorization", async () => {
+  const modelContext = {
+    async registerTool() {
+      assert.fail("Unsafe origins must be rejected before registering a tool.");
+    },
+    async getTools() {
+      return [];
+    },
+  } as unknown as WebMCP.ModelContext;
+  const signal = new AbortController().signal;
+
+  await assert.rejects(
+    registerProviderTools(modelContext, seededProvider, signal, {
+      exposedTo: ["*"],
+    }),
+    /must not contain wildcards/,
+  );
+  await assert.rejects(
+    registerProviderTools(modelContext, seededProvider, signal, {
+      exposedTo: ["https://cargomesh.example/?tenant=client-controlled"],
+    }),
+    /without credentials, paths, queries, or fragments/,
+  );
 });
 
 test("coverage returns a commercial success for a compatible provider fixture", async () => {
