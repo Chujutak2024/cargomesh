@@ -10,8 +10,17 @@ import type {
 } from "./contracts";
 import type { CapacityResult } from "./check-capacity-tool";
 import type { ServiceCoverageResult } from "./check-service-coverage-tool";
+import type {
+  ProviderBookFreightResult,
+  ProviderBookingStatusResult,
+} from "./provider-booking-contracts";
+import {
+  createInMemoryProviderBookingStorage,
+  createProviderFixtureController,
+} from "./provider-booking-runtime";
 import { createQuoteFreightTool } from "./quote-freight-tool";
 import {
+  CARGOMESH_TOOL_CALLER_ORIGINS,
   createProviderTools,
   registerProviderTools,
 } from "./provider-tool-registration";
@@ -83,67 +92,118 @@ async function executeTool<T>(
   return (await tool.execute(input, { signal })) as ProviderToolEnvelope<T>;
 }
 
-test("the provider exposes the three expected read-only tool definitions", () => {
+test("the provider exposes all five expected tool definitions", () => {
   const tools = createProviderTools(seededProvider);
 
   assert.deepEqual(
     tools.map((tool) => tool.name),
-    ["check_service_coverage", "check_capacity", "quote_freight"],
+    [
+      "check_service_coverage",
+      "check_capacity",
+      "quote_freight",
+      "book_freight",
+      "get_provider_booking_status",
+    ],
   );
-  assert.equal(tools.every((tool) => tool.annotations?.readOnlyHint === true), true);
+  assert.deepEqual(
+    tools.map((tool) => tool.annotations?.readOnlyHint),
+    [true, true, true, false, true],
+  );
 });
 
-test("registration exposes all tools and the shared signal cleans them up", async () => {
-  const registeredTools = new Map<string, WebMCP.ModelContextTool>();
+test("registration exposes all five tools cross-origin and the shared signal cleans them up", async () => {
+  const registeredTools = new Map<
+    string,
+    {
+      options: WebMCP.ModelContextRegisterToolOptions;
+      tool: WebMCP.ModelContextTool;
+    }
+  >();
   const modelContext = {
     async registerTool(
       tool: WebMCP.ModelContextTool,
       options?: WebMCP.ModelContextRegisterToolOptions,
     ) {
-      registeredTools.set(tool.name, tool);
+      registeredTools.set(tool.name, { options: options ?? {}, tool });
       options?.signal?.addEventListener(
         "abort",
         () => registeredTools.delete(tool.name),
         { once: true },
       );
     },
-    async getTools() {
-      return [...registeredTools.values()].map((tool) => ({
-        name: tool.name,
-      })) as WebMCP.RegisteredTool[];
+    async getTools(options?: WebMCP.ModelContextGetToolOptions) {
+      return [...registeredTools.values()]
+        .filter(({ options: registrationOptions }) =>
+          !options?.fromOrigins?.length ||
+          options.fromOrigins.some((origin) =>
+            registrationOptions.exposedTo?.includes(origin),
+          ),
+        )
+        .map(({ tool }) => ({ name: tool.name })) as WebMCP.RegisteredTool[];
     },
     async executeTool(
       tool: WebMCP.RegisteredTool,
       inputJson = "{}",
       options?: WebMCP.ModelContextExecuteToolOptions,
     ) {
-      const registeredTool = registeredTools.get(tool.name);
-      if (!registeredTool) {
+      const registration = registeredTools.get(tool.name);
+      if (!registration) {
         throw new Error(`Tool '${tool.name}' is not registered.`);
       }
 
-      const result = await registeredTool.execute(JSON.parse(inputJson), {
+      const result = await registration.tool.execute(JSON.parse(inputJson), {
         signal: options?.signal ?? new AbortController().signal,
       });
       return JSON.stringify(result);
     },
   } as WebMCP.ModelContext;
   const registrationController = new AbortController();
+  const bookingStorage = createInMemoryProviderBookingStorage();
 
   assert.equal(
     await registerProviderTools(
       modelContext,
       seededProvider,
       registrationController.signal,
+      {
+        bookingStorage,
+        now: () => new Date("2026-08-30T20:00:00.000Z"),
+      },
     ),
     true,
   );
   assert.deepEqual(
     (await modelContext.getTools()).map((tool) => tool.name),
-    ["check_service_coverage", "check_capacity", "quote_freight"],
+    [
+      "check_service_coverage",
+      "check_capacity",
+      "quote_freight",
+      "book_freight",
+      "get_provider_booking_status",
+    ],
+  );
+  assert.equal(registeredTools.size, 5);
+  for (const { options } of registeredTools.values()) {
+    assert.deepEqual(options.exposedTo, CARGOMESH_TOOL_CALLER_ORIGINS);
+    assert.equal(options.signal, registrationController.signal);
+  }
+
+  const cargoMeshOrigin = "http://localhost:3001";
+  const crossOriginTools = await modelContext.getTools({
+    fromOrigins: [cargoMeshOrigin],
+  });
+  assert.deepEqual(
+    crossOriginTools.map((tool) => tool.name),
+    [
+      "check_service_coverage",
+      "check_capacity",
+      "quote_freight",
+      "book_freight",
+      "get_provider_booking_status",
+    ],
   );
 
-  const coverageTool = (await modelContext.getTools()).find(
+  const coverageTool = crossOriginTools.find(
     (tool) => tool.name === "check_service_coverage",
   );
   assert.ok(coverageTool);
@@ -155,9 +215,78 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
   ) as ProviderToolEnvelope<ServiceCoverageResult>;
   assert.equal(coverageResult.ok && coverageResult.data.supported, true);
 
+  const bookTool = crossOriginTools.find(
+    (tool) => tool.name === "book_freight",
+  );
+  assert.ok(bookTool);
+  const bookResult = JSON.parse(
+    (await modelContext.executeTool(
+      bookTool,
+      JSON.stringify({
+        freight_request_id: compatibleQuoteInput.freight_request_id,
+        provider_offer_reference: "AND-OFF-8821",
+        idempotency_key: "cm:a04:model-context:booking:v1",
+        authorization_context: {
+          authorization_reference: "server-selection:decision-1:offer-1",
+          authorized_by: "HUMAN_SELECTION",
+        },
+        selection_mode: "ASSISTED",
+      }),
+    )) as string,
+  ) as ProviderToolEnvelope<ProviderBookFreightResult>;
+  assert.equal(bookResult.ok, true);
+  if (!bookResult.ok) return;
+
+  createProviderFixtureController(
+    seededProvider.service.providerServiceCode,
+    bookingStorage,
+  ).setNextResponse(bookResult.data.providerReference, "ACCEPT");
+  const statusTool = crossOriginTools.find(
+    (tool) => tool.name === "get_provider_booking_status",
+  );
+  assert.ok(statusTool);
+  const statusResult = JSON.parse(
+    (await modelContext.executeTool(
+      statusTool,
+      JSON.stringify({ provider_reference: bookResult.data.providerReference }),
+    )) as string,
+  ) as ProviderToolEnvelope<ProviderBookingStatusResult>;
+  assert.equal(
+    statusResult.ok && statusResult.data.providerBookingStatus,
+    "CONFIRMED",
+  );
+
   registrationController.abort();
 
-  assert.deepEqual(await modelContext.getTools(), []);
+  assert.deepEqual(
+    await modelContext.getTools({ fromOrigins: [cargoMeshOrigin] }),
+    [],
+  );
+});
+
+test("registration rejects wildcard and query-based caller authorization", async () => {
+  const modelContext = {
+    async registerTool() {
+      assert.fail("Unsafe origins must be rejected before registering a tool.");
+    },
+    async getTools() {
+      return [];
+    },
+  } as unknown as WebMCP.ModelContext;
+  const signal = new AbortController().signal;
+
+  await assert.rejects(
+    registerProviderTools(modelContext, seededProvider, signal, {
+      exposedTo: ["*"],
+    }),
+    /must not contain wildcards/,
+  );
+  await assert.rejects(
+    registerProviderTools(modelContext, seededProvider, signal, {
+      exposedTo: ["https://cargomesh.example/?tenant=client-controlled"],
+    }),
+    /without credentials, paths, queries, or fragments/,
+  );
 });
 
 test("coverage returns a commercial success for a compatible provider fixture", async () => {
