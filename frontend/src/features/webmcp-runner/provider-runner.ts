@@ -407,6 +407,8 @@ export async function runProviderCollection(
     Object.freeze({ ...candidate }),
   );
 
+  await options.navigation.bindRegisteredCandidates?.(candidates);
+
   for (const candidate of candidates) {
     options.signal?.throwIfAborted();
 

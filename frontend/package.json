@@ -10,7 +10,8 @@
     "test:discovery": "tsx --test src/features/discovery/candidate-matcher.test.ts",
     "test:c02": "tsx --test src/features/decision-engine/balanced.test.ts src/features/result-bridge/validation.test.ts",
     "test:int02a": "tsx --test src/features/orchestration/start-run-input.test.ts src/features/orchestration/view-model.test.ts",
-    "test:int02a-runner": "tsx --test src/features/webmcp-runner/provider-runner.test.ts src/features/webmcp-runner/orchestration-runner.test.ts"
+    "test:int02a-runner": "tsx --test src/features/webmcp-runner/provider-runner.test.ts src/features/webmcp-runner/orchestration-runner.test.ts",
+    "test:external-navigation": "tsx --test src/features/webmcp-runner/external-provider-navigation-adapter.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

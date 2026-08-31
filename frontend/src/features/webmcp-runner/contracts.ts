@@ -123,6 +123,14 @@ export type ProviderPageSession = {
 };
 
 export type ProviderNavigationAdapter = {
+  /**
+   * Binds the immutable discovery snapshot that is authoritative for this
+   * collection run. Security-aware adapters use it to reject arbitrary
+   * external destinations supplied outside discovery.
+   */
+  bindRegisteredCandidates?(
+    candidates: readonly Readonly<CandidateProvider>[],
+  ): void | Promise<void>;
   open(
     navigationUrl: string,
     candidate: CandidateProvider,
