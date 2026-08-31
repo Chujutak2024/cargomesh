@@ -3,9 +3,14 @@ import test from "node:test";
 
 import { createCheckCapacityTool } from "./check-capacity-tool";
 import { createCheckServiceCoverageTool } from "./check-service-coverage-tool";
-import type { ProviderPageConfig, ProviderToolEnvelope } from "./contracts";
+import type {
+  ProviderPageConfig,
+  ProviderQuote,
+  ProviderToolEnvelope,
+} from "./contracts";
 import type { CapacityResult } from "./check-capacity-tool";
 import type { ServiceCoverageResult } from "./check-service-coverage-tool";
+import { createQuoteFreightTool } from "./quote-freight-tool";
 import {
   createProviderTools,
   registerProviderTools,
@@ -60,6 +65,16 @@ const compatibleCapacityInput = {
   special_requirements: ["customs coordination"],
 };
 
+const compatibleQuoteInput = {
+  freight_request_id: "f2000000-0000-0000-0000-000000000001",
+  origin: "Callao, Peru",
+  destination: "Santiago, Chile",
+  cargo_weight_kg: 8_000,
+  cargo_volume_m3: 18,
+  cargo_category: "MACHINERY",
+  pickup_mode: "ASAP",
+};
+
 async function executeTool<T>(
   tool: WebMCP.ModelContextTool,
   input: Record<string, unknown>,
@@ -99,7 +114,7 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
     },
     async executeTool(
       tool: WebMCP.RegisteredTool,
-      inputObject: Record<string, unknown> = {},
+      inputJson = "{}",
       options?: WebMCP.ModelContextExecuteToolOptions,
     ) {
       const registeredTool = registeredTools.get(tool.name);
@@ -107,9 +122,10 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
         throw new Error(`Tool '${tool.name}' is not registered.`);
       }
 
-      return registeredTool.execute(inputObject, {
+      const result = await registeredTool.execute(JSON.parse(inputJson), {
         signal: options?.signal ?? new AbortController().signal,
       });
+      return JSON.stringify(result);
     },
   } as WebMCP.ModelContext;
   const registrationController = new AbortController();
@@ -131,10 +147,12 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
     (tool) => tool.name === "check_service_coverage",
   );
   assert.ok(coverageTool);
-  const coverageResult = (await modelContext.executeTool(
-    coverageTool,
-    compatibleCoverageInput,
-  )) as ProviderToolEnvelope<ServiceCoverageResult>;
+  const coverageResult = JSON.parse(
+    (await modelContext.executeTool(
+      coverageTool,
+      JSON.stringify(compatibleCoverageInput),
+    )) as string,
+  ) as ProviderToolEnvelope<ServiceCoverageResult>;
   assert.equal(coverageResult.ok && coverageResult.data.supported, true);
 
   registrationController.abort();
@@ -255,6 +273,47 @@ test("unknown provider service codes return conservative commercial responses", 
 
   assert.equal(coverage.ok && coverage.data.supported, false);
   assert.equal(capacity.ok && capacity.data.available, false);
+});
+
+test("quote uses an injected clock and remains valid for exactly six hours", async () => {
+  const fixedNow = new Date("2026-08-31T00:30:00.000Z");
+  let clockReads = 0;
+  const tool = createQuoteFreightTool(seededProvider, {
+    now: () => {
+      clockReads += 1;
+      return fixedNow;
+    },
+  });
+
+  const result = await executeTool<ProviderQuote>(tool, compatibleQuoteInput);
+
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(clockReads, 1);
+  assert.equal(result.data.estimatedPickup, "2026-09-01T00:30:00.000Z");
+  assert.equal(result.data.validUntil, "2026-08-31T06:30:00.000Z");
+  assert.equal(
+    Date.parse(result.data.validUntil) - fixedNow.getTime(),
+    6 * 60 * 60 * 1000,
+  );
+});
+
+test("quote keeps a scheduled pickup while validity derives from the frozen clock", async () => {
+  const fixedNow = new Date("2026-08-30T20:00:00.000Z");
+  const result = await executeTool<ProviderQuote>(
+    createQuoteFreightTool(seededProvider, { now: () => fixedNow }),
+    {
+      ...compatibleQuoteInput,
+      pickup_mode: "SCHEDULED",
+      pickup_window_start: "2026-09-01T12:00:00.000Z",
+      pickup_window_end: "2026-09-01T18:00:00.000Z",
+    },
+  );
+
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.data.estimatedPickup, "2026-09-01T12:00:00.000Z");
+  assert.equal(result.data.validUntil, "2026-08-31T02:00:00.000Z");
 });
 
 test("both provider query tools honor an in-flight AbortSignal", async () => {
