@@ -14,7 +14,7 @@
     "test:external-navigation": "tsx --test src/features/webmcp-runner/external-provider-navigation-adapter.test.ts",
     "test:freight-intent": "tsx --test src/features/freight-requests/execution-intent.test.ts",
     "test:a04": "tsx --test src/features/providers/provider-query-tools.test.ts src/features/providers/provider-booking-tools.test.ts",
-    "test:booking": "tsx --test src/features/booking/validation.test.ts"
+    "test:booking": "tsx --test src/features/booking/validation.test.ts src/features/booking/server-policy.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

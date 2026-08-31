@@ -20,6 +20,10 @@ import {
   parseRecordProviderBookingInput,
   parseRecordProviderBookingStatusInput,
 } from "./validation";
+import {
+  mapBookingDatabaseError,
+  requireRequestOrganizationMember,
+} from "./server-policy";
 
 type FreightRequestRow = { id: string; organization_id: string };
 type BookingRow = {
@@ -43,20 +47,7 @@ type BookingEventRow = {
   payload: Json;
 };
 
-function databaseError(error: { message: string }): BookingBridgeError {
-  const { message } = error;
-  if (message.includes("IDEMPOTENCY_CONFLICT")) return new BookingBridgeError("IDEMPOTENCY_CONFLICT", message, 409);
-  if (message.includes("BOOKING_ALREADY_EXISTS")) return new BookingBridgeError("BOOKING_ALREADY_EXISTS", message, 409);
-  if (message.includes("NOT_FOUND")) return new BookingBridgeError("NOT_FOUND", message, 404);
-  if (message.includes("AUTHORIZATION") || message.includes("SMART_AUTO")) return new BookingBridgeError("FORBIDDEN", message, 403);
-  if (message.includes("INVALID_") || message.includes("MISMATCH") || message.includes("NOT_ELIGIBLE") || message.includes("NOT_READY")) {
-    return new BookingBridgeError("BOOKING_REJECTED", message, 422);
-  }
-  if (message.includes("EXPIRED")) return new BookingBridgeError("BOOKING_AUTHORIZATION_EXPIRED", message, 409);
-  return new BookingBridgeError("BOOKING_BRIDGE_UNAVAILABLE", message, 500);
-}
-
-async function assertRequestMembership(freightRequestId: string): Promise<FreightRequestRow> {
+async function assertRequestMembership(freightRequestId: string) {
   const session = await createServerSupabaseClient();
   const { data, error } = await session
     .from("freight_requests")
@@ -66,8 +57,8 @@ async function assertRequestMembership(freightRequestId: string): Promise<Freigh
   if (error) throw new BookingBridgeError("REQUEST_LOOKUP_FAILED", "Unable to load FreightRequest.", 500);
   if (!data) throw new BookingBridgeError("NOT_FOUND", "FreightRequest not found.", 404);
   const request = data as unknown as FreightRequestRow;
-  await requireAuthenticatedMember({ organizationId: request.organization_id });
-  return request;
+  const member = await requireRequestOrganizationMember(request.organization_id, requireAuthenticatedMember);
+  return { request, member };
 }
 
 async function assertBookingBelongsToRequest(bookingId: string, freightRequestId: string): Promise<void> {
@@ -106,8 +97,7 @@ async function assertProviderIdentity(
 
 export async function prepare_booking(rawInput: unknown): Promise<PreparedBookingAuthorization> {
   const input = parsePrepareBookingInput(rawInput);
-  const member = await requireAuthenticatedMember();
-  await assertRequestMembership(input.freightRequestId);
+  const { member } = await assertRequestMembership(input.freightRequestId);
 
   if (input.selectionMode === "SMART_AUTO" && member.role !== "OWNER" && member.role !== "SUPERVISOR") {
     throw new BookingBridgeError("FORBIDDEN", "SMART_AUTO requires an OWNER or SUPERVISOR.", 403);
@@ -121,7 +111,7 @@ export async function prepare_booking(rawInput: unknown): Promise<PreparedBookin
     p_selection_mode: input.selectionMode,
     p_booking_idempotency_key: input.bookingIdempotencyKey,
   });
-  if (error) throw databaseError(error);
+  if (error) throw mapBookingDatabaseError(error);
   return mapPreparedAuthorization(data);
 }
 
@@ -148,8 +138,7 @@ async function mapPreparedAuthorization(
 
 export async function prepare_booking_recovery(rawInput: unknown): Promise<PreparedBookingAuthorization> {
   const input = parsePrepareBookingRecoveryInput(rawInput);
-  const member = await requireAuthenticatedMember();
-  await assertRequestMembership(input.freightRequestId);
+  const { member } = await assertRequestMembership(input.freightRequestId);
   await assertBookingBelongsToRequest(input.replacesBookingId, input.freightRequestId);
   if (input.selectionMode === "SMART_AUTO" && member.role !== "OWNER" && member.role !== "SUPERVISOR") {
     throw new BookingBridgeError("FORBIDDEN", "SMART_AUTO requires an OWNER or SUPERVISOR.", 403);
@@ -162,19 +151,18 @@ export async function prepare_booking_recovery(rawInput: unknown): Promise<Prepa
     p_selection_mode: input.selectionMode,
     p_booking_idempotency_key: input.bookingIdempotencyKey,
   });
-  if (error) throw databaseError(error);
+  if (error) throw mapBookingDatabaseError(error);
   return mapPreparedAuthorization(data);
 }
 
 export async function reset_demo_booking_runtime(freightRequestId: string): Promise<ResetDemoBookingRuntimeResult> {
-  const member = await requireAuthenticatedMember();
-  await assertRequestMembership(freightRequestId);
+  const { member } = await assertRequestMembership(freightRequestId);
   if (member.role !== "OWNER" && member.role !== "SUPERVISOR") {
     throw new BookingBridgeError("FORBIDDEN", "Demo reset requires an OWNER or SUPERVISOR.", 403);
   }
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("reset_demo_booking_runtime", { p_freight_request_id: freightRequestId });
-  if (error) throw databaseError(error);
+  if (error) throw mapBookingDatabaseError(error);
   const row = (data as Array<{ freight_request_id: string; deleted_bookings: number; deleted_authorizations: number }> | null)?.[0];
   if (!row) throw new BookingBridgeError("BOOKING_BRIDGE_UNAVAILABLE", "Demo reset returned no result.", 500);
   return {
@@ -234,7 +222,7 @@ export async function record_provider_booking(
     p_payment_url: input.toolOutput.data.paymentUrl,
     p_provider_idempotent_replay: input.toolOutput.data.idempotentReplay,
   });
-  if (error) throw databaseError(error);
+  if (error) throw mapBookingDatabaseError(error);
   const row = (data as unknown as Array<{ booking_id: string; result_status: "INSERTED" | "DEDUPLICATED"; deduplicated: boolean }> | null)?.[0];
   if (!row) throw new BookingBridgeError("BOOKING_BRIDGE_UNAVAILABLE", "Booking Bridge returned no persistence result.", 500);
   return { bookingId: row.booking_id, status: row.result_status, deduplicated: row.deduplicated };
@@ -286,7 +274,7 @@ export async function record_provider_booking_status(
     p_payment_status: input.toolOutput.data.paymentStatus,
     p_events: input.toolOutput.data.events as unknown as Json,
   });
-  if (error) throw databaseError(error);
+  if (error) throw mapBookingDatabaseError(error);
   const row = (data as unknown as Array<{ booking_id: string; result_status: "INSERTED" | "DEDUPLICATED"; deduplicated: boolean }> | null)?.[0];
   if (!row) throw new BookingBridgeError("BOOKING_BRIDGE_UNAVAILABLE", "Booking status Bridge returned no persistence result.", 500);
   return { bookingId: row.booking_id, status: row.result_status, deduplicated: row.deduplicated };
