@@ -320,6 +320,7 @@ export type Database = {
           available_capacity_kg: number
           available_volume_m3: number | null
           carrier_id: string
+          carrier_service_id: string | null
           compatibility_notes: Json | null
           compatibility_status: string
           created_at: string
@@ -352,6 +353,7 @@ export type Database = {
           available_capacity_kg: number
           available_volume_m3?: number | null
           carrier_id: string
+          carrier_service_id?: string | null
           compatibility_notes?: Json | null
           compatibility_status?: string
           created_at?: string
@@ -384,6 +386,7 @@ export type Database = {
           available_capacity_kg?: number
           available_volume_m3?: number | null
           carrier_id?: string
+          carrier_service_id?: string | null
           compatibility_notes?: Json | null
           compatibility_status?: string
           created_at?: string
@@ -416,6 +419,13 @@ export type Database = {
             columns: ["carrier_id"]
             isOneToOne: false
             referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "carrier_offers_carrier_service_id_fkey"
+            columns: ["carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
             referencedColumns: ["id"]
           },
           {
@@ -924,7 +934,9 @@ export type Database = {
       }
       orchestration_events: {
         Row: {
+          attempt_number: number | null
           carrier_id: string | null
+          carrier_service_id: string | null
           completed_at: string | null
           created_at: string
           duration_ms: number | null
@@ -932,6 +944,7 @@ export type Database = {
           id: string
           idempotency_payload: Json | null
           input_payload: Json | null
+          navigation_url: string | null
           orchestration_run_id: string
           output_payload: Json | null
           persisted_entity_id: string | null
@@ -940,11 +953,15 @@ export type Database = {
           schema_version: string | null
           started_at: string | null
           status: string
+          execution_status: string | null
+          technical_error: Json | null
           tool_call_id: string | null
           tool_name: string | null
         }
         Insert: {
+          attempt_number?: number | null
           carrier_id?: string | null
+          carrier_service_id?: string | null
           completed_at?: string | null
           created_at?: string
           duration_ms?: number | null
@@ -952,6 +969,7 @@ export type Database = {
           id?: string
           idempotency_payload?: Json | null
           input_payload?: Json | null
+          navigation_url?: string | null
           orchestration_run_id: string
           output_payload?: Json | null
           persisted_entity_id?: string | null
@@ -960,11 +978,15 @@ export type Database = {
           schema_version?: string | null
           started_at?: string | null
           status?: string
+          execution_status?: string | null
+          technical_error?: Json | null
           tool_call_id?: string | null
           tool_name?: string | null
         }
         Update: {
+          attempt_number?: number | null
           carrier_id?: string | null
+          carrier_service_id?: string | null
           completed_at?: string | null
           created_at?: string
           duration_ms?: number | null
@@ -972,6 +994,7 @@ export type Database = {
           id?: string
           idempotency_payload?: Json | null
           input_payload?: Json | null
+          navigation_url?: string | null
           orchestration_run_id?: string
           output_payload?: Json | null
           persisted_entity_id?: string | null
@@ -980,6 +1003,8 @@ export type Database = {
           schema_version?: string | null
           started_at?: string | null
           status?: string
+          execution_status?: string | null
+          technical_error?: Json | null
           tool_call_id?: string | null
           tool_name?: string | null
         }
@@ -989,6 +1014,13 @@ export type Database = {
             columns: ["carrier_id"]
             isOneToOne: false
             referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orchestration_events_carrier_service_id_fkey"
+            columns: ["carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
             referencedColumns: ["id"]
           },
           {
@@ -1002,6 +1034,7 @@ export type Database = {
       }
       orchestration_runs: {
         Row: {
+          candidate_snapshot: Json
           completed_at: string | null
           created_at: string
           created_by_member_id: string | null
@@ -1009,12 +1042,15 @@ export type Database = {
           error_message: string | null
           freight_request_id: string
           id: string
+          idempotency_key: string | null
           previous_run_id: string | null
+          result_snapshot: Json | null
           run_type: string
           started_at: string
           status: string
         }
         Insert: {
+          candidate_snapshot?: Json
           completed_at?: string | null
           created_at?: string
           created_by_member_id?: string | null
@@ -1022,12 +1058,15 @@ export type Database = {
           error_message?: string | null
           freight_request_id: string
           id?: string
+          idempotency_key?: string | null
           previous_run_id?: string | null
+          result_snapshot?: Json | null
           run_type: string
           started_at?: string
           status?: string
         }
         Update: {
+          candidate_snapshot?: Json
           completed_at?: string | null
           created_at?: string
           created_by_member_id?: string | null
@@ -1035,7 +1074,9 @@ export type Database = {
           error_message?: string | null
           freight_request_id?: string
           id?: string
+          idempotency_key?: string | null
           previous_run_id?: string | null
+          result_snapshot?: Json | null
           run_type?: string
           started_at?: string
           status?: string
@@ -1390,13 +1431,20 @@ export type Database = {
       }
       record_provider_result: {
         Args: {
+          p_attempt_number: number
           p_carrier_id: string
+          p_carrier_service_id: string
+          p_cargomesh_origin: string
           p_completed_at: string
+          p_duration_ms: number
+          p_execution_status: string
           p_freight_request_id: string
+          p_navigation_url: string
           p_orchestration_run_id: string
           p_provider_url: string
           p_schema_version: string
           p_started_at: string
+          p_technical_error: Json
           p_tool_call_id: string
           p_tool_input: Json
           p_tool_name: string
@@ -1408,6 +1456,21 @@ export type Database = {
           record_id: string
           record_type: string
           result_status: string
+        }[]
+      }
+      start_orchestration_run: {
+        Args: {
+          p_candidate_snapshot: Json
+          p_created_by_member_id: string
+          p_freight_request_id: string
+          p_idempotency_key: string
+        }
+        Returns: {
+          candidate_snapshot: Json
+          deduplicated: boolean
+          freight_request_id: string
+          orchestration_run_id: string
+          status: string
         }[]
       }
     }

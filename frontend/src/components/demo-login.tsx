@@ -1,6 +1,13 @@
 "use client";
 
-import { ArrowRight, LoaderCircle, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  CheckCircle2,
+  LoaderCircle,
+  LockKeyhole,
+  ShieldCheck,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import styles from "./demo-login.module.css";
@@ -19,27 +26,41 @@ export function DemoLogin() {
 
   return (
     <div className={styles.card}>
+      <div className={styles.cardTopline}>
+        <span>
+          <LockKeyhole size={14} aria-hidden="true" />
+          Acceso de demostración
+        </span>
+        <span className={styles.status}>
+          <span aria-hidden="true" />
+          Disponible
+        </span>
+      </div>
+
       <div className={styles.cardHeader}>
         <span className={styles.securityMark} aria-hidden="true">
-          <ShieldCheck size={20} strokeWidth={1.8} />
+          <ShieldCheck size={22} strokeWidth={1.8} />
         </span>
         <div>
-          <span className={styles.eyebrow}>Entorno de evaluación</span>
-          <h1>Accede al control tower</h1>
+          <span className={styles.eyebrow}>Control tower B2B</span>
+          <h1>Bienvenido a CargoMesh</h1>
         </div>
       </div>
 
       <p className={styles.intro}>
-        Ingresa con la organización demo para revisar solicitudes y operaciones de carga internacional.
+        Ingresa al entorno seguro de evaluación para supervisar solicitudes y operaciones de carga.
       </p>
 
       <div className={styles.organization} aria-label="Organización de demostración">
-        <span className={styles.avatar} aria-hidden="true">AM</span>
-        <div>
+        <span className={styles.organizationIcon} aria-hidden="true">
+          <Building2 size={20} strokeWidth={1.8} />
+        </span>
+        <div className={styles.organizationCopy}>
+          <span>Organización activa</span>
           <strong>ACME Mining Perú</strong>
-          <span>Carlos Mendoza · Owner</span>
+          <small>Carlos Mendoza · Administrador</small>
         </div>
-        <span className={styles.ready}>Lista</span>
+        <CheckCircle2 className={styles.readyIcon} size={20} aria-label="Organización lista" />
       </div>
 
       <button
@@ -55,15 +76,19 @@ export function DemoLogin() {
           </>
         ) : (
           <>
-            Entrar a la demo
+            Ingresar al dashboard
             <ArrowRight size={18} aria-hidden="true" />
           </>
         )}
       </button>
 
-      <p className={styles.note}>
-        Esta entrada es exclusiva para la demo. La autenticación empresarial se conecta mediante Supabase.
-      </p>
+      <div className={styles.assurance}>
+        <ShieldCheck size={17} aria-hidden="true" />
+        <p>
+          <strong>Sesión demo controlada</strong>
+          <span>La autenticación empresarial se conectará mediante Supabase.</span>
+        </p>
+      </div>
     </div>
   );
 }

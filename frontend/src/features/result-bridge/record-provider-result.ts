@@ -47,6 +47,7 @@ function mapDatabaseError(message: string): ResultBridgeError {
 
 async function persistProviderResult(
   input: ValidatedRecordProviderResultInput,
+  cargomeshOrigin: string,
 ): Promise<RecordProviderResultResult> {
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("record_provider_result", {
@@ -54,12 +55,19 @@ async function persistProviderResult(
     p_orchestration_run_id: input.orchestrationRunId,
     p_freight_request_id: input.freightRequestId,
     p_carrier_id: input.carrierId,
+    p_carrier_service_id: input.matchingServiceId,
     p_provider_url: input.providerUrl,
+    p_navigation_url: input.navigationUrl,
     p_tool_name: input.toolName,
+    p_attempt_number: input.attemptNumber,
     p_tool_input: input.toolInput as Json,
     p_tool_output: input.toolOutput as unknown as Json,
     p_started_at: input.startedAt,
     p_completed_at: input.completedAt,
+    p_duration_ms: input.durationMs,
+    p_execution_status: input.status,
+    p_technical_error: input.technicalError as unknown as Json,
+    p_cargomesh_origin: cargomeshOrigin,
     p_schema_version: input.schemaVersion,
   });
 
@@ -85,8 +93,9 @@ async function persistProviderResult(
 
 export async function record_provider_result(
   rawInput: unknown,
+  cargomeshOrigin: string,
 ): Promise<RecordProviderResultResult> {
-  const input = parseRecordProviderResultInput(rawInput);
+  const input = parseRecordProviderResultInput(rawInput, cargomeshOrigin);
   await requireAuthenticatedMember();
   const sessionClient = await createServerSupabaseClient();
   const { data: runData, error: runError } = await sessionClient
@@ -143,7 +152,7 @@ export async function record_provider_result(
       500,
     );
   }
-  if (replayEvent) return persistProviderResult(input);
+  if (replayEvent) return persistProviderResult(input, cargomeshOrigin);
 
   if (run.status !== "RUNNING") {
     throw new ResultBridgeError("RUN_NOT_ACTIVE", "Orchestration run must be RUNNING.", 409);
@@ -159,17 +168,20 @@ export async function record_provider_result(
   }
 
   const candidate = discovery.candidates.find(
-    (item) => item.carrierId === input.carrierId && item.providerUrl === input.providerUrl,
+    (item) =>
+      item.carrierId === input.carrierId &&
+      item.providerUrl === input.providerUrl &&
+      item.matchingServiceId === input.matchingServiceId,
   );
   if (!candidate) {
     throw new ResultBridgeError(
       "CANDIDATE_MISMATCH",
-      "Carrier and providerUrl are not part of the compatible candidate set.",
+      "Carrier, providerUrl and matchingServiceId are not part of the compatible candidate set.",
       422,
     );
   }
 
-  return persistProviderResult(input);
+  return persistProviderResult(input, cargomeshOrigin);
 }
 
 export const recordProviderResult = record_provider_result;
