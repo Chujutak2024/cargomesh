@@ -133,7 +133,13 @@ test("prepares ASSISTED selection, executes book_freight through the navigation 
   assert.equal(boundSnapshots.length, 1);
   assert.match(navigationUrls[0], /serviceId=service-demo-2/);
   assert.equal(context.bookingId, "a0000000-0000-0000-0000-000000000099");
-  assert.equal(readBookingRuntimeContext(context.bookingId, storage)?.selectedOffer.offerId, offer.offerId);
+  assert.equal(context.runtimeEvidence?.navigation[0].discoveredToolNames.includes("book_freight"), true);
+  assert.equal(context.runtimeEvidence?.navigation[0].cleanupToolNames.length, 0);
+  assert.equal(context.runtimeEvidence?.tools[0].toolName, "book_freight");
+  assert.equal(context.runtimeEvidence?.tools[0].executionSurface, "document.modelContext");
+  assert.equal(context.runtimeEvidence?.tools[0].toolInput.idempotency_key, undefined);
+  assert.equal(context.runtimeEvidence?.tools[0].toolInput.idempotency_key_present, true);
+  assert.equal(readBookingRuntimeContext(context.bookingId, storage)?.runtimeEvidence?.tools.length, 1);
 });
 
 test("reuses the same selection idempotency key for an assisted replay", async () => {
@@ -196,6 +202,7 @@ test("executes provider status through WebMCP and records a deterministic replay
     dispatchHref: "/dispatch/run-fixture-three",
   };
   const payloads: Record<string, unknown>[] = [];
+  const storage = new MemoryStorage();
   const fetcher = async (_input: string | URL | Request, init?: RequestInit) => {
     payloads.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
     return new Response(JSON.stringify({ ok: true, data: { bookingId: context.bookingId, status: "INSERTED", deduplicated: false } }));
@@ -215,11 +222,16 @@ test("executes provider status through WebMCP and records a deterministic replay
     },
   });
 
-  await refreshProviderBookingStatus(context, {} as HTMLIFrameElement, "http://localhost:3000", { fetcher: fetcher as typeof fetch, createNavigation });
-  await refreshProviderBookingStatus(context, {} as HTMLIFrameElement, "http://localhost:3000", { fetcher: fetcher as typeof fetch, createNavigation });
+  const first = await refreshProviderBookingStatus(context, {} as HTMLIFrameElement, "http://localhost:3000", { fetcher: fetcher as typeof fetch, createNavigation, storage });
+  const second = await refreshProviderBookingStatus(first.context, {} as HTMLIFrameElement, "http://localhost:3000", { fetcher: fetcher as typeof fetch, createNavigation, storage });
 
   assert.equal(payloads[0].toolName, "get_provider_booking_status");
   assert.equal(payloads[0].bridgeCallId, payloads[1].bridgeCallId);
+  assert.equal(second.context.runtimeEvidence?.navigation.length, 2);
+  assert.equal(second.context.runtimeEvidence?.tools.length, 2);
+  assert.equal(second.context.runtimeEvidence?.tools[0].toolName, "get_provider_booking_status");
+  assert.equal(second.context.runtimeEvidence?.tools[0].executionSurface, "document.modelContext");
+  assert.equal(readBookingRuntimeContext(context.bookingId, storage)?.runtimeEvidence?.tools.length, 2);
 });
 
 test("polls only pending bookings and exposes only server-authorized recovery offers", () => {

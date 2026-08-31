@@ -43,12 +43,41 @@ export type BookingRuntimeContext = {
   offers: RankedOfferView[];
   candidates: CandidateProvider[];
   dispatchHref: string;
+  runtimeEvidence?: BookingRuntimeEvidence;
+};
+
+export type BookingRuntimeEvidence = {
+  navigation: Array<{
+    providerUrl: string;
+    navigationUrl: string;
+    carrierId: string;
+    matchingServiceId: string;
+    openedAt: string;
+    discoveredToolNames: string[];
+    cleanupUrl: string;
+    cleanupToolNames: string[];
+    leftAt: string;
+  }>;
+  tools: Array<{
+    toolName: BookingToolName;
+    executionSurface: "document.modelContext";
+    executedAt: string;
+    toolInput: Record<string, unknown>;
+    toolOutput: unknown;
+    bridgeResult: BookingBridgePersistenceResult;
+  }>;
+};
+
+export type BookingStatusRefreshResult = {
+  persistence: BookingBridgePersistenceResult;
+  context: BookingRuntimeContext;
 };
 
 type BookingFlowDependencies = {
   fetcher?: Fetcher;
   storage?: Storage;
   randomUUID?: () => string;
+  now?: () => string;
   createNavigation?: (frame: HTMLIFrameElement, baseUrl: string) => ProviderNavigationAdapter;
 };
 
@@ -152,7 +181,7 @@ export async function refreshProviderBookingStatus(
   frame: HTMLIFrameElement,
   baseUrl: string,
   dependencies: BookingFlowDependencies = {},
-): Promise<BookingBridgePersistenceResult> {
+): Promise<BookingStatusRefreshResult> {
   const candidate = context.candidates.find(
     (item) => item.carrierId === context.carrierId
       && item.matchingServiceId === context.matchingServiceId
@@ -164,16 +193,25 @@ export async function refreshProviderBookingStatus(
   const session = await navigation.open(context.navigationUrl, candidate);
   const runtime = session.runtime as unknown as BookingRuntime;
   const controller = new AbortController();
+  const openedAt = timestamp(dependencies);
+  const cleanupUrl = new URL("/", baseUrl).toString();
+  let discoveredToolNames: string[] = [];
+  let toolInput: Record<string, unknown> = {};
+  let toolOutput: unknown;
+  let executedAt = openedAt;
+  let persistence: BookingBridgePersistenceResult | null = null;
+  let cleanupToolNames: string[] = [];
 
   try {
-    await requireBookingTool(runtime, "get_provider_booking_status");
-    const toolInput = { provider_reference: context.providerReference };
-    const toolOutput = await runtime.executeTool(
+    discoveredToolNames = await requireBookingTool(runtime, "get_provider_booking_status");
+    toolInput = { provider_reference: context.providerReference };
+    executedAt = timestamp(dependencies);
+    toolOutput = await runtime.executeTool(
       "get_provider_booking_status",
       toolInput,
       controller.signal,
     );
-    return await postEnvelope<BookingBridgePersistenceResult>(
+    persistence = await postEnvelope<BookingBridgePersistenceResult>(
       "/api/bookings/record-status",
       {
         bridgeCallId: createStatusBridgeCallId(context.bookingId, toolOutput),
@@ -192,9 +230,32 @@ export async function refreshProviderBookingStatus(
       dependencies.fetcher,
     );
   } finally {
-    const activeTools = await session.leaveAndGetActiveToolNames(new URL("/", baseUrl).toString());
-    assertBookingCleanup(activeTools);
+    cleanupToolNames = await session.leaveAndGetActiveToolNames(cleanupUrl);
+    assertBookingCleanup(cleanupToolNames);
   }
+
+  if (!persistence) throw new Error("El Result Bridge no devolvió evidencia de estado.");
+  const nextContext = appendRuntimeEvidence(context, {
+    navigation: navigationEvidence({
+      candidate,
+      navigationUrl: context.navigationUrl,
+      openedAt,
+      discoveredToolNames,
+      cleanupUrl,
+      cleanupToolNames,
+      leftAt: timestamp(dependencies),
+    }),
+    tool: {
+      toolName: "get_provider_booking_status",
+      executionSurface: "document.modelContext",
+      executedAt,
+      toolInput,
+      toolOutput,
+      bridgeResult: persistence,
+    },
+  });
+  cacheBookingRuntimeContext(nextContext, dependencies.storage);
+  return { persistence, context: nextContext };
 }
 
 export async function fetchBookingViewModel(
@@ -232,7 +293,9 @@ export function cacheBookingRuntimeContext(context: BookingRuntimeContext, stora
 export function readBookingRuntimeContext(bookingId: string, storage: Storage = sessionStorage): BookingRuntimeContext | null {
   try {
     const value = storage.getItem(`${BOOKING_CONTEXT_PREFIX}${bookingId}`);
-    return value ? JSON.parse(value) as BookingRuntimeContext : null;
+    if (!value) return null;
+    const context = JSON.parse(value) as BookingRuntimeContext;
+    return { ...context, runtimeEvidence: normalizeRuntimeEvidence(context.runtimeEvidence) };
   } catch {
     return null;
   }
@@ -258,10 +321,18 @@ async function executePreparedBooking(
   const session = await navigation.open(navigationUrl, input.candidate);
   const runtime = session.runtime as unknown as BookingRuntime;
   const controller = new AbortController();
+  const openedAt = timestamp(dependencies);
+  const cleanupUrl = new URL("/", input.baseUrl).toString();
+  let discoveredToolNames: string[] = [];
+  let toolInput: Record<string, unknown> = {};
+  let toolOutput: unknown;
+  let executedAt = openedAt;
+  let persistence: BookingBridgePersistenceResult | null = null;
+  let cleanupToolNames: string[] = [];
 
   try {
-    await requireBookingTool(runtime, "book_freight");
-    const toolInput = {
+    discoveredToolNames = await requireBookingTool(runtime, "book_freight");
+    toolInput = {
       freight_request_id: input.authorization.freightRequestId,
       provider_offer_reference: input.authorization.providerOfferReference,
       idempotency_key: input.authorization.bookingIdempotencyKey,
@@ -271,8 +342,9 @@ async function executePreparedBooking(
       },
       selection_mode: input.authorization.selectionMode,
     };
-    const toolOutput = await runtime.executeTool("book_freight", toolInput, controller.signal);
-    const persistence = await postEnvelope<BookingBridgePersistenceResult>(
+    executedAt = timestamp(dependencies);
+    toolOutput = await runtime.executeTool("book_freight", toolInput, controller.signal);
+    persistence = await postEnvelope<BookingBridgePersistenceResult>(
       "/api/bookings/record-provider",
       {
         bridgeCallId: `cm:booking:v1:${input.authorization.authorizationReference}`,
@@ -289,29 +361,50 @@ async function executePreparedBooking(
       },
       dependencies.fetcher,
     );
-    const providerReference = readProviderReference(toolOutput);
-    const context: BookingRuntimeContext = {
-      bookingId: persistence.bookingId,
-      authorizationReference: input.authorization.authorizationReference,
-      freightRequestId: input.authorization.freightRequestId,
-      requestCode: input.requestCode,
-      offerId: input.authorization.offerId,
-      carrierId: input.authorization.carrierId,
-      matchingServiceId: input.authorization.matchingServiceId,
-      providerUrl: input.candidate.providerUrl,
-      navigationUrl,
-      providerReference,
-      selectedOffer: input.selectedOffer,
-      offers: input.offers,
-      candidates: input.candidates,
-      dispatchHref: input.dispatchHref,
-    };
-    cacheBookingRuntimeContext(context, dependencies.storage);
-    return context;
   } finally {
-    const activeTools = await session.leaveAndGetActiveToolNames(new URL("/", input.baseUrl).toString());
-    assertBookingCleanup(activeTools);
+    cleanupToolNames = await session.leaveAndGetActiveToolNames(cleanupUrl);
+    assertBookingCleanup(cleanupToolNames);
   }
+
+  if (!persistence) throw new Error("El Result Bridge no devolvió evidencia de booking.");
+  const providerReference = readProviderReference(toolOutput);
+  const context: BookingRuntimeContext = {
+    bookingId: persistence.bookingId,
+    authorizationReference: input.authorization.authorizationReference,
+    freightRequestId: input.authorization.freightRequestId,
+    requestCode: input.requestCode,
+    offerId: input.authorization.offerId,
+    carrierId: input.authorization.carrierId,
+    matchingServiceId: input.authorization.matchingServiceId,
+    providerUrl: input.candidate.providerUrl,
+    navigationUrl,
+    providerReference,
+    selectedOffer: input.selectedOffer,
+    offers: input.offers,
+    candidates: input.candidates,
+    dispatchHref: input.dispatchHref,
+    runtimeEvidence: {
+      navigation: [navigationEvidence({
+        candidate: input.candidate,
+        navigationUrl,
+        openedAt,
+        discoveredToolNames,
+        cleanupUrl,
+        cleanupToolNames,
+        leftAt: timestamp(dependencies),
+      })],
+      tools: [{
+        toolName: "book_freight",
+        executionSurface: "document.modelContext",
+        executedAt,
+        toolInput: redactBookingToolInput(toolInput),
+        toolOutput,
+        bridgeResult: persistence,
+      }],
+    },
+  };
+  cacheBookingRuntimeContext(context, dependencies.storage);
+  return context;
 }
 
 function createNavigation(
@@ -329,6 +422,59 @@ async function requireBookingTool(runtime: BookingRuntime, toolName: BookingTool
   if (!names.includes(toolName)) {
     throw new Error(`WEBMCP_TOOL_MISSING: ${toolName} no está disponible en el provider registrado.`);
   }
+  return names;
+}
+
+function appendRuntimeEvidence(
+  context: BookingRuntimeContext,
+  evidence: {
+    navigation: BookingRuntimeEvidence["navigation"][number];
+    tool: BookingRuntimeEvidence["tools"][number];
+  },
+): BookingRuntimeContext {
+  const current = normalizeRuntimeEvidence(context.runtimeEvidence);
+  return {
+    ...context,
+    runtimeEvidence: {
+      navigation: [...current.navigation, evidence.navigation],
+      tools: [...current.tools, evidence.tool],
+    },
+  };
+}
+
+function normalizeRuntimeEvidence(value: BookingRuntimeEvidence | undefined): BookingRuntimeEvidence {
+  return value ?? { navigation: [], tools: [] };
+}
+
+function navigationEvidence(input: {
+  candidate: CandidateProvider;
+  navigationUrl: string;
+  openedAt: string;
+  discoveredToolNames: string[];
+  cleanupUrl: string;
+  cleanupToolNames: string[];
+  leftAt: string;
+}): BookingRuntimeEvidence["navigation"][number] {
+  return {
+    providerUrl: input.candidate.providerUrl,
+    navigationUrl: input.navigationUrl,
+    carrierId: input.candidate.carrierId,
+    matchingServiceId: input.candidate.matchingServiceId,
+    openedAt: input.openedAt,
+    discoveredToolNames: [...input.discoveredToolNames],
+    cleanupUrl: input.cleanupUrl,
+    cleanupToolNames: [...input.cleanupToolNames],
+    leftAt: input.leftAt,
+  };
+}
+
+function redactBookingToolInput(input: Record<string, unknown>) {
+  const { idempotency_key: idempotencyKey, ...visible } = input;
+  return { ...visible, idempotency_key_present: typeof idempotencyKey === "string" && idempotencyKey.length > 0 };
+}
+
+function timestamp(dependencies: BookingFlowDependencies) {
+  return dependencies.now?.() ?? new Date().toISOString();
 }
 
 function assertBookingCleanup(activeTools: string[]) {

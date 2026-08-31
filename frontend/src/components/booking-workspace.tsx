@@ -73,6 +73,7 @@ type BookingWorkspaceProps = {
   busy?: boolean;
   actionError?: string | null;
   onRefresh?: () => void;
+  showRecovery?: boolean;
   recoveryOptions?: BookingRecoveryOption[];
   onRecover?: (offerId: string) => void;
 };
@@ -82,11 +83,13 @@ export function BookingWorkspace({
   busy = false,
   actionError,
   onRefresh,
+  showRecovery = false,
   recoveryOptions = [],
   onRecover,
 }: BookingWorkspaceProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeEvidence, setActiveEvidence] = useState(model.evidence[0]?.key ?? "events");
+  const [fixtureRecoveryOfferId, setFixtureRecoveryOfferId] = useState<string | null>(null);
   const openButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
@@ -237,20 +240,41 @@ export function BookingWorkspace({
         </section>
       </div>
 
-      {recoveryOptions.length ? (
+      {showRecovery ? (
         <section className={styles.recoveryPanel} aria-labelledby="recovery-title">
-          <header><span className={styles.eyebrow}>Recovery disponible</span><h2 id="recovery-title">Elige una oferta persistida para continuar</h2><p>Solo se muestran las alternativas indicadas por <code>recoveryOfferIds</code>.</p></header>
-          <div>
-            {recoveryOptions.map((offer) => (
-              <article key={offer.offerId}>
-                <div><strong>{offer.displayName}</strong><span>{offer.transitHours} h · {offer.score}/100</span></div>
-                <p>${offer.totalPrice.toLocaleString("en-US")} {offer.currency}</p>
-                <button type="button" disabled={busy} onClick={() => onRecover?.(offer.offerId)}>
-                  {busy ? "Preparando recuperación" : `Continuar con ${offer.displayName}`}
-                </button>
-              </article>
-            ))}
-          </div>
+          <header>
+            <span className={styles.eyebrow}>{model.isFixture ? "Recovery fixture-only" : "Recovery disponible"}</span>
+            <h2 id="recovery-title">{model.isFixture ? "Valida las alternativas sin ejecutar el flujo real" : "Elige una oferta persistida para continuar"}</h2>
+            <p>{model.isFixture ? "La selección permanece solo en memoria visual: no llama APIs, handlers ni WebMCP." : <>Solo se muestran las alternativas indicadas por <code>recoveryOfferIds</code>.</>}</p>
+          </header>
+          {recoveryOptions.length ? (
+            <div>
+              {recoveryOptions.map((offer) => {
+                const fixtureSelected = model.isFixture && fixtureRecoveryOfferId === offer.offerId;
+                return (
+                  <article key={offer.offerId} data-selected={fixtureSelected || undefined}>
+                    <div><strong>{offer.displayName}</strong><span>{offer.transitHours} h · {offer.score}/100</span></div>
+                    <p>${offer.totalPrice.toLocaleString("en-US")} {offer.currency}</p>
+                    <button
+                      type="button"
+                      disabled={busy || (!model.isFixture && !onRecover)}
+                      aria-pressed={model.isFixture ? fixtureSelected : undefined}
+                      onClick={() => model.isFixture ? setFixtureRecoveryOfferId(offer.offerId) : onRecover?.(offer.offerId)}
+                    >
+                      {busy ? "Preparando recuperación" : fixtureSelected ? "Alternativa marcada localmente" : `Continuar con ${offer.displayName}`}
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={styles.recoveryEmpty} role="status">
+              <CircleDashed size={26} aria-hidden="true" />
+              <strong>No hay alternativas de recovery</strong>
+              <span>{model.isFixture ? "Estado fixture 0: no se ejecutó ninguna operación." : "BookingViewModel v1 no autorizó ofertas alternativas."}</span>
+            </div>
+          )}
+          {model.isFixture && fixtureRecoveryOfferId ? <p className={styles.fixtureRecoveryStatus} role="status">Selección local registrada para validar la interfaz. No se creó una reserva.</p> : null}
         </section>
       ) : null}
 

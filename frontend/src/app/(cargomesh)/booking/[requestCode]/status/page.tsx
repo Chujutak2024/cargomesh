@@ -27,5 +27,11 @@ export default async function BookingStatusPage({ params, searchParams }: Bookin
     offerId,
   });
 
-  return <BookingWorkspace model={model} />;
+  return (
+    <BookingWorkspace
+      model={model}
+      showRecovery={model.showRecovery}
+      recoveryOptions={model.recoveryOptions}
+    />
+  );
 }

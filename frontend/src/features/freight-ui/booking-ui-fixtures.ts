@@ -65,6 +65,7 @@ export function getBookingUiFixture(input: {
     ? dispatch.attempts.find((attempt) => attempt.carrierId === selectedOffer.carrierId) ?? null
     : null;
   const status = bookingStatusCopy(input.scenario);
+  const showRecovery = ["rejected", "expired", "no-response", "recovery", "error"].includes(input.scenario);
 
   return {
     requestCode: input.requestCode,
@@ -77,6 +78,15 @@ export function getBookingUiFixture(input: {
     returnHref: `/dispatch/${encodeURIComponent(input.requestCode)}?scenario=${input.offerSet === "zero" ? "no-match" : input.offerSet}`,
     timeline: bookingTimeline(input.scenario, Boolean(selectedOffer)),
     evidence: buildEvidence(input.scenario, input.requestCode, selectedOffer, selectedAttempt?.providerUrl ?? null),
+    showRecovery,
+    recoveryOptions: showRecovery ? offers.map((offer) => ({
+      offerId: offer.offerId,
+      displayName: offer.displayName,
+      totalPrice: offer.totalPrice,
+      currency: offer.currency,
+      transitHours: offer.transitHours,
+      score: offer.score,
+    })) : [],
   };
 }
 

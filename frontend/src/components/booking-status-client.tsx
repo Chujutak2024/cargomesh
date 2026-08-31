@@ -49,7 +49,8 @@ export function BookingStatusClient({ bookingId }: { bookingId: string }) {
     setBusy(true);
     setActionError(null);
     try {
-      await refreshProviderBookingStatus(context, frame, window.location.origin);
+      const result = await refreshProviderBookingStatus(context, frame, window.location.origin);
+      setContext(result.context);
       await load();
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "No fue posible actualizar el estado del provider.");
@@ -121,6 +122,7 @@ export function BookingStatusClient({ bookingId }: { bookingId: string }) {
         busy={busy}
         actionError={actionError ?? loadError}
         onRefresh={shouldPollProviderBooking(viewModel) && context ? () => { void checkProvider(); } : undefined}
+        showRecovery={viewModel.canRecover}
         recoveryOptions={recoveryOptions}
         onRecover={(offerId) => { void recover(offerId); }}
       />
@@ -142,8 +144,8 @@ function toBookingWorkspaceModel(
     location: event.location,
     description: event.description,
   }));
-  const navigationEvents = events.filter((event) => /NAVIGAT/i.test(event.eventType));
-  const toolEvents = events.filter((event) => /BOOKING_REQUESTED|STATUS|CONFIRMED|REJECTED|EXPIRED|CANCELLED/i.test(event.eventType));
+  const runtimeNavigation = context?.runtimeEvidence?.navigation ?? [];
+  const runtimeTools = context?.runtimeEvidence?.tools ?? [];
 
   return {
     requestCode: context?.requestCode ?? "reserva activa",
@@ -158,14 +160,14 @@ function toBookingWorkspaceModel(
       {
         key: "navigation",
         label: "Navegación",
-        summary: navigationEvents.length ? `${navigationEvents.length} eventos persistidos` : "Sin evento de navegación en BookingViewModel v1",
-        payload: navigationEvents,
+        summary: runtimeNavigation.length ? `${runtimeNavigation.length} navegaciones WebMCP observadas` : "Sin contexto local de navegación disponible",
+        payload: runtimeNavigation,
       },
       {
         key: "tool",
         label: "Tool",
-        summary: toolEvents.length ? `${toolEvents.length} transiciones provider persistidas` : "Sin transición provider persistida",
-        payload: toolEvents,
+        summary: runtimeTools.length ? `${runtimeTools.length} ejecuciones mediante document.modelContext` : "Sin ejecución WebMCP observada en este navegador",
+        payload: runtimeTools,
       },
       {
         key: "persistence",

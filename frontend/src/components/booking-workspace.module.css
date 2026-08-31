@@ -65,12 +65,18 @@
 .recoveryPanel code { border-radius: 0.3rem; padding: 0.1rem 0.25rem; background: #edf1ef; color: #34413f; }
 .recoveryPanel > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 0.75rem; padding: 1rem; }
 .recoveryPanel article { display: grid; gap: 0.65rem; border: 1px solid #dbe2df; border-radius: 0.8rem; padding: 0.8rem; background: #fbfcfa; }
+.recoveryPanel article[data-selected="true"] { border-color: #2bae9a; background: #eef8f4; box-shadow: 0 0 0 2px rgb(43 174 154 / 14%); }
 .recoveryPanel article > div { display: grid; gap: 0.15rem; }
 .recoveryPanel article strong { color: #1f2928; font-size: 0.75rem; }
 .recoveryPanel article span { color: #687573; font-size: 0.58rem; }
 .recoveryPanel article p { margin: 0; color: #123c3a; font-size: 1rem; font-weight: 850; }
 .recoveryPanel article button { min-height: 2.75rem; border: 0; border-radius: 0.7rem; padding: 0 0.75rem; background: #185c55; color: #fff; font: inherit; font-size: 0.64rem; font-weight: 800; cursor: pointer; }
 .recoveryPanel article button:disabled { background: #dce4e1; color: #71807d; cursor: not-allowed; }
+.recoveryPanel article button[aria-pressed="true"] { background: #123c3a; }
+.recoveryEmpty { display: grid; min-height: 9rem; place-items: center; align-content: center; gap: 0.35rem; padding: 1rem; color: #687573; text-align: center; }
+.recoveryEmpty strong { color: #34413f; font-size: 0.75rem; }
+.recoveryEmpty span { max-width: 28rem; font-size: 0.62rem; line-height: 1.5; }
+.fixtureRecoveryStatus { margin: 0; border-top: 1px solid #dbe2df; padding: 0.75rem 1rem; background: #eef8f4; color: #185c55; font-size: 0.63rem; font-weight: 750; }
 .drawerLayer { position: fixed; z-index: 80; inset: 0; }
 .backdrop { position: absolute; inset: 0; width: 100%; border: 0; background: rgb(18 42 40 / 55%); cursor: pointer; }
 .drawer { position: absolute; inset: 0 0 0 auto; display: flex; width: min(100%, 36rem); flex-direction: column; overflow: hidden; border-left: 1px solid #d5dcda; background: #fbfcfa; box-shadow: -1.2rem 0 3rem rgb(18 60 58 / 18%); }

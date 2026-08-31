@@ -65,3 +65,18 @@ test("represents every required visual state without inventing booking identifie
     assert.equal(fixture.status.code, expectedStatus);
   }
 });
+
+test("exposes recovery alternatives as fixture-only 0, 1 and N collections", () => {
+  const zero = getBookingUiFixture({ requestCode: "FR-1042", scenario: "recovery", offerSet: "zero" });
+  const one = getBookingUiFixture({ requestCode: "FR-1042", scenario: "rejected", offerSet: "one" });
+  const four = getBookingUiFixture({ requestCode: "FR-1042", scenario: "recovery", offerSet: "four" });
+  const pending = getBookingUiFixture({ requestCode: "FR-1042", scenario: "pending-provider-confirmation", offerSet: "four" });
+
+  assert.equal(zero.showRecovery, true);
+  assert.equal(zero.recoveryOptions.length, 0);
+  assert.equal(one.recoveryOptions.length, 1);
+  assert.equal(four.recoveryOptions.length, 4);
+  assert.equal(pending.showRecovery, false);
+  assert.equal(pending.recoveryOptions.length, 0);
+  assert.equal("bookingId" in four.recoveryOptions[0], false);
+});
