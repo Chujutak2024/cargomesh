@@ -12,12 +12,14 @@
   border: 0;
   border-radius: 0.78rem;
   padding: 0.6rem 0.85rem;
-  background: #d9e3df;
-  color: #71807d;
+  background: #185c55;
+  color: #ffffff;
   font-family: inherit;
   text-align: left;
-  cursor: not-allowed;
+  text-decoration: none;
+  transition: background 160ms ease, box-shadow 160ms ease;
 }
+.primaryAction:hover { background: #123c3a; box-shadow: 0 0.55rem 1.4rem rgb(18 60 58 / 16%); }
 .primaryAction > span { display: grid; gap: 0.05rem; font-size: 0.72rem; font-weight: 800; }
 .primaryAction small { font-size: 0.52rem; font-weight: 600; }
 

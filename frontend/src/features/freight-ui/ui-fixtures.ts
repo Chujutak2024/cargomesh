@@ -1,5 +1,12 @@
 import type {
+  OrchestrationViewModel,
+  ProviderAttemptView,
+  RankedOfferView,
+} from "@/features/orchestration/contracts";
+import type {
   DashboardSummary,
+  DispatchFixtureScenario,
+  FreightIntakeModel,
   FreightRequestListItem,
   LogisticsCapacity,
   TrackingMapModel,
@@ -118,3 +125,270 @@ export const trackingMapFixture: TrackingMapModel = {
     eta: "8 h 20 min",
   },
 };
+
+function toLocalDateTimeInput(value: Date) {
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`;
+}
+
+function atDemoDay(reference: Date, dayOffset: number, hour: number) {
+  const value = new Date(reference);
+  value.setHours(0, 0, 0, 0);
+  value.setDate(value.getDate() + dayOffset);
+  value.setHours(hour);
+  return toLocalDateTimeInput(value);
+}
+
+/** Mirrors the FR-1042 reset contract without freezing the demo to a calendar date. */
+export function createFr1042DemoSchedule(reference = new Date()) {
+  const pickupWindowStart = atDemoDay(reference, 1, 13);
+  return {
+    pickupMode: "SCHEDULED" as const,
+    requiredPickup: pickupWindowStart,
+    pickupWindowStart,
+    pickupWindowEnd: atDemoDay(reference, 1, 17),
+    deliveryDeadline: atDemoDay(reference, 4, 13),
+  };
+}
+
+export function createFreightIntakeFixture(reference = new Date()): FreightIntakeModel {
+  return {
+    freightRequestId: "f2000000-0000-0000-0000-000000000001",
+    requestId: "FR-1042",
+    organization: "ACME Mining Perú",
+    requester: "Carlos Mendoza",
+    cargoProfile: "Repuestos y maquinaria minera",
+    origin: "Callao / Lima, PE",
+    destination: "Santiago, CL",
+    pickupContact: "María Paredes · +51 999 210 440",
+    deliveryContact: "Tomás Rojas · +56 9 6123 4010",
+    borderCrossing: "Santa Rosa / Chacalluta",
+    cargoCategory: "Repuestos mineros",
+    cargoCategoryCode: "MACHINERY",
+    transportMode: "ROAD",
+    serviceType: "FTL",
+    entryMethod: "Pallets",
+    quantity: 10,
+    unitWeightKg: 800,
+    lengthCm: 120,
+    widthCm: 100,
+    heightCm: 150,
+    ...createFr1042DemoSchedule(reference),
+    budgetMaxUsd: 2000,
+    strategy: "BALANCED",
+    documents: ["Factura comercial", "Packing list"],
+  };
+}
+
+const candidateFixtures = [
+  {
+    carrierId: "carrier-demo-1",
+    carrierCode: "ANDES_DEMO",
+    displayName: "Andes Freight",
+    providerUrl: "/providers/andes",
+    matchingServiceId: "service-demo-1",
+  },
+  {
+    carrierId: "carrier-demo-2",
+    carrierCode: "INCA_DEMO",
+    displayName: "Inca Logistics",
+    providerUrl: "/providers/inca",
+    matchingServiceId: "service-demo-2",
+  },
+  {
+    carrierId: "carrier-demo-3",
+    carrierCode: "PACIFIC_DEMO",
+    displayName: "Pacific Cargo",
+    providerUrl: "/providers/pacific",
+    matchingServiceId: "service-demo-3",
+  },
+  {
+    carrierId: "carrier-demo-4",
+    carrierCode: "ALTIPLANO_DEMO",
+    displayName: "Altiplano Transport",
+    providerUrl: "/providers/altiplano",
+    matchingServiceId: "service-demo-4",
+  },
+] as const;
+
+const offerFixtures: RankedOfferView[] = [
+  {
+    offerId: "offer-demo-1",
+    carrierId: "carrier-demo-1",
+    carrierCode: "ANDES_DEMO",
+    displayName: "Andes Freight",
+    matchingServiceId: "service-demo-1",
+    providerOfferReference: "ANDES-OFFER-DEMO",
+    totalPrice: 1760,
+    currency: "USD",
+    transitHours: 31,
+    rank: 1,
+    score: 89,
+    eligible: true,
+    reasons: ["Mejor balance entre costo y confiabilidad", "Capacidad confirmada para la ventana solicitada"],
+    recommended: true,
+  },
+  {
+    offerId: "offer-demo-2",
+    carrierId: "carrier-demo-2",
+    carrierCode: "INCA_DEMO",
+    displayName: "Inca Logistics",
+    matchingServiceId: "service-demo-2",
+    providerOfferReference: "INCA-OFFER-DEMO",
+    totalPrice: 1920,
+    currency: "USD",
+    transitHours: 29,
+    rank: 2,
+    score: 84,
+    eligible: true,
+    reasons: ["Menor tiempo de tránsito", "Alta confiabilidad histórica"],
+    recommended: false,
+  },
+  {
+    offerId: "offer-demo-3",
+    carrierId: "carrier-demo-3",
+    carrierCode: "PACIFIC_DEMO",
+    displayName: "Pacific Cargo",
+    matchingServiceId: "service-demo-3",
+    providerOfferReference: "PACIFIC-OFFER-DEMO",
+    totalPrice: 1590,
+    currency: "USD",
+    transitHours: 60,
+    rank: 3,
+    score: 72,
+    eligible: true,
+    reasons: ["Menor precio total", "Ventana de disponibilidad limitada"],
+    recommended: false,
+  },
+  {
+    offerId: "offer-demo-4",
+    carrierId: "carrier-demo-4",
+    carrierCode: "ALTIPLANO_DEMO",
+    displayName: "Altiplano Transport",
+    matchingServiceId: "service-demo-4",
+    providerOfferReference: "ALTIPLANO-OFFER-DEMO",
+    totalPrice: 1840,
+    currency: "USD",
+    transitHours: 36,
+    rank: 3,
+    score: 80,
+    eligible: true,
+    reasons: ["Capacidad amplia", "Experiencia en operación transfronteriza"],
+    recommended: false,
+  },
+];
+
+const allTools = ["check_service_coverage", "check_capacity", "quote_freight"] as const;
+
+function attempt(
+  index: number,
+  status: ProviderAttemptView["status"],
+  completedTools: ProviderAttemptView["completedTools"] = [],
+  stopReason: string | null = null,
+): ProviderAttemptView {
+  return { ...candidateFixtures[index], status, completedTools: [...completedTools], stopReason };
+}
+
+function baseFixture(
+  scenario: DispatchFixtureScenario,
+  requestCode: string,
+  attempts: ProviderAttemptView[],
+  completedCandidateCount: number,
+) {
+  return {
+    schemaVersion: "1.0" as const,
+    runId: `run-fixture-${scenario}`,
+    freightRequestId: `freight-request-fixture-${requestCode}`,
+    requestCode,
+    startedAt: "2026-09-02T14:00:00.000Z",
+    completedAt: scenario === "loading" || scenario === "evaluating" ? null : "2026-09-02T14:02:30.000Z",
+    candidateCount: attempts.length,
+    completedCandidateCount,
+    attempts,
+    warnings: [],
+  };
+}
+
+function rankingFor(offers: RankedOfferView[], confidence: number) {
+  return {
+    orchestrationRunId: "run-fixture",
+    strategy: "BALANCED" as const,
+    recommendedOfferId: offers.find((offer) => offer.recommended)?.offerId ?? null,
+    decisionConfidence: confidence,
+    options: offers.map((offer) => ({
+      offerId: offer.offerId,
+      rank: offer.rank,
+      rawScore: offer.score,
+      roundedScore: offer.score,
+      eligible: offer.eligible,
+      reasons: offer.reasons,
+    })),
+  };
+}
+
+export function getDispatchFixture(
+  scenario: DispatchFixtureScenario,
+  requestCode: string,
+): OrchestrationViewModel {
+  const pendingAttempts = candidateFixtures.map((_, index) => attempt(index, "PENDING"));
+
+  if (scenario === "loading") {
+    return { ...baseFixture(scenario, requestCode, pendingAttempts, 0), status: "loading", ranking: null, offers: [] };
+  }
+  if (scenario === "evaluating") {
+    const attempts = [
+      attempt(0, "QUOTED", [...allTools]),
+      attempt(1, "RUNNING", ["check_service_coverage", "check_capacity"]),
+      attempt(2, "RUNNING", ["check_service_coverage"]),
+      attempt(3, "PENDING"),
+    ];
+    return { ...baseFixture(scenario, requestCode, attempts, 1), status: "loading", ranking: null, offers: [] };
+  }
+  if (scenario === "error") {
+    const attempts = [
+      attempt(0, "FAILED", ["check_service_coverage"], "La consulta del provider no terminó correctamente."),
+      attempt(1, "PENDING"),
+    ];
+    return {
+      ...baseFixture(scenario, requestCode, attempts, 1),
+      status: "error",
+      error: {
+        code: "RUN_FAILED",
+        message: "La consulta terminó de forma controlada. Revisa la solicitud o vuelve a intentarlo.",
+        retryable: true,
+      },
+      ranking: null,
+      offers: [],
+    };
+  }
+  if (scenario === "no-match") {
+    const attempts = candidateFixtures.slice(0, 3).map((_, index) =>
+      attempt(index, "REJECTED", ["check_service_coverage"], "El provider no cubre la solicitud."),
+    );
+    const base = baseFixture(scenario, requestCode, attempts, attempts.length);
+    return {
+      ...base,
+      status: "NO_MATCH",
+      reason: "No compatible provider produced an eligible offer.",
+      ranking: { ...rankingFor([], 0), orchestrationRunId: base.runId },
+      offers: [],
+    };
+  }
+
+  const offerCount = scenario === "one" ? 1 : scenario === "four" ? 4 : 3;
+  const selected = scenario === "four"
+    ? [offerFixtures[0], offerFixtures[1], offerFixtures[3], offerFixtures[2]].map((offer, index) => ({ ...offer, rank: index + 1 }))
+    : offerFixtures.slice(0, offerCount).map((offer, index) => ({ ...offer, rank: index + 1 }));
+  const attempts = selected.map((offer) => {
+    const candidateIndex = candidateFixtures.findIndex((candidate) => candidate.carrierId === offer.carrierId);
+    return attempt(candidateIndex, "QUOTED", [...allTools]);
+  });
+  const base = baseFixture(scenario, requestCode, attempts, attempts.length);
+  const confidence = offerCount === 1 ? 71 : offerCount === 4 ? 86 : 88;
+  return {
+    ...base,
+    status: "success",
+    offers: selected,
+    ranking: { ...rankingFor(selected, confidence), orchestrationRunId: base.runId },
+  };
+}

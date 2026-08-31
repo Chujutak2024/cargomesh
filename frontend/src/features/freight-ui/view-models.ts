@@ -56,3 +56,43 @@ export type TrackingMapModel = {
     eta: string;
   };
 };
+
+export type FreightIntakeModel = {
+  freightRequestId: string;
+  requestId: string;
+  organization: string;
+  requester: string;
+  cargoProfile: string;
+  origin: string;
+  destination: string;
+  pickupContact: string;
+  deliveryContact: string;
+  borderCrossing: string;
+  cargoCategory: string;
+  cargoCategoryCode: string;
+  transportMode: string;
+  serviceType: string;
+  entryMethod: string;
+  quantity: number;
+  unitWeightKg: number;
+  lengthCm: number;
+  widthCm: number;
+  heightCm: number;
+  pickupMode: "ASAP" | "SCHEDULED";
+  requiredPickup: string;
+  pickupWindowStart: string;
+  pickupWindowEnd: string;
+  deliveryDeadline: string;
+  budgetMaxUsd: number;
+  strategy: "BALANCED";
+  documents: string[];
+};
+
+export type DispatchFixtureScenario =
+  | "loading"
+  | "evaluating"
+  | "error"
+  | "no-match"
+  | "one"
+  | "three"
+  | "four";

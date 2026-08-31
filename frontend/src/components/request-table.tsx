@@ -1,4 +1,5 @@
 import { PackageOpen } from "lucide-react";
+import Link from "next/link";
 import type { FreightRequestListItem } from "@/features/freight-ui/view-models";
 import { StatusBadge } from "./status-badge";
 import styles from "./request-table.module.css";
@@ -10,7 +11,7 @@ export function RequestTable({ requests }: { requests: FreightRequestListItem[] 
         <PackageOpen size={28} strokeWidth={1.5} aria-hidden="true" />
         <strong>No hay cargas todavía</strong>
         <p>Crea una carga para iniciar el descubrimiento de transportistas.</p>
-        <button type="button" disabled title="Disponible en B-02">Crear carga</button>
+        <Link href="/freight-request/new">Crear carga</Link>
       </div>
     );
   }
