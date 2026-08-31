@@ -9,6 +9,11 @@ import { useCallback, useEffect, useState } from "react";
 import type {
   OrchestrationViewModel, ProviderAttemptView, RankedOfferView,
 } from "@/features/orchestration/contracts";
+import {
+  B02_OFFER_SELECTION_ENABLED,
+  isRetryableOrchestrationError,
+  shouldPollOrchestration,
+} from "@/features/freight-ui/dispatch-policies";
 import { takeCachedInt02aViewModel } from "@/features/freight-ui/int02a-client";
 import styles from "./dispatch-view.module.css";
 
@@ -64,7 +69,7 @@ export function OrchestrationDispatch({ runId }: { runId: string }) {
         setModel(payload.data);
         setError(null);
         setLoading(false);
-        if (payload.data.status === "loading") {
+        if (shouldPollOrchestration(payload.data)) {
           pollTimer = window.setTimeout(() => { void poll(); }, 1_500);
         }
       } catch (reason) {
@@ -184,8 +189,8 @@ function ErrorState({ model, onRetry, fixtureScenario }: {
       <h2>No se pudo completar la evaluación</h2>
       <p>{model.error.message}</p>
       <div className={styles.stateActions}>
-        {model.error.retryable && onRetry ? <button className={styles.primaryLink} type="button" onClick={onRetry}><RefreshCw size={16} aria-hidden="true" /> Reintentar evaluación</button> : null}
-        {model.error.retryable && !onRetry && fixtureScenario ? <Link className={styles.primaryLink} href={`/dispatch/${encodeURIComponent(model.requestCode)}?scenario=evaluating`}><RefreshCw size={16} aria-hidden="true" /> Reintentar evaluación</Link> : null}
+        {isRetryableOrchestrationError(model) && onRetry ? <button className={styles.primaryLink} type="button" onClick={onRetry}><RefreshCw size={16} aria-hidden="true" /> Reintentar evaluación</button> : null}
+        {isRetryableOrchestrationError(model) && !onRetry && fixtureScenario ? <Link className={styles.primaryLink} href={`/dispatch/${encodeURIComponent(model.requestCode)}?scenario=evaluating`}><RefreshCw size={16} aria-hidden="true" /> Reintentar evaluación</Link> : null}
         <Link className={styles.secondaryLink} href="/freight-request/new">Revisar solicitud</Link>
       </div>
       <CandidateProgress attempts={model.attempts} />
@@ -244,7 +249,7 @@ function OfferCard({ offer }: { offer: RankedOfferView }) {
       <div className={styles.price}><strong>${offer.totalPrice.toLocaleString("en-US")}</strong><span>{offer.currency} · total</span></div>
       <dl><div><dt><Clock3 size={14} aria-hidden="true" /> Tránsito</dt><dd>{offer.transitHours} h</dd></div><div><dt><CheckCircle2 size={14} aria-hidden="true" /> Elegibilidad</dt><dd>{offer.eligible ? "Elegible" : "No elegible"}</dd></div></dl>
       <ul>{offer.reasons.map((reason) => <li key={reason}><CheckCircle2 size={13} aria-hidden="true" /> {reason}</li>)}</ul>
-      <button type="button" disabled title="Disponible en B-03">Seleccionar esta opción <small>Disponible en B-03</small></button>
+      <button type="button" disabled={!B02_OFFER_SELECTION_ENABLED} title="Disponible en B-03">Seleccionar esta opción <small>Disponible en B-03</small></button>
     </article>
   );
 }
