@@ -19,14 +19,74 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { getBookingUiFixture } from "@/features/freight-ui/booking-ui-fixtures";
 import styles from "./booking-workspace.module.css";
 
-type BookingUiModel = ReturnType<typeof getBookingUiFixture>;
+export type BookingWorkspaceModel = {
+  requestCode: string;
+  fixtureLabel: string;
+  isFixture: boolean;
+  status: {
+    code: string;
+    tone: "progress" | "waiting" | "success" | "danger" | "warning";
+    eyebrow: string;
+    title: string;
+    message: string;
+    nextAction: string;
+  };
+  selectedOffer: {
+    offerId: string;
+    carrierCode: string;
+    displayName: string;
+    providerOfferReference: string;
+    totalPrice: number;
+    currency: string;
+    transitHours: number;
+    rank: number;
+    score: number;
+    recommended: boolean;
+  } | null;
+  availableOfferCount: number;
+  returnHref: string;
+  timeline: ReadonlyArray<{
+    label: string;
+    state: "complete" | "blocked" | "current" | "future";
+  }>;
+  evidence: ReadonlyArray<{
+    key: string;
+    label: string;
+    summary: string;
+    payload: unknown;
+  }>;
+};
 
-export function BookingWorkspace({ model }: { model: BookingUiModel }) {
+export type BookingRecoveryOption = {
+  offerId: string;
+  displayName: string;
+  totalPrice: number;
+  currency: string;
+  transitHours: number;
+  score: number;
+};
+
+type BookingWorkspaceProps = {
+  model: BookingWorkspaceModel;
+  busy?: boolean;
+  actionError?: string | null;
+  onRefresh?: () => void;
+  recoveryOptions?: BookingRecoveryOption[];
+  onRecover?: (offerId: string) => void;
+};
+
+export function BookingWorkspace({
+  model,
+  busy = false,
+  actionError,
+  onRefresh,
+  recoveryOptions = [],
+  onRecover,
+}: BookingWorkspaceProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeEvidence, setActiveEvidence] = useState<(typeof model.evidence)[number]["key"]>(model.evidence[0].key);
+  const [activeEvidence, setActiveEvidence] = useState(model.evidence[0]?.key ?? "events");
   const openButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
@@ -76,7 +136,7 @@ export function BookingWorkspace({ model }: { model: BookingUiModel }) {
         : LoaderCircle;
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} aria-busy={busy}>
       <header className={styles.hero}>
         <div>
           <Link className={styles.backLink} href={model.returnHref}>
@@ -100,7 +160,12 @@ export function BookingWorkspace({ model }: { model: BookingUiModel }) {
 
       <div className={styles.fixtureNotice} role="note">
         <ShieldCheck size={18} aria-hidden="true" />
-        <div><strong>{model.fixtureLabel}</strong><span>Este corte no ejecuta tools, handlers ni escrituras comerciales.</span></div>
+        <div>
+          <strong>{model.fixtureLabel}</strong>
+          <span>{model.isFixture
+            ? "Este corte no ejecuta tools, handlers ni escrituras comerciales."
+            : "El estado comercial y la evidencia proceden de BookingViewModel v1."}</span>
+        </div>
       </div>
 
       <section className={`${styles.statusPanel} ${styles[model.status.tone]}`} aria-live="polite">
@@ -119,9 +184,14 @@ export function BookingWorkspace({ model }: { model: BookingUiModel }) {
           {(model.status.tone === "danger" || model.status.tone === "warning") ? (
             <Link href={model.returnHref}>Revisar opciones <ChevronRight size={16} aria-hidden="true" /></Link>
           ) : null}
+          {onRefresh && model.status.tone === "waiting" ? (
+            <button type="button" disabled={busy} onClick={onRefresh}>{busy ? "Consultando provider" : "Actualizar estado"}</button>
+          ) : null}
           {model.status.tone === "success" ? <button type="button" disabled title="Disponible en una tarea posterior">Ir a seguimiento</button> : null}
         </div>
       </section>
+
+      {actionError ? <div className={styles.actionError} role="alert"><AlertTriangle size={18} aria-hidden="true" /> {actionError}</div> : null}
 
       <div className={styles.contentGrid}>
         <section className={styles.offerPanel} aria-labelledby="selected-offer-title">
@@ -167,18 +237,35 @@ export function BookingWorkspace({ model }: { model: BookingUiModel }) {
         </section>
       </div>
 
+      {recoveryOptions.length ? (
+        <section className={styles.recoveryPanel} aria-labelledby="recovery-title">
+          <header><span className={styles.eyebrow}>Recovery disponible</span><h2 id="recovery-title">Elige una oferta persistida para continuar</h2><p>Solo se muestran las alternativas indicadas por <code>recoveryOfferIds</code>.</p></header>
+          <div>
+            {recoveryOptions.map((offer) => (
+              <article key={offer.offerId}>
+                <div><strong>{offer.displayName}</strong><span>{offer.transitHours} h · {offer.score}/100</span></div>
+                <p>${offer.totalPrice.toLocaleString("en-US")} {offer.currency}</p>
+                <button type="button" disabled={busy} onClick={() => onRecover?.(offer.offerId)}>
+                  {busy ? "Preparando recuperación" : `Continuar con ${offer.displayName}`}
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {drawerOpen ? (
         <div className={styles.drawerLayer}>
           <button className={styles.backdrop} type="button" aria-label="Cerrar evidencia" onClick={() => setDrawerOpen(false)} />
           <aside ref={drawerRef} className={styles.drawer} role="dialog" aria-modal="true" aria-labelledby="judge-drawer-title">
             <header>
-              <div><span className={styles.eyebrow}>Judge Drawer</span><h2 id="judge-drawer-title">Evidencia causal</h2><p>Fixture local preparado para reemplazarse por BookingViewModel v1.</p></div>
+              <div><span className={styles.eyebrow}>Judge Drawer</span><h2 id="judge-drawer-title">Evidencia causal</h2><p>{model.isFixture ? "Fixture local para regresión visual." : "Eventos persistidos entregados por BookingViewModel v1."}</p></div>
               <button ref={closeButtonRef} type="button" aria-label="Cerrar panel de evidencia" onClick={() => setDrawerOpen(false)}><X size={20} /></button>
             </header>
 
             <div className={styles.evidenceSummary}>
               <div><Route size={17} aria-hidden="true" /><span><small>Solicitud</small><strong>{model.requestCode}</strong></span></div>
-              <div><Database size={17} aria-hidden="true" /><span><small>Persistencia</small><strong>Desactivada</strong></span></div>
+              <div><Database size={17} aria-hidden="true" /><span><small>Persistencia</small><strong>{model.isFixture ? "Desactivada" : "BookingViewModel v1"}</strong></span></div>
             </div>
 
             <div className={styles.tabs} role="tablist" aria-label="Categorías de evidencia">
@@ -206,12 +293,14 @@ export function BookingWorkspace({ model }: { model: BookingUiModel }) {
               ))}
             </div>
 
-            <section id="evidence-panel" className={styles.evidencePanel} role="tabpanel" aria-labelledby={`tab-${evidence.key}`} tabIndex={0}>
-              <div className={styles.evidenceHeading}><FileJson2 size={19} aria-hidden="true" /><div><span>{evidence.label}</span><strong>{evidence.summary}</strong></div></div>
-              <pre><code>{JSON.stringify(evidence.payload, null, 2)}</code></pre>
-            </section>
+            {evidence ? (
+              <section id="evidence-panel" className={styles.evidencePanel} role="tabpanel" aria-labelledby={`tab-${evidence.key}`} tabIndex={0}>
+                <div className={styles.evidenceHeading}><FileJson2 size={19} aria-hidden="true" /><div><span>{evidence.label}</span><strong>{evidence.summary}</strong></div></div>
+                <pre><code>{JSON.stringify(evidence.payload, null, 2)}</code></pre>
+              </section>
+            ) : null}
 
-            <footer><Clock3 size={16} aria-hidden="true" /> Datos fixture; no representan una ejecución WebMCP real.</footer>
+            <footer><Clock3 size={16} aria-hidden="true" /> {model.isFixture ? "Datos fixture; no representan una ejecución WebMCP real." : "Evidencia renderizada desde events[] persistidos."}</footer>
           </aside>
         </div>
       ) : null}

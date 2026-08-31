@@ -5,6 +5,7 @@ import {
   createBookingPreviewHref,
   getBookingUiFixture,
   resolveBookingOfferSet,
+  resolveExplicitBookingUiScenario,
   resolveBookingUiScenario,
 } from "./booking-ui-fixtures";
 
@@ -12,6 +13,8 @@ test("resolves booking states only from explicit fixture values", () => {
   assert.equal(resolveBookingUiScenario("confirmed"), "confirmed");
   assert.equal(resolveBookingUiScenario("no-response"), "no-response");
   assert.equal(resolveBookingUiScenario("unknown"), "booking-pending");
+  assert.equal(resolveExplicitBookingUiScenario("expired"), "expired");
+  assert.equal(resolveExplicitBookingUiScenario(undefined), null);
   assert.equal(resolveBookingOfferSet("zero"), "zero");
   assert.equal(resolveBookingOfferSet("four"), "four");
   assert.equal(resolveBookingOfferSet("unknown"), "three");
@@ -43,18 +46,22 @@ test("creates a local booking preview URL without a booking id", () => {
 });
 
 test("represents every required visual state without inventing booking identifiers", () => {
-  const scenarios = [
-    "booking-pending",
-    "pending-provider-confirmation",
-    "confirmed",
-    "rejected",
-    "no-response",
-    "error",
-  ] as const;
+  const scenarios = {
+    "booking-pending": "BOOKING_PENDING",
+    "pending-provider-confirmation": "PENDING_PROVIDER_CONFIRMATION",
+    confirmed: "CONFIRMED",
+    rejected: "REJECTED",
+    expired: "EXPIRED",
+    cancelled: "CANCELLED",
+    "no-response": "NO_RESPONSE",
+    recovery: "RECOVERY",
+    error: "RECOVERABLE_ERROR",
+  } as const;
 
-  for (const scenario of scenarios) {
+  for (const [scenario, expectedStatus] of Object.entries(scenarios) as Array<[keyof typeof scenarios, string]>) {
     const fixture = getBookingUiFixture({ requestCode: "FR-1042", scenario, offerSet: "three", offerId: "offer-demo-1" });
     assert.equal("bookingId" in fixture, false);
-    assert.equal(fixture.status.code.length > 0, true);
+    assert.equal(fixture.isFixture, true);
+    assert.equal(fixture.status.code, expectedStatus);
   }
 });

@@ -5,16 +5,17 @@ import {
   Clock3, Gauge, LoaderCircle, RefreshCw, Route, Sparkles, Truck,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   OrchestrationViewModel, ProviderAttemptView, RankedOfferView,
 } from "@/features/orchestration/contracts";
 import {
-  B02_OFFER_SELECTION_ENABLED,
   isRetryableOrchestrationError,
   shouldPollOrchestration,
 } from "@/features/freight-ui/dispatch-policies";
 import { createBookingPreviewHref } from "@/features/freight-ui/booking-ui-fixtures";
+import { startAssistedBooking } from "@/features/freight-ui/booking-client";
 import type { DispatchFixtureScenario } from "@/features/freight-ui/view-models";
 import { takeCachedInt02aViewModel } from "@/features/freight-ui/int02a-client";
 import styles from "./dispatch-view.module.css";
@@ -220,7 +221,34 @@ function SuccessState({ model, fixtureScenario }: {
   model: Extract<OrchestrationViewModel, { status: "success" }>;
   fixtureScenario?: string;
 }) {
+  const router = useRouter();
+  const bookingFrameRef = useRef<HTMLIFrameElement>(null);
+  const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
   const recommended = model.offers.find((offer) => offer.recommended);
+
+  async function selectRealOffer(offer: RankedOfferView) {
+    const frame = bookingFrameRef.current;
+    if (!frame) {
+      setSelectionError("No fue posible preparar el navegador para solicitar la reserva.");
+      return;
+    }
+    setSelectedOfferId(offer.offerId);
+    setSelectionError(null);
+    try {
+      const context = await startAssistedBooking({
+        model,
+        offer,
+        frame,
+        baseUrl: window.location.origin,
+      });
+      router.push(`/booking/${encodeURIComponent(context.bookingId)}/status`);
+    } catch (error) {
+      setSelectionError(error instanceof Error ? error.message : "No fue posible solicitar la reserva.");
+      setSelectedOfferId(null);
+    }
+  }
+
   return (
     <>
       <section className={styles.readyHeader}>
@@ -229,7 +257,17 @@ function SuccessState({ model, fixtureScenario }: {
       </section>
       {model.offers.length ? (
         <section className={styles.offerGrid} aria-label="Ofertas de transporte ordenadas">
-          {model.offers.map((offer) => <OfferCard key={offer.offerId} offer={offer} requestCode={model.requestCode} fixtureScenario={fixtureScenario} />)}
+          {model.offers.map((offer) => (
+            <OfferCard
+              key={offer.offerId}
+              offer={offer}
+              requestCode={model.requestCode}
+              fixtureScenario={fixtureScenario}
+              selecting={selectedOfferId === offer.offerId}
+              selectionLocked={selectedOfferId !== null}
+              onSelect={fixtureScenario ? undefined : selectRealOffer}
+            />
+          ))}
         </section>
       ) : (
         <section className={styles.statePanel}><span className={styles.largeIcon}><Boxes size={27} aria-hidden="true" /></span><h2>No hay ofertas para mostrar</h2><p>La evaluación terminó correctamente, pero su colección de ofertas está vacía.</p></section>
@@ -241,15 +279,29 @@ function SuccessState({ model, fixtureScenario }: {
           <details><summary>Ver análisis técnico</summary><dl><div><dt>Puntaje BALANCED</dt><dd>{recommended.score}/100</dd></div><div><dt>Confianza</dt><dd>{model.ranking.decisionConfidence}/100</dd></div><div><dt>Estado</dt><dd>Opciones listas</dd></div></dl></details>
         </section>
       ) : null}
+      {selectionError ? <div className={styles.selectionError} role="alert"><AlertTriangle size={17} aria-hidden="true" /> {selectionError}</div> : null}
       <CandidateProgress attempts={model.attempts} />
+      {!fixtureScenario ? (
+        <iframe
+          ref={bookingFrameRef}
+          className={styles.bookingRunnerFrame}
+          src="/"
+          title="Ejecución WebMCP de booking"
+          aria-hidden="true"
+          tabIndex={-1}
+        />
+      ) : null}
     </>
   );
 }
 
-function OfferCard({ offer, requestCode, fixtureScenario }: {
+function OfferCard({ offer, requestCode, fixtureScenario, selecting, selectionLocked, onSelect }: {
   offer: RankedOfferView;
   requestCode: string;
   fixtureScenario?: string;
+  selecting: boolean;
+  selectionLocked: boolean;
+  onSelect?: (offer: RankedOfferView) => void;
 }) {
   const offerSet = toBookingOfferSet(fixtureScenario);
   return (
@@ -264,8 +316,13 @@ function OfferCard({ offer, requestCode, fixtureScenario }: {
           Seleccionar {offer.displayName}
         </Link>
       ) : (
-        <button type="button" disabled={!B02_OFFER_SELECTION_ENABLED} title="Pendiente de BookingViewModel v1">
-          Seleccionar esta opción <small>Pendiente de integración real</small>
+        <button
+          type="button"
+          disabled={selectionLocked}
+          aria-busy={selecting}
+          onClick={() => onSelect?.(offer)}
+        >
+          {selecting ? <><LoaderCircle className={styles.spinner} size={16} aria-hidden="true" /> Preparando reserva</> : <>Seleccionar {offer.displayName}<small>Selección asistida</small></>}
         </button>
       )}
     </article>

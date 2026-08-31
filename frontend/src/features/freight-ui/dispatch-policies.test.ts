@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  B02_OFFER_SELECTION_ENABLED,
   DISPATCH_FIXTURE_SCENARIOS,
   isRetryableOrchestrationError,
   resolveExplicitDispatchScenario,
@@ -50,8 +49,4 @@ test("keeps 0, 1 and N offers independent from candidate attempts", () => {
   assert.equal(three.offers.length, 3);
   assert.equal(four.offers.length, 4);
   assert.equal(four.attempts.length, 4);
-});
-
-test("keeps offer selection disabled until B-03", () => {
-  assert.equal(B02_OFFER_SELECTION_ENABLED, false);
 });

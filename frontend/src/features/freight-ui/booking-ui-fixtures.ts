@@ -5,7 +5,10 @@ const BOOKING_UI_SCENARIOS = [
   "pending-provider-confirmation",
   "confirmed",
   "rejected",
+  "expired",
+  "cancelled",
   "no-response",
+  "recovery",
   "error",
 ] as const;
 
@@ -19,6 +22,13 @@ export function resolveBookingUiScenario(value: string | string[] | undefined): 
   return BOOKING_UI_SCENARIOS.includes(candidate as BookingUiScenario)
     ? candidate as BookingUiScenario
     : "booking-pending";
+}
+
+export function resolveExplicitBookingUiScenario(value: string | string[] | undefined): BookingUiScenario | null {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return BOOKING_UI_SCENARIOS.includes(candidate as BookingUiScenario)
+    ? candidate as BookingUiScenario
+    : null;
 }
 
 export function resolveBookingOfferSet(value: string | string[] | undefined): BookingOfferSet {
@@ -59,6 +69,7 @@ export function getBookingUiFixture(input: {
   return {
     requestCode: input.requestCode,
     fixtureLabel: "Vista local B-03 · sin persistencia real",
+    isFixture: true,
     scenario: input.scenario,
     status,
     selectedOffer,
@@ -110,6 +121,26 @@ function bookingStatusCopy(scenario: BookingUiScenario) {
       nextAction: "La recuperación real será orquestada por los módulos de A y C.",
     };
   }
+  if (scenario === "expired") {
+    return {
+      code: "EXPIRED",
+      tone: "danger" as const,
+      eyebrow: "Plazo vencido",
+      title: "La solicitud de reserva expiró",
+      message: "El provider no confirmó dentro del plazo persistido.",
+      nextAction: "Revisa las ofertas de recovery autorizadas por el servidor.",
+    };
+  }
+  if (scenario === "cancelled") {
+    return {
+      code: "CANCELLED",
+      tone: "warning" as const,
+      eyebrow: "Reserva cancelada",
+      title: "La reserva fue cancelada",
+      message: "La operación quedó cerrada sin convertir la cancelación en confirmación.",
+      nextAction: "Recovery solo puede usar las ofertas indicadas por el ViewModel.",
+    };
+  }
   if (scenario === "no-response") {
     return {
       code: "NO_RESPONSE",
@@ -118,6 +149,16 @@ function bookingStatusCopy(scenario: BookingUiScenario) {
       title: "Aún no recibimos respuesta",
       message: "El provider no respondió dentro de la ventana esperada.",
       nextAction: "La interfaz no cambia el estado ni selecciona un reemplazo automáticamente.",
+    };
+  }
+  if (scenario === "recovery") {
+    return {
+      code: "RECOVERY",
+      tone: "progress" as const,
+      eyebrow: "Continuidad operativa",
+      title: "Preparando una oferta de recuperación",
+      message: "La nueva selección permanece asistida y conserva la reserva anterior como evidencia.",
+      nextAction: "La respuesta real será persistida como una nueva reserva.",
     };
   }
   return {
@@ -131,8 +172,8 @@ function bookingStatusCopy(scenario: BookingUiScenario) {
 }
 
 function bookingTimeline(scenario: BookingUiScenario, hasSelection: boolean) {
-  const pendingConfirmation = ["pending-provider-confirmation", "confirmed", "rejected", "no-response"].includes(scenario);
-  const resolved = ["confirmed", "rejected", "no-response"].includes(scenario);
+  const pendingConfirmation = ["pending-provider-confirmation", "confirmed", "rejected", "expired", "cancelled", "no-response"].includes(scenario);
+  const resolved = ["confirmed", "rejected", "expired", "cancelled", "no-response"].includes(scenario);
   return [
     { label: "Oferta seleccionada", state: hasSelection ? "complete" : "blocked" },
     { label: "Solicitud preparada", state: hasSelection ? "complete" : "future" },
