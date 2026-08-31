@@ -56,7 +56,7 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
       setStep((current) => current + 1);
       return;
     }
-    router.push(`/dispatch/${encodeURIComponent(form.requestId)}?fixture=three`);
+    router.push(`/dispatch/${encodeURIComponent(form.requestId)}?scenario=three`);
   }
 
   return (

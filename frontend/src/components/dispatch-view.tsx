@@ -1,43 +1,68 @@
+"use client";
+
 import {
-  AlertTriangle,
-  ArrowLeft,
-  ArrowRight,
-  BadgeCheck,
-  Boxes,
-  Check,
-  CheckCircle2,
-  CircleDashed,
-  Clock3,
-  DollarSign,
-  Gauge,
-  LoaderCircle,
-  MapPin,
-  RefreshCw,
-  Route,
-  ShieldCheck,
-  Sparkles,
-  Truck,
+  AlertTriangle, ArrowLeft, Boxes, Check, CheckCircle2, CircleDashed,
+  Clock3, Gauge, LoaderCircle, RefreshCw, Route, Sparkles, Truck,
 } from "lucide-react";
 import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import type {
-  CandidateProgressStatus,
-  DispatchCandidate,
-  DispatchOffer,
-  DispatchViewModel,
-} from "@/features/freight-ui/view-models";
+  OrchestrationViewModel, ProviderAttemptView, RankedOfferView,
+} from "@/features/orchestration/contracts";
 import styles from "./dispatch-view.module.css";
 
-const progressCopy: Record<CandidateProgressStatus, string> = {
+const progressCopy: Record<ProviderAttemptView["status"], string> = {
   PENDING: "Pendiente",
-  NAVIGATING: "Navegando",
-  COVERAGE_CHECKED: "Cobertura validada",
-  CAPACITY_CHECKED: "Capacidad validada",
+  RUNNING: "Consulta en curso",
+  REJECTED: "Sin cobertura elegible",
   QUOTED: "Cotización recibida",
-  RECORDED: "Oferta persistida",
+  FAILED: "Consulta fallida",
 };
 
-export function DispatchView({ model }: { model: DispatchViewModel }) {
-  const evaluating = model.state === "LOADING" || model.state === "EVALUATING";
+type DispatchViewProps = {
+  model: OrchestrationViewModel;
+  onRetry?: () => void;
+  fixtureScenario?: string;
+};
+
+export function OrchestrationDispatch({ runId }: { runId: string }) {
+  const [model, setModel] = useState<OrchestrationViewModel | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/orchestration/runs/${encodeURIComponent(runId)}`, {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      const payload: unknown = await response.json();
+      if (!response.ok || !isSuccessfulEnvelope(payload)) {
+        throw new Error(readEnvelopeError(payload) ?? "No fue posible consultar la evaluación.");
+      }
+      setModel(payload.data);
+    } catch (reason) {
+      setModel(null);
+      setError(reason instanceof Error ? reason.message : "No fue posible consultar la evaluación.");
+    } finally {
+      setLoading(false);
+    }
+  }, [runId]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  if (loading) return <TransportState title="Cargando evaluación" message="Consultando la evidencia persistida del proceso." busy />;
+  if (error || !model) return <TransportState title="No pudimos abrir la evaluación" message={error ?? "La respuesta no contiene una evaluación válida."} onRetry={load} />;
+  return <DispatchView model={model} onRetry={load} />;
+}
+
+export function DispatchView({ model, onRetry, fixtureScenario }: DispatchViewProps) {
+  const evaluating = model.status === "loading";
+  const stateClass = model.status === "loading" ? styles.stateLoading
+    : model.status === "error" ? styles.stateError
+      : model.status === "NO_MATCH" ? styles.stateNO_MATCH : styles.stateSuccess;
 
   return (
     <div className={styles.page} aria-busy={evaluating}>
@@ -45,32 +70,31 @@ export function DispatchView({ model }: { model: DispatchViewModel }) {
         <div>
           <Link className={styles.backLink} href="/freight-request/new"><ArrowLeft size={15} aria-hidden="true" /> Editar solicitud</Link>
           <span className={styles.eyebrow}>B-02 · Smart Dispatch</span>
-          <h1>{model.request.origin} <ArrowRight size={22} aria-hidden="true" /> {model.request.destination}</h1>
-          <p>La vista separa providers consultados de ofertas persistidas y admite colecciones variables.</p>
+          <h1>Evaluación de {model.requestCode}</h1>
+          <p>Providers consultados y ofertas persistidas, sin asumir una cantidad fija de carriers.</p>
         </div>
-        <span className={`${styles.stateBadge} ${styles[`state${model.state}`]}`}>{stateLabel(model.state)}</span>
+        <span className={`${styles.stateBadge} ${stateClass}`}>{stateLabel(model.status)}</span>
       </header>
 
       <RequestSummary model={model} />
-
-      {model.state === "LOADING" ? <LoadingState /> : null}
-      {model.state === "EVALUATING" ? <EvaluatingState candidates={model.candidates} /> : null}
-      {model.state === "ERROR" ? <ErrorState model={model} /> : null}
-      {model.state === "NO_MATCH" ? <NoMatchState model={model} /> : null}
-      {model.state === "OPTIONS_READY" ? <OptionsReadyState model={model} /> : null}
+      {model.warnings.length ? <Warnings warnings={model.warnings.map((warning) => warning.message)} /> : null}
+      {model.status === "loading" ? <EvaluatingState model={model} /> : null}
+      {model.status === "error" ? <ErrorState model={model} onRetry={onRetry} fixtureScenario={fixtureScenario} /> : null}
+      {model.status === "NO_MATCH" ? <NoMatchState model={model} /> : null}
+      {model.status === "success" ? <SuccessState model={model} /> : null}
     </div>
   );
 }
 
-function RequestSummary({ model }: { model: DispatchViewModel }) {
+function RequestSummary({ model }: { model: OrchestrationViewModel }) {
   const items = [
-    { label: "Solicitud", value: model.request.requestId, icon: Boxes },
-    { label: "Carga", value: model.request.cargo, icon: Truck },
-    { label: "Recojo", value: model.request.pickupDate, icon: Clock3 },
-    { label: "Presupuesto", value: model.request.budget, icon: DollarSign },
+    { label: "Solicitud", value: model.requestCode, icon: Boxes },
+    { label: "Progreso", value: `${model.completedCandidateCount} de ${model.candidateCount} providers`, icon: Truck },
+    { label: "Inicio", value: formatDateTime(model.startedAt), icon: Clock3 },
+    { label: "Cierre", value: model.completedAt ? formatDateTime(model.completedAt) : "En proceso", icon: CheckCircle2 },
   ];
   return (
-    <section className={styles.requestSummary} aria-label="Resumen de la solicitud">
+    <section className={styles.requestSummary} aria-label="Resumen de la evaluación">
       {items.map(({ label, value, icon: Icon }) => (
         <div key={label}><span><Icon size={16} aria-hidden="true" /></span><small>{label}</small><strong>{value}</strong></div>
       ))}
@@ -78,128 +102,165 @@ function RequestSummary({ model }: { model: DispatchViewModel }) {
   );
 }
 
-function LoadingState() {
-  return (
-    <section className={styles.statePanel} aria-live="polite">
-      <span className={styles.largeIcon}><LoaderCircle className={styles.spinner} size={27} aria-hidden="true" /></span>
-      <h2>Preparando evaluación</h2>
-      <p>Estamos cargando el contexto de la solicitud y el registro compatible.</p>
-      <div className={styles.skeletonGrid} aria-hidden="true"><span /><span /><span /></div>
-    </section>
-  );
-}
-
-function EvaluatingState({ candidates }: { candidates: DispatchCandidate[] }) {
-  const completed = candidates.filter((candidate) => candidate.status === "RECORDED").length;
+function EvaluatingState({ model }: { model: Extract<OrchestrationViewModel, { status: "loading" }> }) {
+  const progress = model.candidateCount ? (model.completedCandidateCount / model.candidateCount) * 100 : 0;
   return (
     <div className={styles.evaluatingGrid}>
       <section className={styles.statePanel} aria-live="polite">
         <span className={styles.largeIcon}><LoaderCircle className={styles.spinner} size={27} aria-hidden="true" /></span>
         <span className={styles.eyebrow}>Evaluación en curso</span>
-        <h2>Buscando opciones en tiempo real</h2>
-        <p>Las ofertas finales aparecerán únicamente después de su persistencia y evaluación.</p>
-        <div className={styles.progressTrack}><span style={{ width: `${candidates.length ? (completed / candidates.length) * 100 : 0}%` }} /></div>
-        <small>{completed} de {candidates.length} candidatos con oferta persistida</small>
+        <h2>Consultando providers compatibles</h2>
+        <p>Las ofertas se mostrarán únicamente cuando hayan sido persistidas y evaluadas.</p>
+        <div className={styles.progressTrack} aria-hidden="true"><span style={{ width: `${progress}%` }} /></div>
+        <small>{model.completedCandidateCount} de {model.candidateCount} candidatos completados</small>
       </section>
-      <CandidateProgress candidates={candidates} />
+      <CandidateProgress attempts={model.attempts} />
     </div>
   );
 }
 
-function CandidateProgress({ candidates }: { candidates: DispatchCandidate[] }) {
+function CandidateProgress({ attempts }: { attempts: ProviderAttemptView[] }) {
   return (
     <section className={styles.candidatePanel} aria-labelledby="candidate-progress-title">
-      <header><div><span className={styles.eyebrow}>Providers descubiertos</span><h2 id="candidate-progress-title">Progreso de consulta</h2></div><span>{candidates.length}</span></header>
-      <div className={styles.candidateList}>
-        {candidates.map((candidate) => {
-          const complete = candidate.status === "RECORDED";
-          return <article key={candidate.candidateId}><span className={complete ? styles.progressComplete : styles.progressPending}>{complete ? <Check size={15} aria-hidden="true" /> : <CircleDashed size={15} aria-hidden="true" />}</span><div><strong>{candidate.displayName}</strong><small>{progressCopy[candidate.status]}</small></div></article>;
-        })}
-      </div>
+      <header><div><span className={styles.eyebrow}>Providers descubiertos</span><h2 id="candidate-progress-title">Progreso de consulta</h2></div><span>{attempts.length}</span></header>
+      {attempts.length ? (
+        <div className={styles.candidateList}>
+          {attempts.map((attempt) => {
+            const complete = attempt.status === "QUOTED";
+            const detail = attempt.stopReason ?? (attempt.completedTools.length
+              ? `${progressCopy[attempt.status]} · ${attempt.completedTools.length} herramientas completadas`
+              : progressCopy[attempt.status]);
+            return (
+              <article key={`${attempt.carrierId}-${attempt.matchingServiceId}`}>
+                <span className={complete ? styles.progressComplete : styles.progressPending}>{complete ? <Check size={15} aria-hidden="true" /> : <CircleDashed size={15} aria-hidden="true" />}</span>
+                <div><strong>{attempt.displayName}</strong><small>{detail}</small></div>
+              </article>
+            );
+          })}
+        </div>
+      ) : <p className={styles.candidateEmpty}>Aún no hay providers registrados para esta evaluación.</p>}
     </section>
   );
 }
 
-function ErrorState({ model }: { model: Extract<DispatchViewModel, { state: "ERROR" }> }) {
+function ErrorState({ model, onRetry, fixtureScenario }: {
+  model: Extract<OrchestrationViewModel, { status: "error" }>;
+  onRetry?: () => void;
+  fixtureScenario?: string;
+}) {
   return (
     <section className={`${styles.statePanel} ${styles.errorPanel}`} role="alert">
       <span className={styles.largeIcon}><AlertTriangle size={27} aria-hidden="true" /></span>
       <span className={styles.eyebrow}>Evaluación interrumpida</span>
-      <h2>{model.error.title}</h2>
+      <h2>No se pudo completar la evaluación</h2>
       <p>{model.error.message}</p>
       <div className={styles.stateActions}>
-        <Link className={styles.primaryLink} href={`/dispatch/${encodeURIComponent(model.request.requestId)}?fixture=evaluating`}><RefreshCw size={16} aria-hidden="true" /> Reintentar evaluación</Link>
+        {model.error.retryable && onRetry ? <button className={styles.primaryLink} type="button" onClick={onRetry}><RefreshCw size={16} aria-hidden="true" /> Reintentar evaluación</button> : null}
+        {model.error.retryable && !onRetry && fixtureScenario ? <Link className={styles.primaryLink} href={`/dispatch/${encodeURIComponent(model.requestCode)}?scenario=evaluating`}><RefreshCw size={16} aria-hidden="true" /> Reintentar evaluación</Link> : null}
         <Link className={styles.secondaryLink} href="/freight-request/new">Revisar solicitud</Link>
       </div>
+      <CandidateProgress attempts={model.attempts} />
     </section>
   );
 }
 
-function NoMatchState({ model }: { model: Extract<DispatchViewModel, { state: "NO_MATCH" }> }) {
+function NoMatchState({ model }: { model: Extract<OrchestrationViewModel, { status: "NO_MATCH" }> }) {
   return (
     <div className={styles.noMatchGrid}>
       <section className={styles.statePanel}>
         <span className={styles.largeIcon}><Route size={27} aria-hidden="true" /></span>
         <span className={styles.eyebrow}>Búsqueda completada</span>
         <h2>No encontramos ofertas elegibles</h2>
-        <p>Se consultaron {model.candidates.length} candidatos, pero no se persistieron ofertas compatibles. No mostramos cards ficticias.</p>
-        <div className={styles.stateActions}>
-          <Link className={styles.primaryLink} href="/freight-request/new">Ajustar solicitud</Link>
-          <Link className={styles.secondaryLink} href={`/dispatch/${encodeURIComponent(model.request.requestId)}?fixture=evaluating`}>Reintentar</Link>
-        </div>
+        <p>{model.reason}</p>
+        <p>Se completaron {model.completedCandidateCount} de {model.candidateCount} candidatos. No se muestran ofertas sintéticas.</p>
+        <div className={styles.stateActions}><Link className={styles.primaryLink} href="/freight-request/new">Ajustar solicitud</Link></div>
       </section>
-      <CandidateProgress candidates={model.candidates} />
+      <CandidateProgress attempts={model.attempts} />
     </div>
   );
 }
 
-function OptionsReadyState({ model }: { model: Extract<DispatchViewModel, { state: "OPTIONS_READY" }> }) {
-  const recommended = model.offers.find((offer) => offer.recommended) ?? model.offers[0];
+function SuccessState({ model }: { model: Extract<OrchestrationViewModel, { status: "success" }> }) {
+  const recommended = model.offers.find((offer) => offer.recommended);
   return (
     <>
       <section className={styles.readyHeader}>
-        <div><span className={styles.eyebrow}>Ofertas persistidas</span><h2>{model.offers.length} {model.offers.length === 1 ? "opción disponible" : "opciones disponibles"}</h2><p>{model.candidates.length} providers consultados · Estrategia {model.strategy}</p></div>
-        <div className={styles.confidence}><Gauge size={18} aria-hidden="true" /><span><small>Confianza de decisión</small><strong>{model.decisionConfidence}/100</strong></span></div>
+        <div><span className={styles.eyebrow}>Ofertas persistidas</span><h2>{model.offers.length} {model.offers.length === 1 ? "opción disponible" : "opciones disponibles"}</h2><p>{model.candidateCount} providers consultados · Estrategia {model.ranking.strategy}</p></div>
+        <div className={styles.confidence}><Gauge size={18} aria-hidden="true" /><span><small>Confianza de decisión</small><strong>{model.ranking.decisionConfidence}/100</strong></span></div>
       </section>
-      <section className={styles.offerGrid} aria-label="Ofertas de transporte ordenadas">
-        {model.offers.map((offer, index) => <OfferCard key={offer.offerId} offer={offer} rank={index + 1} />)}
-      </section>
+      {model.offers.length ? (
+        <section className={styles.offerGrid} aria-label="Ofertas de transporte ordenadas">
+          {model.offers.map((offer) => <OfferCard key={offer.offerId} offer={offer} />)}
+        </section>
+      ) : (
+        <section className={styles.statePanel}><span className={styles.largeIcon}><Boxes size={27} aria-hidden="true" /></span><h2>No hay ofertas para mostrar</h2><p>La evaluación terminó correctamente, pero su colección de ofertas está vacía.</p></section>
+      )}
       {recommended ? (
         <section className={styles.explanation}>
           <div className={styles.explanationIcon}><Sparkles size={20} aria-hidden="true" /></div>
           <div><span className={styles.eyebrow}>Recomendación explicable</span><h2>¿Por qué CargoMesh recomienda {recommended.displayName}?</h2><p>{recommended.reasons.join(". ")}.</p></div>
-          <details><summary>Ver análisis técnico</summary><dl><div><dt>Puntaje BALANCED</dt><dd>{recommended.roundedScore}/100</dd></div><div><dt>Confianza</dt><dd>{model.decisionConfidence}/100</dd></div><div><dt>Estado</dt><dd>OPTIONS_READY</dd></div></dl></details>
+          <details><summary>Ver análisis técnico</summary><dl><div><dt>Puntaje BALANCED</dt><dd>{recommended.score}/100</dd></div><div><dt>Confianza</dt><dd>{model.ranking.decisionConfidence}/100</dd></div><div><dt>Estado</dt><dd>Opciones listas</dd></div></dl></details>
         </section>
       ) : null}
+      <CandidateProgress attempts={model.attempts} />
     </>
   );
 }
 
-function OfferCard({ offer, rank }: { offer: DispatchOffer; rank: number }) {
+function OfferCard({ offer }: { offer: RankedOfferView }) {
   return (
     <article className={`${styles.offerCard} ${offer.recommended ? styles.offerRecommended : ""}`}>
-      <header>
-        <span className={styles.rank}>#{rank}</span>
-        {offer.recommended ? <span className={styles.recommended}><Sparkles size={13} aria-hidden="true" /> Recomendado</span> : null}
-      </header>
-      <div className={styles.carrier}><span><Truck size={19} aria-hidden="true" /></span><div><h3>{offer.displayName}</h3><small>{offer.reportedVehicle} · {(offer.capacityKg / 1000).toLocaleString("es-PE")} t</small></div><strong>{offer.roundedScore}<small> pts</small></strong></div>
+      <header><span className={styles.rank}>#{offer.rank}</span>{offer.recommended ? <span className={styles.recommended}><Sparkles size={13} aria-hidden="true" /> Recomendado</span> : null}</header>
+      <div className={styles.carrier}><span><Truck size={19} aria-hidden="true" /></span><div><h3>{offer.displayName}</h3><small>{offer.carrierCode} · {offer.providerOfferReference}</small></div><strong>{offer.score}<small> pts</small></strong></div>
       <div className={styles.price}><strong>${offer.totalPrice.toLocaleString("en-US")}</strong><span>{offer.currency} · total</span></div>
-      <dl>
-        <div><dt><Clock3 size={14} aria-hidden="true" /> Tránsito</dt><dd>{offer.transitHours} h</dd></div>
-        <div><dt><BadgeCheck size={14} aria-hidden="true" /> Confiabilidad</dt><dd>{offer.reliabilityPercent}%</dd></div>
-        <div><dt><MapPin size={14} aria-hidden="true" /> Recojo</dt><dd>{offer.pickupWindow}</dd></div>
-        <div><dt><ShieldCheck size={14} aria-hidden="true" /> Cross-border</dt><dd>{offer.crossBorderSupported ? "Confirmado" : "No disponible"}</dd></div>
-      </dl>
+      <dl><div><dt><Clock3 size={14} aria-hidden="true" /> Tránsito</dt><dd>{offer.transitHours} h</dd></div><div><dt><CheckCircle2 size={14} aria-hidden="true" /> Elegibilidad</dt><dd>{offer.eligible ? "Elegible" : "No elegible"}</dd></div></dl>
       <ul>{offer.reasons.map((reason) => <li key={reason}><CheckCircle2 size={13} aria-hidden="true" /> {reason}</li>)}</ul>
       <button type="button" disabled title="Disponible en B-03">Seleccionar esta opción <small>Disponible en B-03</small></button>
     </article>
   );
 }
 
-function stateLabel(state: DispatchViewModel["state"]) {
-  if (state === "LOADING") return "Cargando";
-  if (state === "EVALUATING") return "Evaluando";
-  if (state === "ERROR") return "Error controlado";
-  if (state === "NO_MATCH") return "Sin coincidencias";
+function Warnings({ warnings }: { warnings: string[] }) {
+  return <section className={styles.warnings} role="status" aria-label="Advertencias de la evaluación"><AlertTriangle size={18} aria-hidden="true" /><div><strong>La evaluación terminó con advertencias</strong>{warnings.map((warning) => <p key={warning}>{warning}</p>)}</div></section>;
+}
+
+function TransportState({ title, message, busy = false, onRetry }: { title: string; message: string; busy?: boolean; onRetry?: () => void }) {
+  return (
+    <div className={styles.page} aria-busy={busy}>
+      <header className={styles.hero}><div><Link className={styles.backLink} href="/freight-request/new"><ArrowLeft size={15} aria-hidden="true" /> Editar solicitud</Link><span className={styles.eyebrow}>B-02 · Smart Dispatch</span><h1>{title}</h1><p>{message}</p></div></header>
+      <section className={`${styles.statePanel} ${!busy ? styles.errorPanel : ""}`} role={!busy ? "alert" : undefined} aria-live="polite">
+        <span className={styles.largeIcon}>{busy ? <LoaderCircle className={styles.spinner} size={27} aria-hidden="true" /> : <AlertTriangle size={27} aria-hidden="true" />}</span>
+        <h2>{title}</h2><p>{message}</p>
+        {onRetry ? <button className={styles.primaryLink} type="button" onClick={onRetry}><RefreshCw size={16} aria-hidden="true" /> Volver a consultar</button> : null}
+      </section>
+    </div>
+  );
+}
+
+function isSuccessfulEnvelope(value: unknown): value is { ok: true; data: OrchestrationViewModel } {
+  if (!value || typeof value !== "object") return false;
+  const envelope = value as { ok?: unknown; data?: unknown };
+  if (envelope.ok !== true || !envelope.data || typeof envelope.data !== "object") return false;
+  const data = envelope.data as { schemaVersion?: unknown; status?: unknown };
+  return data.schemaVersion === "1.0" && ["loading", "error", "NO_MATCH", "success"].includes(String(data.status));
+}
+
+function readEnvelopeError(value: unknown) {
+  if (!value || typeof value !== "object") return null;
+  const error = (value as { error?: unknown }).error;
+  if (!error || typeof error !== "object") return null;
+  const message = (error as { message?: unknown }).message;
+  return typeof message === "string" ? message : null;
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf()) ? value : new Intl.DateTimeFormat("es-PE", { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
+function stateLabel(status: OrchestrationViewModel["status"]) {
+  if (status === "loading") return "Evaluando";
+  if (status === "error") return "Error controlado";
+  if (status === "NO_MATCH") return "Sin coincidencias";
   return "Opciones listas";
 }
