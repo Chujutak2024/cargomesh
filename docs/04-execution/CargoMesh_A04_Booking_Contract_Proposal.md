@@ -2,7 +2,7 @@
 
 ## Estado
 
-`DRAFT / REQUIERE APROBACIÓN DE C`
+`DRAFT / DECISIONES INCORPORADAS / REQUIERE APROBACIÓN FINAL DE C`
 
 Este documento inicia A-04 sin modificar contratos TypeScript compartidos, C-03,
 Supabase, el checklist ni la interfaz propiedad de B. La implementación comenzará
@@ -91,6 +91,11 @@ type BookFreightInput = {
 };
 ```
 
+`authorization_context` no puede ser fabricado por la UI. C lo genera y lo
+valida server-side después de comprobar selección, membresía y política. El
+cliente únicamente transporta el contexto emitido por el servidor; declarar
+`SMART_AUTO` en un payload cliente no concede autorización.
+
 Reglas propuestas:
 
 1. Todos los strings son obligatorios y no vacíos.
@@ -123,10 +128,10 @@ Comportamiento:
 - la referencia genérica se deriva de datos provider y de la identidad de la
   solicitud, nunca de una rama por carrier.
 
-La regla para una segunda `idempotency_key` sobre la misma
-`provider_offer_reference` requiere confirmación de C. La recomendación es no
-crear una segunda reserva activa: devolver `BOOKING_ALREADY_EXISTS` y conservar
-la primera `providerReference` como detalle seguro de correlación.
+Una segunda `idempotency_key` sobre la misma `provider_offer_reference` no crea
+otra reserva activa: devuelve `BOOKING_ALREADY_EXISTS` y conserva la primera
+`providerReference` como detalle seguro de correlación. C mantiene además el
+guard persistido de un solo booking activo por solicitud.
 
 ## 5. Contrato propuesto de `get_provider_booking_status`
 
@@ -149,9 +154,12 @@ type ProviderBookingStatus =
 type ProviderBookingEvent = {
   providerEventId: string;
   eventType: string;
+  providerBookingStatus: ProviderBookingStatus;
   occurredAt: string;
-  countryCode: string;
-  city: string;
+  location: {
+    countryCode: string;
+    city: string;
+  } | null;
   description: string;
 };
 
@@ -166,7 +174,12 @@ type ProviderBookingStatusResult = {
   } | null;
   updatedEta: string | null;
   providerResponseDeadline: string;
-  paymentStatus: "NOT_REQUIRED" | "PENDING" | "PAID" | "FAILED";
+  paymentStatus:
+    | "NOT_REQUIRED"
+    | "PENDING"
+    | "PAID"
+    | "FAILED"
+    | "REFUNDED";
   events: ProviderBookingEvent[];
 };
 ```
@@ -178,11 +191,16 @@ Una referencia desconocida devuelve envelope `ok:false` con
 
 Los controles son estado provider-side, separado de CargoMesh:
 
-| Control | Próxima respuesta de status | Persistencia provider |
+| Control | Próxima respuesta de status | Efecto después de consumir el control |
 |---|---|---|
-| `ACCEPT` | `CONFIRMED` | queda terminal `CONFIRMED` |
-| `REJECT` | `REJECTED` | queda terminal `REJECTED` |
-| `NO_RESPONSE` | `PENDING_PROVIDER_CONFIRMATION` | permanece pendiente |
+| `ACCEPT` | `CONFIRMED` | la reserva queda terminal; el control se elimina |
+| `REJECT` | `REJECTED` | la reserva queda terminal; el control se elimina |
+| `NO_RESPONSE` | `PENDING_PROVIDER_CONFIRMATION` | no hay transición; el control se elimina |
+
+Cada fixture control es one-shot y solo altera la siguiente respuesta de
+`get_provider_booking_status`. Las consultas posteriores reflejan el estado
+provider resultante; si `NO_RESPONSE` fue consumido, la reserva permanece
+pendiente hasta otro control o hasta que CargoMesh derive `EXPIRED` por deadline.
 
 `NO_RESPONSE` nunca aparece dentro de `ProviderBookingStatus`. Cuando el reloj
 de CargoMesh supera `providerResponseDeadline`, C deriva el estado interno
@@ -205,7 +223,22 @@ bookingId + providerEventId
 Un cambio terminal agrega como máximo un evento nuevo. Consultas posteriores
 reutilizan el mismo evento terminal.
 
-## 8. Registro y cleanup
+## 8. Bridge separado para booking y status
+
+`book_freight` y `get_provider_booking_status` no reutilizan
+`record_provider_result`, el Result Bridge de cotizaciones ni la identidad
+`toolCallId` de `quote_freight`.
+
+C definirá un Booking Bridge server-side separado que:
+
+- valida el `authorization_context` emitido por servidor;
+- correlaciona solicitud, selección, oferta, carrier y servicio;
+- crea/deduplica el UUID interno de booking;
+- persiste eventos por `bookingId + providerEventId`;
+- usa una identidad de llamadas propia de booking/status;
+- rechaza que el cliente se autoautorice para `SMART_AUTO`.
+
+## 9. Registro y cleanup
 
 Después de A-04, una página provider debe exponer:
 
@@ -220,12 +253,13 @@ get_provider_booking_status
 Las cinco tools comparten el mismo `AbortSignal` de registro. Al abandonar la
 página provider no debe quedar activa ninguna de ellas.
 
-## 9. Verificación propuesta
+## 10. Verificación propuesta
 
 - schemas rechazan propiedades adicionales;
 - `book_freight` declara `readOnlyHint: false`;
 - status declara `readOnlyHint: true`;
 - payload inválido devuelve `INVALID_INPUT`;
+- authorization context ausente, cliente o no validado se rechaza server-side;
 - misma key + mismo payload conserva referencia y deadline;
 - misma key + payload distinto devuelve `IDEMPOTENCY_CONFLICT`;
 - segunda key sobre la misma oferta sigue la decisión aprobada por C;
@@ -237,19 +271,19 @@ página provider no debe quedar activa ninguna de ellas.
 - 0 condiciones por carrierCode, nombre o slug;
 - typecheck, build y bundle sin secretos.
 
-## 10. Decisiones que C debe aprobar antes de implementar contratos compartidos
+## 11. Decisiones incorporadas para aprobación final de C
 
-| ID | Decisión | Propuesta de A |
+| ID | Decisión de C | Contrato incorporado |
 |---|---|---|
-| `D-A04-01` | Separar resultado provider de resultado persistido | `ProviderBookFreightResult` no contiene `bookingId`; `BookingResult` de C sí |
-| `D-A04-02` | Forma de `authorization_context` | referencia opaca + `HUMAN_SELECTION`/`AUTO_BOOKING_POLICY` |
-| `D-A04-03` | Enums de `selection_mode` | reutilizar exactamente `ASSISTED` y `SMART_AUTO` |
-| `D-A04-04` | Segunda key para la misma oferta | rechazar con `BOOKING_ALREADY_EXISTS`; DB conserva además el guard de booking activo |
-| `D-A04-05` | Deadline demo | reloj inyectable, capturado una vez, +15 minutos |
-| `D-A04-06` | Payment status | `NOT_REQUIRED`, `PENDING`, `PAID`, `FAILED`; Golden Flow usa `NOT_REQUIRED` |
-| `D-A04-07` | Evento provider | campos canónicos camelCase del contrato de la sección 5 |
-| `D-A04-08` | Fixture controls | solo alteran respuestas WebMCP; `NO_RESPONSE` conserva `PENDING_PROVIDER_CONFIRMATION` |
-| `D-A04-09` | Result Bridge y toolCallId de booking/status | C define la correlación e identidad server-side antes de C-03 |
+| `D-A04-01` | `APPROVE` | `ProviderBookFreightResult` no contiene `bookingId`; `BookingResult` de C sí |
+| `D-A04-02` | `APPROVE CON CONDICIÓN` | contexto generado/validado server-side; el cliente no autoautoriza `SMART_AUTO` |
+| `D-A04-03` | `APPROVE` | enums exactos `ASSISTED` y `SMART_AUTO` |
+| `D-A04-04` | `APPROVE` | segunda key para oferta con booking activo devuelve `BOOKING_ALREADY_EXISTS` |
+| `D-A04-05` | `APPROVE` | reloj inyectable, una lectura por ejecución y deadline +15 minutos |
+| `D-A04-06` | `CHANGE INCORPORADO` | payment status incluye `REFUNDED`; Golden Flow usa `NOT_REQUIRED` |
+| `D-A04-07` | `CHANGE INCORPORADO` | evento incluye `providerBookingStatus` y `location` nullable |
+| `D-A04-08` | `APPROVE` | control one-shot; `NO_RESPONSE` devuelve pending y nunca es status comercial |
+| `D-A04-09` | `CHANGE INCORPORADO` | Booking Bridge e identidad propios; no reutiliza bridge/toolCallId de quote |
 
 Hasta recibir estas respuestas, A no modificará `contracts.ts`, Result Bridge,
 orchestration, Supabase ni consumidores de B/C.
