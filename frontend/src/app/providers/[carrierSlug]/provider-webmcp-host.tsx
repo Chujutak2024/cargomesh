@@ -64,7 +64,7 @@ export function ProviderWebMcpHost({ provider }: ProviderWebMcpHostProps) {
         {browserStatus === "checking" && "Comprobando compatibilidad del navegador…"}
         {browserStatus === "registering" && "WebMCP disponible. Registrando las tools…"}
         {browserStatus === "registered" &&
-          "Las tres tools provider están registradas y visibles para el agente del navegador."}
+          "Las cinco tools provider están registradas y visibles para el agente del navegador."}
         {browserStatus === "unavailable" &&
           "Este navegador no expone document.modelContext. Usa un entorno WebMCP compatible."}
         {browserStatus === "error" &&

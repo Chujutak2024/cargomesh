@@ -10,6 +10,14 @@ import type {
 } from "./contracts";
 import type { CapacityResult } from "./check-capacity-tool";
 import type { ServiceCoverageResult } from "./check-service-coverage-tool";
+import type {
+  ProviderBookFreightResult,
+  ProviderBookingStatusResult,
+} from "./provider-booking-contracts";
+import {
+  createInMemoryProviderBookingStorage,
+  createProviderFixtureController,
+} from "./provider-booking-runtime";
 import { createQuoteFreightTool } from "./quote-freight-tool";
 import {
   createProviderTools,
@@ -83,14 +91,23 @@ async function executeTool<T>(
   return (await tool.execute(input, { signal })) as ProviderToolEnvelope<T>;
 }
 
-test("the provider exposes the three expected read-only tool definitions", () => {
+test("the provider exposes all five expected tool definitions", () => {
   const tools = createProviderTools(seededProvider);
 
   assert.deepEqual(
     tools.map((tool) => tool.name),
-    ["check_service_coverage", "check_capacity", "quote_freight"],
+    [
+      "check_service_coverage",
+      "check_capacity",
+      "quote_freight",
+      "book_freight",
+      "get_provider_booking_status",
+    ],
   );
-  assert.equal(tools.every((tool) => tool.annotations?.readOnlyHint === true), true);
+  assert.deepEqual(
+    tools.map((tool) => tool.annotations?.readOnlyHint),
+    [true, true, true, false, true],
+  );
 });
 
 test("registration exposes all tools and the shared signal cleans them up", async () => {
@@ -129,18 +146,29 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
     },
   } as WebMCP.ModelContext;
   const registrationController = new AbortController();
+  const bookingStorage = createInMemoryProviderBookingStorage();
 
   assert.equal(
     await registerProviderTools(
       modelContext,
       seededProvider,
       registrationController.signal,
+      {
+        bookingStorage,
+        now: () => new Date("2026-08-30T20:00:00.000Z"),
+      },
     ),
     true,
   );
   assert.deepEqual(
     (await modelContext.getTools()).map((tool) => tool.name),
-    ["check_service_coverage", "check_capacity", "quote_freight"],
+    [
+      "check_service_coverage",
+      "check_capacity",
+      "quote_freight",
+      "book_freight",
+      "get_provider_booking_status",
+    ],
   );
 
   const coverageTool = (await modelContext.getTools()).find(
@@ -154,6 +182,47 @@ test("registration exposes all tools and the shared signal cleans them up", asyn
     )) as string,
   ) as ProviderToolEnvelope<ServiceCoverageResult>;
   assert.equal(coverageResult.ok && coverageResult.data.supported, true);
+
+  const bookTool = (await modelContext.getTools()).find(
+    (tool) => tool.name === "book_freight",
+  );
+  assert.ok(bookTool);
+  const bookResult = JSON.parse(
+    (await modelContext.executeTool(
+      bookTool,
+      JSON.stringify({
+        freight_request_id: compatibleQuoteInput.freight_request_id,
+        provider_offer_reference: "AND-OFF-8821",
+        idempotency_key: "cm:a04:model-context:booking:v1",
+        authorization_context: {
+          authorization_reference: "server-selection:decision-1:offer-1",
+          authorized_by: "HUMAN_SELECTION",
+        },
+        selection_mode: "ASSISTED",
+      }),
+    )) as string,
+  ) as ProviderToolEnvelope<ProviderBookFreightResult>;
+  assert.equal(bookResult.ok, true);
+  if (!bookResult.ok) return;
+
+  createProviderFixtureController(
+    seededProvider.service.providerServiceCode,
+    bookingStorage,
+  ).setNextResponse(bookResult.data.providerReference, "ACCEPT");
+  const statusTool = (await modelContext.getTools()).find(
+    (tool) => tool.name === "get_provider_booking_status",
+  );
+  assert.ok(statusTool);
+  const statusResult = JSON.parse(
+    (await modelContext.executeTool(
+      statusTool,
+      JSON.stringify({ provider_reference: bookResult.data.providerReference }),
+    )) as string,
+  ) as ProviderToolEnvelope<ProviderBookingStatusResult>;
+  assert.equal(
+    statusResult.ok && statusResult.data.providerBookingStatus,
+    "CONFIRMED",
+  );
 
   registrationController.abort();
 
