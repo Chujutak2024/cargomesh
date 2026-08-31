@@ -1411,6 +1411,52 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      prepare_booking_authorization: {
+        Args: {
+          p_booking_idempotency_key: string
+          p_freight_request_id: string
+          p_offer_id: string
+          p_selected_by_member_id: string
+          p_selection_mode: string
+        }
+        Returns: {
+          authorization_kind: string
+          authorization_reference: string
+          booking_idempotency_key: string
+          carrier_id: string
+          deduplicated: boolean
+          expires_at: string
+          freight_decision_id: string
+          freight_request_id: string
+          matching_service_id: string
+          offer_id: string
+          provider_offer_reference: string
+          selection_mode: string
+        }[]
+      }
+      prepare_booking_recovery: {
+        Args: {
+          p_booking_idempotency_key: string
+          p_replacement_offer_id: string
+          p_replaces_booking_id: string
+          p_selected_by_member_id: string
+          p_selection_mode: string
+        }
+        Returns: {
+          authorization_kind: string
+          authorization_reference: string
+          booking_idempotency_key: string
+          carrier_id: string
+          deduplicated: boolean
+          expires_at: string
+          freight_decision_id: string
+          freight_request_id: string
+          matching_service_id: string
+          offer_id: string
+          provider_offer_reference: string
+          selection_mode: string
+        }[]
+      }
       persist_balanced_decision: {
         Args: {
           p_anomaly_evidence: Json
@@ -1456,6 +1502,49 @@ export type Database = {
           record_id: string
           record_type: string
           result_status: string
+        }[]
+      }
+      record_provider_booking_result: {
+        Args: {
+          p_authorization_reference: string
+          p_bridge_call_id: string
+          p_canonical_payload: Json
+          p_payment_required: boolean
+          p_payment_url: string | null
+          p_provider_booking_status: string
+          p_provider_idempotent_replay: boolean
+          p_provider_reference: string
+          p_provider_response_deadline: string
+        }
+        Returns: {
+          booking_id: string
+          deduplicated: boolean
+          result_status: string
+        }[]
+      }
+      record_provider_booking_status: {
+        Args: {
+          p_authorization_reference: string
+          p_booking_id: string
+          p_bridge_call_id: string
+          p_canonical_payload: Json
+          p_events: Json
+          p_payment_status: string
+          p_provider_booking_status: string
+          p_provider_reference: string
+        }
+        Returns: {
+          booking_id: string
+          deduplicated: boolean
+          result_status: string
+        }[]
+      }
+      reset_demo_booking_runtime: {
+        Args: { p_freight_request_id: string }
+        Returns: {
+          deleted_authorizations: number
+          deleted_bookings: number
+          freight_request_id: string
         }[]
       }
       start_orchestration_run: {
