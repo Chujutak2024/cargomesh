@@ -1,14 +1,7 @@
 import type { FreightIntakeModel } from "./view-models";
-import { createDocumentModelContextAdapter } from "@/features/webmcp-runner/document-model-context-adapter";
-import { INT02A_PROVIDER_TOOL_NAMES } from "@/features/webmcp-runner/contracts";
 import type {
-  ProviderNavigationAdapter,
   ProviderRunnerInputs,
-  WebMcpRuntimeAdapter,
 } from "@/features/webmcp-runner/contracts";
-
-const NAVIGATION_TIMEOUT_MS = 15_000;
-const WEBMCP_READY_TIMEOUT_MS = 8_000;
 
 export function createInt02aIdempotencyKey(freightRequestId: string) {
   return `cm:int02b:${freightRequestId}:${crypto.randomUUID()}`;
@@ -71,81 +64,4 @@ export function buildProviderRunnerInputs(model: FreightIntakeModel): ProviderRu
       available_documents: [...model.documents],
     },
   };
-}
-
-export function createIframeNavigationAdapter(
-  frame: HTMLIFrameElement,
-  baseUrl: string,
-): ProviderNavigationAdapter {
-  const allowedOrigin = new URL(baseUrl).origin;
-
-  return {
-    async open(navigationUrl) {
-      const providerUrl = sameOriginUrl(navigationUrl, baseUrl, allowedOrigin);
-      await navigateFrame(frame, providerUrl);
-      const runtime = await waitForProviderRuntime(frame);
-
-      return {
-        runtime,
-        async leaveAndGetActiveToolNames(cleanupUrl) {
-          const target = sameOriginUrl(cleanupUrl, baseUrl, allowedOrigin);
-          await navigateFrame(frame, target);
-          return getFrameRuntime(frame).getToolNames();
-        },
-      };
-    },
-  };
-}
-
-function sameOriginUrl(value: string, baseUrl: string, allowedOrigin: string) {
-  const target = new URL(value, baseUrl);
-  if (target.origin !== allowedOrigin) {
-    throw new Error("PROVIDER_NAVIGATION_BLOCKED: provider navigation must remain same-origin.");
-  }
-  return target.toString();
-}
-
-function navigateFrame(frame: HTMLIFrameElement, target: string) {
-  return new Promise<void>((resolve, reject) => {
-    const timeout = window.setTimeout(() => finish(() => reject(new Error("PROVIDER_NAVIGATION_TIMEOUT: provider page did not load."))), NAVIGATION_TIMEOUT_MS);
-    const onLoad = () => finish(resolve);
-    const onError = () => finish(() => reject(new Error("PROVIDER_NAVIGATION_FAILED: provider page could not be loaded.")));
-    const finish = (result: () => void) => {
-      window.clearTimeout(timeout);
-      frame.removeEventListener("load", onLoad);
-      frame.removeEventListener("error", onError);
-      result();
-    };
-
-    frame.addEventListener("load", onLoad, { once: true });
-    frame.addEventListener("error", onError, { once: true });
-    frame.src = target;
-  });
-}
-
-async function waitForProviderRuntime(frame: HTMLIFrameElement): Promise<WebMcpRuntimeAdapter> {
-  const deadline = Date.now() + WEBMCP_READY_TIMEOUT_MS;
-  let lastError: unknown = null;
-
-  while (Date.now() < deadline) {
-    try {
-      const runtime = getFrameRuntime(frame);
-      const names = await runtime.getToolNames();
-      if (INT02A_PROVIDER_TOOL_NAMES.every((name) => names.includes(name))) return runtime;
-    } catch (error) {
-      lastError = error;
-    }
-    await new Promise((resolve) => window.setTimeout(resolve, 100));
-  }
-
-  const detail = lastError instanceof Error ? ` ${lastError.message}` : "";
-  throw new Error(`WEBMCP_UNAVAILABLE: provider tools were not registered.${detail}`);
-}
-
-function getFrameRuntime(frame: HTMLIFrameElement) {
-  const documentHost = frame.contentDocument;
-  if (!documentHost) {
-    throw new Error("PROVIDER_DOCUMENT_UNAVAILABLE: provider document is not accessible.");
-  }
-  return createDocumentModelContextAdapter(documentHost);
 }

@@ -18,10 +18,10 @@ import {
   buildProviderRunnerInputs,
   buildRealDispatchPath,
   cacheInt02aViewModel,
-  createIframeNavigationAdapter,
   createInt02aIdempotencyKey,
 } from "@/features/freight-ui/int02a-client";
 import type { FreightIntakeModel } from "@/features/freight-ui/view-models";
+import { createExternalProviderNavigationAdapter } from "@/features/webmcp-runner";
 import { runInt02aOrchestration } from "@/features/webmcp-runner/orchestration-runner";
 import styles from "./freight-intake-form.module.css";
 
@@ -80,7 +80,10 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
         freightRequestId: form.freightRequestId,
         idempotencyKey: createInt02aIdempotencyKey(form.freightRequestId),
         baseUrl: window.location.origin,
-        navigation: createIframeNavigationAdapter(runnerFrame, window.location.origin),
+        navigation: createExternalProviderNavigationAdapter({
+          frame: runnerFrame,
+          baseUrl: window.location.origin,
+        }),
         createInputs: () => buildProviderRunnerInputs(form),
       });
       cacheInt02aViewModel(evidence.start.runId, evidence.viewModel);
