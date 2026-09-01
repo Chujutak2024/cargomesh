@@ -1,6 +1,6 @@
 # CargoMesh REL-01 — Deployment preflight
 
-> Status: preparatory work only. `REL-01` and `G4` remain open until `INT-03` is integrated and the public Golden Flow passes.
+> Status: preparatory work only. `INT-03` is integrated in `main`; `REL-01` and `G4` remain open until the public Golden Flow passes.
 
 ## 1. Release blockers visible on 2026-08-31
 
@@ -8,7 +8,7 @@
 |---|---|---|
 | Repository visibility | **Blocked:** GitHub reports `PRIVATE` | Project owner changes it to `PUBLIC` only after the final secret scan |
 | Open-source license | Prepared in this branch: MIT | Confirm GitHub detects it after integration |
-| INT-03 | **Blocked:** replay P1 is being corrected through PR #26 and PR #24 | Integrate and repeat the real replay before freezing code |
+| INT-03 | **Complete:** integrated and verified with its replay, recovery and cleanup evidence | Preserve the evidence for the final release package |
 | Public application URL | Pending | Configure the hosting project and production variables |
 | Supabase production project | Pending confirmation | Link one controlled project and apply versioned migrations once |
 | Git history secret scan | No hosted credential detected; two standard local `supabase-demo` tokens exist in old `.env.example` revisions | Enable GitHub secret scanning after making the repository public |
@@ -78,7 +78,7 @@ pnpm release:smoke
 
 ## 6. Gate G4 evidence package
 
-After INT-03 closes, retain sanitized evidence for:
+With INT-03 closed, retain sanitized evidence for:
 
 1. `main` SHA and public URL;
 2. clean incognito login with an ACTIVE member;
