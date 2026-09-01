@@ -17,9 +17,10 @@
     "test:int02a-runner": "tsx --test src/features/webmcp-runner/provider-runner.test.ts src/features/webmcp-runner/orchestration-runner.test.ts",
     "test:external-navigation": "tsx --test src/features/webmcp-runner/external-provider-navigation-adapter.test.ts",
     "test:freight-intent": "tsx --test src/features/freight-requests/execution-intent.test.ts",
+    "test:freight-intake": "tsx --test src/features/freight-requests/intake.test.ts",
     "test:a04": "tsx --test src/features/providers/provider-query-tools.test.ts src/features/providers/provider-booking-tools.test.ts",
     "test:booking": "tsx --test src/features/booking/validation.test.ts src/features/booking/server-policy.test.ts src/features/booking/bridge-call-id.test.ts",
-    "test:release": "npm run test:discovery && npm run test:c02 && npm run test:int02a && npm run test:int02a-runner && npm run test:external-navigation && npm run test:freight-intent && npm run test:a04 && npm run test:booking",
+    "test:release": "npm run test:discovery && npm run test:c02 && npm run test:int02a && npm run test:int02a-runner && npm run test:external-navigation && npm run test:freight-intent && npm run test:freight-intake && npm run test:a04 && npm run test:booking",
     "release:preflight": "node scripts/release-preflight.mjs",
     "release:smoke": "node scripts/release-smoke.mjs",
     "release:verify": "npm run typecheck && npm run test:release && npm run build && npm run release:preflight"
