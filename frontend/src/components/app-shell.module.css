@@ -22,6 +22,7 @@
   top: 0.75rem;
   left: 0.75rem;
   transform: translateY(-200%);
+  min-height: 2.75rem;
   border-radius: 0.6rem;
   padding: 0.7rem 0.9rem;
   background: var(--petroleum);
@@ -56,6 +57,7 @@
 }
 .brand {
   display: inline-flex;
+  min-height: 2.75rem;
   align-items: center;
   gap: 0.7rem;
   color: inherit;
@@ -106,7 +108,7 @@
 .navSection > p { margin: 0 0 0.3rem; padding: 0 0.65rem; color: #85918f; font-size: 0.59rem; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase; }
 .navLink {
   display: flex;
-  min-height: 2.35rem;
+  min-height: 2.75rem;
   align-items: center;
   gap: 0.65rem;
   border-radius: 0.6rem;
@@ -167,7 +169,7 @@
 .search {
   display: none;
   min-width: min(20rem, 28vw);
-  min-height: 2.6rem;
+  min-height: 2.75rem;
   align-items: center;
   gap: 0.55rem;
   border: 1px solid var(--line);

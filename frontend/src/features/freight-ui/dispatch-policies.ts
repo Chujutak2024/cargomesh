@@ -11,8 +11,6 @@ export const DISPATCH_FIXTURE_SCENARIOS: readonly DispatchFixtureScenario[] = [
   "four",
 ];
 
-export const B02_OFFER_SELECTION_ENABLED = false;
-
 export function resolveExplicitDispatchScenario(
   value: string | string[] | undefined,
 ): DispatchFixtureScenario | null {

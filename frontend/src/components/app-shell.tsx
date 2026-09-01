@@ -65,6 +65,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const pageContext = pathname.startsWith("/freight-request/new")
     ? { title: "Nueva carga", subtitle: "Intake guiado de FreightRequest" }
+    : pathname.startsWith("/booking/")
+      ? { title: "Booking", subtitle: "Selección humana y confirmación" }
     : pathname.startsWith("/dispatch/")
       ? { title: "Smart Dispatch", subtitle: "Evaluación dinámica de opciones" }
       : { title: "Dashboard", subtitle: "Vista general de operaciones" };

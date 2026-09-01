@@ -1,6 +1,6 @@
 # CargoMesh — Team Execution Checklist
 
-> **Versión:** 1.1.0
+> **Versión:** 1.2.0
 > **Contrato técnico:** v5.6.0  
 > **Duración:** 4 días  
 > **Equipo:** 3 integrantes trabajando en entornos e IAs independientes  
@@ -390,8 +390,9 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, A-03, B-01, B-02, C-01, C-02, `INT-
   - **Aceptación:** `book_freight` usa `readOnlyHint: false`; repetir la misma key no duplica booking; los controles solo cambian la siguiente respuesta provider.
   - **Verificar:** ejecutar booking dos veces con la misma key y comprobar la misma referencia; probar aceptación y rechazo.
 
-- [ ] **B-03. Completar selección, booking UI y Judge Drawer**
+- [x] **B-03. Completar selección, booking UI y Judge Drawer**
   - **Owner:** B.
+  - **Estado actual:** integrado en `main` mediante PR #24 (`b26e206`); la revisión final de C aprobó el SHA `2d44680`. La UI conserva selección `ASSISTED`, replay idempotente, recovery restringido a `recoveryOfferIds` y Judge Drawer basado en eventos persistidos.
   - **Depende de:** `B-02` e `INT-02B`.
   - **Qué construir:** selección humana, espera de confirmación, resultado de booking y drawer de eventos JSON.
   - **Aceptación:** recomendar no selecciona automáticamente; el drawer muestra navegación, tool, persistencia y decisión; no contiene botones que escriban directamente estados comerciales.
@@ -404,8 +405,9 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, A-03, B-01, B-02, C-01, C-02, `INT-
   - **Aceptación:** selección, request de booking y confirmación son estados separados; reset vacía únicamente datos runtime de demo; rechazo no se convierte en confirmación.
   - **Verificar:** test happy path, test reject y dos ejecuciones consecutivas del reset.
 
-- [ ] **INT-03. Ejecutar Golden Flow y contingencia E2E**
+- [x] **INT-03. Ejecutar Golden Flow y contingencia E2E**
   - **Owner:** A + B + C.
+  - **Estado actual:** integrado y verificado conjuntamente. La corrida real en Chrome/WebMCP comprobó replay `200 / DEDUPLICATED` con el mismo booking y cero duplicados; `REJECT → recovery` restringido a `recoveryOfferIds`, booking alternativo `CONFIRMED`, Judge Drawer, eventos persistidos y cleanup sin tools activas. Evidencia sanitizada: [PR #24](https://github.com/Chujutak2024/cargomesh/pull/24#issuecomment-5486820188).
   - **Depende de:** `A-04`, `B-03`, `C-03`.
   - **Qué construir:** flujo feliz completo y un flujo de rechazo recuperable.
   - **Aceptación:** todas las entidades runtime nacen después de su ejecución causal y el Judge Drawer permite demostrarlo.
@@ -451,7 +453,7 @@ Nunca acumulen todo el trabajo hasta la noche del Día 3.
 
 Una tarea terminada en una rama no cierra un gate. El gate se cierra únicamente después de integración y verificación conjunta.
 
-`G2A` quedó aprobado después de integrar y verificar el flujo headless en `main`. `G2` quedó aprobado al integrar PR #16 y verificar conjuntamente la presentación visual, el flujo real cross-origin y el replay idempotente.
+`G2A` quedó aprobado después de integrar y verificar el flujo headless en `main`. `G2` quedó aprobado al integrar PR #16 y verificar conjuntamente la presentación visual, el flujo real cross-origin y el replay idempotente. `G3` quedó aprobado al integrar PR #24 y verificar conjuntamente booking, replay, rechazo, recovery y cleanup WebMCP.
 
 ### 6.2 Cierre del Día 2 y continuación inmediata
 
@@ -459,6 +461,12 @@ Una tarea terminada en una rama no cierra un gate. El gate se cierra únicamente
 2. PR #16 integró B-02 e INT-02B con un historial limpio (`2950cd7`).
 3. La corrida real cross-origin verificó tres providers, nueve tools, tres `CarrierOffer`, `OPTIONS_READY`, BALANCED `89/84/72`, confianza `88`, cleanup y replay sin navegación adicional.
 4. El siguiente corte es Día 3: A-04, C-03 y B-03, respetando el contrato de booking congelado y los ownerships existentes.
+
+### 6.2.1 Cierre del Día 3 y entrada al Día 4
+
+1. PR #24 integró B-03 en `main` (`b26e206`) sin sobrescribir módulos de A o C.
+2. La ejecución conjunta INT-03 validó el booking inicial, replay `DEDUPLICATED` sin filas duplicadas, `REJECT → recovery` exclusivamente sobre `recoveryOfferIds`, confirmación alternativa, Judge Drawer y cleanup.
+3. `G3` queda aprobado. El siguiente corte es `REL-01 / G4`: congelar `main`, desplegar una URL pública y ejecutar el Golden Flow desde una sesión limpia.
 
 ### 6.3 Trabajo paralelo después de G2A
 
