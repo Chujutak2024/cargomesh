@@ -1,6 +1,9 @@
 ﻿-- CargoMesh Seed Data
--- 1. Demo User for Supabase Auth
--- 2. ACME Mining OWNER Member Linkage
+-- 1. Local-only Demo User for Supabase Auth
+-- 2. ACME Mining SUPERVISOR Member Linkage
+--
+-- This credential is intentionally public and exists only for `supabase db reset`.
+-- Never reuse the email or password in a hosted Supabase project.
 
 -- Create demo user in auth.users
 insert into auth.users (
@@ -27,13 +30,13 @@ values (
   'd0000000-0000-0000-0000-000000000001',
   'authenticated',
   'authenticated',
-  'carlos.mendoza@acmemining.pe',
-  extensions.crypt('CargoMesh2026!', extensions.gen_salt('bf')),
+  'demo.operator@cargomesh.test',
+  extensions.crypt('LOCAL_ONLY_CARGOMESH_DEMO_2026!', extensions.gen_salt('bf')),
   now(),
   now(),
   now(),
   '{"provider":"email","providers":["email"]}',
-  '{"full_name":"Carlos Mendoza"}',
+  '{"full_name":"CargoMesh Demo Operator"}',
   now(),
   now(),
   '',
@@ -57,16 +60,16 @@ insert into auth.identities (
 values (
   'd0000000-0000-0000-0000-000000000001',
   'd0000000-0000-0000-0000-000000000001',
-  format('{"sub":"%s","email":"%s"}', 'd0000000-0000-0000-0000-000000000001', 'carlos.mendoza@acmemining.pe')::jsonb,
+  format('{"sub":"%s","email":"%s"}', 'd0000000-0000-0000-0000-000000000001', 'demo.operator@cargomesh.test')::jsonb,
   'email',
-  'carlos.mendoza@acmemining.pe',
+  'demo.operator@cargomesh.test',
   now(),
   now(),
   now()
 )
 on conflict (provider, provider_id) do nothing;
 
--- Link as OWNER of ACME Mining in organization_members
+-- Link with the least privilege that still supports SMART_AUTO and demo reset.
 insert into public.organization_members (
   id,
   organization_id,
@@ -80,9 +83,9 @@ values (
   'e0000000-0000-0000-0000-000000000001',
   'a0000000-0000-0000-0000-000000000001',
   'd0000000-0000-0000-0000-000000000001',
-  'Carlos Mendoza',
-  'carlos.mendoza@acmemining.pe',
-  'OWNER',
+  'CargoMesh Demo Operator',
+  'demo.operator@cargomesh.test',
+  'SUPERVISOR',
   'ACTIVE'
 )
 on conflict (organization_id, auth_user_id) do update set

@@ -1,7 +1,7 @@
 ﻿begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
-select plan(18);
+select plan(19);
 
 -- 1. Schema Structure
 select has_table('public', 'organizations', 'organizations table exists');
@@ -28,6 +28,12 @@ select results_eq(
   'Three enterprise carriers configured for PE->CL cross-border corridor'
 );
 
+select results_eq(
+  $$ select corporate_email, role, status from public.organization_members where auth_user_id = 'd0000000-0000-0000-0000-000000000001'::uuid $$,
+  $$ values ('demo.operator@cargomesh.test'::text, 'SUPERVISOR'::text, 'ACTIVE'::text) $$,
+  'Local demo member is synthetic, active, and least-privileged for demo reset'
+);
+
 -- 4. Anonymous Access Rejection (Zero Table Privileges -> 42501 permission denied)
 set local role anon;
 set local "request.jwt.claims" to '{"role":"anon"}';
@@ -46,26 +52,26 @@ select throws_ok(
   'anon role is completely denied SELECT on freight_requests'
 );
 
--- 5. Authenticated ACME OWNER Isolation
+-- 5. Authenticated ACME SUPERVISOR Isolation
 set local role authenticated;
 set local "request.jwt.claims" to '{"sub":"d0000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 select results_eq(
   $$ select code from public.organizations $$,
   $$ values ('ACME') $$,
-  'ACME OWNER sees exactly ACME organization'
+  'ACME SUPERVISOR sees exactly ACME organization'
 );
 
 select results_eq(
   $$ select code from public.freight_requests $$,
   $$ values ('FR-1042') $$,
-  'ACME OWNER sees exactly ACME freight requests'
+  'ACME SUPERVISOR sees exactly ACME freight requests'
 );
 
 select results_eq(
   $$ select count(*)::integer from public.organization_cargo_profiles $$,
   $$ values (1) $$,
-  'ACME OWNER sees ACME cargo profiles'
+  'ACME SUPERVISOR sees ACME cargo profiles'
 );
 
 -- 6. User without organization (Authenticated but not active member of any org)

@@ -6,10 +6,10 @@ BEGIN;
 INSERT INTO auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
 ) VALUES
-  ('00000000-0000-0000-0000-000000000000', 'd0000000-0000-0000-0000-000000000002', 'authenticated', 'authenticated', 'ana.supervisor@acmemining.pe', extensions.crypt('CargoMesh2026!', extensions.gen_salt('bf')), now(), '{"provider":"email"}', '{"full_name":"Ana Supervisor"}', now(), now()),
-  ('00000000-0000-0000-0000-000000000000', 'd0000000-0000-0000-0000-000000000003', 'authenticated', 'authenticated', 'pedro.requester@acmemining.pe', extensions.crypt('CargoMesh2026!', extensions.gen_salt('bf')), now(), '{"provider":"email"}', '{"full_name":"Pedro Requester"}', now(), now()),
-  ('00000000-0000-0000-0000-000000000000', 'd0000000-0000-0000-0000-000000000004', 'authenticated', 'authenticated', 'roberto.owner@betalogistics.pe', extensions.crypt('CargoMesh2026!', extensions.gen_salt('bf')), now(), '{"provider":"email"}', '{"full_name":"Roberto Beta"}', now(), now()),
-  ('00000000-0000-0000-0000-000000000000', 'd0000000-0000-0000-0000-000000000005', 'authenticated', 'authenticated', 'no.org@random.com', extensions.crypt('CargoMesh2026!', extensions.gen_salt('bf')), now(), '{"provider":"email"}', '{"full_name":"No Org User"}', now(), now())
+  ('00000000-0000-0000-0000-000000000000', 'd0000000-0000-0000-0000-000000000002', 'authenticated', 'authenticated', 'supervisor@acme.cargomesh.test', extensions.crypt('LOCAL_ONLY_CARGOMESH_DEMO_2026!', extensions.gen_salt('bf')), now(), '{"provider":"email"}', '{"full_name":"Demo Supervisor"}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'd0000000-0000-0000-0000-000000000003', 'authenticated', 'authenticated', 'requester@acme.cargomesh.test', extensions.crypt('LOCAL_ONLY_CARGOMESH_DEMO_2026!', extensions.gen_salt('bf')), now(), '{"provider":"email"}', '{"full_name":"Demo Requester"}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'd0000000-0000-0000-0000-000000000004', 'authenticated', 'authenticated', 'owner@beta.cargomesh.test', extensions.crypt('LOCAL_ONLY_CARGOMESH_DEMO_2026!', extensions.gen_salt('bf')), now(), '{"provider":"email"}', '{"full_name":"Demo Beta Owner"}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'd0000000-0000-0000-0000-000000000005', 'authenticated', 'authenticated', 'no-org@cargomesh.test', extensions.crypt('LOCAL_ONLY_CARGOMESH_DEMO_2026!', extensions.gen_salt('bf')), now(), '{"provider":"email"}', '{"full_name":"Demo User Without Organization"}', now(), now())
 ON CONFLICT (id) DO NOTHING;
 
 -- Organization B (Beta Logistics)
