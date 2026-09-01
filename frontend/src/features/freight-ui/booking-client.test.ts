@@ -148,15 +148,48 @@ test("reuses the same selection idempotency key for an assisted replay", async (
   const authorization = prepared(model);
   const storage = new MemoryStorage();
   const prepareKeys: string[] = [];
+  const prepareResults: PreparedBookingAuthorization[] = [];
+  const providerResults: Array<{ idempotentReplay: boolean }> = [];
+  const bridgePayloads: Record<string, unknown>[] = [];
+  const bridgeResponses: Array<{ httpStatus: number; status: string }> = [];
+  const persisted = {
+    bookings: new Set<string>(),
+    events: new Set<string>(),
+    decisions: new Set<string>(),
+  };
+  const writeAttempts = { bookings: 0, events: 0, decisions: 0 };
   let randomCalls = 0;
   const fetcher = async (input: string | URL | Request, init?: RequestInit) => {
     const path = String(input);
     const body = init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : {};
-    if (path === "/api/bookings/prepare") prepareKeys.push(String(body.bookingIdempotencyKey));
-    const data = path === "/api/bookings/prepare"
-      ? { ...authorization, bookingIdempotencyKey: body.bookingIdempotencyKey as string, deduplicated: prepareKeys.length > 1 }
-      : { bookingId: "a0000000-0000-0000-0000-000000000099", status: prepareKeys.length > 1 ? "DEDUPLICATED" : "INSERTED", deduplicated: prepareKeys.length > 1 };
-    return new Response(JSON.stringify({ ok: true, data }));
+    if (path === "/api/bookings/prepare") {
+      prepareKeys.push(String(body.bookingIdempotencyKey));
+      const result = {
+        ...authorization,
+        bookingIdempotencyKey: body.bookingIdempotencyKey as string,
+        deduplicated: prepareKeys.length > 1,
+      };
+      prepareResults.push(result);
+      return new Response(JSON.stringify({ ok: true, data: result }), { status: 200 });
+    }
+
+    bridgePayloads.push(body);
+    const replay = bridgePayloads.length > 1;
+    if (!replay) {
+      writeAttempts.bookings += 1;
+      writeAttempts.events += 1;
+      writeAttempts.decisions += 1;
+      persisted.bookings.add("a0000000-0000-0000-0000-000000000099");
+      persisted.events.add("booking-created");
+      persisted.decisions.add(authorization.freightDecisionId);
+    }
+    const result = {
+      bookingId: "a0000000-0000-0000-0000-000000000099",
+      status: replay ? "DEDUPLICATED" : "INSERTED",
+      deduplicated: replay,
+    };
+    bridgeResponses.push({ httpStatus: 200, status: result.status });
+    return new Response(JSON.stringify({ ok: true, data: result }), { status: 200 });
   };
   const createNavigation = (): ProviderNavigationAdapter => ({
     bindRegisteredCandidates() {},
@@ -165,7 +198,19 @@ test("reuses the same selection idempotency key for an assisted replay", async (
         runtime: {
           async getToolNames() { return ["book_freight"]; },
           async executeTool() {
-            return { ok: true, data: { providerReference: "INCA-BOOK-1", idempotentReplay: prepareKeys.length > 1 } };
+            const data = {
+              schemaVersion: "1.0",
+              freightRequestId: authorization.freightRequestId,
+              providerOfferReference: authorization.providerOfferReference,
+              providerReference: "INCA-BOOK-1",
+              providerBookingStatus: "PENDING_PROVIDER_CONFIRMATION",
+              providerResponseDeadline: "2026-09-01T12:15:00.000Z",
+              paymentRequired: false,
+              paymentUrl: null,
+              idempotentReplay: prepareKeys.length > 1,
+            } as const;
+            providerResults.push(data);
+            return { ok: true, data };
           },
         },
         async leaveAndGetActiveToolNames() { return []; },
@@ -174,11 +219,30 @@ test("reuses the same selection idempotency key for an assisted replay", async (
   });
   const options = { fetcher: fetcher as typeof fetch, storage, randomUUID: () => `random-${++randomCalls}`, createNavigation };
 
-  await startAssistedBooking({ model, offer, frame: {} as HTMLIFrameElement, baseUrl: "http://localhost:3000" }, options);
-  await startAssistedBooking({ model, offer, frame: {} as HTMLIFrameElement, baseUrl: "http://localhost:3000" }, options);
+  const first = await startAssistedBooking({ model, offer, frame: {} as HTMLIFrameElement, baseUrl: "http://localhost:3000" }, options);
+  const replay = await startAssistedBooking({ model, offer, frame: {} as HTMLIFrameElement, baseUrl: "http://localhost:3000" }, options);
 
   assert.equal(prepareKeys.length, 2);
   assert.equal(prepareKeys[0], prepareKeys[1]);
+  assert.equal(prepareResults[1].deduplicated, true);
+  assert.equal(first.bookingId, replay.bookingId);
+  assert.equal(providerResults[0].idempotentReplay, false);
+  assert.equal(providerResults[1].idempotentReplay, true);
+  assert.equal(bridgeResponses[1].httpStatus, 200);
+  assert.equal(bridgeResponses[1].status, "DEDUPLICATED");
+  assert.equal(bridgePayloads[0].bridgeCallId, `cm:booking:v1:${authorization.authorizationReference}:initial`);
+  assert.equal(bridgePayloads[1].bridgeCallId, `cm:booking:v1:${authorization.authorizationReference}:provider-replay`);
+  assert.notEqual(bridgePayloads[0].bridgeCallId, bridgePayloads[1].bridgeCallId);
+  assert.deepEqual({
+    bookings: persisted.bookings.size,
+    events: persisted.events.size,
+    decisions: persisted.decisions.size,
+  }, { bookings: 1, events: 1, decisions: 1 });
+  assert.deepEqual({
+    bookings: writeAttempts.bookings - persisted.bookings.size,
+    events: writeAttempts.events - persisted.events.size,
+    decisions: writeAttempts.decisions - persisted.decisions.size,
+  }, { bookings: 0, events: 0, decisions: 0 });
   assert.equal(randomCalls, 1);
 });
 

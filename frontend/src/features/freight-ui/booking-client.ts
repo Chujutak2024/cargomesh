@@ -4,6 +4,7 @@ import type {
   PreparedBookingAuthorization,
   ProviderBookFreightResult,
 } from "@/features/booking/contracts";
+import { createBookFreightBridgeCallId } from "@/features/booking/bridge-call-id";
 import { buildProviderNavigationUrl } from "@/features/discovery/provider-navigation";
 import type { OrchestrationViewModel, RankedOfferView } from "@/features/orchestration/contracts";
 import type { CandidateProvider } from "@/features/providers/contracts";
@@ -344,10 +345,14 @@ async function executePreparedBooking(
     };
     executedAt = timestamp(dependencies);
     toolOutput = await runtime.executeTool("book_freight", toolInput, controller.signal);
+    const providerResult = readBookFreightResult(toolOutput);
     persistence = await postEnvelope<BookingBridgePersistenceResult>(
       "/api/bookings/record-provider",
       {
-        bridgeCallId: `cm:booking:v1:${input.authorization.authorizationReference}`,
+        bridgeCallId: createBookFreightBridgeCallId(
+          input.authorization.authorizationReference,
+          providerResult,
+        ),
         authorizationReference: input.authorization.authorizationReference,
         freightRequestId: input.authorization.freightRequestId,
         offerId: input.authorization.offerId,
@@ -367,7 +372,7 @@ async function executePreparedBooking(
   }
 
   if (!persistence) throw new Error("El Result Bridge no devolvió evidencia de booking.");
-  const providerReference = readProviderReference(toolOutput);
+  const providerReference = readBookFreightResult(toolOutput).providerReference;
   const context: BookingRuntimeContext = {
     bookingId: persistence.bookingId,
     authorizationReference: input.authorization.authorizationReference,
@@ -540,7 +545,7 @@ function createStatusBridgeCallId(bookingId: string, toolOutput: unknown) {
   return `cm:booking-status:v1:${bookingId}:${(hash >>> 0).toString(16)}`;
 }
 
-function readProviderReference(value: unknown) {
+function readBookFreightResult(value: unknown): ProviderBookFreightResult {
   if (!isEnvelope(value) || value.ok !== true || !isRecord(value.data)) {
     throw new Error(readEnvelopeError(value) ?? "book_freight no devolvió una reserva válida.");
   }
@@ -548,7 +553,10 @@ function readProviderReference(value: unknown) {
   if (typeof result.providerReference !== "string" || !result.providerReference) {
     throw new Error("book_freight no devolvió providerReference.");
   }
-  return result.providerReference;
+  if (typeof result.idempotentReplay !== "boolean") {
+    throw new Error("book_freight no devolvió idempotentReplay.");
+  }
+  return result as ProviderBookFreightResult;
 }
 
 async function postEnvelope<T>(path: string, body: unknown, fetcher: Fetcher = fetch): Promise<T> {
