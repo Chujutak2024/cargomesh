@@ -1,10 +1,13 @@
 import { DemoLogin } from "@/components/demo-login";
 import { redirectAuthenticatedMemberFromLogin } from "@/features/auth/route-guard";
+import { loginCopyEs } from "@/features/auth/login-copy";
 import { Activity, Boxes, Network, Route, ShieldCheck } from "lucide-react";
 import styles from "./page.module.css";
 
 export default async function LoginPage() {
   await redirectAuthenticatedMemberFromLogin();
+
+  const copy = loginCopyEs;
 
   return (
     <main className={styles.page}>
@@ -14,21 +17,19 @@ export default async function LoginPage() {
             <Network size={22} strokeWidth={1.8} />
           </span>
           <span>
-            <strong>CargoMesh</strong>
-            <small>Control tower</small>
+            <strong>{copy.brand.name}</strong>
+            <small>{copy.brand.label}</small>
           </span>
         </div>
         <div className={styles.brandCopy}>
-          <span className={styles.eyebrow}>Freight orchestration · WebMCP</span>
-          <h2 id="login-brand-title">Tu red logística en una sola vista.</h2>
-          <p>
-            Coordina cargas, capacidad y seguimiento internacional con decisiones visibles para todo el equipo.
-          </p>
+          <span className={styles.eyebrow}>{copy.brandPanel.eyebrow}</span>
+          <h2 id="login-brand-title">{copy.brandPanel.title}</h2>
+          <p>{copy.brandPanel.description}</p>
 
-          <div className={styles.capabilities} aria-label="Capacidades de CargoMesh">
-            <span><Boxes size={16} aria-hidden="true" /> Solicitudes centralizadas</span>
-            <span><Route size={16} aria-hidden="true" /> Operación conectada</span>
-            <span><Activity size={16} aria-hidden="true" /> Estado en tiempo real</span>
+          <div className={styles.capabilities} aria-label={copy.brandPanel.capabilitiesLabel}>
+            <span><Boxes size={16} aria-hidden="true" /> {copy.brandPanel.capabilities.requests}</span>
+            <span><Route size={16} aria-hidden="true" /> {copy.brandPanel.capabilities.operations}</span>
+            <span><Activity size={16} aria-hidden="true" /> {copy.brandPanel.capabilities.tracking}</span>
           </div>
         </div>
 
@@ -41,14 +42,14 @@ export default async function LoginPage() {
 
         <div className={styles.signal}>
           <ShieldCheck size={16} aria-hidden="true" />
-          Entorno de demostración protegido
+          {copy.brandPanel.signal}
         </div>
       </section>
 
-      <section className={styles.formPanel} aria-label="Inicio de sesión">
+      <section className={styles.formPanel} aria-label={copy.form.ariaLabel}>
         <div className={styles.formContent}>
           <DemoLogin />
-          <p className={styles.footer}>CargoMesh · WebMCP Challenge 2026</p>
+          <p className={styles.footer}>{copy.footer}</p>
         </div>
       </section>
     </main>

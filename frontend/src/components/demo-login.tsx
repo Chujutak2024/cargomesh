@@ -14,6 +14,7 @@ import {
   signInWithPassword,
   type PasswordLoginErrorKind,
 } from "@/features/auth/password-login";
+import { loginCopyEs } from "@/features/auth/login-copy";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import styles from "./demo-login.module.css";
 
@@ -26,8 +27,14 @@ export function DemoLogin() {
     message: string;
   } | null>(null);
 
+  function restoreEmailFocus() {
+    window.requestAnimationFrame(() => emailInputRef.current?.focus());
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isLoading) return;
+
     setIsLoading(true);
     setError(null);
 
@@ -42,7 +49,7 @@ export function DemoLogin() {
     } catch {
       setError({ kind: "recoverable", message: RECOVERABLE_LOGIN_ERROR_MESSAGE });
       setIsLoading(false);
-      emailInputRef.current?.focus();
+      restoreEmailFocus();
       return;
     }
 
@@ -54,7 +61,7 @@ export function DemoLogin() {
 
     setError({ kind: result.kind, message: result.message });
     setIsLoading(false);
-    emailInputRef.current?.focus();
+    restoreEmailFocus();
   }
 
   return (
@@ -62,11 +69,7 @@ export function DemoLogin() {
       <div className={styles.cardTopline}>
         <span>
           <LockKeyhole size={14} aria-hidden="true" />
-          Acceso seguro
-        </span>
-        <span className={styles.status}>
-          <span aria-hidden="true" />
-          Disponible
+          {loginCopyEs.form.securityLabel}
         </span>
       </div>
 
@@ -75,18 +78,16 @@ export function DemoLogin() {
           <ShieldCheck size={22} strokeWidth={1.8} />
         </span>
         <div>
-          <span className={styles.eyebrow}>Control tower B2B</span>
-          <h1>Bienvenido a CargoMesh</h1>
+          <span className={styles.eyebrow}>{loginCopyEs.form.eyebrow}</span>
+          <h1>{loginCopyEs.form.title}</h1>
         </div>
       </div>
 
-      <p className={styles.intro}>
-        Inicia sesión con tu cuenta autorizada para supervisar solicitudes y operaciones de carga.
-      </p>
+      <p className={styles.intro}>{loginCopyEs.form.intro}</p>
 
       <form className={styles.form} onSubmit={handleSubmit} noValidate={false}>
         <div className={styles.field}>
-          <label htmlFor="login-email">Correo electrónico</label>
+          <label htmlFor="login-email">{loginCopyEs.form.emailLabel}</label>
           <div className={styles.inputFrame}>
             <Mail size={18} aria-hidden="true" />
             <input
@@ -96,6 +97,7 @@ export function DemoLogin() {
               type="email"
               autoComplete="email"
               inputMode="email"
+              placeholder={loginCopyEs.form.emailPlaceholder}
               required
               disabled={isLoading}
               aria-invalid={error?.kind === "invalid_credentials"}
@@ -105,7 +107,7 @@ export function DemoLogin() {
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="login-password">Contraseña</label>
+          <label htmlFor="login-password">{loginCopyEs.form.passwordLabel}</label>
           <div className={styles.inputFrame}>
             <LockKeyhole size={18} aria-hidden="true" />
             <input
@@ -113,6 +115,7 @@ export function DemoLogin() {
               name="password"
               type="password"
               autoComplete="current-password"
+              placeholder={loginCopyEs.form.passwordPlaceholder}
               required
               disabled={isLoading}
               aria-invalid={error?.kind === "invalid_credentials"}
@@ -122,33 +125,39 @@ export function DemoLogin() {
         </div>
 
         {error ? (
-          <p className={styles.errorMessage} id="login-error" role="alert">
+          <p
+            className={`${styles.errorMessage} ${error.kind === "invalid_credentials" ? styles.invalidError : styles.recoverableError}`}
+            id="login-error"
+            role="alert"
+          >
+            <strong>
+              {error.kind === "invalid_credentials"
+                ? loginCopyEs.form.invalidCredentialsState
+                : loginCopyEs.form.recoverableState}
+            </strong>
             {error.message}
           </p>
         ) : null}
 
-        <button className={styles.primaryAction} type="submit" disabled={isLoading}>
+        <button
+          className={styles.primaryAction}
+          type="submit"
+          disabled={isLoading}
+          aria-busy={isLoading}
+        >
           {isLoading ? (
             <>
               <LoaderCircle className={styles.spinner} size={18} aria-hidden="true" />
-              Verificando acceso…
+              {loginCopyEs.form.loading}
             </>
           ) : (
             <>
-              Iniciar sesión
+              {loginCopyEs.form.submit}
               <ArrowRight size={18} aria-hidden="true" />
             </>
           )}
         </button>
       </form>
-
-      <div className={styles.assurance}>
-        <ShieldCheck size={17} aria-hidden="true" />
-        <p>
-          <strong>Autenticación empresarial</strong>
-          <span>Las credenciales se validan de forma segura mediante Supabase Auth.</span>
-        </p>
-      </div>
     </div>
   );
 }

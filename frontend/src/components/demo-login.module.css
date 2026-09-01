@@ -24,21 +24,6 @@
   gap: 0.4rem;
 }
 
-.status {
-  border-radius: 999px;
-  padding: 0.35rem 0.55rem;
-  color: #176f66;
-  background: #edf8f4;
-}
-
-.status > span {
-  width: 0.42rem;
-  height: 0.42rem;
-  border-radius: 50%;
-  background: #2bae9a;
-  box-shadow: 0 0 0 3px rgb(43 174 154 / 13%);
-}
-
 .cardHeader {
   display: flex;
   align-items: flex-start;
@@ -114,6 +99,8 @@
 .inputFrame:focus-within {
   border-color: #2b7d72;
   box-shadow: 0 0 0 3px rgb(43 125 114 / 18%);
+  outline: 2px solid rgb(43 125 114 / 22%);
+  outline-offset: 1px;
 }
 
 .inputFrame:has(input[aria-invalid="true"]) {
@@ -136,12 +123,19 @@
   font-size: 1rem;
 }
 
+.inputFrame input::placeholder {
+  color: #5f6c68;
+  opacity: 1;
+}
+
 .inputFrame:has(input:disabled) {
   background: #f1f4f2;
   opacity: 0.75;
 }
 
 .errorMessage {
+  display: grid;
+  gap: 0.2rem;
   margin: 0;
   border-left: 3px solid #b42318;
   padding: 0.65rem 0.75rem;
@@ -149,6 +143,22 @@
   background: #fff4f2;
   font-size: 0.78rem;
   line-height: 1.5;
+}
+
+.errorMessage strong {
+  font-size: 0.78rem;
+}
+
+.invalidError {
+  border-left-color: #b42318;
+  color: #8f1d14;
+  background: #fff4f2;
+}
+
+.recoverableError {
+  border-left-color: #9b6b19;
+  color: #704d13;
+  background: #fff9e9;
 }
 
 .primaryAction {
@@ -188,38 +198,6 @@
 
 .spinner {
   animation: spin 0.8s linear infinite;
-}
-
-.assurance {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-  margin-top: 1.2rem;
-  border-top: 1px solid #e7ece9;
-  padding-top: 1rem;
-  color: #687573;
-}
-
-.assurance > svg {
-  flex: 0 0 auto;
-  margin-top: 0.15rem;
-  color: #2b7d72;
-}
-
-.assurance p {
-  display: grid;
-  gap: 0.18rem;
-  margin: 0;
-}
-
-.assurance strong {
-  color: #34413f;
-  font-size: 0.73rem;
-}
-
-.assurance span {
-  font-size: 0.7rem;
-  line-height: 1.5;
 }
 
 @keyframes spin {
