@@ -2,7 +2,7 @@
 
 > **Estado:** BORRADOR. REL-02 no está completado.
 >
-> **Dependencias pendientes:** cierre verificable de INT-03 y REL-01.
+> **Estado de dependencias:** Día 3 / INT-03 está cerrado. Permanecen pendientes REL-01, la URL pública, el video, las capturas y la validación externa.
 >
 > **Uso:** base editorial para Devpost, video y ensayo conjunto. No contiene credenciales ni valores de variables de entorno.
 
@@ -130,14 +130,30 @@ Convención propuesta: `rel02-cap-XX-descripcion.png`. Mantener resolución unif
 | Persistencia booking | Crea booking, decisión y eventos causales | No crea nuevas filas comerciales | Cero bookings, decisiones o eventos duplicados |
 | Provider status | Persiste eventos nuevos | Polls repetidos deduplican eventos por identidad provider | Cronología estable sin eventos repetidos |
 
-> **Pendiente de cierre:** A está ejecutando la validación real de INT-03 sobre el replay corregido. Sustituir esta nota por el run, timestamps y conteos sanitizados aprobados por A y C. Hasta entonces, REL-02 continúa como borrador.
+### Evidencia sanitizada de INT-03 cerrado
+
+La repetición real publicada en PR #24 se ejecutó en un navegador compatible con `document.modelContext` y confirmó:
+
+- la llamada inicial creó la autorización y persistió el booking;
+- repetir la misma selección e idempotencia devolvió `prepare` HTTP 200 y `record-provider` HTTP 200;
+- el provider informó `idempotentReplay:true` y el Bridge respondió `DEDUPLICATED`;
+- el replay conservó el mismo `bookingId` y la misma referencia provider;
+- la identidad del Bridge distinguió las fases `initial` y `provider-replay`;
+- antes del reset existía exactamente un booking y cero bookings duplicados;
+- el caso `REJECTED` expuso únicamente las alternativas autorizadas por `recoveryOfferIds`;
+- la selección de recovery creó un booking de reemplazo ligado al booking rechazado y terminó en `CONFIRMED`;
+- cada booking conservó tres eventos y tres bridge calls deduplicados;
+- el Judge Drawer mostró las ejecuciones mediante `document.modelContext`, las cinco tools descubiertas y la cronología procedente del `BookingViewModel v1`;
+- todas las navegaciones terminaron con `cleanupToolNames: []`.
+
+INT-03 está cerrado. REL-02 continúa como borrador porque REL-01, la URL pública, el video, las capturas y la validación externa todavía están pendientes.
 
 ## 6. Ejecución desde una sesión limpia
 
 ### Requisitos
 
 - Git.
-- Node.js LTS compatible con Next.js 15.
+- Node.js 22 o superior.
 - Corepack/pnpm.
 - Docker en ejecución.
 - Supabase CLI disponible mediante `npx`.
@@ -222,7 +238,7 @@ Debe aportar:
 - input/output sanitizado de cobertura, capacidad, quote, booking y status;
 - evidencia de navegación cross-origin y `matchingServiceId` exacto;
 - cleanup después de cada provider;
-- corrida INT-03 real inicial y replay provider-side;
+- evidencia publicada de INT-03 real, replay provider-side, rechazo y recovery;
 - timestamps y referencias técnicas sanitizadas necesarias para correlación.
 
 ### Integrante B — Product / Frontend y narrativa
@@ -252,12 +268,12 @@ Debe aportar:
 
 ## 8. Pendientes antes de convertirlo en entrega
 
-- [ ] Incorporar la evidencia final y sanitizada de INT-03 aportada por A.
-- [ ] Recibir de C los conteos de replay, arquitectura final y evidencia de entorno limpio.
+- [ ] Recibir de C la arquitectura final y la evidencia de entorno limpio de REL-01.
 - [ ] Reemplazar referencias locales por la URL pública aprobada en REL-01.
 - [ ] Capturar CAP-01 a CAP-10 con estilo y resolución uniformes.
 - [ ] Ensayar el guion con los tres integrantes y confirmar duración menor a tres minutos.
 - [ ] Revisar que video, imágenes y texto no expongan secretos ni credenciales.
+- [ ] Ejecutar la validación externa desde una sesión limpia contra la URL pública.
 - [ ] Realizar revisión cruzada A/B/C.
 
 REL-02 debe permanecer sin marcar hasta que REL-01 esté cerrado, una persona ajena al equipo pueda reproducir el Golden Flow y los tres integrantes aprueben el material final.
