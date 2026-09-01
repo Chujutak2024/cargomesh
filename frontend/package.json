@@ -2,6 +2,9 @@
   "name": "cargomesh-frontend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -14,7 +17,11 @@
     "test:external-navigation": "tsx --test src/features/webmcp-runner/external-provider-navigation-adapter.test.ts",
     "test:freight-intent": "tsx --test src/features/freight-requests/execution-intent.test.ts",
     "test:a04": "tsx --test src/features/providers/provider-query-tools.test.ts src/features/providers/provider-booking-tools.test.ts",
-    "test:booking": "tsx --test src/features/booking/validation.test.ts src/features/booking/server-policy.test.ts src/features/booking/bridge-call-id.test.ts"
+    "test:booking": "tsx --test src/features/booking/validation.test.ts src/features/booking/server-policy.test.ts src/features/booking/bridge-call-id.test.ts",
+    "test:release": "npm run test:discovery && npm run test:c02 && npm run test:int02a && npm run test:int02a-runner && npm run test:external-navigation && npm run test:freight-intent && npm run test:a04 && npm run test:booking",
+    "release:preflight": "node scripts/release-preflight.mjs",
+    "release:smoke": "node scripts/release-smoke.mjs",
+    "release:verify": "npm run typecheck && npm run test:release && npm run build && npm run release:preflight"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
