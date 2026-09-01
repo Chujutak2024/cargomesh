@@ -76,6 +76,18 @@ pnpm release:smoke
 
 `release:smoke` checks the landing page, login and a seeded provider page over the public URL. It does not replace the browser/WebMCP E2E.
 
+### Latest local verification
+
+The release branch was verified against the current `main` base with:
+
+- 94/94 TypeScript unit and integration tests;
+- `pnpm typecheck` and `pnpm build`;
+- 120/120 pgTAP tests;
+- `supabase db lint --local` with no error findings;
+- `release:preflight` 15/15 using non-sensitive placeholder values only.
+
+This is local evidence, not production evidence. The public smoke test and browser WebMCP flow remain required for `REL-01`.
+
 ## 6. Gate G4 evidence package
 
 With INT-03 closed, retain sanitized evidence for:
