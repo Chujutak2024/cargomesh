@@ -1,8 +1,11 @@
 import { DemoLogin } from "@/components/demo-login";
+import { redirectAuthenticatedMemberFromLogin } from "@/features/auth/route-guard";
 import { Activity, Boxes, Network, Route, ShieldCheck } from "lucide-react";
 import styles from "./page.module.css";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  await redirectAuthenticatedMemberFromLogin();
+
   return (
     <main className={styles.page}>
       <section className={styles.brandPanel} aria-labelledby="login-brand-title">
@@ -42,7 +45,7 @@ export default function LoginPage() {
         </div>
       </section>
 
-      <section className={styles.formPanel} aria-label="Inicio de sesión de demostración">
+      <section className={styles.formPanel} aria-label="Inicio de sesión">
         <div className={styles.formContent}>
           <DemoLogin />
           <p className={styles.footer}>CargoMesh · WebMCP Challenge 2026</p>

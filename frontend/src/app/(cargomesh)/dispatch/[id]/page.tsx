@@ -1,4 +1,5 @@
 import { DispatchView, OrchestrationDispatch } from "@/components/dispatch-view";
+import { requireOperationalRouteAccess } from "@/features/auth/route-guard";
 import { resolveExplicitDispatchScenario } from "@/features/freight-ui/dispatch-policies";
 import { getDispatchFixture } from "@/features/freight-ui/ui-fixtures";
 
@@ -8,6 +9,8 @@ type DispatchPageProps = {
 };
 
 export default async function DispatchPage({ params, searchParams }: DispatchPageProps) {
+  await requireOperationalRouteAccess();
+
   const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams]);
   const scenario = resolveExplicitDispatchScenario(resolvedSearchParams.scenario);
   if (scenario) {

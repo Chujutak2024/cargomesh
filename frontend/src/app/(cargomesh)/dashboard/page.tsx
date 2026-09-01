@@ -12,6 +12,7 @@ import { CapacityPanel } from "@/components/capacity-panel";
 import { LiveTrackingMap } from "@/components/live-tracking-map";
 import { RequestTable } from "@/components/request-table";
 import { VehicleStatusPanel } from "@/components/vehicle-status-panel";
+import { requireOperationalRouteAccess } from "@/features/auth/route-guard";
 import {
   dashboardSummaryFixture,
   freightRequestsFixture,
@@ -58,7 +59,9 @@ const metrics = [
   },
 ];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  await requireOperationalRouteAccess();
+
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
