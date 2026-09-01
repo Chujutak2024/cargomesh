@@ -1,5 +1,6 @@
 import { BookingStatusClient } from "@/components/booking-status-client";
 import { BookingWorkspace } from "@/components/booking-workspace";
+import { requireOperationalRouteAccess } from "@/features/auth/route-guard";
 import {
   getBookingUiFixture,
   resolveBookingOfferSet,
@@ -16,6 +17,8 @@ type BookingStatusPageProps = {
 };
 
 export default async function BookingStatusPage({ params, searchParams }: BookingStatusPageProps) {
+  await requireOperationalRouteAccess();
+
   const [{ requestCode }, query] = await Promise.all([params, searchParams]);
   const scenario = resolveExplicitBookingUiScenario(query.scenario);
   if (!scenario) return <BookingStatusClient bookingId={requestCode} />;

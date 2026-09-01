@@ -31,8 +31,8 @@ const INVALID_CREDENTIALS_MESSAGE =
 export const RECOVERABLE_LOGIN_ERROR_MESSAGE =
   "No pudimos iniciar sesión en este momento. Revisa tu conexión e inténtalo nuevamente.";
 
-function isInvalidCredentials(error: { code?: string; status?: number }) {
-  return error.code === "invalid_credentials" || error.status === 400;
+function isInvalidCredentials(error: { code?: string }) {
+  return error.code === "invalid_credentials";
 }
 
 export async function signInWithPassword(

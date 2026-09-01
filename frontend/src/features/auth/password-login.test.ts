@@ -69,6 +69,29 @@ test("keeps unexpected authentication failures recoverable", async () => {
   }
 });
 
+test("keeps a non-credential HTTP 400 error recoverable", async () => {
+  const client = {
+    auth: {
+      async signInWithPassword() {
+        return {
+          data: { session: null },
+          error: { code: "email_not_confirmed", status: 400 },
+        };
+      },
+    },
+  };
+
+  const result = await signInWithPassword(client, {
+    email: "member@example.com",
+    password: "test-password",
+  });
+
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.kind, "recoverable");
+  }
+});
+
 test("the production login does not expose a fictitious identity or a fake session", () => {
   const componentSource = readFileSync(
     new URL("../../components/demo-login.tsx", import.meta.url),
