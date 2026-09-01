@@ -343,8 +343,8 @@ npx supabase db lint --local
 ## 11. Estado del entorno local y siguientes pasos para React
 
 1. [x] Baseline legacy consolidado y `supabase db reset` reproducible desde cero.
-2. [x] Usuario demo en Supabase Auth (`carlos.mendoza@acmemining.pe` / `CargoMesh2026!`).
-3. [x] Membresía `OWNER` de ACME Mining vinculada y activa.
+2. [x] Fixture local de Supabase Auth (`demo.operator@cargomesh.test` / contraseña explícitamente local-only).
+3. [x] Membresía local `SUPERVISOR / ACTIVE` de ACME Mining vinculada; la cuenta hospedada se provisiona por separado.
 4. [x] 17 tablas con RLS, políticas por organización y cero acceso a `anon`.
 5. [ ] Implementar registro transaccional organización + owner en UI/API.
 6. [ ] Implementar invitación server-side y activación de membresía.

@@ -27,14 +27,14 @@ El esquema contiene 17 tablas y los contratos de identidad, perfiles empresarial
 
 Las tres ofertas precargadas de FR-1042 fueron eliminadas. La solicitud, organización, perfil de carga, transportistas, servicios, vehículos y métricas corresponden ahora al Golden Flow v5.6.0. Los tres carriers son fixtures seed reproducibles, no un límite del esquema: `carriers` y `carrier_services` forman un Provider Registry abierto a `0..N` transportistas. Los avisos `unused_index` son informativos y esperables mientras las tablas runtime estén vacías; el Security Advisor no reporta hallazgos.
 
-En el entorno local y en `seed.sql` ya existe el usuario demo en `auth.users` (`carlos.mendoza@acmemining.pe`) con su membresía activa como `OWNER` de ACME Mining en `organization_members`. Las pruebas automatizadas con pgTAP (`npx supabase test db`) y el reset reproducible (`npx supabase db reset`) están 100% operativos.
+En el entorno local y en `seed.sql` existe el fixture de Auth `demo.operator@cargomesh.test`, vinculado como `SUPERVISOR / ACTIVE` de ACME Mining en `organization_members`. Su contraseña local-only está documentada como `LOCAL_ONLY_CARGOMESH_DEMO_2026!`: es una credencial pública destinada exclusivamente a `supabase db reset` y está prohibido reutilizarla en Supabase hospedado. La cuenta pública se provisiona y rota fuera del repositorio. Las pruebas automatizadas con pgTAP (`npx supabase test db`) y el reset reproducible (`npx supabase db reset`) están operativos.
 
 ## 2. Inventario actual de datos base
 
 | Tabla | Filas | Clase esperada | Observación |
 |---|---:|---|---|
 | `organizations` | 1 | Bootstrap | ACME Mining reconciliada |
-| `organization_members` | 1 | Identidad | Carlos Mendoza (OWNER, ACTIVE) |
+| `organization_members` | 1 | Identidad local | CargoMesh Demo Operator (`SUPERVISOR`, `ACTIVE`) |
 | `organization_preferences` | 1 | Bootstrap | modo asistido; auto-booking deshabilitado |
 | `cargo_categories` | 8 | Bootstrap | orientación dinámica de intake y flota |
 | `freight_requests` | 1 | Demo Scenario | FR-1042 existe en `PENDING` |

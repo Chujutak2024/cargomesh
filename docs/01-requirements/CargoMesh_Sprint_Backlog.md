@@ -36,7 +36,7 @@
 
 Para no dispersar esfuerzos en pantallas innecesarias, el alcance se limita estrictamente a:
 
-1. **Autenticación:** 1 solo botón de acceso directo con el usuario demo pre-sembrado (`carlos.mendoza@acmemining.pe`). Sin pantallas complejas de recuperación de contraseña o registro masivo.
+1. **Autenticación:** Login email/password con Supabase Auth. El entorno local usa exclusivamente el fixture `demo.operator@cargomesh.test` con membresía `SUPERVISOR / ACTIVE`; la cuenta hospedada se provisiona por separado y sus credenciales no se almacenan en el repositorio ni se muestran en la UI.
 2. **Provider Registry + plantilla (`/providers/[carrierSlug]`):** Los candidatos se consultan dinámicamente desde `carriers` y `carrier_services`. La demo aloja páginas livianas para los tres registros seed reutilizando `mockups/provider_*.html`, pero la lógica opera sobre `0..N` carriers y también admite un `provider_url` externo. No son sistemas de gestión interna de flotas.
 3. **Solicitud de Carga:** El formulario Stepper viene pre-llenado con los datos de **FR-1042** (10 pallets $\times$ 800 kg = 8,000 kg, 18 m³, Callao $\rightarrow$ Santiago) para avanzar la demo rápidamente.
 4. **Orquestación & Scoring:** Agente que recorre todos los candidatos descubiertos, ejecuta sus tools, aplica BALANCED sobre las ofertas elegibles y guarda la decisión inmutable.
@@ -55,7 +55,7 @@ Para no dispersar esfuerzos en pantallas innecesarias, el alcance se limita estr
 | `CM-00A` | Baseline Legacy (12 tablas) con `supabase db reset` reproducible | *DB Lead* | `[✅ Completado]` |
 | `CM-00B` | 11 Migraciones PostgreSQL 17 + Domain Constraints | *DB Lead* | `[✅ Completado]` |
 | `CM-00C` | Seguridad RLS en 17 tablas (anon bloqueado con `42501`) | *Security Lead* | `[✅ Completado]` |
-| `CM-00D` | Seed Demo Auth (`carlos.mendoza@acmemining.pe` como OWNER) | *DB Lead* | `[✅ Completado]` |
+| `CM-00D` | Seed Auth exclusivamente local (`demo.operator@cargomesh.test` como `SUPERVISOR`) | *DB Lead* | `[✅ Completado]` |
 | `CM-00E` | Suite Oficial pgTAP (`npx supabase test db` 18/18 PASS) | *QA / DB Lead* | `[✅ Completado]` |
 | `CM-00F` | Esqueleto de carpetas: `frontend/` (Next.js) y `backend/` (FastAPI) | *Fullstack Lead* | `[✅ Completado]` |
 | `CM-00G` | Jerarquía Docs (`00-03`) y Catálogo Oficial de Requisitos | *Product Lead* | `[✅ Completado]` |
@@ -66,7 +66,7 @@ Para no dispersar esfuerzos en pantallas innecesarias, el alcance se limita estr
 
 | Clave | Actividad (Alcance Demo) | Épica Padre | Asignado a | Prioridad | Estado |
 |:---:|---|---|:---:|:---:|:---:|
-| `CM-01` | **Login 1-Click & Supabase SSR Client:** Botón de acceso directo con Carlos Mendoza y contexto de ACME. | ⚡ `EP-1` Auth & Shell | *Fullstack Lead* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-01` | **Login email/password & Supabase SSR Client:** Sesión real con usuario autorizado y membresía `ACTIVE`, sin identidad ficticia en cliente. | ⚡ `EP-1` Auth & Shell | *Fullstack Lead* | 🔴 Alta | `[ ] Pendiente` |
 | `CM-02` | **Layout B2B & Dashboard Base:** Sidebar y tabla de solicitudes mostrando `FR-1042` en estado `PENDING`. | ⚡ `EP-1` Auth & Shell | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
 | `CM-03` | **Stepper FR-1042 (5 Pasos):** Formulario pre-llenado con 10 pallets × 800 kg = 8,000 kg y 18 m³. | ⚡ `EP-2` Intake Carga | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
 | `CM-04` | **Validación & Normalización:** Cálculo automático de peso/volumen total y pre-check de integridad. | ⚡ `EP-2` Intake Carga | *Backend Dev* | 🔴 Alta | `[ ] Pendiente` |

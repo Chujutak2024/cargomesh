@@ -70,7 +70,7 @@ graph TD
 - **Contenido:**
   - Empresa (`ACME Mining Corp S.A.`).
   - País (`Perú`) e Identificador empresarial (`20491827361`).
-  - Correo corporativo verificado 🔒 (`carlos.mendoza@acmemining.pe`).
+  - Identidad sintética de evaluación (`demo.operator@cargomesh.test`), separada de cualquier cuenta hospedada real.
   - Miembros e invitados con roles canónicos (`OWNER`, `REQUESTER`, `SUPERVISOR`) y estados `INVITED / ACTIVE`.
   - Acción `Invitar representante`, ejecutada desde servidor mediante Supabase Auth.
   - Políticas de despacho por defecto: Estrategia `BALANCED`, umbral de auto-booking `Confidence ≥ 85%`.
@@ -94,7 +94,7 @@ graph TD
 - **Ruta:** `/freight-request/new`
 - **Propósito:** Captura e intake guiado de una nueva solicitud de transporte.
 - **Estructura del Stepper Interactivo:**
-  1. **Paso 1 — Organización & Solicitante:** Datos autocompletados de ACME Mining y Carlos Mendoza.
+  1. **Paso 1 — Organización & Solicitante:** Datos autocompletados de ACME Mining y CargoMesh Demo Operator.
   2. **Paso 2 — Origen & Destino:** Dirección de recojo (Callao/Lima), dirección de entrega (Santiago), contactos de entrega y paso fronterizo habilitado (Santa Rosa / Chacalluta).
   3. **Paso 3 — Carga:** Sugerencia desde el perfil `Repuestos y maquinaria minera`; captura dinámica por peso total, unidades, paquetes, pallets, lotes o sacos; cantidad, peso y dimensiones por unidad; normalización visible a peso/volumen total. Golden Flow: 10 pallets $\times$ 800 kg = 8,000 kg y 18 m³, con `TRACTOR_TRAILER` como preferencia pendiente de validación WebMCP.
   4. **Paso 4 — Programación & Políticas:** Ventana de recojo programada, presupuesto máximo de **$2,000 USD**, estrategia **BALANCED**, documentos adjuntos (Factura Comercial y Packing List).
@@ -187,7 +187,7 @@ graph TD
 - **Comportamiento:**
   - Informa que se ha activado `SECURITY_REVIEW`.
   - Congela de inmediato todas las automatizaciones y despachos vinculados.
-  - Notifica al administrador verificado (`carlos.mendoza@acmemining.pe`).
+  - Registra la notificación para el operador demo autorizado (`demo.operator@cargomesh.test`).
 
 ---
 
