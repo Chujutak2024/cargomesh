@@ -6023,7 +6023,7 @@ No construir más lógica de negocio.
 Orden:
 
 ```text
-1. Create real Supabase Auth demo user + OWNER membership
+1. Provision hosted Supabase Auth demo user + SUPERVISOR / ACTIVE membership without reusing the local seed credential
 2. Implement organization registration and server-side member invitation
 3. Implement cargo profile suggestion in the intake form
 4. Move quotes/accept-reject behavior to provider fixtures

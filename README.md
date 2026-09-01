@@ -292,7 +292,7 @@ cargomesh/
 │   ├── migrations/                            # 11 synchronized migrations (including baseline legacy)
 │   ├── current_public_schema.sql              # Schema reference dump
 │   ├── database.types.ts                      # Generated TypeScript database types
-│   ├── seed.sql                               # Demo Auth user & ACME OWNER seed
+│   ├── seed.sql                               # Local-only Demo Auth user & ACME SUPERVISOR seed
 │   ├── tests/                                 # Automated pgTAP database test suite
 │   └── snippets/                              # Standalone validation scripts
 ├── frontend/                                  # 🚀 Next.js 15 full-stack MVP

@@ -24,9 +24,9 @@ ON CONFLICT DO NOTHING;
 -- Organization Memberships
 INSERT INTO public.organization_members (id, organization_id, auth_user_id, display_name, corporate_email, role, status)
 VALUES
-  ('e0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000002', 'Ana Supervisor', 'ana.supervisor@acmemining.pe', 'SUPERVISOR', 'ACTIVE'),
-  ('e0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000003', 'Pedro Requester', 'pedro.requester@acmemining.pe', 'REQUESTER', 'ACTIVE'),
-  ('e0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000004', 'Roberto Beta', 'roberto.owner@betalogistics.pe', 'OWNER', 'ACTIVE')
+  ('e0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000002', 'Demo Supervisor', 'supervisor@acme.cargomesh.test', 'SUPERVISOR', 'ACTIVE'),
+  ('e0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000003', 'Demo Requester', 'requester@acme.cargomesh.test', 'REQUESTER', 'ACTIVE'),
+  ('e0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000004', 'Demo Beta Owner', 'owner@beta.cargomesh.test', 'OWNER', 'ACTIVE')
 ON CONFLICT (organization_id, auth_user_id) DO NOTHING;
 
 -- Freight Request for Org B
@@ -110,26 +110,26 @@ BEGIN
   -- --------------------------------------------------------------------------
   RAISE NOTICE '[2/5] Testing multi-tenant isolation...';
 
-  -- Switch to ACME OWNER
+  -- Switch to seeded ACME SUPERVISOR
   PERFORM set_config('role', 'authenticated', true);
   PERFORM set_config('request.jwt.claims', '{"sub":"d0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 
-  -- ACME OWNER should see exactly 1 organization (ACME)
+  -- ACME SUPERVISOR should see exactly 1 organization (ACME)
   SELECT count(*), min(code) INTO v_count, v_code FROM public.organizations;
   IF v_count <> 1 OR v_code <> 'ACME' THEN
-    RAISE EXCEPTION 'FAIL: ACME OWNER saw % orgs (expected 1 ACME, got %)', v_count, v_code;
+    RAISE EXCEPTION 'FAIL: ACME SUPERVISOR saw % orgs (expected 1 ACME, got %)', v_count, v_code;
   END IF;
 
-  -- ACME OWNER should see only ACME freight requests (FR-1042)
+  -- ACME SUPERVISOR should see only ACME freight requests (FR-1042)
   SELECT count(*), min(code) INTO v_count, v_code FROM public.freight_requests;
   IF v_count <> 1 OR v_code <> 'FR-1042' THEN
-    RAISE EXCEPTION 'FAIL: ACME OWNER saw % requests (expected 1 FR-1042, got %)', v_count, v_code;
+    RAISE EXCEPTION 'FAIL: ACME SUPERVISOR saw % requests (expected 1 FR-1042, got %)', v_count, v_code;
   END IF;
 
-  -- ACME OWNER should see only ACME cargo profiles
+  -- ACME SUPERVISOR should see only ACME cargo profiles
   SELECT count(*) INTO v_count FROM public.organization_cargo_profiles;
   IF v_count <> 1 THEN
-    RAISE EXCEPTION 'FAIL: ACME OWNER saw % cargo profiles (expected 1)', v_count;
+    RAISE EXCEPTION 'FAIL: ACME SUPERVISOR saw % cargo profiles (expected 1)', v_count;
   END IF;
 
   -- Switch to ORG B OWNER
@@ -187,12 +187,12 @@ BEGIN
     RAISE EXCEPTION 'FAIL: SUPERVISOR failed to update organization_preferences!';
   END IF;
 
-  -- OWNER: CAN update preferences
-  PERFORM set_config('request.jwt.claims', '{"sub":"d0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+  -- OWNER: CAN update preferences in the owner's organization
+  PERFORM set_config('request.jwt.claims', '{"sub":"d0000000-0000-0000-0000-000000000004","role":"authenticated"}', true);
   
   UPDATE public.organization_preferences
   SET budget_default = 2000
-  WHERE organization_id = 'a0000000-0000-0000-0000-000000000001';
+  WHERE organization_id = 'a0000000-0000-0000-0000-000000000002';
   GET DIAGNOSTICS v_updated = ROW_COUNT;
   IF v_updated <> 1 THEN
     RAISE EXCEPTION 'FAIL: OWNER failed to update organization_preferences!';
