@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "test:auth": "tsx --test src/features/auth/password-login.test.ts",
     "test:discovery": "tsx --test src/features/discovery/candidate-matcher.test.ts",
     "test:c02": "tsx --test src/features/decision-engine/balanced.test.ts src/features/result-bridge/validation.test.ts",
     "test:int02a": "tsx --test src/features/orchestration/start-run-input.test.ts src/features/orchestration/view-model.test.ts",

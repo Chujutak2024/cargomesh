@@ -42,7 +42,7 @@ export default function LoginPage() {
         </div>
       </section>
 
-      <section className={styles.formPanel} aria-label="Inicio de sesión de demostración">
+      <section className={styles.formPanel} aria-label="Inicio de sesión">
         <div className={styles.formContent}>
           <DemoLogin />
           <p className={styles.footer}>CargoMesh · WebMCP Challenge 2026</p>
