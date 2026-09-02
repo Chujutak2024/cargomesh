@@ -1,3 +1,5 @@
+import type { FreightRequestIntakeStatus } from "@/features/freight-requests/intake-contracts";
+
 export type FreightRequestStatus =
   | "PENDING"
   | "AWAITING_SELECTION"
@@ -58,32 +60,42 @@ export type TrackingMapModel = {
 };
 
 export type FreightIntakeModel = {
+  source: "persisted" | "visual-fixture";
   freightRequestId: string;
   requestId: string;
+  organizationId: string;
   organization: string;
+  operatorMemberId: string;
   requester: string;
+  status: FreightRequestIntakeStatus;
+  updatedAt: string;
+  currency: string;
   cargoProfile: string;
   origin: string;
   destination: string;
   pickupContact: string;
   deliveryContact: string;
   borderCrossing: string;
+  operationalNotes: string;
   cargoCategory: string;
   cargoCategoryCode: string;
   transportMode: string;
   serviceType: string;
   entryMethod: string;
-  quantity: number;
-  unitWeightKg: number;
-  lengthCm: number;
-  widthCm: number;
-  heightCm: number;
+  quantity: number | null;
+  unitsPerEntry: number | null;
+  unitWeightKg: number | null;
+  lengthCm: number | null;
+  widthCm: number | null;
+  heightCm: number | null;
+  totalWeightKg: number;
+  totalVolumeM3: number | null;
   pickupMode: "ASAP" | "SCHEDULED";
   requiredPickup: string;
   pickupWindowStart: string;
   pickupWindowEnd: string;
   deliveryDeadline: string;
-  budgetMaxUsd: number;
+  budgetMaxUsd: number | null;
   strategy: "BALANCED";
   documents: string[];
 };

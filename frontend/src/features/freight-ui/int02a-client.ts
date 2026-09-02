@@ -49,8 +49,11 @@ export function buildProviderRunnerInputs(
   model: FreightIntakeModel,
   executionIntent: FreightRequestExecutionIntent,
 ): ProviderRunnerInputs {
-  const cargoWeightKg = model.quantity * model.unitWeightKg;
-  const cargoVolumeM3 = model.quantity * model.lengthCm * model.widthCm * model.heightCm / 1_000_000;
+  if (model.totalVolumeM3 === null || model.totalVolumeM3 <= 0) {
+    throw new Error("La solicitud no tiene un volumen canónico compatible con el runner actual.");
+  }
+  const cargoWeightKg = model.totalWeightKg;
+  const cargoVolumeM3 = model.totalVolumeM3;
   const schedule = buildPersistedSchedule(executionIntent);
 
   return {

@@ -1,41 +1,50 @@
 "use client";
 
 import {
-  ArrowLeft,
-  ArrowRight,
-  Boxes,
-  Building2,
-  CalendarClock,
-  Check,
-  FileCheck2,
-  MapPin,
-  PackageCheck,
-  ShieldCheck,
+  ArrowLeft, ArrowRight, Boxes, Building2, CalendarClock, Check,
+  FileCheck2, MapPin, PackageCheck, ShieldCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
+
 import {
-  applyExecutionIntentToIntake,
-  buildProviderRunnerInputs,
-  buildRealDispatchPath,
-  cacheInt02aViewModel,
-  createInt02aIdempotencyKey,
+  applyExecutionIntentToIntake, buildProviderRunnerInputs, buildRealDispatchPath,
+  cacheInt02aViewModel, createInt02aIdempotencyKey,
 } from "@/features/freight-ui/int02a-client";
 import type { FreightIntakeModel } from "@/features/freight-ui/view-models";
 import { fetchFreightRequestExecutionIntent } from "@/features/freight-requests/execution-intent-client";
+import {
+  assertExecutionIntentCorrelation, assertFreshIntakeCorrelation,
+  getFreightIntakeDispatchBlockReason, loadPersistedFreightIntake,
+} from "@/features/freight-requests/intake-ui-adapter";
 import { createExternalProviderNavigationAdapter } from "@/features/webmcp-runner";
 import { runInt02aOrchestration } from "@/features/webmcp-runner/orchestration-runner";
 import styles from "./freight-intake-form.module.css";
 
 const steps = [
-  { label: "Organización", icon: Building2 },
-  { label: "Ruta", icon: MapPin },
-  { label: "Carga", icon: Boxes },
-  { label: "Programación", icon: CalendarClock },
+  { label: "Organización", icon: Building2 }, { label: "Ruta", icon: MapPin },
+  { label: "Carga", icon: Boxes }, { label: "Programación", icon: CalendarClock },
   { label: "Revisión", icon: PackageCheck },
 ];
-
 const documentOptions = ["Factura comercial", "Packing list", "Ficha técnica"];
+
+function nullableNumber(value: number | null) { return value ?? ""; }
+function displayNumber(value: number | null, suffix = "") {
+  return value === null ? "No registrado" : `${value.toLocaleString("es-PE")}${suffix}`;
+}
+function displayDate(value: string) {
+  return value ? value.replace("T", " ").replace(".000Z", " UTC") : "No aplica";
+}
+function getDisplayedTotals(form: FreightIntakeModel) {
+  if (form.source === "persisted") return { weightKg: form.totalWeightKg, volumeM3: form.totalVolumeM3 };
+  const quantity = form.quantity ?? 0;
+  const units = form.unitsPerEntry ?? 1;
+  const weightKg = form.unitWeightKg === null ? null : quantity * units * form.unitWeightKg;
+  const volumeM3 = [form.lengthCm, form.widthCm, form.heightCm].some((value) => value === null)
+    ? null
+    : quantity * units * (form.lengthCm ?? 0) * (form.widthCm ?? 0) * (form.heightCm ?? 0) / 1_000_000;
+  return { weightKg, volumeM3 };
+}
 
 export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntakeModel }) {
   const router = useRouter();
@@ -44,29 +53,15 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const runnerFrameRef = useRef<HTMLIFrameElement>(null);
-
-  useEffect(() => {
-    let active = true;
-    void fetchFreightRequestExecutionIntent(initialValue.freightRequestId)
-      .then((executionIntent) => {
-        if (active) setForm((current) => applyExecutionIntentToIntake(current, executionIntent));
-      })
-      .catch(() => {
-        // The submit performs a fresh authenticated read and exposes any error to the user.
-      });
-    return () => { active = false; };
-  }, [initialValue.freightRequestId]);
-
-  const totals = useMemo(() => ({
-    weightKg: form.quantity * form.unitWeightKg,
-    volumeM3: form.quantity * form.lengthCm * form.widthCm * form.heightCm / 1_000_000,
-  }), [form.heightCm, form.lengthCm, form.quantity, form.unitWeightKg, form.widthCm]);
+  const readOnly = form.source === "persisted";
+  const totals = useMemo(() => getDisplayedTotals(form), [form]);
+  const dispatchBlockReason = getFreightIntakeDispatchBlockReason(form);
 
   function update<K extends keyof FreightIntakeModel>(key: K, value: FreightIntakeModel[K]) {
-    setForm((current) => ({ ...current, [key]: value }));
+    if (!readOnly) setForm((current) => ({ ...current, [key]: value }));
   }
-
   function toggleDocument(document: string) {
+    if (readOnly) return;
     setForm((current) => ({
       ...current,
       documents: current.documents.includes(document)
@@ -77,30 +72,30 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (step < steps.length - 1) {
-      setStep((current) => current + 1);
-      return;
-    }
+    if (step < steps.length - 1) { setStep((current) => current + 1); return; }
+    if (dispatchBlockReason) { setSubmitError(dispatchBlockReason); return; }
     const runnerFrame = runnerFrameRef.current;
-    if (!runnerFrame) {
-      setSubmitError("No fue posible preparar el navegador para evaluar los providers.");
-      return;
-    }
+    if (!runnerFrame) { setSubmitError("No fue posible preparar el navegador para evaluar los providers."); return; }
 
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const executionIntent = await fetchFreightRequestExecutionIntent(form.freightRequestId);
-      setForm((current) => applyExecutionIntentToIntake(current, executionIntent));
+      const freshIntake = await loadPersistedFreightIntake(form.requestId);
+      assertFreshIntakeCorrelation(form, freshIntake);
+      const freshBlockReason = getFreightIntakeDispatchBlockReason(freshIntake);
+      if (freshBlockReason) throw new Error(freshBlockReason);
+
+      const executionIntent = await fetchFreightRequestExecutionIntent(freshIntake.freightRequestId);
+      assertExecutionIntentCorrelation(freshIntake, executionIntent);
+      const executionModel = applyExecutionIntentToIntake(freshIntake, executionIntent);
+      setForm(executionModel);
+
       const evidence = await runInt02aOrchestration({
-        freightRequestId: form.freightRequestId,
-        idempotencyKey: createInt02aIdempotencyKey(form.freightRequestId),
+        freightRequestId: executionModel.freightRequestId,
+        idempotencyKey: createInt02aIdempotencyKey(executionModel.freightRequestId),
         baseUrl: window.location.origin,
-        navigation: createExternalProviderNavigationAdapter({
-          frame: runnerFrame,
-          baseUrl: window.location.origin,
-        }),
-        createInputs: () => buildProviderRunnerInputs(form, executionIntent),
+        navigation: createExternalProviderNavigationAdapter({ frame: runnerFrame, baseUrl: window.location.origin }),
+        createInputs: () => buildProviderRunnerInputs(executionModel, executionIntent),
       });
       cacheInt02aViewModel(evidence.start.runId, evidence.viewModel);
       router.push(buildRealDispatchPath(evidence.start.runId));
@@ -113,162 +108,68 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
   return (
     <div className={styles.page}>
       <header className={styles.hero}>
-        <div>
-          <span className={styles.eyebrow}>B-02 · Intake de carga</span>
-          <h1>Nueva solicitud de transporte</h1>
-          <p>Revisa el perfil sugerido, ajusta la operación y confirma la búsqueda de opciones.</p>
-        </div>
-        <div className={styles.draftBadge}><ShieldCheck size={16} aria-hidden="true" /> Borrador seguro</div>
+        <div><span className={styles.eyebrow}>B-02 · Intake de carga</span><h1>Nueva solicitud de transporte</h1>
+          <p>{readOnly ? "Revisa la solicitud persistida antes de iniciar la evaluación de providers." : "Escenario fixture declarado para regresión visual; no inicia operaciones reales."}</p></div>
+        <div className={styles.draftBadge}><ShieldCheck size={16} aria-hidden="true" /> {readOnly ? "Datos persistidos" : "Fixture visual"}</div>
       </header>
 
       <ol className={styles.stepper} aria-label="Progreso del formulario">
-        {steps.map(({ label, icon: Icon }, index) => (
-          <li key={label}>
-            <button
-              type="button"
-              className={`${styles.step} ${index === step ? styles.stepActive : ""} ${index < step ? styles.stepDone : ""}`}
-              aria-current={index === step ? "step" : undefined}
-              onClick={() => setStep(index)}
-              disabled={submitting}
-            >
-              <span>{index < step ? <Check size={16} aria-hidden="true" /> : <Icon size={16} aria-hidden="true" />}</span>
-              <small>Paso {index + 1}</small>
-              <strong>{label}</strong>
-            </button>
-          </li>
-        ))}
+        {steps.map(({ label, icon: Icon }, index) => <li key={label}><button type="button" className={`${styles.step} ${index === step ? styles.stepActive : ""} ${index < step ? styles.stepDone : ""}`} aria-current={index === step ? "step" : undefined} onClick={() => setStep(index)} disabled={submitting}><span>{index < step ? <Check size={16} aria-hidden="true" /> : <Icon size={16} aria-hidden="true" />}</span><small>Paso {index + 1}</small><strong>{label}</strong></button></li>)}
       </ol>
 
       <form className={styles.formLayout} onSubmit={submit} aria-busy={submitting}>
         <section className={styles.formCard} aria-labelledby={`step-title-${step}`}>
-          {step === 0 ? (
-            <>
-              <FormHeading id="step-title-0" title="Organización y solicitante" description="El contexto empresarial se aplica sin convertirlo en una identidad de acceso." />
-              <div className={styles.fieldGrid}>
-                <Field label="Organización activa"><input value={form.organization} readOnly /></Field>
-                <Field label="Solicitante"><input value={form.requester} readOnly /></Field>
-                <Field label="Perfil habitual" wide>
-                  <select value={form.cargoProfile} onChange={(event) => update("cargoProfile", event.target.value)}>
-                    <option>Repuestos y maquinaria minera</option>
-                    <option>Carga general paletizada</option>
-                    <option>Equipos industriales</option>
-                  </select>
-                </Field>
-              </div>
-              <InfoBox>El perfil autocompleta valores sugeridos. Todos pueden revisarse antes de confirmar.</InfoBox>
-            </>
-          ) : null}
+          {step === 0 ? <><FormHeading id="step-title-0" title="Organización y solicitante" description="La organización, el operador y el perfil proceden del ViewModel autorizado." /><div className={styles.fieldGrid}>
+            <Field label="Organización activa"><input value={form.organization} readOnly /></Field><Field label="Solicitante"><input value={form.requester} readOnly /></Field>
+            <Field label="Perfil de carga" wide>{readOnly ? <input value={form.cargoProfile || "Sin perfil asociado"} readOnly /> : <select value={form.cargoProfile} onChange={(event) => update("cargoProfile", event.target.value)}><option>Repuestos y maquinaria minera</option><option>Carga general paletizada</option><option>Equipos industriales</option></select>}</Field>
+          </div><InfoBox>{readOnly ? "La identidad y la membresía se validaron server-side; esta vista no las sustituye." : "Los valores de este escenario sirven únicamente para regresión visual."}</InfoBox></> : null}
 
-          {step === 1 ? (
-            <>
-              <FormHeading id="step-title-1" title="Origen y destino" description="Define el corredor y los contactos operativos de recojo y entrega." />
-              <div className={styles.fieldGrid}>
-                <Field label="Origen"><input required value={form.origin} onChange={(event) => update("origin", event.target.value)} /></Field>
-                <Field label="Destino"><input required value={form.destination} onChange={(event) => update("destination", event.target.value)} /></Field>
-                <Field label="Contacto de recojo"><input required value={form.pickupContact} onChange={(event) => update("pickupContact", event.target.value)} /></Field>
-                <Field label="Contacto de entrega"><input required value={form.deliveryContact} onChange={(event) => update("deliveryContact", event.target.value)} /></Field>
-                <Field label="Paso fronterizo" wide><input value={form.borderCrossing} onChange={(event) => update("borderCrossing", event.target.value)} /></Field>
-              </div>
-            </>
-          ) : null}
+          {step === 1 ? <><FormHeading id="step-title-1" title="Origen y destino" description="Corredor y contactos operativos persistidos para esta solicitud." /><div className={styles.fieldGrid}>
+            <Field label="Origen"><input required={!readOnly} readOnly={readOnly} value={form.origin} onChange={(event) => update("origin", event.target.value)} /></Field>
+            <Field label="Destino"><input required={!readOnly} readOnly={readOnly} value={form.destination} onChange={(event) => update("destination", event.target.value)} /></Field>
+            <Field label="Contacto de recojo"><input required={!readOnly} readOnly={readOnly} value={form.pickupContact} onChange={(event) => update("pickupContact", event.target.value)} /></Field>
+            <Field label="Contacto de entrega"><input required={!readOnly} readOnly={readOnly} value={form.deliveryContact} onChange={(event) => update("deliveryContact", event.target.value)} /></Field>
+            <Field label={readOnly ? "Notas operativas" : "Paso fronterizo"} wide><input readOnly={readOnly} value={readOnly ? form.operationalNotes || "Sin notas" : form.borderCrossing} onChange={(event) => update("borderCrossing", event.target.value)} /></Field>
+          </div></> : null}
 
-          {step === 2 ? (
-            <>
-              <FormHeading id="step-title-2" title="Características de la carga" description="La normalización se actualiza desde la cantidad, el peso y las dimensiones unitarias." />
-              <div className={styles.fieldGrid}>
-                <Field label="Categoría"><input required value={form.cargoCategory} onChange={(event) => update("cargoCategory", event.target.value)} /></Field>
-                <Field label="Método de ingreso">
-                  <select value={form.entryMethod} onChange={(event) => update("entryMethod", event.target.value)}>
-                    <option>Pallets</option><option>Bultos</option><option>Maquinaria</option><option>Sacos</option>
-                  </select>
-                </Field>
-                <Field label="Cantidad"><input min="1" required type="number" value={form.quantity} onChange={(event) => update("quantity", Number(event.target.value))} /></Field>
-                <Field label="Peso unitario (kg)"><input min="1" required type="number" value={form.unitWeightKg} onChange={(event) => update("unitWeightKg", Number(event.target.value))} /></Field>
-                <Field label="Largo (cm)"><input min="1" required type="number" value={form.lengthCm} onChange={(event) => update("lengthCm", Number(event.target.value))} /></Field>
-                <Field label="Ancho (cm)"><input min="1" required type="number" value={form.widthCm} onChange={(event) => update("widthCm", Number(event.target.value))} /></Field>
-                <Field label="Alto (cm)"><input min="1" required type="number" value={form.heightCm} onChange={(event) => update("heightCm", Number(event.target.value))} /></Field>
-              </div>
-              <div className={styles.totals} aria-live="polite">
-                <div><small>Peso normalizado</small><strong>{totals.weightKg.toLocaleString("es-PE")} kg</strong></div>
-                <div><small>Volumen normalizado</small><strong>{totals.volumeM3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³</strong></div>
-              </div>
-            </>
-          ) : null}
+          {step === 2 ? <><FormHeading id="step-title-2" title="Características de la carga" description="Los totales canónicos provienen del servidor y no se reconstruyen desde campos opcionales." /><div className={styles.fieldGrid}>
+            <Field label="Categoría"><input required={!readOnly} readOnly={readOnly} value={form.cargoCategory} onChange={(event) => update("cargoCategory", event.target.value)} /></Field>
+            <Field label="Método de ingreso">{readOnly ? <input value={form.entryMethod} readOnly /> : <select value={form.entryMethod} onChange={(event) => update("entryMethod", event.target.value)}><option>Pallets</option><option>Bultos</option><option>Maquinaria</option><option>Sacos</option></select>}</Field>
+            <NumberField label="Cantidad" value={form.quantity} readOnly={readOnly} onChange={(value) => update("quantity", value)} /><NumberField label="Unidades por entrada" value={form.unitsPerEntry} readOnly={readOnly} onChange={(value) => update("unitsPerEntry", value)} />
+            <NumberField label="Peso unitario (kg)" value={form.unitWeightKg} readOnly={readOnly} onChange={(value) => update("unitWeightKg", value)} /><NumberField label="Largo (cm)" value={form.lengthCm} readOnly={readOnly} onChange={(value) => update("lengthCm", value)} />
+            <NumberField label="Ancho (cm)" value={form.widthCm} readOnly={readOnly} onChange={(value) => update("widthCm", value)} /><NumberField label="Alto (cm)" value={form.heightCm} readOnly={readOnly} onChange={(value) => update("heightCm", value)} />
+          </div><div className={styles.totals} aria-live="polite"><div><small>Peso canónico</small><strong>{displayNumber(totals.weightKg, " kg")}</strong></div><div><small>Volumen canónico</small><strong>{totals.volumeM3 === null ? "No registrado" : `${totals.volumeM3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³`}</strong></div></div></> : null}
 
-          {step === 3 ? (
-            <>
-              <FormHeading id="step-title-3" title="Programación y políticas" description="Revisa la ventana persistida y configura el presupuesto y los documentos disponibles." />
-              <div className={styles.fieldGrid}>
-                <Field label="Modo de recojo"><input readOnly value={form.pickupMode} /></Field>
-                <Field label="Recojo requerido"><input readOnly value={form.requiredPickup} /></Field>
-                <Field label="Inicio de ventana de recojo"><input readOnly value={form.pickupWindowStart || "No aplica"} /></Field>
-                <Field label="Fin de ventana de recojo"><input readOnly value={form.pickupWindowEnd || "No aplica"} /></Field>
-                <Field label="Deadline de entrega"><input readOnly value={form.deliveryDeadline || "No definido"} /></Field>
-                <Field label="Presupuesto máximo (USD)"><input min="1" required type="number" value={form.budgetMaxUsd} onChange={(event) => update("budgetMaxUsd", Number(event.target.value))} /></Field>
-                <Field label="Estrategia"><input value={form.strategy} readOnly /></Field>
-              </div>
-              <InfoBox>La programación se sincroniza con el FreightRequest persistido y no se recalcula desde el navegador.</InfoBox>
-              <fieldset className={styles.documentFieldset}>
-                <legend>Documentos disponibles</legend>
-                {documentOptions.map((document) => (
-                  <label key={document}><input type="checkbox" checked={form.documents.includes(document)} onChange={() => toggleDocument(document)} /> <span>{document}</span></label>
-                ))}
-              </fieldset>
-            </>
-          ) : null}
+          {step === 3 ? <><FormHeading id="step-title-3" title="Programación y políticas" description="La programación persistida se vuelve a validar justo antes de la orquestación." /><div className={styles.fieldGrid}>
+            <Field label="Modo de recojo"><input readOnly value={form.pickupMode} /></Field><Field label="Recojo requerido"><input readOnly value={form.requiredPickup} /></Field>
+            <Field label="Inicio de ventana"><input readOnly value={form.pickupWindowStart || "No aplica"} /></Field><Field label="Fin de ventana"><input readOnly value={form.pickupWindowEnd || "No aplica"} /></Field>
+            <Field label="Deadline de entrega"><input readOnly value={form.deliveryDeadline || "No definido"} /></Field><Field label={`Presupuesto máximo (${form.currency})`}><input min="1" required={!readOnly} readOnly={readOnly} type="number" value={nullableNumber(form.budgetMaxUsd)} onChange={(event) => update("budgetMaxUsd", event.target.value ? Number(event.target.value) : null)} /></Field>
+            <Field label="Estrategia"><input value={form.strategy} readOnly /></Field>
+          </div><InfoBox>Execution-intent se consulta inmediatamente antes de crear el run y debe corresponder al mismo UUID y código.</InfoBox>
+          <fieldset className={styles.documentFieldset}><legend>Documentos disponibles</legend>{(readOnly ? form.documents : documentOptions).length ? (readOnly ? form.documents : documentOptions).map((document) => <label key={document}><input type="checkbox" disabled={readOnly} checked={form.documents.includes(document)} onChange={() => toggleDocument(document)} /> <span>{document}</span></label>) : <span>Sin documentos registrados</span>}</fieldset></> : null}
 
-          {step === 4 ? (
-            <>
-              <FormHeading id="step-title-4" title="Revisión y confirmación" description="Confirma que la intención logística esté completa antes de evaluar providers." />
-              <div className={styles.reviewGrid}>
-                <ReviewItem label="Organización" value={`${form.organization} · ${form.requester}`} />
-                <ReviewItem label="Ruta" value={`${form.origin} → ${form.destination}`} />
-                <ReviewItem label="Carga" value={`${form.quantity} ${form.entryMethod.toLowerCase()} · ${totals.weightKg.toLocaleString("es-PE")} kg · ${totals.volumeM3.toFixed(1)} m³`} />
-                <ReviewItem label="Ventana de recojo" value={`${form.pickupWindowStart.replace("T", " ")} → ${form.pickupWindowEnd.replace("T", " ")}`} />
-                <ReviewItem label="Deadline de entrega" value={form.deliveryDeadline.replace("T", " ")} />
-                <ReviewItem label="Política" value={`${form.strategy} · Presupuesto $${form.budgetMaxUsd.toLocaleString("en-US")} USD`} />
-                <ReviewItem label="Documentos" value={form.documents.length ? form.documents.join(", ") : "Sin documentos adjuntos"} />
-              </div>
-              <div className={styles.readyNotice}><FileCheck2 size={20} aria-hidden="true" /><span><strong>Solicitud completa y lista para evaluación</strong><small>La capacidad real se validará mediante WebMCP durante el dispatch.</small></span></div>
-            </>
-          ) : null}
+          {step === 4 ? <><FormHeading id="step-title-4" title="Revisión y confirmación" description="Antes del dispatch se releen el intake y la intención persistida para evitar datos obsoletos." /><div className={styles.reviewGrid}>
+            <ReviewItem label="Organización" value={`${form.organization} · ${form.requester}`} /><ReviewItem label="Ruta" value={`${form.origin} → ${form.destination}`} />
+            <ReviewItem label="Carga" value={`${displayNumber(form.quantity)} ${form.entryMethod.toLowerCase()} · ${displayNumber(totals.weightKg, " kg")} · ${totals.volumeM3 === null ? "Volumen no registrado" : `${totals.volumeM3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³`}`} />
+            <ReviewItem label="Ventana de recojo" value={`${displayDate(form.pickupWindowStart)} → ${displayDate(form.pickupWindowEnd)}`} /><ReviewItem label="Deadline de entrega" value={displayDate(form.deliveryDeadline)} />
+            <ReviewItem label="Política" value={`${form.strategy} · ${form.budgetMaxUsd === null ? "Sin presupuesto máximo" : `${form.currency} ${form.budgetMaxUsd.toLocaleString("en-US")}`}`} /><ReviewItem label="Documentos" value={form.documents.length ? form.documents.join(", ") : "Sin documentos registrados"} />
+          </div><div className={styles.readyNotice}><FileCheck2 size={20} aria-hidden="true" /><span><strong>{dispatchBlockReason ? "Dispatch bloqueado" : "Solicitud lista para evaluación"}</strong><small>{dispatchBlockReason ?? "La capacidad real se validará mediante WebMCP durante el dispatch."}</small></span></div></> : null}
 
-          <footer className={styles.actions}>
-            {submitError ? <p className={styles.submitError} role="alert">{submitError}</p> : null}
-            <button type="button" className={styles.secondaryButton} disabled={step === 0 || submitting} onClick={() => setStep((current) => current - 1)}><ArrowLeft size={17} aria-hidden="true" /> Anterior</button>
-            <button type="submit" className={styles.primaryButton} disabled={submitting}>{submitting ? "Evaluando providers…" : step === steps.length - 1 ? "Confirmar y buscar opciones" : "Continuar"}<ArrowRight size={17} aria-hidden="true" /></button>
-          </footer>
+          <footer className={styles.actions}>{submitError ? <p className={styles.submitError} role="alert">{submitError}</p> : null}<button type="button" className={styles.secondaryButton} disabled={step === 0 || submitting} onClick={() => setStep((current) => current - 1)}><ArrowLeft size={17} aria-hidden="true" /> Anterior</button><button type="submit" className={styles.primaryButton} disabled={submitting || (step === steps.length - 1 && dispatchBlockReason !== null)}>{submitting ? "Evaluando providers…" : step === steps.length - 1 ? "Confirmar y buscar opciones" : "Continuar"}<ArrowRight size={17} aria-hidden="true" /></button></footer>
         </section>
 
-        <aside className={styles.summaryCard} aria-label="Resumen de la solicitud">
-          <span className={styles.eyebrow}>Resumen en vivo</span>
-          <h2>{form.requestId}</h2>
-          <dl>
-            <div><dt>Corredor</dt><dd>{form.origin}<br />{form.destination}</dd></div>
-            <div><dt>Carga</dt><dd>{totals.weightKg.toLocaleString("es-PE")} kg · {totals.volumeM3.toFixed(1)} m³</dd></div>
-            <div><dt>Presupuesto</dt><dd>${form.budgetMaxUsd.toLocaleString("en-US")} USD</dd></div>
-            <div><dt>Estrategia</dt><dd>{form.strategy}</dd></div>
-          </dl>
-          <p><ShieldCheck size={16} aria-hidden="true" /> Los datos son fixtures editables de B-02; no se realizan consultas privilegiadas.</p>
-        </aside>
+        <aside className={styles.summaryCard} aria-label="Resumen de la solicitud"><span className={styles.eyebrow}>{readOnly ? "ViewModel persistido v1" : "Regresión visual"}</span><h2>{form.requestId}</h2><dl>
+          <div><dt>Corredor</dt><dd>{form.origin}<br />{form.destination}</dd></div><div><dt>Carga</dt><dd>{displayNumber(totals.weightKg, " kg")} · {totals.volumeM3 === null ? "Volumen no registrado" : `${totals.volumeM3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³`}</dd></div>
+          <div><dt>Presupuesto</dt><dd>{form.budgetMaxUsd === null ? "Sin máximo" : `${form.currency} ${form.budgetMaxUsd.toLocaleString("en-US")}`}</dd></div><div><dt>Estado</dt><dd>{form.status}</dd></div><div><dt>Estrategia</dt><dd>{form.strategy}</dd></div>
+        </dl><p><ShieldCheck size={16} aria-hidden="true" /> {readOnly ? "El servidor conserva la fuente de verdad; esta vista no inventa ni reemplaza valores ausentes." : "Fixture explícito: no genera runs, ofertas ni bookings."}</p></aside>
       </form>
-      <iframe ref={runnerFrameRef} className={styles.runnerFrame} src="/" title="Ejecución WebMCP de providers" aria-hidden="true" tabIndex={-1} />
+      {readOnly ? <iframe ref={runnerFrameRef} className={styles.runnerFrame} src="/" title="Ejecución WebMCP de providers" aria-hidden="true" tabIndex={-1} /> : null}
     </div>
   );
 }
 
-function FormHeading({ id, title, description }: { id: string; title: string; description: string }) {
-  return <header className={styles.formHeading}><span className={styles.eyebrow}>Configuración</span><h2 id={id}>{title}</h2><p>{description}</p></header>;
-}
-
-function Field({ label, wide = false, children }: { label: string; wide?: boolean; children: React.ReactNode }) {
-  return <label className={wide ? styles.fieldWide : undefined}><span>{label}</span>{children}</label>;
-}
-
-function InfoBox({ children }: { children: React.ReactNode }) {
-  return <p className={styles.infoBox}><ShieldCheck size={17} aria-hidden="true" /> {children}</p>;
-}
-
-function ReviewItem({ label, value }: { label: string; value: string }) {
-  return <div><small>{label}</small><strong>{value}</strong></div>;
-}
+function FormHeading({ id, title, description }: { id: string; title: string; description: string }) { return <header className={styles.formHeading}><span className={styles.eyebrow}>Configuración</span><h2 id={id}>{title}</h2><p>{description}</p></header>; }
+function Field({ label, wide = false, children }: { label: string; wide?: boolean; children: React.ReactNode }) { return <label className={wide ? styles.fieldWide : undefined}><span>{label}</span>{children}</label>; }
+function NumberField({ label, value, readOnly, onChange }: { label: string; value: number | null; readOnly: boolean; onChange: (value: number | null) => void }) { return <Field label={label}><input min="1" required={!readOnly} readOnly={readOnly} type="number" value={nullableNumber(value)} onChange={(event) => onChange(event.target.value ? Number(event.target.value) : null)} /></Field>; }
+function InfoBox({ children }: { children: React.ReactNode }) { return <p className={styles.infoBox}><ShieldCheck size={17} aria-hidden="true" /> {children}</p>; }
+function ReviewItem({ label, value }: { label: string; value: string }) { return <div><small>{label}</small><strong>{value}</strong></div>; }
