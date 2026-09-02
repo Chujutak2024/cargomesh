@@ -348,7 +348,12 @@ Tras la revisión de las pantallas del formulario `/freight-request/new` y del D
 2. **Eliminación de Métricas de Almacén/Infraestructura Ficticias:**
    - Retirar la sección de "Capacidad logística / Andenes (87%, 64%)" y el conteo de "Vehículos disponibles de flota externa", ya que CargoMesh opera como orquestador para shippers y no posee almacenes ni flota fija.
    - Centrar los indicadores en datos verificables del tenant: *Solicitudes Activas*, *Esperando Selección*, *Envíos en Tránsito* y *Completadas*.
-3. **Acceso a Detalle/Modal:**
+3. **Reemplazo de Tabla y Métricas Hardcodeadas por Consulta Real a Supabase:**
+   - Eliminar definitivamente la importación de `freightRequestsFixture` y `dashboardSummaryFixture` desde `ui-fixtures.ts`.
+   - `DashboardPage` consulta `freight_requests` en tiempo real mediante `createServerSupabaseClient()`, respetando el RLS de la organización activa.
+   - Las nuevas solicitudes creadas en `/freight-request/new` aparecen de inmediato en la primera fila del Dashboard.
+   - Si la organización no tiene solicitudes, se renderiza el estado vacío legítimo (`<PackageOpen /> No hay solicitudes todavía`).
+4. **Acceso a Detalle/Modal:**
    - Cada fila de la tabla de solicitudes debe permitir abrir su modal o pantalla de detalle para consultar el estado del booking, eventos y reabrir el dispatch.
 
 ### 10.3 Decisión del Mapa Operativo
@@ -357,4 +362,5 @@ Tras la revisión de las pantallas del formulario `/freight-request/new` y del D
   - Acotado específicamente al corredor logístico de la demo: **Perú (Lima, Callao, Arequipa, Tacna) ➔ Chile (Arica, Santiago)**.
   - Renderiza marcadores en origen y destino, línea de ruta de la carretera Panamericana y frontera internacional.
   - Vinculado a la línea de tiempo de eventos persistidos (*Recogido ➔ En tránsito ➔ Aduana ➔ Entregado*), sin requerir telemetría GPS falsa ni dependencias pesadas con API keys externas.
+
 
