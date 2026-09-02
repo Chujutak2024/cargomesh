@@ -1,19 +1,24 @@
 # CargoMesh REL-01 — Deployment preflight
 
-> Status: preparatory work only. `INT-03` is integrated in `main`; `REL-01` and `G4` remain open until the public Golden Flow passes.
+> **Status:** active release gate, reconciled on 2026-09-02 against
+> `main@ea3e37b`. `INT-03` and the D1 implementation are integrated; `D1-04`,
+> `REL-01` and `G4` remain open until the current release SHA passes the public
+> browser/WebMCP flow.
 
-## 1. Release blockers visible on 2026-08-31
+## 1. Release state
 
 | Check | Current state | Required action |
 |---|---|---|
-| Repository visibility | **Blocked:** GitHub reports `PRIVATE` | Project owner changes it to `PUBLIC` only after the final secret scan |
-| Open-source license | Prepared in this branch: MIT | Confirm GitHub detects it after integration |
-| INT-03 | **Complete:** integrated and verified with its replay, recovery and cleanup evidence | Preserve the evidence for the final release package |
-| Public application URL | Pending | Configure the hosting project and production variables |
-| Supabase production project | Pending confirmation | Link one controlled project and apply versioned migrations once |
-| Git history secret scan | No hosted credential detected; two standard local `supabase-demo` tokens exist in old `.env.example` revisions | Enable GitHub secret scanning after making the repository public |
+| Repository visibility | **Complete:** GitHub reports `PUBLIC` | Keep secret scanning enabled and repeat the final history scan |
+| Open-source license | **Complete:** root `LICENSE` exists | Confirm GitHub continues detecting it on the release SHA |
+| INT-03 / D1 code | **Integrated:** booking/recovery and the editable/recommendation intake are in `main` through PR #53 | Revalidate the combined flow as `D1-04` on the release deployment |
+| Release SHA | Not frozen; documentation and approved UX work remain in progress | Freeze one `main` SHA before collecting final evidence |
+| Public application URL | Deployment infrastructure exists; the final production HTTPS origin and deployed SHA still require confirmation | Record the exact URL/SHA and remove deployment protection for judges |
+| Supabase production project | Previously configured during integration; current migration history, demo membership and reset state still require release verification | Verify the linked project without printing credentials or reapplying unreviewed scenario data |
+| Git history secret scan | No hosted credential was reported in the previous preflight; local `supabase-demo` tokens are not production credentials | Repeat the scan on the frozen release history |
 
-Changing repository visibility remains an owner decision. The preflight never performs it.
+Repository visibility is already public. This preflight does not change visibility,
+repository settings, deployment protection or remote database state.
 
 ## 2. Recommended deployment shape
 
@@ -48,7 +53,9 @@ Store production values in the hosting platform. Never commit `.env.local`, serv
 2. Set the Auth Site URL to the final CargoMesh HTTPS origin.
 3. Add only required callback/redirect URLs. Keep localhost entries for local development, not as the production Site URL.
 4. Apply database changes exclusively from `supabase/migrations` after checking migration history; do not make production schema edits in the Dashboard.
-5. Apply the deterministic demo seed only if the target project is dedicated to the hackathon demo.
+5. Apply only the reviewed baseline/demo dataset required by the release. Optional
+   scenario packages under `supabase/scenarios/` require explicit approval and must
+   not be disguised as migrations or production activity.
 6. Run Security Advisor and confirm RLS on every exposed `public` table.
 7. Keep one operator responsible for the production migration push.
 
@@ -76,17 +83,15 @@ pnpm release:smoke
 
 `release:smoke` checks the landing page, login and a seeded provider page over the public URL. It does not replace the browser/WebMCP E2E.
 
-### Latest local verification
+### Latest integrated verification
 
-The release branch was verified against the current `main` base with:
+PR #53 records 188/188 frontend release tests plus successful `typecheck` and
+production build on `main@ea3e37b`. That PR did not establish a new final pgTAP,
+database lint, secret-scan or public-browser result for the eventual release SHA.
 
-- 94/94 TypeScript unit and integration tests;
-- `pnpm typecheck` and `pnpm build`;
-- 120/120 pgTAP tests;
-- `supabase db lint --local` with no error findings;
-- `release:preflight` 15/15 using non-sensitive placeholder values only.
-
-This is local evidence, not production evidence. The public smoke test and browser WebMCP flow remain required for `REL-01`.
+Do not reuse old test counts as if they described a newer deployment. After the
+release SHA is frozen, rerun the complete frontend, database, preflight, smoke and
+browser/WebMCP matrix and attach its sanitized output.
 
 ## 6. Gate G4 evidence package
 
