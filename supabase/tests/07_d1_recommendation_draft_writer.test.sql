@@ -7,7 +7,7 @@ select has_column(
   'public', 'freight_requests', 'draft_version',
   'D1-01 stores a persisted optimistic draft version'
 );
-select col_type(
+select col_type_is(
   'public', 'freight_requests', 'draft_version', 'integer',
   'draft_version is an integer'
 );

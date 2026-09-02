@@ -175,9 +175,16 @@ function historySuggestion(row: FreightRequestDraftRow): FreightRecommendationSu
   delete proposedFields.pickup_window_start;
   delete proposedFields.pickup_window_end;
   delete proposedFields.delivery_deadline;
+  const historicalSpecifications = jsonObject(row.cargo_specifications);
   const synthetic =
-    jsonObject(row.cargo_specifications).fixtureProvenance ===
+    historicalSpecifications.fixtureProvenance ===
     "D1_SYNTHETIC_RECOMMENDATION_HISTORY";
+  // Provenance describes the historical source, never the cargo a user is
+  // about to create. Keep it in sourceType/reasonCodes and out of the patch.
+  delete historicalSpecifications.fixtureProvenance;
+  delete historicalSpecifications.scenarioVersion;
+  delete historicalSpecifications.notARealRun;
+  proposedFields.cargo_specifications = historicalSpecifications;
   if (
     typeof proposedFields.special_instructions === "string" &&
     proposedFields.special_instructions.startsWith("[SYNTHETIC HISTORY]")
