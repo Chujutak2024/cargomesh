@@ -2,7 +2,13 @@ import {
   parseFreightRequestIntakeViewModel,
   type FreightRequestIntakeViewModel,
 } from "./intake-contracts";
-import type { ManualFreightRequestIntakeInput } from "./manual-intake-contracts";
+import {
+  OFFICIAL_CARGO_CATEGORY_CODES,
+  type ManualFreightRequestIntakeFields,
+  type ManualFreightRequestIntakeInput,
+  type OfficialCargoCategoryCode,
+} from "./manual-intake-contracts";
+import type { FreightIntakeModel } from "@/features/freight-ui/view-models";
 
 export class ManualFreightRequestIntakeClientError extends Error {
   constructor(public readonly code: string, message: string) {
@@ -24,6 +30,81 @@ async function readJson(response: Response) {
       "El guardado manual devolvió una respuesta no válida.",
     );
   }
+}
+
+export function buildManualIntakeFieldsFromForm(
+  form: FreightIntakeModel,
+): ManualFreightRequestIntakeFields {
+  const code: OfficialCargoCategoryCode = OFFICIAL_CARGO_CATEGORY_CODES.includes(
+    form.cargoCategoryCode as OfficialCargoCategoryCode,
+  )
+    ? (form.cargoCategoryCode as OfficialCargoCategoryCode)
+    : form.cargoCategory?.toUpperCase().includes("MAQ")
+      ? "MACHINERY"
+      : form.cargoCategory?.toUpperCase().includes("AGRI")
+        ? "AGRICULTURAL"
+        : form.cargoCategory?.toUpperCase().includes("CONST")
+          ? "CONSTRUCTION"
+          : "GENERAL";
+
+  const originCountry =
+    form.originCountry === "PE" || form.originCountry === "CL"
+      ? form.originCountry
+      : "PE";
+  const destinationCountry =
+    form.destinationCountry === "PE" || form.destinationCountry === "CL"
+      ? form.destinationCountry
+      : "CL";
+
+  return {
+    cargoCategoryCode: code,
+    originCountry,
+    originRegion: form.originRegion || null,
+    originCity:
+      form.originCity || form.origin?.split(",")[0]?.trim() || "Callao",
+    originAddress: form.originAddress || null,
+    destinationCountry,
+    destinationRegion: form.destinationRegion || null,
+    destinationCity:
+      form.destinationCity || form.destination?.split(",")[0]?.trim() || "Santiago",
+    destinationAddress: form.destinationAddress || null,
+    pickupContactName:
+      form.pickupContactName || form.pickupContact?.split("(")[0]?.trim() || null,
+    pickupContactPhone:
+      form.pickupContactPhone ||
+      form.pickupContact?.match(/\((.*?)\)/)?.[1]?.trim() ||
+      null,
+    receiverName:
+      form.receiverName || form.deliveryContact?.split("·")[0]?.trim() || null,
+    receiverCompany:
+      form.receiverCompany ||
+      form.deliveryContact?.split("·")[1]?.trim() ||
+      null,
+    receiverPhone:
+      form.receiverPhone || form.deliveryContact?.split("·")[2]?.trim() || null,
+    cargoDescription: form.cargoDescription || null,
+    cargoEntryMethod: form.entryMethod || "PALLETS",
+    entryQuantity: form.quantity ?? null,
+    entryUnitWeightKg: form.unitWeightKg ?? null,
+    unitsPerEntry: form.unitsPerEntry ?? null,
+    entryLengthCm: form.lengthCm ?? null,
+    entryWidthCm: form.widthCm ?? null,
+    entryHeightCm: form.heightCm ?? null,
+    totalWeightKg: form.totalWeightKg || undefined,
+    pickupMode: form.pickupMode === "ASAP" ? "ASAP" : "SCHEDULED",
+    pickupWindowStart:
+      form.pickupMode === "SCHEDULED" && form.pickupWindowStart
+        ? form.pickupWindowStart
+        : null,
+    pickupWindowEnd:
+      form.pickupMode === "SCHEDULED" && form.pickupWindowEnd
+        ? form.pickupWindowEnd
+        : null,
+    deliveryDeadline: form.deliveryDeadline || null,
+    budgetMax: form.budgetMaxUsd ?? null,
+    specialInstructions: form.operationalNotes || null,
+    availableDocuments: form.documents || [],
+  };
 }
 
 export async function persistManualFreightRequestIntake(

@@ -121,3 +121,64 @@ test("manual scheduled edits retain server validation for coherent dates", () =>
     /pickup_window_end debe ser posterior/,
   );
 });
+
+test("buildManualIntakeFieldsFromForm maps form model into manual intake contract fields", async () => {
+  const { buildManualIntakeFieldsFromForm } = await import("./manual-intake-client");
+  const form = {
+    cargoCategoryCode: "MACHINERY",
+    originCountry: "PE",
+    originRegion: "Callao",
+    originCity: "Callao",
+    originAddress: "Av. Néstor Gambetta 100",
+    destinationCountry: "CL",
+    destinationRegion: "Región Metropolitana",
+    destinationCity: "Santiago",
+    destinationAddress: "Av. Logística 200",
+    pickupContactName: "Ana Pérez",
+    pickupContactPhone: "+51 999 000 111",
+    receiverName: "Diego Ramos",
+    receiverCompany: "Destino SAC",
+    receiverPhone: "+56 999 000 222",
+    cargoDescription: "Repuestos",
+    entryMethod: "PALLETS",
+    quantity: 2,
+    unitWeightKg: 100,
+    unitsPerEntry: 3,
+    lengthCm: 100,
+    widthCm: 50,
+    heightCm: 40,
+    totalWeightKg: 600,
+    totalVolumeM3: 0.12,
+    pickupMode: "SCHEDULED" as const,
+    pickupWindowStart: "2026-09-10T13:00:00.000Z",
+    pickupWindowEnd: "2026-09-10T17:00:00.000Z",
+    deliveryDeadline: "2026-09-12T13:00:00.000Z",
+    budgetMaxUsd: 1000,
+    operationalNotes: "Urgente",
+    documents: ["Factura comercial"],
+  } as any;
+
+  const fields = buildManualIntakeFieldsFromForm(form);
+  assert.equal(fields.cargoCategoryCode, "MACHINERY");
+  assert.equal(fields.originCountry, "PE");
+  assert.equal(fields.originRegion, "Callao");
+  assert.equal(fields.destinationCountry, "CL");
+  assert.equal(fields.destinationRegion, "Región Metropolitana");
+  assert.equal(fields.pickupContactName, "Ana Pérez");
+  assert.equal(fields.receiverName, "Diego Ramos");
+  assert.equal(fields.budgetMax, 1000);
+  assert.equal(fields.pickupMode, "SCHEDULED");
+});
+
+test("persistManualFreightRequestIntake maps HTTP 409 into STALE_DRAFT error", async () => {
+  const { persistManualFreightRequestIntake, ManualFreightRequestIntakeClientError } = await import("./manual-intake-client");
+  const fakeFetch = async () => new Response(
+    JSON.stringify({ ok: false, error: { code: "STALE_DRAFT", message: "Draft version mismatch" } }),
+    { status: 409, headers: { "Content-Type": "application/json" } }
+  );
+
+  await assert.rejects(
+    () => persistManualFreightRequestIntake("req-1", { draftVersion: 1, fields: {} }, new AbortController().signal, fakeFetch as any),
+    (error: any) => error instanceof ManualFreightRequestIntakeClientError && error.code === "STALE_DRAFT"
+  );
+});
