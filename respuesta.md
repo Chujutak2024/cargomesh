@@ -363,4 +363,26 @@ Tras la revisión de las pantallas del formulario `/freight-request/new` y del D
   - Renderiza marcadores en origen y destino, línea de ruta de la carretera Panamericana y frontera internacional.
   - Vinculado a la línea de tiempo de eventos persistidos (*Recogido ➔ En tránsito ➔ Aduana ➔ Entregado*), sin requerir telemetría GPS falsa ni dependencias pesadas con API keys externas.
 
+## 11. Addendum: Estado al 2 de septiembre de 2026
 
+Este addendum actualiza el estado contractual, operativo y de UX del proyecto a la fecha de corte previa a la entrega final.
+
+### 11.1 Hechos Técnicos Verificados
+1. **D1-02 (Recomendaciones WebMCP Read-Only + D1-01 Consentimiento):**
+   - El runtime de recomendaciones contextuales (`get_freight_request_recommendations`) es estrictamente **READ-ONLY**: expone sugerencias al agente sin mutar la base de datos ni el borrador.
+   - La persistencia física de sugerencias ocurre únicamente a través del writer D1-01 (`PATCH /api/freight-requests/[id]/draft`), el cual **requiere consentimiento explícito del usuario en la UI**. Este endpoint valida los campos aplicados, incrementa de forma atómica `draft_version` y rechaza colisiones con `409 STALE_DRAFT`.
+2. **Resolución de la Regresión P0 en `freight-intake-form.tsx` (PR #50 y PR #51):**
+   - **Backend Writer (PR #50):** Implementó `PATCH /api/freight-requests/[freightRequestId]/manual-intake` con rol `SUPERVISOR`, control de concurrencia (`draftVersion`), recálculo server-side determinístico de peso/volumen y migración DDL `20260902170000`.
+   - **Frontend Interactivo (PR #51):** Desbloqueó la edición en `freight-intake-form.tsx` para solicitudes en estado `DRAFT` y `PENDING`, conectó `persistManualFreightRequestIntake()`, incorporó `<select>` para categorías oficiales (`MACHINERY`, `GENERAL`, `AGRICULTURAL`, `CONSTRUCTION`), jerarquía geográfica estructurada en 4 niveles, serialización estricta de fechas `datetime-local` a ISO con timezone y captura amigable de `409 STALE_DRAFT`.
+   - **Estado:** Ambos PRs (#50 y #51) se encuentran **fusionados en `origin/main`** y desplegados en Vercel.
+3. **Integridad de Datos y Migraciones:**
+   - La migración DDL `20260902170000_c_manual_intake_writer.sql` fue aplicada exitosamente en el Supabase remoto y registrada en el historial mediante `migration repair`, manteniendo paridad absoluta entre local y producción sin utilizar `db push`.
+
+### 11.2 Estado de Cumplimiento de Prioridades para la Entrega
+
+| Nivel | Componentes y Requerimientos | Estado Canónico al Cierre |
+|---|---|---|
+| **P0 (Crítico para Entrega)** | • **Intake Editable & Persistido:** Formulario interactivo con writer manual autenticado.<br>• **Recomendaciones Aplicables:** Aplicación selectiva de sugerencias vía WebMCP con incremento de `draft_version` tras consentimiento.<br>• **Golden Flow Canónico:** Solicitud `FR-1042` (Callao ➔ Santiago, Maquinaria) con scores reproducibles (Andes 89, Inca 84, Pacific 72). | **COMPLETADO:** Fusionado en `main` (PR #50 y #51). Backend y UI interactiva operativos en producción. |
+| **P1 (Secundario / Roadmap)** | • **Landing Pública Comercial:** Escaparate público con casos de éxito y métricas de demo (PR #34).<br>• **Mapa Operativo Avanzado:** Visualización Leaflet detallada de la ruta Panamericana.<br>• **Flota Simulada Ampliada:** Catálogo extendido con camiones y organizaciones adicionales (PR #49).<br>• **Dashboard Profundo:** Métricas analíticas agregadas.<br>• **i18n Completa:** Cobertura de localización inglés/español al 100%. | **ROADMAP / EN REVISIÓN:** PR #34 y PR #49 preparados de forma aislada; no bloquean la evaluación técnica de WebMCP. |
+
+> **Invariante de Veracidad:** Ninguna capacidad se declara como entregada o funcional basándose únicamente en la existencia de código en el repositorio o registros sembrados en un script seed. Una capacidad solo se considera entregada cuando cuenta con evidencia observable y verificable por el usuario final.
