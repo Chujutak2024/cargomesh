@@ -1,9 +1,9 @@
 # CargoMesh — Team Execution Checklist
 
-> **Versión:** 1.1.0
-> **Contrato técnico:** v5.6.0  
-> **Duración:** 4 días  
-> **Equipo:** 3 integrantes trabajando en entornos e IAs independientes  
+> **Versión:** 1.2.0
+> **Contrato técnico:** v5.6.0
+> **Duración:** 4 días
+> **Equipo:** 3 integrantes trabajando en entornos e IAs independientes
 > **Fuente arquitectónica:** [`ADR-001_Dynamic_Provider_Registry.md`](../00-master/ADR-001_Dynamic_Provider_Registry.md)
 
 ## 1. Objetivo compartido
@@ -98,9 +98,9 @@ supabase/**
 
 Los archivos compartidos (`package.json`, layouts raíz, tipos compartidos y variables de entorno) requieren aviso en el chat del equipo antes de modificarse.
 
-### 3.1 Ajuste temporal por disponibilidad de B — 2026-08-30
+### 3.1 Ajuste temporal por disponibilidad de B — 2026-08-30 (cerrado)
 
-El Integrante B no está disponible hoy y puede regresar mañana. Este ajuste cambia únicamente la secuencia inmediata; no transfiere ownership ni autoriza a A o C a editar archivos de B.
+El Integrante B estuvo temporalmente ausente. B retomó su ownership y publicó B-02 en el PR #16; este registro se conserva como antecedente y nunca transfirió ownership a A o C.
 
 Reglas temporales:
 
@@ -274,7 +274,7 @@ Una tarea puede comenzar como `PROVISIONAL` o `SPIKE`, pero:
 - se priorizan adapters pequeños antes que reescrituras completas;
 - su autor corrige incompatibilidades con el contrato congelado antes del merge.
 
-Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 están integrados; A-03 permanece en review en el PR #9. Todo trabajo provisional pendiente debe seguir las reglas anteriores antes de integrarse.
+Estado actual: `SH-00`, `SH-01`, A-01, A-02, A-03, B-01, B-02, C-01, C-02, `INT-01 / G1`, `INT-02A / G2A` e `INT-02B / G2` están integrados y verificados en `main`. El corte completo `INT-02` quedó cerrado después de la corrida cross-origin y el replay idempotente.
 
 ## 5. Checklist de construcción
 
@@ -347,8 +347,9 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 es
   - **Aceptación:** mismo `tool_call_id` + mismo payload deduplica; mismo ID + payload diferente produce conflicto; cero ofertas produce `NO_MATCH`; una o N ofertas producen resultado explicable; los scores del Golden Flow se reproducen desde datos.
   - **Verificar:** tests unitarios del scorer, prueba de doble ingestión, conflicto idempotente, `db lint`, pgTAP y revisión RLS.
 
-- [ ] **INT-02A. Integrar búsqueda completa y ranking headless**
+- [x] **INT-02A. Integrar búsqueda completa y ranking headless**
   - **Owner:** A + C; coordina C.
+  - **Estado actual:** integrado y verificado en `main` mediante PR #14 (`6011755`), PR #17 (`6fdf7b7`) y PR #12 (`9ccbdbe`). `G2A` aprobado; no cierra `INT-02` ni `G2`.
   - **Depende de:** `A-03` y `C-02`. Antes de integrar A-03, C solo prepara diseño, harness, contratos de consumo y pruebas que no dependan de su implementación.
   - **Qué construir:** un flujo server-side reproducible `FreightRequest → discovery → CandidateProvider[0..N] → matchingServiceId → provider exacto → tools WebMCP → ProviderToolEnvelope → record_provider_result → CarrierOffer[0..N] → BALANCED → FreightRanking`, sin UI de B.
   - **Aceptación:** funciona con 0, 1 y N providers; conserva `matchingServiceId`; registra resultados idempotentemente; reproduce `89/84/72`; mantiene RLS y secretos fuera del cliente; entrega un JSON/ViewModel estable con estados `loading`, `error`, `NO_MATCH` y `success` para consumo de B.
@@ -356,22 +357,25 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 es
 
   En `INT-02A`, *headless* significa «sin la interfaz CargoMesh propiedad de B». La ejecución provider continúa ocurriendo mediante WebMCP en un navegador/runner compatible; C no debe sustituir `document.modelContext` por una llamada directa a la implementación interna de la tool ni fabricar el resultado desde el servidor.
 
-- [ ] **B-02. Construir intake y dispatch dinámico**
+- [x] **B-02. Construir intake y dispatch dinámico**
   - **Owner:** B. La ausencia temporal no cambia este ownership.
+  - **Estado actual:** integrado y verificado en `main` mediante PR #16 (`2950cd7`). El submit real consume el `execution-intent` persistido; los fixtures permanecen limitados a regresión visual.
   - **Depende de:** `B-01` y tipos compartidos; la conexión con datos reales consume el ViewModel estable de `INT-02A`.
   - **Qué construir:** formulario prellenado editable y `/dispatch/[id]` con estados visuales `loading/EVALUATING`, `error`, `OPTIONS_READY` y `NO_MATCH`.
   - **Aceptación:** renderiza `0..N` candidatos/ofertas; no asume tres cards; distingue candidato consultado de oferta persistida; no requiere que A o C reescriban su interfaz.
   - **Verificar:** fixtures UI con cero, una, tres y cuatro ofertas; luego conectar los ejemplos JSON entregados por `INT-02A`.
 
-- [ ] **INT-02B. Integrar visualmente el ranking headless**
+- [x] **INT-02B. Integrar visualmente el ranking headless**
   - **Owner:** B; apoyan A + C sin asumir ownership visual.
+  - **Estado actual:** integrado y validado en la corrida cross-origin sobre el SHA `006d9a0` de PR #16; la versión limpia quedó integrada como `2950cd7`.
   - **Depende de:** `B-02` e `INT-02A`.
   - **Qué construir:** consumir el ViewModel estable y conectar intake/dispatch con los estados y ofertas ordenadas del flujo headless.
   - **Aceptación:** `loading`, `error`, `NO_MATCH` y `success` se distinguen visualmente; las cards muestran `0..N` ofertas persistidas y ordenadas; ningún componente contiene reglas por carrier.
   - **Verificar:** recorrido visual desktop/móvil con 0, 1, 3 y 4 ofertas, usando el script o endpoint de `INT-02A`.
 
-- [ ] **INT-02. Cerrar búsqueda completa, ranking y presentación**
+- [x] **INT-02. Cerrar búsqueda completa, ranking y presentación**
   - **Owner:** A + B + C.
+  - **Estado actual:** cerrado en `main` después de validar intake real, tres providers externos, Result Bridge, ranking BALANCED, ViewModel y replay cerrado.
   - **Depende de:** `INT-02A` e `INT-02B`.
   - **Qué construir:** validar como un solo corte la ejecución headless y su presentación visual, sin duplicar lógica server-side en componentes.
   - **Aceptación:** añadir un carrier compatible mediante datos/configuración lo incorpora sin modificar orquestador, scorer o UI; B confirma la integración visual.
@@ -379,29 +383,31 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 es
 
 ### Día 3 — Booking, evidencia y recuperación
 
-- [ ] **A-04. Implementar tools provider de booking**
+- [x] **A-04. Implementar tools provider de booking**
   - **Owner:** A.
   - **Depende de:** `A-03`.
   - **Qué construir:** `book_freight`, `get_provider_booking_status`, idempotencia provider-side y fixture controls `ACCEPT`, `REJECT`, `NO_RESPONSE`.
   - **Aceptación:** `book_freight` usa `readOnlyHint: false`; repetir la misma key no duplica booking; los controles solo cambian la siguiente respuesta provider.
   - **Verificar:** ejecutar booking dos veces con la misma key y comprobar la misma referencia; probar aceptación y rechazo.
 
-- [ ] **B-03. Completar selección, booking UI y Judge Drawer**
+- [x] **B-03. Completar selección, booking UI y Judge Drawer**
   - **Owner:** B.
+  - **Estado actual:** integrado en `main` mediante PR #24 (`b26e206`); la revisión final de C aprobó el SHA `2d44680`. La UI conserva selección `ASSISTED`, replay idempotente, recovery restringido a `recoveryOfferIds` y Judge Drawer basado en eventos persistidos.
   - **Depende de:** `B-02` e `INT-02B`.
   - **Qué construir:** selección humana, espera de confirmación, resultado de booking y drawer de eventos JSON.
   - **Aceptación:** recomendar no selecciona automáticamente; el drawer muestra navegación, tool, persistencia y decisión; no contiene botones que escriban directamente estados comerciales.
   - **Verificar:** recorrido manual desde `OPTIONS_READY` hasta confirmación/rechazo.
 
-- [ ] **C-03. Persistir booking, reset y recuperación mínima**
+- [x] **C-03. Persistir booking, reset y recuperación mínima**
   - **Owner:** C.
   - **Depende de:** `C-02`, contrato de `A-04`.
   - **Qué construir:** booking interno, provider reference, eventos deduplicados, reset server-side y recuperación sobre carriers restantes.
   - **Aceptación:** selección, request de booking y confirmación son estados separados; reset vacía únicamente datos runtime de demo; rechazo no se convierte en confirmación.
   - **Verificar:** test happy path, test reject y dos ejecuciones consecutivas del reset.
 
-- [ ] **INT-03. Ejecutar Golden Flow y contingencia E2E**
+- [x] **INT-03. Ejecutar Golden Flow y contingencia E2E**
   - **Owner:** A + B + C.
+  - **Estado actual:** integrado y verificado conjuntamente. La corrida real en Chrome/WebMCP comprobó replay `200 / DEDUPLICATED` con el mismo booking y cero duplicados; `REJECT → recovery` restringido a `recoveryOfferIds`, booking alternativo `CONFIRMED`, Judge Drawer, eventos persistidos y cleanup sin tools activas. Evidencia sanitizada: [PR #24](https://github.com/Chujutak2024/cargomesh/pull/24#issuecomment-5486820188).
   - **Depende de:** `A-04`, `B-03`, `C-03`.
   - **Qué construir:** flujo feliz completo y un flujo de rechazo recuperable.
   - **Aceptación:** todas las entidades runtime nacen después de su ejecución causal y el Judge Drawer permite demostrarlo.
@@ -447,25 +453,28 @@ Nunca acumulen todo el trabajo hasta la noche del Día 3.
 
 Una tarea terminada en una rama no cierra un gate. El gate se cierra únicamente después de integración y verificación conjunta.
 
-Durante la ausencia temporal de B, `G2A` puede verificarse como checkpoint técnico. `G2` permanece abierto hasta completar `INT-02B` y recibir validación visual de B o una decisión posterior explícita del equipo.
+`G2A` quedó aprobado después de integrar y verificar el flujo headless en `main`. `G2` quedó aprobado al integrar PR #16 y verificar conjuntamente la presentación visual, el flujo real cross-origin y el replay idempotente. `G3` quedó aprobado al integrar PR #24 y verificar conjuntamente booking, replay, rechazo, recovery y cleanup WebMCP.
 
-### 6.2 Plan de continuación inmediato
+### 6.2 Cierre del Día 2 y continuación inmediata
 
-1. A revisa el estado real de `feat/a-webmcp-a03`, completa pruebas/evidencia, actualiza el PR #9 y entrega handoff a C sin modificar archivos de B.
-2. C confirma C-02 en `main` y prepara el diseño, contratos de consumo, estados, harness y scripts headless de `INT-02A` que no dependan de código A-03 aún no integrado.
-3. Cuando A-03 esté integrado y verificado, A y C conectan `INT-02A` en una rama de integración; A valida ejecución/cleanup WebMCP y C valida persistencia, idempotencia, ranking y seguridad.
-4. C publica el ViewModel, ejemplos JSON, endpoint o script reproducible y handoff para B. Aunque `G2A` pase, `INT-02` y `G2` permanecen abiertos.
-5. B-02 y B-03 quedan reservadas y sin cambios mientras B está ausente; A y C no implementan placeholders visuales en sus archivos.
-6. Cuando B regrese, actualiza su rama desde `main` sin sobrescribir trabajo local, continúa B-02/B-03 y consume el ViewModel de `INT-02A`.
-7. B implementa/valida `INT-02B` con apoyo de A/C; solo entonces el equipo puede cerrar `INT-02` y `G2`.
+1. PR #21 integró el contrato de `execution-intent` persistido en `main` (`3159a58`).
+2. PR #16 integró B-02 e INT-02B con un historial limpio (`2950cd7`).
+3. La corrida real cross-origin verificó tres providers, nueve tools, tres `CarrierOffer`, `OPTIONS_READY`, BALANCED `89/84/72`, confianza `88`, cleanup y replay sin navegación adicional.
+4. El siguiente corte es Día 3: A-04, C-03 y B-03, respetando el contrato de booking congelado y los ownerships existentes.
 
-### 6.3 Trabajo paralelo permitido durante la ausencia temporal de B
+### 6.2.1 Cierre del Día 3 y entrada al Día 4
+
+1. PR #24 integró B-03 en `main` (`b26e206`) sin sobrescribir módulos de A o C.
+2. La ejecución conjunta INT-03 validó el booking inicial, replay `DEDUPLICATED` sin filas duplicadas, `REJECT → recovery` exclusivamente sobre `recoveryOfferIds`, confirmación alternativa, Judge Drawer y cleanup.
+3. `G3` queda aprobado. El siguiente corte es `REL-01 / G4`: congelar `main`, desplegar una URL pública y ejecutar el Golden Flow desde una sesión limpia.
+
+### 6.3 Trabajo paralelo después de G2A
 
 | Integrante | Trabajo exacto permitido hoy | Límites |
 |---|---|---|
-| **A** | completar y publicar A-03; preparar su parte de `INT-02A`; documentar registro, ejecución, cancelación y cleanup de tools WebMCP; entregar handoff a C | no modificar dashboard, dispatch, `RequestTable`, componentes ni fixtures visuales de B |
-| **C** | verificar C-02 en `main`; diseñar orquestador headless; preparar contratos de consumo, estados, pruebas E2E, scripts, fixtures y evidencia; revisar RLS, idempotencia y secretos | no modificar archivos de B ni implementar código que dependa del contrato A-03 antes de su integración; no cambiar contratos congelados sin coordinación |
-| **B** | sin trabajo requerido mientras esté ausente; conserva B-02, B-03 e `INT-02B` | su ausencia no autoriza reasignación ni sustitución de su UI |
+| **A** | entregar el handoff de `INT-02A` a B e iniciar A-04 en una rama separada | no modificar dashboard, dispatch, `RequestTable`, componentes ni fixtures visuales de B |
+| **C** | apoyar `INT-02B`, verificar fronteras server-side y preparar C-03 | no duplicar lógica de ranking en UI ni implementar booking antes de congelar el contrato A-04 |
+| **B** | completar B-02 e implementar `INT-02B` consumiendo el ViewModel estable | no modificar runner WebMCP, Result Bridge, Supabase, RLS ni Decision Engine |
 
 ### 6.4 Handoff obligatorio de INT-02A para B
 
@@ -581,67 +590,21 @@ Agregar una fila únicamente después de integrar a `main`.
 | 2026-08-29 03:17 | `A-01` | A | `37eb5e8` (#2) | Slug dinámico y `not-found.tsx` | `A-02` |
 | 2026-08-29 | `C-01` | C | `6503c95` (#6) | Aprobación cruzada A; discovery 10/10, typecheck y build en `main` | `INT-01` con A-02 integrado; `C-02` cuando exista el envelope final |
 | 2026-08-29 | `A-02` | A | `5ac1448` (#5) | Revisión C de compatibilidad con C-01; typecheck y build en `main` | `INT-01` |
-| 2026-08-30 | `B-01` | B | `3639940` (#4) | C: `npm install`, typecheck y build en `main`; recorrido `/login` → `/dashboard`, navegación móvil y P1 de rutas 404 corregido | Validación visual de B para `G1`; `B-02` según el plan del Día 2 |
+| 2026-08-30 | `B-01` | B | `3639940` (#4), `94dbdc6` (#13) | C: typecheck/build, recorrido `/login` → `/dashboard`, escritorio/móvil, backdrop fuera del foco, estado vacío implementado y corrección de mapa basado en model; sin rutas futuras navegables, secretos ni IDs/carriers hardcodeados en componentes | `B-02` según el plan del Día 2 |
 | 2026-08-30 | `INT-01 / G1` | A + C; valida B | `13b76d8` (#8) | C: discovery 10/10, parámetros de ruta 3/3, typecheck, build, WebMCP/404/cleanup y bundle sin secretos; B: validación visual desktop/móvil aprobada | `A-03`, `B-02`, `C-02` |
 | 2026-08-30 02:02 | `C-02` | C; revisa A | `b11ce1e` (#10) | Aprobación cruzada sobre `da109eb`; C-02 12/12, discovery 10/10, pgTAP 49/49, db lint, typecheck y build en `main`; Golden Flow 89/84/72 y bundle sin secretos | `INT-02A` cuando A-03 esté integrado; diseño/harness headless puede adelantarse sin UI de B; `C-03` cuando exista el contrato A-04 |
 | 2026-08-30 10:51 | `A-03` | A; revisa C | `8a0a5a5` (#9) | Aprobación sobre `324ba358`; A-03/discovery/INT-01 24/24, C-02 12/12, typecheck y build en `main`; `getTools()`, ejecución real de coverage/capacity y cleanup WebMCP; bundle sin secretos | `INT-02A` con A + C; `A-04` |
+| 2026-08-30 20:00 | `INT-02A / G2A` | A + C | `6011755` (#14), `6fdf7b7` (#17), `9ccbdbe` (#12) | WebMCP real con 3 providers y cleanup; Result Bridge 9 eventos/3 ofertas; replay cerrado e idempotencia; BALANCED 89/84/72, confianza 88; 66/66 pruebas, pgTAP 80/80, db lint, typecheck/build y bundle sin secretos en `main` | B-02 contra ViewModel estable; `INT-02B`; A-04 y diseño de C-03 en paralelo |
+| 2026-08-31 | `B-02 / INT-02B / INT-02 / G2` | B; validan A + C | `3159a58` (#21), `2950cd7` (#16) | Intake consume `execution-intent` persistido; corrida cross-origin con 3 providers externos y 9/9 tools; 9 eventos, 3 ofertas elegibles, BALANCED 89/84/72, confianza 88, cleanup y replay cerrado sin nuevas tools; 55/55 pruebas relevantes, typecheck y build | Día 3: A-04, C-03 y B-03 |
+| 2026-08-31 | `A-04 / C-03` | A + C; revisión cruzada | `0cebad1` (#20), `9bd8891` (#23) | Cinco tools provider WebMCP y cleanup real; Booking Bridge server-side con contexto multi-organización, idempotencia, eventos deduplicados, recovery y reset demo; A-04 25/25, booking 8/8, pgTAP 118/118, db lint/advisor, typecheck y build en `main` | B rebasea PR #24, consume `BookingViewModel v1` y completa B-03; después `INT-03` |
 
 ## 9. Bloqueos y decisiones pendientes
 
 | Fecha | Task ID | Bloqueo/decisión | Responsable de resolver | Estado |
 |---|---|---|---|---|
 | 2026-08-29 | `SH-00` | A inició `A-01` en rama separada; normalizar su output sin detener ni reescribir el spike | C + A | Resuelto en PR #2 |
-| 2026-08-29 | `SH-00` | Congelar navegador/build WebMCP, flags y firma observada de `executeTool()` | A + C | Pendiente |
-| 2026-08-30 | `INT-02` | B no está disponible hoy; preservar B-02/B-03 y adelantar solo `INT-02A` headless | A + C preparan handoff; B retoma su ownership al regresar | Temporal; `INT-02B` y `G2` permanecen pendientes |
-
-## 10. Estrategia Git y GitHub recomendada
-
-### Ramas
-
-```text
-feat/a-webmcp-<task>
-feat/b-ui-<task>
-feat/c-data-<task>
-fix/integration-<task>
-```
-
-### Commits
-
-```text
-feat(webmcp): ...
-feat(ui): ...
-feat(data): ...
-test(integration): ...
-docs(team): ...
-```
-
-### Pull Requests
-
-Cada PR debe incluir:
-
-- Task ID del checklist;
-- alcance y archivos modificados;
-- prueba ejecutada;
-- captura o JSON si cambia una tool WebMCP;
-- riesgos conocidos;
-- `Closes #issue` si utilizan GitHub Issues.
-
-## 11. Recomendación adicional: GitHub Issues como estado vivo
-
-Este Markdown debe conservar el plan y los hitos integrados. Para evitar conflictos editándolo simultáneamente, usen GitHub Issues o GitHub Projects como tablero vivo:
-
-- un issue por Task ID;
-- labels `owner-a`, `owner-b`, `owner-c`, `integration`;
-- labels `todo`, `in-progress`, `blocked`, `review`, `done`;
-- cada rama y PR referencia su issue;
-
-## 9. Bloqueos y decisiones pendientes
-
-| Fecha | Task ID | Bloqueo/decisión | Responsable de resolver | Estado |
-|---|---|---|---|---|
-| 2026-08-29 | `SH-00` | A inició `A-01` en rama separada; normalizar su output sin detener ni reescribir el spike | C + A | Resuelto en PR #2 |
-| 2026-08-29 | `SH-00` | Congelar navegador/build WebMCP, flags y firma observada de `executeTool()` | A + C | Pendiente |
-| 2026-08-30 | `INT-02` | B no está disponible hoy; preservar B-02/B-03 y adelantar solo `INT-02A` headless | A + C preparan handoff; B retoma su ownership al regresar | Temporal; `INT-02B` y `G2` permanecen pendientes |
+| 2026-08-29 | `SH-00` | Congelar navegador/build WebMCP, flags y firma observada de `executeTool()` | A + C | Resuelto: Chrome recibe y devuelve argumentos JSON serializados; adapter integrado en PR #12 |
+| 2026-08-30 | `INT-02` | B no estuvo disponible temporalmente; preservar B-02/B-03 y adelantar solo `INT-02A` headless | A + C preparan handoff; B conserva ownership visual | Resuelto: B retomó ownership, PR #16 fue integrado y `INT-02B / G2` quedaron verificados |
 
 ## 10. Estrategia Git y GitHub recomendada
 
@@ -695,17 +658,3 @@ GitHub Issues/Projects = trabajo vivo
 Pull Requests = evidencia y revisión
 Git history = verdad de lo que realmente se integró
 ```
-
-## 12. Tareas Prioritarias de UX/UI, Controles de Entrada y Mapa (2 de septiembre de 2026)
-
-Para subsanar las observaciones de las pantallas auditadas en `/freight-request/new` y el Dashboard operativo, se incorporan las siguientes tareas inmediatas bajo ownership de **B** (con soporte de contratos de **C**):
-
-### 📋 Nuevas Tareas de Frontend & UX:
-
-| Task ID | Componente | Descripción y Requerimientos | Owner | Estado |
-|---|---|---|:---:|:---:|
-| **`B-D1-UX1`** | Intake: Categorías & UUIDs | Reemplazar inputs de texto libre por `<select>` de categorías amigables (*Maquinaria*, *General*, *Agrícola*, *Construcción*). Ocultar UUIDs y código `MACHINERY` de la vista del usuario. | **B** | `todo` |
-| **`B-D1-UX2`** | Intake: Jerarquía Geográfica | Reemplazar texto libre `PE`/`CL` por selectores estructurados: `País` ➔ `Departamento/Región` ➔ `Ciudad` ➔ `Dirección`. Normalizar entradas para `candidate-matcher.ts`. | **B** | `todo` |
-| **`B-D1-UX3`** | Intake: Programación Humana | Reemplazar textos ISO crudos bloqueados por selector *Inmediato (ASAP)* / *Programado (SCHEDULED)*, inputs `<input type="datetime-local">` y badge explicativo de *Estrategia BALANCED*. | **B** | `todo` |
-| **`B-D1-UX4`** | Dashboard: Compactación & KPIs | Reducir el tamaño vertical de las tarjetas de métricas (*KPI Ribbon* compacto). Retirar la sección de "Capacidad logística / Andenes" y conteo de vehículos externos ficticios. | **B** | `todo` |
-| **`B-D1-MAP`** | Seguimiento: Mapa Leaflet | Integrar mapa interactivo ligero (Leaflet / OpenStreetMap) centrado en el corredor Perú ➔ Chile (Lima, Callao, Arequipa, Tacna, Arica, Santiago) con marcadores de origen/destino y trazado de ruta, vinculado a los eventos reales de tracking. | **B** | `todo` |
