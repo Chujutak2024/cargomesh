@@ -5,6 +5,7 @@ import { createFreightIntakeFixture } from "@/features/freight-ui/ui-fixtures";
 import { buildProviderRunnerInputs } from "@/features/freight-ui/int02a-client";
 import type { RecommendationProposedFields } from "./contracts";
 import {
+  applyFreightRequestDraftToIntake,
   persistAndRevalidateRecommendation,
   RecommendationAcceptanceError,
 } from "./recommendation-acceptance";
@@ -176,6 +177,49 @@ test("D1-01 acceptance revalidates a newer canonical draft before provider input
   assert.equal(inputs.check_service_coverage.origin, "Callao, Arica, PE");
   assert.equal(inputs.check_service_coverage.destination, "Tacna, CL");
   assert.equal(inputs.check_service_coverage.cargo_category, "MACHINERY");
+});
+
+test("canonical adoption clears a previous SCHEDULED window when the server returns ASAP", () => {
+  const current = createFreightIntakeFixture();
+  const fields = canonicalValuesFromIntake(current);
+  fields.pickup_mode = "ASAP";
+  delete fields.pickup_window_start;
+  delete fields.pickup_window_end;
+
+  const adopted = applyFreightRequestDraftToIntake(current, {
+    schemaVersion: "1.0",
+    freightRequestId: current.freightRequestId,
+    requestCode: current.requestId,
+    draftVersion: 2,
+    fields,
+    normalized: { cargoWeightKg: 8_000, cargoVolumeM3: 18 },
+  });
+
+  assert.equal(adopted.pickupMode, "ASAP");
+  assert.equal(adopted.requiredPickup, "");
+  assert.equal(adopted.pickupWindowStart, "");
+  assert.equal(adopted.pickupWindowEnd, "");
+  assert.equal(adopted.recommendationValues.pickup_window_start, undefined);
+  assert.equal(adopted.recommendationValues.pickup_window_end, undefined);
+});
+
+test("canonical adoption clears an address omitted by the server", () => {
+  const current = createFreightIntakeFixture();
+  const fields = canonicalValuesFromIntake(current);
+  delete fields.origin_address;
+
+  const adopted = applyFreightRequestDraftToIntake(current, {
+    schemaVersion: "1.0",
+    freightRequestId: current.freightRequestId,
+    requestCode: current.requestId,
+    draftVersion: 2,
+    fields,
+    normalized: { cargoWeightKg: 8_000, cargoVolumeM3: 18 },
+  });
+
+  assert.equal(adopted.originAddress, "");
+  assert.equal(adopted.origin, "Lima, PE");
+  assert.equal(adopted.recommendationValues.origin_address, undefined);
 });
 
 test("fields without visible operational support remain comparison-only", () => {

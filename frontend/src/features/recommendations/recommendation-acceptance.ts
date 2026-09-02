@@ -87,14 +87,58 @@ export function applyFreightRequestDraftToIntake(
     );
   }
 
-  return applyRecommendationFieldsToIntake({
+  const preservesCategoryPresentation =
+    draft.fields.cargo_category_id === current.cargoCategoryId;
+  const canonicalBase: FreightIntakeModel = {
     ...current,
     freightRequestId: draft.freightRequestId,
     requestId: draft.requestCode,
     draftVersion: draft.draftVersion,
+    originCountry: "",
+    originCity: "",
+    originAddress: "",
+    origin: "",
+    destinationCountry: "",
+    destinationCity: "",
+    destinationAddress: "",
+    destination: "",
+    pickupContactName: "",
+    pickupContactPhone: "",
+    pickupContact: "",
+    receiverName: "",
+    receiverCompany: "",
+    receiverPhone: "",
+    deliveryContact: "",
+    borderCrossing: "",
+    cargoCategory: preservesCategoryPresentation ? current.cargoCategory : "",
+    cargoCategoryId: "",
+    cargoCategoryCode: preservesCategoryPresentation ? current.cargoCategoryCode : "",
+    cargoDescription: "",
+    entryMethod: "",
+    quantity: 0,
+    unitWeightKg: 0,
+    unitsPerEntry: 0,
     totalWeightKg: draft.normalized.cargoWeightKg,
     totalVolumeM3: cargoVolumeM3 as number,
     cargoWeightKg: draft.normalized.cargoWeightKg,
     cargoVolumeM3: cargoVolumeM3 as number,
-  }, draft.fields);
+    lengthCm: 0,
+    widthCm: 0,
+    heightCm: 0,
+    pickupMode: "ASAP",
+    requiredPickup: "",
+    pickupWindowStart: "",
+    pickupWindowEnd: "",
+    deliveryDeadline: "",
+    budgetMaxUsd: 0,
+    strategy: "BALANCED",
+    documents: [],
+    recommendationValues: {},
+  };
+  const adopted = applyRecommendationFieldsToIntake(canonicalBase, draft.fields);
+  return {
+    ...adopted,
+    requiredPickup:
+      adopted.pickupMode === "SCHEDULED" ? adopted.pickupWindowStart : "",
+  };
 }
