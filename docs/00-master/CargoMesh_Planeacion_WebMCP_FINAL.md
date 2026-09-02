@@ -499,6 +499,11 @@ priority
 
 Al crear una solicitud, CargoMesh puede sugerir una plantilla y una clase de flota. El miembro siempre puede revisar los valores antes de confirmar.
 
+La implementación de esa sugerencia durante el intake se rige por
+[ADR-002 — Recomendaciones de borrador D1 mediante WebMCP](ADR-002_D1_Intake_Recommendations.md):
+es una ayuda de solo lectura, exige selección explícita de campos y no equivale
+a recomendación de oferta, selección ni booking.
+
 ### Schedule
 
 ```text
