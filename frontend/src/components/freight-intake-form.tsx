@@ -222,10 +222,14 @@ export function FreightIntakeForm({
   const readOnly = !isEditable;
   const totals = useMemo(() => getDisplayedTotals(form), [form]);
   const dispatchBlockReason = getFreightIntakeDispatchBlockReason(form);
+  const [originCoords, setOriginCoords] = useState(defaultCleanMode ? "" : "-12.0464, -77.0428");
+  const [destCoords, setDestCoords] = useState(defaultCleanMode ? "" : "-33.4489, -70.6693");
 
   function handleToggleCleanMode() {
     if (!isCleanMode) {
       setIsCleanMode(true);
+      setOriginCoords("");
+      setDestCoords("");
       setForm((curr) => ({
         ...curr,
         draftVersion: curr.draftVersion,
@@ -261,6 +265,8 @@ export function FreightIntakeForm({
       }));
     } else {
       setIsCleanMode(false);
+      setOriginCoords("-12.0464, -77.0428");
+      setDestCoords("-33.4489, -70.6693");
       setForm(initialValue);
     }
   }
@@ -575,274 +581,317 @@ export function FreightIntakeForm({
           </> : null}
 
           {step === 1 ? <>
-            <FormHeading id="step-title-1" title="Origen y destino" description="Corredor y contactos operativos estructurados para esta solicitud." />
-            <div className={styles.fieldGrid}>
-              <Field label="País de origen">
-                {readOnly ? (
-                  <input value={`${originCountryData.flag} ${originCountryData.name} (${originCountryData.code})`} readOnly />
-                ) : (
-                  <select
-                    value={form.originCountry}
-                    onChange={(event) => {
-                      const countryCode = event.target.value as any;
-                      const country = getCountryByCode(countryCode) || LATAM_LOGISTICS_DIRECTORY[0];
-                      const defaultRegion = country.regions[0];
-                      const defaultHub = defaultRegion.hubs[0];
-                      setForm((curr) => ({
-                        ...curr,
-                        originCountry: countryCode,
-                        originRegion: defaultRegion.name,
-                        originCity: defaultHub.city,
-                        origin: `${defaultHub.display}, ${countryCode}`,
-                      }));
-                    }}
-                  >
-                    {LATAM_LOGISTICS_DIRECTORY.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.flag} {c.name} ({c.code})
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </Field>
-              <Field label="Región / Departamento (Origen)">
-                {readOnly ? (
-                  <input value={form.originRegion || "No registrado"} readOnly />
-                ) : (
-                  <select
-                    value={originSelectedRegion.name}
-                    onChange={(event) => {
-                      const regionName = event.target.value;
-                      const region = originRegions.find((r) => r.name === regionName) || originRegions[0];
-                      const defaultHub = region.hubs[0];
-                      setForm((curr) => ({
-                        ...curr,
-                        originRegion: region.name,
-                        originCity: defaultHub.city,
-                        origin: `${defaultHub.display}, ${curr.originCountry}`,
-                      }));
-                    }}
-                  >
-                    {originRegions.map((r) => (
-                      <option key={r.name} value={r.name}>
-                        {r.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </Field>
-              <Field label="Ciudad / Hub Logístico (Origen)">
-                {readOnly ? (
-                  <input value={form.originCity} readOnly />
-                ) : (
-                  <select
-                    value={form.originCity}
-                    onChange={(event) => {
-                      const cityName = event.target.value;
-                      const hub = originSelectedRegion.hubs.find((h) => h.city === cityName) || originSelectedRegion.hubs[0];
-                      setForm((curr) => ({
-                        ...curr,
-                        originCity: cityName,
-                        origin: `${hub?.display || cityName}, ${curr.originCountry}`,
-                      }));
-                    }}
-                  >
-                    {originSelectedRegion.hubs.map((h, index) => (
-                      <option key={`${h.city}-${index}`} value={h.city}>
-                        {h.display} {h.tag ? `[${h.tag}]` : ""}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </Field>
-              <Field label="Dirección de recojo" wide>
-                <input
-                  readOnly={readOnly}
-                  placeholder="ej. Av. Néstor Gambetta 100, Almacén Central"
-                  value={form.originAddress}
-                  onChange={(event) => update("originAddress", event.target.value)}
-                />
-              </Field>
+            <FormHeading
+              id="step-title-1"
+              title="Origen y destino del flete"
+              description="Estructura los puntos de recojo y entrega con sus respectivos contactos operativos y coordenadas."
+            />
 
-              <Field label="País de destino">
-                {readOnly ? (
-                  <input value={`${destCountryData.flag} ${destCountryData.name} (${destCountryData.code})`} readOnly />
-                ) : (
-                  <select
-                    value={form.destinationCountry}
-                    onChange={(event) => {
-                      const countryCode = event.target.value as any;
-                      const country = getCountryByCode(countryCode) || LATAM_LOGISTICS_DIRECTORY[1];
-                      const defaultRegion = country.regions[0];
-                      const defaultHub = defaultRegion.hubs[0];
-                      setForm((curr) => ({
-                        ...curr,
-                        destinationCountry: countryCode,
-                        destinationRegion: defaultRegion.name,
-                        destinationCity: defaultHub.city,
-                        destination: `${defaultHub.display}, ${countryCode}`,
-                      }));
-                    }}
-                  >
-                    {LATAM_LOGISTICS_DIRECTORY.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.flag} {c.name} ({c.code})
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </Field>
-              <Field label="Región / Departamento (Destino)">
-                {readOnly ? (
-                  <input value={form.destinationRegion || "No registrado"} readOnly />
-                ) : (
-                  <select
-                    value={destSelectedRegion.name}
-                    onChange={(event) => {
-                      const regionName = event.target.value;
-                      const region = destRegions.find((r) => r.name === regionName) || destRegions[0];
-                      const defaultHub = region.hubs[0];
-                      setForm((curr) => ({
-                        ...curr,
-                        destinationRegion: region.name,
-                        destinationCity: defaultHub.city,
-                        destination: `${defaultHub.display}, ${curr.destinationCountry}`,
-                      }));
-                    }}
-                  >
-                    {destRegions.map((r) => (
-                      <option key={r.name} value={r.name}>
-                        {r.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </Field>
-              <Field label="Ciudad / Hub Logístico (Destino)">
-                {readOnly ? (
-                  <input value={form.destinationCity} readOnly />
-                ) : (
-                  <select
-                    value={form.destinationCity}
-                    onChange={(event) => {
-                      const cityName = event.target.value;
-                      const hub = destSelectedRegion.hubs.find((h) => h.city === cityName) || destSelectedRegion.hubs[0];
-                      setForm((curr) => ({
-                        ...curr,
-                        destinationCity: cityName,
-                        destination: `${hub?.display || cityName}, ${curr.destinationCountry}`,
-                      }));
-                    }}
-                  >
-                    {destSelectedRegion.hubs.map((h, index) => (
-                      <option key={`${h.city}-${index}`} value={h.city}>
-                        {h.display} {h.tag ? `[${h.tag}]` : ""}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </Field>
-              <Field label="Dirección de entrega" wide>
-                <input
-                  readOnly={readOnly}
-                  placeholder="ej. Av. Logística 200, Centro de Distribución"
-                  value={form.destinationAddress}
-                  onChange={(event) => update("destinationAddress", event.target.value)}
-                />
-              </Field>
-
-              <Field label="Contacto de recojo (Nombre)">
-                <input
-                  readOnly={readOnly}
-                  placeholder="ej. Ana Pérez"
-                  value={form.pickupContactName}
-                  onChange={(event) => {
-                    const name = event.target.value;
-                    setForm((curr) => ({
-                      ...curr,
-                      pickupContactName: name,
-                      pickupContact: curr.pickupContactPhone ? `${name} (${curr.pickupContactPhone})` : name,
-                    }));
-                  }}
-                />
-              </Field>
-              <Field label="Teléfono de recojo">
-                <div className={styles.phoneInputGroup}>
-                  <span className={styles.dialBadge}>{getCountryDialCode(form.originCountry)}</span>
+            {/* SECCIÓN 1: DATOS DEL ORIGEN (RECOJO) */}
+            <div className={styles.subSectionCard}>
+              <div className={styles.subSectionHeader}>
+                <span className={styles.subSectionBadge}>
+                  <MapPin size={14} /> 1. Datos del Origen (Recojo)
+                </span>
+                <small>Ubicación de despacho y supervisor responsable en planta/almacén</small>
+              </div>
+              <div className={styles.fieldGrid}>
+                <Field label="País de origen">
+                  {readOnly ? (
+                    <input value={`${originCountryData.flag} ${originCountryData.name} (${originCountryData.code})`} readOnly />
+                  ) : (
+                    <select
+                      value={form.originCountry}
+                      onChange={(event) => {
+                        const countryCode = event.target.value as any;
+                        const country = getCountryByCode(countryCode) || LATAM_LOGISTICS_DIRECTORY[0];
+                        const defaultRegion = country.regions[0];
+                        const defaultHub = defaultRegion.hubs[0];
+                        setForm((curr) => ({
+                          ...curr,
+                          originCountry: countryCode,
+                          originRegion: defaultRegion.name,
+                          originCity: defaultHub.city,
+                          origin: `${defaultHub.display}, ${countryCode}`,
+                        }));
+                      }}
+                    >
+                      {LATAM_LOGISTICS_DIRECTORY.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.flag} {c.name} ({c.code})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </Field>
+                <Field label="Departamento / Región (Origen)">
+                  {readOnly ? (
+                    <input value={form.originRegion || "No registrado"} readOnly />
+                  ) : (
+                    <select
+                      value={originSelectedRegion.name}
+                      onChange={(event) => {
+                        const regionName = event.target.value;
+                        const region = originRegions.find((r) => r.name === regionName) || originRegions[0];
+                        const defaultHub = region.hubs[0];
+                        setForm((curr) => ({
+                          ...curr,
+                          originRegion: region.name,
+                          originCity: defaultHub.city,
+                          origin: `${defaultHub.display}, ${curr.originCountry}`,
+                        }));
+                      }}
+                    >
+                      {originRegions.map((r) => (
+                        <option key={r.name} value={r.name}>
+                          {r.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </Field>
+                <Field label="Provincia / Ciudad (Origen)">
+                  {readOnly ? (
+                    <input value={form.originCity} readOnly />
+                  ) : (
+                    <select
+                      value={form.originCity}
+                      onChange={(event) => {
+                        const cityName = event.target.value;
+                        const hub = originSelectedRegion.hubs.find((h) => h.city === cityName) || originSelectedRegion.hubs[0];
+                        setForm((curr) => ({
+                          ...curr,
+                          originCity: cityName,
+                          origin: `${hub?.display || cityName}, ${curr.originCountry}`,
+                        }));
+                      }}
+                    >
+                      {originSelectedRegion.hubs.map((h, index) => (
+                        <option key={`${h.city}-${index}`} value={h.city}>
+                          {h.display} {h.tag ? `· ${h.tag}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </Field>
+                <Field label="Coordenadas GPS (Lat, Lng) — Opcional">
                   <input
                     readOnly={readOnly}
-                    placeholder="999 555 101"
-                    type="tel"
-                    value={form.pickupContactPhone ? form.pickupContactPhone.replace(/^\+\d+\s*/, "") : ""}
+                    placeholder="ej. -12.0464, -77.0428"
+                    value={originCoords}
+                    onChange={(event) => setOriginCoords(event.target.value)}
+                  />
+                </Field>
+                <Field label="Dirección exacta de recojo (Calle / Nro / Almacén)" wide>
+                  <input
+                    readOnly={readOnly}
+                    placeholder="ej. Av. Néstor Gambetta 100, Almacén Central"
+                    value={form.originAddress}
+                    onChange={(event) => update("originAddress", event.target.value)}
+                  />
+                </Field>
+                <Field label="Supervisor / Contacto de recojo (Nombre)">
+                  <input
+                    readOnly={readOnly}
+                    placeholder="ej. Ana Pérez"
+                    value={form.pickupContactName}
                     onChange={(event) => {
-                      const dial = getCountryDialCode(form.originCountry);
-                      const rawDigits = event.target.value.replace(/[^\d\s-]/g, "");
-                      const fullPhone = rawDigits ? `${dial} ${rawDigits.trim()}` : "";
+                      const name = event.target.value;
                       setForm((curr) => ({
                         ...curr,
-                        pickupContactPhone: fullPhone,
-                        pickupContact: curr.pickupContactName ? `${curr.pickupContactName} (${fullPhone})` : fullPhone,
+                        pickupContactName: name,
+                        pickupContact: curr.pickupContactPhone ? `${name} (${curr.pickupContactPhone})` : name,
                       }));
                     }}
                   />
-                </div>
-              </Field>
+                </Field>
+                <Field label="Teléfono de recojo">
+                  <div className={styles.phoneInputGroup}>
+                    <span className={styles.dialBadge}>{getCountryDialCode(form.originCountry)}</span>
+                    <input
+                      readOnly={readOnly}
+                      placeholder="999 555 101"
+                      type="tel"
+                      value={form.pickupContactPhone ? form.pickupContactPhone.replace(/^\+\d+\s*/, "") : ""}
+                      onChange={(event) => {
+                        const dial = getCountryDialCode(form.originCountry);
+                        const rawDigits = event.target.value.replace(/[^\d\s-]/g, "");
+                        const fullPhone = rawDigits ? `${dial} ${rawDigits.trim()}` : "";
+                        setForm((curr) => ({
+                          ...curr,
+                          pickupContactPhone: fullPhone,
+                          pickupContact: curr.pickupContactName ? `${curr.pickupContactName} (${fullPhone})` : fullPhone,
+                        }));
+                      }}
+                    />
+                  </div>
+                </Field>
+              </div>
+            </div>
 
-              <Field label="Contacto receptor (Nombre)">
-                <input
-                  readOnly={readOnly}
-                  placeholder="ej. Diego Ramos"
-                  value={form.receiverName}
-                  onChange={(event) => {
-                    const name = event.target.value;
-                    setForm((curr) => ({
-                      ...curr,
-                      receiverName: name,
-                      deliveryContact: [name, curr.receiverCompany, curr.receiverPhone].filter(Boolean).join(" · "),
-                    }));
-                  }}
-                />
-              </Field>
-              <Field label="Empresa receptora">
-                <input
-                  readOnly={readOnly}
-                  placeholder="ej. Destino Minero S.A."
-                  value={form.receiverCompany}
-                  onChange={(event) => {
-                    const comp = event.target.value;
-                    setForm((curr) => ({
-                      ...curr,
-                      receiverCompany: comp,
-                      deliveryContact: [curr.receiverName, comp, curr.receiverPhone].filter(Boolean).join(" · "),
-                    }));
-                  }}
-                />
-              </Field>
-              <Field label="Teléfono receptor">
-                <div className={styles.phoneInputGroup}>
-                  <span className={styles.dialBadge}>{getCountryDialCode(form.destinationCountry)}</span>
+            {/* SECCIÓN 2: DATOS DEL DESTINO (ENTREGA) */}
+            <div className={styles.subSectionCard} style={{ marginTop: "1rem" }}>
+              <div className={styles.subSectionHeader}>
+                <span className={styles.subSectionBadge} style={{ background: "#e8f4f8", color: "#165a72" }}>
+                  <MapPin size={14} /> 2. Datos del Destino (Entrega)
+                </span>
+                <small>Ubicación de entrega y receptor autorizado en destino</small>
+              </div>
+              <div className={styles.fieldGrid}>
+                <Field label="País de destino">
+                  {readOnly ? (
+                    <input value={`${destCountryData.flag} ${destCountryData.name} (${destCountryData.code})`} readOnly />
+                  ) : (
+                    <select
+                      value={form.destinationCountry}
+                      onChange={(event) => {
+                        const countryCode = event.target.value as any;
+                        const country = getCountryByCode(countryCode) || LATAM_LOGISTICS_DIRECTORY[1];
+                        const defaultRegion = country.regions[0];
+                        const defaultHub = defaultRegion.hubs[0];
+                        setForm((curr) => ({
+                          ...curr,
+                          destinationCountry: countryCode,
+                          destinationRegion: defaultRegion.name,
+                          destinationCity: defaultHub.city,
+                          destination: `${defaultHub.display}, ${countryCode}`,
+                        }));
+                      }}
+                    >
+                      {LATAM_LOGISTICS_DIRECTORY.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.flag} {c.name} ({c.code})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </Field>
+                <Field label="Departamento / Región (Destino)">
+                  {readOnly ? (
+                    <input value={form.destinationRegion || "No registrado"} readOnly />
+                  ) : (
+                    <select
+                      value={destSelectedRegion.name}
+                      onChange={(event) => {
+                        const regionName = event.target.value;
+                        const region = destRegions.find((r) => r.name === regionName) || destRegions[0];
+                        const defaultHub = region.hubs[0];
+                        setForm((curr) => ({
+                          ...curr,
+                          destinationRegion: region.name,
+                          destinationCity: defaultHub.city,
+                          destination: `${defaultHub.display}, ${curr.destinationCountry}`,
+                        }));
+                      }}
+                    >
+                      {destRegions.map((r) => (
+                        <option key={r.name} value={r.name}>
+                          {r.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </Field>
+                <Field label="Provincia / Ciudad (Destino)">
+                  {readOnly ? (
+                    <input value={form.destinationCity} readOnly />
+                  ) : (
+                    <select
+                      value={form.destinationCity}
+                      onChange={(event) => {
+                        const cityName = event.target.value;
+                        const hub = destSelectedRegion.hubs.find((h) => h.city === cityName) || destSelectedRegion.hubs[0];
+                        setForm((curr) => ({
+                          ...curr,
+                          destinationCity: cityName,
+                          destination: `${hub?.display || cityName}, ${curr.destinationCountry}`,
+                        }));
+                      }}
+                    >
+                      {destSelectedRegion.hubs.map((h, index) => (
+                        <option key={`${h.city}-${index}`} value={h.city}>
+                          {h.display} {h.tag ? `· ${h.tag}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </Field>
+                <Field label="Coordenadas GPS (Lat, Lng) — Opcional">
                   <input
                     readOnly={readOnly}
-                    placeholder="999 000 222"
-                    type="tel"
-                    value={form.receiverPhone ? form.receiverPhone.replace(/^\+\d+\s*/, "") : ""}
+                    placeholder="ej. -33.4489, -70.6693"
+                    value={destCoords}
+                    onChange={(event) => setDestCoords(event.target.value)}
+                  />
+                </Field>
+                <Field label="Dirección exacta de entrega (Planta / Centro Logístico)" wide>
+                  <input
+                    readOnly={readOnly}
+                    placeholder="ej. Av. Logística 200, Centro de Distribución"
+                    value={form.destinationAddress}
+                    onChange={(event) => update("destinationAddress", event.target.value)}
+                  />
+                </Field>
+                <Field label="Empresa receptora (Razón Social)">
+                  <input
+                    readOnly={readOnly}
+                    placeholder="ej. Destino Minero S.A."
+                    value={form.receiverCompany}
                     onChange={(event) => {
-                      const dial = getCountryDialCode(form.destinationCountry);
-                      const rawDigits = event.target.value.replace(/[^\d\s-]/g, "");
-                      const fullPhone = rawDigits ? `${dial} ${rawDigits.trim()}` : "";
+                      const comp = event.target.value;
                       setForm((curr) => ({
                         ...curr,
-                        receiverPhone: fullPhone,
-                        deliveryContact: [curr.receiverName, curr.receiverCompany, fullPhone].filter(Boolean).join(" · "),
+                        receiverCompany: comp,
+                        deliveryContact: [curr.receiverName, comp, curr.receiverPhone].filter(Boolean).join(" · "),
                       }));
                     }}
                   />
-                </div>
-              </Field>
-              <Field label="Notas operativas" wide>
+                </Field>
+                <Field label="Contacto receptor (Nombre)">
+                  <input
+                    readOnly={readOnly}
+                    placeholder="ej. Diego Ramos"
+                    value={form.receiverName}
+                    onChange={(event) => {
+                      const name = event.target.value;
+                      setForm((curr) => ({
+                        ...curr,
+                        receiverName: name,
+                        deliveryContact: [name, curr.receiverCompany, curr.receiverPhone].filter(Boolean).join(" · "),
+                      }));
+                    }}
+                  />
+                </Field>
+                <Field label="Teléfono receptor">
+                  <div className={styles.phoneInputGroup}>
+                    <span className={styles.dialBadge}>{getCountryDialCode(form.destinationCountry)}</span>
+                    <input
+                      readOnly={readOnly}
+                      placeholder="999 000 222"
+                      type="tel"
+                      value={form.receiverPhone ? form.receiverPhone.replace(/^\+\d+\s*/, "") : ""}
+                      onChange={(event) => {
+                        const dial = getCountryDialCode(form.destinationCountry);
+                        const rawDigits = event.target.value.replace(/[^\d\s-]/g, "");
+                        const fullPhone = rawDigits ? `${dial} ${rawDigits.trim()}` : "";
+                        setForm((curr) => ({
+                          ...curr,
+                          receiverPhone: fullPhone,
+                          deliveryContact: [curr.receiverName, curr.receiverCompany, fullPhone].filter(Boolean).join(" · "),
+                        }));
+                      }}
+                    />
+                  </div>
+                </Field>
+              </div>
+            </div>
+
+            {/* SECCIÓN 3: INSTRUCCIONES OPERATIVAS Y CRUCE FRONTERIZO */}
+            <div className={styles.subSectionCard} style={{ marginTop: "1rem" }}>
+              <Field label="Instrucciones operativas de ruta (Cruce fronterizo / Aduana / Almacén)" wide>
                 <input
                   readOnly={readOnly}
-                  placeholder="Instrucciones para paso fronterizo o almacén"
+                  placeholder="ej. Requiere cruce por Paso Santa Rosa / Chacalluta. Notificar con 24h de anticipación..."
                   value={form.operationalNotes}
                   onChange={(event) => update("operationalNotes", event.target.value)}
                 />

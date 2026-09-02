@@ -1,4 +1,4 @@
-﻿export type LogisticsHub = {
+export type LogisticsHub = {
   city: string;
   display: string;
   tag?: string;
@@ -27,51 +27,55 @@ export const LATAM_LOGISTICS_DIRECTORY: CountryLogistics[] = [
       {
         name: "Callao",
         hubs: [
-          { city: "Callao", display: "Callao (Terminal Portuario APM / DP World)", tag: "Puerto" },
-          { city: "Callao", display: "Callao (Av. Néstor Gambetta / Zona Industrial)", tag: "Logístico" },
+          { city: "Callao", display: "Callao", tag: "Puerto" },
+          { city: "Ventanilla", display: "Ventanilla", tag: "Industrial" },
+          { city: "Bellavista", display: "Bellavista", tag: "Urbano" },
         ],
       },
       {
         name: "Lima",
         hubs: [
-          { city: "Lima", display: "Lima Metropolitana (Centro Logístico)", tag: "Urbano" },
-          { city: "Lurín", display: "Lurín (Parque Industrial Sur)", tag: "Industrial" },
-          { city: "Huachipa", display: "Huachipa (Hub Carretera Central)", tag: "Logístico" },
+          { city: "Lima", display: "Lima Centro", tag: "Comercial" },
+          { city: "Lurín", display: "Lurín", tag: "Industrial" },
+          { city: "Huachipa", display: "Huachipa", tag: "Logístico" },
+          { city: "Punta Hermosa", display: "Punta Hermosa", tag: "Sur" },
+          { city: "Ate", display: "Ate / Vitarte", tag: "Industrial" },
         ],
       },
       {
         name: "Arequipa",
         hubs: [
-          { city: "Arequipa", display: "Arequipa (Parque Industrial Río Seco)", tag: "Industrial" },
-          { city: "Matarani", display: "Matarani (Terminal Portuario TISUR)", tag: "Puerto" },
+          { city: "Arequipa", display: "Arequipa", tag: "Industrial" },
+          { city: "Matarani", display: "Matarani", tag: "Puerto" },
+          { city: "Mollendo", display: "Mollendo", tag: "Costa" },
         ],
       },
       {
         name: "Moquegua",
         hubs: [
-          { city: "Ilo", display: "Ilo (Puerto / Corredor Bioceánico)", tag: "Puerto" },
-          { city: "Moquegua", display: "Moquegua (Corredor Minero Cuajone / Quellaveco)", tag: "Minero" },
+          { city: "Ilo", display: "Ilo", tag: "Puerto" },
+          { city: "Moquegua", display: "Moquegua", tag: "Minero" },
         ],
       },
       {
         name: "Tacna",
         hubs: [
-          { city: "Tacna", display: "Tacna (ZOFRATACNA)", tag: "Zona Franca" },
-          { city: "Santa Rosa", display: "Frontera Santa Rosa (Paso Internacional a Chile)", tag: "Frontera" },
+          { city: "Tacna", display: "Tacna", tag: "Zona Franca" },
+          { city: "Santa Rosa", display: "Santa Rosa", tag: "Frontera" },
         ],
       },
       {
         name: "Piura",
         hubs: [
-          { city: "Paita", display: "Paita (Terminal Portuario Euroandinos)", tag: "Puerto" },
-          { city: "Piura", display: "Piura (Zona Agroindustrial)", tag: "Agro" },
+          { city: "Paita", display: "Paita", tag: "Puerto" },
+          { city: "Piura", display: "Piura", tag: "Agro" },
         ],
       },
       {
         name: "La Libertad",
         hubs: [
-          { city: "Trujillo", display: "Trujillo (Parque Industrial)", tag: "Industrial" },
-          { city: "Salaverry", display: "Salaverry (Puerto Multimodal)", tag: "Puerto" },
+          { city: "Trujillo", display: "Trujillo", tag: "Industrial" },
+          { city: "Salaverry", display: "Salaverry", tag: "Puerto" },
         ],
       },
     ],
