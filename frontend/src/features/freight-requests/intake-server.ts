@@ -37,7 +37,7 @@ async function findPersistedIntakeRecord(
   const { data: freightRequest, error: freightRequestError } = await supabase
     .from("freight_requests")
     .select(
-      "id,code,organization_id,status,cargo_category_id,cargo_profile_id,cargo_entry_method,entry_quantity,units_per_entry,cargo_weight_kg,cargo_volume_m3,entry_unit_weight_kg,entry_length_cm,entry_width_cm,entry_height_cm,origin_address,origin_city,origin_country,destination_address,destination_city,destination_country,pickup_contact_name,pickup_contact_phone,receiver_name,receiver_company,receiver_phone,special_instructions,transport_mode,service_type,pickup_mode,required_pickup,pickup_window_start,pickup_window_end,delivery_deadline,budget_max,optimization_strategy,available_documents,updated_at",
+      "id,code,organization_id,status,draft_version,cargo_category_id,cargo_profile_id,cargo_entry_method,entry_quantity,units_per_entry,cargo_weight_kg,cargo_volume_m3,entry_unit_weight_kg,entry_length_cm,entry_width_cm,entry_height_cm,origin_address,origin_city,origin_country,origin_region,destination_address,destination_city,destination_country,destination_region,pickup_contact_name,pickup_contact_phone,receiver_name,receiver_company,receiver_phone,special_instructions,transport_mode,service_type,pickup_mode,required_pickup,pickup_window_start,pickup_window_end,delivery_deadline,budget_max,optimization_strategy,available_documents,updated_at",
     )
     .eq("organization_id", organizationId)
     .eq("code", requestCode)
@@ -101,6 +101,7 @@ async function findPersistedIntakeRecord(
   return {
     id: request.id,
     code: request.code,
+    draftVersion: request.draft_version,
     organizationId: request.organization_id,
     organizationName: organization.name,
     defaultCurrency: organization.default_currency,
@@ -121,6 +122,14 @@ async function findPersistedIntakeRecord(
     heightCm: request.entry_height_cm,
     origin: formatPlace(request.origin_address, request.origin_city, request.origin_country),
     destination: formatPlace(request.destination_address, request.destination_city, request.destination_country),
+    originCountry: request.origin_country,
+    originRegion: request.origin_region,
+    originCity: request.origin_city,
+    originAddress: request.origin_address,
+    destinationCountry: request.destination_country,
+    destinationRegion: request.destination_region,
+    destinationCity: request.destination_city,
+    destinationAddress: request.destination_address,
     pickupContactName: request.pickup_contact_name,
     pickupContactPhone: request.pickup_contact_phone,
     deliveryContactName: request.receiver_name,

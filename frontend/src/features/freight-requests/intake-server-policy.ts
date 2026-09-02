@@ -11,6 +11,7 @@ const REQUEST_CODE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
 export type PersistedIntakeRecord = {
   id: string;
   code: string;
+  draftVersion: number;
   organizationId: string;
   organizationName: string;
   defaultCurrency: string;
@@ -31,6 +32,14 @@ export type PersistedIntakeRecord = {
   heightCm: number | null;
   origin: string;
   destination: string;
+  originCountry: string;
+  originRegion: string | null;
+  originCity: string;
+  originAddress: string | null;
+  destinationCountry: string;
+  destinationRegion: string | null;
+  destinationCity: string;
+  destinationAddress: string | null;
   pickupContactName: string | null;
   pickupContactPhone: string | null;
   deliveryContactName: string | null;
@@ -130,6 +139,7 @@ export async function getFreightRequestIntake(
       schemaVersion: FREIGHT_REQUEST_INTAKE_SCHEMA_VERSION,
       freightRequestId: record.id,
       requestCode: record.code,
+      draftVersion: record.draftVersion,
       organization: { id: record.organizationId, name: record.organizationName, defaultCurrency: record.defaultCurrency },
       currentOperator: { memberId: record.requesterMemberId, displayName: record.requesterDisplayName },
       status: record.status,
@@ -150,6 +160,14 @@ export async function getFreightRequestIntake(
       route: {
         origin: record.origin,
         destination: record.destination,
+        originCountry: record.originCountry,
+        originRegion: record.originRegion,
+        originCity: record.originCity,
+        originAddress: record.originAddress,
+        destinationCountry: record.destinationCountry,
+        destinationRegion: record.destinationRegion,
+        destinationCity: record.destinationCity,
+        destinationAddress: record.destinationAddress,
         pickupContact: { name: record.pickupContactName, phone: record.pickupContactPhone },
         deliveryContact: {
           name: record.deliveryContactName,
