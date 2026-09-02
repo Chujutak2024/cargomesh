@@ -5,7 +5,7 @@ import {
   FileCheck2, MapPin, PackageCheck, ShieldCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import {
   applyExecutionIntentToIntake, buildProviderRunnerInputs, buildRealDispatchPath,
@@ -17,6 +17,18 @@ import {
   assertExecutionIntentCorrelation, assertFreshIntakeCorrelation,
   getFreightIntakeDispatchBlockReason, loadPersistedFreightIntake,
 } from "@/features/freight-requests/intake-ui-adapter";
+import type { RecommendationProposedFields } from "@/features/recommendations/contracts";
+import { FreightRecommendationPanel } from "@/features/recommendations/freight-recommendation-panel";
+import { FreightRecommendationWebMcpHost } from "@/features/recommendations/freight-recommendation-webmcp-host";
+import {
+  applyFreightRequestDraftToIntake,
+  persistAndRevalidateRecommendation,
+  type PersistRecommendationAcceptance,
+} from "@/features/recommendations/recommendation-acceptance";
+import {
+  fetchFreightRequestDraft,
+  persistFreightRecommendationDraft,
+} from "@/features/recommendations/recommendation-draft-client";
 import { createExternalProviderNavigationAdapter } from "@/features/webmcp-runner";
 import { runInt02aOrchestration } from "@/features/webmcp-runner/orchestration-runner";
 import styles from "./freight-intake-form.module.css";
@@ -46,16 +58,66 @@ function getDisplayedTotals(form: FreightIntakeModel) {
   return { weightKg, volumeM3 };
 }
 
-export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntakeModel }) {
+export function FreightIntakeForm({
+  initialValue,
+  persistRecommendation = persistFreightRecommendationDraft,
+}: {
+  initialValue: FreightIntakeModel;
+  persistRecommendation?: PersistRecommendationAcceptance;
+}) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(initialValue);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [webMcpReady, setWebMcpReady] = useState(false);
+  const [recommendationRegistrationError, setRecommendationRegistrationError] = useState<string | null>(null);
+  const [draftReady, setDraftReady] = useState(initialValue.source !== "persisted");
+  const [draftLoadError, setDraftLoadError] = useState<string | null>(null);
   const runnerFrameRef = useRef<HTMLIFrameElement>(null);
   const readOnly = form.source === "persisted";
   const totals = useMemo(() => getDisplayedTotals(form), [form]);
   const dispatchBlockReason = getFreightIntakeDispatchBlockReason(form);
+
+  const loadCanonicalDraft = useCallback(async (signal: AbortSignal) => {
+    const draft = await fetchFreightRequestDraft(initialValue.freightRequestId, signal);
+    setForm((current) => applyFreightRequestDraftToIntake(current, draft));
+    setDraftLoadError(null);
+    setDraftReady(true);
+  }, [initialValue.freightRequestId]);
+
+  useEffect(() => {
+    if (initialValue.source !== "persisted") return;
+    const controller = new AbortController();
+    void loadCanonicalDraft(controller.signal).catch((error) => {
+      if (controller.signal.aborted) return;
+      setDraftReady(false);
+      setDraftLoadError(error instanceof Error ? error.message : "No fue posible cargar el borrador vigente desde D1-01.");
+    });
+    return () => controller.abort();
+  }, [initialValue.source, loadCanonicalDraft]);
+
+  const handleRegistrationChange = useCallback((registered: boolean) => {
+    setWebMcpReady(registered);
+    if (registered) setRecommendationRegistrationError(null);
+  }, []);
+
+  const handleRegistrationError = useCallback((error: Error) => {
+    setRecommendationRegistrationError(error.message);
+  }, []);
+
+  const applyRecommendation = useCallback(async (
+    fields: RecommendationProposedFields,
+    signal: AbortSignal,
+  ) => {
+    const persisted = await persistAndRevalidateRecommendation(form, fields, persistRecommendation, signal);
+    setForm(persisted);
+  }, [form, persistRecommendation]);
+
+  const reloadStaleDraft = useCallback(async (signal: AbortSignal) => {
+    setDraftReady(false);
+    await loadCanonicalDraft(signal);
+  }, [loadCanonicalDraft]);
 
   function update<K extends keyof FreightIntakeModel>(key: K, value: FreightIntakeModel[K]) {
     if (!readOnly) setForm((current) => ({ ...current, [key]: value }));
@@ -112,6 +174,19 @@ export function FreightIntakeForm({ initialValue }: { initialValue: FreightIntak
           <p>{readOnly ? "Revisa la solicitud persistida antes de iniciar la evaluación de providers." : "Escenario fixture declarado para regresión visual; no inicia operaciones reales."}</p></div>
         <div className={styles.draftBadge}><ShieldCheck size={16} aria-hidden="true" /> {readOnly ? "Datos persistidos" : "Fixture visual"}</div>
       </header>
+
+      <FreightRecommendationWebMcpHost
+        onRegistrationChange={handleRegistrationChange}
+        onRegistrationError={handleRegistrationError}
+      />
+      {form.source === "persisted" ? <FreightRecommendationPanel
+        form={form}
+        draftVersion={form.draftVersion}
+        webMcpReady={webMcpReady && draftReady}
+        registrationError={draftLoadError ?? recommendationRegistrationError}
+        onApply={applyRecommendation}
+        onStaleDraft={reloadStaleDraft}
+      /> : null}
 
       <ol className={styles.stepper} aria-label="Progreso del formulario">
         {steps.map(({ label, icon: Icon }, index) => <li key={label}><button type="button" className={`${styles.step} ${index === step ? styles.stepActive : ""} ${index < step ? styles.stepDone : ""}`} aria-current={index === step ? "step" : undefined} onClick={() => setStep(index)} disabled={submitting}><span>{index < step ? <Check size={16} aria-hidden="true" /> : <Icon size={16} aria-hidden="true" />}</span><small>Paso {index + 1}</small><strong>{label}</strong></button></li>)}

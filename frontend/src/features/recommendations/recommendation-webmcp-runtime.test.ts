@@ -68,7 +68,10 @@ function createModelContextHarness() {
     string,
     WebMCP.ModelContextRegisterToolOptions
   >();
-  const executions: Array<{ name: string; inputJson: string }> = [];
+  const executions: Array<{
+    name: string;
+    input: Record<string, unknown>;
+  }> = [];
   const modelContext = {
     async registerTool(
       tool: WebMCP.ModelContextTool,
@@ -92,16 +95,16 @@ function createModelContextHarness() {
     },
     async executeTool(
       tool: WebMCP.RegisteredTool,
-      inputJson = "{}",
+      input: Record<string, unknown> = {},
       options?: WebMCP.ModelContextExecuteToolOptions,
     ) {
       const implementation = registered.get(tool.name);
       if (!implementation) throw new Error("Tool is not registered.");
-      executions.push({ name: tool.name, inputJson });
-      const output = await implementation.execute(JSON.parse(inputJson), {
+      executions.push({ name: tool.name, input });
+      const output = await implementation.execute(input, {
         signal: options?.signal ?? new AbortController().signal,
       });
-      return JSON.stringify(output);
+      return output;
     },
   } as WebMCP.ModelContext;
 
@@ -158,7 +161,7 @@ test("getTools and executeTool cross document.modelContext with a strict read-on
     harness.executions[0]?.name,
     GET_FREIGHT_REQUEST_RECOMMENDATIONS_TOOL_NAME,
   );
-  assert.deepEqual(JSON.parse(harness.executions[0]?.inputJson ?? "{}"), input);
+  assert.deepEqual(harness.executions[0]?.input, input);
   assert.equal(
     requests[0]?.url,
     `/api/freight-requests/${freightRequestId}/recommendations?draftVersion=3`,
@@ -332,13 +335,17 @@ test("strict input rejects missing, invalid and additional fields before calling
     { freightRequestId: "not-a-uuid", draftVersion: 1 },
     { freightRequestId, draftVersion: 1, organizationId: "forbidden" },
   ]) {
-    const outputJson = await harness.documentHost.modelContext.executeTool(
-      registeredTool,
-      JSON.stringify(invalidInput),
-    );
-    const output = JSON.parse(outputJson ?? "null") as FreightRecommendationToolEnvelope;
-    assert.equal(output.ok, false);
-    if (!output.ok) assert.equal(output.error.code, "INVALID_INPUT");
+    const output = await (
+      harness.documentHost.modelContext as unknown as {
+        executeTool(
+          tool: WebMCP.RegisteredTool,
+          input: Record<string, unknown>,
+        ): Promise<unknown>;
+      }
+    ).executeTool(registeredTool, invalidInput);
+    const result = output as FreightRecommendationToolEnvelope;
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.error.code, "INVALID_INPUT");
   }
   assert.equal(requests, 0);
 });

@@ -1,4 +1,5 @@
 import type { FreightRequestIntakeStatus } from "@/features/freight-requests/intake-contracts";
+import type { RecommendationProposedFields } from "@/features/recommendations/contracts";
 
 export type FreightRequestStatus =
   | "DRAFT"
@@ -66,6 +67,7 @@ export type TrackingMapModel = {
 export type FreightIntakeModel = {
   source: "persisted" | "visual-fixture";
   freightRequestId: string;
+  draftVersion: number;
   requestId: string;
   organizationId: string;
   organization: string;
@@ -102,6 +104,7 @@ export type FreightIntakeModel = {
   budgetMaxUsd: number | null;
   strategy: "BALANCED";
   documents: string[];
+  recommendationValues: RecommendationProposedFields;
 };
 
 export type DispatchFixtureScenario =
