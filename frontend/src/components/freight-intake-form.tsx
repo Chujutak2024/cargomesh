@@ -3,6 +3,7 @@
 import {
   ArrowLeft, ArrowRight, Box, Boxes, Building2, CalendarClock, Check,
   FileCheck2, Layers, LoaderCircle, MapPin, PackageCheck, ShieldAlert, ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -48,7 +49,7 @@ import { runInt02aOrchestration } from "@/features/webmcp-runner/orchestration-r
 import styles from "./freight-intake-form.module.css";
 
 const steps = [
-  { label: "Organización", icon: Building2 }, { label: "Ruta", icon: MapPin },
+  { label: "Contexto", icon: Building2 }, { label: "Ruta", icon: MapPin },
   { label: "Carga", icon: Boxes }, { label: "Programación", icon: CalendarClock },
   { label: "Revisión", icon: PackageCheck },
 ];
@@ -72,6 +73,7 @@ export const DEMO_CARGO_PROFILES = [
     name: "✍️ Personalizado (Ingreso manual sin plantilla)",
     categoryCode: "GENERAL",
     categoryName: "Carga General",
+    description: "Carga general paletizada",
     entryMethod: "TOTAL_WEIGHT",
     quantity: null,
     unitWeightKg: null,
@@ -85,7 +87,8 @@ export const DEMO_CARGO_PROFILES = [
     id: "c7f04716-c200-481d-ab7d-9c10dbe6cb3a",
     name: "📦 Repuestos y maquinaria minera (PALLETS · 10 pallets de 800 kg c/u)",
     categoryCode: "MACHINERY",
-    categoryName: "Maquinaria y Equipos Industriales",
+    categoryName: "Maquinaria",
+    description: "Repuestos y maquinaria minera",
     entryMethod: "PALLETS",
     quantity: 10,
     unitWeightKg: 800,
@@ -99,7 +102,8 @@ export const DEMO_CARGO_PROFILES = [
     id: "c2dd33ae-6942-48f6-8693-f6c6c169af4c",
     name: "🍇 Arándanos y Fruta Fresca Reefer (PALLETS · 20 pallets de 800 kg c/u)",
     categoryCode: "AGRICULTURAL",
-    categoryName: "Productos Agrícolas",
+    categoryName: "Agrícola",
+    description: "Arándanos y fruta fresca de exportación",
     entryMethod: "PALLETS",
     quantity: 20,
     unitWeightKg: 800,
@@ -113,14 +117,15 @@ export const DEMO_CARGO_PROFILES = [
     id: "59f0adc8-7c07-4dcf-85d3-41257fc8fb32",
     name: "🏗️ Cemento en Bolsas y Clinker (PALLETS · 24 pallets de 1,000 kg c/u)",
     categoryCode: "CONSTRUCTION",
-    categoryName: "Materiales de Construcción",
+    categoryName: "Construcción",
+    description: "Cemento y materiales de construcción embolsados",
     entryMethod: "PALLETS",
     quantity: 24,
     unitWeightKg: 1000,
     unitsPerEntry: 1,
     lengthCm: 120,
     widthCm: 100,
-    heightCm: 140,
+    heightCm: 160,
     totalWeightKg: 24000,
   },
 ];
@@ -232,6 +237,29 @@ export function FreightIntakeForm({
   const [isOversized, setIsOversized] = useState(false);
   const [palletPreset, setPalletPreset] = useState<"standard" | "euro" | "custom">("standard");
   const [hasBudgetLimit, setHasBudgetLimit] = useState(form.budgetMaxUsd !== null);
+  const [aiBudgetNotice, setAiBudgetNotice] = useState<string | null>(null);
+
+  const isCallaoToSantiago =
+    (form.originCity.toLowerCase().includes("callao") || form.originCountry === "PE") &&
+    (form.destinationCity.toLowerCase().includes("santiago") || form.destinationCountry === "CL");
+
+  const historicalCorridorText = isCallaoToSantiago
+    ? "Callao ➔ Santiago · ~USD 1,720"
+    : form.originCity && form.destinationCity
+      ? `${form.originCity} ➔ ${form.destinationCity} · Sin referencia histórica suficiente`
+      : "Sin referencia histórica suficiente";
+
+  function handleSuggestBudget() {
+    setHasBudgetLimit(true);
+    const weight = totals.weightKg || form.totalWeightKg || 8000;
+    const suggested = isCallaoToSantiago
+      ? 1900
+      : Math.round(620 + weight * 0.105 + 145 + 200);
+    update("budgetMaxUsd", suggested);
+    setAiBudgetNotice(
+      `Sugerencia aplicada: USD ${suggested.toLocaleString("en-US")} basada en análisis de corredor y peso (${displayNumber(weight, " kg")}).`
+    );
+  }
 
   function handleToggleCleanMode() {
     if (!isCleanMode) {
@@ -521,17 +549,44 @@ export function FreightIntakeForm({
       <form className={styles.formLayout} onSubmit={submit} aria-busy={submitting || saving}>
         <section className={styles.formCard} aria-labelledby={`step-title-${step}`}>
           {step === 0 ? <>
-            <FormHeading id="step-title-0" title="Organización y solicitante" description="Selecciona el contexto operativo, solicitante y el perfil estándar de la empresa." />
-            <div className={styles.fieldGrid}>
-              <Field label="Organización activa">
-                <input value={`${form.organization} · Empresa Verificada`} readOnly />
-              </Field>
-              <Field label="Solicitante">
-                <input value="CargoMesh Operator (REQUESTER)" readOnly />
-              </Field>
-              <Field label="Supervisor responsable (opcional)" wide>
+            <FormHeading
+              id="step-title-0"
+              title="Contexto de la solicitud"
+              description="Confirma la organización, responsable de la solicitud y perfil operativo aplicable."
+            />
+
+            {/* SUB-BLOQUE 1: CONTEXTO DE IDENTIDAD */}
+            <div className={styles.subSectionCard}>
+              <div className={styles.subSectionHeader}>
+                <span className={styles.subSectionBadge}>
+                  <Building2 size={14} /> 1. Contexto de identidad
+                </span>
+                <small>Datos del emisor verificados por sesión</small>
+              </div>
+
+              <div className={styles.contextGrid}>
+                <div className={styles.contextInfoCard}>
+                  <span className={styles.contextLabel}>Organización</span>
+                  <span className={styles.contextValue}>
+                    {form.organization}
+                    <span className={styles.rolePill}>Verificada</span>
+                  </span>
+                  <span className={styles.contextSub}>ACME Mining Corporation</span>
+                </div>
+
+                <div className={styles.contextInfoCard}>
+                  <span className={styles.contextLabel}>Solicitado por</span>
+                  <span className={styles.contextValue}>
+                    CargoMesh Demo Operator
+                    <span className={styles.rolePill}>Solicitante</span>
+                  </span>
+                  <span className={styles.contextSub}>demo.operator@cargomesh.test</span>
+                </div>
+              </div>
+
+              <Field label="Supervisor responsable" wide>
                 {readOnly ? (
-                  <input value={form.requester || "María Torres (Supervisor)"} readOnly />
+                  <input value={form.requester || "CargoMesh Demo Operator — Supervisor de Operaciones"} readOnly />
                 ) : (
                   <select
                     value={form.operatorMemberId || DEMO_OPERATORS[0].id}
@@ -551,10 +606,24 @@ export function FreightIntakeForm({
                     ))}
                   </select>
                 )}
+                <small style={{ color: "#687573", fontSize: "0.68rem", marginTop: "0.25rem", display: "block" }}>
+                  Opcional · Recibe las excepciones que requieran revisión humana.
+                </small>
               </Field>
-              <Field label="Perfil de carga estándar de la empresa" wide>
+            </div>
+
+            {/* SUB-BLOQUE 2: CONFIGURACIÓN PREDEFINIDA */}
+            <div className={styles.subSectionCard} style={{ marginTop: "1rem" }}>
+              <div className={styles.subSectionHeader}>
+                <span className={styles.subSectionBadge}>
+                  <Boxes size={14} /> 2. Configuración predefinida
+                </span>
+                <small>Plantillas operativas para acelerar la carga de datos</small>
+              </div>
+
+              <Field label="Perfil de carga" wide>
                 {readOnly ? (
-                  <input value={form.cargoProfile || "Perfil operativo estándar"} readOnly />
+                  <input value={form.cargoProfile || "Personalizado"} readOnly />
                 ) : (
                   <select
                     value={
@@ -568,7 +637,7 @@ export function FreightIntakeForm({
                         cargoProfile: profile.id === "custom" ? "" : profile.categoryName,
                         cargoCategoryCode: profile.categoryCode,
                         cargoCategory: profile.categoryName,
-                        cargoDescription: profile.categoryName,
+                        cargoDescription: profile.description,
                         entryMethod: profile.entryMethod,
                         quantity: profile.quantity,
                         unitWeightKg: profile.unitWeightKg,
@@ -589,12 +658,12 @@ export function FreightIntakeForm({
                   </select>
                 )}
               </Field>
+              <p className={styles.budgetHelpText} style={{ margin: "0.4rem 0 0" }}>
+                {form.cargoProfile
+                  ? `✓ Perfil aplicado: "${form.cargoProfile}". Preconfigura automáticamente categoría, presentación y dimensiones en el Paso 3.`
+                  : "Al seleccionar un perfil estándar, CargoMesh preconfigurará categoría, embalaje y cubicaje en el Paso 3."}
+              </p>
             </div>
-            <InfoBox>
-              {form.cargoProfile
-                ? `✓ Perfil aplicado: "${form.cargoProfile}". Pre-configura automáticamente categoría, presentación y dimensiones en el Paso 3.`
-                : "Al seleccionar un perfil de carga estándar, el sistema pre-configura automáticamente la categoría oficial, método de embalaje y cubicaje en el Paso 3."}
-            </InfoBox>
           </> : null}
 
           {step === 1 ? <>
@@ -958,7 +1027,7 @@ export function FreightIntakeForm({
             <div className={styles.subSectionCard} style={{ marginTop: "0.75rem" }}>
               <div className={styles.subSectionHeader}>
                 <span className={styles.subSectionBadge}>
-                  <Layers size={14} /> 1. Clasificación
+                  <Layers size={14} /> 1. Clasificación logística y comercial
                 </span>
                 <div className={styles.badgeGroup} style={{ margin: 0 }}>
                   <span className={styles.badgeItem}>🚛 ROAD</span>
@@ -966,7 +1035,7 @@ export function FreightIntakeForm({
                 </div>
               </div>
               <div className={styles.fieldGrid}>
-                <Field label="Categoría de carga">
+                <Field label="Categoría logística">
                   {readOnly ? (
                     <input value={form.cargoCategory} readOnly />
                   ) : (
@@ -975,27 +1044,35 @@ export function FreightIntakeForm({
                       onChange={(event) => {
                         const code = event.target.value as OfficialCargoCategoryCode;
                         const labelMap: Record<OfficialCargoCategoryCode, string> = {
-                          MACHINERY: "Repuestos y maquinaria minera",
-                          GENERAL: "Carga general paletizada",
-                          AGRICULTURAL: "Agrícola y perecibles",
-                          CONSTRUCTION: "Materiales de construcción",
+                          MACHINERY: "Maquinaria",
+                          GENERAL: "Carga General",
+                          AGRICULTURAL: "Agrícola",
+                          CONSTRUCTION: "Construcción",
                         };
                         setForm((curr) => ({
                           ...curr,
                           cargoCategoryCode: code,
                           cargoCategory: labelMap[code] ?? code,
-                          cargoDescription: labelMap[code] ?? code,
                         }));
                       }}
                     >
-                      <option value="MACHINERY">Repuestos y maquinaria minera</option>
-                      <option value="GENERAL">Carga general paletizada</option>
-                      <option value="AGRICULTURAL">Agrícola y perecibles</option>
-                      <option value="CONSTRUCTION">Materiales de construcción</option>
+                      <option value="MACHINERY">Maquinaria (MACHINERY)</option>
+                      <option value="GENERAL">Carga General (GENERAL)</option>
+                      <option value="AGRICULTURAL">Agrícola (AGRICULTURAL)</option>
+                      <option value="CONSTRUCTION">Construcción (CONSTRUCTION)</option>
                     </select>
                   )}
                 </Field>
-                <Field label="Presentación / embalaje">
+                <Field label="Descripción de la carga">
+                  <input
+                    type="text"
+                    readOnly={readOnly}
+                    placeholder="ej. Repuestos y maquinaria minera"
+                    value={form.cargoDescription}
+                    onChange={(event) => update("cargoDescription", event.target.value)}
+                  />
+                </Field>
+                <Field label="Presentación / embalaje" wide>
                   {readOnly ? (
                     <input value={form.entryMethod} readOnly />
                   ) : (
@@ -1006,7 +1083,7 @@ export function FreightIntakeForm({
                       <option value="PALLETS">Pallets (Carga paletizada)</option>
                       <option value="UNITS">Bultos / Cajas</option>
                       <option value="SACKS">Sacos</option>
-                      <option value="TOTAL_WEIGHT">Carga suelta (Solo peso total)</option>
+                      <option value="TOTAL_WEIGHT">Carga suelta / a granel</option>
                     </select>
                   )}
                 </Field>
@@ -1019,7 +1096,7 @@ export function FreightIntakeForm({
                 <span className={styles.subSectionBadge}>
                   <Box size={14} /> 2. Composición física
                 </span>
-                <small>El peso y volumen total se calculan automáticamente según el embalaje.</small>
+                <small>{form.entryMethod === "TOTAL_WEIGHT" ? "El peso se registra directamente; el volumen es opcional." : "El peso y volumen total se calculan automáticamente según el embalaje."}</small>
               </div>
 
               {form.entryMethod === "TOTAL_WEIGHT" ? (
@@ -1337,7 +1414,7 @@ export function FreightIntakeForm({
 
               {isHazardous && (
                 <div className={`${styles.requirementAlert} ${styles.hazardAlert}`}>
-                  ⚠️ <strong>Aviso para matching:</strong> El agente WebMCP filtrará exclusivamente transportistas certificados para transporte de mercancías peligrosas (Hazmat).
+                  ⚠️ <strong>Aviso para matching:</strong> CargoMesh filtrará únicamente transportistas compatibles con mercancía peligrosa (Hazmat).
                 </div>
               )}
 
@@ -1427,10 +1504,10 @@ export function FreightIntakeForm({
                 <span className={styles.subSectionBadge}>
                   <Building2 size={14} /> 2. Restricción presupuestaria
                 </span>
-                <small>Límite máximo que el agente no sobrepasará al seleccionar ofertas</small>
+                <small>Límite máximo que CargoMesh no sobrepasará al seleccionar ofertas</small>
               </div>
 
-              <div style={{ marginTop: "0.4rem", marginBottom: "0.75rem" }}>
+              <div style={{ marginTop: "0.4rem", marginBottom: "0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
                 <div className={styles.segmentedGroup}>
                   <button
                     type="button"
@@ -1438,6 +1515,7 @@ export function FreightIntakeForm({
                     onClick={() => {
                       setHasBudgetLimit(false);
                       update("budgetMaxUsd", null);
+                      setAiBudgetNotice(null);
                     }}
                   >
                     Sin límite presupuestario
@@ -1455,7 +1533,24 @@ export function FreightIntakeForm({
                     Definir presupuesto máximo
                   </button>
                 </div>
+
+                {!readOnly && (
+                  <button
+                    type="button"
+                    className={styles.aiSuggestBtn}
+                    onClick={handleSuggestBudget}
+                  >
+                    <Sparkles size={14} /> Sugerir presupuesto vía IA / WebMCP
+                  </button>
+                )}
               </div>
+
+              {aiBudgetNotice && (
+                <div className={styles.aiSuggestNotice}>
+                  <Sparkles size={14} />
+                  <span>{aiBudgetNotice}</span>
+                </div>
+              )}
 
               {hasBudgetLimit ? (
                 <div className={styles.fieldGrid}>
@@ -1471,7 +1566,7 @@ export function FreightIntakeForm({
                   </Field>
                   <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
                     <div className={styles.historicalRefBadge}>
-                      📊 Referencia en corredor Callao ➔ Santiago: <strong>~USD 1,720</strong>
+                      📊 Referencia histórica: <strong>{historicalCorridorText}</strong>
                     </div>
                     <p className={styles.budgetHelpText}>
                       El presupuesto actúa como <strong>Hard Constraint</strong>: cualquier cotización superior será descartada antes de la evaluación.
@@ -1480,7 +1575,7 @@ export function FreightIntakeForm({
                 </div>
               ) : (
                 <p className={styles.budgetHelpText} style={{ margin: 0 }}>
-                  El agente evaluará todas las ofertas recibidas según la estrategia óptima de costo y confiabilidad sin filtro de precio tope.
+                  CargoMesh evaluará todas las ofertas recibidas según la estrategia óptima de costo y confiabilidad sin filtro de precio tope.
                 </p>
               )}
             </div>
@@ -1547,8 +1642,8 @@ export function FreightIntakeForm({
                 <span className={styles.checklistIcon}><Check size={16} aria-hidden="true" /></span>
                 <div>
                   <span className={styles.checklistLabel}>Organización y Solicitante</span>
-                  <strong>{form.organization} · {form.requester}</strong>
-                  <small>Empresa verificada · Modo ROAD FTL</small>
+                  <strong>{form.organization} · {form.requester || "CargoMesh Demo Operator"}</strong>
+                  <small>Empresa verificada · Solicitante autorizado (ROAD FTL)</small>
                 </div>
               </div>
               <div className={styles.checklistItem}>
@@ -1563,8 +1658,8 @@ export function FreightIntakeForm({
                 <span className={styles.checklistIcon}><Check size={16} aria-hidden="true" /></span>
                 <div>
                   <span className={styles.checklistLabel}>Carga y cubicaje</span>
-                  <strong>{form.quantity ? `${form.quantity} bultos · ` : ""}{displayNumber(totals.weightKg, " kg")}{totals.volumeM3 !== null ? ` · ${totals.volumeM3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³` : ""}</strong>
-                  <small>{form.cargoCategory} · {form.entryMethod.toLowerCase()}</small>
+                  <strong>{form.quantity ? `${form.quantity} ${form.entryMethod === "PALLETS" ? "pallets" : form.entryMethod === "SACKS" ? "sacos" : "bultos"} · ` : ""}{displayNumber(totals.weightKg, " kg")}{totals.volumeM3 !== null ? ` · ${totals.volumeM3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³` : ""}</strong>
+                  <small>{form.cargoCategory}{form.cargoDescription && form.cargoDescription !== form.cargoCategory ? ` · ${form.cargoDescription}` : ""} · {form.entryMethod === "PALLETS" ? "Pallets" : form.entryMethod === "SACKS" ? "Sacos" : form.entryMethod === "TOTAL_WEIGHT" ? "Carga suelta" : "Bultos"}</small>
                 </div>
               </div>
               <div className={styles.checklistItem}>
@@ -1687,7 +1782,8 @@ export function FreightIntakeForm({
               <dd>
                 <strong>{displayNumber(totals.weightKg, " kg")}</strong> · {totals.volumeM3 === null ? "Volumen n/d" : `${totals.volumeM3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³`}
                 <div style={{ color: "#687573", fontSize: "0.68rem", marginTop: "0.15rem" }}>
-                  {form.quantity ? `${form.quantity} bultos · ` : ""}{form.cargoCategory}
+                  {form.quantity ? `${form.quantity} ${form.entryMethod === "PALLETS" ? "pallets" : form.entryMethod === "SACKS" ? "sacos" : "bultos"} · ` : ""}
+                  {form.cargoCategory}{form.cargoDescription && form.cargoDescription !== form.cargoCategory ? ` · ${form.cargoDescription}` : ""}
                 </div>
                 <div style={{ marginTop: "0.3rem" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", background: "#edf8f4", color: "#185c55", padding: "0.2rem 0.5rem", border: "1px solid #c2e5d9", borderRadius: "0.4rem", fontSize: "0.68rem", fontWeight: 800 }}>
