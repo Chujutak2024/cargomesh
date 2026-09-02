@@ -368,20 +368,20 @@ Tras la revisión de las pantallas del formulario `/freight-request/new` y del D
 Este addendum actualiza el estado contractual, operativo y de UX del proyecto a la fecha de corte previa a la entrega final.
 
 ### 11.1 Hechos Técnicos Verificados
-1. **D1-02 (Recomendaciones WebMCP):**
-   - El runtime de recomendaciones contextuales (`get_freight_request_recommendations`) existe, está registrado en `document.modelContext` y persiste de forma atómica mediante control de concurrencia optimista con `draft_version`.
-   - Si otra transacción muta la solicitud en vuelo, el servidor rechaza con `409 STALE_DRAFT` protegiendo la integridad transaccional.
-2. **Regresión P0 en el Intake Autenticado (PR #43):**
-   - El PR #43 convirtió la ruta `/freight-request/new` en una vista de solo lectura que carga solicitudes ya existentes persistidas (`freight-intake-loader.tsx`).
-   - Esto constituye una **regresión P0** respecto al flujo de creación de nueva carga: el formulario quedó bloqueado (`readOnly`/`disabled`), impidiendo que un shipper capture una carga nueva desde cero.
+1. **D1-02 (Recomendaciones WebMCP Read-Only + D1-01 Consentimiento):**
+   - El runtime de recomendaciones contextuales (`get_freight_request_recommendations`) es estrictamente **READ-ONLY**: expone sugerencias al agente sin mutar la base de datos ni el borrador.
+   - La persistencia física ocurre únicamente a través del writer D1-01 (`PATCH /api/freight-requests/[id]/draft`), el cual **requiere consentimiento explícito del usuario en la UI**. Este endpoint valida los campos aplicados, incrementa de forma atómica `draft_version` y rechaza colisiones con `409 STALE_DRAFT`.
+2. **Regresión P0 en `freight-intake-form.tsx` (PR #43):**
+   - En `frontend/src/components/freight-intake-form.tsx` (línea 56), la lógica `const readOnly = form.source === "persisted"` inhabilita la edición de los campos (`if (!readOnly) setForm(...)`).
+   - Esto genera una **regresión P0** en la ruta `/freight-request/new`: el formulario no permite la captura ni edición interactiva de una nueva solicitud de transporte desde cero.
 3. **Brecha de Persistencia Manual (Falta Writer Autenticado):**
-   - Falta el endpoint y mutation client-side (writer manual autenticado) para que los campos editados por el usuario (contactos, ruta origen/destino, categoría de carga, especificaciones y programación) se persistan atómicamente en `freight_requests`.
+   - Falta conectar el writer manual autenticado para que los campos editados interactivamente por el usuario (contactos de recojo/entrega, jerarquía de ruta, categoría de carga desplegable, unidades de carga y programación temporal) se persistan atómicamente en `freight_requests`.
 
 ### 11.2 Separación Estricta de Prioridades para la Entrega
 
 | Nivel | Componentes y Requerimientos | Criterio de Entrega / Estado |
 |---|---|---|
-| **P0 (Crítico para Entrega)** | • **Intake Editable & Persistido:** Formulario interactivo con writer manual autenticado.<br>• **Recomendaciones Aplicables:** Aplicación selectiva de sugerencias vía WebMCP con incremento de `draft_version`.<br>• **Golden Flow Canónico:** Solicitud `FR-1042` (Callao ➔ Santiago, Maquinaria) con scores reproducibles (Andes 89, Inca 84, Pacific 72). | **Obligatorio:** Solo se declara entregado cuando el usuario puede completar el flujo de inicio a fin en la UI. |
+| **P0 (Crítico para Entrega)** | • **Intake Editable & Persistido:** Desbloqueo de `freight-intake-form.tsx` con writer manual autenticado.<br>• **Recomendaciones Aplicables:** Aplicación selectiva de sugerencias vía WebMCP con incremento de `draft_version` tras consentimiento.<br>• **Golden Flow Canónico:** Solicitud `FR-1042` (Callao ➔ Santiago, Maquinaria) con scores reproducibles (Andes 89, Inca 84, Pacific 72). | **Obligatorio:** Solo se declara entregado cuando el usuario puede completar el flujo de inicio a fin en la UI. |
 | **P1 (Secundario / Roadmap)** | • **Mapa Operativo Avanzado:** Visualización Leaflet detallada de la ruta Panamericana.<br>• **Flota Simulada Ampliada:** Catálogo extendido con camiones y organizaciones adicionales.<br>• **Dashboard Profundo:** Métricas analíticas agregadas.<br>• **i18n Completa:** Cobertura de localización inglés/español al 100%. | **Diferible:** No bloquea la evaluación técnica de WebMCP; se presenta como roadmap o datos de escenario. |
 
 > **Invariante de Veracidad:** Ninguna capacidad se declara como entregada o funcional basándose únicamente en la existencia de código en el repositorio o registros sembrados en un script seed. Una capacidad solo se considera entregada cuando cuenta con evidencia observable y verificable por el usuario final.
