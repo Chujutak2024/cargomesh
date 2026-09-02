@@ -14,6 +14,7 @@ export type FreightRequestIntakeViewModel = {
   schemaVersion: typeof FREIGHT_REQUEST_INTAKE_SCHEMA_VERSION;
   freightRequestId: string;
   requestCode: string;
+  draftVersion: number;
   organization: { id: string; name: string; defaultCurrency: string };
   currentOperator: { memberId: string; displayName: string };
   status: FreightRequestIntakeStatus;
@@ -34,6 +35,14 @@ export type FreightRequestIntakeViewModel = {
   route: {
     origin: string;
     destination: string;
+    originCountry: string;
+    originRegion: string | null;
+    originCity: string;
+    originAddress: string | null;
+    destinationCountry: string;
+    destinationRegion: string | null;
+    destinationCity: string;
+    destinationAddress: string | null;
     pickupContact: { name: string | null; phone: string | null };
     deliveryContact: {
       name: string | null;
@@ -149,6 +158,10 @@ export function parseFreightRequestIntakeViewModel(
   if (!UUID_PATTERN.test(freightRequestId)) {
     throw new Error("INVALID_FREIGHT_REQUEST_INTAKE: freightRequestId must be a UUID.");
   }
+  const draftVersion = requiredNumber(raw.draftVersion, "draftVersion");
+  if (!Number.isInteger(draftVersion)) {
+    throw new Error("INVALID_FREIGHT_REQUEST_INTAKE: draftVersion must be an integer.");
+  }
 
   if (!isRecord(raw.organization) || !isRecord(raw.currentOperator) || !isRecord(raw.cargo) || !isRecord(raw.route) || !isRecord(raw.execution)) {
     throw new Error("INVALID_FREIGHT_REQUEST_INTAKE: nested fields must be objects.");
@@ -187,6 +200,7 @@ export function parseFreightRequestIntakeViewModel(
     schemaVersion: FREIGHT_REQUEST_INTAKE_SCHEMA_VERSION,
     freightRequestId,
     requestCode: requiredString(raw.requestCode, "requestCode"),
+    draftVersion,
     organization: {
       id: uuid(raw.organization.id, "organization.id"),
       name: requiredString(raw.organization.name, "organization.name"),
@@ -214,6 +228,14 @@ export function parseFreightRequestIntakeViewModel(
     route: {
       origin: requiredString(raw.route.origin, "route.origin"),
       destination: requiredString(raw.route.destination, "route.destination"),
+      originCountry: requiredString(raw.route.originCountry, "route.originCountry"),
+      originRegion: optionalString(raw.route.originRegion, "route.originRegion"),
+      originCity: requiredString(raw.route.originCity, "route.originCity"),
+      originAddress: optionalString(raw.route.originAddress, "route.originAddress"),
+      destinationCountry: requiredString(raw.route.destinationCountry, "route.destinationCountry"),
+      destinationRegion: optionalString(raw.route.destinationRegion, "route.destinationRegion"),
+      destinationCity: requiredString(raw.route.destinationCity, "route.destinationCity"),
+      destinationAddress: optionalString(raw.route.destinationAddress, "route.destinationAddress"),
       pickupContact: {
         name: optionalString(pickupContact.name, "route.pickupContact.name"),
         phone: optionalString(pickupContact.phone, "route.pickupContact.phone"),

@@ -110,11 +110,13 @@ export type FreightRequestDraftRow = {
   draft_version: number;
   cargo_category_id: string;
   origin_country: string;
+  origin_region: string | null;
   origin_city: string;
   origin_address: string | null;
   pickup_contact_name: string | null;
   pickup_contact_phone: string | null;
   destination_country: string;
+  destination_region: string | null;
   destination_city: string;
   destination_address: string | null;
   receiver_name: string | null;

@@ -18,6 +18,7 @@ const intake: FreightRequestIntakeViewModel = {
   schemaVersion: "1.0",
   freightRequestId: "60000000-0000-0000-0000-000000000001",
   requestCode: "FR-1042",
+  draftVersion: 2,
   organization: {
     id: "00000000-0000-0000-0000-000000000001",
     name: "ACME Mining",
@@ -45,6 +46,14 @@ const intake: FreightRequestIntakeViewModel = {
   route: {
     origin: "Callao, PE",
     destination: "Santiago, CL",
+    originCountry: "PE",
+    originRegion: "Callao",
+    originCity: "Callao",
+    originAddress: null,
+    destinationCountry: "CL",
+    destinationRegion: "Región Metropolitana",
+    destinationCity: "Santiago",
+    destinationAddress: null,
     pickupContact: { name: "Ana", phone: "+51 900 000 001" },
     deliveryContact: { name: "Luis", company: "Destino", phone: null },
     operationalNotes: "Coordinar ingreso.",

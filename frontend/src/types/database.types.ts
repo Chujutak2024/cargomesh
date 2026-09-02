@@ -746,6 +746,7 @@ export type Database = {
           destination_address: string | null
           destination_city: string
           destination_country: string
+          destination_region: string | null
           entry_height_cm: number | null
           entry_length_cm: number | null
           entry_quantity: number | null
@@ -762,6 +763,7 @@ export type Database = {
           origin_address: string | null
           origin_city: string
           origin_country: string
+          origin_region: string | null
           package_count: number | null
           pickup_contact_name: string | null
           pickup_contact_phone: string | null
@@ -803,6 +805,7 @@ export type Database = {
           destination_address?: string | null
           destination_city: string
           destination_country: string
+          destination_region?: string | null
           entry_height_cm?: number | null
           entry_length_cm?: number | null
           entry_quantity?: number | null
@@ -819,6 +822,7 @@ export type Database = {
           origin_address?: string | null
           origin_city: string
           origin_country: string
+          origin_region?: string | null
           package_count?: number | null
           pickup_contact_name?: string | null
           pickup_contact_phone?: string | null
@@ -860,6 +864,7 @@ export type Database = {
           destination_address?: string | null
           destination_city?: string
           destination_country?: string
+          destination_region?: string | null
           entry_height_cm?: number | null
           entry_length_cm?: number | null
           entry_quantity?: number | null
@@ -876,6 +881,7 @@ export type Database = {
           origin_address?: string | null
           origin_city?: string
           origin_country?: string
+          origin_region?: string | null
           package_count?: number | null
           pickup_contact_name?: string | null
           pickup_contact_phone?: string | null

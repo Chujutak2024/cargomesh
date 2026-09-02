@@ -17,6 +17,7 @@ const viewModel: FreightRequestIntakeViewModel = {
   schemaVersion: "1.0",
   freightRequestId: "60000000-0000-0000-0000-000000000001",
   requestCode: "FR-1042",
+  draftVersion: 1,
   organization: { id: "00000000-0000-0000-0000-000000000001", name: "ACME Mining", defaultCurrency: "USD" },
   currentOperator: { memberId: "50000000-0000-0000-0000-000000000001", displayName: "Demo Supervisor" },
   status: "PENDING",
@@ -37,6 +38,14 @@ const viewModel: FreightRequestIntakeViewModel = {
   route: {
     origin: "Callao, PE",
     destination: "Santiago, CL",
+    originCountry: "PE",
+    originRegion: "Callao",
+    originCity: "Callao",
+    originAddress: null,
+    destinationCountry: "CL",
+    destinationRegion: "Región Metropolitana",
+    destinationCity: "Santiago",
+    destinationAddress: null,
     pickupContact: { name: null, phone: null },
     deliveryContact: { name: null, company: null, phone: null },
     operationalNotes: null,
@@ -59,6 +68,7 @@ const viewModel: FreightRequestIntakeViewModel = {
 const persistedRecord: PersistedIntakeRecord = {
   id: viewModel.freightRequestId,
   code: viewModel.requestCode,
+  draftVersion: viewModel.draftVersion,
   organizationId: viewModel.organization.id,
   organizationName: viewModel.organization.name,
   defaultCurrency: viewModel.organization.defaultCurrency,
@@ -79,6 +89,14 @@ const persistedRecord: PersistedIntakeRecord = {
   heightCm: viewModel.cargo.heightCm,
   origin: viewModel.route.origin,
   destination: viewModel.route.destination,
+  originCountry: viewModel.route.originCountry,
+  originRegion: viewModel.route.originRegion,
+  originCity: viewModel.route.originCity,
+  originAddress: viewModel.route.originAddress,
+  destinationCountry: viewModel.route.destinationCountry,
+  destinationRegion: viewModel.route.destinationRegion,
+  destinationCity: viewModel.route.destinationCity,
+  destinationAddress: viewModel.route.destinationAddress,
   pickupContactName: null,
   pickupContactPhone: null,
   deliveryContactName: null,
@@ -135,6 +153,13 @@ test("rejects an incomplete scheduled intake instead of manufacturing a window",
       execution: { ...viewModel.execution, pickupWindowEnd: null },
     }),
     /SCHEDULED requires a complete pickup window/,
+  );
+});
+
+test("requires an integral draft version for a writable canonical intake", () => {
+  assert.throws(
+    () => parseFreightRequestIntakeViewModel({ ...viewModel, draftVersion: 1.5 }),
+    /draftVersion must be an integer/,
   );
 });
 

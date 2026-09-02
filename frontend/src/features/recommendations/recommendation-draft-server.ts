@@ -29,18 +29,20 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { persistEditableFreightRequest } from "./recommendation-draft-persistence";
 
-const FREIGHT_REQUEST_DRAFT_SELECT = [
+export const FREIGHT_REQUEST_DRAFT_SELECT = [
   "id",
   "code",
   "organization_id",
   "draft_version",
   "cargo_category_id",
   "origin_country",
+  "origin_region",
   "origin_city",
   "origin_address",
   "pickup_contact_name",
   "pickup_contact_phone",
   "destination_country",
+  "destination_region",
   "destination_city",
   "destination_address",
   "receiver_name",
@@ -81,7 +83,7 @@ const FREIGHT_REQUEST_DRAFT_SELECT = [
   "status",
 ].join(",");
 
-async function getAuthorizedRow(freightRequestId: string): Promise<FreightRequestDraftRow> {
+export async function getAuthorizedFreightRequestDraftRow(freightRequestId: string): Promise<FreightRequestDraftRow> {
   if (!isUuid(freightRequestId)) throw invalidInput("freightRequestId debe ser UUID.");
   await requireAuthenticatedMember();
   const supabase = await createServerSupabaseClient();
@@ -111,7 +113,7 @@ async function getAuthorizedRow(freightRequestId: string): Promise<FreightReques
   throw new RecommendationDraftError("NOT_FOUND", "La solicitud no existe.", 404);
 }
 
-async function assertCargoCategoryExists(categoryId: string) {
+export async function assertCargoCategoryExists(categoryId: string) {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("cargo_categories")
@@ -122,7 +124,7 @@ async function assertCargoCategoryExists(categoryId: string) {
   if (!data) throw invalidDraft("cargo_category_id no pertenece a una categoría disponible.");
 }
 
-function patchForDatabase(normalized: NormalizedDraft, currentVersion: number) {
+export function patchForDatabase(normalized: NormalizedDraft, currentVersion: number) {
   const fields = normalized.fields;
   return {
     origin_country: fields.origin_country as string,
@@ -207,7 +209,7 @@ function historySuggestion(row: FreightRequestDraftRow): FreightRecommendationSu
 }
 
 export async function getFreightRequestDraft(freightRequestId: string): Promise<FreightRequestDraft> {
-  return draftFromRow(await getAuthorizedRow(freightRequestId));
+  return draftFromRow(await getAuthorizedFreightRequestDraftRow(freightRequestId));
 }
 
 export async function getFreightRequestRecommendations(
@@ -217,7 +219,7 @@ export async function getFreightRequestRecommendations(
   if (!Number.isInteger(draftVersion) || draftVersion < 1) {
     throw invalidInput("draftVersion debe ser un entero mayor o igual a 1.");
   }
-  const current = await getAuthorizedRow(freightRequestId);
+  const current = await getAuthorizedFreightRequestDraftRow(freightRequestId);
   if (current.draft_version !== draftVersion) {
     throw new RecommendationDraftError(
       "STALE_DRAFT",
@@ -262,7 +264,7 @@ export async function applyFreightRequestRecommendation(
   rawInput: unknown,
 ): Promise<FreightRequestDraft> {
   const input = parseApplyInput(rawInput);
-  const current = await getAuthorizedRow(freightRequestId);
+  const current = await getAuthorizedFreightRequestDraftRow(freightRequestId);
   if (current.draft_version !== input.draftVersion) {
     throw new RecommendationDraftError(
       "STALE_DRAFT",

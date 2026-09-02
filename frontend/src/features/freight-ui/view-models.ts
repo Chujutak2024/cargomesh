@@ -78,10 +78,12 @@ export type FreightIntakeModel = {
   currency: string;
   cargoProfile: string;
   originCountry: string;
+  originRegion: string;
   originCity: string;
   originAddress: string;
   origin: string;
   destinationCountry: string;
+  destinationRegion: string;
   destinationCity: string;
   destinationAddress: string;
   destination: string;
