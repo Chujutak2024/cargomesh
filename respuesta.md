@@ -314,3 +314,47 @@ Enlaces fijados al SHA auditado para evitar confundir cambios posteriores con es
 - [Checklist principal](https://github.com/Chujutak2024/cargomesh/blob/17e3c0ea3a9201dc640ebcef4be66cfa5ca1c6b7/docs/04-execution/CargoMesh_Team_Execution_Checklist.md) y [PR #35, corrección separada de lectura del intake](https://github.com/Chujutak2024/cargomesh/pull/35).
 
 **Conclusión actualizada:** el núcleo técnico tiene ejecución real bajo condiciones controladas, pero no satisface por completo la experiencia pretendida. El siguiente trabajo no es meramente “pulir UI”: es completar nueva carga editable/persistida, recomendación contextual mediante WebMCP, aplicación humana y seguimiento geográfico simulado coherente. Una capacidad se considera entregada cuando el usuario puede alcanzarla, comprenderla y comprobar su efecto sobre su propia solicitud, no cuando únicamente aparece en código o en documentación.
+
+## 10. Actualización de Requisitos UX/UI, Controles de Entrada y Dashboard (2 de septiembre de 2026)
+
+Tras la revisión de las pantallas del formulario `/freight-request/new` y del Dashboard operativo, se incorporan las siguientes decisiones obligatorias para cerrar la experiencia de usuario y evitar entradas crudas o descontroladas:
+
+### 10.1 Estructuración e Inputs del Intake de Carga
+
+1. **Categorías Amigables y Ocultación de UUIDs:**
+   - Queda terminantemente prohibido mostrar campos de texto donde el usuario deba escribir UUIDs crudos (como `c0000000-0000-0000-0000-000000000005`) o códigos internos (`MACHINERY`).
+   - El campo **Categoría** debe ser un desplegable (`<select>`) amigable con opciones claras (*Maquinaria Minera*, *Carga General Palletizada*, *Agrícola y Granel*, *Materiales de Construcción*).
+   - Al seleccionar la categoría, el formulario asigna internamente `cargo_category_id` y `cargoCategoryCode` sin exponer identificadores técnicos al usuario.
+
+2. **Jerarquía Geográfica Estructurada (Ruta Origen y Destino):**
+   - Eliminar los inputs de texto libre donde el usuario escribe `"PE"`, `"CL"` o mezcla distritos y ciudades.
+   - Implementar selección jerárquica:
+     - **País:** Selector desplegable (`🇵🇪 Perú` / `🇨🇱 Chile`).
+     - **Departamento / Región / Estado:** Selector dependiente del país seleccionado (ej. Lima, Arequipa, Ica, Tacna / Región Metropolitana, Antofagasta, Valparaíso).
+     - **Ciudad / Localidad:** Selector o autocomplete normalizado.
+     - **Dirección específica:** Campo de texto para dirección exacta de almacén o terminal.
+   - **Beneficio técnico:** Garantiza que `candidate-matcher.ts` y las tools WebMCP reciban `originRegion` y `destinationRegion` normalizados, evitando fallos de matching por discrepancias tipográficas.
+
+3. **Programación y Políticas Humanizadas y Editables:**
+   - **Modo de recojo:** Selector explícito entre *Inmediato (ASAP)* y *Programado (SCHEDULED)*.
+   - **Fechas y Horas:** Reemplazar los textos ISO crudos bloqueados por controles estándar `<input type="datetime-local">` o selectores de fecha accesibles.
+   - **Validación:** El frontend y backend validan que `fin_ventana > inicio_ventana` y `delivery_deadline > fin_ventana`.
+   - **Estrategia:** Mostrar un selector o badge descriptivo de *Estrategia Equilibrada (BALANCED)* con su desglose transparente (25% costo, 25% confiabilidad, 20% tiempo, 30% disponibilidad/ruta).
+
+### 10.2 Reestructuración del Dashboard Operativo
+
+1. **Compactación de Tarjetas de Métricas (KPI Ribbon):**
+   - Reducir la altura y espacio vertical excesivo que ocupan las 4 tarjetas de métricas para priorizar la visualización de la tabla de solicitudes y tracking.
+2. **Eliminación de Métricas de Almacén/Infraestructura Ficticias:**
+   - Retirar la sección de "Capacidad logística / Andenes (87%, 64%)" y el conteo de "Vehículos disponibles de flota externa", ya que CargoMesh opera como orquestador para shippers y no posee almacenes ni flota fija.
+   - Centrar los indicadores en datos verificables del tenant: *Solicitudes Activas*, *Esperando Selección*, *Envíos en Tránsito* y *Completadas*.
+3. **Acceso a Detalle/Modal:**
+   - Cada fila de la tabla de solicitudes debe permitir abrir su modal o pantalla de detalle para consultar el estado del booking, eventos y reabrir el dispatch.
+
+### 10.3 Decisión del Mapa Operativo
+
+- **Implementación con mapa interactivo ligero (Leaflet / OpenStreetMap):**
+  - Acotado específicamente al corredor logístico de la demo: **Perú (Lima, Callao, Arequipa, Tacna) ➔ Chile (Arica, Santiago)**.
+  - Renderiza marcadores en origen y destino, línea de ruta de la carretera Panamericana y frontera internacional.
+  - Vinculado a la línea de tiempo de eventos persistidos (*Recogido ➔ En tránsito ➔ Aduana ➔ Entregado*), sin requerir telemetría GPS falsa ni dependencias pesadas con API keys externas.
+
