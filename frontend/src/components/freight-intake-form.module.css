@@ -123,6 +123,18 @@
 .advancedRouteSection summary { font-size: 0.72rem; font-weight: 750; color: #2b7d72; cursor: pointer; user-select: none; margin-bottom: 0.75rem; }
 .advancedRouteSection summary:hover { color: #185c55; }
 
+/* STEP 3: SEGMENTED CONTROLS & STRATEGY */
+.segmentedGroup { display: inline-flex; border: 1px solid #d4dfdc; border-radius: 0.75rem; padding: 0.25rem; background: #f6f8f7; gap: 0.25rem; }
+.segmentedBtn { border: 0; background: transparent; padding: 0.45rem 0.85rem; border-radius: 0.55rem; font-family: inherit; font-size: 0.72rem; font-weight: 700; color: #55736e; cursor: pointer; transition: all 0.15s ease; }
+.segmentedBtnActive { background: #ffffff; color: #185c55; font-weight: 800; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.strategyCard { background: #ffffff; border: 1px solid #d9e6e2; border-radius: 0.8rem; padding: 0.85rem 1rem; margin-top: 0.5rem; }
+.strategyCardHeader { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
+.strategyBadge { display: inline-flex; align-items: center; gap: 0.3rem; background: #edf8f4; color: #185c55; border: 1px solid #c2e5d9; padding: 0.25rem 0.6rem; border-radius: 0.45rem; font-size: 0.72rem; font-weight: 800; }
+.strategyWeights { font-size: 0.72rem; color: #2e4340; font-weight: 600; line-height: 1.4; }
+.strategyPolicyNote { font-size: 0.65rem; color: #687573; margin-top: 0.25rem; }
+.historicalRefBadge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.68rem; color: #2b7d72; background: #edf8f4; padding: 0.3rem 0.6rem; border-radius: 0.45rem; margin-top: 0.4rem; }
+.budgetHelpText { font-size: 0.66rem; color: #687573; line-height: 1.45; margin-top: 0.4rem; }
+
 @media (min-width: 700px) {
   .fieldGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fieldWide { grid-column: 1 / -1; }

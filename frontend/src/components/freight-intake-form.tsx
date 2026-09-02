@@ -230,6 +230,8 @@ export function FreightIntakeForm({
   const [isHazardous, setIsHazardous] = useState(false);
   const [isFragile, setIsFragile] = useState(false);
   const [isOversized, setIsOversized] = useState(false);
+  const [palletPreset, setPalletPreset] = useState<"standard" | "euro" | "custom">("standard");
+  const [hasBudgetLimit, setHasBudgetLimit] = useState(form.budgetMaxUsd !== null);
 
   function handleToggleCleanMode() {
     if (!isCleanMode) {
@@ -240,6 +242,8 @@ export function FreightIntakeForm({
       setIsHazardous(false);
       setIsFragile(false);
       setIsOversized(false);
+      setPalletPreset("standard");
+      setHasBudgetLimit(false);
       setForm((curr) => ({
         ...curr,
         draftVersion: curr.draftVersion,
@@ -1015,69 +1019,221 @@ export function FreightIntakeForm({
                 <span className={styles.subSectionBadge}>
                   <Box size={14} /> 2. Composición física
                 </span>
-                <small>El peso y volumen total se calculan automáticamente.</small>
+                <small>El peso y volumen total se calculan automáticamente según el embalaje.</small>
               </div>
+
               {form.entryMethod === "TOTAL_WEIGHT" ? (
-                <div className={styles.fieldGrid}>
-                  <NumberField
-                    label="Peso total de la carga (kg)"
-                    value={form.totalWeightKg}
-                    readOnly={readOnly}
-                    onChange={(value) => update("totalWeightKg", value ?? 0)}
-                  />
-                </div>
+                <>
+                  <div className={styles.fieldGrid}>
+                    <NumberField
+                      label="Peso total de la carga (kg)"
+                      value={form.totalWeightKg}
+                      readOnly={readOnly}
+                      onChange={(value) => update("totalWeightKg", value ?? 0)}
+                    />
+                    <Field label="Volumen total estimado (m³) — opcional">
+                      <input
+                        type="number"
+                        step="0.1"
+                        readOnly={readOnly}
+                        placeholder="ej. 18.0"
+                        value={nullableNumber(form.totalVolumeM3)}
+                        onChange={(e) => update("totalVolumeM3", e.target.value ? Number(e.target.value) : null)}
+                      />
+                    </Field>
+                    {isOversized && (
+                      <div className={styles.fieldWide}>
+                        <span style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#86198f", marginBottom: "0.4rem" }}>
+                          Dimensiones máximas de la pieza sobredimensionada (Largo × Ancho × Alto cm)
+                        </span>
+                        <div className={styles.dimensionRow}>
+                          <div className={styles.dimensionInputGroup}>
+                            <span>Largo (cm)</span>
+                            <input
+                              type="number"
+                              readOnly={readOnly}
+                              value={nullableNumber(form.lengthCm)}
+                              onChange={(e) => update("lengthCm", e.target.value ? Number(e.target.value) : null)}
+                              placeholder="ej. 600"
+                            />
+                          </div>
+                          <div className={styles.dimensionInputGroup}>
+                            <span>Ancho (cm)</span>
+                            <input
+                              type="number"
+                              readOnly={readOnly}
+                              value={nullableNumber(form.widthCm)}
+                              onChange={(e) => update("widthCm", e.target.value ? Number(e.target.value) : null)}
+                              placeholder="ej. 250"
+                            />
+                          </div>
+                          <div className={styles.dimensionInputGroup}>
+                            <span>Alto (cm)</span>
+                            <input
+                              type="number"
+                              readOnly={readOnly}
+                              value={nullableNumber(form.heightCm)}
+                              onChange={(e) => update("heightCm", e.target.value ? Number(e.target.value) : null)}
+                              placeholder="ej. 280"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.totalsCards} aria-live="polite">
+                    <div className={styles.totalCard}>
+                      <span className={styles.totalCardLabel}>Peso total</span>
+                      <strong className={styles.totalCardValue}>{displayNumber(totals.weightKg, " kg")}</strong>
+                      <small className={styles.totalCardSub}>Informado directamente</small>
+                    </div>
+                    <div className={styles.totalCard}>
+                      <span className={styles.totalCardLabel}>Volumen total</span>
+                      <strong className={styles.totalCardValue}>
+                        {totals.volumeM3 === null
+                          ? "No informado"
+                          : `${totals.volumeM3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³`}
+                      </strong>
+                      <small className={styles.totalCardSub}>
+                        {totals.volumeM3 === null ? "Opcional para carga suelta" : "Informado directamente"}
+                      </small>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <>
                   <div className={styles.fieldGrid}>
                     <NumberField
-                      label="Número de bultos"
+                      label={
+                        form.entryMethod === "PALLETS"
+                          ? "Número de pallets"
+                          : form.entryMethod === "SACKS"
+                            ? "Número de sacos"
+                            : "Número de bultos / cajas"
+                      }
                       value={form.quantity}
                       readOnly={readOnly}
                       onChange={(value) => update("quantity", value)}
                     />
                     <NumberField
-                      label="Peso por bulto (kg)"
+                      label={
+                        form.entryMethod === "PALLETS"
+                          ? "Peso por pallet (kg)"
+                          : form.entryMethod === "SACKS"
+                            ? "Peso por saco (kg)"
+                            : "Peso por bulto (kg)"
+                      }
                       value={form.unitWeightKg}
                       readOnly={readOnly}
                       onChange={(value) => update("unitWeightKg", value)}
                     />
-                    <div className={styles.fieldWide}>
-                      <span style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#2e4340", marginBottom: "0.4rem" }}>
-                        Dimensiones por bulto (opcional)
-                      </span>
-                      <div className={styles.dimensionRow}>
-                        <div className={styles.dimensionInputGroup}>
-                          <span>Largo (cm)</span>
-                          <input
-                            type="number"
-                            readOnly={readOnly}
-                            value={nullableNumber(form.lengthCm)}
-                            onChange={(e) => update("lengthCm", e.target.value ? Number(e.target.value) : null)}
-                            placeholder="120"
-                          />
+
+                    {form.entryMethod === "PALLETS" ? (
+                      <div className={styles.fieldWide}>
+                        <span style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#2e4340", marginBottom: "0.35rem" }}>
+                          Dimensiones del pallet
+                        </span>
+                        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.6rem" }}>
+                          <button
+                            type="button"
+                            className={`${styles.requirementPill} ${palletPreset === "standard" ? styles.requirementPillActive : ""}`}
+                            onClick={() => {
+                              setPalletPreset("standard");
+                              setForm((curr) => ({ ...curr, lengthCm: 120, widthCm: 100 }));
+                            }}
+                          >
+                            Estándar (120 × 100 cm)
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.requirementPill} ${palletPreset === "euro" ? styles.requirementPillActive : ""}`}
+                            onClick={() => {
+                              setPalletPreset("euro");
+                              setForm((curr) => ({ ...curr, lengthCm: 120, widthCm: 80 }));
+                            }}
+                          >
+                            Europeo (120 × 80 cm)
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.requirementPill} ${palletPreset === "custom" ? styles.requirementPillActive : ""}`}
+                            onClick={() => setPalletPreset("custom")}
+                          >
+                            Personalizado
+                          </button>
                         </div>
-                        <div className={styles.dimensionInputGroup}>
-                          <span>Ancho (cm)</span>
-                          <input
-                            type="number"
-                            readOnly={readOnly}
-                            value={nullableNumber(form.widthCm)}
-                            onChange={(e) => update("widthCm", e.target.value ? Number(e.target.value) : null)}
-                            placeholder="100"
-                          />
-                        </div>
-                        <div className={styles.dimensionInputGroup}>
-                          <span>Alto (cm)</span>
-                          <input
-                            type="number"
-                            readOnly={readOnly}
-                            value={nullableNumber(form.heightCm)}
-                            onChange={(e) => update("heightCm", e.target.value ? Number(e.target.value) : null)}
-                            placeholder="160"
-                          />
+                        <div className={styles.dimensionRow}>
+                          <div className={styles.dimensionInputGroup}>
+                            <span>Largo (cm)</span>
+                            <input
+                              type="number"
+                              readOnly={readOnly || palletPreset !== "custom"}
+                              value={nullableNumber(form.lengthCm ?? 120)}
+                              onChange={(e) => update("lengthCm", e.target.value ? Number(e.target.value) : null)}
+                              placeholder="120"
+                            />
+                          </div>
+                          <div className={styles.dimensionInputGroup}>
+                            <span>Ancho (cm)</span>
+                            <input
+                              type="number"
+                              readOnly={readOnly || palletPreset !== "custom"}
+                              value={nullableNumber(form.widthCm ?? 100)}
+                              onChange={(e) => update("widthCm", e.target.value ? Number(e.target.value) : null)}
+                              placeholder="100"
+                            />
+                          </div>
+                          <div className={styles.dimensionInputGroup}>
+                            <span>Alto con carga (cm)</span>
+                            <input
+                              type="number"
+                              readOnly={readOnly}
+                              value={nullableNumber(form.heightCm)}
+                              onChange={(e) => update("heightCm", e.target.value ? Number(e.target.value) : null)}
+                              placeholder="160"
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className={styles.fieldWide}>
+                        <span style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#2e4340", marginBottom: "0.4rem" }}>
+                          Dimensiones por unidad ({form.entryMethod === "SACKS" ? "opcional para sacos" : "opcional"})
+                        </span>
+                        <div className={styles.dimensionRow}>
+                          <div className={styles.dimensionInputGroup}>
+                            <span>Largo (cm)</span>
+                            <input
+                              type="number"
+                              readOnly={readOnly}
+                              value={nullableNumber(form.lengthCm)}
+                              onChange={(e) => update("lengthCm", e.target.value ? Number(e.target.value) : null)}
+                              placeholder="120"
+                            />
+                          </div>
+                          <div className={styles.dimensionInputGroup}>
+                            <span>Ancho (cm)</span>
+                            <input
+                              type="number"
+                              readOnly={readOnly}
+                              value={nullableNumber(form.widthCm)}
+                              onChange={(e) => update("widthCm", e.target.value ? Number(e.target.value) : null)}
+                              placeholder="100"
+                            />
+                          </div>
+                          <div className={styles.dimensionInputGroup}>
+                            <span>Alto (cm)</span>
+                            <input
+                              type="number"
+                              readOnly={readOnly}
+                              value={nullableNumber(form.heightCm)}
+                              onChange={(e) => update("heightCm", e.target.value ? Number(e.target.value) : null)}
+                              placeholder="160"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className={styles.totalsCards} aria-live="polite">
                     <div className={styles.totalCard}>
@@ -1087,8 +1243,14 @@ export function FreightIntakeForm({
                       </strong>
                       <small className={styles.totalCardSub}>
                         {form.quantity && form.unitWeightKg
-                          ? `${form.quantity} × ${form.unitWeightKg} kg`
-                          : "Completa bultos y peso por bulto"}
+                          ? `${form.quantity} ${
+                              form.entryMethod === "PALLETS"
+                                ? "pallets"
+                                : form.entryMethod === "SACKS"
+                                  ? "sacos"
+                                  : "bultos"
+                            } × ${form.unitWeightKg} kg`
+                          : "Completa cantidad y peso unitario"}
                       </small>
                     </div>
                     <div className={styles.totalCard}>
@@ -1100,8 +1262,10 @@ export function FreightIntakeForm({
                       </strong>
                       <small className={styles.totalCardSub}>
                         {totals.volumeM3 === null || !form.quantity
-                          ? "Completa bultos y dimensiones"
-                          : "Calculado automáticamente"}
+                          ? form.entryMethod === "SACKS"
+                            ? "No informado (opcional para sacos)"
+                            : "Completa dimensiones"
+                          : "Calculado desde dimensiones"}
                       </small>
                     </div>
                   </div>
@@ -1191,84 +1355,185 @@ export function FreightIntakeForm({
           </> : null}
 
           {step === 3 ? <>
-            <FormHeading id="step-title-3" title="Programación y preferencias" description="Configura la ventana de transporte, presupuesto y documentación para el despacho." />
-            <div className={styles.fieldGrid}>
-              <Field label="Modo de recojo">
-                {readOnly ? (
-                  <input readOnly value={form.pickupMode} />
+            <FormHeading
+              id="step-title-3"
+              title="Programación y preferencias"
+              description="Define la ventana de transporte, límites presupuestarios y documentos para la operación."
+            />
+
+            {/* SUB-BLOQUE 1: VENTANA DE TRANSPORTE */}
+            <div className={styles.subSectionCard}>
+              <div className={styles.subSectionHeader}>
+                <span className={styles.subSectionBadge}>
+                  <CalendarClock size={14} /> 1. Ventana de transporte
+                </span>
+                <small>Horarios de recojo y plazo máximo de entrega</small>
+              </div>
+              <div className={styles.fieldGrid}>
+                <Field label="Modo de recojo">
+                  {readOnly ? (
+                    <input readOnly value={form.pickupMode} />
+                  ) : (
+                    <select
+                      value={form.pickupMode}
+                      onChange={(event) => {
+                        const mode = event.target.value as "ASAP" | "SCHEDULED";
+                        setForm((curr) => ({ ...curr, pickupMode: mode }));
+                      }}
+                    >
+                      <option value="SCHEDULED">Ventana programada (SCHEDULED)</option>
+                      <option value="ASAP">Inmediato (ASAP)</option>
+                    </select>
+                  )}
+                </Field>
+                {form.pickupMode === "SCHEDULED" ? (
+                  <>
+                    <Field label="Inicio de ventana de recojo">
+                      <input
+                        type="datetime-local"
+                        readOnly={readOnly}
+                        value={toDatetimeLocalValue(form.pickupWindowStart)}
+                        onChange={(event) => update("pickupWindowStart", fromDatetimeLocalValue(event.target.value))}
+                      />
+                    </Field>
+                    <Field label="Fin de ventana de recojo">
+                      <input
+                        type="datetime-local"
+                        readOnly={readOnly}
+                        value={toDatetimeLocalValue(form.pickupWindowEnd)}
+                        onChange={(event) => update("pickupWindowEnd", fromDatetimeLocalValue(event.target.value))}
+                      />
+                    </Field>
+                    <Field label="Deadline de entrega en destino">
+                      <input
+                        type="datetime-local"
+                        readOnly={readOnly}
+                        value={toDatetimeLocalValue(form.deliveryDeadline)}
+                        onChange={(event) => update("deliveryDeadline", fromDatetimeLocalValue(event.target.value))}
+                      />
+                    </Field>
+                  </>
                 ) : (
-                  <select
-                    value={form.pickupMode}
-                    onChange={(event) => {
-                      const mode = event.target.value as "ASAP" | "SCHEDULED";
-                      setForm((curr) => ({ ...curr, pickupMode: mode }));
+                  <Field label="Recojo requerido" wide>
+                    <input readOnly value="ASAP · Recolección prioritaria en el primer turno disponible" />
+                  </Field>
+                )}
+              </div>
+            </div>
+
+            {/* SUB-BLOQUE 2: RESTRICCIÓN PRESUPUESTARIA */}
+            <div className={styles.subSectionCard} style={{ marginTop: "1rem" }}>
+              <div className={styles.subSectionHeader}>
+                <span className={styles.subSectionBadge}>
+                  <Building2 size={14} /> 2. Restricción presupuestaria
+                </span>
+                <small>Límite máximo que el agente no sobrepasará al seleccionar ofertas</small>
+              </div>
+
+              <div style={{ marginTop: "0.4rem", marginBottom: "0.75rem" }}>
+                <div className={styles.segmentedGroup}>
+                  <button
+                    type="button"
+                    className={`${styles.segmentedBtn} ${!hasBudgetLimit ? styles.segmentedBtnActive : ""}`}
+                    onClick={() => {
+                      setHasBudgetLimit(false);
+                      update("budgetMaxUsd", null);
                     }}
                   >
-                    <option value="SCHEDULED">Ventana programada (SCHEDULED)</option>
-                    <option value="ASAP">Inmediato (ASAP)</option>
-                  </select>
-                )}
-              </Field>
-              {form.pickupMode === "SCHEDULED" ? (
-                <>
-                  <Field label="Inicio de ventana">
+                    Sin límite presupuestario
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.segmentedBtn} ${hasBudgetLimit ? styles.segmentedBtnActive : ""}`}
+                    onClick={() => {
+                      setHasBudgetLimit(true);
+                      if (form.budgetMaxUsd === null) {
+                        update("budgetMaxUsd", 2000);
+                      }
+                    }}
+                  >
+                    Definir presupuesto máximo
+                  </button>
+                </div>
+              </div>
+
+              {hasBudgetLimit ? (
+                <div className={styles.fieldGrid}>
+                  <Field label={`Presupuesto máximo (${form.currency})`}>
                     <input
-                      type="datetime-local"
+                      min="1"
+                      required={!readOnly}
                       readOnly={readOnly}
-                      value={toDatetimeLocalValue(form.pickupWindowStart)}
-                      onChange={(event) => update("pickupWindowStart", fromDatetimeLocalValue(event.target.value))}
+                      type="number"
+                      value={nullableNumber(form.budgetMaxUsd)}
+                      onChange={(event) => update("budgetMaxUsd", event.target.value ? Number(event.target.value) : null)}
                     />
                   </Field>
-                  <Field label="Fin de ventana">
-                    <input
-                      type="datetime-local"
-                      readOnly={readOnly}
-                      value={toDatetimeLocalValue(form.pickupWindowEnd)}
-                      onChange={(event) => update("pickupWindowEnd", fromDatetimeLocalValue(event.target.value))}
-                    />
-                  </Field>
-                  <Field label="Deadline de entrega">
-                    <input
-                      type="datetime-local"
-                      readOnly={readOnly}
-                      value={toDatetimeLocalValue(form.deliveryDeadline)}
-                      onChange={(event) => update("deliveryDeadline", fromDatetimeLocalValue(event.target.value))}
-                    />
-                  </Field>
-                </>
+                  <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                    <div className={styles.historicalRefBadge}>
+                      📊 Referencia en corredor Callao ➔ Santiago: <strong>~USD 1,720</strong>
+                    </div>
+                    <p className={styles.budgetHelpText}>
+                      El presupuesto actúa como <strong>Hard Constraint</strong>: cualquier cotización superior será descartada antes de la evaluación.
+                    </p>
+                  </div>
+                </div>
               ) : (
-                <Field label="Recojo requerido" wide>
-                  <input readOnly value="ASAP · Recolección prioritaria en el primer turno disponible" />
-                </Field>
+                <p className={styles.budgetHelpText} style={{ margin: 0 }}>
+                  El agente evaluará todas las ofertas recibidas según la estrategia óptima de costo y confiabilidad sin filtro de precio tope.
+                </p>
               )}
-              <Field label={`Presupuesto máximo (${form.currency})`}>
-                <input
-                  min="1"
-                  required={!readOnly}
-                  readOnly={readOnly}
-                  type="number"
-                  value={nullableNumber(form.budgetMaxUsd)}
-                  onChange={(event) => update("budgetMaxUsd", event.target.value ? Number(event.target.value) : null)}
-                />
-              </Field>
-              <Field label="Estrategia">
-                <input value={form.strategy} readOnly />
-              </Field>
             </div>
-            <fieldset className={styles.documentFieldset}>
-              <legend>Documentos disponibles</legend>
-              {documentOptions.map((doc) => (
-                <label key={doc.code}>
-                  <input
-                    type="checkbox"
-                    disabled={readOnly}
-                    checked={form.documents.map(mapDocumentToCanonicalCode).includes(doc.code)}
-                    onChange={() => toggleDocument(doc.code)}
-                  />
-                  <span>{doc.label}</span>
-                </label>
-              ))}
-            </fieldset>
+
+            {/* SUB-BLOQUE 3: ESTRATEGIA DE DECISIÓN */}
+            <div className={styles.subSectionCard} style={{ marginTop: "1rem" }}>
+              <div className={styles.subSectionHeader}>
+                <span className={styles.subSectionBadge}>
+                  <ShieldCheck size={14} /> 3. Estrategia de decisión
+                </span>
+                <small>Fórmula determinística aplicada para el ranking de ofertas</small>
+              </div>
+
+              <div className={styles.strategyCard}>
+                <div className={styles.strategyCardHeader}>
+                  <span className={styles.strategyBadge}>
+                    ⚖️ {form.strategy} (Determinístico)
+                  </span>
+                  <span style={{ fontSize: "0.68rem", color: "#687573", fontWeight: 750 }}>
+                    Política ACME Mining Perú
+                  </span>
+                </div>
+                <div className={styles.strategyWeights}>
+                  25% Costo comercial · 25% SLA y Fiabilidad · 20% Tiempo de tránsito · 30% Capacidad y Disponibilidad
+                </div>
+                <div className={styles.strategyPolicyNote}>
+                  Garantiza una ponderación transparente y auditable, protegiendo contra anomalías tarifarias o transportistas sin historial probado.
+                </div>
+              </div>
+            </div>
+
+            {/* SUB-BLOQUE 4: DOCUMENTACIÓN DISPONIBLE */}
+            <div className={styles.subSectionCard} style={{ marginTop: "1rem" }}>
+              <div className={styles.subSectionHeader}>
+                <span className={styles.subSectionBadge}>
+                  <FileCheck2 size={14} /> 4. Documentación disponible
+                </span>
+                <small>Declara los documentos que tienes listos; WebMCP validará si el carrier o la aduana exigen adicionales</small>
+              </div>
+              <fieldset className={styles.documentFieldset} style={{ border: 0, padding: 0, margin: "0.5rem 0 0" }}>
+                {documentOptions.map((doc) => (
+                  <label key={doc.code}>
+                    <input
+                      type="checkbox"
+                      disabled={readOnly}
+                      checked={form.documents.map(mapDocumentToCanonicalCode).includes(doc.code)}
+                      onChange={() => toggleDocument(doc.code)}
+                    />
+                    <span>{doc.label}</span>
+                  </label>
+                ))}
+              </fieldset>
+            </div>
           </> : null}
 
           {step === 4 ? <>
