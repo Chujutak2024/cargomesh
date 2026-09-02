@@ -1,13 +1,16 @@
 import { DemoLogin } from "@/components/demo-login";
 import { redirectAuthenticatedMemberFromLogin } from "@/features/auth/route-guard";
-import { loginCopyEs } from "@/features/auth/login-copy";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { loginCopy } from "@/features/auth/login-copy";
+import { getRequestLocale } from "@/features/i18n/server";
 import { Activity, Boxes, Network, Route, ShieldCheck } from "lucide-react";
 import styles from "./page.module.css";
 
 export default async function LoginPage() {
   await redirectAuthenticatedMemberFromLogin();
 
-  const copy = loginCopyEs;
+  const locale = await getRequestLocale();
+  const copy = loginCopy[locale];
 
   return (
     <main className={styles.page}>
@@ -48,7 +51,8 @@ export default async function LoginPage() {
 
       <section className={styles.formPanel} aria-label={copy.form.ariaLabel}>
         <div className={styles.formContent}>
-          <DemoLogin />
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.75rem" }}><LanguageSwitcher compact /></div>
+          <DemoLogin copy={copy.form} />
           <p className={styles.footer}>{copy.footer}</p>
         </div>
       </section>

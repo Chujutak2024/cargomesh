@@ -22,7 +22,7 @@ test("provides the same copy keys in every supported locale", () => {
   );
 });
 
-test("keeps login UI copy centralized and removes redundant status copy", () => {
+test("passes locale-selected login copy into the client form and removes redundant status copy", () => {
   const componentSource = readFileSync(
     new URL("../../components/demo-login.tsx", import.meta.url),
     "utf8",
@@ -32,8 +32,10 @@ test("keeps login UI copy centralized and removes redundant status copy", () => 
     "utf8",
   );
 
-  assert.match(componentSource, /loginCopyEs/);
-  assert.match(pageSource, /loginCopyEs/);
+  assert.match(componentSource, /LoginFormCopy/);
+  assert.match(componentSource, /DemoLogin\(\{ copy \}/);
+  assert.match(pageSource, /loginCopy\[locale\]/);
+  assert.match(pageSource, /<DemoLogin copy=\{copy\.form\}/);
   assert.doesNotMatch(componentSource, />Disponible</);
   assert.doesNotMatch(componentSource, /Autenticación empresarial/);
   assert.doesNotMatch(componentSource, /Supabase Auth/);

@@ -14,11 +14,11 @@ import {
   signInWithPassword,
   type PasswordLoginErrorKind,
 } from "@/features/auth/password-login";
-import { loginCopyEs } from "@/features/auth/login-copy";
+import type { LoginFormCopy } from "@/features/auth/login-copy";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import styles from "./demo-login.module.css";
 
-export function DemoLogin() {
+export function DemoLogin({ copy }: { copy: LoginFormCopy }) {
   const router = useRouter();
   const emailInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,7 +69,7 @@ export function DemoLogin() {
       <div className={styles.cardTopline}>
         <span>
           <LockKeyhole size={14} aria-hidden="true" />
-          {loginCopyEs.form.securityLabel}
+          {copy.securityLabel}
         </span>
       </div>
 
@@ -78,16 +78,16 @@ export function DemoLogin() {
           <ShieldCheck size={22} strokeWidth={1.8} />
         </span>
         <div>
-          <span className={styles.eyebrow}>{loginCopyEs.form.eyebrow}</span>
-          <h1>{loginCopyEs.form.title}</h1>
+          <span className={styles.eyebrow}>{copy.eyebrow}</span>
+          <h1>{copy.title}</h1>
         </div>
       </div>
 
-      <p className={styles.intro}>{loginCopyEs.form.intro}</p>
+      <p className={styles.intro}>{copy.intro}</p>
 
       <form className={styles.form} onSubmit={handleSubmit} noValidate={false}>
         <div className={styles.field}>
-          <label htmlFor="login-email">{loginCopyEs.form.emailLabel}</label>
+          <label htmlFor="login-email">{copy.emailLabel}</label>
           <div className={styles.inputFrame}>
             <Mail size={18} aria-hidden="true" />
             <input
@@ -97,7 +97,7 @@ export function DemoLogin() {
               type="email"
               autoComplete="email"
               inputMode="email"
-              placeholder={loginCopyEs.form.emailPlaceholder}
+              placeholder={copy.emailPlaceholder}
               required
               disabled={isLoading}
               aria-invalid={error?.kind === "invalid_credentials"}
@@ -107,7 +107,7 @@ export function DemoLogin() {
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="login-password">{loginCopyEs.form.passwordLabel}</label>
+          <label htmlFor="login-password">{copy.passwordLabel}</label>
           <div className={styles.inputFrame}>
             <LockKeyhole size={18} aria-hidden="true" />
             <input
@@ -115,7 +115,7 @@ export function DemoLogin() {
               name="password"
               type="password"
               autoComplete="current-password"
-              placeholder={loginCopyEs.form.passwordPlaceholder}
+              placeholder={copy.passwordPlaceholder}
               required
               disabled={isLoading}
               aria-invalid={error?.kind === "invalid_credentials"}
@@ -132,8 +132,8 @@ export function DemoLogin() {
           >
             <strong>
               {error.kind === "invalid_credentials"
-                ? loginCopyEs.form.invalidCredentialsState
-                : loginCopyEs.form.recoverableState}
+                ? copy.invalidCredentialsState
+                : copy.recoverableState}
             </strong>
             {error.message}
           </p>
@@ -148,11 +148,11 @@ export function DemoLogin() {
           {isLoading ? (
             <>
               <LoaderCircle className={styles.spinner} size={18} aria-hidden="true" />
-              {loginCopyEs.form.loading}
+              {copy.loading}
             </>
           ) : (
             <>
-              {loginCopyEs.form.submit}
+              {copy.submit}
               <ArrowRight size={18} aria-hidden="true" />
             </>
           )}

@@ -27,10 +27,18 @@ export type PersistedDashboardRequest = {
 };
 
 export type PersistedDashboardBooking = {
+  id?: string;
   freight_request_id: string;
   status: string;
   provider_booking_status: string;
   updated_at: string;
+};
+
+export type PersistedDashboardRun = {
+  id: string;
+  freight_request_id: string;
+  status: string;
+  created_at: string;
 };
 
 export type DashboardViewModel = {
@@ -47,12 +55,12 @@ function formatPlace(address: string | null, city: string, country: string) {
   return address ? `${address}, ${city}, ${country}` : `${city}, ${country}`;
 }
 
-function formatDate(value: string) {
+function formatDate(value: string, locale: string) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) {
     throw new Error("INVALID_DASHBOARD_DATA: persisted date is invalid.");
   }
-  return new Intl.DateTimeFormat("es-PE", {
+  return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -99,28 +107,48 @@ export function buildDashboardViewModel(
   organizationId: string,
   persistedRequests: PersistedDashboardRequest[],
   persistedBookings: PersistedDashboardBooking[],
+  persistedRuns: PersistedDashboardRun[] = [],
+  locale = "es-PE",
 ): DashboardViewModel {
   if (persistedRequests.some((request) => request.organization_id !== organizationId)) {
     throw new Error("DASHBOARD_CONTEXT_MISMATCH: request belongs to another organization.");
   }
 
   const bookings = latestBookings(persistedBookings);
+  const runs = new Map<string, PersistedDashboardRun>();
+  for (const run of persistedRuns) {
+    const current = runs.get(run.freight_request_id);
+    if (!current || Date.parse(run.created_at) > Date.parse(current.created_at)) runs.set(run.freight_request_id, run);
+  }
   const requests = persistedRequests.map<FreightRequestListItem>((request) => {
+    const booking = bookings.get(request.id);
+    const status = resolveStatus(request.status, booking);
+    const run = runs.get(request.id);
+    const actionHref = booking?.id && ["BOOKED", "IN_TRANSIT", "COMPLETED"].includes(status)
+      ? `/tracking/${booking.id}`
+      : booking?.id
+        ? `/booking/${encodeURIComponent(request.code)}/status`
+        : run
+          ? `/dispatch/${run.id}`
+          : buildFreightRequestIntakeHref(request.code);
     const volume = request.cargo_volume_m3 === null
-      ? "volumen no registrado"
-      : `${request.cargo_volume_m3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³`;
+      ? (locale.startsWith("en") ? "volume not recorded" : "volumen no registrado")
+      : `${request.cargo_volume_m3.toLocaleString(locale, { maximumFractionDigits: 2 })} m³`;
     return {
       id: request.id,
       requestCode: request.code,
       origin: formatPlace(request.origin_address, request.origin_city, request.origin_country),
       destination: formatPlace(request.destination_address, request.destination_city, request.destination_country),
-      corridorNote: request.cross_border ? "Corredor internacional" : "Ruta nacional",
-      cargoSummary: `${request.cargo_weight_kg.toLocaleString("es-PE")} kg · ${volume}`,
+      corridorNote: request.cross_border
+        ? (locale.startsWith("en") ? "International corridor" : "Corredor internacional")
+        : (locale.startsWith("en") ? "Domestic route" : "Ruta nacional"),
+      cargoSummary: `${request.cargo_weight_kg.toLocaleString(locale)} kg · ${volume}`,
       cargoDetail: request.cargo_description
         ?? `${request.cargo_entry_method} · ${request.transport_mode}/${request.service_type}`,
-      pickupDate: formatDate(request.required_pickup),
-      updatedAt: formatDate(request.updated_at),
-      status: resolveStatus(request.status, bookings.get(request.id)),
+      pickupDate: formatDate(request.required_pickup, locale),
+      updatedAt: formatDate(request.updated_at, locale),
+      status,
+      actionHref,
     };
   });
 

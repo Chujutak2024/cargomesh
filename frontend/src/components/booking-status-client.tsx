@@ -155,6 +155,8 @@ function toBookingWorkspaceModel(
     selectedOffer: context?.selectedOffer ?? null,
     availableOfferCount: context?.offers.length ?? model.recoveryOfferIds.length + 1,
     returnHref: context?.dispatchHref ?? "/dashboard",
+    trackingHref: ["CONFIRMED", "IN_TRANSIT", "COMPLETED"].includes(model.status) ? `/tracking/${model.bookingId}` : undefined,
+    providerResponseDeadline: model.status === "PENDING_PROVIDER_CONFIRMATION" ? model.providerResponseDeadline : undefined,
     timeline: bookingTimeline(model),
     evidence: [
       {

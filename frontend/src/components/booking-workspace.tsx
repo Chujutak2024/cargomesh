@@ -47,6 +47,8 @@ export type BookingWorkspaceModel = {
   } | null;
   availableOfferCount: number;
   returnHref: string;
+  trackingHref?: string;
+  providerResponseDeadline?: string;
   timeline: ReadonlyArray<{
     label: string;
     state: "complete" | "blocked" | "current" | "future";
@@ -90,6 +92,7 @@ export function BookingWorkspace({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeEvidence, setActiveEvidence] = useState(model.evidence[0]?.key ?? "events");
   const [fixtureRecoveryOfferId, setFixtureRecoveryOfferId] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const openButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
@@ -128,6 +131,15 @@ export function BookingWorkspace({
       openButtonRef.current?.focus();
     };
   }, [drawerOpen]);
+
+  useEffect(() => {
+    if (!model.providerResponseDeadline) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, [model.providerResponseDeadline]);
+
+  const remainingMs = model.providerResponseDeadline ? Math.max(0, Date.parse(model.providerResponseDeadline) - now) : null;
+  const countdown = remainingMs === null ? null : `${String(Math.floor(remainingMs / 3_600_000)).padStart(2, "0")}:${String(Math.floor((remainingMs % 3_600_000) / 60_000)).padStart(2, "0")}:${String(Math.floor((remainingMs % 60_000) / 1_000)).padStart(2, "0")}`;
 
   const evidence = model.evidence.find((item) => item.key === activeEvidence) ?? model.evidence[0];
   const StatusIcon = model.status.tone === "success"
@@ -190,7 +202,8 @@ export function BookingWorkspace({
           {onRefresh && model.status.tone === "waiting" ? (
             <button type="button" disabled={busy} onClick={onRefresh}>{busy ? "Consultando provider" : "Actualizar estado"}</button>
           ) : null}
-          {model.status.tone === "success" ? <button type="button" disabled title="Disponible en una tarea posterior">Ir a seguimiento</button> : null}
+          {countdown && model.status.tone === "waiting" ? <span className={styles.deadline} aria-label="Tiempo restante para respuesta">{countdown}</span> : null}
+          {model.status.tone === "success" && model.trackingHref ? <Link href={model.trackingHref}>Ir a seguimiento <ChevronRight size={16} aria-hidden="true" /></Link> : null}
         </div>
       </section>
 

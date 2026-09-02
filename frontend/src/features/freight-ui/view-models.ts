@@ -24,6 +24,7 @@ export type FreightRequestListItem = {
   pickupDate: string;
   updatedAt: string;
   status: FreightRequestStatus;
+  actionHref?: string;
 };
 
 export type DashboardSummary = {
