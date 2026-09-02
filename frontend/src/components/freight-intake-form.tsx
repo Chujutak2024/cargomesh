@@ -162,14 +162,53 @@ function getDisplayedTotals(form: FreightIntakeModel) {
 
 export function FreightIntakeForm({
   initialValue,
+  defaultCleanMode = false,
   persistRecommendation = persistFreightRecommendationDraft,
 }: {
   initialValue: FreightIntakeModel;
+  defaultCleanMode?: boolean;
   persistRecommendation?: PersistRecommendationAcceptance;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState(initialValue);
+  const [isCleanMode, setIsCleanMode] = useState(defaultCleanMode);
+  const [form, setForm] = useState<FreightIntakeModel>(() => {
+    if (defaultCleanMode) {
+      return {
+        ...initialValue,
+        cargoProfile: "",
+        originRegion: "",
+        originCity: "",
+        originAddress: "",
+        origin: "",
+        destinationRegion: "",
+        destinationCity: "",
+        destinationAddress: "",
+        destination: "",
+        pickupContactName: "",
+        pickupContactPhone: "",
+        pickupContact: "",
+        receiverName: "",
+        receiverCompany: "",
+        receiverPhone: "",
+        deliveryContact: "",
+        quantity: null,
+        unitWeightKg: null,
+        unitsPerEntry: 1,
+        lengthCm: null,
+        widthCm: null,
+        heightCm: null,
+        totalWeightKg: 0,
+        cargoWeightKg: 0,
+        totalVolumeM3: null,
+        cargoVolumeM3: null,
+        budgetMaxUsd: null,
+        documents: [],
+        operationalNotes: "",
+      };
+    }
+    return initialValue;
+  });
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
@@ -183,7 +222,6 @@ export function FreightIntakeForm({
   const readOnly = !isEditable;
   const totals = useMemo(() => getDisplayedTotals(form), [form]);
   const dispatchBlockReason = getFreightIntakeDispatchBlockReason(form);
-  const [isCleanMode, setIsCleanMode] = useState(false);
 
   function handleToggleCleanMode() {
     if (!isCleanMode) {
@@ -235,7 +273,7 @@ export function FreightIntakeForm({
   }, [initialValue.freightRequestId]);
 
   useEffect(() => {
-    if (initialValue.source !== "persisted") return;
+    if (initialValue.source !== "persisted" || defaultCleanMode) return;
     const controller = new AbortController();
     void loadCanonicalDraft(controller.signal).catch((error) => {
       if (controller.signal.aborted) return;
@@ -243,7 +281,7 @@ export function FreightIntakeForm({
       setDraftLoadError(error instanceof Error ? error.message : "No fue posible cargar el borrador vigente desde D1-01.");
     });
     return () => controller.abort();
-  }, [initialValue.source, loadCanonicalDraft]);
+  }, [initialValue.source, loadCanonicalDraft, defaultCleanMode]);
 
   const handleRegistrationChange = useCallback((registered: boolean) => {
     setWebMcpReady(registered);
