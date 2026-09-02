@@ -74,3 +74,4 @@ export const loginCopy = {
 export const loginCopyEs = loginCopy.es;
 
 export type LoginLocale = keyof typeof loginCopy;
+export type LoginFormCopy = (typeof loginCopy)[LoginLocale]["form"];

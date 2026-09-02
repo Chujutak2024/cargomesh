@@ -1,0 +1,8 @@
+.wrapper { position: relative; min-height: 25rem; }
+.map { width: 100%; min-height: 25rem; background: #e9f1ee; }
+.notice { position: absolute; z-index: 500; top: 0.75rem; left: 3.4rem; right: 0.75rem; display: flex; max-width: 31rem; flex-wrap: wrap; gap: 0.35rem 0.6rem; border: 1px solid #d7dfdc; border-radius: 0.5rem; padding: 0.5rem 0.65rem; background: rgb(255 255 255 / 94%); color: #52605e; font-size: 0.62rem; box-shadow: 0 0.4rem 1.2rem rgb(18 60 58 / 10%); }
+.notice strong { color: #123c3a; }
+.empty { display: grid; min-height: 19rem; place-content: center; justify-items: center; gap: 0.55rem; padding: 1.5rem; color: #687573; text-align: center; background: #f4f8f6; }
+.empty strong { color: #263331; font-size: 0.82rem; }
+.empty p { max-width: 30rem; margin: 0; font-size: 0.68rem; line-height: 1.55; }
+@media (max-width: 600px) { .wrapper, .map { min-height: 20rem; } .notice { left: 0.75rem; } }

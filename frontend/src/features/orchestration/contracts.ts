@@ -45,6 +45,17 @@ export type RankedOfferView = {
   eligible: boolean;
   reasons: string[];
   recommended: boolean;
+  availableCapacityKg?: number;
+  availableVolumeM3?: number | null;
+  estimatedPickup?: string;
+  estimatedDelivery?: string;
+  reliabilityScore?: number;
+  availabilityClass?: string;
+  vehicleId?: string | null;
+  subscores?: {
+    cost: number; reliability: number; eta: number; availability: number;
+    routeExperience: number; organizationHistory: number;
+  } | null;
 };
 
 export type OrchestrationViewModelBase = {

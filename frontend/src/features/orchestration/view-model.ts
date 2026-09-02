@@ -51,6 +51,13 @@ type OfferRow = {
   price: number;
   currency: string;
   transit_hours: number;
+  available_capacity_kg?: number;
+  available_volume_m3?: number | null;
+  estimated_pickup?: string;
+  estimated_delivery?: string;
+  reliability_score?: number;
+  availability_class?: string;
+  vehicle_id?: string | null;
 };
 
 export type ViewModelSource = {
@@ -58,7 +65,16 @@ export type ViewModelSource = {
   freightRequest: FreightRequestRow;
   events: EventRow[];
   offers: OfferRow[];
+  decisionSubscores?: Json | null;
 };
+
+function subscoresFor(value: Json | null | undefined, offerId: string): RankedOfferView["subscores"] {
+  if (!isRecord(value) || !isRecord(value[offerId])) return null;
+  const row = value[offerId] as Record<string, unknown>;
+  const keys = ["cost", "reliability", "eta", "availability", "routeExperience", "organizationHistory"] as const;
+  if (!keys.every((key) => typeof row[key] === "number")) return null;
+  return Object.fromEntries(keys.map((key) => [key, row[key]])) as NonNullable<RankedOfferView["subscores"]>;
+}
 
 type RankingOption = FreightRanking["options"][number];
 
@@ -240,6 +256,7 @@ function rankedOffers(
   offers: OfferRow[],
   candidates: CandidateProvider[],
   ranking: FreightRanking,
+  decisionSubscores?: Json | null,
 ): RankedOfferView[] {
   const candidatesByCarrierService = new Map(
     candidates.map((candidate) => [`${candidate.carrierId}:${candidate.matchingServiceId}`, candidate]),
@@ -253,7 +270,7 @@ function rankedOffers(
         ? candidatesByCarrierService.get(`${offer.carrier_id}:${offer.carrier_service_id}`)
         : undefined;
       if (!option || !candidate || !offer.carrier_service_id || offer.currency !== "USD") return null;
-      return {
+      const view: RankedOfferView = {
         offerId: offer.id,
         carrierId: offer.carrier_id,
         carrierCode: candidate.carrierCode,
@@ -269,6 +286,16 @@ function rankedOffers(
         reasons: option.reasons,
         recommended: ranking.recommendedOfferId === offer.id,
       };
+      if (offer.available_capacity_kg !== undefined) view.availableCapacityKg = offer.available_capacity_kg;
+      if (offer.available_volume_m3 !== undefined) view.availableVolumeM3 = offer.available_volume_m3;
+      if (offer.estimated_pickup !== undefined) view.estimatedPickup = offer.estimated_pickup;
+      if (offer.estimated_delivery !== undefined) view.estimatedDelivery = offer.estimated_delivery;
+      if (offer.reliability_score !== undefined) view.reliabilityScore = offer.reliability_score;
+      if (offer.availability_class !== undefined) view.availabilityClass = offer.availability_class;
+      if (offer.vehicle_id !== undefined) view.vehicleId = offer.vehicle_id;
+      const subscores = subscoresFor(decisionSubscores, offer.id);
+      if (subscores) view.subscores = subscores;
+      return view;
     })
     .filter((offer): offer is RankedOfferView => offer !== null)
     .sort((left, right) => left.rank - right.rank);
@@ -334,7 +361,7 @@ export function buildOrchestrationViewModel(source: ViewModelSource): Orchestrat
       ...base,
       status: "success",
       ranking,
-      offers: rankedOffers(source.offers, candidates, ranking),
+      offers: rankedOffers(source.offers, candidates, ranking, source.decisionSubscores),
     };
   }
 

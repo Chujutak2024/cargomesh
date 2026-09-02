@@ -47,7 +47,7 @@ export async function get_orchestration_view_model(
   const freightRequest = requestData as unknown as ViewModelSource["freightRequest"];
   await requireAuthenticatedMember({ organizationId: freightRequest.organization_id });
 
-  const [{ data: eventData, error: eventError }, { data: offerData, error: offerError }] =
+  const [{ data: eventData, error: eventError }, { data: offerData, error: offerError }, { data: decisionData, error: decisionError }] =
     await Promise.all([
       supabase
         .from("orchestration_events")
@@ -57,11 +57,12 @@ export async function get_orchestration_view_model(
         .eq("orchestration_run_id", orchestrationRunId),
       supabase
         .from("carrier_offers")
-        .select("id,carrier_id,carrier_service_id,provider_offer_reference,price,currency,transit_hours")
+        .select("id,carrier_id,carrier_service_id,provider_offer_reference,price,currency,transit_hours,available_capacity_kg,available_volume_m3,estimated_pickup,estimated_delivery,reliability_score,availability_class,vehicle_id")
         .eq("orchestration_run_id", orchestrationRunId),
+      supabase.from("freight_decisions").select("subscores").eq("orchestration_run_id", orchestrationRunId).maybeSingle(),
     ]);
 
-  if (eventError || offerError) {
+  if (eventError || offerError || decisionError) {
     throw new OrchestrationError(
       "ORCHESTRATION_VIEW_MODEL_FAILED",
       "Unable to load persisted provider results.",
@@ -74,6 +75,7 @@ export async function get_orchestration_view_model(
     freightRequest,
     events: eventData ?? [],
     offers: offerData ?? [],
+    decisionSubscores: (decisionData as unknown as { subscores: import("@/types/database.types").Json } | null)?.subscores ?? null,
   } as unknown as ViewModelSource);
 }
 

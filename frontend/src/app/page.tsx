@@ -13,14 +13,17 @@ import {
   Route,
   ShieldCheck,
 } from "lucide-react";
-import { landingCopyEs } from "@/features/landing/landing-copy";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { landingCopy } from "@/features/landing/landing-copy";
+import { getRequestLocale } from "@/features/i18n/server";
 import styles from "./page.module.css";
 
 const flowIcons = [ClipboardList, Network, BarChart3, RefreshCw];
 const shipperIcons = [Pickaxe, Grape, Building2];
 
-export default function HomePage() {
-  const copy = landingCopyEs;
+export default async function HomePage() {
+  const locale = await getRequestLocale();
+  const copy = landingCopy[locale];
 
   return (
     <main className={styles.page}>
@@ -36,6 +39,7 @@ export default function HomePage() {
         </Link>
 
         <div className={styles.navLinks}>
+          <LanguageSwitcher />
           <a href="#como-funciona">{copy.nav.howItWorks}</a>
           <Link className={styles.navCta} href="/login">
             {copy.nav.signIn}

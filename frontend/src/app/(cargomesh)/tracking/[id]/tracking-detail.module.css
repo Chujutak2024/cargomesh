@@ -1,0 +1,13 @@
+.grid { display: grid; gap: 1rem; }
+.timeline { display: grid; gap: 0; margin: 0; padding: 0.5rem 1rem 1rem; list-style: none; }
+.timeline li { position: relative; display: grid; grid-template-columns: 1.2rem 1fr; gap: 0.65rem; padding: 0.75rem 0; }
+.timeline li:not(:last-child)::after { position: absolute; top: 1.65rem; bottom: -0.75rem; left: 0.34rem; width: 1px; background: #cfe1dc; content: ""; }
+.dot { z-index: 1; width: 0.72rem; height: 0.72rem; margin-top: 0.15rem; border: 2px solid #fff; border-radius: 50%; background: #2bae9a; box-shadow: 0 0 0 2px #bde3d9; }
+.timeline div { display: grid; gap: 0.25rem; }
+.timeline strong { color: #123c3a; font-size: 0.76rem; }
+.timeline span { color: #2b7d72; font-size: 0.62rem; font-weight: 750; }
+.timeline p, .timeline small { display: flex; align-items: center; gap: 0.3rem; margin: 0; color: #687573; font-size: 0.68rem; line-height: 1.45; }
+.notice { align-self: start; padding: 1rem; border: 1px solid #cfe1dc; border-radius: 0.75rem; background: #f4faf7; color: #185c55; }
+.notice h2 { margin: 0.55rem 0 0.3rem; font-size: 0.82rem; }
+.notice p { margin: 0; color: #52605e; font-size: 0.68rem; line-height: 1.55; }
+@media (min-width: 900px) { .grid { grid-template-columns: minmax(0, 2fr) minmax(15rem, 0.7fr); } }
