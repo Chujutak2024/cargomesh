@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  ArrowLeft, ArrowRight, Boxes, Building2, CalendarClock, Check,
-  FileCheck2, MapPin, PackageCheck, ShieldCheck,
+  ArrowLeft, ArrowRight, Box, Boxes, Building2, CalendarClock, Check,
+  FileCheck2, Layers, MapPin, PackageCheck, ShieldAlert, ShieldCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -224,12 +224,22 @@ export function FreightIntakeForm({
   const dispatchBlockReason = getFreightIntakeDispatchBlockReason(form);
   const [originCoords, setOriginCoords] = useState(defaultCleanMode ? "" : "-12.0464, -77.0428");
   const [destCoords, setDestCoords] = useState(defaultCleanMode ? "" : "-33.4489, -70.6693");
+  const [requiresRefrigeration, setRequiresRefrigeration] = useState(false);
+  const [tempMin, setTempMin] = useState("-5");
+  const [tempMax, setTempMax] = useState("2");
+  const [isHazardous, setIsHazardous] = useState(false);
+  const [isFragile, setIsFragile] = useState(false);
+  const [isOversized, setIsOversized] = useState(false);
 
   function handleToggleCleanMode() {
     if (!isCleanMode) {
       setIsCleanMode(true);
       setOriginCoords("");
       setDestCoords("");
+      setRequiresRefrigeration(false);
+      setIsHazardous(false);
+      setIsFragile(false);
+      setIsOversized(false);
       setForm((curr) => ({
         ...curr,
         draftVersion: curr.draftVersion,
@@ -900,70 +910,260 @@ export function FreightIntakeForm({
           </> : null}
 
           {step === 2 ? <>
-            <FormHeading id="step-title-2" title="Características de la carga" description="Los totales canónicos se calculan de forma determinística en el servidor." />
-            <div className={styles.fieldGrid}>
-              <Field label="Categoría de carga">
-                {readOnly ? (
-                  <input value={form.cargoCategory} readOnly />
-                ) : (
-                  <select
-                    value={form.cargoCategoryCode}
-                    onChange={(event) => {
-                      const code = event.target.value as OfficialCargoCategoryCode;
-                      const labelMap: Record<OfficialCargoCategoryCode, string> = {
-                        MACHINERY: "Repuestos y maquinaria minera",
-                        GENERAL: "Carga general paletizada",
-                        AGRICULTURAL: "Agrícola y perecibles",
-                        CONSTRUCTION: "Materiales de construcción",
-                      };
-                      setForm((curr) => ({
-                        ...curr,
-                        cargoCategoryCode: code,
-                        cargoCategory: labelMap[code] ?? code,
-                        cargoDescription: labelMap[code] ?? code,
-                      }));
-                    }}
-                  >
-                    <option value="MACHINERY">Repuestos y maquinaria minera</option>
-                    <option value="GENERAL">Carga general paletizada</option>
-                    <option value="AGRICULTURAL">Agrícola y perecibles</option>
-                    <option value="CONSTRUCTION">Materiales de construcción</option>
-                  </select>
-                )}
-              </Field>
-              <Field label="Método de ingreso">
-                {readOnly ? (
-                  <input value={form.entryMethod} readOnly />
-                ) : (
-                  <select value={form.entryMethod} onChange={(event) => update("entryMethod", event.target.value)}>
-                    <option value="PALLETS">Pallets</option>
-                    <option value="UNITS">Bultos / Unidades</option>
-                    <option value="SACKS">Sacos</option>
-                    <option value="TOTAL_WEIGHT">Carga Suelta (Solo peso total)</option>
-                  </select>
-                )}
-              </Field>
+            <FormHeading
+              id="step-title-2"
+              title="Características de la carga"
+              description="Define la composición y requisitos operativos del envío."
+            />
+
+            {/* BANNER DE PERFIL APLICADO */}
+            {form.cargoProfile ? (
+              <div className={styles.profileBanner}>
+                <div className={styles.profileBannerContent}>
+                  <span className={styles.profileBannerBadge}>
+                    <Check size={13} aria-hidden="true" /> Perfil aplicado
+                  </span>
+                  <strong>{form.cargoProfile} · {form.organization}</strong>
+                </div>
+                <button
+                  type="button"
+                  className={styles.profileChangeBtn}
+                  onClick={() => setStep(0)}
+                >
+                  Cambiar en Paso 1
+                </button>
+              </div>
+            ) : null}
+
+            {/* BLOQUE 1: CLASIFICACIÓN DE LA CARGA */}
+            <div className={styles.subSectionCard} style={{ marginTop: "0.75rem" }}>
+              <div className={styles.subSectionHeader}>
+                <span className={styles.subSectionBadge}>
+                  <Layers size={14} /> 1. Clasificación
+                </span>
+                <div className={styles.badgeGroup} style={{ margin: 0 }}>
+                  <span className={styles.badgeItem}>🚛 ROAD</span>
+                  <span className={styles.badgeItem}>📦 FTL · Carga dedicada</span>
+                </div>
+              </div>
+              <div className={styles.fieldGrid}>
+                <Field label="Categoría de carga">
+                  {readOnly ? (
+                    <input value={form.cargoCategory} readOnly />
+                  ) : (
+                    <select
+                      value={form.cargoCategoryCode}
+                      onChange={(event) => {
+                        const code = event.target.value as OfficialCargoCategoryCode;
+                        const labelMap: Record<OfficialCargoCategoryCode, string> = {
+                          MACHINERY: "Repuestos y maquinaria minera",
+                          GENERAL: "Carga general paletizada",
+                          AGRICULTURAL: "Agrícola y perecibles",
+                          CONSTRUCTION: "Materiales de construcción",
+                        };
+                        setForm((curr) => ({
+                          ...curr,
+                          cargoCategoryCode: code,
+                          cargoCategory: labelMap[code] ?? code,
+                          cargoDescription: labelMap[code] ?? code,
+                        }));
+                      }}
+                    >
+                      <option value="MACHINERY">Repuestos y maquinaria minera</option>
+                      <option value="GENERAL">Carga general paletizada</option>
+                      <option value="AGRICULTURAL">Agrícola y perecibles</option>
+                      <option value="CONSTRUCTION">Materiales de construcción</option>
+                    </select>
+                  )}
+                </Field>
+                <Field label="Presentación / embalaje">
+                  {readOnly ? (
+                    <input value={form.entryMethod} readOnly />
+                  ) : (
+                    <select
+                      value={form.entryMethod}
+                      onChange={(event) => update("entryMethod", event.target.value)}
+                    >
+                      <option value="PALLETS">Pallets (Carga paletizada)</option>
+                      <option value="UNITS">Bultos / Cajas</option>
+                      <option value="SACKS">Sacos</option>
+                      <option value="TOTAL_WEIGHT">Carga suelta (Solo peso total)</option>
+                    </select>
+                  )}
+                </Field>
+              </div>
+            </div>
+
+            {/* BLOQUE 2: COMPOSICIÓN FÍSICA */}
+            <div className={styles.subSectionCard} style={{ marginTop: "1rem" }}>
+              <div className={styles.subSectionHeader}>
+                <span className={styles.subSectionBadge}>
+                  <Box size={14} /> 2. Composición física
+                </span>
+                <small>El peso y volumen total se calculan automáticamente.</small>
+              </div>
               {form.entryMethod === "TOTAL_WEIGHT" ? (
-                <NumberField
-                  label="Peso total de la carga (kg)"
-                  value={form.totalWeightKg}
-                  readOnly={readOnly}
-                  onChange={(value) => update("totalWeightKg", value ?? 0)}
-                />
+                <div className={styles.fieldGrid}>
+                  <NumberField
+                    label="Peso total de la carga (kg)"
+                    value={form.totalWeightKg}
+                    readOnly={readOnly}
+                    onChange={(value) => update("totalWeightKg", value ?? 0)}
+                  />
+                </div>
               ) : (
                 <>
-                  <NumberField label="Cantidad" value={form.quantity} readOnly={readOnly} onChange={(value) => update("quantity", value)} />
-                  <NumberField label="Unidades por entrada" value={form.unitsPerEntry} readOnly={readOnly} onChange={(value) => update("unitsPerEntry", value)} />
-                  <NumberField label="Peso unitario (kg)" value={form.unitWeightKg} readOnly={readOnly} onChange={(value) => update("unitWeightKg", value)} />
-                  <NumberField label="Largo (cm)" value={form.lengthCm} readOnly={readOnly} onChange={(value) => update("lengthCm", value)} />
-                  <NumberField label="Ancho (cm)" value={form.widthCm} readOnly={readOnly} onChange={(value) => update("widthCm", value)} />
-                  <NumberField label="Alto (cm)" value={form.heightCm} readOnly={readOnly} onChange={(value) => update("heightCm", value)} />
+                  <div className={styles.fieldGrid}>
+                    <NumberField
+                      label="Número de bultos"
+                      value={form.quantity}
+                      readOnly={readOnly}
+                      onChange={(value) => update("quantity", value)}
+                    />
+                    <NumberField
+                      label="Peso por bulto (kg)"
+                      value={form.unitWeightKg}
+                      readOnly={readOnly}
+                      onChange={(value) => update("unitWeightKg", value)}
+                    />
+                    <div className={styles.fieldWide}>
+                      <span style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#2e4340", marginBottom: "0.4rem" }}>
+                        Dimensiones por bulto (opcional)
+                      </span>
+                      <div className={styles.dimensionRow}>
+                        <div className={styles.dimensionInputGroup}>
+                          <span>Largo (cm)</span>
+                          <input
+                            type="number"
+                            readOnly={readOnly}
+                            value={nullableNumber(form.lengthCm)}
+                            onChange={(e) => update("lengthCm", e.target.value ? Number(e.target.value) : null)}
+                            placeholder="120"
+                          />
+                        </div>
+                        <div className={styles.dimensionInputGroup}>
+                          <span>Ancho (cm)</span>
+                          <input
+                            type="number"
+                            readOnly={readOnly}
+                            value={nullableNumber(form.widthCm)}
+                            onChange={(e) => update("widthCm", e.target.value ? Number(e.target.value) : null)}
+                            placeholder="100"
+                          />
+                        </div>
+                        <div className={styles.dimensionInputGroup}>
+                          <span>Alto (cm)</span>
+                          <input
+                            type="number"
+                            readOnly={readOnly}
+                            value={nullableNumber(form.heightCm)}
+                            onChange={(e) => update("heightCm", e.target.value ? Number(e.target.value) : null)}
+                            placeholder="160"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className={styles.totalsCards} aria-live="polite">
+                    <div className={styles.totalCard}>
+                      <span className={styles.totalCardLabel}>Peso total</span>
+                      <strong className={styles.totalCardValue}>{displayNumber(totals.weightKg, " kg")}</strong>
+                      <small className={styles.totalCardSub}>
+                        {form.quantity && form.unitWeightKg
+                          ? `${form.quantity} × ${form.unitWeightKg} kg`
+                          : "Calculado automáticamente"}
+                      </small>
+                    </div>
+                    <div className={styles.totalCard}>
+                      <span className={styles.totalCardLabel}>Volumen total</span>
+                      <strong className={styles.totalCardValue}>
+                        {totals.volumeM3 === null
+                          ? "No registrado"
+                          : `${totals.volumeM3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³`}
+                      </strong>
+                      <small className={styles.totalCardSub}>Calculado automáticamente</small>
+                    </div>
+                  </div>
                 </>
               )}
             </div>
-            <div className={styles.totals} aria-live="polite">
-              <div><small>Peso canónico</small><strong>{displayNumber(totals.weightKg, " kg")}</strong></div>
-              <div><small>Volumen canónico</small><strong>{totals.volumeM3 === null ? "No registrado" : `${totals.volumeM3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³`}</strong></div>
+
+            {/* BLOQUE 3: REQUISITOS DE MANEJO */}
+            <div className={styles.subSectionCard} style={{ marginTop: "1rem" }}>
+              <div className={styles.subSectionHeader}>
+                <span className={styles.subSectionBadge}>
+                  <ShieldAlert size={14} /> 3. Requisitos de manejo
+                </span>
+                <small>Filtra capabilities requeridas para los carriers WebMCP</small>
+              </div>
+
+              <div className={styles.requirementPillGroup}>
+                <button
+                  type="button"
+                  className={`${styles.requirementPill} ${requiresRefrigeration ? styles.requirementPillActive : ""}`}
+                  onClick={() => setRequiresRefrigeration(!requiresRefrigeration)}
+                >
+                  ❄ Temperatura controlada
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.requirementPill} ${isHazardous ? styles.requirementPillActive : ""}`}
+                  onClick={() => setIsHazardous(!isHazardous)}
+                >
+                  ⚠ Mercancía peligrosa (Hazmat)
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.requirementPill} ${isFragile ? styles.requirementPillActive : ""}`}
+                  onClick={() => setIsFragile(!isFragile)}
+                >
+                  ◇ Carga frágil
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.requirementPill} ${isOversized ? styles.requirementPillActive : ""}`}
+                  onClick={() => setIsOversized(!isOversized)}
+                >
+                  ↔ Sobredimensionada
+                </button>
+              </div>
+
+              {requiresRefrigeration && (
+                <div className={styles.tempRangeRow}>
+                  <span style={{ fontSize: "0.74rem", fontWeight: 700, color: "#0c6396" }}>
+                    Rango de temperatura requerido:
+                  </span>
+                  <input
+                    type="number"
+                    className={styles.tempInput}
+                    value={tempMin}
+                    onChange={(e) => setTempMin(e.target.value)}
+                  />
+                  <span style={{ fontSize: "0.74rem", color: "#0c6396" }}>°C a</span>
+                  <input
+                    type="number"
+                    className={styles.tempInput}
+                    value={tempMax}
+                    onChange={(e) => setTempMax(e.target.value)}
+                  />
+                  <span style={{ fontSize: "0.74rem", color: "#0c6396" }}>°C</span>
+                </div>
+              )}
+
+              {isHazardous && (
+                <div className={`${styles.requirementAlert} ${styles.hazardAlert}`}>
+                  ⚠️ <strong>Aviso para matching:</strong> El agente WebMCP filtrará exclusivamente transportistas certificados para transporte de mercancías peligrosas (Hazmat).
+                </div>
+              )}
+
+              <Field label="Instrucciones especiales de manipuleo (opcional)" wide>
+                <input
+                  readOnly={readOnly}
+                  placeholder="ej. Manipular únicamente con montacargas; no apilar más de 2 niveles..."
+                  value={form.operationalNotes}
+                  onChange={(event) => update("operationalNotes", event.target.value)}
+                />
+              </Field>
             </div>
           </> : null}
 
@@ -1117,7 +1317,9 @@ export function FreightIntakeForm({
               <dd>
                 <strong>{originCountryData.flag} {form.originCity || "Origen"}, {form.originCountry}</strong>
                 <br />
-                <small style={{ color: "#2b7d72", fontWeight: 750 }}>↓ Cruce transfronterizo</small>
+                <small style={{ color: "#2b7d72", fontWeight: 750 }}>
+                  {form.originCountry !== form.destinationCountry ? "↓ Internacional" : "↓ Nacional"}
+                </small>
                 <br />
                 <strong>{destCountryData.flag} {form.destinationCity || "Destino"}, {form.destinationCountry}</strong>
               </dd>
@@ -1126,13 +1328,43 @@ export function FreightIntakeForm({
               <dt>Carga en vivo</dt>
               <dd>
                 <strong>{displayNumber(totals.weightKg, " kg")}</strong> · {totals.volumeM3 === null ? "Volumen n/d" : `${totals.volumeM3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³`}
-                <div style={{ marginTop: "0.25rem" }}>
-                  <span style={{ display: "inline-block", background: "#edf8f4", color: "#185c55", padding: "0.2rem 0.45rem", borderRadius: "0.4rem", fontSize: "0.64rem", fontWeight: 800 }}>
-                    {(totals.weightKg ?? 0) >= 8000 ? "🚚 Camión Completo (FTL)" : "📦 Carga Consolidada (LTL)"}
+                <div style={{ color: "#687573", fontSize: "0.68rem", marginTop: "0.15rem" }}>
+                  {form.quantity ? `${form.quantity} bultos · ` : ""}{form.cargoCategory}
+                </div>
+                <div style={{ marginTop: "0.3rem" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", background: "#edf8f4", color: "#185c55", padding: "0.2rem 0.5rem", border: "1px solid #c2e5d9", borderRadius: "0.4rem", fontSize: "0.68rem", fontWeight: 800 }}>
+                    🚚 FTL · Carga dedicada (ROAD)
                   </span>
                 </div>
               </dd>
             </div>
+            {(requiresRefrigeration || isHazardous || isFragile || isOversized) ? (
+              <div>
+                <dt>Requisitos de manejo</dt>
+                <dd style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem", marginTop: "0.25rem" }}>
+                  {requiresRefrigeration && (
+                    <span style={{ background: "#e1f3fd", color: "#0c6396", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
+                      ❄ Reefer ({tempMin}°C a {tempMax}°C)
+                    </span>
+                  )}
+                  {isHazardous && (
+                    <span style={{ background: "#fef3d6", color: "#8a5700", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
+                      ⚠ Hazmat
+                    </span>
+                  )}
+                  {isFragile && (
+                    <span style={{ background: "#f5eefe", color: "#5b21b6", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
+                      ◇ Frágil
+                    </span>
+                  )}
+                  {isOversized && (
+                    <span style={{ background: "#fae8ff", color: "#86198f", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
+                      ↔ Sobredimensionada
+                    </span>
+                  )}
+                </dd>
+              </div>
+            ) : null}
             <div>
               <dt>Presupuesto en vivo</dt>
               <dd>
