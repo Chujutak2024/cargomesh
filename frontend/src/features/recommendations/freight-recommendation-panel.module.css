@@ -43,6 +43,7 @@
 .values small { color: #7a8784; font-size: 0.55rem; text-transform: uppercase; }
 .values strong { overflow-wrap: anywhere; color: #34413f; font-size: 0.68rem; line-height: 1.4; }
 .unavailable { color: #7a8784; font-size: 0.58rem; line-height: 1.45; }
+.integrationPending { margin: 0.85rem 0 0; border: 1px solid #d8c89e; border-radius: 0.75rem; padding: 0.7rem; background: #fff9e8; color: #6e5720; font-size: 0.68rem; line-height: 1.5; }
 .modalFooter { display: flex; justify-content: flex-end; gap: 0.65rem; border-top: 1px solid #e6ebe8; padding: 0.85rem 1.1rem; background: #fbfcfa; }
 .cancelButton { border: 1px solid #d7dfdc; padding: 0 0.85rem; background: #fff; color: #52605e; }
 .applyButton { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border: 1px solid #185c55; padding: 0 0.9rem; background: #185c55; color: #fff; }

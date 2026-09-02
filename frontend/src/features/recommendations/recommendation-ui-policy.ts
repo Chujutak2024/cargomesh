@@ -13,9 +13,18 @@ const UNITIZED_FIELDS = new Set<RecommendationProposedFieldName>([
   "units_per_entry",
 ]);
 
-export const SUPPORTED_INTAKE_RECOMMENDATION_FIELDS = new Set<RecommendationProposedFieldName>(
-  RECOMMENDATION_PROPOSED_FIELD_NAMES,
-);
+export const SUPPORTED_INTAKE_RECOMMENDATION_FIELDS = new Set<RecommendationProposedFieldName>([
+  "origin_country", "origin_city", "origin_address",
+  "pickup_contact_name", "pickup_contact_phone",
+  "destination_country", "destination_city", "destination_address",
+  "receiver_name", "receiver_company", "receiver_phone",
+  "cargo_category_id", "cargo_description", "cargo_entry_method",
+  "entry_quantity", "entry_unit_weight_kg", "units_per_entry",
+  "entry_length_cm", "entry_width_cm", "entry_height_cm",
+  "pickup_mode", "pickup_window_start", "pickup_window_end",
+  "delivery_deadline", "budget_max", "optimization_strategy",
+  "available_documents",
+]);
 
 const FIELD_LABELS: Record<RecommendationProposedFieldName, string> = {
   origin_country: "País de origen",
@@ -85,6 +94,19 @@ export function canonicalValuesFromIntake(
 ): RecommendationProposedFields {
   return {
     ...form.recommendationValues,
+    origin_country: form.originCountry,
+    origin_city: form.originCity,
+    origin_address: form.originAddress,
+    pickup_contact_name: form.pickupContactName,
+    pickup_contact_phone: form.pickupContactPhone,
+    destination_country: form.destinationCountry,
+    destination_city: form.destinationCity,
+    destination_address: form.destinationAddress,
+    receiver_name: form.receiverName,
+    receiver_company: form.receiverCompany,
+    receiver_phone: form.receiverPhone,
+    cargo_category_id: form.cargoCategoryId,
+    cargo_description: form.cargoDescription,
     cargo_entry_method: form.entryMethod,
     entry_quantity: form.quantity,
     entry_unit_weight_kg: form.unitWeightKg,
@@ -156,6 +178,36 @@ export function applyRecommendationFieldsToIntake(
   const next = { ...form };
   next.recommendationValues = { ...form.recommendationValues, ...fields };
 
+  const originCountry = stringValue(fields.origin_country);
+  if (originCountry !== undefined) next.originCountry = originCountry;
+  const originCity = stringValue(fields.origin_city);
+  if (originCity !== undefined) next.originCity = originCity;
+  const originAddress = stringValue(fields.origin_address);
+  if (originAddress !== undefined) next.originAddress = originAddress;
+  const pickupContactName = stringValue(fields.pickup_contact_name);
+  if (pickupContactName !== undefined) next.pickupContactName = pickupContactName;
+  const pickupContactPhone = stringValue(fields.pickup_contact_phone);
+  if (pickupContactPhone !== undefined) next.pickupContactPhone = pickupContactPhone;
+  const destinationCountry = stringValue(fields.destination_country);
+  if (destinationCountry !== undefined) next.destinationCountry = destinationCountry;
+  const destinationCity = stringValue(fields.destination_city);
+  if (destinationCity !== undefined) next.destinationCity = destinationCity;
+  const destinationAddress = stringValue(fields.destination_address);
+  if (destinationAddress !== undefined) next.destinationAddress = destinationAddress;
+  const receiverName = stringValue(fields.receiver_name);
+  if (receiverName !== undefined) next.receiverName = receiverName;
+  const receiverCompany = stringValue(fields.receiver_company);
+  if (receiverCompany !== undefined) next.receiverCompany = receiverCompany;
+  const receiverPhone = stringValue(fields.receiver_phone);
+  if (receiverPhone !== undefined) next.receiverPhone = receiverPhone;
+  const cargoCategoryId = stringValue(fields.cargo_category_id);
+  if (cargoCategoryId !== undefined) next.cargoCategoryId = cargoCategoryId;
+  const cargoDescription = stringValue(fields.cargo_description);
+  if (cargoDescription !== undefined) {
+    next.cargoDescription = cargoDescription;
+    next.cargoCategory = cargoDescription;
+  }
+
   const entryMethod = stringValue(fields.cargo_entry_method);
   if (entryMethod) next.entryMethod = entryMethod;
   const quantity = finiteNumber(fields.entry_quantity);
@@ -189,10 +241,25 @@ export function applyRecommendationFieldsToIntake(
   }
 
   if (next.entryMethod === "TOTAL_WEIGHT") {
-    next.unitsPerEntry = 0;
     delete next.recommendationValues.entry_quantity;
     delete next.recommendationValues.entry_unit_weight_kg;
     delete next.recommendationValues.units_per_entry;
   }
-  return next;
+  return synchronizeOperationalFields(next);
+}
+
+function synchronizeOperationalFields(model: FreightIntakeModel): FreightIntakeModel {
+  const origin = [model.originAddress, model.originCity, model.originCountry]
+    .filter(Boolean)
+    .join(", ");
+  const destination = [model.destinationAddress, model.destinationCity, model.destinationCountry]
+    .filter(Boolean)
+    .join(", ");
+  const pickupContact = [model.pickupContactName, model.pickupContactPhone]
+    .filter(Boolean)
+    .join(" · ");
+  const deliveryContact = [model.receiverName, model.receiverCompany, model.receiverPhone]
+    .filter(Boolean)
+    .join(" · ");
+  return { ...model, origin, destination, pickupContact, deliveryContact };
 }

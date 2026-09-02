@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createFreightIntakeFixture } from "@/features/freight-ui/ui-fixtures";
+import { buildProviderRunnerInputs } from "@/features/freight-ui/int02a-client";
 import type { RecommendationProposedFields } from "./contracts";
+import { persistAndRevalidateRecommendation } from "./recommendation-acceptance";
 import {
   applyRecommendationFieldsToIntake,
   buildRecommendationDiff,
@@ -94,16 +96,85 @@ test("diff exposes exact canonical names from the complete form whitelist", () =
   ]);
 });
 
-test("canonical fields without a dedicated legacy control remain in the editable draft", () => {
+test("route, contacts, category and description update the visible operational draft", () => {
   const form = createFreightIntakeFixture();
+  const proposed: RecommendationProposedFields = {
+    origin_country: "CL",
+    origin_city: "Arica",
+    origin_address: "Puerto de Arica",
+    pickup_contact_name: "Ana",
+    pickup_contact_phone: "+56 9000",
+    destination_country: "PE",
+    destination_city: "Tacna",
+    receiver_name: "Luis",
+    receiver_company: "Destino SpA",
+    receiver_phone: "+51 8000",
+    cargo_category_id: "c0000000-0000-0000-0000-000000000099",
+    cargo_description: "Carga general",
+  };
   const selected = selectApplicableRecommendationFields(
     form,
-    { origin_country: "CL", receiver_company: "Destino SpA" },
-    new Set(["origin_country", "receiver_company"]),
+    proposed,
+    new Set(Object.keys(proposed) as Array<keyof RecommendationProposedFields>),
   );
   const updated = applyRecommendationFieldsToIntake(form, selected);
-  assert.equal(updated.recommendationValues.origin_country, "CL");
-  assert.equal(updated.recommendationValues.receiver_company, "Destino SpA");
+  assert.equal(updated.origin, "Puerto de Arica, Arica, CL");
+  assert.equal(updated.destination, "Tacna, PE");
+  assert.equal(updated.pickupContact, "Ana · +56 9000");
+  assert.equal(updated.deliveryContact, "Luis · Destino SpA · +51 8000");
+  assert.equal(updated.cargoCategoryId, proposed.cargo_category_id);
+  assert.equal(updated.cargoDescription, "Carga general");
+});
+
+test("D1-01 acceptance revalidates a newer canonical draft before provider inputs change", async () => {
+  const form = createFreightIntakeFixture();
+  const fields: RecommendationProposedFields = {
+    origin_city: "Arica",
+    destination_city: "Tacna",
+    pickup_contact_name: "Ana",
+    cargo_category_id: "c0000000-0000-0000-0000-000000000099",
+    cargo_description: "Carga general",
+  };
+  const persisted = await persistAndRevalidateRecommendation(
+    form,
+    fields,
+    async (input) => {
+      assert.equal(input.draftVersion, 1);
+      return applyRecommendationFieldsToIntake({
+        ...form,
+        draftVersion: 2,
+        cargoCategoryCode: "GENERAL",
+      }, input.acceptedFields);
+    },
+    new AbortController().signal,
+  );
+  const inputs = buildProviderRunnerInputs(persisted, {
+    schemaVersion: "1.0",
+    freightRequestId: persisted.freightRequestId,
+    requestCode: persisted.requestId,
+    status: "PENDING",
+    pickupMode: persisted.pickupMode,
+    requiredPickup: persisted.requiredPickup,
+    pickupWindowStart: persisted.pickupWindowStart,
+    pickupWindowEnd: persisted.pickupWindowEnd,
+    deliveryDeadline: persisted.deliveryDeadline,
+    updatedAt: "2026-09-02T00:00:00.000Z",
+  });
+  assert.equal(persisted.draftVersion, 2);
+  assert.equal(inputs.check_service_coverage.origin, "Callao, Arica, PE");
+  assert.equal(inputs.check_service_coverage.destination, "Tacna, CL");
+  assert.equal(inputs.check_service_coverage.cargo_category, "GENERAL");
+});
+
+test("fields without visible operational support remain comparison-only", () => {
+  const rows = buildRecommendationDiff(createFreightIntakeFixture(), {
+    is_hazardous: true,
+    cargo_specifications: { note: "restricted" },
+  });
+  assert.deepEqual(rows.map(({ field, selectable }) => ({ field, selectable })), [
+    { field: "cargo_specifications", selectable: false },
+    { field: "is_hazardous", selectable: false },
+  ]);
 });
 
 test("STALE_DRAFT is classified separately from ordinary errors and empty results", () => {

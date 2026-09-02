@@ -18,6 +18,7 @@ import type {
   RecommendationProposedFields,
 } from "./contracts";
 import { executeFreightRecommendationToolViaWebMcp } from "./recommendation-webmcp-runtime";
+import { RecommendationAcceptanceError } from "./recommendation-acceptance";
 import {
   buildRecommendationDiff,
   classifyRecommendationResult,
@@ -30,7 +31,7 @@ type FreightRecommendationPanelProps = {
   draftVersion: number;
   webMcpReady: boolean;
   registrationError: string | null;
-  onApply: (fields: RecommendationProposedFields) => void;
+  onApply?: (fields: RecommendationProposedFields, signal: AbortSignal) => Promise<void>;
   onStaleDraft: () => Promise<void> | void;
 };
 
@@ -50,6 +51,7 @@ export function FreightRecommendationPanel({
 }: FreightRecommendationPanelProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [applying, setApplying] = useState(false);
   const [suggestions, setSuggestions] = useState<FreightRecommendationSuggestion[]>([]);
   const [activeSuggestion, setActiveSuggestion] = useState(0);
   const [selectedFields, setSelectedFields] = useState<Set<RecommendationProposedFieldName>>(new Set());
@@ -101,6 +103,7 @@ export function FreightRecommendationPanel({
     requestController.current = null;
     setOpen(false);
     setLoading(false);
+    setApplying(false);
     setSelectedFields(new Set());
     queueMicrotask(() => launchButtonRef.current?.focus());
   }
@@ -166,18 +169,36 @@ export function FreightRecommendationPanel({
     setSelectedFields(new Set());
   }
 
-  function applySelection() {
-    if (!suggestion) return;
+  async function applySelection() {
+    if (!suggestion || !onApply) return;
     const fields = selectApplicableRecommendationFields(
       form,
       suggestion.proposedFields,
       selectedFields,
     );
     if (Object.keys(fields).length === 0) return;
-    onApply(fields);
-    setNotice("Se aplicaron únicamente los campos seleccionados.");
-    setOpen(false);
-    setSelectedFields(new Set());
+    const controller = new AbortController();
+    requestController.current = controller;
+    setApplying(true);
+    setError(null);
+    try {
+      await onApply(fields, controller.signal);
+      setNotice("D1-01 guardó y confirmó únicamente los campos seleccionados.");
+      setOpen(false);
+      setSelectedFields(new Set());
+    } catch (caught) {
+      if (controller.signal.aborted) return;
+      if (caught instanceof RecommendationAcceptanceError && caught.code === "STALE_DRAFT") {
+        setOpen(false);
+        setSuggestions([]);
+        setSelectedFields(new Set());
+        await onStaleDraft();
+        return;
+      }
+      setError(caught instanceof Error ? caught.message : "D1-01 no confirmó los cambios.");
+    } finally {
+      if (!controller.signal.aborted) setApplying(false);
+    }
   }
 
   const applicableSelectionCount = diff.filter(
@@ -279,6 +300,11 @@ export function FreightRecommendationPanel({
                       </label>
                     ))}
                   </fieldset>
+                  {!onApply ? (
+                    <p className={styles.integrationPending} role="status">
+                      Aplicación pendiente: C debe publicar y conectar la escritura D1-01. La consulta no modifica el borrador.
+                    </p>
+                  ) : null}
                 </>
               ) : null}
             </div>
@@ -288,11 +314,11 @@ export function FreightRecommendationPanel({
               <button
                 type="button"
                 className={styles.applyButton}
-                disabled={!suggestion || applicableSelectionCount === 0 || loading}
-                onClick={applySelection}
+                disabled={!onApply || !suggestion || applicableSelectionCount === 0 || loading || applying}
+                onClick={() => void applySelection()}
               >
-                <CheckCircle2 size={17} aria-hidden="true" />
-                Aplicar {applicableSelectionCount ? `${applicableSelectionCount} campo${applicableSelectionCount === 1 ? "" : "s"}` : "selección"}
+                {applying ? <LoaderCircle className={styles.spinner} size={17} aria-hidden="true" /> : <CheckCircle2 size={17} aria-hidden="true" />}
+                {applying ? "Guardando con D1-01…" : onApply ? `Aplicar ${applicableSelectionCount ? `${applicableSelectionCount} campo${applicableSelectionCount === 1 ? "" : "s"}` : "selección"}` : "D1-01 pendiente"}
               </button>
             </footer>
           </section>
