@@ -1,9 +1,9 @@
 # CargoMesh — Team Execution Checklist
 
 > **Versión:** 1.2.0
-> **Contrato técnico:** v5.6.0  
-> **Duración:** 4 días  
-> **Equipo:** 3 integrantes trabajando en entornos e IAs independientes  
+> **Contrato técnico:** v5.6.0
+> **Duración:** 4 días
+> **Equipo:** 3 integrantes trabajando en entornos e IAs independientes
 > **Fuente arquitectónica:** [`ADR-001_Dynamic_Provider_Registry.md`](../00-master/ADR-001_Dynamic_Provider_Registry.md)
 
 ## 1. Objetivo compartido
