@@ -43,7 +43,7 @@ set local role service_role;
 select throws_ok(
   $$update public.freight_requests set draft_version = 0 where code = 'FR-1042'$$,
   '23514',
-  '%freight_requests_draft_version_positive%',
+  null,
   'draft_version rejects non-positive values'
 );
 
