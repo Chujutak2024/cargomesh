@@ -2,6 +2,10 @@
 
 > **Propósito:** Esta guía documenta los escenarios reales y las herramientas expuestas a agentes en el navegador mediante la API WebMCP (`document.modelContext`), separando explícitamente las capacidades verificadas en vivo de los datos sintéticos de escenario y el roadmap futuro.
 
+For the evaluator-facing DevTools procedure, exact provider input/output schemas,
+Golden Flow evidence, and recovery evidence, see
+[`WebMCP_Judge_Audit_Guide.md`](./WebMCP_Judge_Audit_Guide.md).
+
 ---
 
 ## 1. Inventario Contractual de Herramientas WebMCP (6 Tools Reales)
