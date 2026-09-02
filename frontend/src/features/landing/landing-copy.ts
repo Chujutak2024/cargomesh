@@ -36,6 +36,30 @@ export const landingCopy = {
         traceabilityDescription: "Cada paso conserva su evidencia",
       },
     },
+    shippers: {
+      eyebrow: "Organizaciones shippers",
+      title: "Empresas líderes que gestionan sus fletes con CargoMesh.",
+      description:
+        "Tres operaciones representativas del escenario CargoMesh, con necesidades distintas y resultados fáciles de comprobar en la demo.",
+      demoLabel: "Indicadores del escenario demostrativo",
+      companies: [
+        {
+          name: "ACME Mining Perú",
+          highlight: "98% satisfacción",
+          description: "1,400 toneladas movidas",
+        },
+        {
+          name: "Agrícola del Valle Sur",
+          highlight: "96% satisfacción",
+          description: "Cadena de frío certificada",
+        },
+        {
+          name: "Cemento & Concreto Andino",
+          highlight: "94% satisfacción",
+          description: "Corredor centro-sur",
+        },
+      ],
+    },
     flow: {
       eyebrow: "Cómo funciona",
       title: "Una decisión trazable de principio a fin.",
@@ -81,6 +105,18 @@ export const landingCopy = {
       visual: {
         eyebrow: "Orchestration flow", status: "Ready to decide", originLabel: "Origin", origin: "Callao / Lima", destinationLabel: "Destination", destination: "Santiago", discovery: "Registered carriers", discoveryValue: "0..N", evidence: "WebMCP evidence", evidenceValue: "Verified", ranking: "BALANCED ranking", rankingValue: "Reproducible", confidenceLabel: "Decision confidence", confidence: "88 / 100", traceabilityTitle: "Full traceability", traceabilityDescription: "Every step keeps its evidence",
       },
+    },
+    shippers: {
+      eyebrow: "Shipper organizations",
+      title: "Leading companies managing their freight with CargoMesh.",
+      description:
+        "Three representative CargoMesh scenarios with different operational needs and results that are easy to verify in the demo.",
+      demoLabel: "Demo scenario indicators",
+      companies: [
+        { name: "ACME Mining Peru", highlight: "98% satisfaction", description: "1,400 tonnes moved" },
+        { name: "Southern Valley Agriculture", highlight: "96% satisfaction", description: "Certified cold chain" },
+        { name: "Andean Cement & Concrete", highlight: "94% satisfaction", description: "Central-southern corridor" },
+      ],
     },
     flow: {
       eyebrow: "How it works", title: "One traceable decision from start to finish.", description: "WebMCP bridges carrier websites with a B2B operation your team can understand and supervise.",

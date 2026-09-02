@@ -15,6 +15,20 @@ test("keeps the same landing copy structure in both locales", () => {
   assert.deepEqual(Object.keys(landingCopy.es), Object.keys(landingCopy.en));
   assert.equal(landingCopy.es.flow.steps.length, 4);
   assert.equal(landingCopy.en.flow.steps.length, landingCopy.es.flow.steps.length);
+  assert.equal(landingCopy.es.shippers.companies.length, 3);
+  assert.equal(landingCopy.en.shippers.companies.length, landingCopy.es.shippers.companies.length);
+});
+
+test("labels shipper metrics as demo evidence without losing the requested social proof", () => {
+  assert.equal(landingCopy.es.shippers.demoLabel, "Indicadores del escenario demostrativo");
+  assert.deepEqual(
+    landingCopy.es.shippers.companies.map(({ name, highlight, description }) => ({ name, highlight, description })),
+    [
+      { name: "ACME Mining Perú", highlight: "98% satisfacción", description: "1,400 toneladas movidas" },
+      { name: "Agrícola del Valle Sur", highlight: "96% satisfacción", description: "Cadena de frío certificada" },
+      { name: "Cemento & Concreto Andino", highlight: "94% satisfacción", description: "Corredor centro-sur" },
+    ],
+  );
 });
 
 test("keeps the public hero free of credentials and provider route contracts", () => {

@@ -2,10 +2,13 @@ import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
+  Building2,
   CheckCircle2,
   ClipboardList,
+  Grape,
   Globe2,
   Network,
+  Pickaxe,
   RefreshCw,
   Route,
   ShieldCheck,
@@ -14,6 +17,7 @@ import { landingCopyEs } from "@/features/landing/landing-copy";
 import styles from "./page.module.css";
 
 const flowIcons = [ClipboardList, Network, BarChart3, RefreshCw];
+const shipperIcons = [Pickaxe, Grape, Building2];
 
 export default function HomePage() {
   const copy = landingCopyEs;
@@ -132,6 +136,35 @@ export default function HomePage() {
               <small>{copy.hero.visual.traceabilityDescription}</small>
             </span>
           </div>
+        </div>
+      </section>
+
+      <section className={styles.shipperSection} aria-labelledby="shipper-title">
+        <div className={styles.shipperHeading}>
+          <div>
+            <p className={styles.eyebrow}>{copy.shippers.eyebrow}</p>
+            <h2 id="shipper-title">{copy.shippers.title}</h2>
+          </div>
+          <div>
+            <p>{copy.shippers.description}</p>
+            <span className={styles.demoLabel}>{copy.shippers.demoLabel}</span>
+          </div>
+        </div>
+
+        <div className={styles.shipperGrid}>
+          {copy.shippers.companies.map((company, index) => {
+            const Icon = shipperIcons[index];
+            return (
+              <article className={styles.shipperCard} key={company.name}>
+                <span className={styles.shipperIcon} aria-hidden="true">
+                  <Icon size={22} strokeWidth={1.7} />
+                </span>
+                <h3>{company.name}</h3>
+                <strong>{company.highlight}</strong>
+                <p>{company.description}</p>
+              </article>
+            );
+          })}
         </div>
       </section>
 
