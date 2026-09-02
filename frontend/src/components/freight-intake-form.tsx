@@ -583,17 +583,17 @@ export function FreightIntakeForm({
           {step === 1 ? <>
             <FormHeading
               id="step-title-1"
-              title="Origen y destino del flete"
-              description="Estructura los puntos de recojo y entrega con sus respectivos contactos operativos y coordenadas."
+              title="Origen y destino"
+              description="Define los puntos de recojo y entrega de la carga."
             />
 
             {/* SECCIÓN 1: DATOS DEL ORIGEN (RECOJO) */}
             <div className={styles.subSectionCard}>
               <div className={styles.subSectionHeader}>
                 <span className={styles.subSectionBadge}>
-                  <MapPin size={14} /> 1. Datos del Origen (Recojo)
+                  <MapPin size={14} /> 1. Origen (Recojo)
                 </span>
-                <small>Ubicación de despacho y supervisor responsable en planta/almacén</small>
+                <small>Punto de partida</small>
               </div>
               <div className={styles.fieldGrid}>
                 <Field label="País de origen">
@@ -624,7 +624,7 @@ export function FreightIntakeForm({
                     </select>
                   )}
                 </Field>
-                <Field label="Departamento / Región (Origen)">
+                <Field label="Departamento / Región">
                   {readOnly ? (
                     <input value={form.originRegion || "No registrado"} readOnly />
                   ) : (
@@ -650,7 +650,7 @@ export function FreightIntakeForm({
                     </select>
                   )}
                 </Field>
-                <Field label="Provincia / Ciudad (Origen)">
+                <Field label="Ciudad">
                   {readOnly ? (
                     <input value={form.originCity} readOnly />
                   ) : (
@@ -668,13 +668,13 @@ export function FreightIntakeForm({
                     >
                       {originSelectedRegion.hubs.map((h, index) => (
                         <option key={`${h.city}-${index}`} value={h.city}>
-                          {h.display} {h.tag ? `· ${h.tag}` : ""}
+                          {h.city}
                         </option>
                       ))}
                     </select>
                   )}
                 </Field>
-                <Field label="Coordenadas GPS (Lat, Lng) — Opcional">
+                <Field label="Coordenadas GPS (opcional)">
                   <input
                     readOnly={readOnly}
                     placeholder="ej. -12.0464, -77.0428"
@@ -682,7 +682,7 @@ export function FreightIntakeForm({
                     onChange={(event) => setOriginCoords(event.target.value)}
                   />
                 </Field>
-                <Field label="Dirección exacta de recojo (Calle / Nro / Almacén)" wide>
+                <Field label="Dirección de recojo" wide>
                   <input
                     readOnly={readOnly}
                     placeholder="ej. Av. Néstor Gambetta 100, Almacén Central"
@@ -690,7 +690,7 @@ export function FreightIntakeForm({
                     onChange={(event) => update("originAddress", event.target.value)}
                   />
                 </Field>
-                <Field label="Supervisor / Contacto de recojo (Nombre)">
+                <Field label="Contacto de recojo">
                   <input
                     readOnly={readOnly}
                     placeholder="ej. Ana Pérez"
@@ -733,9 +733,9 @@ export function FreightIntakeForm({
             <div className={styles.subSectionCard} style={{ marginTop: "1rem" }}>
               <div className={styles.subSectionHeader}>
                 <span className={styles.subSectionBadge} style={{ background: "#e8f4f8", color: "#165a72" }}>
-                  <MapPin size={14} /> 2. Datos del Destino (Entrega)
+                  <MapPin size={14} /> 2. Destino (Entrega)
                 </span>
-                <small>Ubicación de entrega y receptor autorizado en destino</small>
+                <small>Punto de llegada</small>
               </div>
               <div className={styles.fieldGrid}>
                 <Field label="País de destino">
@@ -766,7 +766,7 @@ export function FreightIntakeForm({
                     </select>
                   )}
                 </Field>
-                <Field label="Departamento / Región (Destino)">
+                <Field label="Departamento / Región">
                   {readOnly ? (
                     <input value={form.destinationRegion || "No registrado"} readOnly />
                   ) : (
@@ -792,7 +792,7 @@ export function FreightIntakeForm({
                     </select>
                   )}
                 </Field>
-                <Field label="Provincia / Ciudad (Destino)">
+                <Field label="Ciudad">
                   {readOnly ? (
                     <input value={form.destinationCity} readOnly />
                   ) : (
@@ -810,13 +810,13 @@ export function FreightIntakeForm({
                     >
                       {destSelectedRegion.hubs.map((h, index) => (
                         <option key={`${h.city}-${index}`} value={h.city}>
-                          {h.display} {h.tag ? `· ${h.tag}` : ""}
+                          {h.city}
                         </option>
                       ))}
                     </select>
                   )}
                 </Field>
-                <Field label="Coordenadas GPS (Lat, Lng) — Opcional">
+                <Field label="Coordenadas GPS (opcional)">
                   <input
                     readOnly={readOnly}
                     placeholder="ej. -33.4489, -70.6693"
@@ -824,7 +824,7 @@ export function FreightIntakeForm({
                     onChange={(event) => setDestCoords(event.target.value)}
                   />
                 </Field>
-                <Field label="Dirección exacta de entrega (Planta / Centro Logístico)" wide>
+                <Field label="Dirección de entrega" wide>
                   <input
                     readOnly={readOnly}
                     placeholder="ej. Av. Logística 200, Centro de Distribución"
@@ -832,7 +832,7 @@ export function FreightIntakeForm({
                     onChange={(event) => update("destinationAddress", event.target.value)}
                   />
                 </Field>
-                <Field label="Empresa receptora (Razón Social)">
+                <Field label="Empresa de entrega">
                   <input
                     readOnly={readOnly}
                     placeholder="ej. Destino Minero S.A."
@@ -847,7 +847,7 @@ export function FreightIntakeForm({
                     }}
                   />
                 </Field>
-                <Field label="Contacto receptor (Nombre)">
+                <Field label="Contacto de entrega">
                   <input
                     readOnly={readOnly}
                     placeholder="ej. Diego Ramos"
@@ -862,7 +862,7 @@ export function FreightIntakeForm({
                     }}
                   />
                 </Field>
-                <Field label="Teléfono receptor">
+                <Field label="Teléfono de entrega">
                   <div className={styles.phoneInputGroup}>
                     <span className={styles.dialBadge}>{getCountryDialCode(form.destinationCountry)}</span>
                     <input
@@ -886,12 +886,12 @@ export function FreightIntakeForm({
               </div>
             </div>
 
-            {/* SECCIÓN 3: INSTRUCCIONES OPERATIVAS Y CRUCE FRONTERIZO */}
+            {/* SECCIÓN 3: INSTRUCCIONES DE RUTA */}
             <div className={styles.subSectionCard} style={{ marginTop: "1rem" }}>
-              <Field label="Instrucciones operativas de ruta (Cruce fronterizo / Aduana / Almacén)" wide>
+              <Field label="Instrucciones de ruta (opcional)" wide>
                 <input
                   readOnly={readOnly}
-                  placeholder="ej. Requiere cruce por Paso Santa Rosa / Chacalluta. Notificar con 24h de anticipación..."
+                  placeholder="ej. Indicaciones para aduana o almacén"
                   value={form.operationalNotes}
                   onChange={(event) => update("operationalNotes", event.target.value)}
                 />
