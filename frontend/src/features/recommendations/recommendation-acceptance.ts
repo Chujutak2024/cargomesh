@@ -46,6 +46,18 @@ export async function persistAndRevalidateRecommendation(
     );
   }
 
+  if (
+    !Number.isFinite(persisted.cargoWeightKg) ||
+    persisted.cargoWeightKg <= 0 ||
+    !Number.isFinite(persisted.cargoVolumeM3) ||
+    persisted.cargoVolumeM3 <= 0
+  ) {
+    throw new RecommendationAcceptanceError(
+      "INVALID_CANONICAL_DRAFT",
+      "D1-01 no devolvió peso y volumen canónicos válidos.",
+    );
+  }
+
   const canonical = canonicalValuesFromIntake(persisted);
   for (const [field, expected] of Object.entries(acceptedFields)) {
     if (JSON.stringify(canonical[field as keyof RecommendationProposedFields]) !== JSON.stringify(expected)) {

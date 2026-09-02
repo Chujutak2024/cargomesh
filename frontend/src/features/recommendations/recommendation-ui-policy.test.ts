@@ -4,7 +4,10 @@ import test from "node:test";
 import { createFreightIntakeFixture } from "@/features/freight-ui/ui-fixtures";
 import { buildProviderRunnerInputs } from "@/features/freight-ui/int02a-client";
 import type { RecommendationProposedFields } from "./contracts";
-import { persistAndRevalidateRecommendation } from "./recommendation-acceptance";
+import {
+  persistAndRevalidateRecommendation,
+  RecommendationAcceptanceError,
+} from "./recommendation-acceptance";
 import {
   applyRecommendationFieldsToIntake,
   buildRecommendationDiff,
@@ -87,7 +90,7 @@ test("TOTAL_WEIGHT excludes every unitized field even when selected", () => {
 
 test("diff exposes exact canonical names from the complete form whitelist", () => {
   const rows = buildRecommendationDiff(createFreightIntakeFixture(), {
-    origin_country: "PE",
+    origin_country: "CL",
     budget_max: 1800,
   });
   assert.deepEqual(rows.map(({ field, selectable }) => ({ field, selectable })), [
@@ -175,6 +178,26 @@ test("fields without visible operational support remain comparison-only", () => 
     { field: "cargo_specifications", selectable: false },
     { field: "is_hazardous", selectable: false },
   ]);
+});
+
+test("STALE_DRAFT during D1-01 acceptance rejects without mutating the current draft", async () => {
+  const form = createFreightIntakeFixture();
+  const snapshot = structuredClone(form);
+  await assert.rejects(
+    persistAndRevalidateRecommendation(
+      form,
+      { origin_city: "Arica" },
+      async () => {
+        throw new RecommendationAcceptanceError(
+          "STALE_DRAFT",
+          "El borrador cambió en el servidor.",
+        );
+      },
+      new AbortController().signal,
+    ),
+    (error: unknown) => error instanceof RecommendationAcceptanceError && error.code === "STALE_DRAFT",
+  );
+  assert.deepEqual(form, snapshot);
 });
 
 test("STALE_DRAFT is classified separately from ordinary errors and empty results", () => {

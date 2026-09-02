@@ -137,7 +137,10 @@ export function buildRecommendationDiff(
       label: recommendationFieldLabel(field),
       currentValue: currentValues[field],
       proposedValue,
-      selectable: SUPPORTED_INTAKE_RECOMMENDATION_FIELDS.has(field),
+      selectable:
+        SUPPORTED_INTAKE_RECOMMENDATION_FIELDS.has(field) &&
+        isApplicableValue(field, proposedValue) &&
+        JSON.stringify(currentValues[field]) !== JSON.stringify(proposedValue),
     }];
   });
 }
@@ -157,9 +160,29 @@ export function selectApplicableRecommendationFields(
     if (!selectedFields.has(field) || !SUPPORTED_INTAKE_RECOMMENDATION_FIELDS.has(field)) continue;
     if (totalWeight && UNITIZED_FIELDS.has(field)) continue;
     const value = proposedFields[field];
-    if (value !== undefined) selected[field] = value;
+    if (
+      value !== undefined &&
+      isApplicableValue(field, value) &&
+      JSON.stringify(canonicalValuesFromIntake(form)[field]) !== JSON.stringify(value)
+    ) selected[field] = value;
   }
   return selected;
+}
+
+function isApplicableValue(
+  field: RecommendationProposedFieldName,
+  value: RecommendationJsonValue,
+): boolean {
+  if ([
+    "entry_quantity", "entry_unit_weight_kg", "units_per_entry",
+    "entry_length_cm", "entry_width_cm", "entry_height_cm", "budget_max",
+  ].includes(field)) return typeof value === "number" && Number.isFinite(value);
+  if (field === "available_documents") {
+    return Array.isArray(value) && value.every((item) => typeof item === "string");
+  }
+  if (field === "optimization_strategy") return value === "BALANCED";
+  if (field === "pickup_mode") return value === "ASAP" || value === "SCHEDULED";
+  return typeof value === "string";
 }
 
 function finiteNumber(value: RecommendationJsonValue | undefined): number | undefined {
