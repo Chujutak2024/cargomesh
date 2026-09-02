@@ -48,7 +48,7 @@ El ecosistema CargoMesh registra exclusivamente **6 herramientas WebMCP reales**
 | **Polaris Cold Chain Logistics** | **Escenario sintético no certificado públicamente** | Definido en catálogo de escenarios (`expanded-fleet`). Sin runtime WebMCP certificado públicamente. |
 | **Apex Hazmat Transport** | **Escenario sintético no certificado públicamente** | Definido en catálogo de escenarios (`expanded-fleet`). Sin runtime WebMCP certificado públicamente. |
 | **Velocity Express Freight** | **Escenario sintético no certificado públicamente** | Definido en catálogo de escenarios (`expanded-fleet`). Sin runtime WebMCP certificado públicamente. |
-| **Intake Manual Editable (`freight-intake-form.tsx`)** | **Pendiente de UAT / Regresión P0** | En `freight-intake-form.tsx` (línea 56: `readOnly = form.source === "persisted"`), los inputs quedan bloqueados. Requiere conectar writer manual autenticado. |
+| **Intake Manual Editable (`freight-intake-form.tsx`)** | **Entregado y Verificado en Main** | Desbloqueado en PR #51 con writer manual autenticado (PR #50), contratos de ruta en 4 niveles, categorías oficiales y control de concurrencia optimista con `409 STALE_DRAFT`. |
 | **Recomendaciones WebMCP (D1-02)** | **Contrato y pruebas verificados** | Runtime de recomendaciones registrado como read-only; validado contra regresiones `STALE_DRAFT` (HTTP 409). |
 | **Directorio Público de Shippers con SLA** | **Roadmap** | Propuesta futura; no existe como endpoint público ni tool WebMCP. |
 
