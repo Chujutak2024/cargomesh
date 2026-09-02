@@ -59,6 +59,72 @@ const documentOptions = [
   { code: "technical_datasheet", label: "Ficha técnica" },
 ];
 
+export const DEMO_OPERATORS = [
+  { id: "e0000000-0000-0000-0000-000000000001", name: "CargoMesh Demo Operator", role: "Supervisor de Operaciones" },
+  { id: "e0000000-0000-0000-0000-000000000002", name: "Ing. Carlos Mendoza", role: "Jefe de Despacho & Logística" },
+  { id: "e0000000-0000-0000-0000-000000000003", name: "Ana Lucía Torres", role: "Coordinadora de Comercio Exterior" },
+  { id: "e0000000-0000-0000-0000-000000000004", name: "Ing. Roberto Huamán", role: "Supervisor de Faena & Carga" },
+];
+
+export const DEMO_CARGO_PROFILES = [
+  {
+    id: "custom",
+    name: "✍️ Personalizado (Ingreso manual sin plantilla)",
+    categoryCode: "GENERAL",
+    categoryName: "Carga General",
+    entryMethod: "TOTAL_WEIGHT",
+    quantity: null,
+    unitWeightKg: null,
+    unitsPerEntry: null,
+    lengthCm: null,
+    widthCm: null,
+    heightCm: null,
+    totalWeightKg: 8000,
+  },
+  {
+    id: "c7f04716-c200-481d-ab7d-9c10dbe6cb3a",
+    name: "📦 Repuestos y maquinaria minera (PALLETS · 10 pallets de 800 kg c/u)",
+    categoryCode: "MACHINERY",
+    categoryName: "Maquinaria y Equipos Industriales",
+    entryMethod: "PALLETS",
+    quantity: 10,
+    unitWeightKg: 800,
+    unitsPerEntry: 1,
+    lengthCm: 120,
+    widthCm: 100,
+    heightCm: 160,
+    totalWeightKg: 8000,
+  },
+  {
+    id: "c2dd33ae-6942-48f6-8693-f6c6c169af4c",
+    name: "🍇 Arándanos y Fruta Fresca Reefer (PALLETS · 20 pallets de 800 kg c/u)",
+    categoryCode: "AGRICULTURAL",
+    categoryName: "Productos Agrícolas",
+    entryMethod: "PALLETS",
+    quantity: 20,
+    unitWeightKg: 800,
+    unitsPerEntry: 1,
+    lengthCm: 120,
+    widthCm: 100,
+    heightCm: 160,
+    totalWeightKg: 16000,
+  },
+  {
+    id: "59f0adc8-7c07-4dcf-85d3-41257fc8fb32",
+    name: "🏗️ Cemento en Bolsas y Clinker (PALLETS · 24 pallets de 1,000 kg c/u)",
+    categoryCode: "CONSTRUCTION",
+    categoryName: "Materiales de Construcción",
+    entryMethod: "PALLETS",
+    quantity: 24,
+    unitWeightKg: 1000,
+    unitsPerEntry: 1,
+    lengthCm: 120,
+    widthCm: 100,
+    heightCm: 140,
+    totalWeightKg: 24000,
+  },
+];
+
 function nullableNumber(value: number | null) { return value ?? ""; }
 function displayNumber(value: number | null, suffix = "") {
   return value === null ? "No registrado" : `${value.toLocaleString("es-PE")}${suffix}`;
@@ -117,6 +183,41 @@ export function FreightIntakeForm({
   const readOnly = !isEditable;
   const totals = useMemo(() => getDisplayedTotals(form), [form]);
   const dispatchBlockReason = getFreightIntakeDispatchBlockReason(form);
+  const [isCleanMode, setIsCleanMode] = useState(false);
+
+  function handleToggleCleanMode() {
+    if (!isCleanMode) {
+      setIsCleanMode(true);
+      setForm((curr) => ({
+        ...curr,
+        requestId: "FR-NUEVO",
+        draftVersion: 1,
+        cargoProfile: "",
+        originAddress: "",
+        destinationAddress: "",
+        pickupContactName: "",
+        pickupContactPhone: "",
+        receiverName: "",
+        receiverCompany: "",
+        receiverPhone: "",
+        quantity: null,
+        unitWeightKg: null,
+        unitsPerEntry: null,
+        lengthCm: null,
+        widthCm: null,
+        heightCm: null,
+        totalWeightKg: 0,
+        cargoWeightKg: 0,
+        totalVolumeM3: null,
+        cargoVolumeM3: null,
+        budgetMaxUsd: null,
+        documents: [],
+      }));
+    } else {
+      setIsCleanMode(false);
+      setForm(initialValue);
+    }
+  }
 
   const loadCanonicalDraft = useCallback(async (signal: AbortSignal) => {
     const draft = await fetchFreightRequestDraft(initialValue.freightRequestId, signal);
@@ -284,9 +385,20 @@ export function FreightIntakeForm({
               : "Escenario fixture declarado para regresión visual; no inicia operaciones reales."}
           </p>
         </div>
-        <div className={styles.draftBadge}>
-          <ShieldCheck size={16} aria-hidden="true" />
-          {form.source === "persisted" ? `Borrador v${form.draftVersion} (${form.status})` : "Fixture visual"}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.45rem" }}>
+          <div className={styles.draftBadge}>
+            <ShieldCheck size={16} aria-hidden="true" />
+            {isCleanMode ? "Borrador v1 (Nuevo)" : form.source === "persisted" ? `Borrador v${form.draftVersion} (${form.status})` : "Fixture visual"}
+          </div>
+          {isEditable && (
+            <button
+              type="button"
+              className={styles.cleanDraftButton}
+              onClick={handleToggleCleanMode}
+            >
+              {isCleanMode ? "⚡ Cargar caso canónico FR-1042" : "🧹 Iniciar borrador en blanco (v1)"}
+            </button>
+          )}
         </div>
       </header>
 
@@ -324,18 +436,76 @@ export function FreightIntakeForm({
       <form className={styles.formLayout} onSubmit={submit} aria-busy={submitting || saving}>
         <section className={styles.formCard} aria-labelledby={`step-title-${step}`}>
           {step === 0 ? <>
-            <FormHeading id="step-title-0" title="Organización y solicitante" description="La organización, el operador y el perfil proceden del ViewModel autorizado." />
+            <FormHeading id="step-title-0" title="Organización y solicitante" description="Selecciona el supervisor responsable y el perfil operativo estándar de la empresa." />
             <div className={styles.fieldGrid}>
-              <Field label="Organización activa"><input value={form.organization} readOnly /></Field>
-              <Field label="Solicitante"><input value={form.requester} readOnly /></Field>
-              <Field label="Perfil de carga" wide>
-                <input value={form.cargoProfile || "Perfil operativo estándar"} readOnly />
+              <Field label="Organización activa">
+                <input value={`${form.organization} · Empresa Verificada`} readOnly />
+              </Field>
+              <Field label="Solicitante (Supervisor a cargo)">
+                {readOnly ? (
+                  <input value={form.requester} readOnly />
+                ) : (
+                  <select
+                    value={form.operatorMemberId || DEMO_OPERATORS[0].id}
+                    onChange={(e) => {
+                      const op = DEMO_OPERATORS.find((o) => o.id === e.target.value) || DEMO_OPERATORS[0];
+                      setForm((curr) => ({
+                        ...curr,
+                        operatorMemberId: op.id,
+                        requester: op.name,
+                      }));
+                    }}
+                  >
+                    {DEMO_OPERATORS.map((op) => (
+                      <option key={op.id} value={op.id}>
+                        {op.name} — {op.role}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Field>
+              <Field label="Perfil de carga estándar de la empresa" wide>
+                {readOnly ? (
+                  <input value={form.cargoProfile || "Perfil operativo estándar"} readOnly />
+                ) : (
+                  <select
+                    value={
+                      DEMO_CARGO_PROFILES.find((p) => form.cargoProfile && p.name.includes(form.cargoProfile))?.id ||
+                      (form.cargoProfile ? DEMO_CARGO_PROFILES[1].id : "custom")
+                    }
+                    onChange={(e) => {
+                      const profile = DEMO_CARGO_PROFILES.find((p) => p.id === e.target.value) || DEMO_CARGO_PROFILES[0];
+                      setForm((curr) => ({
+                        ...curr,
+                        cargoProfile: profile.id === "custom" ? "" : profile.categoryName,
+                        cargoCategoryCode: profile.categoryCode,
+                        cargoCategory: profile.categoryName,
+                        cargoDescription: profile.categoryName,
+                        entryMethod: profile.entryMethod,
+                        quantity: profile.quantity,
+                        unitWeightKg: profile.unitWeightKg,
+                        unitsPerEntry: profile.unitsPerEntry,
+                        lengthCm: profile.lengthCm,
+                        widthCm: profile.widthCm,
+                        heightCm: profile.heightCm,
+                        totalWeightKg: profile.totalWeightKg,
+                        cargoWeightKg: profile.totalWeightKg,
+                      }));
+                    }}
+                  >
+                    {DEMO_CARGO_PROFILES.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </Field>
             </div>
             <InfoBox>
               {readOnly
                 ? "La identidad y la membresía se validaron server-side; esta vista no las sustituye."
-                : "Formulario editable autenticado con recálculo server-side. La categoría de carga oficial y dimensiones se definen en el Paso 3."}
+                : "Al seleccionar un perfil de carga estándar, el sistema pre-configura automáticamente la categoría oficial, método de embalaje y cubicaje en el Paso 3."}
             </InfoBox>
           </> : null}
 
@@ -825,7 +995,7 @@ export function FreightIntakeForm({
         </section>
 
         <aside className={styles.summaryCard} aria-label="Resumen de la solicitud">
-          <span className={styles.eyebrow}>{readOnly ? "ViewModel persistido (Cerrado)" : `Borrador v${form.draftVersion}`}</span>
+          <span className={styles.eyebrow}>{readOnly ? "ViewModel persistido (Cerrado)" : isCleanMode ? "Borrador v1 (Nuevo)" : `Borrador v${form.draftVersion}`}</span>
           <h2>{form.requestId}</h2>
           <dl>
             <div>
