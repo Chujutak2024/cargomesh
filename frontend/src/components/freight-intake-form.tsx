@@ -190,8 +190,8 @@ export function FreightIntakeForm({
       setIsCleanMode(true);
       setForm((curr) => ({
         ...curr,
-        requestId: "FR-NUEVO",
-        draftVersion: 1,
+        // Preserve current server draftVersion to avoid 409 STALE_DRAFT concurrency conflicts
+        draftVersion: curr.draftVersion,
         cargoProfile: "",
         originAddress: "",
         destinationAddress: "",
@@ -200,18 +200,7 @@ export function FreightIntakeForm({
         receiverName: "",
         receiverCompany: "",
         receiverPhone: "",
-        quantity: null,
-        unitWeightKg: null,
-        unitsPerEntry: null,
-        lengthCm: null,
-        widthCm: null,
-        heightCm: null,
-        totalWeightKg: 0,
-        cargoWeightKg: 0,
-        totalVolumeM3: null,
-        cargoVolumeM3: null,
-        budgetMaxUsd: null,
-        documents: [],
+        operationalNotes: "",
       }));
     } else {
       setIsCleanMode(false);
@@ -298,9 +287,18 @@ export function FreightIntakeForm({
       return updatedModel;
     } catch (error) {
       if (error instanceof ManualFreightRequestIntakeClientError && error.code === "STALE_DRAFT") {
-        setSubmitError("El borrador cambió concurrentemente en el servidor (409 STALE_DRAFT). Recargando versión canónica...");
-        const ctrl = new AbortController();
-        await loadCanonicalDraft(ctrl.signal);
+        try {
+          const ctrl = new AbortController();
+          const draft = await fetchFreightRequestDraft(initialValue.freightRequestId, ctrl.signal);
+          setForm((curr) => ({
+            ...curr,
+            draftVersion: draft.draftVersion,
+          }));
+          setSubmitError(`Versión sincronizada con el servidor (v${draft.draftVersion}). Presiona Continuar nuevamente.`);
+        } catch {
+          const ctrl = new AbortController();
+          await loadCanonicalDraft(ctrl.signal);
+        }
       } else {
         setSubmitError(error instanceof Error ? error.message : "No fue posible guardar los cambios manuales.");
       }
