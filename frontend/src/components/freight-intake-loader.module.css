@@ -1,0 +1,39 @@
+.stateCard {
+  display: grid;
+  width: min(100%, 42rem);
+  min-height: 18rem;
+  margin: 4rem auto;
+  place-items: center;
+  align-content: center;
+  gap: 0.75rem;
+  border: 1px solid #d8e2de;
+  border-radius: 1rem;
+  padding: 2rem;
+  background: #fff;
+  color: #31514d;
+  text-align: center;
+  box-shadow: 0 0.6rem 2rem rgb(18 60 58 / 6%);
+}
+
+.stateCard h1,
+.stateCard p { margin: 0; }
+.stateCard h1 { color: #123c3a; font-size: 1.35rem; }
+.stateCard p { max-width: 34rem; color: #687573; font-size: 0.78rem; line-height: 1.6; }
+.stateCard button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.45rem;
+  border: 0;
+  border-radius: 0.72rem;
+  padding: 0 1rem;
+  background: #185c55;
+  color: #fff;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.spinner { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }

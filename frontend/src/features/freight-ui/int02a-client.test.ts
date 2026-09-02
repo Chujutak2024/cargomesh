@@ -55,6 +55,25 @@ test("maps the B-02 intake into the public INT-02A runner inputs", () => {
   assert.deepEqual(inputs.quote_freight.available_documents, freightIntakeFixture.documents);
 });
 
+test("uses canonical totals instead of rebuilding them from optional entry fields", () => {
+  const inputs = buildProviderRunnerInputs({
+    ...freightIntakeFixture,
+    quantity: 2,
+    unitsPerEntry: 3,
+    unitWeightKg: 4,
+    lengthCm: 5,
+    widthCm: 6,
+    heightCm: 7,
+    totalWeightKg: 1_234,
+    totalVolumeM3: 9.5,
+  }, persistedIntent);
+
+  assert.equal(inputs.check_capacity.cargo_weight_kg, 1_234);
+  assert.equal(inputs.check_capacity.cargo_volume_m3, 9.5);
+  assert.equal(inputs.quote_freight.cargo_weight_kg, 1_234);
+  assert.equal(inputs.quote_freight.cargo_volume_m3, 9.5);
+});
+
 test("rejects an incomplete SCHEDULED pickup window", () => {
   assert.throws(
     () => buildProviderRunnerInputs(
