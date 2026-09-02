@@ -65,6 +65,10 @@
 .dialBadge { display: inline-flex; align-items: center; justify-content: center; min-height: 2.85rem; padding: 0 0.75rem; border: 1px solid #d7dfdc; border-radius: 0.7rem; background: #edf4f1; color: #185c55; font-size: 0.76rem; font-weight: 800; white-space: nowrap; }
 .cleanDraftButton { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px dashed #2b7d72; border-radius: 0.65rem; padding: 0.4rem 0.75rem; background: #f0faf6; color: #185c55; font-family: inherit; font-size: 0.68rem; font-weight: 750; cursor: pointer; transition: all 0.15s ease; }
 .cleanDraftButton:hover { background: #ddf3ea; border-style: solid; }
+.subSectionCard { border: 1px solid #dde3e0; border-radius: 0.85rem; padding: 1.1rem; background: #fbfdfc; display: grid; gap: 0.85rem; }
+.subSectionHeader { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem; border-bottom: 1px solid #edf1ef; padding-bottom: 0.65rem; margin-bottom: 0.25rem; }
+.subSectionBadge { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; font-weight: 800; color: #185c55; background: #edf8f4; padding: 0.25rem 0.65rem; border-radius: 0.5rem; }
+.subSectionHeader small { color: #687573; font-size: 0.68rem; }
 .runnerFrame { position: fixed; width: 1px; height: 1px; overflow: hidden; border: 0; clip-path: inset(50%); opacity: 0; pointer-events: none; }
 @media (min-width: 700px) {
   .fieldGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
