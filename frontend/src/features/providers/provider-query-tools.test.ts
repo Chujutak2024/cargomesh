@@ -83,6 +83,57 @@ const crossBorderScenarioProvider: ProviderPageConfig = {
   },
 };
 
+const polarisScenarioProvider: ProviderPageConfig = {
+  ...seededProvider,
+  carrierId: "b2000000-0000-0000-0000-000000000001",
+  carrierCode: "POLARIS_COLD_CHAIN",
+  displayName: "Polaris Cold Chain Logistics",
+  providerUrl: "/providers/polaris-cold-chain",
+  matchingServiceId: "d2000000-0000-0000-0000-000000000001",
+  service: {
+    providerServiceCode: "POLARIS-PECL-REEFER-FTL",
+    transportMode: "ROAD",
+    serviceType: "FTL",
+    maxCapacityKg: 22_000,
+    maxVolumeM3: 65,
+    supportsCrossBorder: true,
+  },
+};
+
+const apexScenarioProvider: ProviderPageConfig = {
+  ...polarisScenarioProvider,
+  carrierId: "b2000000-0000-0000-0000-000000000002",
+  carrierCode: "APEX_HAZMAT",
+  displayName: "Apex Hazmat Transport",
+  providerUrl: "/providers/apex-hazmat",
+  matchingServiceId: "d2000000-0000-0000-0000-000000000002",
+  service: {
+    providerServiceCode: "APEX-PECL-HAZMAT-FTL",
+    transportMode: "ROAD",
+    serviceType: "FTL",
+    maxCapacityKg: 30_000,
+    maxVolumeM3: 60,
+    supportsCrossBorder: true,
+  },
+};
+
+const velocityScenarioProvider: ProviderPageConfig = {
+  ...polarisScenarioProvider,
+  carrierId: "b2000000-0000-0000-0000-000000000003",
+  carrierCode: "VELOCITY_EXPRESS",
+  displayName: "Velocity Express Freight",
+  providerUrl: "/providers/velocity-express",
+  matchingServiceId: "d2000000-0000-0000-0000-000000000003",
+  service: {
+    providerServiceCode: "VELOCITY-PE-EXPRESS-FTL",
+    transportMode: "ROAD",
+    serviceType: "FTL",
+    maxCapacityKg: 12_000,
+    maxVolumeM3: 40,
+    supportsCrossBorder: false,
+  },
+};
+
 const compatibleCoverageInput = {
   origin: "Callao, Peru",
   destination: "Santiago, Chile",
@@ -513,6 +564,122 @@ test("the Peru-Chile agricultural service satisfies corridor, category, capacity
   assert.equal(coverage.ok && coverage.data.supported, true);
   assert.equal(coverage.ok && coverage.data.crossBorderSupported, true);
   assert.equal(capacity.ok && capacity.data.available, true);
+});
+
+test("expanded-fleet scenarios return declared coverage, capacity and synthetic tariffs", async () => {
+  const fixedNow = new Date("2026-09-01T12:00:00.000Z");
+  const scenarios = [
+    {
+      provider: polarisScenarioProvider,
+      coverage: {
+        origin: "Ica, Peru",
+        destination: "Santiago, Chile",
+        transport_mode: "ROAD",
+        service_type: "FTL",
+        cargo_category: "AGRICULTURAL",
+      },
+      capacity: {
+        origin: "Ica, Peru",
+        destination: "Santiago, Chile",
+        cargo_weight_kg: 15_000,
+        cargo_volume_m3: 45,
+        cargo_category: "AGRICULTURAL",
+        pickup_mode: "SCHEDULED" as const,
+        pickup_window_start: "2026-09-10T13:00:00.000Z",
+        pickup_window_end: "2026-09-10T17:00:00.000Z",
+        delivery_deadline: "2026-09-12T23:00:00.000Z",
+        special_requirements: ["cold chain", "customs coordination"],
+      },
+      price: 1850,
+      referencePrefix: "POL-REEFER-OFF-",
+      documents: ["COMMERCIAL_INVOICE", "PACKING_LIST", "CERTIFICATE_OF_ORIGIN"],
+    },
+    {
+      provider: apexScenarioProvider,
+      coverage: {
+        origin: "Callao, Peru",
+        destination: "Santiago, Chile",
+        transport_mode: "ROAD",
+        service_type: "FTL",
+        cargo_category: "MACHINERY",
+      },
+      capacity: {
+        origin: "Callao, Peru",
+        destination: "Santiago, Chile",
+        cargo_weight_kg: 18_000,
+        cargo_volume_m3: 45,
+        cargo_category: "MACHINERY",
+        pickup_mode: "SCHEDULED" as const,
+        pickup_window_start: "2026-09-10T14:00:00.000Z",
+        pickup_window_end: "2026-09-10T18:00:00.000Z",
+        delivery_deadline: "2026-09-12T23:00:00.000Z",
+        special_requirements: ["hazardous", "customs coordination"],
+      },
+      price: 2650,
+      referencePrefix: "APX-HAZ-OFF-",
+      documents: ["COMMERCIAL_INVOICE", "PACKING_LIST", "CERTIFICATE_OF_ORIGIN"],
+    },
+    {
+      provider: velocityScenarioProvider,
+      coverage: {
+        origin: "Lima, Peru",
+        destination: "Arequipa, Peru",
+        transport_mode: "ROAD",
+        service_type: "FTL",
+        cargo_category: "GENERAL",
+      },
+      capacity: {
+        origin: "Lima, Peru",
+        destination: "Arequipa, Peru",
+        cargo_weight_kg: 8_000,
+        cargo_volume_m3: 30,
+        cargo_category: "GENERAL",
+        pickup_mode: "SCHEDULED" as const,
+        pickup_window_start: "2026-09-10T13:00:00.000Z",
+        pickup_window_end: "2026-09-10T17:00:00.000Z",
+        delivery_deadline: "2026-09-12T23:00:00.000Z",
+        special_requirements: ["fragile handling"],
+      },
+      price: 890,
+      referencePrefix: "VEL-EXP-OFF-",
+      documents: [],
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    const coverage = await executeTool<ServiceCoverageResult>(
+      createCheckServiceCoverageTool(scenario.provider),
+      scenario.coverage,
+    );
+    const capacity = await executeTool<CapacityResult>(
+      createCheckCapacityTool(scenario.provider),
+      scenario.capacity,
+    );
+    const quote = await executeTool<ProviderQuote>(
+      createQuoteFreightTool(scenario.provider, { now: () => fixedNow }),
+      {
+        freight_request_id: `${scenario.provider.carrierCode}-scenario-request`,
+        origin: scenario.capacity.origin,
+        destination: scenario.capacity.destination,
+        cargo_weight_kg: scenario.capacity.cargo_weight_kg,
+        cargo_volume_m3: scenario.capacity.cargo_volume_m3,
+        cargo_category: scenario.capacity.cargo_category,
+        pickup_mode: scenario.capacity.pickup_mode,
+        pickup_window_start: scenario.capacity.pickup_window_start,
+        pickup_window_end: scenario.capacity.pickup_window_end,
+        delivery_deadline: scenario.capacity.delivery_deadline,
+        available_documents: scenario.documents,
+      },
+    );
+
+    assert.equal(coverage.ok && coverage.data.supported, true);
+    assert.equal(capacity.ok && capacity.data.available, true);
+    assert.equal(quote.ok && quote.data.price, scenario.price);
+    assert.equal(
+      quote.ok && quote.data.providerOfferReference.startsWith(scenario.referencePrefix),
+      true,
+    );
+  }
 });
 
 test("the negative D1 request is a commercial capacity rejection", async () => {

@@ -112,6 +112,69 @@ const providerCapabilityFixtures: Record<string, ProviderCapabilityFixture> = {
     availabilityClass: "AVAILABLE_IN_WINDOW",
     requiresCrossBorder: true,
   },
+  "POLARIS-PECL-REEFER-FTL": {
+    origin: {
+      regionAliases: ["ica"],
+      countryAliases: ["peru", "pe"],
+    },
+    destination: {
+      regionAliases: ["santiago"],
+      countryAliases: ["chile", "cl"],
+    },
+    cargoCategories: ["agricultural", "fresh produce", "grapes", "uva", "agricola"],
+    supportedRequirements: [
+      "temperature controlled",
+      "refrigerated",
+      "cold chain",
+      "customs coordination",
+      "coordinacion aduanera",
+    ],
+    reportedVehicleType: "Volvo FM 460 Cryo-Reefer (synthetic fixture)",
+    earliestPickup: "2026-09-10T13:00:00.000Z",
+    transitHours: 30,
+    availabilityClass: "AVAILABLE_IN_WINDOW",
+    requiresCrossBorder: true,
+  },
+  "APEX-PECL-HAZMAT-FTL": {
+    origin: {
+      regionAliases: ["callao", "lima"],
+      countryAliases: ["peru", "pe"],
+    },
+    destination: {
+      regionAliases: ["santiago"],
+      countryAliases: ["chile", "cl"],
+    },
+    cargoCategories: ["machinery", "construction", "hazmat", "hazardous", "chemical"],
+    supportedRequirements: [
+      "hazardous",
+      "hazmat",
+      "dangerous goods",
+      "customs coordination",
+      "coordinacion aduanera",
+    ],
+    reportedVehicleType: "Kenworth T680 Hazmat (synthetic fixture)",
+    earliestPickup: "2026-09-10T14:00:00.000Z",
+    transitHours: 36,
+    availabilityClass: "AVAILABLE_IN_WINDOW",
+    requiresCrossBorder: true,
+  },
+  "VELOCITY-PE-EXPRESS-FTL": {
+    origin: {
+      regionAliases: ["lima"],
+      countryAliases: ["peru", "pe"],
+    },
+    destination: {
+      regionAliases: ["arequipa"],
+      countryAliases: ["peru", "pe"],
+    },
+    cargoCategories: ["general", "construction", "general cargo", "carga general"],
+    supportedRequirements: ["fragile handling", "manejo fragil"],
+    reportedVehicleType: "Freightliner Cascadia 116 Express (synthetic fixture)",
+    earliestPickup: "2026-09-10T13:00:00.000Z",
+    transitHours: 24,
+    availabilityClass: "EXACT_CONFIRMED_SLOT",
+    requiresCrossBorder: false,
+  },
 };
 
 export function normalizeCapabilityValue(value: string): string {

@@ -112,6 +112,29 @@ const quoteFixtureOverrides: Record<string, QuoteFixtureOverride> = {
     requiredDocuments: ["commercial_invoice", "packing_list", "certificate_of_origin"],
     enforceRequiredDocuments: true,
   },
+  "POLARIS-PECL-REEFER-FTL": {
+    providerOfferReferencePrefix: "POL-REEFER",
+    priceBreakdown: { lineHaul: 1550, handling: 145, customsCoordination: 155 },
+    transitHours: 30,
+    availabilityClass: "AVAILABLE_IN_WINDOW",
+    requiredDocuments: ["commercial_invoice", "packing_list", "certificate_of_origin"],
+    enforceRequiredDocuments: true,
+  },
+  "APEX-PECL-HAZMAT-FTL": {
+    providerOfferReferencePrefix: "APX-HAZ",
+    priceBreakdown: { lineHaul: 2250, handling: 245, customsCoordination: 155 },
+    transitHours: 36,
+    availabilityClass: "AVAILABLE_IN_WINDOW",
+    requiredDocuments: ["commercial_invoice", "packing_list", "certificate_of_origin"],
+    enforceRequiredDocuments: true,
+  },
+  "VELOCITY-PE-EXPRESS-FTL": {
+    providerOfferReferencePrefix: "VEL-EXP",
+    priceBreakdown: { lineHaul: 760, handling: 130, customsCoordination: 0 },
+    transitHours: 24,
+    availabilityClass: "EXACT_CONFIRMED_SLOT",
+    requiredDocuments: [],
+  },
 };
 
 type ParsedInput =
