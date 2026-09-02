@@ -190,16 +190,35 @@ export function FreightIntakeForm({
       setIsCleanMode(true);
       setForm((curr) => ({
         ...curr,
-        // Preserve current server draftVersion to avoid 409 STALE_DRAFT concurrency conflicts
         draftVersion: curr.draftVersion,
         cargoProfile: "",
+        originRegion: "",
+        originCity: "",
         originAddress: "",
+        origin: "",
+        destinationRegion: "",
+        destinationCity: "",
         destinationAddress: "",
+        destination: "",
         pickupContactName: "",
         pickupContactPhone: "",
+        pickupContact: "",
         receiverName: "",
         receiverCompany: "",
         receiverPhone: "",
+        deliveryContact: "",
+        quantity: null,
+        unitWeightKg: null,
+        unitsPerEntry: 1,
+        lengthCm: null,
+        widthCm: null,
+        heightCm: null,
+        totalWeightKg: 0,
+        cargoWeightKg: 0,
+        totalVolumeM3: null,
+        cargoVolumeM3: null,
+        budgetMaxUsd: null,
+        documents: [],
         operationalNotes: "",
       }));
     } else {
@@ -244,9 +263,17 @@ export function FreightIntakeForm({
   }, [form, persistRecommendation]);
 
   const reloadStaleDraft = useCallback(async (signal: AbortSignal) => {
-    setDraftReady(false);
-    await loadCanonicalDraft(signal);
-  }, [loadCanonicalDraft]);
+    try {
+      const draft = await fetchFreightRequestDraft(initialValue.freightRequestId, signal);
+      setForm((current) => ({
+        ...current,
+        draftVersion: draft.draftVersion,
+      }));
+      setDraftReady(true);
+    } catch {
+      // Background stale notification shouldn't erase user's active inputs
+    }
+  }, [initialValue.freightRequestId]);
 
   function update<K extends keyof FreightIntakeModel>(key: K, value: FreightIntakeModel[K]) {
     if (!readOnly) setForm((current) => ({ ...current, [key]: value }));
@@ -312,10 +339,12 @@ export function FreightIntakeForm({
     event.preventDefault();
     if (step < steps.length - 1) {
       if (isEditable && form.source === "persisted") {
-        try {
-          await saveManualDraft();
-        } catch {
-          return;
+        if (form.originCity && form.destinationCity && (totals.weightKg ?? 0) > 0) {
+          try {
+            await saveManualDraft();
+          } catch (err) {
+            console.warn("Auto-save on step transition deferred:", err);
+          }
         }
       }
       setStep((current) => current + 1);
