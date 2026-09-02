@@ -17,10 +17,12 @@ export default async function NewFreightRequestPage({
 }) {
   await requireOperationalRouteAccess();
   const query = await searchParams;
+  const hasExplicitCode = typeof query.requestCode === "string" && query.requestCode.trim().length > 0;
 
   return (
     <FreightIntakeLoader
       requestCode={resolveIntakeRequestCode(query.requestCode)}
+      defaultCleanMode={!hasExplicitCode}
       visualScenario={isIntakeVisualScenario(query.scenario)}
     />
   );

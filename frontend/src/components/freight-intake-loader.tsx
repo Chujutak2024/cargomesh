@@ -33,9 +33,11 @@ function userFacingLoadError(error: unknown) {
 
 export function FreightIntakeLoader({
   requestCode,
+  defaultCleanMode = false,
   visualScenario,
 }: {
   requestCode: string;
+  defaultCleanMode?: boolean;
   visualScenario: boolean;
 }) {
   const [attempt, setAttempt] = useState(0);
@@ -88,5 +90,5 @@ export function FreightIntakeLoader({
     );
   }
 
-  return <FreightIntakeForm initialValue={state.model} />;
+  return <FreightIntakeForm initialValue={state.model} defaultCleanMode={defaultCleanMode} />;
 }
