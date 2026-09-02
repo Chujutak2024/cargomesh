@@ -27,6 +27,7 @@ import {
 import { requireAuthenticatedMember } from "@/lib/supabase/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { persistEditableFreightRequest } from "./recommendation-draft-persistence";
 
 const FREIGHT_REQUEST_DRAFT_SELECT = [
   "id",
@@ -284,30 +285,12 @@ export async function applyFreightRequestRecommendation(
 
   const supabase = await createServerSupabaseClient();
   const databasePatch = patchForDatabase(normalized, current.draft_version);
-  const { data, error } = await supabase
-    .from("freight_requests")
-    .update(databasePatch as never)
-    .eq("id", current.id)
-    .eq("organization_id", current.organization_id)
-    .eq("draft_version", input.draftVersion)
-    .select(FREIGHT_REQUEST_DRAFT_SELECT)
-    .maybeSingle();
-
-  if (error) {
-    throw new RecommendationDraftError(
-      "DRAFT_UNAVAILABLE",
-      "No fue posible persistir el borrador validado.",
-      500,
-    );
-  }
-  if (!data) {
-    throw new RecommendationDraftError(
-      "STALE_DRAFT",
-      "El borrador cambió; no se aplicó ninguna sugerencia.",
-      409,
-    );
-  }
-  return draftFromRow(data as unknown as FreightRequestDraftRow);
+  const persisted = await persistEditableFreightRequest(
+    supabase.from("freight_requests").update(databasePatch as never),
+    current,
+    FREIGHT_REQUEST_DRAFT_SELECT,
+  );
+  return draftFromRow(persisted);
 }
 
 export { RecommendationDraftError, __test__ };
