@@ -53,6 +53,36 @@ const genericProvider: ProviderPageConfig = {
   },
 };
 
+const domesticScenarioProvider: ProviderPageConfig = {
+  ...seededProvider,
+  carrierId: "b1000000-0000-0000-0000-000000000001",
+  carrierCode: "NEXO_DEMO",
+  displayName: "[SYNTHETIC] Nexo Demo Logistics",
+  providerUrl: "/providers/nexo-demo",
+  matchingServiceId: "d1000000-0000-0000-0000-000000000001",
+  service: {
+    providerServiceCode: "NEXO-DEMO-PE-DOM-FTL",
+    transportMode: "ROAD",
+    serviceType: "FTL",
+    maxCapacityKg: 12_000,
+    maxVolumeM3: 40,
+    supportsCrossBorder: false,
+  },
+};
+
+const crossBorderScenarioProvider: ProviderPageConfig = {
+  ...domesticScenarioProvider,
+  matchingServiceId: "d1000000-0000-0000-0000-000000000002",
+  service: {
+    providerServiceCode: "NEXO-DEMO-PECL-AGR-FTL",
+    transportMode: "ROAD",
+    serviceType: "FTL",
+    maxCapacityKg: 16_000,
+    maxVolumeM3: 50,
+    supportsCrossBorder: true,
+  },
+};
+
 const compatibleCoverageInput = {
   origin: "Callao, Peru",
   destination: "Santiago, Chile",
@@ -402,6 +432,186 @@ test("unknown provider service codes return conservative commercial responses", 
 
   assert.equal(coverage.ok && coverage.data.supported, false);
   assert.equal(capacity.ok && capacity.data.available, false);
+});
+
+test("a domestic service is compatible without declaring cross-border support", async () => {
+  const coverage = await executeTool<ServiceCoverageResult>(
+    createCheckServiceCoverageTool(domesticScenarioProvider),
+    {
+      origin: "Lima, Peru",
+      destination: "Arequipa, Peru",
+      transport_mode: "ROAD",
+      service_type: "FTL",
+      cargo_category: "GENERAL",
+    },
+  );
+  const capacity = await executeTool<CapacityResult>(
+    createCheckCapacityTool(domesticScenarioProvider),
+    {
+      origin: "Lima, Peru",
+      destination: "Arequipa, Peru",
+      cargo_weight_kg: 7_000,
+      cargo_volume_m3: 10.5,
+      cargo_category: "GENERAL",
+      pickup_mode: "SCHEDULED",
+      pickup_window_start: "2026-09-10T13:00:00.000Z",
+      pickup_window_end: "2026-09-10T17:00:00.000Z",
+      delivery_deadline: "2026-09-12T23:00:00.000Z",
+    },
+  );
+
+  assert.equal(coverage.ok && coverage.data.supported, true);
+  assert.equal(coverage.ok && coverage.data.crossBorderSupported, false);
+  assert.equal(capacity.ok && capacity.data.available, true);
+});
+
+test("location matching rejects a different city even when the country word matches", async () => {
+  const coverage = await executeTool<ServiceCoverageResult>(
+    createCheckServiceCoverageTool(domesticScenarioProvider),
+    {
+      origin: "Cusco, Peru",
+      destination: "Arequipa, Peru",
+      transport_mode: "ROAD",
+      service_type: "FTL",
+      cargo_category: "GENERAL",
+    },
+  );
+
+  assert.equal(coverage.ok, true);
+  if (!coverage.ok) return;
+  assert.equal(coverage.data.supported, false);
+  assert.match(coverage.data.serviceNotes.join(" "), /corredor solicitado/i);
+});
+
+test("the Peru-Chile agricultural service satisfies corridor, category, capacity and window", async () => {
+  const coverage = await executeTool<ServiceCoverageResult>(
+    createCheckServiceCoverageTool(crossBorderScenarioProvider),
+    {
+      origin: "Callao, Peru",
+      destination: "Santiago, Chile",
+      transport_mode: "ROAD",
+      service_type: "FTL",
+      cargo_category: "AGRICULTURAL",
+    },
+  );
+  const capacity = await executeTool<CapacityResult>(
+    createCheckCapacityTool(crossBorderScenarioProvider),
+    {
+      origin: "Callao, Peru",
+      destination: "Santiago, Chile",
+      cargo_weight_kg: 4_500,
+      cargo_volume_m3: 9,
+      cargo_category: "AGRICULTURAL",
+      pickup_mode: "SCHEDULED",
+      pickup_window_start: "2026-09-10T13:00:00.000Z",
+      pickup_window_end: "2026-09-10T17:00:00.000Z",
+      delivery_deadline: "2026-09-13T13:00:00.000Z",
+      special_requirements: ["customs coordination"],
+    },
+  );
+
+  assert.equal(coverage.ok && coverage.data.supported, true);
+  assert.equal(coverage.ok && coverage.data.crossBorderSupported, true);
+  assert.equal(capacity.ok && capacity.data.available, true);
+});
+
+test("the negative D1 request is a commercial capacity rejection", async () => {
+  const capacity = await executeTool<CapacityResult>(
+    createCheckCapacityTool(domesticScenarioProvider),
+    {
+      origin: "Lima, Peru",
+      destination: "Arequipa, Peru",
+      cargo_weight_kg: 18_000,
+      cargo_volume_m3: 42,
+      cargo_category: "CONSTRUCTION",
+      pickup_mode: "SCHEDULED",
+      pickup_window_start: "2026-09-10T13:00:00.000Z",
+      pickup_window_end: "2026-09-10T17:00:00.000Z",
+      delivery_deadline: "2026-09-12T23:00:00.000Z",
+    },
+  );
+
+  assert.equal(capacity.ok, true);
+  if (!capacity.ok) return;
+  assert.equal(capacity.data.available, false);
+  assert.match(capacity.data.capabilityNotes.join(" "), /categoría solicitada/i);
+  assert.match(capacity.data.capabilityNotes.join(" "), /peso solicitado excede/i);
+  assert.match(capacity.data.capabilityNotes.join(" "), /volumen solicitado excede/i);
+});
+
+test("scenario quotes use declared synthetic tariffs and request-specific references", async () => {
+  const fixedNow = new Date("2026-09-01T12:00:00.000Z");
+  const domesticQuote = await executeTool<ProviderQuote>(
+    createQuoteFreightTool(domesticScenarioProvider, { now: () => fixedNow }),
+    {
+      freight_request_id: "new-domestic-request",
+      origin: "Lima, Peru",
+      destination: "Arequipa, Peru",
+      cargo_weight_kg: 7_000,
+      cargo_volume_m3: 10.5,
+      cargo_category: "GENERAL",
+      pickup_mode: "SCHEDULED",
+      pickup_window_start: "2026-09-10T13:00:00.000Z",
+      pickup_window_end: "2026-09-10T17:00:00.000Z",
+      delivery_deadline: "2026-09-12T23:00:00.000Z",
+      available_documents: [],
+    },
+  );
+  const secondDomesticQuote = await executeTool<ProviderQuote>(
+    createQuoteFreightTool(domesticScenarioProvider, { now: () => fixedNow }),
+    {
+      freight_request_id: "another-domestic-request",
+      origin: "Lima, Peru",
+      destination: "Arequipa, Peru",
+      cargo_weight_kg: 7_000,
+    },
+  );
+
+  assert.equal(domesticQuote.ok && domesticQuote.data.price, 980);
+  assert.equal(domesticQuote.ok && domesticQuote.data.customsCoordinationIncluded, false);
+  assert.equal(secondDomesticQuote.ok, true);
+  if (!domesticQuote.ok || !secondDomesticQuote.ok) return;
+  assert.notEqual(
+    domesticQuote.data.providerOfferReference,
+    secondDomesticQuote.data.providerOfferReference,
+  );
+});
+
+test("the Peru-Chile fixture checks declared documents before quoting", async () => {
+  const tool = createQuoteFreightTool(crossBorderScenarioProvider, {
+    now: () => new Date("2026-09-01T12:00:00.000Z"),
+  });
+  const input = {
+    freight_request_id: "new-cross-border-request",
+    origin: "Callao, Peru",
+    destination: "Santiago, Chile",
+    cargo_weight_kg: 4_500,
+    cargo_volume_m3: 9,
+    cargo_category: "AGRICULTURAL",
+    pickup_mode: "SCHEDULED",
+    pickup_window_start: "2026-09-10T13:00:00.000Z",
+    pickup_window_end: "2026-09-10T17:00:00.000Z",
+    delivery_deadline: "2026-09-13T13:00:00.000Z",
+  };
+  const missingDocuments = await executeTool<ProviderQuote>(tool, input);
+  const completeDocuments = await executeTool<ProviderQuote>(tool, {
+    ...input,
+    available_documents: [
+      "COMMERCIAL_INVOICE",
+      "PACKING_LIST",
+      "CERTIFICATE_OF_ORIGIN",
+    ],
+  });
+
+  assert.equal(missingDocuments.ok, false);
+  if (!missingDocuments.ok) {
+    assert.equal(missingDocuments.error.code, "REQUIRED_DOCUMENTS_MISSING");
+  }
+  assert.equal(completeDocuments.ok && completeDocuments.data.price, 1420);
+  assert.deepEqual(
+    completeDocuments.ok ? completeDocuments.data.requiredDocuments : [],
+    ["commercial_invoice", "packing_list", "certificate_of_origin"],
+  );
 });
 
 test("quote uses an injected clock and remains valid for exactly six hours", async () => {

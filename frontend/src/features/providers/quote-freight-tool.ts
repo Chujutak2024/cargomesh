@@ -67,10 +67,13 @@ export const quoteFreightInputSchema = {
 } as const;
 
 type QuoteFixtureOverride = {
-  providerOfferReference: string;
+  providerOfferReference?: string;
+  providerOfferReferencePrefix?: string;
   priceBreakdown: Record<string, number>;
   transitHours: number;
   availabilityClass: AvailabilityClass;
+  requiredDocuments?: string[];
+  enforceRequiredDocuments?: boolean;
 };
 
 // Golden Flow seed data only. Discovery and business logic never depend on these keys;
@@ -93,6 +96,21 @@ const quoteFixtureOverrides: Record<string, QuoteFixtureOverride> = {
     priceBreakdown: { lineHaul: 1320, handling: 125, customsCoordination: 145 },
     transitHours: 60,
     availabilityClass: "LIMITED_WINDOW",
+  },
+  "NEXO-DEMO-PE-DOM-FTL": {
+    providerOfferReferencePrefix: "NEX-DOM",
+    priceBreakdown: { lineHaul: 900, handling: 80, customsCoordination: 0 },
+    transitHours: 24,
+    availabilityClass: "EXACT_CONFIRMED_SLOT",
+    requiredDocuments: [],
+  },
+  "NEXO-DEMO-PECL-AGR-FTL": {
+    providerOfferReferencePrefix: "NEX-PECL",
+    priceBreakdown: { lineHaul: 1180, handling: 95, customsCoordination: 145 },
+    transitHours: 48,
+    availabilityClass: "AVAILABLE_IN_WINDOW",
+    requiredDocuments: ["commercial_invoice", "packing_list", "certificate_of_origin"],
+    enforceRequiredDocuments: true,
   },
 };
 
@@ -216,6 +234,10 @@ function roundCurrency(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+function normalizeDocumentCode(value: string): string {
+  return value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+}
+
 function deterministicTimeline(
   input: QuoteFreightInput,
   transitHours: number,
@@ -276,6 +298,25 @@ function buildProviderQuote(
 
   const fixtureSeed = stableHash(provider.service.providerServiceCode);
   const fixtureOverride = quoteFixtureOverrides[provider.service.providerServiceCode];
+  const requiredDocuments = fixtureOverride?.requiredDocuments ??
+    (provider.service.supportsCrossBorder ? ["commercial_invoice", "packing_list"] : []);
+
+  if (fixtureOverride?.enforceRequiredDocuments) {
+    const availableDocuments = new Set(
+      (input.available_documents ?? []).map(normalizeDocumentCode),
+    );
+    const missingDocuments = requiredDocuments.filter(
+      (documentCode) => !availableDocuments.has(normalizeDocumentCode(documentCode)),
+    );
+
+    if (missingDocuments.length > 0) {
+      return createErrorEnvelope(
+        "REQUIRED_DOCUMENTS_MISSING",
+        `Faltan documentos requeridos por el fixture: ${missingDocuments.join(", ")}.`,
+      );
+    }
+  }
+
   const utilization = input.cargo_weight_kg / provider.service.maxCapacityKg;
   const lineHaul = roundCurrency(620 + input.cargo_weight_kg * 0.105 + (fixtureSeed % 260));
   const handling = roundCurrency(85 + (fixtureSeed % 45));
@@ -295,9 +336,9 @@ function buildProviderQuote(
     .slice(-6)
     .padStart(6, "0");
   const referencePrefix = provider.carrierCode.replace(/[^A-Z0-9]/g, "").slice(0, 8) || "PROVIDER";
-  const requiredDocuments = provider.service.supportsCrossBorder
-    ? ["commercial_invoice", "packing_list"]
-    : [];
+  const scenarioReference = fixtureOverride?.providerOfferReferencePrefix
+    ? `${fixtureOverride.providerOfferReferencePrefix}-OFF-${referenceSuffix}`
+    : `${referencePrefix}-OFF-${referenceSuffix}`;
 
   return {
     ok: true,
@@ -305,7 +346,7 @@ function buildProviderQuote(
       schemaVersion: "1.0",
       freightRequestId: input.freight_request_id,
       providerOfferReference:
-        fixtureOverride?.providerOfferReference ?? `${referencePrefix}-OFF-${referenceSuffix}`,
+        fixtureOverride?.providerOfferReference ?? scenarioReference,
       price,
       currency: "USD",
       priceBreakdown,

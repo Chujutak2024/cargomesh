@@ -1,14 +1,20 @@
 import type { AvailabilityClass } from "./contracts";
 
 export type ProviderCapabilityFixture = {
-  originAliases: string[];
-  destinationAliases: string[];
+  origin: ProviderFixtureLocation;
+  destination: ProviderFixtureLocation;
   cargoCategories: string[];
   supportedRequirements: string[];
   reportedVehicleType: string;
   earliestPickup: string;
   transitHours: number;
   availabilityClass: Exclude<AvailabilityClass, "UNAVAILABLE">;
+  requiresCrossBorder: boolean;
+};
+
+type ProviderFixtureLocation = {
+  regionAliases: string[];
+  countryAliases: string[];
 };
 
 // Golden Flow provider fixtures. The lookup key is the registered service code,
@@ -16,34 +22,95 @@ export type ProviderCapabilityFixture = {
 // services receive a conservative response instead of fabricated capabilities.
 const providerCapabilityFixtures: Record<string, ProviderCapabilityFixture> = {
   "ANDES-PECL-FTL": {
-    originAliases: ["callao", "lima", "peru", "pe"],
-    destinationAliases: ["santiago", "chile", "cl"],
+    origin: {
+      regionAliases: ["callao", "lima"],
+      countryAliases: ["peru", "pe"],
+    },
+    destination: {
+      regionAliases: ["santiago"],
+      countryAliases: ["chile", "cl"],
+    },
     cargoCategories: ["machinery", "mining spare parts", "maquinaria", "repuestos mineros"],
     supportedRequirements: ["customs coordination", "coordinacion aduanera"],
     reportedVehicleType: "Scania R450",
     earliestPickup: "2026-08-30T13:00:00.000Z",
     transitHours: 31,
     availabilityClass: "AVAILABLE_IN_WINDOW",
+    requiresCrossBorder: true,
   },
   "INCA-PECL-FTL": {
-    originAliases: ["callao", "lima", "peru", "pe"],
-    destinationAliases: ["santiago", "chile", "cl"],
+    origin: {
+      regionAliases: ["callao", "lima"],
+      countryAliases: ["peru", "pe"],
+    },
+    destination: {
+      regionAliases: ["santiago"],
+      countryAliases: ["chile", "cl"],
+    },
     cargoCategories: ["machinery", "mining spare parts", "maquinaria", "repuestos mineros"],
     supportedRequirements: ["customs coordination", "coordinacion aduanera"],
     reportedVehicleType: "Volvo FH",
     earliestPickup: "2026-08-30T14:00:00.000Z",
     transitHours: 29,
     availabilityClass: "AVAILABLE_IN_WINDOW",
+    requiresCrossBorder: true,
   },
   "PACIFIC-PECL-FTL": {
-    originAliases: ["callao", "lima", "peru", "pe"],
-    destinationAliases: ["santiago", "chile", "cl"],
+    origin: {
+      regionAliases: ["callao", "lima"],
+      countryAliases: ["peru", "pe"],
+    },
+    destination: {
+      regionAliases: ["santiago"],
+      countryAliases: ["chile", "cl"],
+    },
     cargoCategories: ["machinery", "mining spare parts", "maquinaria", "repuestos mineros"],
     supportedRequirements: ["customs coordination", "coordinacion aduanera"],
     reportedVehicleType: "Freightliner",
     earliestPickup: "2026-08-30T19:00:00.000Z",
     transitHours: 60,
     availabilityClass: "LIMITED_WINDOW",
+    requiresCrossBorder: true,
+  },
+  "NEXO-DEMO-PE-DOM-FTL": {
+    origin: {
+      regionAliases: ["lima"],
+      countryAliases: ["peru", "pe"],
+    },
+    destination: {
+      regionAliases: ["arequipa"],
+      countryAliases: ["peru", "pe"],
+    },
+    cargoCategories: ["general", "general cargo", "carga general"],
+    supportedRequirements: ["fragile handling", "manejo fragil"],
+    reportedVehicleType: "Rigid truck 12T (synthetic fixture)",
+    earliestPickup: "2026-09-10T13:00:00.000Z",
+    transitHours: 24,
+    availabilityClass: "EXACT_CONFIRMED_SLOT",
+    requiresCrossBorder: false,
+  },
+  "NEXO-DEMO-PECL-AGR-FTL": {
+    origin: {
+      regionAliases: ["callao"],
+      countryAliases: ["peru", "pe"],
+    },
+    destination: {
+      regionAliases: ["santiago"],
+      countryAliases: ["chile", "cl"],
+    },
+    cargoCategories: ["agricultural", "agricultural products", "agricola"],
+    supportedRequirements: [
+      "customs coordination",
+      "coordinacion aduanera",
+      "commercial invoice",
+      "packing list",
+      "certificate of origin",
+    ],
+    reportedVehicleType: "Tractor trailer 16T (synthetic fixture)",
+    earliestPickup: "2026-09-10T13:00:00.000Z",
+    transitHours: 48,
+    availabilityClass: "AVAILABLE_IN_WINDOW",
+    requiresCrossBorder: true,
   },
 };
 
@@ -68,6 +135,16 @@ export function matchesCapabilityAlias(value: string, aliases: string[]): boolea
       ? valueTokens.includes(normalizedAlias)
       : normalizedValue.includes(normalizedAlias);
   });
+}
+
+export function matchesCapabilityLocation(
+  value: string,
+  location: ProviderFixtureLocation,
+): boolean {
+  return (
+    matchesCapabilityAlias(value, location.regionAliases) &&
+    matchesCapabilityAlias(value, location.countryAliases)
+  );
 }
 
 export function getProviderCapabilityFixture(
