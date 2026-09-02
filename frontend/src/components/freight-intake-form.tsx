@@ -2,7 +2,7 @@
 
 import {
   ArrowLeft, ArrowRight, Boxes, Building2, CalendarClock, Check,
-  FileCheck2, MapPin, PackageCheck, ShieldCheck,
+  FileCheck2, LoaderCircle, MapPin, PackageCheck, ShieldCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -732,7 +732,7 @@ export function FreightIntakeForm({
             {/* SECCIÓN 2: DATOS DEL DESTINO (ENTREGA) */}
             <div className={styles.subSectionCard} style={{ marginTop: "1rem" }}>
               <div className={styles.subSectionHeader}>
-                <span className={styles.subSectionBadge} style={{ background: "#e8f4f8", color: "#165a72" }}>
+                <span className={styles.subSectionBadge}>
                   <MapPin size={14} /> 2. Datos del Destino (Entrega)
                 </span>
                 <small>Ubicación de entrega y receptor autorizado en destino</small>
@@ -1060,13 +1060,23 @@ export function FreightIntakeForm({
               <ReviewItem label="Política" value={`${form.strategy} · ${form.budgetMaxUsd === null ? "Sin presupuesto máximo" : `${form.currency} ${form.budgetMaxUsd.toLocaleString("en-US")}`}`} />
               <ReviewItem label="Documentos" value={form.documents.length ? form.documents.join(", ") : "Sin documentos registrados"} />
             </div>
-            <div className={styles.readyNotice}>
-              <FileCheck2 size={20} aria-hidden="true" />
-              <span>
-                <strong>{dispatchBlockReason ? "Dispatch bloqueado" : "Solicitud lista para evaluación"}</strong>
-                <small>{dispatchBlockReason ?? "La capacidad real se validará mediante WebMCP durante el dispatch."}</small>
-              </span>
-            </div>
+            {submitting ? (
+              <div className={styles.searchingState} role="status" aria-live="polite">
+                <span className={styles.searchingIcon}><LoaderCircle className={styles.spinner} size={22} aria-hidden="true" /></span>
+                <span>
+                  <strong>Buscando opciones de transporte</strong>
+                  <small>Estamos consultando los transportistas registrados mediante WebMCP. Serás dirigido al despacho cuando termine la evaluación.</small>
+                </span>
+              </div>
+            ) : (
+              <div className={styles.readyNotice}>
+                <FileCheck2 size={20} aria-hidden="true" />
+                <span>
+                  <strong>{dispatchBlockReason ? "Dispatch bloqueado" : "Solicitud lista para evaluación"}</strong>
+                  <small>{dispatchBlockReason ?? "La capacidad real se validará mediante WebMCP durante el dispatch."}</small>
+                </span>
+              </div>
+            )}
           </> : null}
 
           <footer className={styles.actions}>
@@ -1097,13 +1107,13 @@ export function FreightIntakeForm({
               disabled={submitting || saving || (step === steps.length - 1 && dispatchBlockReason !== null)}
             >
               {submitting
-                ? "Evaluando providers…"
+                ? <><LoaderCircle className={styles.spinner} size={17} aria-hidden="true" /> Buscando transportistas…</>
                 : saving
                   ? "Guardando…"
                   : step === steps.length - 1
-                    ? "Confirmar y buscar opciones"
+                    ? "Confirmar y buscar opciones de transporte"
                     : "Continuar"}
-              <ArrowRight size={17} aria-hidden="true" />
+              {submitting ? null : <ArrowRight size={17} aria-hidden="true" />}
             </button>
           </footer>
         </section>
