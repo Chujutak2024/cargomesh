@@ -1,0 +1,151 @@
+{
+  "schemaVersion": "1.0",
+  "package": "D1-03",
+  "provenance": "SYNTHETIC_DEMO_ONLY",
+  "baseClock": "2026-09-01T12:00:00Z",
+  "separation": {
+    "seeded": ["provider catalog", "provider metrics", "vehicles", "organization cargo profiles", "synthetic request antecedents"],
+    "neverSeeded": ["new freight request", "orchestration run", "provider tool event", "carrier offer", "freight decision", "booking"],
+    "newRequestSource": "CargoMesh UI",
+    "runtimeSource": "WebMCP orchestration during the demo"
+  },
+  "stableSeedKeys": {
+    "carrierId": "b1000000-0000-0000-0000-000000000001",
+    "domesticServiceId": "d1000000-0000-0000-0000-000000000001",
+    "crossBorderServiceId": "d1000000-0000-0000-0000-000000000002",
+    "domesticProfileId": "a1000000-0000-0000-0000-000000000101",
+    "crossBorderProfileId": "a1000000-0000-0000-0000-000000000102",
+    "syntheticAntecedentIds": [
+      "f2100000-0000-0000-0000-000000000001",
+      "f2100000-0000-0000-0000-000000000002"
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "national-compatible",
+      "label": "Nacional compatible",
+      "newRequest": {
+        "origin_country": "PE",
+        "origin_city": "Lima",
+        "destination_country": "PE",
+        "destination_city": "Arequipa",
+        "cargo_category_code": "GENERAL",
+        "cargo_weight_kg": 7000,
+        "cargo_volume_m3": 10.5,
+        "cargo_entry_method": "PALLETS",
+        "entry_quantity": 7,
+        "entry_unit_weight_kg": 1000,
+        "units_per_entry": 1,
+        "pickup_mode": "SCHEDULED",
+        "pickup_window_start": "2026-09-10T13:00:00Z",
+        "pickup_window_end": "2026-09-10T17:00:00Z",
+        "delivery_deadline": "2026-09-12T23:00:00Z",
+        "transport_mode": "ROAD",
+        "service_type": "FTL",
+        "cross_border": false,
+        "available_documents": []
+      },
+      "expected": {
+        "candidateCountForScenarioCarrier": 1,
+        "providerServiceCode": "NEXO-DEMO-PE-DOM-FTL",
+        "supportsCrossBorderRequired": false,
+        "recommendation": "Suggest the marked national antecedent/profile; require user acceptance before applying.",
+        "declaredScenarioTariff": {
+          "amount": 980,
+          "currency": "USD",
+          "kind": "SYNTHETIC_FIXED_FIXTURE",
+          "notMarketQuote": true
+        }
+      },
+      "limitations": [
+        "The tariff and capacity are synthetic demo fixtures, not carrier telemetry.",
+        "The provider runtime needs the separate domestic cross-border gating correction before this case can pass all WebMCP tools."
+      ]
+    },
+    {
+      "id": "peru-chile-compatible",
+      "label": "Perú-Chile compatible",
+      "newRequest": {
+        "origin_country": "PE",
+        "origin_city": "Callao",
+        "destination_country": "CL",
+        "destination_city": "Santiago",
+        "cargo_category_code": "AGRICULTURAL",
+        "cargo_weight_kg": 4500,
+        "cargo_volume_m3": 9,
+        "cargo_entry_method": "SACKS",
+        "entry_quantity": 150,
+        "entry_unit_weight_kg": 30,
+        "units_per_entry": 1,
+        "pickup_mode": "SCHEDULED",
+        "pickup_window_start": "2026-09-10T13:00:00Z",
+        "pickup_window_end": "2026-09-10T17:00:00Z",
+        "delivery_deadline": "2026-09-13T13:00:00Z",
+        "transport_mode": "ROAD",
+        "service_type": "FTL",
+        "cross_border": true,
+        "available_documents": ["COMMERCIAL_INVOICE", "PACKING_LIST", "CERTIFICATE_OF_ORIGIN"]
+      },
+      "expected": {
+        "candidateCountForScenarioCarrier": 1,
+        "providerServiceCode": "NEXO-DEMO-PECL-AGR-FTL",
+        "supportsCrossBorderRequired": true,
+        "recommendation": "Suggest the marked Peru-Chile antecedent/profile; require user acceptance before applying.",
+        "declaredScenarioTariff": {
+          "amount": 1420,
+          "currency": "USD",
+          "kind": "SYNTHETIC_FIXED_FIXTURE",
+          "notMarketQuote": true
+        }
+      },
+      "limitations": [
+        "Document checks are declared demo requirements; no customs document verification service is claimed.",
+        "The tariff and schedule are synthetic fixtures, not live carrier data."
+      ]
+    },
+    {
+      "id": "no-match-no-history",
+      "label": "Sin cobertura/capacidad y sin antecedente aplicable",
+      "newRequest": {
+        "origin_country": "PE",
+        "origin_city": "Lima",
+        "destination_country": "PE",
+        "destination_city": "Arequipa",
+        "cargo_category_code": "CONSTRUCTION",
+        "cargo_weight_kg": 18000,
+        "cargo_volume_m3": 42,
+        "cargo_entry_method": "TOTAL_WEIGHT",
+        "pickup_mode": "SCHEDULED",
+        "pickup_window_start": "2026-09-10T13:00:00Z",
+        "pickup_window_end": "2026-09-10T17:00:00Z",
+        "delivery_deadline": "2026-09-12T23:00:00Z",
+        "transport_mode": "ROAD",
+        "service_type": "FTL",
+        "cross_border": false,
+        "available_documents": []
+      },
+      "expected": {
+        "candidateCountForScenarioCarrier": 0,
+        "orchestrationStatus": "NO_MATCH",
+        "recommendationCount": 0,
+        "reason": "Category is not registered and requested weight/volume exceed the domestic service."
+      },
+      "limitations": [
+        "This is a negative context for the existing ACTIVE demo member, not a second seeded Auth identity.",
+        "No synthetic profile or historical order is seeded for this category/corridor combination."
+      ]
+    }
+  ],
+  "goldenFlowIsolation": {
+    "canonicalRequestCode": "FR-1042",
+    "canonicalCargoCategory": "MACHINERY",
+    "scenarioServiceCargoCategories": ["GENERAL", "AGRICULTURAL"],
+    "expectedCanonicalCandidateCount": 3,
+    "expectedCanonicalScores": [89, 84, 72],
+    "note": "Scenario services never register MACHINERY, so they cannot enter the canonical Golden Flow candidate set."
+  },
+  "cleanup": {
+    "command": "Get-Content -Raw supabase/scenarios/d1/cleanup.sql | docker exec -i supabase_db_cargomesh psql -U postgres -d postgres",
+    "scope": "Only stable D1-03 catalog, profile, and synthetic antecedent IDs. UI-created requests are intentionally retained."
+  }
+}
