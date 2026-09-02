@@ -38,14 +38,14 @@ La respuesta es un envelope `schemaVersion: "1.0"`, ligado al `freightRequestId`
 
 ## Invariantes de producto y seguridad
 
-1. Solo un miembro autenticado con membresía `ACTIVE` de la organización dueña de la solicitud puede leer recomendaciones, leer el borrador o aplicar una selección.
+1. Solo un miembro autenticado con membresía `ACTIVE` de la organización dueña de la solicitud puede leer recomendaciones y el borrador. El `PATCH` que aplica campos requiere además el rol `SUPERVISOR` en esa organización.
 2. La fuente efectiva de D1 v1 es `ORGANIZATION_HISTORY`; para un caso de demo controlado puede emitirse como `SYNTHETIC_RECOMMENDATION_HISTORY`. `CARGO_PROFILE` queda reservado en el schema, pero no puede emitirse hasta que tenga consulta, autorización y pruebas propias. Nunca se consulta ni se expone historial de otra organización.
 3. Los datos sintéticos se identifican como tales. Preparan un caso demo, pero no precrean `CarrierOffer`, `FreightDecision`, `Booking`, eventos ni una corrida de orquestación.
 4. La recomendación es de solo lectura. El único write es un `PATCH` posterior iniciado por el usuario con uno o más campos seleccionados.
 5. Cerrar, cancelar, no seleccionar campos, recibir error o recibir `STALE_DRAFT` no muta el borrador.
 6. La UI no infiere aliases, campos implícitos ni valores omitidos. El servidor valida los nombres canónicos, combina el patch con el borrador persistido y devuelve el snapshot canónico completo.
 7. Los totales normalizados no son aceptables como input de una recomendación. El servidor recalcula `cargo_weight_kg` y `cargo_volume_m3` cuando la forma de carga lo requiere.
-8. D1 solo opera con borradores editables (`DRAFT` o `PENDING`). Una solicitud `ORCHESTRATING` o posterior rechaza el write sin modificar estado.
+8. El `PATCH` D1 solo opera con borradores editables (`DRAFT` o `PENDING`). Una solicitud `ORCHESTRATING` o posterior rechaza el write sin modificar estado. Esta restricción no bloquea el `GET` ni la ejecución read-only de la tool; ambos pueden leer el borrador autorizado y conservan la protección por versión `STALE_DRAFT`.
 
 ## Algoritmo de recomendación v1
 
@@ -177,4 +177,3 @@ Para considerar D1 integrado se requiere:
 - **C:** endpoints autenticados, autorización, algoritmo/fuentes, persistencia atómica, normalización, RLS y pruebas de datos.
 
 Este ADR es una precisión de la sugerencia de perfiles de carga ya prevista en el contrato maestro; no habilita nuevas acciones comerciales ni amplía el lifecycle de booking.
-
