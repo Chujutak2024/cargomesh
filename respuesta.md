@@ -363,4 +363,25 @@ Tras la revisión de las pantallas del formulario `/freight-request/new` y del D
   - Renderiza marcadores en origen y destino, línea de ruta de la carretera Panamericana y frontera internacional.
   - Vinculado a la línea de tiempo de eventos persistidos (*Recogido ➔ En tránsito ➔ Aduana ➔ Entregado*), sin requerir telemetría GPS falsa ni dependencias pesadas con API keys externas.
 
+## 11. Addendum: Estado al 2 de septiembre de 2026
 
+Este addendum actualiza el estado contractual, operativo y de UX del proyecto a la fecha de corte previa a la entrega final.
+
+### 11.1 Hechos Técnicos Verificados
+1. **D1-02 (Recomendaciones WebMCP):**
+   - El runtime de recomendaciones contextuales (`get_freight_request_recommendations`) existe, está registrado en `document.modelContext` y persiste de forma atómica mediante control de concurrencia optimista con `draft_version`.
+   - Si otra transacción muta la solicitud en vuelo, el servidor rechaza con `409 STALE_DRAFT` protegiendo la integridad transaccional.
+2. **Regresión P0 en el Intake Autenticado (PR #43):**
+   - El PR #43 convirtió la ruta `/freight-request/new` en una vista de solo lectura que carga solicitudes ya existentes persistidas (`freight-intake-loader.tsx`).
+   - Esto constituye una **regresión P0** respecto al flujo de creación de nueva carga: el formulario quedó bloqueado (`readOnly`/`disabled`), impidiendo que un shipper capture una carga nueva desde cero.
+3. **Brecha de Persistencia Manual (Falta Writer Autenticado):**
+   - Falta el endpoint y mutation client-side (writer manual autenticado) para que los campos editados por el usuario (contactos, ruta origen/destino, categoría de carga, especificaciones y programación) se persistan atómicamente en `freight_requests`.
+
+### 11.2 Separación Estricta de Prioridades para la Entrega
+
+| Nivel | Componentes y Requerimientos | Criterio de Entrega / Estado |
+|---|---|---|
+| **P0 (Crítico para Entrega)** | • **Intake Editable & Persistido:** Formulario interactivo con writer manual autenticado.<br>• **Recomendaciones Aplicables:** Aplicación selectiva de sugerencias vía WebMCP con incremento de `draft_version`.<br>• **Golden Flow Canónico:** Solicitud `FR-1042` (Callao ➔ Santiago, Maquinaria) con scores reproducibles (Andes 89, Inca 84, Pacific 72). | **Obligatorio:** Solo se declara entregado cuando el usuario puede completar el flujo de inicio a fin en la UI. |
+| **P1 (Secundario / Roadmap)** | • **Mapa Operativo Avanzado:** Visualización Leaflet detallada de la ruta Panamericana.<br>• **Flota Simulada Ampliada:** Catálogo extendido con camiones y organizaciones adicionales.<br>• **Dashboard Profundo:** Métricas analíticas agregadas.<br>• **i18n Completa:** Cobertura de localización inglés/español al 100%. | **Diferible:** No bloquea la evaluación técnica de WebMCP; se presenta como roadmap o datos de escenario. |
+
+> **Invariante de Veracidad:** Ninguna capacidad se declara como entregada o funcional basándose únicamente en la existencia de código en el repositorio o registros sembrados en un script seed. Una capacidad solo se considera entregada cuando cuenta con evidencia observable y verificable por el usuario final.
