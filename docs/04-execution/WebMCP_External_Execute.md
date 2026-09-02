@@ -1,177 +1,102 @@
-# WebMCP External Execute — Consultas Prioritarias para Agentes de IA
+# WebMCP External Execute — Escenarios y límite de evidencia
 
-> **Propósito:** Especificación de los escenarios de interacción en lenguaje natural para agentes de IA externos (como ChatGPT, Gemini o Claude navegando con WebMCP) interactuando con las herramientas nativas del navegador expuestas por **CargoMesh** y las páginas web de los **Transportistas**.
+> Esta guía separa lo que puede demostrarse hoy mediante `document.modelContext`
+> de los escenarios enriquecidos que todavía requieren implementación. Datos
+> sintéticos, capturas fixture o una ruta de provider no sustituyen discovery y
+> ejecución real de una tool.
 
----
+## Estado actual
 
-## 📋 Las 5 Familias de Consultas WebMCP
+| Capacidad | Contrato / herramienta | Estado y evidencia válida |
+| --- | --- | --- |
+| Factibilidad de un provider | `check_service_coverage`, `check_capacity` | Implementada para los providers registrados que descubren las tools desde su origin autorizado. |
+| Cotización y decisión | `quote_freight` + Result Bridge / BALANCED | Implementada. `evaluate_offers` es una operación server-side de CargoMesh, no una tool WebMCP expuesta al agente. |
+| Reserva y confirmación | `book_freight`, `get_provider_booking_status` | Implementada después de la selección ASSISTED y autorización del Booking Bridge. |
+| Recomendación de borrador | `get_freight_request_recommendations` | Implementada en CargoMesh. Requiere sesión, borrador compatible y consentimiento explícito antes del PATCH. |
+| Directorio y reputación de shippers | — | Propuesto. Las tablas de organizaciones y perfiles no exponen por sí mismas una tool WebMCP ni autorizan su lectura. |
 
-```text
-┌────────────────────────────────────────────────────────────────────────┐
-│                        AGENTE DE IA EXTERNO                            │
-│                 (ChatGPT / Gemini / In-App Browser)                    │
-└──────────────────────────────────┬─────────────────────────────────────┘
-                                   │
-         ┌─────────────────────────┼─────────────────────────┐
-         ▼                         ▼                         ▼
-  [ 🔍 FACTIBILIDAD ]       [ 💰 COTIZACIÓN ]         [ 🚚 SEGUIMIENTO ]
-  • Cobertura de ruta       • Comparativa en vivo     • Estado del booking
-  • Capacidad de camión     • Ranking BALANCED        • Checkpoints aduana
-  • Requisitos de frío/haz  • SLA y Confiabilidad     • ETA de llegada
-         │                         │                         │
-         ├─────────────────────────┴─────────────────────────┤
-         ▼                                                   ▼
-  [ 📦 HISTORIAL & RECOMENDACIONES ]            [ 🏢 SHIPPERS & REPUTACIÓN ]
-  • Antecedentes de empaque                     • Directorio de empresas clientes
-  • Autocompletado inteligente                  • Calificación y SLA histórico
-         │                                                   │
-         ▼                                                   ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│               HERRAMIENTAS REGISTRADAS EN WEBMCP                       │
-│                   (document.modelContext)                              │
-│                                                                        │
-│ • check_service_coverage        • quote_freight                        │
-│ • check_capacity                • book_freight                         │
-│ • get_freight_request_recommendations • get_provider_booking_status    │
-└────────────────────────────────────────────────────────────────────────┘
+Las seis tools reales actuales son las cinco del provider y
+`get_freight_request_recommendations`. La disponibilidad se prueba con
+`document.modelContext.getTools()` y la llamada nativa
+`executeTool(tool, JSON.stringify(input), { signal })`; nunca mediante handlers
+directos ni IDs hardcodeados.
+
+## Golden Flow verificable
+
+1. Un SUPERVISOR autenticado crea o abre un FreightRequest en estado `DRAFT` o
+   `PENDING`.
+2. CargoMesh relee el intake y el execution intent persistidos.
+3. En cada provider registrado, el navegador descubre cobertura, capacidad y
+   cotización; CargoMesh persiste los eventos y construye el ranking BALANCED.
+4. El usuario selecciona una oferta. Solo entonces se autoriza y ejecuta
+   `book_freight`; el replay conserva la misma reserva.
+5. `get_provider_booking_status` alimenta el estado, eventos y Judge Drawer.
+6. Para un borrador, la persona puede abrir recomendaciones, elegir campos
+   canónicos y aplicar el resultado. El servidor recalcula peso y volumen,
+   incrementa `draftVersion` y rechaza un `STALE_DRAFT` con HTTP 409.
+
+La cancelación de una recomendación no muta el borrador. Una página fixture o
+`?scenario=` se reserva para regresión visual y no cuenta como evidencia de este
+flujo.
+
+## Contrato de recomendación D1
+
+La herramienta no recibe ciudad ni categoría libres de un agente. Su input
+canónico es:
+
+```json
+{
+  "freightRequestId": "uuid-del-borrador",
+  "draftVersion": 1
+}
 ```
 
----
+Devuelve sugerencias con `sourceType`, explicación, razones y
+`proposedFields`. La UI muestra el diff y permite seleccionar campos de la
+whitelist. No se aplican aliases, peso total ni volumen desde la sugerencia.
 
-### 1. 🔍 Consultas de Cobertura y Capacidad ("¿Quién puede llevar esto?")
+## Datos de escenarios ampliados
 
-* **Pregunta del usuario / jurado a la IA:**
-  > *Español:* *"¿Polaris Cold Chain puede llevar 15 toneladas de uva refrigerada a -2°C desde Ica hasta Santiago de Chile?"*  
-  > *English:* *"Can Polaris Cold Chain haul 15 tons of refrigerated produce at -2°C from Ica, Peru to Santiago, Chile?"*
-* **Herramientas WebMCP invocadas:**
-  - `check_service_coverage` (en la web de Polaris Cold Chain: `/providers/polaris-cold-chain`)
-  - `check_capacity` (en la web de Polaris Cold Chain)
-* **Parámetros enviados:**
-  ```json
-  {
-    "originCountry": "PE",
-    "originRegion": "Ica",
-    "destinationCountry": "CL",
-    "destinationRegion": "Región Metropolitana",
-    "cargoWeightKg": 15000,
-    "requiresRefrigeration": true,
-    "temperatureRange": { "minCelsius": -2, "maxCelsius": 0 }
-  }
-  ```
-* **Respuesta generada por la IA:**
-  > *"Sí. **Polaris Cold Chain Logistics** cuenta con tracto-camiones Volvo FM y Scania R500 certificados para frío extremo (-25°C a +5°C) y dispone de capacidad confirmada para 22 toneladas en la ruta Ica ➔ Santiago con cruce fronterizo y coordinación aduanera habilitada."*
+`supabase/scenarios/expanded-fleet/seed.sql` contiene flota, shippers y carriers
+sintéticos para una demostración controlada. No es una migración ni se ejecuta
+con `db push`.
 
----
+Que los datos estén cargados en un entorno de evaluación **no** convierte a un
+carrier en provider WebMCP. En concreto, Polaris, Apex y Velocity siguen siendo
+escenarios de datos hasta que cada uno tenga:
 
-### 2. 💰 Consultas de Cotización y Comparativa ("¿Quién es el mejor y cuánto cuesta?")
+- una página/provider origin desplegado e incluido explícitamente en
+  `CARGOMESH_TOOL_CALLER_ORIGINS`;
+- `matchingServiceId` persistido y coherente con el servicio elegido;
+- discovery real de las cinco tools provider y cleanup al abandonar el origin;
+- pruebas de cobertura/capacidad/cotización y, para booking, autorización e
+  idempotencia;
+- evidencia de navegador sanitizada.
 
-* **Pregunta del usuario / jurado a la IA:**
-  > *Español:* *"Cotízame 8,000 kg de repuestos mineros de Lima a Santiago con los transportistas disponibles y dime cuál es la mejor opción."*  
-  > *English:* *"Quote an 8,000 kg mining machinery shipment from Lima to Santiago across available carriers and recommend the best option."*
-* **Herramientas WebMCP invocadas:**
-  - `quote_freight` en paralelo en:
-    1. *Andes Express* (`/providers/andes-express`)
-    2. *Apex Hazmat Transport* (`/providers/apex-hazmat`)
-    3. *Transportes Inca* (`/providers/transportes-inca`)
-    4. *Pacific Cargo Logistics* (`/providers/pacific-cargo`)
-* **Parámetros enviados:**
-  ```json
-  {
-    "originCity": "Lima",
-    "destinationCity": "Santiago",
-    "cargoWeightKg": 8000,
-    "cargoVolumeM3": 18.0,
-    "cargoCategory": "MACHINERY"
-  }
-  ```
-* **Respuesta generada por la IA:**
-  > *"Consulté a los transportistas en vivo vía WebMCP:*
-  > * 🥇 **Andes Express (Recomendado por Motor BALANCED - 89 pts):** \$2,150 USD · Entrega en 48h · 98% confiabilidad · Flota Scania R450 6x4.
-  > * 🥈 **Transportes Inca (84 pts):** \$1,980 USD (Más económico) · Entrega en 72h · 92% confiabilidad.
-  > * 🥉 **Pacific Cargo Logistics (72 pts):** \$2,400 USD · Entrega rápida en 40h · 88% confiabilidad.
-  > * 🛡️ **Apex Hazmat Transport:** \$2,650 USD · Especializado en carga de alto riesgo y química.
-  > 
-  > *Te recomiendo **Andes Express** porque ofrece el equilibrio óptimo entre costo competitivo, velocidad de tránsito y máxima seguridad aduanera en frontera."*
+Hasta entonces, el Golden Flow oficial usa únicamente providers ya registrados
+y validados. No se debe afirmar que Polaris, Apex o Velocity fueron consultados
+en vivo ni mostrar `supports_webmcp` como prueba de ejecución.
 
----
+## Escenarios de demo propuestos
 
-### 3. 📦 Consultas de Historial y Autocompletado ("Recuérdame mis órdenes")
+Estos prompts son guion de futuro y solo pasan a evidencia cuando cumplan el
+bloque anterior:
 
-* **Pregunta del usuario / jurado a la IA:**
-  > *Español:* *"Quiero mandar otro lote de repuestos a la minera en Santiago, ¿qué dimensiones usamos la última vez?"*  
-  > *English:* *"I need to send another spare parts batch to the mine in Santiago, what cargo dimensions did we use last time?"*
-* **Herramienta WebMCP invocada:**
-  - `get_freight_request_recommendations` (en CargoMesh)
-* **Parámetros enviados:**
-  ```json
-  {
-    "destinationCity": "Santiago",
-    "cargoCategory": "MACHINERY"
-  }
-  ```
-* **Respuesta generada por la IA:**
-  > *"Encontré el antecedente histórico de tu organización `FR-1042`: utilizaste **10 pallets de 120x100x150 cm (800 kg c/u)** con entrega a Tomás Rojas en Santiago (+56 9 6123 4010). ¿Deseas que aplique estos parámetros con un solo clic a tu nuevo borrador?"*
+- «¿Polaris puede llevar 15 toneladas de uva refrigerada de Ica a Santiago?»
+- «Cotiza repuestos mineros de Lima a Santiago y explica el ranking.»
+- «Recomiéndame los campos de un envío anterior y déjame escoger qué aplicar.»
+- «Consulta el estado de una reserva ya autorizada y muestra sus eventos.»
+- «Muestra organizaciones y reputación.» — requiere un contrato server-side y
+  una nueva tool con RLS; no se implementa como lectura pública.
 
----
+## Checklist de evidencia
 
-### 4. 🚚 Consultas de Tracking en Vivo ("¿Dónde está mi carga?")
-
-* **Pregunta del usuario / jurado a la IA:**
-  > *Español:* *"¿Cómo va mi envío de la orden `FR-1039` con Andes Express? ¿Ya cruzó la frontera?"*  
-  > *English:* *"What is the live tracking status of shipment FR-1039 with Andes Express? Has it crossed the border?"*
-* **Herramienta WebMCP invocada:**
-  - `get_provider_booking_status` (en la web de Andes Express)
-* **Parámetros enviados:**
-  ```json
-  {
-    "bookingId": "BK-1039-ANDES",
-    "freightRequestId": "f2000000-0000-0000-0000-000000000002"
-  }
-  ```
-* **Respuesta generada por la IA:**
-  > *"Tu envío se encuentra en estado **EN TRÁNSITO**. El último checkpoint registrado fue a las 08:30 en el **Paso Fronterizo Santa Rosa / Chacalluta** (Inspección aduanera completada). Conductor asignado: Diego Salazar (Unidad Scania TR-204). Llegada estimada a Antofagasta: hoy en 3 horas y 45 minutos."*
-
----
-
-### 5. 🏢 Consultas de Shippers y Reputación ("¿Qué empresas usan CargoMesh y cómo están valoradas?")
-
-* **Pregunta del usuario / jurado a la IA:**
-  > *Español:* *"¿Qué empresas utilizan CargoMesh para mover sus fletes y cuál es su calificación de satisfacción?"*  
-  > *English:* *"Which enterprise shippers are using CargoMesh to manage their freight and what are their satisfaction ratings?"*
-* **Contexto WebMCP consultado:**
-  - Directorio de organizaciones activas del ecosistema y perfiles de carga verificados.
-* **Respuesta generada por la IA:**
-  > *"CargoMesh gestiona fletes para generadores de carga industriales líderes en el corredor Perú-Chile, todos operando exclusivamente con transporte terrestre en camión:*
-  > 
-  > 1. 🚜 **ACME Mining Perú (Código: `ACME`)**
-  >    - **Sector:** Minería y Maquinaria Pesada.
-  >    - **SLA / Satisfacción:** **98.2%** de entregas a tiempo (+1,400 toneladas movidas).
-  >    - **Rutas habituales:** Callao/Lima ➔ Santiago de Chile (Minas de cobre).
-  >    - **Transportista preferido:** *Andes Express* (Plataformas Scania 28t y Lowboy 32t).
-  > 
-  > 2. 🍇 **Agrícola del Valle Sur (Código: `AGRIVAS`)**
-  >    - **Sector:** Agroexportación y Cadena de Frío.
-  >    - **SLA / Satisfacción:** **96.5%** de cumplimiento térmico (+850 toneladas de fruta fresca).
-  >    - **Rutas habituales:** Ica/Callao ➔ Santiago de Chile en camiones Reefer (-1°C a +1°C).
-  >    - **Transportista preferido:** *Polaris Cold Chain Logistics* y *Transportes Inca*.
-  > 
-  > 3. 🏗️ **Cemento & Concreto Andino (Código: `CEMENTOS`)**
-  >    - **Sector:** Materiales de Construcción e Infraestructura Industrial.
-  >    - **SLA / Satisfacción:** **94.8%** de puntualidad nacional (+2,100 toneladas transportadas).
-  >    - **Rutas habituales:** Lima ➔ Arequipa y Huancayo en plataformas pesadas FTL.
-  >    - **Transportista preferido:** *Velocity Express Freight* y *Nexo Demo Logistics*."*
-
----
-
-## 🎯 Resumen Ejecutivo de Capacidades
-
-| Familia de Consulta | Propósito Principal | Tool WebMCP Involucrada |
-|---|---|---|
-| **1. Factibilidad Técnica** | *"¿Tienes camión reefer / plataforma / permisos para esta ruta?"* | `check_service_coverage`, `check_capacity` |
-| **2. Comparativa Económica** | *"¿Quién me da la mejor relación precio-tiempo hoy?"* | `quote_freight`, `evaluate_offers` |
-| **3. Asistencia Inteligente** | *"¿Qué empaque y contactos usamos en envíos anteriores?"* | `get_freight_request_recommendations` |
-| **4. Seguimiento Operativo** | *"¿Dónde está mi camión y cuál es el último evento de aduana?"* | `get_provider_booking_status` |
-| **5. Directorio de Shippers** | *"¿Qué empresas usan CargoMesh y cuál es su calificación?"* | `organization_directory`, `organization_cargo_profiles` |
-
----
-*Documento actualizado para pruebas de integración con agentes LLM externos (ChatGPT/Gemini) y guión oficial de evaluación técnica (Google WebMCP Challenge 2026).*
+- [ ] Usuario demo con membresía `ACTIVE` y rol `SUPERVISOR`.
+- [ ] Snapshot de `getTools()` por cada origin realmente usado.
+- [ ] Inputs y outputs sanitizados de las tools ejecutadas.
+- [ ] Eventos persistidos, decisión, booking/replay o recuperación según el caso.
+- [ ] Cleanup: cero tools del provider tras salir de cada origin.
+- [ ] Para D1: diff seleccionado, PATCH persistido, recarga canónica y caso
+  `STALE_DRAFT`.
+- [ ] Ningún escenario de datos se presenta como ejecución si carece de runtime
+  WebMCP desplegado.
