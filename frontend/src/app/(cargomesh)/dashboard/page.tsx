@@ -1,8 +1,9 @@
 import {
   CircleCheckBig,
-  Clock3,
+  PackageOpen,
   PackageCheck,
   Plus,
+  ShieldCheck,
   Truck,
 } from "lucide-react";
 import Link from "next/link";
@@ -37,20 +38,14 @@ export default async function DashboardPage() {
     return <DashboardError locale={locale} />;
   }
 
+  const hasRequests = dashboard.requests.length > 0;
   const metrics = [
     {
-      label: translate(locale, "Cargas activas", "Active shipments"),
+      label: translate(locale, "Solicitudes activas", "Active requests"),
       value: dashboard.summary.activeRequests,
       detail: translate(locale, "Solicitudes abiertas", "Open requests"),
       icon: PackageCheck,
       tone: "turquoise",
-    },
-    {
-      label: translate(locale, "Esperando selección", "Awaiting selection"),
-      value: dashboard.summary.awaitingSelection,
-      detail: translate(locale, "Requieren una decisión", "Require a decision"),
-      icon: Clock3,
-      tone: "cream",
     },
     {
       label: translate(locale, "En tránsito", "In transit"),
@@ -60,11 +55,18 @@ export default async function DashboardPage() {
       tone: "green",
     },
     {
-      label: translate(locale, "Completadas", "Completed"),
+      label: translate(locale, "Entregadas", "Delivered"),
       value: dashboard.summary.completed,
-      detail: translate(locale, "Bookings finalizados", "Completed bookings"),
+      detail: translate(locale, "Bookings completados", "Completed bookings"),
       icon: CircleCheckBig,
       tone: "positive",
+    },
+    {
+      label: translate(locale, "Cumplimiento SLA", "SLA compliance"),
+      value: "—",
+      detail: translate(locale, "Sin datos reportados", "No reported data"),
+      icon: ShieldCheck,
+      tone: "cream",
     },
   ];
 
@@ -76,10 +78,12 @@ export default async function DashboardPage() {
           <h1>{translate(locale, "Control de operaciones", "Operations control")}</h1>
           <p>{translate(locale, "Consulta solicitudes, booking y eventos persistidos sin métricas de flota o capacidad simuladas.", "Review persisted requests, bookings, and events without simulated fleet or capacity metrics.")}</p>
         </div>
-        <Link className={styles.primaryAction} href="/freight-request/new">
-          <Plus size={17} aria-hidden="true" />
-          <span>{translate(locale, "Nueva carga", "New shipment")}<small>{translate(locale, "Abrir intake", "Open intake")}</small></span>
-        </Link>
+        {hasRequests ? (
+          <Link className={styles.primaryAction} href="/freight-request/new">
+            <Plus size={17} aria-hidden="true" />
+            <span>{translate(locale, "Nueva carga", "New shipment")}<small>{translate(locale, "Abrir intake", "Open intake")}</small></span>
+          </Link>
+        ) : null}
       </section>
 
       <section className={styles.metrics} aria-label={translate(locale, "Indicadores derivados de solicitudes reales", "Indicators derived from real requests")}>
@@ -94,22 +98,37 @@ export default async function DashboardPage() {
         ))}
       </section>
 
-      <section className={styles.dataGridSingle}>
-        <article className={styles.panel}>
-          <header className={styles.panelHeader}><div><span className={styles.eyebrow}>{translate(locale, "Ruta persistida", "Persisted route")}</span><h2>{translate(locale, "Mapa operativo", "Operations map")}</h2></div></header>
-          <OperationsMap model={dashboard.map} />
-        </article>
-      </section>
+      {hasRequests ? (
+        <>
+          <section className={styles.dataGridSingle}>
+            <article className={styles.panel}>
+              <header className={styles.panelHeader}><div><span className={styles.eyebrow}>{translate(locale, "Ruta persistida", "Persisted route")}</span><h2>{translate(locale, "Mapa operativo", "Operations map")}</h2></div></header>
+              <OperationsMap model={dashboard.map} />
+            </article>
+          </section>
 
-      <section className={styles.dataGridSingle}>
-        <article className={styles.panel}>
-          <header className={styles.panelHeader}>
-            <div><span className={styles.eyebrow}>{translate(locale, "Actividad persistida", "Persisted activity")}</span><h2>{translate(locale, "Solicitudes de la organización", "Organization requests")}</h2></div>
-            <span className={styles.counter}>{dashboard.requests.length}</span>
-          </header>
-          <RequestTable requests={dashboard.requests} locale={locale} />
-        </article>
-      </section>
+          <section className={styles.dataGridSingle}>
+            <article className={styles.panel}>
+              <header className={styles.panelHeader}>
+                <div><span className={styles.eyebrow}>{translate(locale, "Actividad persistida", "Persisted activity")}</span><h2>{translate(locale, "Solicitudes de la organización", "Organization requests")}</h2></div>
+                <span className={styles.counter}>{dashboard.requests.length}</span>
+              </header>
+              <RequestTable requests={dashboard.requests} locale={locale} />
+            </article>
+          </section>
+        </>
+      ) : (
+        <section className={styles.emptyState} aria-labelledby="dashboard-empty-title">
+          <span className={styles.emptyIcon}><PackageOpen size={30} strokeWidth={1.7} aria-hidden="true" /></span>
+          <span className={styles.eyebrow}>{translate(locale, "Primer paso", "First step")}</span>
+          <h2 id="dashboard-empty-title">{translate(locale, "Aún no hay solicitudes de carga", "No shipment requests yet")}</h2>
+          <p>{translate(locale, "Crea la primera solicitud de tu organización para iniciar la evaluación de transportistas y ver su avance aquí.", "Create your organization's first request to start carrier evaluation and track its progress here.")}</p>
+          <Link className={styles.emptyAction} href="/freight-request/new">
+            <Plus size={17} aria-hidden="true" />
+            {translate(locale, "Crear Nueva Solicitud de Carga", "Create New Shipment Request")}
+          </Link>
+        </section>
+      )}
     </div>
   );
 }

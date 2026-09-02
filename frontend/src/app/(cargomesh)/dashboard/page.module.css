@@ -27,12 +27,13 @@
 .metricCard {
   display: grid;
   min-width: 0;
-  min-height: 8.6rem;
-  align-content: space-between;
-  gap: 0.55rem;
+  min-height: 5.4rem;
+  grid-template-columns: 2.05rem auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.7rem;
   border: 1px solid #dde3e0;
   border-radius: 0.9rem;
-  padding: 0.9rem;
+  padding: 0.75rem;
   background: #ffffff;
   box-shadow: 0 0.4rem 1.5rem rgb(18 60 58 / 4%);
 }
@@ -43,7 +44,7 @@
 .cream { color: #755c26; background: #fff4d9; }
 .positive { color: #ffffff; background: #2bae9a; }
 .trend { display: none; align-items: center; gap: 0.2rem; color: #2b7d72; font-size: 0.53rem; font-weight: 750; }
-.metricCard > strong { color: #1f2928; font-size: clamp(1.55rem, 3vw, 2rem); letter-spacing: -0.045em; }
+.metricCard > strong { color: #1f2928; font-size: 1.45rem; letter-spacing: 0; }
 .metricCard > div:last-child { display: grid; gap: 0.18rem; }
 .metricCard > div:last-child span { color: #34413f; font-size: 0.68rem; font-weight: 750; }
 .metricCard > div:last-child small { color: #7a8784; font-size: 0.56rem; }
@@ -56,6 +57,25 @@
 .panelHeader h2 { margin: 0; color: #1f2928; font-size: 0.83rem; letter-spacing: -0.012em; }
 .update { display: inline-flex; align-items: center; gap: 0.28rem; color: #7b8785; font-size: 0.57rem; white-space: nowrap; }
 .counter { display: grid; min-width: 1.65rem; height: 1.65rem; place-items: center; border-radius: 0.52rem; background: #edf5f2; color: #185c55; font-size: 0.65rem; font-weight: 850; }
+.emptyState {
+  display: grid;
+  min-height: 21rem;
+  place-items: center;
+  align-content: center;
+  gap: 0.55rem;
+  border: 1px solid #d7e3df;
+  border-radius: 1rem;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  background: #ffffff;
+  box-shadow: 0 0.6rem 2rem rgb(18 60 58 / 4%);
+  text-align: center;
+}
+.emptyIcon { display: grid; width: 3.4rem; height: 3.4rem; margin-bottom: 0.25rem; place-items: center; border-radius: 0.8rem; background: #ddf3ea; color: #176f66; }
+.emptyState h2 { margin: 0; color: #1f2928; font-size: 1.12rem; letter-spacing: 0; }
+.emptyState p { max-width: 34rem; margin: 0 0 0.5rem; color: #687573; font-size: 0.75rem; line-height: 1.6; }
+.emptyAction { display: inline-flex; min-height: 2.85rem; align-items: center; justify-content: center; gap: 0.45rem; border-radius: 0.72rem; padding: 0 1rem; background: #185c55; color: #ffffff; font-size: 0.7rem; font-weight: 800; text-decoration: none; transition: background 160ms ease, box-shadow 160ms ease; }
+.emptyAction:hover { background: #123c3a; box-shadow: 0 0.55rem 1.4rem rgb(18 60 58 / 16%); }
+.primaryAction:focus-visible, .emptyAction:focus-visible, .errorPanel a:focus-visible { outline: 3px solid rgb(43 174 154 / 30%); outline-offset: 3px; }
 .errorPanel { display: grid; width: min(100%, 40rem); justify-items: start; gap: 0.75rem; margin: 4rem auto; border: 1px solid #efc4bf; border-radius: 1rem; padding: 1.5rem; background: #fff; }
 .errorPanel h1, .errorPanel p { margin: 0; }
 .errorPanel h1 { color: #7f302b; font-size: 1.35rem; }
@@ -74,5 +94,6 @@
 }
 @media (min-width: 1180px) {
   .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .metricCard { min-height: 9rem; padding: 1rem; }
+  .metricCard { padding: 0.8rem; }
 }
+@media (prefers-reduced-motion: reduce) { .primaryAction, .emptyAction { transition: none; } }
