@@ -3,7 +3,7 @@
 > **Autonomous Agentic Freight Orchestration for Cross-Border B2B Logistics**  
 > *Technical Specification v5.6.0 — Google WebMCP Challenge 2026*
 
-[![WebMCP Challenge 2026](https://img.shields.io/badge/WebMCP_Challenge-2026_Official-8C6316?style=for-the-badge&logo=google-chrome&logoColor=white)](https://github.com/Chujutak2024/cargomesh)
+[![WebMCP Challenge 2026 Submission](https://img.shields.io/badge/WebMCP_Challenge_2026-Submission-8C6316?style=for-the-badge&logo=google-chrome&logoColor=white)](https://webmcp.devpost.com/)
 [![Contract v5.6.0](https://img.shields.io/badge/Contract-v5.6.0_FINAL-3178C6?style=for-the-badge&logo=semantic-release&logoColor=white)](docs/00-master/CargoMesh_Planeacion_WebMCP_FINAL.md)
 [![Protocol](https://img.shields.io/badge/Protocol-Browser_Native_WebMCP-38B2AC?style=for-the-badge&logo=w3c&logoColor=white)](https://github.com/Chujutak2024/cargomesh)
 [![Backend](https://img.shields.io/badge/Backend-Supabase_PostgreSQL_RLS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
@@ -24,19 +24,65 @@
 
 ---
 
+## 🚀 WebMCP Challenge 2026 Submission
+
+CargoMesh is an agent-native B2B freight orchestrator for LATAM. It discovers a
+dynamic `0..N` carrier network and lets a browser agent quote, compare, book,
+and recover freight directly through registered carrier web applications using
+WebMCP (`document.modelContext`). The agent coordinates the workflow; carrier
+tools provide structured commercial responses, and a deterministic engine—not
+an LLM—produces the ranking.
+
+### Five provider tools
+
+| Tool | Annotation | Role in the provider pipeline |
+|---|---|---|
+| `check_service_coverage` | `readOnlyHint: true` | Verifies corridor, transport mode, service type, cargo category, and cross-border support. |
+| `check_capacity` | `readOnlyHint: true` | Verifies weight, volume, special requirements, pickup window, and delivery deadline. |
+| `quote_freight` | `readOnlyHint: true` | Returns the correlated price, breakdown, transit time, availability class, documents, and quote validity. |
+| `book_freight` | `readOnlyHint: false` | Submits an authorized, idempotent booking request for the selected provider offer. |
+| `get_provider_booking_status` | `readOnlyHint: true` | Returns provider status, payment state, location, ETA, and deduplicated lifecycle events. |
+
+The evaluator procedure, exact JSON contracts, Golden Flow payloads, recovery
+causality, and cleanup check are documented in the
+[WebMCP Judge Audit Guide](docs/04-execution/WebMCP_Judge_Audit_Guide.md).
+
+### Decoupled architecture
+
+| Layer | Technology | Responsibility and trust boundary |
+|---|---|---|
+| Frontend and provider portals | Next.js 15, React 19 | Authenticated intake, dynamic `/providers/[carrierSlug]` documents, WebMCP registration/execution, dispatch, booking, and Judge Drawer. |
+| Data and authorization | Supabase, PostgreSQL 17, Auth, RLS | Organization isolation, versioned migrations, server-side authorization, and optimistic draft concurrency through `draft_version`. Privileged credentials never enter the client bundle. |
+| Result Bridge | Next.js server routes + PostgreSQL | Validates run, carrier, `providerUrl`, `matchingServiceId`, tool identity, envelope, and timestamps before idempotent persistence. |
+| Decision Engine | TypeScript `BALANCED` | Ranks any eligible `0..N` offer collection deterministically: 25% cost, 25% reliability, 20% transit, and 10% each for availability, route experience, and organization history. |
+
+### Documentation map
+
+| Area | Source of truth |
+|---|---|
+| `docs/00-master` | [Dynamic Provider Registry ADR](docs/00-master/ADR-001_Dynamic_Provider_Registry.md) |
+| `docs/01-requirements` | [Requirements Catalogue](docs/01-requirements/CargoMesh_Catalogo_Requisitos.md) |
+| `docs/02-database` | [Supabase Data Contract](docs/02-database/CargoMesh_Supabase_Data_Contract.md) |
+| `docs/03-ux-ui` | [Devpost Screenshot Capture Plan](docs/03-ux-ui/screenshots/README.md) |
+| `docs/04-execution` | [WebMCP Judge Audit Guide](docs/04-execution/WebMCP_Judge_Audit_Guide.md) and [Team Execution Checklist](docs/04-execution/CargoMesh_Team_Execution_Checklist.md) |
+
+---
+
 ## 📖 Table of Contents
-1. [Executive Summary & Official North Star](#-executive-summary--official-north-star)
-2. [Canonical Transparency Declaration & Causality Rule](#-canonical-transparency-declaration--causality-rule)
-3. [Architectural Triad & Strict Separation of Concerns](#-architectural-triad--strict-separation-of-concerns)
-4. [The Four Data Classes](#-the-four-data-classes)
-5. [Transactional Decoupling & The Result Bridge](#-transactional-decoupling--the-result-bridge)
-6. [Deterministic Decision Engine & Balanced Formulas](#-deterministic-decision-engine--balanced-formulas)
-7. [Decision Confidence Score & Anomaly Guard](#-decision-confidence-score--anomaly-guard)
-8. [International Golden Flow Scenario Matrix](#-international-golden-flow-scenario-matrix)
-9. [Database Schema Architecture (15 Domain + 2 Observability Tables)](#-database-schema-architecture-15-domain--2-observability-tables)
-10. [WebMCP Tool Contract Specification](#-webmcp-tool-contract-specification)
-11. [73-Point Acceptance Test Summary](#-73-point-acceptance-test-summary)
-12. [Repository Structure Map](#-repository-structure-map)
+
+1. [WebMCP Challenge 2026 Submission](#-webmcp-challenge-2026-submission)
+2. [Executive Summary & Official North Star](#-executive-summary--official-north-star)
+3. [Canonical Transparency Declaration & Causality Rule](#-canonical-transparency-declaration--causality-rule)
+4. [Architectural Triad & Strict Separation of Concerns](#-architectural-triad--strict-separation-of-concerns)
+5. [The Four Data Classes](#-the-four-data-classes)
+6. [Transactional Decoupling & The Result Bridge](#-transactional-decoupling--the-result-bridge)
+7. [Deterministic Decision Engine & Balanced Formulas](#-deterministic-decision-engine--balanced-formulas)
+8. [Decision Confidence Score & Anomaly Guard](#-decision-confidence-score--anomaly-guard)
+9. [International Golden Flow Scenario Matrix](#-international-golden-flow-scenario-matrix)
+10. [Database Schema Architecture](#-database-schema-architecture-15-domain--2-observability-tables)
+11. [WebMCP Tool Contract Specification](#-webmcp-tool-contract-specification)
+12. [Acceptance Test Summary](#-73-point-acceptance-test-summary)
+13. [Repository Structure Map](#-repository-structure-map)
 
 ---
 
@@ -51,7 +97,7 @@ CargoMesh is designed as an open B2B trucking marketplace: any verified carrier 
 > **Team coordination:** Ownership, build milestones, verification checkpoints, and the multi-AI handoff protocol live in [CargoMesh Team Execution Checklist](docs/04-execution/CargoMesh_Team_Execution_Checklist.md).
 
 ### The Official North Star:
-> *"An authenticated enterprise creates a `FreightRequest`; the AI agent navigates participating carrier websites via WebMCP, retrieves real structured responses from deterministic provider fixtures, CargoMesh validates and persists those results into its database, the customer selects an eligible alternative, the carrier confirms or rejects the booking, and the system maintains operational continuity through live milestone tracking or automated recovery."*
+> *"An authenticated enterprise creates a `FreightRequest`; the AI agent navigates participating carrier websites via WebMCP, retrieves real structured responses from deterministic provider fixtures, CargoMesh validates and persists those results into its database, the customer selects an eligible alternative, the carrier confirms or rejects the booking, and the system maintains operational continuity through live milestone tracking or guided recovery."*
 
 ```mermaid
 graph TD
@@ -69,7 +115,7 @@ graph TD
     L --> M["📑 book_freight() Provider Request"]
     M --> N["⏳ PENDING_PROVIDER_CONFIRMATION"]
     N -->|CONFIRMED| O["📍 Live Tracking & Customs Timeline (get_provider_booking_status)"]
-    N -->|REJECTED / EXPIRED| P["🔄 Automated Recovery Run (Fresh Provider Evaluation)"]
+    N -->|REJECTED / EXPIRED| P["🔄 Guided Recovery Run (Fresh Provider Evaluation)"]
     O --> Q["🏁 DELIVERED (COMPLETED)"]
 ```
 
@@ -242,16 +288,15 @@ cargomesh/
 ## 🛠️ WebMCP Tool Contract Specification
 
 All carrier WebMCP tools implement a strict common envelope:
+
 - **Success**: `{ "ok": true, "data": { ... } }`
 - **Technical Failure**: `{ "ok": false, "error": { "code": "...", "message": "...", "retryable": true } }`
-- **Commercial Rejection / Expiration**: Returns `{ "ok": true, "data": { "provider_booking_status": "REJECTED" } }` *(Commercial rejections are valid business responses, not execution crashes)*.
+- **Commercial Rejection / Expiration**: Returns `{ "ok": true, "data": { "providerBookingStatus": "REJECTED" } }` *(Commercial rejections are valid business responses, not execution crashes)*.
 
-### Provider Tools:
-1. `check_service_coverage`: Verifies corridor support (`Callao/Lima -> Santiago`), transport mode (`ROAD`), and cross-border capability.
-2. `check_capacity`: Confirms origin terminal fleet readiness and payload capability.
-3. `quote_freight`: Emits deterministic quote with itemized breakdown and customs notes.
-4. `book_freight`: Submits binding booking intent and returns `provider_reference` (e.g., `AND-BOOK-8821`).
-5. `get_provider_booking_status`: Returns current lifecycle state (`CONFIRMED`, `IN_TRANSIT`, `DELIVERED`, `REJECTED`, `EXPIRED`) and tracking events.
+The registered tool inventory is summarized at the top of this README. See the
+[WebMCP Judge Audit Guide](docs/04-execution/WebMCP_Judge_Audit_Guide.md) for
+the exact input/output schemas and evaluator-ready `getTools()` / `executeTool()`
+commands.
 
 ---
 
@@ -282,10 +327,12 @@ cargomesh/
 │   │   ├── CargoMesh_Supabase_Schema_Contract.md
 │   │   └── CargoMesh_Supabase_Data_Contract.md
 │   ├── 03-ux-ui/                              # UX architecture, screen flows & WebMCP evidence
-│       ├── CargoMesh_Mockups_Requeridos.md
-│       └── CargoMesh_Mockups_WebMCP_Ajustes.md
+│   │   ├── CargoMesh_Mockups_Requeridos.md
+│   │   ├── CargoMesh_Mockups_WebMCP_Ajustes.md
+│   │   └── screenshots/README.md              # REL-02 capture plan and image slots
 │   └── 04-execution/                          # Team ownership, checklist and multi-AI handoffs
-│       └── CargoMesh_Team_Execution_Checklist.md
+│       ├── CargoMesh_Team_Execution_Checklist.md
+│       └── WebMCP_Judge_Audit_Guide.md
 ├── mockups/                                   # Standalone UX/UI HTML mockups & provider pages
 ├── supabase/                                  # Database migrations, seed, tests, and config
 │   ├── config.toml                            # Local Supabase stack configuration
@@ -299,7 +346,7 @@ cargomesh/
 │   ├── src/app/                               # App Router, Route Handlers and /providers/[carrierSlug]
 │   ├── src/components/                        # Modular UI components
 │   ├── src/lib/                               # Provider discovery, WebMCP contracts, Supabase and Decision Engine
-│   └── package.json                           # Next.js 15, React 19, Tailwind CSS, Supabase SSR
+│   └── package.json                           # Next.js 15, React 19 and Supabase SSR
 ├── backend/                                   # Reserved for post-MVP services; not part of the hackathon critical path
 ├── .gitignore                                 # Git security exclusions (.env, node_modules, temp files)
 └── README.md                                  # Executive technical specification (This document)
