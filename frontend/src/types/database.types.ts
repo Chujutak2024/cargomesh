@@ -741,6 +741,7 @@ export type Database = {
           confirmed_by_member_id: string | null
           created_at: string
           cross_border: boolean
+          draft_version: number
           delivery_deadline: string | null
           destination_address: string | null
           destination_city: string
@@ -797,6 +798,7 @@ export type Database = {
           confirmed_by_member_id?: string | null
           created_at?: string
           cross_border?: boolean
+          draft_version?: number
           delivery_deadline?: string | null
           destination_address?: string | null
           destination_city: string
@@ -853,6 +855,7 @@ export type Database = {
           confirmed_by_member_id?: string | null
           created_at?: string
           cross_border?: boolean
+          draft_version?: number
           delivery_deadline?: string | null
           destination_address?: string | null
           destination_city?: string

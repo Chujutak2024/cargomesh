@@ -336,9 +336,9 @@ test("strict input rejects missing, invalid and additional fields before calling
       registeredTool,
       JSON.stringify(invalidInput),
     );
-    const output = JSON.parse(outputJson ?? "null") as FreightRecommendationToolEnvelope;
-    assert.equal(output.ok, false);
-    if (!output.ok) assert.equal(output.error.code, "INVALID_INPUT");
+    const result = JSON.parse(outputJson ?? "null") as FreightRecommendationToolEnvelope;
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.error.code, "INVALID_INPUT");
   }
   assert.equal(requests, 0);
 });

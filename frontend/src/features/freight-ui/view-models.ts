@@ -1,4 +1,5 @@
 import type { FreightRequestIntakeStatus } from "@/features/freight-requests/intake-contracts";
+import type { RecommendationProposedFields } from "@/features/recommendations/contracts";
 
 export type FreightRequestStatus =
   | "DRAFT"
@@ -66,6 +67,7 @@ export type TrackingMapModel = {
 export type FreightIntakeModel = {
   source: "persisted" | "visual-fixture";
   freightRequestId: string;
+  draftVersion: number;
   requestId: string;
   organizationId: string;
   organization: string;
@@ -75,14 +77,27 @@ export type FreightIntakeModel = {
   updatedAt: string;
   currency: string;
   cargoProfile: string;
+  originCountry: string;
+  originCity: string;
+  originAddress: string;
   origin: string;
+  destinationCountry: string;
+  destinationCity: string;
+  destinationAddress: string;
   destination: string;
+  pickupContactName: string;
+  pickupContactPhone: string;
   pickupContact: string;
+  receiverName: string;
+  receiverCompany: string;
+  receiverPhone: string;
   deliveryContact: string;
   borderCrossing: string;
   operationalNotes: string;
   cargoCategory: string;
+  cargoCategoryId: string;
   cargoCategoryCode: string;
+  cargoDescription: string;
   transportMode: string;
   serviceType: string;
   entryMethod: string;
@@ -94,6 +109,8 @@ export type FreightIntakeModel = {
   heightCm: number | null;
   totalWeightKg: number;
   totalVolumeM3: number | null;
+  cargoWeightKg: number;
+  cargoVolumeM3: number | null;
   pickupMode: "ASAP" | "SCHEDULED";
   requiredPickup: string;
   pickupWindowStart: string;
@@ -102,6 +119,7 @@ export type FreightIntakeModel = {
   budgetMaxUsd: number | null;
   strategy: "BALANCED";
   documents: string[];
+  recommendationValues: RecommendationProposedFields;
 };
 
 export type DispatchFixtureScenario =

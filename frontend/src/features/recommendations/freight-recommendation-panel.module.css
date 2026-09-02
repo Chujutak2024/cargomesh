@@ -1,0 +1,63 @@
+.launcher { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.85rem; border: 1px solid #cfe1dc; border-radius: 1rem; padding: 0.85rem 1rem; background: #f4fbf8; }
+.icon { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border-radius: 0.75rem; background: #185c55; color: #fff; }
+.launcher h2 { margin: 0 0 0.2rem; color: #123c3a; font-size: 0.88rem; }
+.launcher p { margin: 0; color: #52605e; font-size: 0.68rem; line-height: 1.5; }
+.launcher .errorText { margin-top: 0.3rem; color: #a44740; }
+.launcher .notice { margin-top: 0.3rem; color: #185c55; font-weight: 700; }
+.launchButton, .cancelButton, .applyButton, .closeButton, .suggestionTabs button { min-height: 2.75rem; border-radius: 0.7rem; font: inherit; font-size: 0.68rem; font-weight: 800; cursor: pointer; }
+.launchButton { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; border: 1px solid #185c55; padding: 0 0.85rem; background: #185c55; color: #fff; white-space: nowrap; }
+.launchButton:disabled { cursor: not-allowed; opacity: 0.55; }
+.launchButton:focus-visible, .cancelButton:focus-visible, .applyButton:focus-visible, .closeButton:focus-visible, .suggestionTabs button:focus-visible, .diffList input:focus-visible { outline: 3px solid rgb(43 174 154 / 30%); outline-offset: 2px; }
+.scrim { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: 1rem; background: rgb(7 26 25 / 58%); }
+.modal { width: min(48rem, 100%); max-height: calc(100dvh - 2rem); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; border: 1px solid #d7dfdc; border-radius: 1rem; background: #fff; box-shadow: 0 1.4rem 4rem rgb(7 26 25 / 25%); }
+.modalHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #e6ebe8; padding: 1rem 1.1rem; }
+.eyebrow { color: #2b7d72; font-size: 0.58rem; font-weight: 850; letter-spacing: 0.12em; text-transform: uppercase; }
+.modalHeader h2 { margin: 0.2rem 0 0.25rem; color: #1f2928; font-size: 1.1rem; }
+.modalHeader p { margin: 0; color: #687573; font-size: 0.7rem; line-height: 1.5; }
+.closeButton { display: grid; width: 2.75rem; flex: 0 0 2.75rem; place-items: center; border: 1px solid #d7dfdc; background: #fff; color: #52605e; }
+.modalBody { overflow-y: auto; padding: 1rem 1.1rem; }
+.state { min-height: 14rem; display: grid; align-content: center; justify-items: center; gap: 0.45rem; color: #2b7d72; text-align: center; }
+.state strong { color: #1f2928; font-size: 0.9rem; }
+.state p { max-width: 28rem; margin: 0; color: #687573; font-size: 0.72rem; line-height: 1.55; }
+.errorState { color: #a44740; }
+.suggestionTabs { display: flex; gap: 0.45rem; overflow-x: auto; margin-bottom: 0.8rem; }
+.suggestionTabs button { border: 1px solid #d7dfdc; padding: 0 0.75rem; background: #fff; color: #52605e; white-space: nowrap; }
+.suggestionTabs button[aria-selected="true"] { border-color: #185c55; background: #edf8f4; color: #185c55; }
+.evidence { display: grid; gap: 0.7rem; border: 1px solid #cfe1dc; border-radius: 0.85rem; padding: 0.85rem; background: #f4fbf8; }
+.evidence div { display: grid; gap: 0.15rem; }
+.evidence small { color: #687573; font-size: 0.57rem; font-weight: 750; text-transform: uppercase; }
+.evidence strong { color: #29413e; font-size: 0.72rem; line-height: 1.5; }
+.evidence ul { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0; padding: 0; list-style: none; }
+.evidence li { border-radius: 99rem; padding: 0.25rem 0.5rem; background: #dff2eb; color: #185c55; font-size: 0.55rem; font-weight: 800; }
+.diffList { display: grid; gap: 0.6rem; margin: 1rem 0 0; border: 0; padding: 0; }
+.diffList legend { margin-bottom: 0.65rem; color: #34413f; font-size: 0.72rem; font-weight: 850; }
+.diffList > label { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.65rem; align-items: start; border: 1px solid #dde3e0; border-radius: 0.8rem; padding: 0.75rem; cursor: pointer; }
+.diffList > label:has(input:checked) { border-color: #2b7d72; background: #f4fbf8; }
+.diffList input { width: 1.05rem; height: 1.05rem; margin: 0.15rem 0 0; accent-color: #185c55; }
+.diffList .diffDisabled { cursor: not-allowed; opacity: 0.65; }
+.diffContent { display: grid; min-width: 0; gap: 0.5rem; }
+.diffTitle { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.4rem; color: #34413f; font-size: 0.7rem; font-weight: 800; }
+.diffTitle code { color: #687573; font-size: 0.57rem; font-weight: 650; }
+.values { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.55rem; }
+.values > span:not([aria-hidden]) { display: grid; min-width: 0; gap: 0.15rem; }
+.values small { color: #7a8784; font-size: 0.55rem; text-transform: uppercase; }
+.values strong { overflow-wrap: anywhere; color: #34413f; font-size: 0.68rem; line-height: 1.4; }
+.unavailable { color: #7a8784; font-size: 0.58rem; line-height: 1.45; }
+.integrationPending { margin: 0.85rem 0 0; border: 1px solid #d8c89e; border-radius: 0.75rem; padding: 0.7rem; background: #fff9e8; color: #6e5720; font-size: 0.68rem; line-height: 1.5; }
+.modalFooter { display: flex; justify-content: flex-end; gap: 0.65rem; border-top: 1px solid #e6ebe8; padding: 0.85rem 1.1rem; background: #fbfcfa; }
+.cancelButton { border: 1px solid #d7dfdc; padding: 0 0.85rem; background: #fff; color: #52605e; }
+.applyButton { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border: 1px solid #185c55; padding: 0 0.9rem; background: #185c55; color: #fff; }
+.applyButton:disabled { cursor: not-allowed; opacity: 0.48; }
+.spinner { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 640px) {
+  .launcher { grid-template-columns: auto minmax(0, 1fr); }
+  .launchButton { grid-column: 1 / -1; width: 100%; }
+  .scrim { place-items: end center; padding: 0; }
+  .modal { max-height: 92dvh; border-radius: 1rem 1rem 0 0; }
+  .modalFooter { flex-direction: column-reverse; }
+  .cancelButton, .applyButton { width: 100%; }
+  .values { grid-template-columns: 1fr; }
+  .values > span[aria-hidden] { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
