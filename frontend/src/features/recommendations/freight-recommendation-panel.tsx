@@ -32,7 +32,7 @@ type FreightRecommendationPanelProps = {
   webMcpReady: boolean;
   registrationError: string | null;
   onApply?: (fields: RecommendationProposedFields, signal: AbortSignal) => Promise<void>;
-  onStaleDraft: () => Promise<void> | void;
+  onStaleDraft: (signal: AbortSignal) => Promise<void> | void;
 };
 
 const SOURCE_LABELS: Record<FreightRecommendationSuggestion["sourceType"], string> = {
@@ -134,7 +134,7 @@ export function FreightRecommendationPanel({
         setSuggestions([]);
         setSelectedFields(new Set());
         setNotice("La sugerencia quedó obsoleta. Se está recargando el borrador vigente.");
-        await onStaleDraft();
+        await onStaleDraft(controller.signal);
         return;
       }
       if (!result.ok) {
@@ -192,7 +192,7 @@ export function FreightRecommendationPanel({
         setOpen(false);
         setSuggestions([]);
         setSelectedFields(new Set());
-        await onStaleDraft();
+        await onStaleDraft(controller.signal);
         return;
       }
       setError(caught instanceof Error ? caught.message : "D1-01 no confirmó los cambios.");

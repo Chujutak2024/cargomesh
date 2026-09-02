@@ -11,6 +11,7 @@ import {
 import {
   applyRecommendationFieldsToIntake,
   buildRecommendationDiff,
+  canonicalValuesFromIntake,
   classifyRecommendationResult,
   selectApplicableRecommendationFields,
 } from "./recommendation-ui-policy";
@@ -135,7 +136,6 @@ test("D1-01 acceptance revalidates a newer canonical draft before provider input
     origin_city: "Arica",
     destination_city: "Tacna",
     pickup_contact_name: "Ana",
-    cargo_category_id: "c0000000-0000-0000-0000-000000000099",
     cargo_description: "Carga general",
   };
   const persisted = await persistAndRevalidateRecommendation(
@@ -143,11 +143,20 @@ test("D1-01 acceptance revalidates a newer canonical draft before provider input
     fields,
     async (input) => {
       assert.equal(input.draftVersion, 1);
-      return applyRecommendationFieldsToIntake({
-        ...form,
+      return {
+        schemaVersion: "1.0",
+        freightRequestId: form.freightRequestId,
+        requestCode: form.requestId,
         draftVersion: 2,
-        cargoCategoryCode: "GENERAL",
-      }, input.acceptedFields);
+        fields: {
+          ...canonicalValuesFromIntake(form),
+          ...input.acceptedFields,
+        },
+        normalized: {
+          cargoWeightKg: 8_000,
+          cargoVolumeM3: 18,
+        },
+      };
     },
     new AbortController().signal,
   );
@@ -166,7 +175,7 @@ test("D1-01 acceptance revalidates a newer canonical draft before provider input
   assert.equal(persisted.draftVersion, 2);
   assert.equal(inputs.check_service_coverage.origin, "Callao, Arica, PE");
   assert.equal(inputs.check_service_coverage.destination, "Tacna, CL");
-  assert.equal(inputs.check_service_coverage.cargo_category, "GENERAL");
+  assert.equal(inputs.check_service_coverage.cargo_category, "MACHINERY");
 });
 
 test("fields without visible operational support remain comparison-only", () => {

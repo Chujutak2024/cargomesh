@@ -1,6 +1,10 @@
 import type { FreightIntakeModel } from "@/features/freight-ui/view-models";
 import type { RecommendationProposedFields } from "./contracts";
-import { canonicalValuesFromIntake } from "./recommendation-ui-policy";
+import type { FreightRequestDraft } from "./recommendation-draft-contracts";
+import {
+  applyRecommendationFieldsToIntake,
+  canonicalValuesFromIntake,
+} from "./recommendation-ui-policy";
 
 export type PersistRecommendationAcceptanceInput = {
   freightRequestId: string;
@@ -11,7 +15,7 @@ export type PersistRecommendationAcceptanceInput = {
 export type PersistRecommendationAcceptance = (
   input: PersistRecommendationAcceptanceInput,
   signal: AbortSignal,
-) => Promise<FreightIntakeModel>;
+) => Promise<FreightRequestDraft>;
 
 export class RecommendationAcceptanceError extends Error {
   constructor(
@@ -29,16 +33,16 @@ export async function persistAndRevalidateRecommendation(
   persist: PersistRecommendationAcceptance,
   signal: AbortSignal,
 ): Promise<FreightIntakeModel> {
-  const persisted = await persist({
+  const draft = await persist({
     freightRequestId: current.freightRequestId,
     draftVersion: current.draftVersion,
     acceptedFields,
   }, signal);
 
   if (
-    persisted.freightRequestId !== current.freightRequestId ||
-    !Number.isInteger(persisted.draftVersion) ||
-    persisted.draftVersion <= current.draftVersion
+    draft.freightRequestId !== current.freightRequestId ||
+    !Number.isInteger(draft.draftVersion) ||
+    draft.draftVersion <= current.draftVersion
   ) {
     throw new RecommendationAcceptanceError(
       "INVALID_CANONICAL_DRAFT",
@@ -47,10 +51,10 @@ export async function persistAndRevalidateRecommendation(
   }
 
   if (
-    !Number.isFinite(persisted.cargoWeightKg) ||
-    persisted.cargoWeightKg <= 0 ||
-    !Number.isFinite(persisted.cargoVolumeM3) ||
-    persisted.cargoVolumeM3 <= 0
+    !Number.isFinite(draft.normalized.cargoWeightKg) ||
+    draft.normalized.cargoWeightKg <= 0 ||
+    !Number.isFinite(draft.normalized.cargoVolumeM3) ||
+    (draft.normalized.cargoVolumeM3 ?? 0) <= 0
   ) {
     throw new RecommendationAcceptanceError(
       "INVALID_CANONICAL_DRAFT",
@@ -58,6 +62,7 @@ export async function persistAndRevalidateRecommendation(
     );
   }
 
+  const persisted = applyFreightRequestDraftToIntake(current, draft);
   const canonical = canonicalValuesFromIntake(persisted);
   for (const [field, expected] of Object.entries(acceptedFields)) {
     if (JSON.stringify(canonical[field as keyof RecommendationProposedFields]) !== JSON.stringify(expected)) {
@@ -68,4 +73,28 @@ export async function persistAndRevalidateRecommendation(
     }
   }
   return persisted;
+}
+
+export function applyFreightRequestDraftToIntake(
+  current: FreightIntakeModel,
+  draft: FreightRequestDraft,
+): FreightIntakeModel {
+  const cargoVolumeM3 = draft.normalized.cargoVolumeM3;
+  if (!Number.isFinite(cargoVolumeM3) || (cargoVolumeM3 ?? 0) <= 0) {
+    throw new RecommendationAcceptanceError(
+      "INVALID_CANONICAL_DRAFT",
+      "D1-01 no devolvió un volumen canónico válido.",
+    );
+  }
+
+  return applyRecommendationFieldsToIntake({
+    ...current,
+    freightRequestId: draft.freightRequestId,
+    requestId: draft.requestCode,
+    draftVersion: draft.draftVersion,
+    totalWeightKg: draft.normalized.cargoWeightKg,
+    totalVolumeM3: cargoVolumeM3 as number,
+    cargoWeightKg: draft.normalized.cargoWeightKg,
+    cargoVolumeM3: cargoVolumeM3 as number,
+  }, draft.fields);
 }
