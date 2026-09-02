@@ -1,6 +1,7 @@
 import { PackageOpen } from "lucide-react";
 import Link from "next/link";
 import type { FreightRequestListItem } from "@/features/freight-ui/view-models";
+import { buildFreightRequestIntakeHref } from "@/features/dashboard/dashboard-view-model";
 import { StatusBadge } from "./status-badge";
 import styles from "./request-table.module.css";
 
@@ -23,18 +24,18 @@ export function RequestTable({ requests }: { requests: FreightRequestListItem[] 
           <tr>
             <th>Carga</th>
             <th>Ruta</th>
-            <th>Unidad y conductor</th>
-            <th>Llegada estimada</th>
+            <th>Carga</th>
+            <th>Programación</th>
             <th>Estado</th>
           </tr>
         </thead>
         <tbody>
           {requests.map((request) => (
             <tr key={request.id}>
-              <td data-label="Carga"><strong className={styles.requestId}>{request.id}</strong><span>{request.cargoSummary}</span></td>
+              <td data-label="Solicitud"><Link className={styles.requestLink} href={buildFreightRequestIntakeHref(request.requestCode)}>{request.requestCode}</Link><span>{request.cargoSummary}</span></td>
               <td data-label="Ruta"><strong>{request.origin} → {request.destination}</strong><span>{request.corridorNote ?? request.cargoDetail}</span></td>
-              <td data-label="Unidad y conductor"><strong>{request.vehicleCode}</strong><span>{request.driver}</span></td>
-              <td data-label="Llegada estimada"><strong>{request.eta}</strong><span>Recojo · {request.pickupDate}</span></td>
+              <td data-label="Carga"><strong>{request.cargoSummary}</strong><span>{request.cargoDetail}</span></td>
+              <td data-label="Programación"><strong>Recojo · {request.pickupDate}</strong><span>Actualizada · {request.updatedAt}</span></td>
               <td data-label="Estado"><StatusBadge status={request.status} /></td>
             </tr>
           ))}

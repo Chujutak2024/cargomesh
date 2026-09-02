@@ -1,87 +1,89 @@
 import {
-  ArrowUpRight,
   CircleCheckBig,
   Clock3,
   PackageCheck,
   Plus,
   Truck,
-  Warehouse,
 } from "lucide-react";
 import Link from "next/link";
-import { CapacityPanel } from "@/components/capacity-panel";
-import { LiveTrackingMap } from "@/components/live-tracking-map";
+
 import { RequestTable } from "@/components/request-table";
-import { VehicleStatusPanel } from "@/components/vehicle-status-panel";
 import { requireOperationalRouteAccess } from "@/features/auth/route-guard";
-import {
-  dashboardSummaryFixture,
-  freightRequestsFixture,
-  logisticsCapacityFixture,
-  trackingMapFixture,
-  vehiclesFixture,
-} from "@/features/freight-ui/ui-fixtures";
+import { getOrganizationDashboard } from "@/features/dashboard/dashboard-server";
+import type { DashboardViewModel } from "@/features/dashboard/dashboard-view-model";
 import styles from "./page.module.css";
 
-const availableVehicles = vehiclesFixture.filter((vehicle) => vehicle.status === "AVAILABLE").length;
+export const dynamic = "force-dynamic";
 
-const metrics = [
-  {
-    label: "Cargas activas",
-    value: dashboardSummaryFixture.activeRequests,
-    detail: "1 requiere selección",
-    trend: "+12% esta semana",
-    icon: PackageCheck,
-    tone: "turquoise",
-  },
-  {
-    label: "En tránsito",
-    value: dashboardSummaryFixture.activeShipments,
-    detail: "Sin incidencias críticas",
-    trend: "Operación estable",
-    icon: Truck,
-    tone: "green",
-  },
-  {
-    label: "Vehículos disponibles",
-    value: availableVehicles,
-    detail: "4 unidades monitoreadas",
-    trend: "Listo para asignar",
-    icon: Warehouse,
-    tone: "cream",
-  },
-  {
-    label: "Entregas a tiempo",
-    value: `${dashboardSummaryFixture.slaCompliance}%`,
-    detail: "Últimos 30 días",
-    trend: "+2.4% vs. periodo anterior",
-    icon: CircleCheckBig,
-    tone: "positive",
-  },
-];
+function DashboardError() {
+  return (
+    <section className={styles.errorPanel} role="alert">
+      <h1>No pudimos cargar el dashboard</h1>
+      <p>La consulta autenticada falló. Reintenta para recuperar los datos reales de tu organización.</p>
+      <Link href="/dashboard">Reintentar</Link>
+    </section>
+  );
+}
 
 export default async function DashboardPage() {
-  await requireOperationalRouteAccess();
+  const member = await requireOperationalRouteAccess();
+  let dashboard: DashboardViewModel;
+  try {
+    dashboard = await getOrganizationDashboard(member);
+  } catch {
+    return <DashboardError />;
+  }
+
+  const metrics = [
+    {
+      label: "Cargas activas",
+      value: dashboard.summary.activeRequests,
+      detail: "Solicitudes abiertas",
+      icon: PackageCheck,
+      tone: "turquoise",
+    },
+    {
+      label: "Esperando selección",
+      value: dashboard.summary.awaitingSelection,
+      detail: "Requieren una decisión",
+      icon: Clock3,
+      tone: "cream",
+    },
+    {
+      label: "En tránsito",
+      value: dashboard.summary.inTransit,
+      detail: "Bookings en movimiento",
+      icon: Truck,
+      tone: "green",
+    },
+    {
+      label: "Completadas",
+      value: dashboard.summary.completed,
+      detail: "Bookings finalizados",
+      icon: CircleCheckBig,
+      tone: "positive",
+    },
+  ];
 
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
         <div>
-          <span className={styles.eyebrow}>Sábado, 29 de agosto</span>
-          <h1>Control de operaciones</h1>
-          <p>Supervisa cargas, flota y capacidad logística desde una sola vista.</p>
+          <span className={styles.eyebrow}>Datos de la organización activa</span>
+          <h1>Control de solicitudes</h1>
+          <p>Consulta el estado persistido de tus cargas sin métricas, flota o capacidad simuladas.</p>
         </div>
         <Link className={styles.primaryAction} href="/freight-request/new">
           <Plus size={17} aria-hidden="true" />
-          <span>Nueva carga<small>Crear solicitud</small></span>
+          <span>Nueva carga<small>Abrir intake</small></span>
         </Link>
       </section>
 
-      <section className={styles.metrics} aria-label="Indicadores operativos">
-        {metrics.map(({ label, value, detail, trend, icon: Icon, tone }) => (
+      <section className={styles.metrics} aria-label="Indicadores derivados de solicitudes reales">
+        {metrics.map(({ label, value, detail, icon: Icon, tone }) => (
           <article className={styles.metricCard} key={label}>
             <div className={styles.metricTop}>
               <span className={`${styles.metricIcon} ${styles[tone]}`}><Icon size={17} strokeWidth={1.8} aria-hidden="true" /></span>
-              <span className={styles.trend}><ArrowUpRight size={12} aria-hidden="true" /> {trend}</span>
             </div>
             <strong>{value}</strong>
             <div><span>{label}</span><small>{detail}</small></div>
@@ -89,38 +91,13 @@ export default async function DashboardPage() {
         ))}
       </section>
 
-      <section className={styles.operationsGrid}>
-        <article className={`${styles.panel} ${styles.trackingPanel}`}>
-          <header className={styles.panelHeader}>
-            <div><span className={styles.eyebrow}>Red operativa</span><h2>Seguimiento en vivo</h2></div>
-            <span className={styles.update}><Clock3 size={13} aria-hidden="true" /> Actualizado hace 2 min</span>
-          </header>
-          <LiveTrackingMap model={trackingMapFixture} />
-        </article>
-
-        <article className={`${styles.panel} ${styles.vehiclePanel}`}>
-          <header className={styles.panelHeader}>
-            <div><span className={styles.eyebrow}>Flota</span><h2>Estado de vehículos</h2></div>
-            <span className={styles.counter}>{vehiclesFixture.length}</span>
-          </header>
-          <VehicleStatusPanel vehicles={vehiclesFixture} />
-        </article>
-      </section>
-
-      <section className={styles.dataGrid}>
+      <section className={styles.dataGridSingle}>
         <article className={styles.panel}>
           <header className={styles.panelHeader}>
-            <div><span className={styles.eyebrow}>Actividad reciente</span><h2>Cargas recientes</h2></div>
-            <span className={styles.update}>Vista de demostración</span>
+            <div><span className={styles.eyebrow}>Actividad persistida</span><h2>Solicitudes de la organización</h2></div>
+            <span className={styles.counter}>{dashboard.requests.length}</span>
           </header>
-          <RequestTable requests={freightRequestsFixture} />
-        </article>
-
-        <article className={styles.panel}>
-          <header className={styles.panelHeader}>
-            <div><span className={styles.eyebrow}>Infraestructura</span><h2>Capacidad logística</h2></div>
-          </header>
-          <CapacityPanel centers={logisticsCapacityFixture} />
+          <RequestTable requests={dashboard.requests} />
         </article>
       </section>
     </div>

@@ -12,6 +12,7 @@
   white-space: nowrap;
 }
 .dot { width: 0.36rem; height: 0.36rem; border-radius: 50%; background: currentColor; }
-.PENDING, .AWAITING_SELECTION { color: #775818; background: #fff4d9; border-color: #efd69d; }
+.DRAFT, .PENDING, .ORCHESTRATING, .AWAITING_SELECTION, .BOOKING { color: #775818; background: #fff4d9; border-color: #efd69d; }
 .BOOKED, .IN_TRANSIT { color: #185c55; background: #ddf3ea; border-color: #b8dfd3; }
-.DELIVERED { color: #246c55; background: #e3f4ec; border-color: #b9dfcf; }
+.COMPLETED { color: #246c55; background: #e3f4ec; border-color: #b9dfcf; }
+.FAILED, .CANCELLED { color: #9b3c35; background: #fff0ee; border-color: #efc4bf; }

@@ -49,12 +49,18 @@
 .metricCard > div:last-child small { color: #7a8784; font-size: 0.56rem; }
 
 .operationsGrid, .dataGrid { display: grid; min-width: 0; gap: 1rem; }
+.dataGridSingle { display: grid; min-width: 0; }
 .panel { min-width: 0; overflow: hidden; border: 1px solid #dde3e0; border-radius: 1rem; background: #ffffff; box-shadow: 0 0.6rem 2rem rgb(18 60 58 / 4%); }
 .panelHeader { display: flex; min-height: 4rem; align-items: center; justify-content: space-between; gap: 0.8rem; padding: 0.85rem 1rem; border-bottom: 1px solid #e4e9e6; }
 .panelHeader > div { display: grid; gap: 0.16rem; }
 .panelHeader h2 { margin: 0; color: #1f2928; font-size: 0.83rem; letter-spacing: -0.012em; }
 .update { display: inline-flex; align-items: center; gap: 0.28rem; color: #7b8785; font-size: 0.57rem; white-space: nowrap; }
 .counter { display: grid; min-width: 1.65rem; height: 1.65rem; place-items: center; border-radius: 0.52rem; background: #edf5f2; color: #185c55; font-size: 0.65rem; font-weight: 850; }
+.errorPanel { display: grid; width: min(100%, 40rem); justify-items: start; gap: 0.75rem; margin: 4rem auto; border: 1px solid #efc4bf; border-radius: 1rem; padding: 1.5rem; background: #fff; }
+.errorPanel h1, .errorPanel p { margin: 0; }
+.errorPanel h1 { color: #7f302b; font-size: 1.35rem; }
+.errorPanel p { color: #687573; font-size: 0.75rem; line-height: 1.6; }
+.errorPanel a { border-radius: 0.7rem; padding: 0.65rem 0.9rem; background: #185c55; color: #fff; font-size: 0.7rem; font-weight: 800; text-decoration: none; }
 
 @media (max-width: 620px) {
   .hero { align-items: flex-start; flex-direction: column; }
