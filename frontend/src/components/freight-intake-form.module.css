@@ -109,9 +109,24 @@
 .tempRangeRow { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; background: #f0f7fb; border: 1px solid #cee1ee; border-radius: 0.65rem; padding: 0.6rem 0.85rem; }
 .tempInput { width: 4.5rem; padding: 0.35rem 0.5rem; border: 1px solid #b4d1e5; border-radius: 0.45rem; font-family: inherit; font-size: 0.78rem; text-align: center; }
 
+/* STEP 4: PRE-FLIGHT CHECKLIST */
+.checklistGrid { display: grid; gap: 0.65rem; margin-bottom: 1.15rem; }
+.checklistItem { display: flex; align-items: flex-start; gap: 0.75rem; background: #ffffff; border: 1px solid #e1e7e4; border-radius: 0.75rem; padding: 0.75rem 1rem; }
+.checklistIcon { display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: #edf8f4; color: #185c55; flex: 0 0 auto; margin-top: 0.1rem; }
+.checklistItem > div { display: flex; flex-direction: column; gap: 0.15rem; }
+.checklistLabel { font-size: 0.64rem; font-weight: 750; color: #687573; text-transform: uppercase; letter-spacing: 0.03em; }
+.checklistItem strong { font-size: 0.8rem; color: #1f302d; font-weight: 800; }
+.checklistItem small { font-size: 0.68rem; color: #687573; }
+
+.notesTextarea { width: 100%; border: 1px solid #d7dfdc; border-radius: 0.7rem; padding: 0.65rem 0.8rem; font-family: inherit; font-size: 0.76rem; color: #1f302d; resize: vertical; min-height: 4.5rem; }
+.advancedRouteSection { margin-top: 0.6rem; border-top: 1px dashed #e1e7e4; padding-top: 0.65rem; }
+.advancedRouteSection summary { font-size: 0.72rem; font-weight: 750; color: #2b7d72; cursor: pointer; user-select: none; margin-bottom: 0.75rem; }
+.advancedRouteSection summary:hover { color: #185c55; }
+
 @media (min-width: 700px) {
   .fieldGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fieldWide { grid-column: 1 / -1; }
+  .checklistGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .reviewGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (min-width: 980px) { .formLayout { grid-template-columns: minmax(0, 1fr) 18rem; } .summaryCard { position: sticky; top: 6.2rem; } }

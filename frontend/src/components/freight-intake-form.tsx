@@ -517,14 +517,17 @@ export function FreightIntakeForm({
       <form className={styles.formLayout} onSubmit={submit} aria-busy={submitting || saving}>
         <section className={styles.formCard} aria-labelledby={`step-title-${step}`}>
           {step === 0 ? <>
-            <FormHeading id="step-title-0" title="Organización y solicitante" description="Selecciona el supervisor responsable y el perfil operativo estándar de la empresa." />
+            <FormHeading id="step-title-0" title="Organización y solicitante" description="Selecciona el contexto operativo, solicitante y el perfil estándar de la empresa." />
             <div className={styles.fieldGrid}>
               <Field label="Organización activa">
                 <input value={`${form.organization} · Empresa Verificada`} readOnly />
               </Field>
-              <Field label="Solicitante (Supervisor a cargo)">
+              <Field label="Solicitante">
+                <input value="CargoMesh Operator (REQUESTER)" readOnly />
+              </Field>
+              <Field label="Supervisor responsable (opcional)" wide>
                 {readOnly ? (
-                  <input value={form.requester} readOnly />
+                  <input value={form.requester || "María Torres (Supervisor)"} readOnly />
                 ) : (
                   <select
                     value={form.operatorMemberId || DEMO_OPERATORS[0].id}
@@ -584,8 +587,8 @@ export function FreightIntakeForm({
               </Field>
             </div>
             <InfoBox>
-              {readOnly
-                ? "La identidad y la membresía se validaron server-side; esta vista no las sustituye."
+              {form.cargoProfile
+                ? `✓ Perfil aplicado: "${form.cargoProfile}". Pre-configura automáticamente categoría, presentación y dimensiones en el Paso 3.`
                 : "Al seleccionar un perfil de carga estándar, el sistema pre-configura automáticamente la categoría oficial, método de embalaje y cubicaje en el Paso 3."}
             </InfoBox>
           </> : null}
@@ -684,15 +687,7 @@ export function FreightIntakeForm({
                     </select>
                   )}
                 </Field>
-                <Field label="Coordenadas GPS (opcional)">
-                  <input
-                    readOnly={readOnly}
-                    placeholder="ej. -12.0464, -77.0428"
-                    value={originCoords}
-                    onChange={(event) => setOriginCoords(event.target.value)}
-                  />
-                </Field>
-                <Field label="Dirección de recojo" wide>
+                <Field label="Dirección de recojo">
                   <input
                     readOnly={readOnly}
                     placeholder="ej. Av. Néstor Gambetta 100, Almacén Central"
@@ -700,43 +695,57 @@ export function FreightIntakeForm({
                     onChange={(event) => update("originAddress", event.target.value)}
                   />
                 </Field>
-                <Field label="Contacto de recojo">
-                  <input
-                    readOnly={readOnly}
-                    placeholder="ej. Ana Pérez"
-                    value={form.pickupContactName}
-                    onChange={(event) => {
-                      const name = event.target.value;
-                      setForm((curr) => ({
-                        ...curr,
-                        pickupContactName: name,
-                        pickupContact: curr.pickupContactPhone ? `${name} (${curr.pickupContactPhone})` : name,
-                      }));
-                    }}
-                  />
-                </Field>
-                <Field label="Teléfono de recojo">
-                  <div className={styles.phoneInputGroup}>
-                    <span className={styles.dialBadge}>{getCountryDialCode(form.originCountry)}</span>
+              </div>
+
+              <details className={styles.advancedRouteSection}>
+                <summary><span>👤 Datos operativos de contacto y ubicación (opcional) ▾</span></summary>
+                <div className={styles.fieldGrid}>
+                  <Field label="Contacto de recojo">
                     <input
                       readOnly={readOnly}
-                      placeholder="999 555 101"
-                      type="tel"
-                      value={form.pickupContactPhone ? form.pickupContactPhone.replace(/^\+\d+\s*/, "") : ""}
+                      placeholder="ej. Ana Pérez"
+                      value={form.pickupContactName}
                       onChange={(event) => {
-                        const dial = getCountryDialCode(form.originCountry);
-                        const rawDigits = event.target.value.replace(/[^\d\s-]/g, "");
-                        const fullPhone = rawDigits ? `${dial} ${rawDigits.trim()}` : "";
+                        const name = event.target.value;
                         setForm((curr) => ({
                           ...curr,
-                          pickupContactPhone: fullPhone,
-                          pickupContact: curr.pickupContactName ? `${curr.pickupContactName} (${fullPhone})` : fullPhone,
+                          pickupContactName: name,
+                          pickupContact: curr.pickupContactPhone ? `${name} (${curr.pickupContactPhone})` : name,
                         }));
                       }}
                     />
-                  </div>
-                </Field>
-              </div>
+                  </Field>
+                  <Field label="Teléfono de recojo">
+                    <div className={styles.phoneInputGroup}>
+                      <span className={styles.dialBadge}>{getCountryDialCode(form.originCountry)}</span>
+                      <input
+                        readOnly={readOnly}
+                        placeholder="999 555 101"
+                        type="tel"
+                        value={form.pickupContactPhone ? form.pickupContactPhone.replace(/^\+\d+\s*/, "") : ""}
+                        onChange={(event) => {
+                          const dial = getCountryDialCode(form.originCountry);
+                          const rawDigits = event.target.value.replace(/[^\d\s-]/g, "");
+                          const fullPhone = rawDigits ? `${dial} ${rawDigits.trim()}` : "";
+                          setForm((curr) => ({
+                            ...curr,
+                            pickupContactPhone: fullPhone,
+                            pickupContact: curr.pickupContactName ? `${curr.pickupContactName} (${fullPhone})` : fullPhone,
+                          }));
+                        }}
+                      />
+                    </div>
+                  </Field>
+                  <Field label="Ubicación precisa (Lat, Lng) — opcional" wide>
+                    <input
+                      readOnly={readOnly}
+                      placeholder="ej. -12.0464, -77.0428"
+                      value={originCoords}
+                      onChange={(event) => setOriginCoords(event.target.value)}
+                    />
+                  </Field>
+                </div>
+              </details>
             </div>
 
             {/* SECCIÓN 2: DATOS DEL DESTINO (ENTREGA) */}
@@ -826,15 +835,7 @@ export function FreightIntakeForm({
                     </select>
                   )}
                 </Field>
-                <Field label="Coordenadas GPS (opcional)">
-                  <input
-                    readOnly={readOnly}
-                    placeholder="ej. -33.4489, -70.6693"
-                    value={destCoords}
-                    onChange={(event) => setDestCoords(event.target.value)}
-                  />
-                </Field>
-                <Field label="Dirección de entrega" wide>
+                <Field label="Dirección de entrega">
                   <input
                     readOnly={readOnly}
                     placeholder="ej. Av. Logística 200, Centro de Distribución"
@@ -842,58 +843,72 @@ export function FreightIntakeForm({
                     onChange={(event) => update("destinationAddress", event.target.value)}
                   />
                 </Field>
-                <Field label="Empresa de entrega">
-                  <input
-                    readOnly={readOnly}
-                    placeholder="ej. Destino Minero S.A."
-                    value={form.receiverCompany}
-                    onChange={(event) => {
-                      const comp = event.target.value;
-                      setForm((curr) => ({
-                        ...curr,
-                        receiverCompany: comp,
-                        deliveryContact: [curr.receiverName, comp, curr.receiverPhone].filter(Boolean).join(" · "),
-                      }));
-                    }}
-                  />
-                </Field>
-                <Field label="Contacto de entrega">
-                  <input
-                    readOnly={readOnly}
-                    placeholder="ej. Diego Ramos"
-                    value={form.receiverName}
-                    onChange={(event) => {
-                      const name = event.target.value;
-                      setForm((curr) => ({
-                        ...curr,
-                        receiverName: name,
-                        deliveryContact: [name, curr.receiverCompany, curr.receiverPhone].filter(Boolean).join(" · "),
-                      }));
-                    }}
-                  />
-                </Field>
-                <Field label="Teléfono de entrega">
-                  <div className={styles.phoneInputGroup}>
-                    <span className={styles.dialBadge}>{getCountryDialCode(form.destinationCountry)}</span>
+              </div>
+
+              <details className={styles.advancedRouteSection}>
+                <summary><span>👤 Datos operativos de contacto y ubicación (opcional) ▾</span></summary>
+                <div className={styles.fieldGrid}>
+                  <Field label="Empresa de entrega">
                     <input
                       readOnly={readOnly}
-                      placeholder="999 000 222"
-                      type="tel"
-                      value={form.receiverPhone ? form.receiverPhone.replace(/^\+\d+\s*/, "") : ""}
+                      placeholder="ej. Destino Minero S.A."
+                      value={form.receiverCompany}
                       onChange={(event) => {
-                        const dial = getCountryDialCode(form.destinationCountry);
-                        const rawDigits = event.target.value.replace(/[^\d\s-]/g, "");
-                        const fullPhone = rawDigits ? `${dial} ${rawDigits.trim()}` : "";
+                        const comp = event.target.value;
                         setForm((curr) => ({
                           ...curr,
-                          receiverPhone: fullPhone,
-                          deliveryContact: [curr.receiverName, curr.receiverCompany, fullPhone].filter(Boolean).join(" · "),
+                          receiverCompany: comp,
+                          deliveryContact: [curr.receiverName, comp, curr.receiverPhone].filter(Boolean).join(" · "),
                         }));
                       }}
                     />
-                  </div>
-                </Field>
-              </div>
+                  </Field>
+                  <Field label="Contacto de entrega">
+                    <input
+                      readOnly={readOnly}
+                      placeholder="ej. Diego Ramos"
+                      value={form.receiverName}
+                      onChange={(event) => {
+                        const name = event.target.value;
+                        setForm((curr) => ({
+                          ...curr,
+                          receiverName: name,
+                          deliveryContact: [name, curr.receiverCompany, curr.receiverPhone].filter(Boolean).join(" · "),
+                        }));
+                      }}
+                    />
+                  </Field>
+                  <Field label="Teléfono de entrega">
+                    <div className={styles.phoneInputGroup}>
+                      <span className={styles.dialBadge}>{getCountryDialCode(form.destinationCountry)}</span>
+                      <input
+                        readOnly={readOnly}
+                        placeholder="999 000 222"
+                        type="tel"
+                        value={form.receiverPhone ? form.receiverPhone.replace(/^\+\d+\s*/, "") : ""}
+                        onChange={(event) => {
+                          const dial = getCountryDialCode(form.destinationCountry);
+                          const rawDigits = event.target.value.replace(/[^\d\s-]/g, "");
+                          const fullPhone = rawDigits ? `${dial} ${rawDigits.trim()}` : "";
+                          setForm((curr) => ({
+                            ...curr,
+                            receiverPhone: fullPhone,
+                            deliveryContact: [curr.receiverName, curr.receiverCompany, fullPhone].filter(Boolean).join(" · "),
+                          }));
+                        }}
+                      />
+                    </div>
+                  </Field>
+                  <Field label="Ubicación precisa (Lat, Lng) — opcional">
+                    <input
+                      readOnly={readOnly}
+                      placeholder="ej. -33.4489, -70.6693"
+                      value={destCoords}
+                      onChange={(event) => setDestCoords(event.target.value)}
+                    />
+                  </Field>
+                </div>
+              </details>
             </div>
 
             {/* SECCIÓN 3: INSTRUCCIONES DE RUTA */}
@@ -1067,21 +1082,27 @@ export function FreightIntakeForm({
                   <div className={styles.totalsCards} aria-live="polite">
                     <div className={styles.totalCard}>
                       <span className={styles.totalCardLabel}>Peso total</span>
-                      <strong className={styles.totalCardValue}>{displayNumber(totals.weightKg, " kg")}</strong>
+                      <strong className={styles.totalCardValue}>
+                        {form.quantity && form.unitWeightKg ? displayNumber(totals.weightKg, " kg") : "— kg"}
+                      </strong>
                       <small className={styles.totalCardSub}>
                         {form.quantity && form.unitWeightKg
                           ? `${form.quantity} × ${form.unitWeightKg} kg`
-                          : "Calculado automáticamente"}
+                          : "Completa bultos y peso por bulto"}
                       </small>
                     </div>
                     <div className={styles.totalCard}>
                       <span className={styles.totalCardLabel}>Volumen total</span>
                       <strong className={styles.totalCardValue}>
-                        {totals.volumeM3 === null
-                          ? "No registrado"
+                        {totals.volumeM3 === null || !form.quantity
+                          ? "— m³"
                           : `${totals.volumeM3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³`}
                       </strong>
-                      <small className={styles.totalCardSub}>Calculado automáticamente</small>
+                      <small className={styles.totalCardSub}>
+                        {totals.volumeM3 === null || !form.quantity
+                          ? "Completa bultos y dimensiones"
+                          : "Calculado automáticamente"}
+                      </small>
                     </div>
                   </div>
                 </>
@@ -1094,7 +1115,7 @@ export function FreightIntakeForm({
                 <span className={styles.subSectionBadge}>
                   <ShieldAlert size={14} /> 3. Requisitos de manejo
                 </span>
-                <small>Filtra capabilities requeridas para los carriers WebMCP</small>
+                <small>CargoMesh solo considerará transportistas compatibles con estos requisitos.</small>
               </div>
 
               <div className={styles.requirementPillGroup}>
@@ -1157,9 +1178,11 @@ export function FreightIntakeForm({
               )}
 
               <Field label="Instrucciones especiales de manipuleo (opcional)" wide>
-                <input
+                <textarea
+                  rows={3}
                   readOnly={readOnly}
-                  placeholder="ej. Manipular únicamente con montacargas; no apilar más de 2 niveles..."
+                  className={styles.notesTextarea}
+                  placeholder="ej. No apilar. Manipular únicamente con montacargas y mantener protegido de humedad."
                   value={form.operationalNotes}
                   onChange={(event) => update("operationalNotes", event.target.value)}
                 />
@@ -1168,7 +1191,7 @@ export function FreightIntakeForm({
           </> : null}
 
           {step === 3 ? <>
-            <FormHeading id="step-title-3" title="Programación y políticas" description="Configura la ventana de recojo, deadline de entrega y presupuesto máximo." />
+            <FormHeading id="step-title-3" title="Programación y preferencias" description="Configura la ventana de transporte, presupuesto y documentación para el despacho." />
             <div className={styles.fieldGrid}>
               <Field label="Modo de recojo">
                 {readOnly ? (
@@ -1249,31 +1272,91 @@ export function FreightIntakeForm({
           </> : null}
 
           {step === 4 ? <>
-            <FormHeading id="step-title-4" title="Revisión y confirmación" description="Revisa el borrador antes de iniciar la evaluación con providers WebMCP." />
-            <div className={styles.reviewGrid}>
-              <ReviewItem label="Organización" value={`${form.organization} · ${form.requester}`} />
-              <ReviewItem label="Ruta" value={`${form.originCountry}: ${form.originCity} (${form.originRegion || "S/R"}) → ${form.destinationCountry}: ${form.destinationCity} (${form.destinationRegion || "S/R"})`} />
-              <ReviewItem label="Contactos" value={`Recojo: ${form.pickupContact || "No registrado"} | Entrega: ${form.deliveryContact || "No registrado"}`} />
-              <ReviewItem label="Carga" value={`${displayNumber(form.quantity)} ${form.entryMethod.toLowerCase()} · ${form.cargoCategory} · ${displayNumber(totals.weightKg, " kg")} · ${totals.volumeM3 === null ? "Volumen no registrado" : `${totals.volumeM3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³`}`} />
-              <ReviewItem label="Programación" value={form.pickupMode === "ASAP" ? "ASAP (Inmediato)" : `${displayDate(form.pickupWindowStart)} → ${displayDate(form.pickupWindowEnd)}`} />
-              <ReviewItem label="Deadline de entrega" value={displayDate(form.deliveryDeadline)} />
-              <ReviewItem label="Política" value={`${form.strategy} · ${form.budgetMaxUsd === null ? "Sin presupuesto máximo" : `${form.currency} ${form.budgetMaxUsd.toLocaleString("en-US")}`}`} />
-              <ReviewItem label="Documentos" value={form.documents.length ? form.documents.join(", ") : "Sin documentos registrados"} />
+            <FormHeading
+              id="step-title-4"
+              title="Revisión de solicitud"
+              description="Verifica los parámetros operativos antes de transferir el control al agente WebMCP."
+            />
+            <div className={styles.checklistGrid}>
+              <div className={styles.checklistItem}>
+                <span className={styles.checklistIcon}><Check size={16} aria-hidden="true" /></span>
+                <div>
+                  <span className={styles.checklistLabel}>Organización y Solicitante</span>
+                  <strong>{form.organization} · {form.requester}</strong>
+                  <small>Empresa verificada · Modo ROAD FTL</small>
+                </div>
+              </div>
+              <div className={styles.checklistItem}>
+                <span className={styles.checklistIcon}><Check size={16} aria-hidden="true" /></span>
+                <div>
+                  <span className={styles.checklistLabel}>Ruta autorizada</span>
+                  <strong>{originCountryData.flag} {form.originCity}, {form.originCountry} → {destCountryData.flag} {form.destinationCity}, {form.destinationCountry}</strong>
+                  <small>{form.originCountry !== form.destinationCountry ? "Corredor Internacional" : "Ruta Nacional"}</small>
+                </div>
+              </div>
+              <div className={styles.checklistItem}>
+                <span className={styles.checklistIcon}><Check size={16} aria-hidden="true" /></span>
+                <div>
+                  <span className={styles.checklistLabel}>Carga y cubicaje</span>
+                  <strong>{form.quantity ? `${form.quantity} bultos · ` : ""}{displayNumber(totals.weightKg, " kg")}{totals.volumeM3 !== null ? ` · ${totals.volumeM3.toLocaleString("es-PE", { maximumFractionDigits: 2 })} m³` : ""}</strong>
+                  <small>{form.cargoCategory} · {form.entryMethod.toLowerCase()}</small>
+                </div>
+              </div>
+              <div className={styles.checklistItem}>
+                <span className={styles.checklistIcon}><Check size={16} aria-hidden="true" /></span>
+                <div>
+                  <span className={styles.checklistLabel}>Requisitos de manipuleo</span>
+                  <strong>
+                    {[
+                      requiresRefrigeration ? `❄ Reefer (${tempMin}°C a ${tempMax}°C)` : null,
+                      isHazardous ? "⚠ Hazmat" : null,
+                      isFragile ? "◇ Carga frágil" : null,
+                      isOversized ? "↔ Sobredimensionada" : null,
+                    ].filter(Boolean).join(" · ") || "Estándar (Sin requisitos especiales)"}
+                  </strong>
+                  <small>Filtro de compatibilidad de carriers</small>
+                </div>
+              </div>
+              <div className={styles.checklistItem}>
+                <span className={styles.checklistIcon}><Check size={16} aria-hidden="true" /></span>
+                <div>
+                  <span className={styles.checklistLabel}>Ventana de transporte</span>
+                  <strong>{form.pickupMode === "ASAP" ? "ASAP (Recolección inmediata)" : `${displayDate(form.pickupWindowStart)} → ${displayDate(form.pickupWindowEnd)}`}</strong>
+                  <small>Deadline: {displayDate(form.deliveryDeadline)}</small>
+                </div>
+              </div>
+              <div className={styles.checklistItem}>
+                <span className={styles.checklistIcon}><Check size={16} aria-hidden="true" /></span>
+                <div>
+                  <span className={styles.checklistLabel}>Estrategia de Decisión</span>
+                  <strong>{form.strategy} (Motor BALANCED)</strong>
+                  <small>Presupuesto: {form.budgetMaxUsd === null ? "Sin límite" : `${form.currency} ${form.budgetMaxUsd.toLocaleString("en-US")}`}</small>
+                </div>
+              </div>
+              <div className={styles.checklistItem}>
+                <span className={styles.checklistIcon}><Check size={16} aria-hidden="true" /></span>
+                <div>
+                  <span className={styles.checklistLabel}>Documentos listos</span>
+                  <strong>{form.documents.length ? form.documents.join(", ") : "Sin documentos adicionales"}</strong>
+                  <small>Requeridos para cruce de frontera</small>
+                </div>
+              </div>
             </div>
+
             {submitting ? (
               <div className={styles.searchingState} role="status" aria-live="polite">
                 <span className={styles.searchingIcon}><LoaderCircle className={styles.spinner} size={22} aria-hidden="true" /></span>
                 <span>
-                  <strong>Buscando opciones de transporte</strong>
-                  <small>Estamos consultando los transportistas registrados mediante WebMCP. Serás dirigido al despacho cuando termine la evaluación.</small>
+                  <strong>Orquestando con WebMCP</strong>
+                  <small>Estamos consultando los transportistas registrados en tiempo real. Serás dirigido al despacho cuando termine la evaluación.</small>
                 </span>
               </div>
             ) : (
               <div className={styles.readyNotice}>
                 <FileCheck2 size={20} aria-hidden="true" />
                 <span>
-                  <strong>{dispatchBlockReason ? "Dispatch bloqueado" : "Solicitud lista para evaluación"}</strong>
-                  <small>{dispatchBlockReason ?? "La capacidad real se validará mediante WebMCP durante el dispatch."}</small>
+                  <strong>{dispatchBlockReason ? "Dispatch bloqueado" : "CargoMesh está listo para buscar capacidad logística compatible."}</strong>
+                  <small>{dispatchBlockReason ?? "Al iniciar orquestación, el agente WebMCP visitará cada carrier para validar cobertura, capacidad y cotización."}</small>
                 </span>
               </div>
             )}
@@ -1307,11 +1390,11 @@ export function FreightIntakeForm({
               disabled={submitting || saving || (step === steps.length - 1 && dispatchBlockReason !== null)}
             >
               {submitting
-                ? <><LoaderCircle className={styles.spinner} size={17} aria-hidden="true" /> Buscando transportistas…</>
+                ? <><LoaderCircle className={styles.spinner} size={17} aria-hidden="true" /> Orquestando con WebMCP…</>
                 : saving
                   ? "Guardando…"
                   : step === steps.length - 1
-                    ? "Confirmar y buscar opciones de transporte"
+                    ? "Iniciar orquestación"
                     : "Continuar"}
               {submitting ? null : <ArrowRight size={17} aria-hidden="true" />}
             </button>
