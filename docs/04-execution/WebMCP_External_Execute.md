@@ -61,21 +61,23 @@ whitelist. No se aplican aliases, peso total ni volumen desde la sugerencia.
 sintéticos para una demostración controlada. No es una migración ni se ejecuta
 con `db push`.
 
-Que los datos estén cargados en un entorno de evaluación **no** convierte a un
-carrier en provider WebMCP. En concreto, Polaris, Apex y Velocity siguen siendo
-escenarios de datos hasta que cada uno tenga:
+Los carriers de escenario sí resuelven mediante la página genérica
+`/providers/[carrierSlug]`, que registra las cinco tools desde el
+`providerServiceCode` persistido. Aun así, un seed por sí solo no prueba una
+respuesta comercial: cada servicio necesita un fixture explícito de corredor,
+capacidad, requisitos y tarifa para no devolver el resultado conservador de
+"no cubierto".
 
-- una página/provider origin desplegado e incluido explícitamente en
-  `CARGOMESH_TOOL_CALLER_ORIGINS`;
+Antes de presentar Polaris, Apex o Velocity como ejecución en vivo, se exige:
+
 - `matchingServiceId` persistido y coherente con el servicio elegido;
-- discovery real de las cinco tools provider y cleanup al abandonar el origin;
-- pruebas de cobertura/capacidad/cotización y, para booking, autorización e
-  idempotencia;
+- discovery de las cinco tools desde el documento provider y cleanup al salir;
+- una prueba de cobertura/capacidad/cotización del fixture declarado y, para
+  booking, autorización e idempotencia;
 - evidencia de navegador sanitizada.
 
-Hasta entonces, el Golden Flow oficial usa únicamente providers ya registrados
-y validados. No se debe afirmar que Polaris, Apex o Velocity fueron consultados
-en vivo ni mostrar `supports_webmcp` como prueba de ejecución.
+`supports_webmcp` solo habilita el registro y discovery: no demuestra que una
+consulta comercial haya sido ejecutada correctamente.
 
 ## Escenarios de demo propuestos
 
