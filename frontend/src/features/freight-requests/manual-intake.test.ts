@@ -155,7 +155,7 @@ test("buildManualIntakeFieldsFromForm maps form model into manual intake contrac
     deliveryDeadline: "2026-09-12T13:00:00.000Z",
     budgetMaxUsd: 1000,
     operationalNotes: "Urgente",
-    documents: ["Factura comercial"],
+    documents: ["Factura comercial", "Packing list"],
   } as any;
 
   const fields = buildManualIntakeFieldsFromForm(form);
@@ -168,6 +168,44 @@ test("buildManualIntakeFieldsFromForm maps form model into manual intake contrac
   assert.equal(fields.receiverName, "Diego Ramos");
   assert.equal(fields.budgetMax, 1000);
   assert.equal(fields.pickupMode, "SCHEDULED");
+  // PALLETS must not send totalWeightKg and must map document labels to canonical codes
+  assert.equal(fields.totalWeightKg, undefined);
+  assert.equal(fields.entryQuantity, 2);
+  assert.deepEqual(fields.availableDocuments, ["commercial_invoice", "packing_list"]);
+
+  // Must normalize server-side without throwing "totalWeightKg solo se aplica con TOTAL_WEIGHT"
+  const normalized = normalizeManualFreightRequestIntake(row, fields, undefined);
+  assert.equal(normalized.normalized.cargoWeightKg, 600);
+});
+
+test("buildManualIntakeFieldsFromForm maps TOTAL_WEIGHT cleanly and normalizes server-side", async () => {
+  const { buildManualIntakeFieldsFromForm } = await import("./manual-intake-client");
+  const form = {
+    cargoCategoryCode: "GENERAL",
+    originCountry: "PE",
+    originCity: "Lima",
+    destinationCountry: "CL",
+    destinationCity: "Santiago",
+    entryMethod: "TOTAL_WEIGHT",
+    quantity: 5,
+    unitWeightKg: 200,
+    totalWeightKg: 850,
+    pickupMode: "ASAP" as const,
+    documents: ["Certificado de origen"],
+  } as any;
+
+  const fields = buildManualIntakeFieldsFromForm(form);
+  assert.equal(fields.cargoEntryMethod, "TOTAL_WEIGHT");
+  assert.equal(fields.totalWeightKg, 850);
+  assert.equal(fields.entryQuantity, null);
+  assert.equal(fields.entryUnitWeightKg, null);
+  assert.equal(fields.unitsPerEntry, null);
+  assert.equal(fields.entryLengthCm, null);
+  assert.deepEqual(fields.availableDocuments, ["certificate_of_origin"]);
+
+  // Server normalizer accepts TOTAL_WEIGHT
+  const normalized = normalizeManualFreightRequestIntake(row, fields, undefined);
+  assert.equal(normalized.normalized.cargoWeightKg, 850);
 });
 
 test("persistManualFreightRequestIntake maps HTTP 409 into STALE_DRAFT error", async () => {

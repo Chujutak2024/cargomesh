@@ -99,10 +99,10 @@ export function normalizeManualFreightRequestIntake(
   setOptional(row, proposed, fields, "specialInstructions", "special_instructions", "special_instructions");
   setRequired(row, proposed, fields, "availableDocuments", "available_documents", "available_documents");
 
-  if (owns(fields, "originRegion")) row.origin_region = fields.originRegion ?? null;
-  if (owns(fields, "destinationRegion")) row.destination_region = fields.destinationRegion ?? null;
+  if (owns(fields, "originRegion") && fields.originRegion !== undefined) row.origin_region = fields.originRegion ?? null;
+  if (owns(fields, "destinationRegion") && fields.destinationRegion !== undefined) row.destination_region = fields.destinationRegion ?? null;
 
-  if (owns(fields, "totalWeightKg")) {
+  if (owns(fields, "totalWeightKg") && fields.totalWeightKg !== undefined) {
     if (row.cargo_entry_method !== "TOTAL_WEIGHT") {
       throw new RecommendationDraftError(
         "INVALID_DRAFT",

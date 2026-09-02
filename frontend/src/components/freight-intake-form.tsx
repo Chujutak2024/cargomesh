@@ -22,6 +22,7 @@ import {
   buildManualIntakeFieldsFromForm,
   persistManualFreightRequestIntake,
   ManualFreightRequestIntakeClientError,
+  mapDocumentToCanonicalCode,
 } from "@/features/freight-requests/manual-intake-client";
 import type { OfficialCargoCategoryCode } from "@/features/freight-requests/manual-intake-contracts";
 import type { RecommendationProposedFields } from "@/features/recommendations/contracts";
@@ -45,7 +46,12 @@ const steps = [
   { label: "Carga", icon: Boxes }, { label: "Programación", icon: CalendarClock },
   { label: "Revisión", icon: PackageCheck },
 ];
-const documentOptions = ["Factura comercial", "Packing list", "Ficha técnica"];
+const documentOptions = [
+  { code: "commercial_invoice", label: "Factura comercial" },
+  { code: "packing_list", label: "Lista de empaque (Packing list)" },
+  { code: "certificate_of_origin", label: "Certificado de origen" },
+  { code: "technical_datasheet", label: "Ficha técnica" },
+];
 
 function nullableNumber(value: number | null) { return value ?? ""; }
 function displayNumber(value: number | null, suffix = "") {
@@ -68,6 +74,9 @@ function fromDatetimeLocalValue(localValue: string): string {
   return date.toISOString();
 }
 function getDisplayedTotals(form: FreightIntakeModel) {
+  if (form.entryMethod === "TOTAL_WEIGHT") {
+    return { weightKg: form.totalWeightKg, volumeM3: form.totalVolumeM3 ?? null };
+  }
   const quantity = form.quantity ?? 0;
   const units = form.unitsPerEntry ?? 1;
   const weightKg = form.unitWeightKg !== null && form.unitWeightKg !== undefined
@@ -146,13 +155,16 @@ export function FreightIntakeForm({
   function update<K extends keyof FreightIntakeModel>(key: K, value: FreightIntakeModel[K]) {
     if (!readOnly) setForm((current) => ({ ...current, [key]: value }));
   }
-  function toggleDocument(document: string) {
+  function toggleDocument(code: string) {
     if (readOnly) return;
+    const currentCodes = form.documents.map(mapDocumentToCanonicalCode);
+    const hasCode = currentCodes.includes(code);
+    const updated = hasCode
+      ? currentCodes.filter((item) => item !== code)
+      : [...currentCodes, code];
     setForm((current) => ({
       ...current,
-      documents: current.documents.includes(document)
-        ? current.documents.filter((item) => item !== document)
-        : [...current.documents, document],
+      documents: updated,
     }));
   }
 
@@ -298,22 +310,13 @@ export function FreightIntakeForm({
               <Field label="Organización activa"><input value={form.organization} readOnly /></Field>
               <Field label="Solicitante"><input value={form.requester} readOnly /></Field>
               <Field label="Perfil de carga" wide>
-                {readOnly ? (
-                  <input value={form.cargoProfile || "Sin perfil asociado"} readOnly />
-                ) : (
-                  <select value={form.cargoProfile} onChange={(event) => update("cargoProfile", event.target.value)}>
-                    <option value="Repuestos y maquinaria minera">Repuestos y maquinaria minera</option>
-                    <option value="Carga general paletizada">Carga general paletizada</option>
-                    <option value="Agrícola y perecibles">Agrícola y perecibles</option>
-                    <option value="Materiales de construcción">Materiales de construcción</option>
-                  </select>
-                )}
+                <input value={form.cargoProfile || "Perfil operativo estándar"} readOnly />
               </Field>
             </div>
             <InfoBox>
               {readOnly
                 ? "La identidad y la membresía se validaron server-side; esta vista no las sustituye."
-                : "Formulario editable autenticado con recálculo server-side y control de concurrencia optimista."}
+                : "Formulario editable autenticado con recálculo server-side. La categoría de carga oficial y dimensiones se definen en el Paso 3."}
             </InfoBox>
           </> : null}
 
@@ -540,10 +543,10 @@ export function FreightIntakeForm({
                       }));
                     }}
                   >
-                    <option value="MACHINERY">Repuestos y maquinaria minera (MACHINERY)</option>
-                    <option value="GENERAL">Carga general paletizada (GENERAL)</option>
-                    <option value="AGRICULTURAL">Agrícola y perecibles (AGRICULTURAL)</option>
-                    <option value="CONSTRUCTION">Materiales de construcción (CONSTRUCTION)</option>
+                    <option value="MACHINERY">Repuestos y maquinaria minera</option>
+                    <option value="GENERAL">Carga general paletizada</option>
+                    <option value="AGRICULTURAL">Agrícola y perecibles</option>
+                    <option value="CONSTRUCTION">Materiales de construcción</option>
                   </select>
                 )}
               </Field>
@@ -559,12 +562,23 @@ export function FreightIntakeForm({
                   </select>
                 )}
               </Field>
-              <NumberField label="Cantidad" value={form.quantity} readOnly={readOnly} onChange={(value) => update("quantity", value)} />
-              <NumberField label="Unidades por entrada" value={form.unitsPerEntry} readOnly={readOnly} onChange={(value) => update("unitsPerEntry", value)} />
-              <NumberField label="Peso unitario (kg)" value={form.unitWeightKg} readOnly={readOnly} onChange={(value) => update("unitWeightKg", value)} />
-              <NumberField label="Largo (cm)" value={form.lengthCm} readOnly={readOnly} onChange={(value) => update("lengthCm", value)} />
-              <NumberField label="Ancho (cm)" value={form.widthCm} readOnly={readOnly} onChange={(value) => update("widthCm", value)} />
-              <NumberField label="Alto (cm)" value={form.heightCm} readOnly={readOnly} onChange={(value) => update("heightCm", value)} />
+              {form.entryMethod === "TOTAL_WEIGHT" ? (
+                <NumberField
+                  label="Peso total de la carga (kg)"
+                  value={form.totalWeightKg}
+                  readOnly={readOnly}
+                  onChange={(value) => update("totalWeightKg", value ?? 0)}
+                />
+              ) : (
+                <>
+                  <NumberField label="Cantidad" value={form.quantity} readOnly={readOnly} onChange={(value) => update("quantity", value)} />
+                  <NumberField label="Unidades por entrada" value={form.unitsPerEntry} readOnly={readOnly} onChange={(value) => update("unitsPerEntry", value)} />
+                  <NumberField label="Peso unitario (kg)" value={form.unitWeightKg} readOnly={readOnly} onChange={(value) => update("unitWeightKg", value)} />
+                  <NumberField label="Largo (cm)" value={form.lengthCm} readOnly={readOnly} onChange={(value) => update("lengthCm", value)} />
+                  <NumberField label="Ancho (cm)" value={form.widthCm} readOnly={readOnly} onChange={(value) => update("widthCm", value)} />
+                  <NumberField label="Alto (cm)" value={form.heightCm} readOnly={readOnly} onChange={(value) => update("heightCm", value)} />
+                </>
+              )}
             </div>
             <div className={styles.totals} aria-live="polite">
               <div><small>Peso canónico</small><strong>{displayNumber(totals.weightKg, " kg")}</strong></div>
@@ -639,15 +653,15 @@ export function FreightIntakeForm({
             </div>
             <fieldset className={styles.documentFieldset}>
               <legend>Documentos disponibles</legend>
-              {documentOptions.map((document) => (
-                <label key={document}>
+              {documentOptions.map((doc) => (
+                <label key={doc.code}>
                   <input
                     type="checkbox"
                     disabled={readOnly}
-                    checked={form.documents.includes(document)}
-                    onChange={() => toggleDocument(document)}
+                    checked={form.documents.map(mapDocumentToCanonicalCode).includes(doc.code)}
+                    onChange={() => toggleDocument(doc.code)}
                   />
-                  <span>{document}</span>
+                  <span>{doc.label}</span>
                 </label>
               ))}
             </fieldset>
@@ -731,7 +745,7 @@ export function FreightIntakeForm({
           </p>
         </aside>
       </form>
-      {readOnly ? <iframe ref={runnerFrameRef} className={styles.runnerFrame} src="/" title="Ejecución WebMCP de providers" aria-hidden="true" tabIndex={-1} /> : null}
+      <iframe ref={runnerFrameRef} className={styles.runnerFrame} src="/" title="Ejecución WebMCP de providers" aria-hidden="true" tabIndex={-1} />
     </div>
   );
 }
