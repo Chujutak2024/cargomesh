@@ -16,13 +16,16 @@ export const OFFICIAL_CARGO_CATEGORY_CODES = [
 
 export type OfficialCargoCategoryCode = (typeof OFFICIAL_CARGO_CATEGORY_CODES)[number];
 
+export const SUPPORTED_COUNTRY_CODES = ["PE", "CL", "CO", "BO", "AR", "EC"] as const;
+export type SupportedCountryCode = (typeof SUPPORTED_COUNTRY_CODES)[number];
+
 export type ManualFreightRequestIntakeFields = {
   cargoCategoryCode?: OfficialCargoCategoryCode;
-  originCountry?: "PE" | "CL";
+  originCountry?: SupportedCountryCode;
   originRegion?: string | null;
   originCity?: string;
   originAddress?: string | null;
-  destinationCountry?: "PE" | "CL";
+  destinationCountry?: SupportedCountryCode;
   destinationRegion?: string | null;
   destinationCity?: string;
   destinationAddress?: string | null;
@@ -113,10 +116,10 @@ function nullableIsoDate(value: unknown, field: string): string | null {
   return isoDate(requiredString(value, field), field);
 }
 
-function country(value: unknown, field: string): "PE" | "CL" {
-  const normalized = requiredString(value, field).toUpperCase();
-  if (normalized !== "PE" && normalized !== "CL") {
-    throw invalidInput(`${field} debe ser PE o CL.`);
+function country(value: unknown, field: string): SupportedCountryCode {
+  const normalized = requiredString(value, field).toUpperCase() as SupportedCountryCode;
+  if (!SUPPORTED_COUNTRY_CODES.includes(normalized)) {
+    throw invalidInput(`${field} debe ser uno de: ${SUPPORTED_COUNTRY_CODES.join(", ")}.`);
   }
   return normalized;
 }

@@ -208,6 +208,33 @@ test("buildManualIntakeFieldsFromForm maps TOTAL_WEIGHT cleanly and normalizes s
   assert.equal(normalized.normalized.cargoWeightKg, 850);
 });
 
+test("buildManualIntakeFieldsFromForm supports LATAM cross-border corridors (CO, BO, AR, EC)", async () => {
+  const { buildManualIntakeFieldsFromForm } = await import("./manual-intake-client");
+  const form = {
+    cargoCategoryCode: "CONSTRUCTION",
+    originCountry: "CO",
+    originRegion: "Cundinamarca",
+    originCity: "Bogotá",
+    destinationCountry: "PE",
+    destinationRegion: "Callao",
+    destinationCity: "Callao",
+    entryMethod: "TOTAL_WEIGHT",
+    totalWeightKg: 12000,
+    pickupMode: "ASAP" as const,
+  } as any;
+
+  const fields = buildManualIntakeFieldsFromForm(form);
+  assert.equal(fields.originCountry, "CO");
+  assert.equal(fields.destinationCountry, "PE");
+  assert.equal(fields.originRegion, "Cundinamarca");
+
+  const normalized = normalizeManualFreightRequestIntake(row, fields, undefined);
+  assert.equal(normalized.normalized.fields.cross_border, true);
+  assert.equal(normalized.normalized.fields.origin_country, "CO");
+  assert.equal(normalized.normalized.fields.destination_country, "PE");
+  assert.equal(normalized.originRegion, "Cundinamarca");
+});
+
 test("persistManualFreightRequestIntake maps HTTP 409 into STALE_DRAFT error", async () => {
   const { persistManualFreightRequestIntake, ManualFreightRequestIntakeClientError } = await import("./manual-intake-client");
   const fakeFetch = async () => new Response(

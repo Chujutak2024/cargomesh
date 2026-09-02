@@ -4,9 +4,11 @@ import {
 } from "./intake-contracts";
 import {
   OFFICIAL_CARGO_CATEGORY_CODES,
+  SUPPORTED_COUNTRY_CODES,
   type ManualFreightRequestIntakeFields,
   type ManualFreightRequestIntakeInput,
   type OfficialCargoCategoryCode,
+  type SupportedCountryCode,
 } from "./manual-intake-contracts";
 import type { FreightIntakeModel } from "@/features/freight-ui/view-models";
 
@@ -66,14 +68,16 @@ export function buildManualIntakeFieldsFromForm(
           ? "CONSTRUCTION"
           : "GENERAL";
 
-  const originCountry =
-    form.originCountry === "PE" || form.originCountry === "CL"
-      ? form.originCountry
-      : "PE";
-  const destinationCountry =
-    form.destinationCountry === "PE" || form.destinationCountry === "CL"
-      ? form.destinationCountry
-      : "CL";
+  const originCountry: SupportedCountryCode = (SUPPORTED_COUNTRY_CODES as readonly string[]).includes(
+    form.originCountry,
+  )
+    ? (form.originCountry as SupportedCountryCode)
+    : "PE";
+  const destinationCountry: SupportedCountryCode = (SUPPORTED_COUNTRY_CODES as readonly string[]).includes(
+    form.destinationCountry,
+  )
+    ? (form.destinationCountry as SupportedCountryCode)
+    : "CL";
 
   const isTotalWeight = form.entryMethod === "TOTAL_WEIGHT";
   const cargoEntryMethod = isTotalWeight ? "TOTAL_WEIGHT" : (form.entryMethod || "PALLETS");
