@@ -6,6 +6,7 @@ import type {
 import {
   getProviderCapabilityFixture,
   matchesCapabilityAlias,
+  matchesCapabilityLocation,
   normalizeCapabilityValue,
 } from "./provider-capability-fixtures";
 import {
@@ -208,10 +209,10 @@ function buildCapacityResult(
 ): ProviderToolEnvelope<CapacityResult> {
   const fixture = getProviderCapabilityFixture(provider.service.providerServiceCode);
   const originMatches = fixture
-    ? matchesCapabilityAlias(input.origin, fixture.originAliases)
+    ? matchesCapabilityLocation(input.origin, fixture.origin)
     : false;
   const destinationMatches = fixture
-    ? matchesCapabilityAlias(input.destination, fixture.destinationAliases)
+    ? matchesCapabilityLocation(input.destination, fixture.destination)
     : false;
   const cargoCategoryMatches = fixture
     ? matchesCapabilityAlias(input.cargo_category, fixture.cargoCategories)
@@ -226,6 +227,9 @@ function buildCapacityResult(
         matchesCapabilityAlias(requirement, fixture.supportedRequirements),
       )
     : (input.special_requirements ?? []).length === 0;
+  const crossBorderCapabilityMatches = Boolean(
+    fixture && (!fixture.requiresCrossBorder || provider.service.supportsCrossBorder),
+  );
 
   let earliestPickup: Date | null = null;
   let plannedPickup: Date | null = null;
@@ -258,7 +262,7 @@ function buildCapacityResult(
       originMatches &&
       destinationMatches &&
       cargoCategoryMatches &&
-      provider.service.supportsCrossBorder &&
+      crossBorderCapabilityMatches &&
       weightAvailable &&
       volumeAvailable &&
       specialRequirementsAvailable,
@@ -278,7 +282,7 @@ function buildCapacityResult(
   if (fixture && !cargoCategoryMatches) {
     capabilityNotes.push("La categoría solicitada no está habilitada en el fixture provider.");
   }
-  if (!provider.service.supportsCrossBorder) {
+  if (fixture?.requiresCrossBorder && !provider.service.supportsCrossBorder) {
     capabilityNotes.push("El servicio no declara capacidad transfronteriza.");
   }
   if (!weightAvailable) {
