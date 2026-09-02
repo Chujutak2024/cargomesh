@@ -1,34 +1,63 @@
 # CargoMesh Agent Invariants & Governance Rules
 
-Este archivo establece las directivas prioritarias que deben respetar todos los agentes (Antigravity, Codex, etc.) que trabajen en este repositorio.
+This file defines the priority instructions that every agent working in this
+repository must follow, including Antigravity and Codex.
 
-## 1. 🗄️ Supabase Migrations vs. Scenario Seeds
-- **NUNCA agregar datos de prueba (INSERTs de camiones, carriers o shippers de demo) en `supabase/migrations/`**.
-  - `supabase/migrations/` es EXCLUSIVAMENTE para DDL estructural (`CREATE TABLE`, `ALTER TABLE`, `ADD COLUMN`, `INDEXES`, `RLS POLICIES`). Todo lo que esté aquí se ejecuta en producción remoto mediante `supabase db push`.
-- **Todos los datos sintéticos de prueba/demo DEBEN ir en `supabase/scenarios/<scenario-name>/seed.sql`** o en `supabase/seed.sql`.
+## 1. Supabase Migrations vs. Scenario Seeds
 
-## 2. 🌐 Providers WebMCP & Honestidad Técnica
-- Para declarar un carrier como proveedor WebMCP operativo, debe contar con:
-  1. Su ruta `/providers/[carrierSlug]` en Next.js.
-  2. Sus 5 tools registradas en `document.modelContext`.
-  3. Sus fixtures de capacidad en `frontend/src/features/providers/provider-capability-fixtures.ts`.
-  4. Sus tarifas de cotización en `quote-freight-tool.ts`.
-- Cualquier carrier que solo exista en la base de datos se debe documentar como **"Dato de escenario / Roadmap"**, nunca como tool en vivo.
+- **NEVER add test data**—including demo trucks, carriers, or shippers—to
+  `supabase/migrations/`.
+- `supabase/migrations/` is exclusively for structural DDL such as `CREATE TABLE`,
+  `ALTER TABLE`, columns, indexes, constraints, and RLS policies. Everything in
+  this directory can be applied to the remote production project through
+  `supabase db push`.
+- All synthetic test/demo data must live in
+  `supabase/scenarios/<scenario-name>/seed.sql` or in `supabase/seed.sql`.
 
-## 3. 🌿 Flujo de Ramas & Deadline de Entrega
-- La entrega final es inminente (24-48 horas).
-- **`origin/main`** debe mantenerse verde en todo momento.
-- Roles de trabajo:
-  - **Role A**: WebMCP Tools & Runtime (`feat/a-*`)
-  - **Role B**: UI, Intake Form & Landing (`feat/b-*`)
-  - **Role C (Codex)**: Data Layer, RLS, Concurrency (`codex/c-*`)
-  - **Antigravity**: Integración, auditoría, pairing, resolución de bloqueos y alineación.
-- Antes de ejecutar comandos vinculados a Supabase (`--linked`), verificar en qué directorio y rama se encuentra la terminal local.
-- Antes de pushear a `main`, validar siempre `npm run typecheck` y `git pull --rebase origin main`.
+## 2. WebMCP Providers & Technical Honesty
 
-## 4. 📦 Contratos Comerciales
-- Concurrencia optimista mediante `draft_version` en `freight_requests`.
-- Motor determinístico BALANCED: 25% costo, 25% confiabilidad/SLA, 20% ETA,
-  10% disponibilidad, 10% experiencia de ruta y 10% historial de la organización.
-  La fuente ejecutable es `frontend/src/features/decision-engine/contracts.ts`.
-- Golden Flow canónico (`FR-1042` Callao ➔ Santiago) mantiene invariables sus scores oficiales: Andes (89), Inca (84), Pacific (72).
+A carrier can be described as an operational WebMCP provider only when it has:
+
+1. a Next.js `/providers/[carrierSlug]` route;
+2. its five tools registered through `document.modelContext`;
+3. capacity fixtures in
+   `frontend/src/features/providers/provider-capability-fixtures.ts`;
+4. quote rates in `frontend/src/features/providers/quote-freight-tool.ts`.
+
+A carrier that exists only in the database must be documented as
+**Scenario Data / Roadmap**, never as a live provider tool integration.
+
+## 3. Branch Flow & Release Deadline
+
+- The final delivery is imminent. Keep `origin/main` green at all times.
+- Work ownership:
+  - **Role A:** WebMCP tools and runtime (`feat/a-*`)
+  - **Role B:** UI, intake form, landing, i18n, and map (`feat/b-*`)
+  - **Role C:** data layer, RLS, concurrency, and integration (`codex/c-*`)
+  - **Antigravity:** integration support, audits, pairing, blocker resolution,
+    and alignment
+- Before running any linked Supabase command, verify the current directory,
+  branch, and linked project.
+- Before pushing work intended for `main`, run `npm run typecheck` and reconcile
+  the branch with the latest `origin/main` according to the agreed PR workflow.
+
+## 4. Commercial Contracts
+
+- `freight_requests` uses optimistic concurrency through `draft_version`.
+- Deterministic BALANCED weights are 25% cost, 25% reliability/SLA, 20% ETA,
+  10% availability, 10% route experience, and 10% organization history.
+  The executable source is
+  `frontend/src/features/decision-engine/contracts.ts`.
+- The canonical FR-1042 Golden Flow from Callao to Santiago preserves the
+  official scores: Andes 89, Inca 84, and Pacific 72.
+
+## 5. Documentation Language
+
+- New and materially updated active/canonical documentation is written in
+  English for the WebMCP Challenge review audience.
+- Historical evidence may remain in Spanish when translating it would not
+  improve the active release path. It must be labeled as historical and must not
+  act as the current source of truth.
+- Translation must preserve identifiers, schemas, states, percentages, and
+  acceptance criteria. A translation is never authorization to change a
+  contract.
