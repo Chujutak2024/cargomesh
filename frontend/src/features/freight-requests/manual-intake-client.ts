@@ -32,6 +32,25 @@ async function readJson(response: Response) {
   }
 }
 
+export const DOCUMENT_LABEL_TO_CANONICAL_CODE: Record<string, string> = {
+  "factura comercial": "commercial_invoice",
+  "commercial_invoice": "commercial_invoice",
+  "packing list": "packing_list",
+  "lista de empaque": "packing_list",
+  "lista de empaque (packing list)": "packing_list",
+  "packing_list": "packing_list",
+  "certificado de origen": "certificate_of_origin",
+  "certificate_of_origin": "certificate_of_origin",
+  "ficha técnica": "technical_datasheet",
+  "ficha tecnica": "technical_datasheet",
+  "technical_datasheet": "technical_datasheet",
+};
+
+export function mapDocumentToCanonicalCode(doc: string): string {
+  const normalized = doc.trim().toLowerCase();
+  return DOCUMENT_LABEL_TO_CANONICAL_CODE[normalized] || normalized.replace(/[\s-]+/g, "_");
+}
+
 export function buildManualIntakeFieldsFromForm(
   form: FreightIntakeModel,
 ): ManualFreightRequestIntakeFields {
@@ -56,17 +75,18 @@ export function buildManualIntakeFieldsFromForm(
       ? form.destinationCountry
       : "CL";
 
-  return {
+  const isTotalWeight = form.entryMethod === "TOTAL_WEIGHT";
+  const cargoEntryMethod = isTotalWeight ? "TOTAL_WEIGHT" : (form.entryMethod || "PALLETS");
+
+  const fields: ManualFreightRequestIntakeFields = {
     cargoCategoryCode: code,
     originCountry,
     originRegion: form.originRegion || null,
-    originCity:
-      form.originCity || form.origin?.split(",")[0]?.trim() || "Callao",
+    originCity: form.originCity?.trim() || form.origin?.split(",")[0]?.trim() || "",
     originAddress: form.originAddress || null,
     destinationCountry,
     destinationRegion: form.destinationRegion || null,
-    destinationCity:
-      form.destinationCity || form.destination?.split(",")[0]?.trim() || "Santiago",
+    destinationCity: form.destinationCity?.trim() || form.destination?.split(",")[0]?.trim() || "",
     destinationAddress: form.destinationAddress || null,
     pickupContactName:
       form.pickupContactName || form.pickupContact?.split("(")[0]?.trim() || null,
@@ -83,14 +103,13 @@ export function buildManualIntakeFieldsFromForm(
     receiverPhone:
       form.receiverPhone || form.deliveryContact?.split("·")[2]?.trim() || null,
     cargoDescription: form.cargoDescription || null,
-    cargoEntryMethod: form.entryMethod || "PALLETS",
-    entryQuantity: form.quantity ?? null,
-    entryUnitWeightKg: form.unitWeightKg ?? null,
-    unitsPerEntry: form.unitsPerEntry ?? null,
-    entryLengthCm: form.lengthCm ?? null,
-    entryWidthCm: form.widthCm ?? null,
-    entryHeightCm: form.heightCm ?? null,
-    totalWeightKg: form.totalWeightKg || undefined,
+    cargoEntryMethod,
+    entryQuantity: isTotalWeight ? null : (form.quantity ?? null),
+    entryUnitWeightKg: isTotalWeight ? null : (form.unitWeightKg ?? null),
+    unitsPerEntry: isTotalWeight ? null : (form.unitsPerEntry ?? null),
+    entryLengthCm: isTotalWeight ? null : (form.lengthCm ?? null),
+    entryWidthCm: isTotalWeight ? null : (form.widthCm ?? null),
+    entryHeightCm: isTotalWeight ? null : (form.heightCm ?? null),
     pickupMode: form.pickupMode === "ASAP" ? "ASAP" : "SCHEDULED",
     pickupWindowStart:
       form.pickupMode === "SCHEDULED" && form.pickupWindowStart
@@ -103,8 +122,14 @@ export function buildManualIntakeFieldsFromForm(
     deliveryDeadline: form.deliveryDeadline || null,
     budgetMax: form.budgetMaxUsd ?? null,
     specialInstructions: form.operationalNotes || null,
-    availableDocuments: form.documents || [],
+    availableDocuments: (form.documents || []).map(mapDocumentToCanonicalCode),
   };
+
+  if (isTotalWeight && form.totalWeightKg !== null && form.totalWeightKg !== undefined) {
+    fields.totalWeightKg = form.totalWeightKg;
+  }
+
+  return fields;
 }
 
 export async function persistManualFreightRequestIntake(
