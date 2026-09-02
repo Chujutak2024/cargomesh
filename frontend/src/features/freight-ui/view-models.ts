@@ -1,31 +1,35 @@
 import type { FreightRequestIntakeStatus } from "@/features/freight-requests/intake-contracts";
 
 export type FreightRequestStatus =
+  | "DRAFT"
   | "PENDING"
+  | "ORCHESTRATING"
   | "AWAITING_SELECTION"
+  | "BOOKING"
   | "BOOKED"
   | "IN_TRANSIT"
-  | "DELIVERED";
+  | "COMPLETED"
+  | "FAILED"
+  | "CANCELLED";
 
 export type FreightRequestListItem = {
   id: string;
+  requestCode: string;
   origin: string;
   destination: string;
   corridorNote?: string;
   cargoSummary: string;
   cargoDetail: string;
   pickupDate: string;
-  eta: string;
-  vehicleCode: string;
-  driver: string;
+  updatedAt: string;
   status: FreightRequestStatus;
 };
 
 export type DashboardSummary = {
   activeRequests: number;
   awaitingSelection: number;
-  activeShipments: number;
-  slaCompliance: number;
+  inTransit: number;
+  completed: number;
 };
 
 export type VehicleStatus = "ACTIVE" | "AVAILABLE" | "MAINTENANCE";

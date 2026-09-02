@@ -8,7 +8,9 @@
 .table td strong, .table td span { display: block; }
 .table td strong { color: #263230; font-size: 0.67rem; }
 .table td span { max-width: 17rem; margin-top: 0.22rem; overflow: hidden; color: #87918f; font-size: 0.57rem; text-overflow: ellipsis; white-space: nowrap; }
-.requestId { color: #185c55 !important; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.requestLink { color: #185c55; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.67rem; font-weight: 850; text-underline-offset: 0.18rem; }
+.requestLink:hover { color: #123c3a; }
+.requestLink:focus-visible { border-radius: 0.2rem; outline: 3px solid rgb(43 174 154 / 25%); outline-offset: 2px; }
 .empty { display: grid; justify-items: center; padding: 3rem 1rem; color: #7c8886; text-align: center; }
 .empty strong { margin-top: 0.9rem; color: #1f2928; }
 .empty p { max-width: 25rem; margin: 0.35rem 0 1rem; font-size: 0.75rem; }
