@@ -61,6 +61,8 @@
 .summaryCard p { display: flex; gap: 0.45rem; margin: 0; color: #687573; font-size: 0.62rem; line-height: 1.5; }
 .summaryCard p svg { flex: 0 0 auto; color: #2b7d72; }
 .submitError { flex: 1 1 100%; margin: 0; border-radius: 0.65rem; padding: 0.65rem 0.75rem; background: #fff0ee; color: #a44740; font-size: 0.65rem; line-height: 1.45; }
+.phoneInputGroup { display: flex; width: 100%; gap: 0.4rem; align-items: center; }
+.dialBadge { display: inline-flex; align-items: center; justify-content: center; min-height: 2.85rem; padding: 0 0.75rem; border: 1px solid #d7dfdc; border-radius: 0.7rem; background: #edf4f1; color: #185c55; font-size: 0.76rem; font-weight: 800; white-space: nowrap; }
 .runnerFrame { position: fixed; width: 1px; height: 1px; overflow: hidden; border: 0; clip-path: inset(50%); opacity: 0; pointer-events: none; }
 @media (min-width: 700px) {
   .fieldGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
