@@ -219,9 +219,15 @@ export function OperationsMap({ model }: { model: OperationsMapModel | null }) {
       // Trazo de la ruta (Auténtica Panamericana Sur costera para ruta nominal o directo a través de checkpoints)
       L.polyline(latlngs, {
         color: route.isNominal ? "#185c55" : brass,
-        dashArray: route.isNominal ? "8 6" : undefined,
-        opacity: route.isNominal ? 0.85 : 0.95,
-        weight: 4,
+        // El corredor planificado es una guía vial, no telemetría. Conservamos los
+        // waypoints declarados (sin simplificación Leaflet) para que no aparezca
+        // como una diagonal que atraviesa el territorio.
+        dashArray: route.isNominal ? "5 7" : undefined,
+        lineCap: "round",
+        lineJoin: "round",
+        opacity: route.isNominal ? 0.72 : 0.95,
+        smoothFactor: 0,
+        weight: route.isNominal ? 2 : 3,
       }).addTo(map);
 
       const markerOrder = [...route.points].sort((left, right) => {
