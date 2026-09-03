@@ -79,10 +79,13 @@ Correlation:
 - provider reference: `AND-BOOK-48133070`.
 
 The browser flow discovered three candidates and executed coverage, capacity,
-and quote for every provider. The Judge Drawer exposed nine persisted WebMCP
-events and ten navigation records, including the subsequent booking/status
-calls. Each navigation retained the exact `matchingServiceId`, listed the five
-provider tools, and ended with `cleanupToolNames: []`.
+and quote for every provider. The Result Bridge persisted exactly nine
+orchestration events: three tools for each of three carriers. Separately, the
+Booking Bridge persisted the later `book_freight` and
+`get_provider_booking_status` calls. The Judge Drawer exposed ten navigation
+records across orchestration and booking. Each navigation retained the exact
+`matchingServiceId`, listed the five provider tools, and ended with
+`cleanupToolNames: []`.
 
 The Result Bridge persisted three offers and one decision. Supabase read-only
 verification for the run returned:

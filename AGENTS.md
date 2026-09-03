@@ -28,5 +28,5 @@ Este archivo establece las directivas prioritarias que deben respetar todos los 
 
 ## 4. 📦 Contratos Comerciales
 - Concurrencia optimista mediante `draft_version` en `freight_requests`.
-- Motor determinístico BALANCED (25% costo, 25% SLA, 20% tiempo, 30% disponibilidad).
+- Motor determinístico BALANCED de seis dimensiones (25% costo, 25% SLA/confiabilidad, 20% tiempo de tránsito, 10% disponibilidad, 10% experiencia de ruta y 10% historial de la organización).
 - Golden Flow canónico (`FR-1042` Callao ➔ Santiago) mantiene invariables sus scores oficiales: Andes (89), Inca (84), Pacific (72).
