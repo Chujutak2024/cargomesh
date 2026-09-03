@@ -23,10 +23,10 @@
 .formHeading h2 { margin: 0.25rem 0 0.35rem; color: #1f2928; font-size: 1.15rem; letter-spacing: -0.025em; }
 .formHeading p { margin: 0; color: #687573; font-size: 0.75rem; line-height: 1.55; }
 .fieldGrid { display: grid; gap: 0.9rem; }
-.fieldGrid label { display: grid; min-width: 0; gap: 0.4rem; color: #3c4a48; font-size: 0.66rem; font-weight: 780; }
-.fieldGrid input, .fieldGrid select { width: 100%; min-width: 0; min-height: 2.85rem; border: 1px solid #d7dfdc; border-radius: 0.7rem; padding: 0 0.75rem; background: #fbfcfa; color: #1f2928; font: inherit; font-size: 0.78rem; }
-.fieldGrid input[readonly] { color: #687573; background: #f1f4f2; }
-.fieldGrid input:focus, .fieldGrid select:focus { border-color: #2bae9a; outline: 3px solid rgb(43 174 154 / 16%); outline-offset: 1px; }
+.fieldGrid label, .subSectionCard label { display: grid; min-width: 0; gap: 0.4rem; color: #3c4a48; font-size: 0.66rem; font-weight: 780; }
+.fieldGrid input, .fieldGrid select, .subSectionCard input, .subSectionCard select { width: 100%; min-width: 0; max-width: 100%; min-height: 2.85rem; border: 1px solid #d7dfdc; border-radius: 0.7rem; padding: 0 0.75rem; background: #fbfcfa; color: #1f2928; font: inherit; font-size: 0.78rem; }
+.fieldGrid input[readonly], .subSectionCard input[readonly] { color: #687573; background: #f1f4f2; }
+.fieldGrid input:focus, .fieldGrid select:focus, .subSectionCard input:focus, .subSectionCard select:focus { border-color: #2bae9a; outline: 3px solid rgb(43 174 154 / 16%); outline-offset: 1px; }
 .infoBox { display: flex; align-items: flex-start; gap: 0.5rem; margin: 1rem 0 0; border-radius: 0.75rem; padding: 0.75rem; background: #edf8f4; color: #3d625d; font-size: 0.68rem; line-height: 1.5; }
 .infoBox svg { flex: 0 0 auto; }
 .totals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.7rem; margin-top: 1rem; }
@@ -72,8 +72,8 @@
 .dialBadge { display: inline-flex; align-items: center; justify-content: center; min-height: 2.85rem; padding: 0 0.75rem; border: 1px solid #d7dfdc; border-radius: 0.7rem; background: #edf4f1; color: #185c55; font-size: 0.76rem; font-weight: 800; white-space: nowrap; }
 .cleanDraftButton { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px dashed #2b7d72; border-radius: 0.65rem; padding: 0.4rem 0.75rem; background: #f0faf6; color: #185c55; font-family: inherit; font-size: 0.68rem; font-weight: 750; cursor: pointer; transition: all 0.15s ease; }
 .cleanDraftButton:hover { background: #ddf3ea; border-style: solid; }
-.subSectionCard { border: 1px solid #dde3e0; border-radius: 0.85rem; padding: 1.1rem; background: #fbfdfc; display: grid; gap: 0.85rem; }
-.subSectionHeader { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem; border-bottom: 1px solid #edf1ef; padding-bottom: 0.65rem; margin-bottom: 0.25rem; }
+.subSectionCard { min-width: 0; border: 1px solid #dde3e0; border-radius: 0.85rem; padding: 1.1rem; background: #fbfdfc; display: grid; gap: 0.85rem; }
+.subSectionHeader { min-width: 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem; border-bottom: 1px solid #edf1ef; padding-bottom: 0.65rem; margin-bottom: 0.25rem; }
 .subSectionBadge { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; font-weight: 800; color: #185c55; background: #edf8f4; padding: 0.25rem 0.65rem; border-radius: 0.5rem; }
 .subSectionHeader small { color: #687573; font-size: 0.68rem; }
 .runnerFrame { position: fixed; width: 1px; height: 1px; overflow: hidden; border: 0; clip-path: inset(50%); opacity: 0; pointer-events: none; }
@@ -136,11 +136,11 @@
 .budgetHelpText { font-size: 0.66rem; color: #687573; line-height: 1.45; margin-top: 0.4rem; }
 
 /* CONTEXT IDENTITY CARDS */
-.contextGrid { display: grid; gap: 0.75rem; margin-bottom: 0.75rem; }
-.contextInfoCard { background: #ffffff; border: 1px solid #e1e7e4; border-radius: 0.75rem; padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.contextGrid { min-width: 0; display: grid; gap: 0.75rem; margin-bottom: 0.75rem; }
+.contextInfoCard { min-width: 0; background: #ffffff; border: 1px solid #e1e7e4; border-radius: 0.75rem; padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.2rem; }
 .contextLabel { font-size: 0.65rem; font-weight: 750; color: #687573; text-transform: uppercase; letter-spacing: 0.03em; }
-.contextValue { font-size: 0.85rem; font-weight: 800; color: #1f302d; display: flex; align-items: center; gap: 0.4rem; }
-.contextSub { font-size: 0.68rem; color: #2b7d72; font-weight: 600; }
+.contextValue { font-size: 0.85rem; font-weight: 800; color: #1f302d; display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; min-width: 0; word-break: break-word; }
+.contextSub { font-size: 0.68rem; color: #2b7d72; font-weight: 600; min-width: 0; word-break: break-word; }
 .rolePill { display: inline-flex; align-items: center; padding: 0.15rem 0.45rem; border-radius: 0.35rem; font-size: 0.62rem; font-weight: 800; background: #edf8f4; color: #185c55; border: 1px solid #c2e5d9; }
 
 /* AI SUGGESTION BUTTON */
@@ -164,5 +164,5 @@
   .step small { display: none; }
   .step strong { width: 100%; overflow: hidden; font-size: 0.48rem; text-overflow: ellipsis; white-space: nowrap; }
 }
-@media (max-width: 620px) { .hero { align-items: flex-start; flex-direction: column; } .draftBadge { width: 100%; justify-content: center; } .actions { flex-direction: column-reverse; } .primaryButton, .secondaryButton { width: 100%; } }
+@media (max-width: 620px) { .hero { align-items: flex-start; flex-direction: column; } .draftBadge { width: 100%; justify-content: center; } .actions { flex-direction: column-reverse; } .primaryButton, .secondaryButton { width: 100%; } .subSectionCard { padding: 0.85rem 0.75rem; } .subSectionHeader { flex-direction: column; align-items: flex-start; } }
 @media (prefers-reduced-motion: reduce) { .step, .primaryButton { transition: none; } .spinner { animation: none; } }
