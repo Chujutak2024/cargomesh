@@ -128,3 +128,29 @@ inválido detiene el flujo antes del ranking y queda identificado por etapa en
 `Int02aApiError`. El coordinador acepta `fetcher` inyectable para pruebas, pero
 en navegador usa `fetch` y las APIs públicas reales; nunca llama handlers
 provider ni funciones server-only directamente.
+
+## External validation harness
+
+`runExternalWebMcpValidation` composes the production collection runner with
+`createExternalProviderNavigationAdapter`. It accepts only an immutable target
+snapshot supplied by the caller and requires every target to use an HTTP(S)
+origin different from CargoMesh.
+
+The returned evidence contains the exact CargoMesh origin, provider origins,
+navigation URLs, `matchingServiceId` values, calls, timestamps, and cleanup
+results. Callers must sanitize the captured records before publishing them. The
+harness does not create candidates, persist records, call provider handlers, or
+turn a synthetic test into public browser evidence.
+
+Polaris and Apex exist only in the integration test as specialized scenario
+inputs. Production remains carrier-agnostic. A real showcase still requires:
+
+1. an externally deployed registered provider origin;
+2. its exact absolute `provider_url` in the discovery snapshot;
+3. the provider tools registered with `exposedTo: [cargoMeshOrigin]`;
+4. a clean compatible browser run capturing `getTools`, `executeTool`, and
+   cleanup evidence.
+
+`exposedTo` remains a provider registration policy; the harness cannot grant
+that permission. It only requests tools from the exact registered provider
+origin and rejects navigation outside the immutable discovery snapshot.
