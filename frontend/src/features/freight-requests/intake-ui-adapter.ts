@@ -12,10 +12,10 @@ function joinPresent(parts: Array<string | null>) {
   return parts.filter((part): part is string => Boolean(part)).join(" · ");
 }
 
-export function resolveIntakeRequestCode(value: string | string[] | undefined) {
+export function resolveIntakeRequestCode(value: string | string[] | undefined): string | null {
   return typeof value === "string" && value.trim().length > 0
     ? value.trim()
-    : DEFAULT_INTAKE_REQUEST_CODE;
+    : null;
 }
 
 export function isIntakeVisualScenario(value: string | string[] | undefined) {
@@ -103,6 +103,9 @@ export async function loadPersistedFreightIntake(
 }
 
 export function getFreightIntakeDispatchBlockReason(model: FreightIntakeModel) {
+  if (model.source === "new-draft") {
+    return "Debes crear y guardar la solicitud en el servidor antes de iniciar la orquestación.";
+  }
   if (model.source !== "persisted") {
     return "El escenario fixture es exclusivamente visual y no puede iniciar un dispatch real.";
   }

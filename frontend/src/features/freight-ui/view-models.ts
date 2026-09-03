@@ -66,7 +66,7 @@ export type TrackingMapModel = {
 };
 
 export type FreightIntakeModel = {
-  source: "persisted" | "visual-fixture";
+  source: "persisted" | "visual-fixture" | "new-draft";
   freightRequestId: string;
   draftVersion: number;
   requestId: string;
@@ -123,6 +123,12 @@ export type FreightIntakeModel = {
   strategy: "BALANCED";
   documents: string[];
   recommendationValues: RecommendationProposedFields;
+  requiresRefrigeration?: boolean;
+  temperatureMinC?: number | null;
+  temperatureMaxC?: number | null;
+  isHazardous?: boolean;
+  isOversized?: boolean;
+  isFragile?: boolean;
 };
 
 export type DispatchFixtureScenario =

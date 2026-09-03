@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createFreightIntakeFixture } from "@/features/freight-ui/ui-fixtures";
+import {
+  createFreightIntakeFixture,
+  createNewDraftIntakeModel,
+} from "@/features/freight-ui/ui-fixtures";
 import type { FreightRequestExecutionIntent } from "./execution-intent-contracts";
 import {
   assertExecutionIntentCorrelation,
@@ -123,10 +126,11 @@ test("enables only the explicit visual fixture scenario", () => {
     "El escenario fixture es exclusivamente visual y no puede iniciar un dispatch real.");
 });
 
-test("resolves a requested code and uses FR-1042 only as the declared demo code", () => {
+test("resolves an explicit requested code and returns null when omitted", () => {
   assert.equal(resolveIntakeRequestCode(" FR-2099 "), "FR-2099");
-  assert.equal(resolveIntakeRequestCode(undefined), "FR-1042");
-  assert.equal(resolveIntakeRequestCode(["FR-2099"]), "FR-1042");
+  assert.equal(resolveIntakeRequestCode("FR-1042"), "FR-1042");
+  assert.equal(resolveIntakeRequestCode(undefined), null);
+  assert.equal(resolveIntakeRequestCode(["FR-2099"]), null);
 });
 
 test("propagates authenticated load failures without creating a fixture fallback", async () => {
@@ -141,6 +145,14 @@ test("propagates authenticated load failures without creating a fixture fallback
 test("blocks a request that is no longer pending", () => {
   const model = mapFreightRequestIntakeToForm({ ...intake, status: "ORCHESTRATING" });
   assert.match(getFreightIntakeDispatchBlockReason(model) ?? "", /ORCHESTRATING/);
+});
+
+test("blocks dispatch when model is a new unpersisted draft", () => {
+  const newDraft = createNewDraftIntakeModel();
+  assert.equal(newDraft.source, "new-draft");
+  assert.equal(newDraft.freightRequestId, "");
+  assert.equal(newDraft.draftVersion, 0);
+  assert.match(getFreightIntakeDispatchBlockReason(newDraft) ?? "", /servidor/);
 });
 
 test("accepts a fresh read only when request, organization and operator still correlate", () => {

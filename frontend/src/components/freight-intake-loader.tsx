@@ -8,7 +8,10 @@ import {
   loadPersistedFreightIntake,
 } from "@/features/freight-requests/intake-ui-adapter";
 import type { FreightIntakeModel } from "@/features/freight-ui/view-models";
-import { createFreightIntakeFixture } from "@/features/freight-ui/ui-fixtures";
+import {
+  createFreightIntakeFixture,
+  createNewDraftIntakeModel,
+} from "@/features/freight-ui/ui-fixtures";
 
 import styles from "./freight-intake-loader.module.css";
 
@@ -36,20 +39,29 @@ export function FreightIntakeLoader({
   defaultCleanMode = false,
   visualScenario,
 }: {
-  requestCode: string;
+  requestCode: string | null;
   defaultCleanMode?: boolean;
   visualScenario: boolean;
 }) {
   const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<LoadState>(() =>
-    visualScenario
-      ? { status: "ready", model: createFreightIntakeFixture() }
-      : { status: "loading" },
-  );
+  const [state, setState] = useState<LoadState>(() => {
+    if (visualScenario) {
+      return { status: "ready", model: createFreightIntakeFixture() };
+    }
+    if (!requestCode) {
+      return { status: "ready", model: createNewDraftIntakeModel() };
+    }
+    return { status: "loading" };
+  });
 
   useEffect(() => {
     if (visualScenario) {
       setState({ status: "ready", model: createFreightIntakeFixture() });
+      return;
+    }
+
+    if (!requestCode) {
+      setState({ status: "ready", model: createNewDraftIntakeModel() });
       return;
     }
 
