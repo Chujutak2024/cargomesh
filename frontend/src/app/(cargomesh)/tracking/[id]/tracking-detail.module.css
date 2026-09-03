@@ -1,4 +1,6 @@
 .grid { display: grid; gap: 1rem; }
+.mapPanel { min-width: 0; }
+.mapState { border-radius: 999px; padding: 0.35rem 0.55rem; background: #f5efe2; color: #795718; font-size: 0.58rem; font-weight: 800; }
 .timeline { display: grid; gap: 0; margin: 0; padding: 0.5rem 1rem 1rem; list-style: none; }
 .timeline li { position: relative; display: grid; grid-template-columns: 1.2rem 1fr; gap: 0.65rem; padding: 0.75rem 0; }
 .timeline li:not(:last-child)::after { position: absolute; top: 1.65rem; bottom: -0.75rem; left: 0.34rem; width: 1px; background: #cfe1dc; content: ""; }
