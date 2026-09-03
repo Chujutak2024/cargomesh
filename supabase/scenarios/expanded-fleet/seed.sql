@@ -503,7 +503,7 @@ insert into public.carriers (
   updated_at
 )
 values
-  -- Carrier 5: Frío extremo internacional
+  -- Carrier 5: Frío extremo internacional (Escenario / Roadmap)
   (
     'b2000000-0000-0000-0000-000000000001',
     'Polaris Cold Chain Logistics',
@@ -511,11 +511,11 @@ values
     'ENTERPRISE_CARRIER',
     'ACTIVE',
     '/providers/polaris-cold-chain',
-    true,
+    false,
     now(),
     now()
   ),
-  -- Carrier 6: Carga peligrosa certificada
+  -- Carrier 6: Carga peligrosa certificada (Escenario / Roadmap)
   (
     'b2000000-0000-0000-0000-000000000002',
     'Apex Hazmat Transport',
@@ -523,11 +523,11 @@ values
     'ENTERPRISE_CARRIER',
     'ACTIVE',
     '/providers/apex-hazmat',
-    true,
+    false,
     now(),
     now()
   ),
-  -- Carrier 7: Flete prioritario express
+  -- Carrier 7: Flete prioritario express (Escenario / Roadmap)
   (
     'b2000000-0000-0000-0000-000000000003',
     'Velocity Express Freight',
@@ -535,7 +535,7 @@ values
     'REGIONAL_CARRIER',
     'ACTIVE',
     '/providers/velocity-express',
-    true,
+    false,
     now(),
     now()
   )
