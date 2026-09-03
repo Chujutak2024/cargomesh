@@ -423,3 +423,39 @@ test("9. Exhausted collision retries returns a recoverable 409 REQUEST_CODE_COLL
   // Verified: exhausted the 3 configured attempts
   assert.equal(insertCall, 3);
 });
+
+test("10. Concurrent draft creations recover from a shared requestCode and return distinct drafts", async () => {
+  const generatedCodes = ["FR-SHARED", "FR-SHARED", "FR-RECOVERED-A", "FR-RECOVERED-B"];
+  const committedCodes = new Set<string>();
+  let codeGenerationCount = 0;
+
+  const { deps, insertedRows } = createTestDependencies({
+    generateRequestCode: async () => generatedCodes[codeGenerationCount++] || `FR-FALLBACK-${codeGenerationCount}`,
+    insertFreightRequest: async (row) => {
+      // Allow both callers to reach the unique constraint with the same first code.
+      await Promise.resolve();
+      const code = row.code as string;
+      if (committedCodes.has(code)) {
+        const pgError = new Error(
+          'duplicate key value violates unique constraint "freight_requests_code_key"',
+        );
+        (pgError as unknown as { code: string }).code = "23505";
+        throw pgError;
+      }
+
+      committedCodes.add(code);
+      insertedRows.push(row);
+      return { id: row.id as string, code };
+    },
+  });
+
+  const payload = { fields: { originCity: "Callao" } };
+  const [first, second] = await Promise.all([
+    createFreightRequestDraftWithDependencies(payload, deps),
+    createFreightRequestDraftWithDependencies(payload, deps),
+  ]);
+
+  assert.notEqual(first.requestCode, second.requestCode);
+  assert.equal(insertedRows.length, 2);
+  assert.equal(new Set(insertedRows.map((row) => row.code)).size, 2);
+});
