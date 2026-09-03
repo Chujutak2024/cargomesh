@@ -33,7 +33,7 @@ CargoMesh turns one enterprise freight request into an explainable and recoverab
    - `quote_freight`;
    - `book_freight`;
    - `get_provider_booking_status`.
-5. CargoMesh validates and records the structured responses through an idempotent Result Bridge.
+5. CargoMesh records coverage, capacity, and quote responses through the idempotent Result Bridge; later booking and status responses use the separate Booking Bridge.
 6. The deterministic BALANCED engine ranks eligible offers and explains every subscore.
 7. An authorized user selects an offer before CargoMesh requests a booking.
 8. If the provider rejects the booking, CargoMesh offers only valid recovery alternatives and requires a new explicit selection.
@@ -145,7 +145,7 @@ Cross-origin access requires exact origin permissions, an immutable discovery sn
 
 Carrier profiles and provider responses used in the demo are deterministic synthetic fixtures. The WebMCP registration and execution, navigation and cleanup, Result Bridge, database persistence, BALANCED evaluation, explicit selection, booking lifecycle, replay handling, and recovery flow are implemented application behavior.
 
-The public browser-agent UAT passed against [https://cargomesh.vercel.app](https://cargomesh.vercel.app) at `origin/main@76d03ef`. Andes, Inca, and Pacific each exposed the same five provider tools through the native `document.modelContext` surface, and the exact discovery `serviceId` remained in every provider URL. Real `executeTool()` calls produced nine Result Bridge orchestration events—coverage, capacity, and quote for each of three carriers. The later `book_freight` and `get_provider_booking_status` calls were persisted separately by the Booking Bridge. Leaving each provider document removed all five tools. The fresh run produced the deterministic `89 / 84 / 72` ranking with confidence `88`, followed by an explicit Andes selection and a confirmed booking. The current registered demo provider URLs are paths on the CargoMesh deployment; we do not misrepresent that result as proof of an independently hosted provider origin.
+The public browser-agent UAT passed against [https://cargomesh.vercel.app](https://cargomesh.vercel.app) at the capture revision `origin/main@76d03ef`. Andes, Inca, and Pacific each exposed the same five provider tools through the native `document.modelContext` surface, and the exact discovery `serviceId` remained in every provider URL. Real `executeTool()` calls produced nine Result Bridge orchestration events—coverage, capacity, and quote for each of three carriers. The later `book_freight` and `get_provider_booking_status` calls were persisted separately by the Booking Bridge. Leaving each provider document removed all five tools. The fresh run produced the deterministic `89 / 84 / 72` ranking with confidence `88`, followed by an explicit Andes selection and a confirmed booking. The production baseline verified before finalization is `origin/main@f38f9a7`; the earlier UAT SHA remains attached to its historical run and screenshots rather than being rewritten retroactively. The current registered demo provider URLs are paths on the CargoMesh deployment; we do not misrepresent that result as proof of an independently hosted provider origin.
 
 ### Public WebMCP UAT evidence
 
@@ -164,7 +164,9 @@ The five discovered tools were `check_service_coverage`, `check_capacity`, `quot
 ## Public links
 
 - Repository: [https://github.com/Chujutak2024/cargomesh](https://github.com/Chujutak2024/cargomesh) — public open-source submission.
+- License: [MIT](../../LICENSE).
 - Public demo: [https://cargomesh.vercel.app](https://cargomesh.vercel.app)
+- Verified production baseline before finalization: `origin/main@f38f9a7`.
 - Demo access: Single-click authenticated access on `/login` via "Acceder como Operador Demo (SUPERVISOR)" / "Sign in as Demo Operator".
 - Demo environment declaration: Evaluator and demonstration environment operating on synthetic scenario fixtures. No real-world cargo dispatch, no PII, and no administrative Supabase privileges.
 - Demo video: `<FINAL_VIDEO_URL>`
@@ -291,8 +293,8 @@ This segment is backed by a separate approved public UAT: Andes reaches `REJECTE
 
 - [x] Complete the public provider-surface, Golden Flow, and confirmed-booking UAT at [https://cargomesh.vercel.app](https://cargomesh.vercel.app) on `origin/main@76d03ef`.
 - [ ] Replace `<FINAL_VIDEO_URL>` after the edited video is uploaded.
-- [ ] Confirm the repository is public and the license is detected.
+- [x] Confirm the repository is public and the MIT license is detected.
 - [x] Add sanitized intake, tools, trace, ranking, confirmed booking, and cleanup screenshots.
 - [x] Complete the public Andes `REJECT` → explicit Inca replacement UAT and attach sanitized captures 06 and 06b.
 - [ ] Map this story to the live official Devpost fields after the project is initialized with the hackathon workflow.
-- [ ] Perform one final secret scan before making or confirming any public artifact.
+- [x] Perform one final secret scan before making or confirming any public artifact.

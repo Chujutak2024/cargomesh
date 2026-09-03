@@ -10,6 +10,8 @@
 The `CM-01` through `CM-14` MVP cuts below are integrated and verified. The calendar and detailed stories remain as a historical execution record, not an active to-do list. Current implementation truth lives in `main`, the ADRs and the release evidence.
 
 - Public demo: `https://cargomesh.vercel.app`
+- Verified production baseline before finalization: `origin/main@f38f9a7`
+- Public repository and license: `https://github.com/Chujutak2024/cargomesh` · MIT
 - Provider discovery and orchestration: data-driven `0..N`
 - Demo providers: Andes, Inca and Pacific are live same-origin CargoMesh routes, not independently hosted partners
 - Provider tool set: exactly five canonical provider tools
@@ -51,7 +53,7 @@ Para no dispersar esfuerzos en pantallas innecesarias, el alcance se limita estr
 
 1. **Authentication:** One-click demo access creates a real Supabase Auth session server-side and still requires an `ACTIVE` membership. Hosted credentials are private deployment variables and never reach the browser.
 2. **Provider Registry + plantilla (`/providers/[carrierSlug]`):** Los candidatos se consultan dinámicamente desde `carriers` y `carrier_services`. La demo aloja páginas livianas para los tres registros seed reutilizando `mockups/provider_*.html`, pero la lógica opera sobre `0..N` carriers y también admite un `provider_url` externo. No son sistemas de gestión interna de flotas.
-3. **Solicitud de Carga:** El formulario Stepper viene pre-llenado con los datos de **FR-1042** (10 pallets $\times$ 800 kg = 8,000 kg, 18 m³, Callao $\rightarrow$ Santiago) para avanzar la demo rápidamente.
+3. **Solicitud de Carga:** El formulario Stepper inicia como un borrador limpio. El operador puede cargar explícitamente **FR-1042** (10 pallets $\times$ 800 kg = 8,000 kg, 18 m³, Callao $\rightarrow$ Santiago) como caso reproducible; nunca se usa como fallback productivo ni se muta al abrir un borrador nuevo.
 4. **Orquestación & Scoring:** Agente que recorre todos los candidatos descubiertos, ejecuta sus tools, aplica BALANCED sobre las ofertas elegibles y guarda la decisión inmutable.
 5. **Booking & Tracking:** Simulación limpia de confirmación aduanera y timeline de hitos.
 6. **Recovery:** Modal contextual que ante rechazo de Andes ofrece a Inca Logistics en 1 clic.

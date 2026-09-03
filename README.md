@@ -36,8 +36,10 @@ an LLM—produces the ranking.
 ### 🌐 Live Deployment & Demo Access
 
 - **Production URL**: [https://cargomesh.vercel.app](https://cargomesh.vercel.app)
+- **Verified Production Baseline**: `origin/main@f38f9a7`
 - **Source Repository**: [https://github.com/Chujutak2024/cargomesh](https://github.com/Chujutak2024/cargomesh)
-- **One-Click Demo Access**: Navigate to `/login` and select **"Acceder como Operador Demo (SUPERVISOR)"** (or switch to **EN** for English). Pre-configured authentication grants authenticated session access to the ACME Industrial shipper workspace.
+- **Open-Source License**: [MIT](LICENSE)
+- **One-Click Demo Access**: Navigate to `/login` and select **"Acceder como Operador Demo (SUPERVISOR)"** (or switch to **EN** for English). Pre-configured authentication grants authenticated session access to the ACME Mining shipper workspace.
 - **Demonstration Scope & Honest Disclosure**: This deployment is an evaluation and demonstration environment. All carriers, services, route metrics, and historical requests are synthetic demo fixtures. No real commercial shipments are dispatched, and client sessions hold no remote administrative Supabase privileges.
 
 ### Five provider tools
@@ -53,6 +55,11 @@ an LLM—produces the ranking.
 The evaluator procedure, exact JSON contracts, Golden Flow payloads, recovery
 causality, and cleanup check are documented in the
 [WebMCP Judge Audit Guide](docs/04-execution/WebMCP_Judge_Audit_Guide.md).
+
+The approved public evidence is collected in the
+[REL-02 WebMCP UAT report](docs/04-execution/REL02_Public_WebMCP_UAT_Evidence.md),
+with a reproducible read-only evaluator sequence in the
+[WebMCP Demo Console Runbook](docs/04-execution/WebMCP_Demo_Console_Runbook.md).
 
 WebMCP reduces the fragility of screen-based automation: CargoMesh consumes
 typed, origin-gated tools through `document.modelContext` instead of depending
@@ -74,8 +81,8 @@ on button positions, DOM text extraction, or click synchronization.
 | `docs/00-master` | [Dynamic Provider Registry ADR](docs/00-master/ADR-001_Dynamic_Provider_Registry.md) |
 | `docs/01-requirements` | [Requirements Catalogue](docs/01-requirements/CargoMesh_Catalogo_Requisitos.md) |
 | `docs/02-database` | [Supabase Data Contract](docs/02-database/CargoMesh_Supabase_Data_Contract.md) |
-| `docs/03-ux-ui` | [Devpost Screenshot Capture Plan](docs/03-ux-ui/screenshots/README.md) |
-| `docs/04-execution` | [WebMCP Judge Audit Guide](docs/04-execution/WebMCP_Judge_Audit_Guide.md) and [Team Execution Checklist](docs/04-execution/CargoMesh_Team_Execution_Checklist.md) |
+| `docs/03-ux-ui` | [Approved Devpost Evidence Gallery](docs/03-ux-ui/screenshots/README.md) |
+| `docs/04-execution` | [WebMCP Judge Audit Guide](docs/04-execution/WebMCP_Judge_Audit_Guide.md), [Console Runbook](docs/04-execution/WebMCP_Demo_Console_Runbook.md), [Public UAT Evidence](docs/04-execution/REL02_Public_WebMCP_UAT_Evidence.md), and [Team Execution Checklist](docs/04-execution/CargoMesh_Team_Execution_Checklist.md) |
 
 ---
 
@@ -125,7 +132,7 @@ graph TD
     K --> L["👤 Human Selection / Smart Auto Policy"]
     L --> M["📑 book_freight() Provider Request"]
     M --> N["⏳ PENDING_PROVIDER_CONFIRMATION"]
-    N -->|CONFIRMED| O["📍 Live Tracking & Customs Timeline (get_provider_booking_status)"]
+    N -->|CONFIRMED| O["📍 Persisted Milestone Tracking & Customs Timeline (get_provider_booking_status)"]
     N -->|REJECTED / EXPIRED| P["🔄 Guided Recovery Run (Fresh Provider Evaluation)"]
     O --> Q["🏁 DELIVERED (COMPLETED)"]
 ```
@@ -135,7 +142,7 @@ graph TD
 ## 🛡️ Canonical Transparency Declaration & Causality Rule
 
 ### 1.1 Canonical Declaration of Transparency
-> **"Carrier base data and responses are deterministic demo fixtures residing in carrier web pages. WebMCP tool execution, structured result transfer, database persistence, mathematical scoring, human selection, booking lifecycle, provider acknowledgement, and recovery mechanisms are 100% real."**
+> **"Carrier base data and responses are deterministic demo fixtures residing in carrier web pages. WebMCP tool execution, structured result transfer, database persistence, mathematical scoring, human selection, booking lifecycle, provider acknowledgement, and recovery are implemented end-to-end application behavior."**
 
 ### 1.2 Strict Causality Rule (Anti-Fake Demo)
 In CargoMesh, the database seed initializes **only the baseline environment** (organization account, active member, cargo categories, carriers, services, and historical metrics).
@@ -227,7 +234,7 @@ $$\text{Final Score} = \text{round}\left( 0.25 \cdot S_{\text{cost}} + 0.25 \cdo
 | Dimension | Weight | Canonical Normalization Formula | Operational Meaning |
 |:---|:---:|:---|:---|
 | **Cost Score** ($S_{\text{cost}}$) | **25%** | `(lowest_eligible_price / candidate_price) * 100` | Cheapest eligible carrier receives 100 pts. |
-| **Reliability Score** ($S_{\text{reliability}}$) | **25%** | `(successful_trips / completed_trips) * 100` | Derived directly from verified historical trip logs. |
+| **Reliability Score** ($S_{\text{reliability}}$) | **25%** | `(successful_trips / completed_trips) * 100` | Derived from persisted synthetic historical metrics in the demo dataset. |
 | **ETA Score** ($S_{\text{eta}}$) | **20%** | `(best_transit_hours / candidate_transit_hours) * 100` | Fastest transit time receives 100 pts. |
 | **Availability Score** ($S_{\text{availability}}$) | **10%** | `AVAILABLE (90) | LIMITED (60)` | Carrier fleet certainty class in origin hub. |
 | **Route Experience** ($S_{\text{route}}$) | **10%** | `min(100, completed_route_operations)` | 1 point per completed operation, capped at 100. |
@@ -340,14 +347,14 @@ cargomesh/
 │   ├── 03-ux-ui/                              # UX architecture, screen flows & WebMCP evidence
 │   │   ├── CargoMesh_Mockups_Requeridos.md
 │   │   ├── CargoMesh_Mockups_WebMCP_Ajustes.md
-│   │   └── screenshots/README.md              # REL-02 capture plan and image slots
+│   │   └── screenshots/README.md              # Approved REL-02 evidence gallery and capture standards
 │   └── 04-execution/                          # Team ownership, checklist and multi-AI handoffs
 │       ├── CargoMesh_Team_Execution_Checklist.md
 │       └── WebMCP_Judge_Audit_Guide.md
 ├── mockups/                                   # Standalone UX/UI HTML mockups & provider pages
 ├── supabase/                                  # Database migrations, seed, tests, and config
 │   ├── config.toml                            # Local Supabase stack configuration
-│   ├── migrations/                            # 11 synchronized migrations (including baseline legacy)
+│   ├── migrations/                            # Versioned PostgreSQL schema and security migrations
 │   ├── current_public_schema.sql              # Schema reference dump
 │   ├── database.types.ts                      # Generated TypeScript database types
 │   ├── seed.sql                               # Local-only Demo Auth user & ACME SUPERVISOR seed

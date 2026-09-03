@@ -1,12 +1,15 @@
 # CargoMesh Devpost Screenshot Capture Plan
 
-Status: REL-02 capture slots only
-Evidence source: final public HTTPS deployment and exact deployed Git SHA
+Status: approved REL-02 public UAT evidence set
+Captured UAT revision: `origin/main@76d03ef`
+Finalization baseline: `origin/main@f38f9a7`
+Evidence source: public HTTPS deployment at `https://cargomesh.vercel.app`
 
-This directory intentionally contains no fabricated screenshots. Add each image
-only after the corresponding flow passes in a clean WebMCP-compatible browser.
-Before committing an image, redact email addresses, cookies, tokens,
-authorization references, private user identifiers, and any Supabase secret.
+This directory contains the eight approved screenshots for the seven required
+evidence slots; recovery uses separate rejection and replacement-confirmation
+captures. The images record the public UAT performed at `76d03ef`. The newer
+production release is recorded separately and is not retroactively claimed as
+the capture revision. No image is fabricated.
 
 ## Capture standards
 
@@ -31,11 +34,11 @@ authorization references, private user identifiers, and any Supabase secret.
 | 6 | `06-recovery-andes-to-inca.png` | Andes → Inca recovery | Andes `REJECTED`, eligible `recoveryOfferIds`, explicit Inca selection, USD 1,920 / 29 h, and new booking | Show a separate controlled contingency; do not portray auto-booking |
 | 7 | `07-provider-cleanup.png` | Provider cleanup verification | Empty list of the five provider tools after leaving the provider document | Other page-owned CargoMesh tools may remain; only abandoned provider tools must be absent |
 
-## Placeholder snippets
+## Reusable Markdown snippets
 
-The image references remain commented until their PNG files exist. After each
-capture is reviewed, remove the surrounding HTML comment and reuse the same
-Markdown in the root README or Devpost draft.
+All referenced PNG files now exist and have been reviewed. Reuse the snippets
+below when preparing the final Devpost page; they are already linked from the
+REL-02 evidence report and the Devpost story.
 
 ```markdown
 ![FR-1042 intake: Callao to Santiago](./01-intake-fr1042.png)
@@ -68,8 +71,8 @@ Markdown in the root README or Devpost draft.
 ## Completion checklist
 
 - [x] Capture all seven evidence slots from the final HTTPS deployment (recovery uses two honest companion captures).
-- [ ] Verify every image against the exact deployed SHA.
-- [ ] Redact secrets and personal information.
-- [ ] Confirm that text remains readable after Devpost compression.
-- [ ] Replace the commented placeholders only after A+C approve the evidence.
-- [ ] Reference the approved files from the final README and Devpost draft.
+- [x] Record the exact capture revision separately from the current production release.
+- [x] Review every image for secrets and personal information.
+- [x] Confirm that the principal proof remains readable at Devpost width.
+- [x] Receive A+C approval for the evidence set.
+- [x] Reference the approved files from the REL-02 report, root README, and Devpost draft.

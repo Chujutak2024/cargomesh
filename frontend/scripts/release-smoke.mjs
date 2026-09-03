@@ -10,7 +10,9 @@ if (baseUrl.protocol !== "https:") {
   throw new Error("CARGOMESH_RELEASE_URL must use HTTPS.");
 }
 
-const serviceId = "d0000000-0000-0000-0000-000000000001";
+// Canonical Andes service from the Golden Flow seed. Keep this distinct from
+// the demo Auth user UUID, which also uses a stable seed identity.
+const serviceId = "30000000-0000-0000-0000-000000000001";
 const targets = [
   { name: "landing", path: "/" },
   { name: "login", path: "/login" },
