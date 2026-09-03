@@ -24,7 +24,7 @@ authorization references, private user identifiers, and any Supabase secret.
 | # | Target filename | Required scene | Evidence that must be visible | Redaction / acceptance check |
 |---:|---|---|---|---|
 | 1 | `01-intake-fr1042.png` | FR-1042 freight intake | Callao, Peru → Santiago, Chile; ROAD/FTL; 8,000 kg; 18 m³; authenticated request context | No credentials; persisted values rather than browser-generated dates |
-| 2 | `02-provider-tools-devtools.png` | Provider portal plus DevTools | `document.modelContext`, the five provider tool names, and the exact provider origin | URL includes the discovered `serviceId`; no access tokens or cookies |
+| 2 | `02-provider-tools-production.png` | Public provider portal | The five provider tool names registered through `document.modelContext` and the exact provider path | Companion UAT transcript records the URL with discovered `serviceId`; no access tokens or cookies |
 | 3 | `03-judge-drawer-webmcp-trace.png` | Judge Drawer trace | `providerUrl`, `matchingServiceId`, coverage → capacity → quote, sanitized envelopes, and timestamps | Inputs/outputs correlate to one run; no `service_role` or authorization secret |
 | 4 | `04-balanced-ranking.png` | BALANCED ranking | Andes 89, Inca 84, Pacific 72, confidence 88, and the Andes explanation | Show that the collection is dynamic `0..N`; do not imply scores come from an LLM |
 | 5 | `05-confirmed-booking.png` | Confirmed booking | Explicit ASSISTED selection, stable provider reference, `CONFIRMED`, and persisted event timeline | Hide server-issued authorization reference; no duplicate booking |
@@ -38,8 +38,8 @@ capture is reviewed, remove the surrounding HTML comment and reuse the same
 Markdown in the root README or Devpost draft.
 
 ```markdown
-<!-- ![FR-1042 intake: Callao to Santiago](./01-intake-fr1042.png) -->
-<!-- ![Five provider tools visible through WebMCP](./02-provider-tools-devtools.png) -->
+![FR-1042 intake: Callao to Santiago](./01-intake-fr1042.png)
+![Five provider tools visible through WebMCP](./02-provider-tools-production.png)
 <!-- ![Judge Drawer WebMCP execution trace](./03-judge-drawer-webmcp-trace.png) -->
 <!-- ![BALANCED ranking: Andes 89, Inca 84, Pacific 72](./04-balanced-ranking.png) -->
 <!-- ![Confirmed provider booking and event timeline](./05-confirmed-booking.png) -->
@@ -66,7 +66,7 @@ Markdown in the root README or Devpost draft.
 
 ## Completion checklist
 
-- [ ] Capture all seven images from the final HTTPS deployment.
+- [ ] Capture all seven images from the final HTTPS deployment (intake and provider tools captures complete).
 - [ ] Verify every image against the exact deployed SHA.
 - [ ] Redact secrets and personal information.
 - [ ] Confirm that text remains readable after Devpost compression.

@@ -126,9 +126,9 @@ An exact replay must not repeat browser work or create another offer or booking.
 
 A recommendation is not a selection, a selection is not a booking, and a booking request is not provider confirmation. Keeping those states separate allowed us to implement deterministic rejection recovery without silently switching the user's carrier.
 
-### 5. Demonstrating cross-origin WebMCP honestly
+### 5. Demonstrating browser-agent WebMCP honestly
 
-Cross-origin access requires exact origin permissions, an immutable discovery snapshot, active-document tool execution, and cleanup between providers. We built a reusable validation harness and documented the remaining public HTTPS UAT as a release gate rather than claiming localhost evidence as production proof.
+Cross-origin access requires exact origin permissions, an immutable discovery snapshot, active-document tool execution, and cleanup between providers. We built a reusable validation harness and validate the public HTTPS provider documents with an external WebMCP-enabled Chrome agent. An independently hosted provider origin remains a separate deployment proof and is not inferred from same-deployment provider paths.
 
 ## What we are proud of
 
@@ -145,7 +145,19 @@ Cross-origin access requires exact origin permissions, an immutable discovery sn
 
 Carrier profiles and provider responses used in the demo are deterministic synthetic fixtures. The WebMCP registration and execution, navigation and cleanup, Result Bridge, database persistence, BALANCED evaluation, explicit selection, booking lifecycle, replay handling, and recovery flow are implemented application behavior.
 
-The public cross-origin UAT is being executed against [https://cargomesh.vercel.app](https://cargomesh.vercel.app) at `origin/main@78af18b`. We will not present a local or same-origin run as final production evidence.
+The public browser-agent UAT passed against [https://cargomesh.vercel.app](https://cargomesh.vercel.app) at `origin/main@b1e3457`. Andes, Inca, and Pacific each exposed the same five provider tools through the native `document.modelContext` surface, the exact discovery `serviceId` remained in every provider URL, a real read-only `executeTool()` call returned a valid provider envelope, and leaving the provider document removed all five tools. The current registered demo provider URLs are paths on the CargoMesh deployment; we do not misrepresent that result as proof of an independently hosted provider origin.
+
+### Public WebMCP UAT evidence
+
+Validated on 2026-09-02 from an external WebMCP-enabled Chrome session:
+
+| Provider | Exact public provider document | Native result |
+|---|---|---|
+| Andes Freight | `/providers/andes?serviceId=30000000-0000-0000-0000-000000000001` | Five tools discovered; `check_service_coverage` returned `ok: true`, `supported: true`, and `providerServiceCode: ANDES-PECL-FTL` for Callao → Santiago. |
+| Inca Logistics | `/providers/inca?serviceId=30000000-0000-0000-0000-000000000003` | Five tools discovered through `document.modelContext.getTools()`. |
+| Pacific Cargo | `/providers/pacific?serviceId=30000000-0000-0000-0000-000000000002` | Five tools discovered through `document.modelContext.getTools()`. |
+
+The five discovered tools were `check_service_coverage`, `check_capacity`, `quote_freight`, `book_freight`, and `get_provider_booking_status`. After full-document navigation to `https://cargomesh.vercel.app/`, `document.modelContext.getTools()` returned an empty list, proving provider cleanup. Sanitized captures are stored for the [FR-1042 intake](../03-ux-ui/screenshots/01-intake-fr1042.png) and [public provider tool surface](../03-ux-ui/screenshots/02-provider-tools-production.png). The complete result and the current Golden Flow blocker are recorded in the [REL-02 public UAT evidence](./REL02_Public_WebMCP_UAT_Evidence.md).
 
 ## Public links
 
@@ -271,7 +283,7 @@ Target duration: **2:55–3:00**. The narration below is approximately 385 words
 
 ## Finalization placeholders
 
-- [ ] Complete the public WebMCP UAT at [https://cargomesh.vercel.app](https://cargomesh.vercel.app) and attach sanitized evidence.
+- [x] Complete the public browser-agent WebMCP UAT at [https://cargomesh.vercel.app](https://cargomesh.vercel.app) on `origin/main@b1e3457` and attach sanitized provider evidence.
 - [ ] Replace `<FINAL_VIDEO_URL>` after the edited video is uploaded.
 - [ ] Confirm the repository is public and the license is detected.
 - [ ] Add final screenshots and their repository paths.
