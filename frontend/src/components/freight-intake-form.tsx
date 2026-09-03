@@ -26,6 +26,10 @@ import {
   mapDocumentToCanonicalCode,
 } from "@/features/freight-requests/manual-intake-client";
 import {
+  createFreightRequestDraft,
+  DraftCreationClientError,
+} from "@/features/freight-requests/draft-creation-client";
+import {
   LATAM_LOGISTICS_DIRECTORY,
   getCountryByCode,
   getCountryDialCode,
@@ -216,6 +220,7 @@ export function FreightIntakeForm({
   });
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [creatingDraft, setCreatingDraft] = useState(false);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [webMcpReady, setWebMcpReady] = useState(false);
@@ -378,6 +383,46 @@ export function FreightIntakeForm({
     }));
   }
 
+  const handleCreateDraft = useCallback(async (signal?: AbortSignal) => {
+    if (form.source !== "new-draft") return form;
+    setCreatingDraft(true);
+    setSubmitError(null);
+    setSaveNotice(null);
+    try {
+      const abortSignal = signal ?? new AbortController().signal;
+      const baseFields = buildManualIntakeFieldsFromForm(form);
+      const fields = {
+        ...baseFields,
+        requiresRefrigeration,
+        temperatureMinC: requiresRefrigeration && tempMin !== "" ? Number(tempMin) : null,
+        temperatureMaxC: requiresRefrigeration && tempMax !== "" ? Number(tempMax) : null,
+        isHazardous,
+        isOversized,
+        isFragile,
+      };
+      const created = await createFreightRequestDraft({ fields }, abortSignal);
+      const updatedModel = mapFreightRequestIntakeToForm(created);
+      setForm(updatedModel);
+      setSaveNotice(`Borrador creado exitosamente: ${updatedModel.requestId} (v${updatedModel.draftVersion}).`);
+      if (typeof window !== "undefined" && window.history) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("requestCode", updatedModel.requestId);
+        window.history.replaceState({}, "", url.toString());
+      }
+      return updatedModel;
+    } catch (error) {
+      const message = error instanceof DraftCreationClientError
+        ? `Error al crear borrador (${error.code}): ${error.message}`
+        : error instanceof Error
+          ? error.message
+          : "No fue posible crear el borrador en el servidor.";
+      setSubmitError(message);
+      throw error;
+    } finally {
+      setCreatingDraft(false);
+    }
+  }, [form, requiresRefrigeration, tempMin, tempMax, isHazardous, isOversized, isFragile]);
+
   const saveManualDraft = useCallback(async (signal?: AbortSignal) => {
     if (!isEditable || form.source !== "persisted" || !form.freightRequestId) return form;
     setSaving(true);
@@ -435,6 +480,14 @@ export function FreightIntakeForm({
         }
       }
       setStep((current) => current + 1);
+      return;
+    }
+    if (step === steps.length - 1 && form.source === "new-draft") {
+      try {
+        await handleCreateDraft();
+      } catch {
+        return;
+      }
       return;
     }
     if (dispatchBlockReason) { setSubmitError(dispatchBlockReason); return; }
@@ -1370,6 +1423,12 @@ export function FreightIntakeForm({
                 <small>CargoMesh solo considerará transportistas compatibles con estos requisitos.</small>
               </div>
 
+              <div style={{ marginBottom: "0.75rem" }}>
+                <span style={{ display: "inline-block", fontSize: "0.72rem", color: "var(--muted)", background: "rgba(196, 144, 31, 0.12)", border: "1px solid rgba(196, 144, 31, 0.3)", borderRadius: "6px", padding: "4px 8px" }}>
+                  ℹ Requisitos especiales preparados para el contrato de C: pendiente de persistencia/validación operativa mientras se implementa el writer.
+                </span>
+              </div>
+
               <div className={styles.requirementPillGroup}>
                 <button
                   type="button"
@@ -1744,11 +1803,22 @@ export function FreightIntakeForm({
             >
               <ArrowLeft size={17} aria-hidden="true" /> Anterior
             </button>
+            {form.source === "new-draft" ? (
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                disabled={submitting || saving || creatingDraft}
+                onClick={() => void handleCreateDraft()}
+              >
+                <FileCheck2 size={17} aria-hidden="true" />
+                {creatingDraft ? "Creando…" : "Crear borrador"}
+              </button>
+            ) : null}
             {isEditable && form.source === "persisted" && Boolean(form.freightRequestId) ? (
               <button
                 type="button"
                 className={styles.secondaryButton}
-                disabled={submitting || saving}
+                disabled={submitting || saving || creatingDraft}
                 onClick={() => void saveManualDraft()}
               >
                 <FileCheck2 size={17} aria-hidden="true" />
@@ -1758,14 +1828,21 @@ export function FreightIntakeForm({
             <button
               type="submit"
               className={styles.primaryButton}
-              disabled={submitting || saving || (step === steps.length - 1 && dispatchBlockReason !== null)}
+              disabled={
+                submitting ||
+                saving ||
+                creatingDraft ||
+                (step === steps.length - 1 && form.source !== "new-draft" && dispatchBlockReason !== null)
+              }
             >
               {submitting
                 ? <><LoaderCircle className={styles.spinner} size={17} aria-hidden="true" /> Orquestando con WebMCP…</>
-                : saving
-                  ? "Guardando…"
+                : saving || creatingDraft
+                  ? "Procesando…"
                   : step === steps.length - 1
-                    ? "Iniciar orquestación"
+                    ? form.source === "new-draft"
+                      ? "Crear solicitud en servidor"
+                      : "Iniciar orquestación"
                     : "Continuar"}
               {submitting ? null : <ArrowRight size={17} aria-hidden="true" />}
             </button>
