@@ -1,7 +1,9 @@
 # CargoMesh WebMCP Judge Audit Guide
 
 Status: REL-02 technical evidence package  
-Contract snapshot: `origin/main@a28d338`  
+
+Runtime audited against: `origin/main@628ed4b`
+
 Audience: WebMCP Challenge judges, technical reviewers, and demo operators
 
 ## 1. What this guide proves
@@ -655,6 +657,8 @@ Success `data` schema:
 
 Andes' `96% SLA` is historical reliability input used by the server-side BALANCED engine. It is not a field returned by `quote_freight`. The provider quote proves `$1,760`, `31h`, and `AVAILABLE_IN_WINDOW`; the server snapshot adds the 96% reliability metric.
 
+The canonical BALANCED weights are `25%` cost, `25%` historical reliability, `20%` transit time, `10%` availability, `10%` route experience, and `10%` organization history.
+
 ### 6.2 Representative FR-1042 provider inputs
 
 For a live run, obtain dates and the request UUID from the authenticated execution intent. Do not replace them with the browser clock. The following payload is sanitized evidence from the canonical fixture shape:
@@ -736,7 +740,9 @@ Expected final ranking evidence:
 | 2 | Inca Logistics | USD 1,920 | 29 h | 98% | `AVAILABLE_IN_WINDOW` | 84 |
 | 3 | Pacific Cargo | USD 1,590 | 60 h | 86% | `LIMITED_WINDOW` | 72 |
 
-## 7. Recovery contingency evidence
+## 7. Recovery contingency evidence — approved public UAT
+
+The public UAT completed the sequence below in a separate controlled run. Andes reached `REJECTED`, the user explicitly selected an alternative contained in `recoveryOfferIds`, and the Inca replacement reached `CONFIRMED`. The sanitized captures 06 and 06b keep the rejection and replacement evidence distinct.
 
 ### 7.1 Causality
 
@@ -848,7 +854,7 @@ The subsequent Inca booking must reference `INC-OFF-9042`, use a newly issued au
 
 ## 8. Evidence capture template
 
-Publish only sanitized values. IDs used solely for runtime correlation may remain; credentials may not.
+Publish only sanitized values. IDs used solely for runtime correlation may remain, but actual authorization IDs/references and credentials must always be redacted.
 
 | Evidence | Required capture |
 |---|---|
@@ -857,9 +863,9 @@ Publish only sanitized values. IDs used solely for runtime correlation may remai
 | Registration | `typeof document.modelContext`, five tool names, exact provider origin |
 | Execution | Tool name, sanitized input, complete envelope, start/end timestamps |
 | Golden Flow | Three offers, `89/84/72`, confidence `88`, Andes recommended |
-| Booking | Booking ID, provider reference, server-issued authorization correlation |
+| Booking | Booking ID, provider reference, and proof of server-issued authorization correlation with the actual authorization ID redacted |
 | Replay | Same booking/reference, deduplicated response, no duplicate rows |
-| Recovery | Andes `REJECTED`, `recoveryOfferIds`, new Inca authorization and booking |
+| Recovery | Andes `REJECTED`, `recoveryOfferIds`, explicit Inca selection, new authorization, replacement booking, and `CONFIRMED`; approved in the public run with sanitized captures 06/06b |
 | Cleanup | Empty list of the five provider tools after each provider is abandoned |
 | Security | Client bundle scan with zero secret matches |
 

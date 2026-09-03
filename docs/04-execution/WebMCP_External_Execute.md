@@ -8,9 +8,9 @@ Golden Flow evidence, and recovery evidence, see
 
 ---
 
-## 1. Inventario Contractual de Herramientas WebMCP (6 Tools Reales)
+## 1. Inventario contractual: 5 tools provider y 1 tool de intake separada
 
-El ecosistema CargoMesh registra exclusivamente **6 herramientas WebMCP reales**. No existen tools adicionales expuestas a los agentes.
+Cada portal provider registra exactamente **5 herramientas WebMCP**. CargoMesh registra además `get_freight_request_recommendations` en el intake como una superficie independiente y read-only; no es una sexta tool provider. No existen tools provider adicionales expuestas a los agentes.
 
 | # | Nombre de Tool | Origin / Contexto | Función y Propósito | Estado de Validación |
 |---|---|---|---|:---:|
@@ -19,7 +19,7 @@ El ecosistema CargoMesh registra exclusivamente **6 herramientas WebMCP reales**
 | 3 | `quote_freight` | `/providers/[carrierSlug]` | Devuelve cotización formal desglosada (lineHaul, handling, customs) con validez temporal. | **Contrato y pruebas OK** |
 | 4 | `book_freight` | `/providers/[carrierSlug]` | Solicita la reserva del flete con número de oferta tras selección asistida y autorización previa. | **Contrato y pruebas OK** |
 | 5 | `get_provider_booking_status` | `/providers/[carrierSlug]` | Consulta el estado actual del booking (`CONFIRMED`, `IN_TRANSIT`, etc.) y eventos de ruta. | **Contrato y pruebas OK** |
-| 6 | `get_freight_request_recommendations` | `/freight-request/new` (CargoMesh) | Sugiere antecedentes históricos basados en envíos previos de la organización autenticada (**Estrictamente Read-Only**). | **Contrato y pruebas OK** |
+| — | `get_freight_request_recommendations` | `/freight-request/new` (CargoMesh; fuera del portal provider) | Sugiere antecedentes históricos basados en envíos previos de la organización autenticada (**Estrictamente Read-Only**). | **Contrato y pruebas OK** |
 
 > [!IMPORTANT]
 > **Aclaraciones Contractuales Críticas:**
@@ -45,9 +45,9 @@ El ecosistema CargoMesh registra exclusivamente **6 herramientas WebMCP reales**
 
 | Entidad / Capacidad | Clasificación | Estado Actual y Límite de Evidencia |
 |---|:---:|---|
-| **Andes Freight (`ANDES`)** | **Contrato y pruebas verificados; UAT pública pendiente** | Rutas `/providers/andes`. Fixtures, 5 tools WebMCP y pruebas automatizadas (32/32) verificadas. UAT pública en Vercel pendiente por Vercel Deployment Protection. |
-| **Transportes Inca (`INCA`)** | **Contrato y pruebas verificados; UAT pública pendiente** | Rutas `/providers/inca`. Fixtures, 5 tools WebMCP y pruebas automatizadas (32/32) verificadas. UAT pública en Vercel pendiente por Vercel Deployment Protection. |
-| **Pacific Cargo (`PACIFIC`)** | **Contrato y pruebas verificados; UAT pública pendiente** | Rutas `/providers/pacific`. Fixtures, 5 tools WebMCP y pruebas automatizadas (32/32) verificadas. UAT pública en Vercel pendiente por Vercel Deployment Protection. |
+| **Andes Freight (`ANDES`)** | **Provider live del demo; recovery público aprobado** | `/providers/andes` cumple ruta, 5 tools, capacidad y tarifa ejecutables. Superficie pública, Golden Flow y rechazo controlado verificados en el mismo origin Vercel de CargoMesh; no prueba hosting independiente. |
+| **Transportes Inca (`INCA`)** | **Provider live del demo; recovery público aprobado** | `/providers/inca` cumple ruta, 5 tools, capacidad y tarifa ejecutables. Superficie pública, Golden Flow y booking alternativo confirmado verificados en el mismo origin Vercel de CargoMesh; no prueba hosting independiente. |
+| **Pacific Cargo (`PACIFIC`)** | **Provider live del demo** | `/providers/pacific` cumple ruta, 5 tools, capacidad y tarifa ejecutables. Superficie pública y Golden Flow verificados en el mismo origin Vercel de CargoMesh; no prueba hosting independiente. |
 | **Nexo Demo Logistics (`NEXO_DEMO`)** | **Escenario sintético no certificado públicamente** | Provider para escenarios D1. Cuenta con fixtures locales para pruebas; sin certificación pública en producción. |
 | **Polaris Cold Chain Logistics** | **Escenario sintético no certificado públicamente** | Definido en catálogo de escenarios (`expanded-fleet`). Sin runtime WebMCP certificado públicamente. |
 | **Apex Hazmat Transport** | **Escenario sintético no certificado públicamente** | Definido en catálogo de escenarios (`expanded-fleet`). Sin runtime WebMCP certificado públicamente. |
@@ -72,9 +72,9 @@ El ecosistema CargoMesh registra exclusivamente **6 herramientas WebMCP reales**
 * **Pregunta del usuario a la IA:**
   > *"Cotízame el envío FR-1042 con los transportistas habilitados y muéstrame el resultado del análisis."*
 * **Invocación WebMCP:**
-  - Ejecución en paralelo de `quote_freight` en Andes Freight (`/providers/andes`), Transportes Inca (`/providers/inca`) y Pacific Cargo (`/providers/pacific`).
+  - El runner navega secuencialmente por Andes Freight (`/providers/andes`), Transportes Inca (`/providers/inca`) y Pacific Cargo (`/providers/pacific`); en cada documento ejecuta cobertura, capacidad y cotización en ese orden.
 * **Procesamiento interno:**
-  - CargoMesh recibe las ofertas estructuradas, genera sus hashes SHA-256 en el Result Bridge y corre el algoritmo server-side `BALANCED`.
+  - CargoMesh recibe las ofertas estructuradas, genera sus hashes SHA-256 en el Result Bridge y corre el algoritmo server-side `BALANCED` con pesos `25%` costo, `25%` confiabilidad, `20%` tránsito, `10%` disponibilidad, `10%` experiencia de ruta y `10%` historial de la organización.
 * **Resultado:**
   - Andes Freight: Score 89 (Recomendado).
   - Transportes Inca: Score 84.
@@ -106,3 +106,4 @@ El ecosistema CargoMesh registra exclusivamente **6 herramientas WebMCP reales**
 - [ ] Trazabilidad inmutable: ofertas persistidas en `carrier_offers` con hash criptográfico.
 - [ ] Verificación de concurrencia: intento de mutación concurrente produce `409 STALE_DRAFT`.
 - [ ] Cero alucinaciones: ningún transportista del catálogo sintético (Nexo, Polaris, Apex, Velocity) se presenta como certificado públicamente.
+- [x] Recovery público: Andes `REJECT`, selección explícita de Inca y confirmación del booking alternativo aprobados; evidencia sanitizada en [`REL02_Public_WebMCP_UAT_Evidence.md`](./REL02_Public_WebMCP_UAT_Evidence.md) y capturas 06/06b.

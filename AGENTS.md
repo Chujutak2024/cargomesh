@@ -14,6 +14,10 @@ Este archivo establece las directivas prioritarias que deben respetar todos los 
   3. Sus fixtures de capacidad en `frontend/src/features/providers/provider-capability-fixtures.ts`.
   4. Sus tarifas de cotización en `quote-freight-tool.ts`.
 - Cualquier carrier que solo exista en la base de datos se debe documentar como **"Dato de escenario / Roadmap"**, nunca como tool en vivo.
+- En la evidencia pública actual, solo Andes, Inca y Pacific pueden declararse providers WebMCP live del demo al cumplir ruta, cinco tools, capacidad y tarifa ejecutables. Sus `providerUrl` son rutas del mismo origin Vercel de CargoMesh y no prueban providers alojados independientemente.
+- Polaris, Apex y Velocity son datos de escenario / roadmap, no providers WebMCP live.
+- `get_freight_request_recommendations` es una tool read-only separada del intake y nunca debe contarse como sexta tool provider.
+- El Golden Flow, el booking Andes confirmado y el recovery Andes `REJECT` → Inca `CONFIRMED` tienen evidencia pública sanitizada en [`REL02_Public_WebMCP_UAT_Evidence.md`](docs/04-execution/REL02_Public_WebMCP_UAT_Evidence.md), incluidas las capturas 06 y 06b.
 
 ## 3. 🌿 Flujo de Ramas & Deadline de Entrega
 - La entrega final es inminente (24-48 horas).
