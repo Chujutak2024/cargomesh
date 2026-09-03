@@ -158,6 +158,39 @@ export function createInitialDraftTemplateRow(
   };
 }
 
+export const MAX_REQUEST_CODE_INSERT_ATTEMPTS = 3;
+
+export function isUniqueCodeViolation(error: unknown): boolean {
+  if (!error) return false;
+  if (typeof error === "object") {
+    const err = error as Record<string, unknown>;
+    if (err.code === "23505" || err.pgCode === "23505") return true;
+    if (typeof err.message === "string") {
+      const msg = err.message.toLowerCase();
+      if (
+        msg.includes("23505") ||
+        msg.includes("freight_requests_code_key") ||
+        (msg.includes("unique") && msg.includes("code")) ||
+        (msg.includes("duplicate key") && msg.includes("code"))
+      ) {
+        return true;
+      }
+    }
+  }
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    if (
+      msg.includes("23505") ||
+      msg.includes("freight_requests_code_key") ||
+      (msg.includes("unique") && msg.includes("code")) ||
+      (msg.includes("duplicate key") && msg.includes("code"))
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export async function createFreightRequestDraftWithDependencies(
   rawInput: unknown,
   dependencies: DraftCreationDependencies,
@@ -179,68 +212,88 @@ export async function createFreightRequestDraftWithDependencies(
   const templateRow = createInitialDraftTemplateRow(member.organizationId, categoryId, now);
   const normalized = normalizeManualFreightRequestIntake(templateRow, parsedInput.fields, categoryId, now);
 
-  const freightRequestId = crypto.randomUUID();
-  const requestCode = await dependencies.generateRequestCode(member.organizationId);
+  let finalRequestCode = "";
 
-  const insertRow = {
-    id: freightRequestId,
-    organization_id: member.organizationId,
-    requested_by_member_id: member.memberId,
-    code: requestCode,
-    draft_version: 1,
-    status: "DRAFT",
-    cargo_category_id: categoryId,
-    origin_country: normalized.normalized.fields.origin_country,
-    origin_region: normalized.originRegion,
-    origin_city: normalized.normalized.fields.origin_city,
-    origin_address: normalized.normalized.fields.origin_address ?? null,
-    destination_country: normalized.normalized.fields.destination_country,
-    destination_region: normalized.destinationRegion,
-    destination_city: normalized.normalized.fields.destination_city,
-    destination_address: normalized.normalized.fields.destination_address ?? null,
-    pickup_contact_name: normalized.normalized.fields.pickup_contact_name ?? null,
-    pickup_contact_phone: normalized.normalized.fields.pickup_contact_phone ?? null,
-    receiver_name: normalized.normalized.fields.receiver_name ?? null,
-    receiver_company: normalized.normalized.fields.receiver_company ?? null,
-    receiver_phone: normalized.normalized.fields.receiver_phone ?? null,
-    cargo_description: normalized.normalized.fields.cargo_description ?? null,
-    cargo_entry_method: normalized.normalized.fields.cargo_entry_method,
-    entry_quantity: normalized.normalized.fields.entry_quantity ?? null,
-    entry_unit_weight_kg: normalized.normalized.fields.entry_unit_weight_kg ?? null,
-    units_per_entry: normalized.normalized.fields.units_per_entry ?? null,
-    entry_length_cm: normalized.normalized.fields.entry_length_cm ?? null,
-    entry_width_cm: normalized.normalized.fields.entry_width_cm ?? null,
-    entry_height_cm: normalized.normalized.fields.entry_height_cm ?? null,
-    cargo_weight_kg: normalized.normalized.cargoWeightKg,
-    cargo_volume_m3: normalized.normalized.cargoVolumeM3,
-    service_type: "FTL",
-    transport_mode: "ROAD",
-    requires_refrigeration: false,
-    temperature_min_c: null,
-    temperature_max_c: null,
-    is_hazardous: false,
-    is_fragile: false,
-    is_oversized: false,
-    is_high_value: false,
-    is_stackable: true,
-    special_instructions: normalized.normalized.fields.special_instructions ?? null,
-    pickup_mode: normalized.normalized.fields.pickup_mode,
-    required_pickup: normalized.requiredPickup,
-    pickup_window_start: normalized.normalized.fields.pickup_window_start ?? null,
-    pickup_window_end: normalized.normalized.fields.pickup_window_end ?? null,
-    delivery_deadline: normalized.normalized.fields.delivery_deadline ?? null,
-    budget_max: normalized.normalized.fields.budget_max ?? null,
-    optimization_strategy: "BALANCED",
-    available_documents: normalized.normalized.fields.available_documents,
-    cross_border: normalized.normalized.fields.cross_border,
-    cargo_specifications: {},
-    created_at: now.toISOString(),
-    updated_at: now.toISOString(),
-  };
+  for (let attempt = 1; attempt <= MAX_REQUEST_CODE_INSERT_ATTEMPTS; attempt++) {
+    const freightRequestId = crypto.randomUUID();
+    const requestCode = await dependencies.generateRequestCode(member.organizationId);
 
-  await dependencies.insertFreightRequest(insertRow);
+    const insertRow = {
+      id: freightRequestId,
+      organization_id: member.organizationId,
+      requested_by_member_id: member.memberId,
+      code: requestCode,
+      draft_version: 1,
+      status: "DRAFT",
+      cargo_category_id: categoryId,
+      origin_country: normalized.normalized.fields.origin_country,
+      origin_region: normalized.originRegion,
+      origin_city: normalized.normalized.fields.origin_city,
+      origin_address: normalized.normalized.fields.origin_address ?? null,
+      destination_country: normalized.normalized.fields.destination_country,
+      destination_region: normalized.destinationRegion,
+      destination_city: normalized.normalized.fields.destination_city,
+      destination_address: normalized.normalized.fields.destination_address ?? null,
+      pickup_contact_name: normalized.normalized.fields.pickup_contact_name ?? null,
+      pickup_contact_phone: normalized.normalized.fields.pickup_contact_phone ?? null,
+      receiver_name: normalized.normalized.fields.receiver_name ?? null,
+      receiver_company: normalized.normalized.fields.receiver_company ?? null,
+      receiver_phone: normalized.normalized.fields.receiver_phone ?? null,
+      cargo_description: normalized.normalized.fields.cargo_description ?? null,
+      cargo_entry_method: normalized.normalized.fields.cargo_entry_method,
+      entry_quantity: normalized.normalized.fields.entry_quantity ?? null,
+      entry_unit_weight_kg: normalized.normalized.fields.entry_unit_weight_kg ?? null,
+      units_per_entry: normalized.normalized.fields.units_per_entry ?? null,
+      entry_length_cm: normalized.normalized.fields.entry_length_cm ?? null,
+      entry_width_cm: normalized.normalized.fields.entry_width_cm ?? null,
+      entry_height_cm: normalized.normalized.fields.entry_height_cm ?? null,
+      cargo_weight_kg: normalized.normalized.cargoWeightKg,
+      cargo_volume_m3: normalized.normalized.cargoVolumeM3,
+      service_type: "FTL",
+      transport_mode: "ROAD",
+      requires_refrigeration: false,
+      temperature_min_c: null,
+      temperature_max_c: null,
+      is_hazardous: false,
+      is_fragile: false,
+      is_oversized: false,
+      is_high_value: false,
+      is_stackable: true,
+      special_instructions: normalized.normalized.fields.special_instructions ?? null,
+      pickup_mode: normalized.normalized.fields.pickup_mode,
+      required_pickup: normalized.requiredPickup,
+      pickup_window_start: normalized.normalized.fields.pickup_window_start ?? null,
+      pickup_window_end: normalized.normalized.fields.pickup_window_end ?? null,
+      delivery_deadline: normalized.normalized.fields.delivery_deadline ?? null,
+      budget_max: normalized.normalized.fields.budget_max ?? null,
+      optimization_strategy: "BALANCED",
+      available_documents: normalized.normalized.fields.available_documents,
+      cross_border: normalized.normalized.fields.cross_border,
+      cargo_specifications: {},
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+    };
 
-  return dependencies.loadIntake(requestCode);
+    try {
+      await dependencies.insertFreightRequest(insertRow);
+      finalRequestCode = requestCode;
+      break;
+    } catch (error) {
+      if (isUniqueCodeViolation(error)) {
+        if (attempt < MAX_REQUEST_CODE_INSERT_ATTEMPTS) {
+          continue;
+        }
+        throw new RecommendationDraftError(
+          "REQUEST_CODE_COLLISION",
+          "Conflicto de concurrencia al asignar el código de solicitud. Por favor, reintenta.",
+          409,
+        );
+      }
+      throw error;
+    }
+  }
+
+  return dependencies.loadIntake(finalRequestCode);
 }
 
 export { RecommendationDraftError };

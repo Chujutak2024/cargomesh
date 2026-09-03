@@ -346,3 +346,80 @@ test("7. Inactive special flags (false or null) are accepted without error", asy
   assert.equal(insertedRows.length, 1);
   assert.equal(result.requestCode, "FR-3301");
 });
+
+test("8. Retries on PostgreSQL 23505 unique constraint collision on requestCode and succeeds on second attempt", async () => {
+  let codeGenCall = 0;
+  let insertCall = 0;
+
+  const generatedCodes = ["FR-COLLISION-1", "FR-FRESH-2"];
+
+  const { deps, insertedRows } = createTestDependencies({
+    generateRequestCode: async () => {
+      const code = generatedCodes[codeGenCall] || "FR-FALLBACK";
+      codeGenCall++;
+      return code;
+    },
+    insertFreightRequest: async (row) => {
+      insertCall++;
+      if (row.code === "FR-COLLISION-1") {
+        const pgError = new Error(
+          'duplicate key value violates unique constraint "freight_requests_code_key"',
+        );
+        (pgError as unknown as { code: string }).code = "23505";
+        throw pgError;
+      }
+      insertedRows.push(row);
+      return { id: row.id as string, code: row.code as string };
+    },
+  });
+
+  const payload = {
+    fields: {
+      originCity: "Callao",
+    },
+  };
+
+  const result = await createFreightRequestDraftWithDependencies(payload, deps);
+
+  // Verified: 2 insert attempts took place
+  assert.equal(insertCall, 2);
+  // Verified: second attempt succeeded with the fresh code
+  assert.equal(result.requestCode, "FR-FRESH-2");
+  assert.equal(insertedRows.length, 1);
+  assert.equal(insertedRows[0].code, "FR-FRESH-2");
+});
+
+test("9. Exhausted collision retries returns a recoverable 409 REQUEST_CODE_COLLISION error, never 500", async () => {
+  let insertCall = 0;
+
+  const { deps } = createTestDependencies({
+    insertFreightRequest: async () => {
+      insertCall++;
+      const pgError = new Error(
+        'duplicate key value violates unique constraint "freight_requests_code_key"',
+      );
+      (pgError as unknown as { code: string }).code = "23505";
+      throw pgError;
+    },
+  });
+
+  const payload = {
+    fields: {
+      originCity: "Callao",
+    },
+  };
+
+  await assert.rejects(
+    () => createFreightRequestDraftWithDependencies(payload, deps),
+    (error: unknown) => {
+      assert.ok(error instanceof RecommendationDraftError);
+      assert.equal(error.code, "REQUEST_CODE_COLLISION");
+      assert.equal(error.httpStatus, 409);
+      assert.notEqual(error.httpStatus, 500);
+      return true;
+    },
+  );
+
+  // Verified: exhausted the 3 configured attempts
+  assert.equal(insertCall, 3);
+});

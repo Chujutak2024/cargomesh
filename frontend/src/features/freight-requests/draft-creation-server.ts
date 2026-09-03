@@ -60,6 +60,15 @@ async function defaultInsertFreightRequest(
     .select("id, code")
     .single();
   if (error) {
+    if (
+      error.code === "23505" ||
+      error.message?.includes("23505") ||
+      error.message?.includes("freight_requests_code_key")
+    ) {
+      const collisionError = new Error(`PG_UNIQUE_23505: ${error.message}`);
+      (collisionError as unknown as { code: string }).code = "23505";
+      throw collisionError;
+    }
     throw new RecommendationDraftError(
       "DRAFT_CREATION_UNAVAILABLE",
       `No fue posible persistir el borrador en la base de datos: ${error.message}`,
