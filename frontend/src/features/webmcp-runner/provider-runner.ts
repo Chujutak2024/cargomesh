@@ -3,6 +3,7 @@ import type {
   CandidateProvider,
   ProviderToolEnvelope,
 } from "@/features/providers/contracts";
+import { REQUIRED_PROVIDER_TOOL_NAMES } from "@/features/providers/provider-tool-registration";
 
 import {
   INT02A_PROVIDER_TOOL_NAMES,
@@ -388,7 +389,9 @@ export async function executeProviderCandidate(
 
 function cleanupEvidence(activeToolNames: string[]): ProviderCleanupEvidence {
   const remainingProviderTools = activeToolNames.filter((toolName) =>
-    INT02A_PROVIDER_TOOL_NAMES.includes(toolName as Int02aProviderToolName),
+    REQUIRED_PROVIDER_TOOL_NAMES.includes(
+      toolName as (typeof REQUIRED_PROVIDER_TOOL_NAMES)[number],
+    ),
   );
 
   return {

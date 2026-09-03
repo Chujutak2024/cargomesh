@@ -1,5 +1,6 @@
 import { buildProviderNavigationUrl } from "@/features/discovery/provider-navigation";
 import type { CandidateProvider } from "@/features/providers/contracts";
+import { REQUIRED_PROVIDER_TOOL_NAMES } from "@/features/providers/provider-tool-registration";
 
 import type {
   Int02aProviderToolName,
@@ -44,6 +45,18 @@ function normalizedHttpUrl(value: string, baseUrl?: string): string {
 
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new Error("INVALID_NAVIGATION_URL: destination must use HTTP(S).");
+  }
+
+  if (url.username || url.password) {
+    throw new Error(
+      "INVALID_NAVIGATION_URL: destination must not contain credentials.",
+    );
+  }
+
+  if (url.origin.includes("*")) {
+    throw new Error(
+      "INVALID_NAVIGATION_URL: destination origin must not contain wildcards.",
+    );
   }
 
   return url.toString();
@@ -185,7 +198,27 @@ async function waitForProviderTools(
         providerOrigin,
         cargoMeshOrigin,
       );
-      if (tools.length > 0) return tools;
+      const names = tools.map((tool) => tool.name);
+      const hasRequiredSurface = REQUIRED_PROVIDER_TOOL_NAMES.every(
+        (toolName) => names.filter((name) => name === toolName).length === 1,
+      );
+      if (hasRequiredSurface) {
+        const unexpected = names.filter(
+          (name) =>
+            !REQUIRED_PROVIDER_TOOL_NAMES.includes(
+              name as (typeof REQUIRED_PROVIDER_TOOL_NAMES)[number],
+            ),
+        );
+        if (
+          unexpected.length > 0 ||
+          tools.length !== REQUIRED_PROVIDER_TOOL_NAMES.length
+        ) {
+          throw new Error(
+            `UNEXPECTED_PROVIDER_TOOLS: provider must expose exactly five tools; received ${names.join(", ")}.`,
+          );
+        }
+        return tools;
+      }
     } catch (error) {
       lastError = error;
     }
@@ -221,20 +254,30 @@ export function createExternalProviderNavigationAdapter(
 
   return {
     bindRegisteredCandidates(candidates) {
-      destinations = new Map(
-        candidates.map((candidate) => {
-          const snapshot = Object.freeze({ ...candidate });
-          const navigationUrl = buildProviderNavigationUrl(snapshot, baseUrl);
-          return [
-            destinationIdentity(snapshot),
-            {
-              candidate: snapshot,
-              navigationUrl,
-              origin: new URL(navigationUrl).origin,
-            },
-          ];
-        }),
-      );
+      const nextDestinations = new Map<string, RegisteredDestination>();
+      const navigationUrls = new Set<string>();
+
+      for (const candidate of candidates) {
+        const snapshot = Object.freeze({ ...candidate });
+        const identity = destinationIdentity(snapshot);
+        const navigationUrl = normalizedHttpUrl(
+          buildProviderNavigationUrl(snapshot, baseUrl),
+        );
+        if (nextDestinations.has(identity) || navigationUrls.has(navigationUrl)) {
+          throw new Error(
+            "DUPLICATE_PROVIDER_DESTINATION: discovery snapshot contains a duplicated provider service target.",
+          );
+        }
+
+        nextDestinations.set(identity, {
+          candidate: snapshot,
+          navigationUrl,
+          origin: new URL(navigationUrl).origin,
+        });
+        navigationUrls.add(navigationUrl);
+      }
+
+      destinations = nextDestinations;
     },
 
     async open(navigationUrl, candidate) {
@@ -301,13 +344,23 @@ export function createExternalProviderNavigationAdapter(
           }
 
           await navigateFrame(options.frame, cleanupUrl, navigationTimeoutMs);
-          const tools = await toolsForActiveFrame(
+          const providerTools = await toolsForActiveFrame(
             modelContext,
             options.frame,
-            cargoMeshOrigin,
+            registered.origin,
             cargoMeshOrigin,
           );
-          return tools.map((tool) => tool.name);
+          const rootTools = registered.origin === cargoMeshOrigin
+            ? []
+            : await toolsForActiveFrame(
+                modelContext,
+                options.frame,
+                cargoMeshOrigin,
+                cargoMeshOrigin,
+              );
+          return [...new Set(
+            [...providerTools, ...rootTools].map((tool) => tool.name),
+          )];
         },
       };
     },

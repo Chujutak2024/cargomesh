@@ -62,10 +62,11 @@ function httpUrl(value: string, errorCode: string): URL {
     (url.protocol !== "http:" && url.protocol !== "https:") ||
     !url.hostname ||
     url.username ||
-    url.password
+    url.password ||
+    url.origin.includes("*")
   ) {
     throw new Error(
-      `${errorCode}: value must use HTTP(S) without credentials.`,
+      `${errorCode}: value must use HTTP(S) without credentials or wildcard origins.`,
     );
   }
 
@@ -89,9 +90,20 @@ function prepareTargets(
     "INVALID_CARGOMESH_ORIGIN",
   ).origin;
   const identities = new Set<string>();
+  const navigationUrls = new Set<string>();
 
   return targets.map((target) => {
     const candidate = Object.freeze({ ...target.candidate });
+    if (!candidate.matchingServiceId) {
+      throw new Error(
+        "INVALID_MATCHING_SERVICE_ID: matchingServiceId must not be empty.",
+      );
+    }
+
+    const registeredProviderUrl = httpUrl(
+      candidate.providerUrl,
+      "INVALID_EXTERNAL_PROVIDER_ORIGIN",
+    );
     const identity = targetIdentity(candidate);
     if (identities.has(identity)) {
       throw new Error(
@@ -113,6 +125,19 @@ function prepareTargets(
         "EXTERNAL_PROVIDER_REQUIRED: validation targets must use an origin different from CargoMesh.",
       );
     }
+
+    if (registeredProviderUrl.origin !== providerUrl.origin) {
+      throw new Error(
+        "PROVIDER_ORIGIN_MISMATCH: navigation changed the registered provider origin.",
+      );
+    }
+
+    if (navigationUrls.has(providerUrl.toString())) {
+      throw new Error(
+        "DUPLICATE_EXTERNAL_PROVIDER_TARGET: each discovered provider navigation target must appear once.",
+      );
+    }
+    navigationUrls.add(providerUrl.toString());
 
     if (
       providerUrl.searchParams.getAll("serviceId").length !== 1 ||

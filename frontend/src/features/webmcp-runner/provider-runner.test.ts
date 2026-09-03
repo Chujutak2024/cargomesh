@@ -132,7 +132,7 @@ function createNavigation(
     executionOrder: string[];
     cleanupCount: number;
   },
-  leaveToolsBehind = false,
+  leaveToolsBehind: boolean | string[] = false,
 ): ProviderNavigationAdapter {
   return {
     async open(url, selectedCandidate) {
@@ -149,6 +149,7 @@ function createNavigation(
         async leaveAndGetActiveToolNames(cleanupUrl) {
           evidence.cleanupCount += 1;
           evidence.cleanupUrls.push(cleanupUrl);
+          if (Array.isArray(leaveToolsBehind)) return [...leaveToolsBehind];
           if (!leaveToolsBehind) documentRuntime.clearTools();
           return documentRuntime.getActiveToolNames();
         },
@@ -508,4 +509,26 @@ test("reports cleanup failure when provider tools survive page abandonment", asy
     ),
     true,
   );
+});
+
+test("cleanup also fails when only a booking provider tool survives", async () => {
+  const observed = evidence();
+  const result = await runProviderCollection({
+    candidates: [candidate(1)],
+    baseUrl: "http://localhost:3000",
+    orchestrationRunId: RUN_ID,
+    freightRequestId: REQUEST_ID,
+    navigation: createNavigation(
+      () => successfulBehaviors(),
+      observed,
+      ["get_provider_booking_status"],
+    ),
+    createInputs: () => inputs,
+    createToolCallId,
+  });
+
+  assert.equal(result.attempts[0]?.cleanup.verified, false);
+  assert.deepEqual(result.attempts[0]?.cleanup.activeToolNames, [
+    "get_provider_booking_status",
+  ]);
 });

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { CandidateProvider } from "@/features/providers/contracts";
+import { REQUIRED_PROVIDER_TOOL_NAMES } from "@/features/providers/provider-tool-registration";
 
 import {
   INT02A_PROVIDER_TOOL_NAMES,
@@ -14,7 +15,7 @@ const CARGOMESH_URL = "https://cargomesh.vercel.app/";
 const REQUEST_ID = "f2000000-0000-0000-0000-000000000001";
 const RUN_ID = "fa000000-0000-0000-0000-000000000001";
 
-const polaris: CandidateProvider = {
+const syntheticPolarisFixture: CandidateProvider = {
   carrierId: "b2000000-0000-0000-0000-000000000001",
   carrierCode: "POLARIS_COLD_CHAIN",
   displayName: "Polaris Cold Chain Logistics",
@@ -23,7 +24,7 @@ const polaris: CandidateProvider = {
   matchingServiceId: "d2000000-0000-0000-0000-000000000001",
 };
 
-const apex: CandidateProvider = {
+const syntheticApexFixture: CandidateProvider = {
   carrierId: "b2000000-0000-0000-0000-000000000002",
   carrierCode: "APEX_HAZMAT",
   displayName: "Apex Hazmat Transport",
@@ -135,7 +136,7 @@ function createModelContext(frame: ReturnType<typeof createFrame>) {
       if (activeUrl.origin === new URL(CARGOMESH_URL).origin) return [];
       if (!options?.fromOrigins?.includes(activeUrl.origin)) return [];
 
-      return INT02A_PROVIDER_TOOL_NAMES.map((toolName) => ({
+      return REQUIRED_PROVIDER_TOOL_NAMES.map((toolName) => ({
         name: toolName,
         title: toolName,
         description: `Synthetic test tool ${toolName}`,
@@ -181,17 +182,17 @@ function createModelContext(frame: ReturnType<typeof createFrame>) {
   return { modelContext, getToolsOptions, executed };
 }
 
-test("runs Polaris and Apex through the external WebMCP pipeline with exact origins and cleanup", async () => {
+test("runs synthetic Polaris and Apex fixtures through the external contract harness", async () => {
   const frame = createFrame();
   const context = createModelContext(frame);
   const result = await runExternalWebMcpValidation({
     targets: [
       {
-        candidate: polaris,
+        candidate: syntheticPolarisFixture,
         inputs: inputs("agricultural", ["temperature controlled"]),
       },
       {
-        candidate: apex,
+        candidate: syntheticApexFixture,
         inputs: inputs("hazmat", ["dangerous goods"]),
       },
     ],
@@ -204,15 +205,18 @@ test("runs Polaris and Apex through the external WebMCP pipeline with exact orig
     webMcpReadyTimeoutMs: 100,
   });
 
-  const polarisOrigin = new URL(polaris.providerUrl).origin;
-  const apexOrigin = new URL(apex.providerUrl).origin;
+  const polarisOrigin = new URL(syntheticPolarisFixture.providerUrl).origin;
+  const apexOrigin = new URL(syntheticApexFixture.providerUrl).origin;
   assert.equal(frame.attributes.get("allow"), "tools");
   assert.equal(result.schemaVersion, "1.0");
   assert.equal(result.cargoMeshOrigin, "https://cargomesh.vercel.app");
   assert.deepEqual(result.providerOrigins, [polarisOrigin, apexOrigin]);
   assert.deepEqual(
     result.targets.map((target) => target.matchingServiceId),
-    [polaris.matchingServiceId, apex.matchingServiceId],
+    [
+      syntheticPolarisFixture.matchingServiceId,
+      syntheticApexFixture.matchingServiceId,
+    ],
   );
   assert.equal(
     result.targets.every(
@@ -281,14 +285,14 @@ test("runs Polaris and Apex through the external WebMCP pipeline with exact orig
     false,
   );
   assert.deepEqual(frame.navigations, [
-    `${polaris.providerUrl}?serviceId=${polaris.matchingServiceId}`,
+    `${syntheticPolarisFixture.providerUrl}?serviceId=${syntheticPolarisFixture.matchingServiceId}`,
     CARGOMESH_URL,
-    `${apex.providerUrl}?serviceId=${apex.matchingServiceId}`,
+    `${syntheticApexFixture.providerUrl}?serviceId=${syntheticApexFixture.matchingServiceId}`,
     CARGOMESH_URL,
   ]);
 });
 
-test("rejects a same-origin candidate before navigation", async () => {
+test("rejects a relative target before navigation because external URLs must be absolute", async () => {
   const frame = createFrame();
   const context = createModelContext(frame);
 
@@ -296,8 +300,34 @@ test("rejects a same-origin candidate before navigation", async () => {
     runExternalWebMcpValidation({
       targets: [{
         candidate: {
-          ...polaris,
+          ...syntheticPolarisFixture,
           providerUrl: "/providers/polaris-cold-chain",
+        },
+        inputs: inputs("agricultural", ["temperature controlled"]),
+      }],
+      cargoMeshBaseUrl: CARGOMESH_URL,
+      frame: frame.frame,
+      documentHost: { modelContext: context.modelContext },
+      orchestrationRunId: RUN_ID,
+      freightRequestId: REQUEST_ID,
+    }),
+    /INVALID_EXTERNAL_PROVIDER_ORIGIN/,
+  );
+
+  assert.deepEqual(frame.navigations, []);
+  assert.deepEqual(context.executed, []);
+});
+
+test("rejects an absolute target on the CargoMesh origin before navigation", async () => {
+  const frame = createFrame();
+  const context = createModelContext(frame);
+
+  await assert.rejects(
+    runExternalWebMcpValidation({
+      targets: [{
+        candidate: {
+          ...syntheticPolarisFixture,
+          providerUrl: `${CARGOMESH_URL}providers/polaris-cold-chain`,
         },
         inputs: inputs("agricultural", ["temperature controlled"]),
       }],
@@ -311,20 +341,98 @@ test("rejects a same-origin candidate before navigation", async () => {
   );
 
   assert.deepEqual(frame.navigations, []);
-  assert.deepEqual(context.executed, []);
+});
+
+test("rejects wildcard origins and credentials before navigation", async () => {
+  for (const providerUrl of [
+    "https://*.provider.example/providers/fixture",
+    "https://user:password@provider.example/providers/fixture",
+  ]) {
+    const frame = createFrame();
+    const context = createModelContext(frame);
+    await assert.rejects(
+      runExternalWebMcpValidation({
+        targets: [{
+          candidate: { ...syntheticPolarisFixture, providerUrl },
+          inputs: inputs("agricultural", ["temperature controlled"]),
+        }],
+        cargoMeshBaseUrl: CARGOMESH_URL,
+        frame: frame.frame,
+        documentHost: { modelContext: context.modelContext },
+        orchestrationRunId: RUN_ID,
+        freightRequestId: REQUEST_ID,
+      }),
+      /INVALID_EXTERNAL_PROVIDER_ORIGIN/,
+    );
+    assert.deepEqual(frame.navigations, []);
+  }
+});
+
+test("rejects an empty matchingServiceId before navigation", async () => {
+  const frame = createFrame();
+  const context = createModelContext(frame);
+
+  await assert.rejects(
+    runExternalWebMcpValidation({
+      targets: [{
+        candidate: { ...syntheticPolarisFixture, matchingServiceId: "" },
+        inputs: inputs("agricultural", ["temperature controlled"]),
+      }],
+      cargoMeshBaseUrl: CARGOMESH_URL,
+      frame: frame.frame,
+      documentHost: { modelContext: context.modelContext },
+      orchestrationRunId: RUN_ID,
+      freightRequestId: REQUEST_ID,
+    }),
+    /INVALID_MATCHING_SERVICE_ID/,
+  );
+
+  assert.deepEqual(frame.navigations, []);
 });
 
 test("rejects a duplicated provider service snapshot", async () => {
   const frame = createFrame();
   const context = createModelContext(frame);
   const target = {
-    candidate: polaris,
+    candidate: syntheticPolarisFixture,
     inputs: inputs("agricultural", ["temperature controlled"]),
   };
 
   await assert.rejects(
     runExternalWebMcpValidation({
       targets: [target, target],
+      cargoMeshBaseUrl: CARGOMESH_URL,
+      frame: frame.frame,
+      documentHost: { modelContext: context.modelContext },
+      orchestrationRunId: RUN_ID,
+      freightRequestId: REQUEST_ID,
+    }),
+    /DUPLICATE_EXTERNAL_PROVIDER_TARGET/,
+  );
+
+  assert.deepEqual(frame.navigations, []);
+});
+
+test("rejects duplicate effective destinations with different carrier metadata", async () => {
+  const frame = createFrame();
+  const context = createModelContext(frame);
+
+  await assert.rejects(
+    runExternalWebMcpValidation({
+      targets: [
+        {
+          candidate: syntheticPolarisFixture,
+          inputs: inputs("agricultural", ["temperature controlled"]),
+        },
+        {
+          candidate: {
+            ...syntheticPolarisFixture,
+            carrierId: "another-synthetic-carrier",
+            carrierCode: "SYNTHETIC_DUPLICATE",
+          },
+          inputs: inputs("agricultural", ["temperature controlled"]),
+        },
+      ],
       cargoMeshBaseUrl: CARGOMESH_URL,
       frame: frame.frame,
       documentHost: { modelContext: context.modelContext },
