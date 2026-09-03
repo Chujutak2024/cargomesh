@@ -65,6 +65,8 @@ const supabaseUrlValue = readRequired("NEXT_PUBLIC_SUPABASE_URL");
 parseSecureOrigin("Supabase project origin", supabaseUrlValue);
 readRequired("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 const serviceRoleValue = readRequired("SUPABASE_SERVICE_ROLE_KEY");
+const demoLoginEmail = readRequired("CARGOMESH_DEMO_LOGIN_EMAIL");
+const demoLoginPassword = readRequired("CARGOMESH_DEMO_LOGIN_PASSWORD");
 
 const callerOriginsValue = readRequired("NEXT_PUBLIC_CARGOMESH_TOOL_CALLER_ORIGINS");
 const callerOrigins = callerOriginsValue
@@ -105,6 +107,9 @@ const forbidden = [
 ];
 if (serviceRoleValue && !/replace-with/i.test(serviceRoleValue)) {
   forbidden.push({ label: "configured service-role value", pattern: serviceRoleValue });
+}
+if (demoLoginPassword && !/replace-with/i.test(demoLoginPassword)) {
+  forbidden.push({ label: "configured demo-login password", pattern: demoLoginPassword });
 }
 
 const bundleFindings = [];

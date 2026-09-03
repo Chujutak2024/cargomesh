@@ -92,7 +92,7 @@ test("keeps a non-credential HTTP 400 error recoverable", async () => {
   }
 });
 
-test("the production login does not expose a fictitious identity or a fake session", () => {
+test("the production login uses a server-side one-click demo session without client credentials", () => {
   const componentSource = readFileSync(
     new URL("../../components/demo-login.tsx", import.meta.url),
     "utf8",
@@ -101,7 +101,9 @@ test("the production login does not expose a fictitious identity or a fake sessi
   assert.equal(componentSource.includes("Carlos Mendoza"), false);
   assert.equal(componentSource.includes("ACME Mining Perú"), false);
   assert.equal(componentSource.includes("sessionStorage"), false);
-  assert.match(componentSource, /createBrowserSupabaseClient/);
+  assert.match(componentSource, /startDemoSession/);
+  assert.equal(componentSource.includes("signInWithPassword"), false);
+  assert.equal(componentSource.includes('type="password"'), false);
   assert.match(componentSource, /router\.replace\("\/dashboard"\)/);
   assert.match(componentSource, /router\.refresh\(\)/);
 });

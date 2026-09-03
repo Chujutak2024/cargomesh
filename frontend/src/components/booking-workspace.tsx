@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useLocale } from "@/features/i18n/locale-provider";
 import styles from "./booking-workspace.module.css";
 
 export type BookingWorkspaceModel = {
@@ -89,6 +90,7 @@ export function BookingWorkspace({
   recoveryOptions = [],
   onRecover,
 }: BookingWorkspaceProps) {
+  const { t } = useLocale();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeEvidence, setActiveEvidence] = useState(model.evidence[0]?.key ?? "events");
   const [fixtureRecoveryOfferId, setFixtureRecoveryOfferId] = useState<string | null>(null);
@@ -155,11 +157,11 @@ export function BookingWorkspace({
       <header className={styles.hero}>
         <div>
           <Link className={styles.backLink} href={model.returnHref}>
-            <ArrowLeft size={16} aria-hidden="true" /> Volver a opciones
+            <ArrowLeft size={16} aria-hidden="true" /> {t("Volver a opciones", "Back to options")}
           </Link>
-          <span className={styles.eyebrow}>B-03 · Booking visual</span>
-          <h1>Reserva para {model.requestCode}</h1>
-          <p>La recomendación y la selección humana permanecen separadas durante todo el flujo.</p>
+          <span className={styles.eyebrow}>{t("B-03 · Reserva visual", "B-03 · Visual booking")}</span>
+          <h1>{t("Reserva para", "Booking for")} {model.requestCode}</h1>
+          <p>{t("La recomendación y la selección humana permanecen separadas durante todo el flujo.", "The recommendation and human selection remain separate throughout the workflow.")}</p>
         </div>
         <button
           ref={openButtonRef}
@@ -169,7 +171,7 @@ export function BookingWorkspace({
           aria-expanded={drawerOpen}
           onClick={() => setDrawerOpen(true)}
         >
-          <PanelRightOpen size={18} aria-hidden="true" /> Abrir evidencia
+          <PanelRightOpen size={18} aria-hidden="true" /> {t("Abrir evidencia", "Open evidence")}
         </button>
       </header>
 
@@ -178,8 +180,8 @@ export function BookingWorkspace({
         <div>
           <strong>{model.fixtureLabel}</strong>
           <span>{model.isFixture
-            ? "Este corte no ejecuta tools, handlers ni escrituras comerciales."
-            : "El estado comercial y la evidencia proceden de BookingViewModel v1."}</span>
+            ? t("Este corte no ejecuta tools, handlers ni escrituras comerciales.", "This fixture does not execute tools, handlers, or commercial writes.")
+            : t("El estado comercial y la evidencia proceden de BookingViewModel v1.", "Commercial status and evidence come from BookingViewModel v1.")}</span>
         </div>
       </div>
 
@@ -194,16 +196,16 @@ export function BookingWorkspace({
           <span className={styles.statusCode}>{model.status.code}</span>
         </div>
         <div className={styles.statusAside}>
-          <small>Siguiente paso</small>
+          <small>{t("Siguiente paso", "Next step")}</small>
           <p>{model.status.nextAction}</p>
           {(model.status.tone === "danger" || model.status.tone === "warning") ? (
-            <Link href={model.returnHref}>Revisar opciones <ChevronRight size={16} aria-hidden="true" /></Link>
+            <Link href={model.returnHref}>{t("Revisar opciones", "Review options")} <ChevronRight size={16} aria-hidden="true" /></Link>
           ) : null}
           {onRefresh && model.status.tone === "waiting" ? (
-            <button type="button" disabled={busy} onClick={onRefresh}>{busy ? "Consultando provider" : "Actualizar estado"}</button>
+            <button type="button" disabled={busy} onClick={onRefresh}>{busy ? t("Consultando provider", "Checking provider") : t("Actualizar estado", "Refresh status")}</button>
           ) : null}
-          {countdown && model.status.tone === "waiting" ? <span className={styles.deadline} aria-label="Tiempo restante para respuesta">{countdown}</span> : null}
-          {model.status.tone === "success" && model.trackingHref ? <Link href={model.trackingHref}>Ir a seguimiento <ChevronRight size={16} aria-hidden="true" /></Link> : null}
+          {countdown && model.status.tone === "waiting" ? <span className={styles.deadline} aria-label={t("Tiempo restante para respuesta", "Time remaining for response")}>{countdown}</span> : null}
+          {model.status.tone === "success" && model.trackingHref ? <Link href={model.trackingHref}>{t("Ir a seguimiento", "Open tracking")} <ChevronRight size={16} aria-hidden="true" /></Link> : null}
         </div>
       </section>
 
@@ -212,41 +214,41 @@ export function BookingWorkspace({
       <div className={styles.contentGrid}>
         <section className={styles.offerPanel} aria-labelledby="selected-offer-title">
           <header>
-            <div><span className={styles.eyebrow}>Selección humana</span><h2 id="selected-offer-title">Oferta seleccionada</h2></div>
-            <span>{model.availableOfferCount} {model.availableOfferCount === 1 ? "oferta" : "ofertas"}</span>
+            <div><span className={styles.eyebrow}>{t("Selección humana", "Human selection")}</span><h2 id="selected-offer-title">{t("Oferta seleccionada", "Selected offer")}</h2></div>
+            <span>{model.availableOfferCount} {model.availableOfferCount === 1 ? t("oferta", "offer") : t("ofertas", "offers")}</span>
           </header>
           {model.selectedOffer ? (
             <article className={styles.selectedOffer}>
               <div className={styles.carrierIcon}><Truck size={22} aria-hidden="true" /></div>
               <div className={styles.carrierCopy}>
-                <span>{model.selectedOffer.recommended ? "Recomendada y elegida por el usuario" : "Elegida por el usuario"}</span>
+                <span>{model.selectedOffer.recommended ? t("Recomendada y elegida por el usuario", "Recommended and selected by the user") : t("Elegida por el usuario", "Selected by the user")}</span>
                 <h3>{model.selectedOffer.displayName}</h3>
                 <p>{model.selectedOffer.carrierCode} · {model.selectedOffer.providerOfferReference}</p>
               </div>
               <div className={styles.price}><strong>${model.selectedOffer.totalPrice.toLocaleString("en-US")}</strong><span>{model.selectedOffer.currency} total</span></div>
               <dl>
-                <div><dt>Tránsito</dt><dd>{model.selectedOffer.transitHours} h</dd></div>
-                <div><dt>Puntaje</dt><dd>{model.selectedOffer.score}/100</dd></div>
+                <div><dt>{t("Tránsito", "Transit")}</dt><dd>{model.selectedOffer.transitHours} h</dd></div>
+                <div><dt>{t("Puntaje", "Score")}</dt><dd>{model.selectedOffer.score}/100</dd></div>
                 <div><dt>Ranking</dt><dd>#{model.selectedOffer.rank}</dd></div>
               </dl>
             </article>
           ) : (
             <div className={styles.emptyOffer}>
               <CircleDashed size={28} aria-hidden="true" />
-              <h3>No hay una oferta seleccionada</h3>
-              <p>La recomendación del sistema no se convierte automáticamente en selección.</p>
-              <Link href={model.returnHref}>Volver a OPTIONS_READY</Link>
+              <h3>{t("No hay una oferta seleccionada", "No offer selected")}</h3>
+              <p>{t("La recomendación del sistema no se convierte automáticamente en selección.", "The system recommendation never becomes a selection automatically.")}</p>
+              <Link href={model.returnHref}>{t("Volver a OPTIONS_READY", "Back to OPTIONS_READY")}</Link>
             </div>
           )}
         </section>
 
         <section className={styles.timelinePanel} aria-labelledby="booking-timeline-title">
-          <header><span className={styles.eyebrow}>Progreso comercial</span><h2 id="booking-timeline-title">Estado de la reserva</h2></header>
+          <header><span className={styles.eyebrow}>{t("Progreso comercial", "Commercial progress")}</span><h2 id="booking-timeline-title">{t("Estado de la reserva", "Booking status")}</h2></header>
           <ol>
             {model.timeline.map((item, index) => (
               <li key={item.label} className={styles[item.state]}>
                 <span>{item.state === "complete" ? <Check size={15} aria-hidden="true" /> : index + 1}</span>
-                <div><strong>{item.label}</strong><small>{timelineLabel(item.state)}</small></div>
+                <div><strong>{item.label}</strong><small>{timelineLabel(item.state, t)}</small></div>
               </li>
             ))}
           </ol>
@@ -256,9 +258,9 @@ export function BookingWorkspace({
       {showRecovery ? (
         <section className={styles.recoveryPanel} aria-labelledby="recovery-title">
           <header>
-            <span className={styles.eyebrow}>{model.isFixture ? "Recovery fixture-only" : "Recovery disponible"}</span>
-            <h2 id="recovery-title">{model.isFixture ? "Valida las alternativas sin ejecutar el flujo real" : "Elige una oferta persistida para continuar"}</h2>
-            <p>{model.isFixture ? "La selección permanece solo en memoria visual: no llama APIs, handlers ni WebMCP." : <>Solo se muestran las alternativas indicadas por <code>recoveryOfferIds</code>.</>}</p>
+            <span className={styles.eyebrow}>{model.isFixture ? "Recovery fixture-only" : t("Recovery disponible", "Recovery available")}</span>
+            <h2 id="recovery-title">{model.isFixture ? t("Valida las alternativas sin ejecutar el flujo real", "Review alternatives without executing the real workflow") : t("Elige una oferta persistida para continuar", "Choose a persisted offer to continue")}</h2>
+            <p>{model.isFixture ? t("La selección permanece solo en memoria visual: no llama APIs, handlers ni WebMCP.", "The selection remains in visual memory only: it calls no APIs, handlers, or WebMCP tools.") : <>{t("Solo se muestran las alternativas indicadas por", "Only alternatives listed by")} <code>recoveryOfferIds</code>.</>}</p>
           </header>
           {recoveryOptions.length ? (
             <div>
@@ -274,7 +276,7 @@ export function BookingWorkspace({
                       aria-pressed={model.isFixture ? fixtureSelected : undefined}
                       onClick={() => model.isFixture ? setFixtureRecoveryOfferId(offer.offerId) : onRecover?.(offer.offerId)}
                     >
-                      {busy ? "Preparando recuperación" : fixtureSelected ? "Alternativa marcada localmente" : `Continuar con ${offer.displayName}`}
+                      {busy ? t("Preparando recuperación", "Preparing recovery") : fixtureSelected ? t("Alternativa marcada localmente", "Alternative selected locally") : `${t("Continuar con", "Continue with")} ${offer.displayName}`}
                     </button>
                   </article>
                 );
@@ -283,29 +285,29 @@ export function BookingWorkspace({
           ) : (
             <div className={styles.recoveryEmpty} role="status">
               <CircleDashed size={26} aria-hidden="true" />
-              <strong>No hay alternativas de recovery</strong>
-              <span>{model.isFixture ? "Estado fixture 0: no se ejecutó ninguna operación." : "BookingViewModel v1 no autorizó ofertas alternativas."}</span>
+              <strong>{t("No hay alternativas de recovery", "No recovery alternatives")}</strong>
+              <span>{model.isFixture ? t("Estado fixture 0: no se ejecutó ninguna operación.", "Fixture state 0: no operation was executed.") : t("BookingViewModel v1 no autorizó ofertas alternativas.", "BookingViewModel v1 authorized no alternative offers.")}</span>
             </div>
           )}
-          {model.isFixture && fixtureRecoveryOfferId ? <p className={styles.fixtureRecoveryStatus} role="status">Selección local registrada para validar la interfaz. No se creó una reserva.</p> : null}
+          {model.isFixture && fixtureRecoveryOfferId ? <p className={styles.fixtureRecoveryStatus} role="status">{t("Selección local registrada para validar la interfaz. No se creó una reserva.", "Local selection recorded for UI validation. No booking was created.")}</p> : null}
         </section>
       ) : null}
 
       {drawerOpen ? (
         <div className={styles.drawerLayer}>
-          <button className={styles.backdrop} type="button" aria-label="Cerrar evidencia" onClick={() => setDrawerOpen(false)} />
+          <button className={styles.backdrop} type="button" aria-label={t("Cerrar evidencia", "Close evidence")} onClick={() => setDrawerOpen(false)} />
           <aside ref={drawerRef} className={styles.drawer} role="dialog" aria-modal="true" aria-labelledby="judge-drawer-title">
             <header>
-              <div><span className={styles.eyebrow}>Judge Drawer</span><h2 id="judge-drawer-title">Evidencia causal</h2><p>{model.isFixture ? "Fixture local para regresión visual." : "Eventos persistidos entregados por BookingViewModel v1."}</p></div>
-              <button ref={closeButtonRef} type="button" aria-label="Cerrar panel de evidencia" onClick={() => setDrawerOpen(false)}><X size={20} /></button>
+              <div><span className={styles.eyebrow}>Judge Drawer</span><h2 id="judge-drawer-title">{t("Evidencia causal", "Causal evidence")}</h2><p>{model.isFixture ? t("Fixture local para regresión visual.", "Local fixture for visual regression.") : t("Eventos persistidos entregados por BookingViewModel v1.", "Persisted events delivered by BookingViewModel v1.")}</p></div>
+              <button ref={closeButtonRef} type="button" aria-label={t("Cerrar panel de evidencia", "Close evidence panel")} onClick={() => setDrawerOpen(false)}><X size={20} /></button>
             </header>
 
             <div className={styles.evidenceSummary}>
-              <div><Route size={17} aria-hidden="true" /><span><small>Solicitud</small><strong>{model.requestCode}</strong></span></div>
-              <div><Database size={17} aria-hidden="true" /><span><small>Persistencia</small><strong>{model.isFixture ? "Desactivada" : "BookingViewModel v1"}</strong></span></div>
+              <div><Route size={17} aria-hidden="true" /><span><small>{t("Solicitud", "Request")}</small><strong>{model.requestCode}</strong></span></div>
+              <div><Database size={17} aria-hidden="true" /><span><small>{t("Persistencia", "Persistence")}</small><strong>{model.isFixture ? t("Desactivada", "Disabled") : "BookingViewModel v1"}</strong></span></div>
             </div>
 
-            <div className={styles.tabs} role="tablist" aria-label="Categorías de evidencia">
+            <div className={styles.tabs} role="tablist" aria-label={t("Categorías de evidencia", "Evidence categories")}>
               {model.evidence.map((item) => (
                 <button
                   key={item.key}
@@ -337,7 +339,7 @@ export function BookingWorkspace({
               </section>
             ) : null}
 
-            <footer><Clock3 size={16} aria-hidden="true" /> {model.isFixture ? "Datos fixture; no representan una ejecución WebMCP real." : "Evidencia renderizada desde events[] persistidos."}</footer>
+            <footer><Clock3 size={16} aria-hidden="true" /> {model.isFixture ? t("Datos fixture; no representan una ejecución WebMCP real.", "Fixture data; it does not represent a real WebMCP execution.") : t("Evidencia renderizada desde events[] persistidos.", "Evidence rendered from persisted events[].")}</footer>
           </aside>
         </div>
       ) : null}
@@ -345,9 +347,12 @@ export function BookingWorkspace({
   );
 }
 
-function timelineLabel(state: "complete" | "blocked" | "current" | "future") {
-  if (state === "complete") return "Completado";
-  if (state === "current") return "Estado actual";
-  if (state === "blocked") return "Requiere selección";
-  return "Pendiente";
+function timelineLabel(
+  state: "complete" | "blocked" | "current" | "future",
+  t: (spanish: string, english: string) => string,
+) {
+  if (state === "complete") return t("Completado", "Completed");
+  if (state === "current") return t("Estado actual", "Current status");
+  if (state === "blocked") return t("Requiere selección", "Selection required");
+  return t("Pendiente", "Pending");
 }

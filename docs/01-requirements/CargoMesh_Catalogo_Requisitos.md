@@ -26,7 +26,7 @@
 #### [RF-01] Autenticación de Usuario Demo
 * **Prioridad:** 🟢 **Baja** *(Cubierta por seed / Mock de sesión)*
 * **Descripción:** El sistema debe proveer un mecanismo de autenticación mediante Supabase Auth para validar la identidad del representante de la empresa con JWT.
-* **Criterio de Aceptación:** En local, el usuario debe poder ingresar con el fixture pre-sembrado (`demo.operator@cargomesh.test` / `LOCAL_ONLY_CARGOMESH_DEMO_2026!`) y membresía `SUPERVISOR / ACTIVE`. Esta credencial es pública, existe solo para `supabase db reset` y nunca debe reutilizarse en Supabase hospedado; la cuenta pública se provisiona por separado.
+* **Criterio de Aceptación:** El usuario entra mediante un botón de demo que crea una sesión real de Supabase Auth server-side y exige membresía `ACTIVE`; el navegador nunca recibe correo ni contraseña. En local, el servidor puede usar el fixture pre-sembrado `.test`. En hosting, la identidad se provisiona y rota por separado mediante `CARGOMESH_DEMO_LOGIN_EMAIL` y `CARGOMESH_DEMO_LOGIN_PASSWORD`; la contraseña local nunca se reutiliza.
 
 #### [RF-02] Contexto de Organización Multitenant Dinámica
 * **Prioridad:** 🟡 **Media**

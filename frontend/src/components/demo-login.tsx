@@ -4,54 +4,25 @@ import {
   ArrowRight,
   LoaderCircle,
   LockKeyhole,
-  Mail,
   ShieldCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useRef, useState } from "react";
-import {
-  RECOVERABLE_LOGIN_ERROR_MESSAGE,
-  signInWithPassword,
-  type PasswordLoginErrorKind,
-} from "@/features/auth/password-login";
+import { useState } from "react";
+import { startDemoSession, type DemoLoginResult } from "@/features/auth/demo-login-client";
 import type { LoginFormCopy } from "@/features/auth/login-copy";
-import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import styles from "./demo-login.module.css";
 
 export function DemoLogin({ copy }: { copy: LoginFormCopy }) {
   const router = useRouter();
-  const emailInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<{
-    kind: PasswordLoginErrorKind;
-    message: string;
-  } | null>(null);
+  const [error, setError] = useState<Exclude<DemoLoginResult, { ok: true }> | null>(null);
 
-  function restoreEmailFocus() {
-    window.requestAnimationFrame(() => emailInputRef.current?.focus());
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function handleDemoLogin() {
     if (isLoading) return;
 
     setIsLoading(true);
     setError(null);
-
-    const formData = new FormData(event.currentTarget);
-    let result;
-
-    try {
-      result = await signInWithPassword(createBrowserSupabaseClient(), {
-        email: String(formData.get("email") ?? "").trim(),
-        password: String(formData.get("password") ?? ""),
-      });
-    } catch {
-      setError({ kind: "recoverable", message: RECOVERABLE_LOGIN_ERROR_MESSAGE });
-      setIsLoading(false);
-      restoreEmailFocus();
-      return;
-    }
+    const result = await startDemoSession();
 
     if (result.ok) {
       router.replace("/dashboard");
@@ -59,9 +30,8 @@ export function DemoLogin({ copy }: { copy: LoginFormCopy }) {
       return;
     }
 
-    setError({ kind: result.kind, message: result.message });
+    setError(result);
     setIsLoading(false);
-    restoreEmailFocus();
   }
 
   return (
@@ -85,63 +55,26 @@ export function DemoLogin({ copy }: { copy: LoginFormCopy }) {
 
       <p className={styles.intro}>{copy.intro}</p>
 
-      <form className={styles.form} onSubmit={handleSubmit} noValidate={false}>
-        <div className={styles.field}>
-          <label htmlFor="login-email">{copy.emailLabel}</label>
-          <div className={styles.inputFrame}>
-            <Mail size={18} aria-hidden="true" />
-            <input
-              ref={emailInputRef}
-              id="login-email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              inputMode="email"
-              placeholder={copy.emailPlaceholder}
-              required
-              disabled={isLoading}
-              aria-invalid={error?.kind === "invalid_credentials"}
-              aria-describedby={error ? "login-error" : undefined}
-            />
-          </div>
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor="login-password">{copy.passwordLabel}</label>
-          <div className={styles.inputFrame}>
-            <LockKeyhole size={18} aria-hidden="true" />
-            <input
-              id="login-password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder={copy.passwordPlaceholder}
-              required
-              disabled={isLoading}
-              aria-invalid={error?.kind === "invalid_credentials"}
-              aria-describedby={error ? "login-error" : undefined}
-            />
-          </div>
-        </div>
+      <div className={styles.form}>
+        <p className={styles.intro}>{copy.demoNotice}</p>
 
         {error ? (
           <p
-            className={`${styles.errorMessage} ${error.kind === "invalid_credentials" ? styles.invalidError : styles.recoverableError}`}
+            className={`${styles.errorMessage} ${error.kind === "unauthorized" ? styles.invalidError : styles.recoverableError}`}
             id="login-error"
             role="alert"
           >
             <strong>
-              {error.kind === "invalid_credentials"
-                ? copy.invalidCredentialsState
-                : copy.recoverableState}
+              {error.kind === "unauthorized" ? copy.unauthorizedState : copy.recoverableState}
             </strong>
-            {error.message}
+            {error.kind === "unavailable" ? copy.unavailableMessage : error.kind === "unauthorized" ? copy.unauthorizedMessage : copy.recoverableMessage}
           </p>
         ) : null}
 
         <button
           className={styles.primaryAction}
-          type="submit"
+          type="button"
+          onClick={() => void handleDemoLogin()}
           disabled={isLoading}
           aria-busy={isLoading}
         >
@@ -157,7 +90,7 @@ export function DemoLogin({ copy }: { copy: LoginFormCopy }) {
             </>
           )}
         </button>
-      </form>
+      </div>
     </div>
   );
 }

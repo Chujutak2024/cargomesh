@@ -10,8 +10,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test:auth": "tsx --test src/features/auth/password-login.test.ts src/features/auth/route-access-policy.test.ts src/features/auth/login-copy.test.ts",
-    "test:i18n": "tsx --test src/features/i18n/config.test.ts src/features/i18n/judge-evidence-presentation.test.ts",
+    "test:auth": "tsx --test src/features/auth/password-login.test.ts src/features/auth/demo-login-client.test.ts src/features/auth/route-access-policy.test.ts src/features/auth/login-copy.test.ts",
+    "test:i18n": "tsx --test src/features/i18n/config.test.ts src/features/i18n/judge-evidence-presentation.test.ts src/features/i18n/release-copy.test.ts",
     "test:landing": "tsx --test src/features/landing/landing-copy.test.ts",
     "test:discovery": "tsx --test src/features/discovery/candidate-matcher.test.ts",
     "test:c02": "tsx --test src/features/decision-engine/balanced.test.ts src/features/result-bridge/validation.test.ts",
@@ -25,10 +25,10 @@
     "test:booking": "tsx --test src/features/booking/validation.test.ts src/features/booking/server-policy.test.ts src/features/booking/bridge-call-id.test.ts",
     "test:d1-recommendations": "tsx --test src/features/recommendations/recommendation-webmcp-runtime.test.ts src/features/recommendations/recommendation-draft-client.test.ts src/features/recommendations/recommendation-ui-policy.test.ts",
     "test:d1-writer": "tsx --test src/features/recommendations/recommendation-draft-server.test.ts src/features/recommendations/recommendation-draft-persistence.test.ts",
-    "test:release": "npm run test:auth && npm run test:i18n && npm run test:landing && npm run test:discovery && npm run test:c02 && npm run test:int02a && npm run test:int02a-runner && npm run test:external-navigation && npm run test:freight-intent && npm run test:freight-intake && npm run test:dashboard && npm run test:a04 && npm run test:booking && npm run test:d1-recommendations && npm run test:d1-writer",
+    "test:release": "pnpm test:auth && pnpm test:i18n && pnpm test:landing && pnpm test:discovery && pnpm test:c02 && pnpm test:int02a && pnpm test:int02a-runner && pnpm test:external-navigation && pnpm test:freight-intent && pnpm test:freight-intake && pnpm test:dashboard && pnpm test:a04 && pnpm test:booking && pnpm test:d1-recommendations && pnpm test:d1-writer",
     "release:preflight": "node scripts/release-preflight.mjs",
     "release:smoke": "node scripts/release-smoke.mjs",
-    "release:verify": "npm run typecheck && npm run test:release && npm run build && npm run release:preflight"
+    "release:verify": "pnpm typecheck && pnpm test:release && pnpm build && pnpm release:preflight"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
