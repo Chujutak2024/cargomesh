@@ -1,6 +1,6 @@
 # REL-02 Public WebMCP UAT Evidence
 
-Status: provider surface and Golden Flow passed; recovery capture pending
+Status: provider surface, Golden Flow, and recovery passed
 
 Validation date: 2026-09-02 (America/Lima)
 
@@ -65,6 +65,8 @@ five provider tools remained registered.
 - [Judge Drawer WebMCP trace](../03-ux-ui/screenshots/03-judge-drawer-webmcp-trace.png)
 - [BALANCED ranking](../03-ux-ui/screenshots/04-balanced-ranking.png)
 - [Confirmed Andes booking](../03-ux-ui/screenshots/05-confirmed-booking.png)
+- [Andes rejection event](../03-ux-ui/screenshots/06-recovery-andes-to-inca.png)
+- [Explicit Inca recovery booking](../03-ux-ui/screenshots/06b-recovery-inca-confirmed.png)
 - [Provider cleanup](../03-ux-ui/screenshots/07-provider-cleanup.png)
 
 ## Golden Flow result
@@ -101,13 +103,38 @@ The decision confidence was `88`, the user explicitly selected Andes in
 provider status as `CONFIRMED`. No credential, cookie, token, authorization
 reference, anon key, or `service_role` value is included in the captures.
 
-## Recovery status
+## Recovery result
 
-The confirmed Golden Flow is preserved as evidence. The separate controlled
-`REJECT` → recovery run has not yet been executed in this evidence revision;
-it requires an authorized demo reset because that operation deletes the current
-runtime. It must use a fresh run and must not portray the confirmed booking as
-the same booking that rejected.
+After preserving the confirmed Golden Flow evidence, the team explicitly
+authorized the destructive demo reset. The reset removed the confirmed booking
+while retaining the eligible offer set, then returned FR-1042 to
+`AWAITING_SELECTION` for a separate controlled contingency.
+
+The user selected Andes again and the provider fixture returned `REJECT`. The
+Booking Bridge persisted a distinct rejected booking:
+
+- Andes booking: `cece861f-be2a-4ef3-a4f8-c2ebd95f5ef1`;
+- provider reference: `AND-BOOK-08873160`;
+- provider status: `REJECTED`;
+- final lifecycle status after recovery: `REBOOKED`.
+
+The UI exposed only the alternatives authorized by `recoveryOfferIds`. The user
+explicitly selected Inca Logistics at USD 1,920 and 29 hours. CargoMesh created
+a new booking with a new provider reference and a `replaces_booking_id` pointing
+to the rejected Andes booking:
+
+- Inca booking: `485e1806-7b47-4f88-8801-e4dccfb2778a`;
+- provider reference: `INC-BOOK-63438267`;
+- provider status and lifecycle status: `CONFIRMED`;
+- selection mode: `ASSISTED`.
+
+Read-only database verification found three persisted events per booking. The
+Andes sequence ends in `BOOKING_REJECTED`; the Inca sequence ends in
+`BOOKING_CONFIRMED`. The Inca Judge Drawer recorded exact service navigation,
+the five discovered provider tools, and `cleanupToolNames: []` after both
+booking and status calls. The two screenshots intentionally separate the
+rejection evidence from the replacement confirmation instead of implying that
+one booking both rejected and confirmed.
 
 ## Scope note
 

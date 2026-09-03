@@ -43,7 +43,8 @@ Markdown in the root README or Devpost draft.
 ![Judge Drawer WebMCP execution trace](./03-judge-drawer-webmcp-trace.png)
 ![BALANCED ranking: Andes 89, Inca 84, Pacific 72](./04-balanced-ranking.png)
 ![Confirmed provider booking and event timeline](./05-confirmed-booking.png)
-<!-- ![Recovery from Andes rejection to Inca selection](./06-recovery-andes-to-inca.png) -->
+![Andes booking rejection event](./06-recovery-andes-to-inca.png)
+![Explicit Inca recovery booking confirmed](./06b-recovery-inca-confirmed.png)
 ![Provider tool cleanup after navigation](./07-provider-cleanup.png)
 ```
 
@@ -66,7 +67,7 @@ Markdown in the root README or Devpost draft.
 
 ## Completion checklist
 
-- [ ] Capture all seven images from the final HTTPS deployment (six complete; recovery remains).
+- [x] Capture all seven evidence slots from the final HTTPS deployment (recovery uses two honest companion captures).
 - [ ] Verify every image against the exact deployed SHA.
 - [ ] Redact secrets and personal information.
 - [ ] Confirm that text remains readable after Devpost compression.
