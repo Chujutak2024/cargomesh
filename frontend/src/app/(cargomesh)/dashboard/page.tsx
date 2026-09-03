@@ -29,11 +29,20 @@ function DashboardError({ locale }: { locale: "es" | "en" }) {
   );
 }
 
-export default async function DashboardPage() {
+type DashboardPageProps = {
+  searchParams: Promise<{ request?: string | string[] }>;
+};
+
+function requestedCode(value: string | string[] | undefined) {
+  return typeof value === "string" && /^[A-Z0-9-]{1,32}$/.test(value) ? value : undefined;
+}
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const [member, locale] = await Promise.all([requireOperationalRouteAccess(), getRequestLocale()]);
+  const selectedRequestCode = requestedCode((await searchParams).request);
   let dashboard: DashboardViewModel & { map: import("@/components/operations-map").OperationsMapModel | null };
   try {
-    dashboard = await getOrganizationDashboard(member, localeTag(locale));
+    dashboard = await getOrganizationDashboard(member, localeTag(locale), selectedRequestCode);
   } catch {
     return <DashboardError locale={locale} />;
   }
@@ -101,7 +110,7 @@ export default async function DashboardPage() {
       {hasRequests ? (
         <>
           <section className={styles.dataGridSingle}>
-            <article className={styles.panel}>
+            <article className={styles.panel} id="operations-map">
               <header className={styles.panelHeader}><div><span className={styles.eyebrow}>{translate(locale, "Ruta persistida", "Persisted route")}</span><h2>{translate(locale, "Mapa operativo", "Operations map")}</h2></div></header>
               <OperationsMap model={dashboard.map} />
             </article>
@@ -113,7 +122,7 @@ export default async function DashboardPage() {
                 <div><span className={styles.eyebrow}>{translate(locale, "Actividad persistida", "Persisted activity")}</span><h2>{translate(locale, "Solicitudes de la organización", "Organization requests")}</h2></div>
                 <span className={styles.counter}>{dashboard.requests.length}</span>
               </header>
-              <RequestTable requests={dashboard.requests} locale={locale} />
+              <RequestTable requests={dashboard.requests} locale={locale} selectedRequestCode={selectedRequestCode} />
             </article>
           </section>
         </>

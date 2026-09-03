@@ -5,12 +5,16 @@
 .table td { padding: 0.85rem 0.9rem; border-bottom: 1px solid #edf0ee; color: #5d6967; font-size: 0.65rem; vertical-align: middle; }
 .table tbody tr:last-child td { border-bottom: 0; }
 .table tbody tr:hover { background: #f8fbf9; }
+.table tbody tr.selectedRow { background: #e8f7f1; box-shadow: inset 3px 0 0 #20aa91; }
 .table td strong, .table td span { display: block; }
 .table td strong { color: #263230; font-size: 0.67rem; }
 .table td span { max-width: 17rem; margin-top: 0.22rem; overflow: hidden; color: #87918f; font-size: 0.57rem; text-overflow: ellipsis; white-space: nowrap; }
 .requestLink { color: #185c55; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.67rem; font-weight: 850; text-underline-offset: 0.18rem; }
 .requestLink:hover { color: #123c3a; }
 .requestLink:focus-visible { border-radius: 0.2rem; outline: 3px solid rgb(43 174 154 / 25%); outline-offset: 2px; }
+.mapLink { display: inline-flex; margin-top: 0.45rem; color: #185c55; font-size: 0.6rem; font-weight: 800; text-decoration: underline; text-underline-offset: 0.18rem; }
+.mapLink:hover { color: #123c3a; }
+.mapLink:focus-visible { border-radius: 0.2rem; outline: 3px solid rgb(43 174 154 / 25%); outline-offset: 2px; }
 .empty { display: grid; justify-items: center; padding: 3rem 1rem; color: #7c8886; text-align: center; }
 .empty strong { margin-top: 0.9rem; color: #1f2928; }
 .empty p { max-width: 25rem; margin: 0.35rem 0 1rem; font-size: 0.75rem; }
@@ -24,6 +28,7 @@
   .table, .table tbody, .table tr, .table td { display: block; }
   .table tbody { display: grid; gap: 0.7rem; padding: 0.75rem; }
   .table tr { overflow: hidden; border: 1px solid #e1e7e4; border-radius: 0.8rem; background: white; }
+  .table tr.selectedRow { border-color: #94d9c9; }
   .table td { display: grid; grid-template-columns: 7.2rem minmax(0, 1fr); gap: 0.5rem; padding: 0.6rem 0.75rem; border-bottom: 1px solid #edf0ee; text-align: right; }
   .table td::before { align-self: center; color: #7c8886; content: attr(data-label); font-size: 0.53rem; font-weight: 800; letter-spacing: 0.04em; text-align: left; text-transform: uppercase; }
   .table td > * { justify-self: end; }

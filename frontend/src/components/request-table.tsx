@@ -1,12 +1,20 @@
 import { PackageOpen } from "lucide-react";
 import Link from "next/link";
 import type { FreightRequestListItem } from "@/features/freight-ui/view-models";
-import { buildFreightRequestIntakeHref } from "@/features/dashboard/dashboard-view-model";
+import { buildDashboardRouteHref, buildFreightRequestIntakeHref } from "@/features/dashboard/dashboard-view-model";
 import type { Locale } from "@/features/i18n/config";
 import { StatusBadge } from "./status-badge";
 import styles from "./request-table.module.css";
 
-export function RequestTable({ requests, locale = "es" }: { requests: FreightRequestListItem[]; locale?: Locale }) {
+export function RequestTable({
+  requests,
+  locale = "es",
+  selectedRequestCode,
+}: {
+  requests: FreightRequestListItem[];
+  locale?: Locale;
+  selectedRequestCode?: string;
+}) {
   const en = locale === "en";
   if (requests.length === 0) {
     return (
@@ -32,15 +40,18 @@ export function RequestTable({ requests, locale = "es" }: { requests: FreightReq
           </tr>
         </thead>
         <tbody>
-          {requests.map((request) => (
-            <tr key={request.id}>
-              <td data-label={en ? "Request" : "Solicitud"}><Link className={styles.requestLink} href={request.actionHref ?? buildFreightRequestIntakeHref(request.requestCode)}>{request.requestCode}</Link><span>{request.cargoSummary}</span></td>
+          {requests.map((request) => {
+            const selected = request.requestCode === selectedRequestCode;
+            return (
+            <tr key={request.id} className={selected ? styles.selectedRow : undefined}>
+              <td data-label={en ? "Request" : "Solicitud"}><Link className={styles.requestLink} href={request.actionHref ?? buildFreightRequestIntakeHref(request.requestCode)}>{request.requestCode}</Link><span>{request.cargoSummary}</span><Link className={styles.mapLink} href={buildDashboardRouteHref(request.requestCode)} aria-current={selected ? "location" : undefined}>{en ? "View route" : "Ver ruta"}</Link></td>
               <td data-label="Ruta"><strong>{request.origin} → {request.destination}</strong><span>{request.corridorNote ?? request.cargoDetail}</span></td>
               <td data-label="Carga"><strong>{request.cargoSummary}</strong><span>{request.cargoDetail}</span></td>
               <td data-label={en ? "Schedule" : "Programación"}><strong>{en ? "Pickup" : "Recojo"} · {request.pickupDate}</strong><span>{en ? "Updated" : "Actualizada"} · {request.updatedAt}</span></td>
               <td data-label={en ? "Status" : "Estado"}><StatusBadge status={request.status} locale={locale} /></td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>

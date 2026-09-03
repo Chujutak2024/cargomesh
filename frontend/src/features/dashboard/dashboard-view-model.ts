@@ -103,6 +103,10 @@ export function buildFreightRequestIntakeHref(requestCode: string) {
   return `/freight-request/new?requestCode=${encodeURIComponent(requestCode)}`;
 }
 
+export function buildDashboardRouteHref(requestCode: string) {
+  return `/dashboard?request=${encodeURIComponent(requestCode)}#operations-map`;
+}
+
 export function buildDashboardViewModel(
   organizationId: string,
   persistedRequests: PersistedDashboardRequest[],

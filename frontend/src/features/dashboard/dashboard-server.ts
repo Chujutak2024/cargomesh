@@ -8,11 +8,12 @@ import {
   type PersistedDashboardRequest,
   type PersistedDashboardRun,
 } from "./dashboard-view-model";
-import { buildDashboardOperationsMap } from "./dashboard-map";
+import { buildDashboardOperationsMap, resolveDashboardMapTarget } from "./dashboard-map";
 
 export async function getOrganizationDashboard(
   member: AuthenticatedMemberContext,
   locale = "es-PE",
+  selectedRequestCode?: string,
 ) {
   const supabase = await createServerSupabaseClient();
   const { data: requestData, error: requestError } = await supabase
@@ -54,18 +55,16 @@ export async function getOrganizationDashboard(
     locale,
   );
   const persistedBookingData = (bookingData ?? []) as unknown as Array<{ id: string; freight_request_id: string; status: string; provider_booking_status: string; updated_at: string }>;
-  const activeBooking = persistedBookingData.find((booking) =>
-    ["CONFIRMED", "IN_TRANSIT"].includes(booking.status) || ["CONFIRMED", "IN_TRANSIT"].includes(booking.provider_booking_status),
-  );
+  const mapTarget = resolveDashboardMapTarget(requests, persistedBookingData, selectedRequestCode);
   let eventData: Array<{ provider_event_id: string; event_type: string; occurred_at: string; payload: unknown }> = [];
-  if (activeBooking) {
+  if (mapTarget?.booking?.id) {
     const { data } = await supabase.from("booking_events")
       .select("provider_event_id,event_type,occurred_at,payload")
-      .eq("booking_id", activeBooking.id).order("occurred_at", { ascending: true });
+      .eq("booking_id", mapTarget.booking.id).order("occurred_at", { ascending: true });
     eventData = (data ?? []) as unknown as typeof eventData;
   }
   return {
     ...model,
-    map: buildDashboardOperationsMap(requests, persistedBookingData, eventData),
+    map: buildDashboardOperationsMap(requests, persistedBookingData, eventData, selectedRequestCode),
   };
 }

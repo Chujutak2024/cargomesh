@@ -39,6 +39,42 @@ function checkpointsFrom(events: PersistedBookingEvent[]) {
   });
 }
 
+export type DashboardMapTarget = {
+  request: PersistedDashboardRequest;
+  booking: PersistedDashboardBooking | undefined;
+};
+
+/**
+ * Resolves a map target exclusively from the authenticated organization's
+ * persisted request list. An explicit requestCode never falls back to another
+ * request, which prevents a URL typo from silently displaying unrelated data.
+ */
+export function resolveDashboardMapTarget(
+  requests: PersistedDashboardRequest[],
+  bookings: PersistedDashboardBooking[],
+  selectedRequestCode?: string,
+): DashboardMapTarget | null {
+  const selected = selectedRequestCode
+    ? requests.find((request) => request.code === selectedRequestCode)
+    : undefined;
+  if (selectedRequestCode && !selected) return null;
+
+  const booking = selected
+    ? activeBooking(bookings.filter((item) => item.freight_request_id === selected.id))
+    : activeBooking(bookings);
+  const request = selected
+    ?? (booking ? requests.find((item) => item.id === booking.freight_request_id) : undefined)
+    ?? requests.find((item) => PLANNED_REQUEST_STATUSES.has(item.status));
+
+  if (!request) return null;
+  const requestBooking = booking?.freight_request_id === request.id
+    ? booking
+    : activeBooking(bookings.filter((item) => item.freight_request_id === request.id));
+  if (!requestBooking && !PLANNED_REQUEST_STATUSES.has(request.status)) return null;
+
+  return { request, booking: requestBooking };
+}
+
 /**
  * Produces only persisted planned-route data or persisted carrier checkpoints.
  * It never manufactures a booking, vehicle, ETA, GPS position, or checkpoint.
@@ -47,13 +83,11 @@ export function buildDashboardOperationsMap(
   requests: PersistedDashboardRequest[],
   bookings: PersistedDashboardBooking[],
   events: PersistedBookingEvent[] = [],
+  selectedRequestCode?: string,
 ): OperationsMapModel | null {
-  const booking = activeBooking(bookings);
-  const request = booking
-    ? requests.find((item) => item.id === booking.freight_request_id)
-    : requests.find((item) => PLANNED_REQUEST_STATUSES.has(item.status));
-
-  if (!request) return null;
+  const target = resolveDashboardMapTarget(requests, bookings, selectedRequestCode);
+  if (!target) return null;
+  const { request, booking } = target;
 
   return {
     bookingId: booking?.id ?? null,

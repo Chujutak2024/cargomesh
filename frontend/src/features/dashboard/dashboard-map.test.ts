@@ -77,3 +77,33 @@ test("draft-only requests never manufacture a planned operational route", () => 
   const map = buildDashboardOperationsMap([{ ...callaoToSantiago, status: "DRAFT" }], []);
   assert.equal(map, null);
 });
+
+test("an explicit requestCode selects its own persisted planned route over another active booking", () => {
+  const limaToIca = {
+    ...callaoToSantiago,
+    id: "request-fr1028",
+    code: "FR-1028",
+    origin_city: "Lima",
+    destination_city: "Ica",
+    destination_country: "PE",
+    cross_border: false,
+  };
+  const booking: PersistedDashboardBooking = {
+    id: "booking-andes",
+    freight_request_id: callaoToSantiago.id,
+    status: "CONFIRMED",
+    provider_booking_status: "CONFIRMED",
+    updated_at: "2026-09-02T21:00:00.000Z",
+  };
+
+  const map = buildDashboardOperationsMap([callaoToSantiago, limaToIca], [booking], [], "FR-1028");
+
+  assert.equal(map?.requestCode, "FR-1028");
+  assert.equal(map?.mode, "planned");
+  assert.equal(map?.bookingId, null);
+});
+
+test("an explicit unknown requestCode never falls back to another organization request", () => {
+  const map = buildDashboardOperationsMap([callaoToSantiago], [], [], "FR-9999");
+  assert.equal(map, null);
+});
