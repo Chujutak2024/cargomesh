@@ -74,6 +74,7 @@ export type RecommendationDiffRow = {
   currentValue: RecommendationJsonValue | undefined;
   proposedValue: RecommendationJsonValue;
   selectable: boolean;
+  unselectableReason?: string;
 };
 
 export type RecommendationResultState = "ready" | "empty" | "stale" | "error";
@@ -129,18 +130,34 @@ export function buildRecommendationDiff(
   proposedFields: RecommendationProposedFields,
 ): RecommendationDiffRow[] {
   const currentValues = canonicalValuesFromIntake(form);
+  const totalWeightActive =
+    proposedFields.cargo_entry_method === "TOTAL_WEIGHT" ||
+    (form.entryMethod === "TOTAL_WEIGHT" && proposedFields.cargo_entry_method === undefined);
+
   return RECOMMENDATION_PROPOSED_FIELD_NAMES.flatMap((field) => {
     const proposedValue = proposedFields[field];
     if (proposedValue === undefined) return [];
+    const isSupported = SUPPORTED_INTAKE_RECOMMENDATION_FIELDS.has(field);
+    const isUnitized = UNITIZED_FIELDS.has(field);
+    const conflictsWithTotalWeight = totalWeightActive && isUnitized;
+    const isApplicable = isApplicableValue(field, proposedValue);
+    const hasChanged = JSON.stringify(currentValues[field]) !== JSON.stringify(proposedValue);
+
+    const selectable = isSupported && !conflictsWithTotalWeight && isApplicable && hasChanged;
+    let unselectableReason: string | undefined;
+    if (conflictsWithTotalWeight) {
+      unselectableReason = "No combinable con carga a granel (TOTAL_WEIGHT).";
+    } else if (!isSupported) {
+      unselectableReason = "Visible para comparación; este formulario todavía no expone ese campo.";
+    }
+
     return [{
       field,
       label: recommendationFieldLabel(field),
       currentValue: currentValues[field],
       proposedValue,
-      selectable:
-        SUPPORTED_INTAKE_RECOMMENDATION_FIELDS.has(field) &&
-        isApplicableValue(field, proposedValue) &&
-        JSON.stringify(currentValues[field]) !== JSON.stringify(proposedValue),
+      selectable,
+      unselectableReason,
     }];
   });
 }

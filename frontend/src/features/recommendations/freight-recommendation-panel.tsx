@@ -158,8 +158,16 @@ export function FreightRecommendationPanel({
   function toggleField(field: RecommendationProposedFieldName) {
     setSelectedFields((current) => {
       const next = new Set(current);
-      if (next.has(field)) next.delete(field);
-      else next.add(field);
+      if (next.has(field)) {
+        next.delete(field);
+      } else {
+        next.add(field);
+        if (field === "cargo_entry_method" && suggestion?.proposedFields.cargo_entry_method === "TOTAL_WEIGHT") {
+          next.delete("entry_quantity");
+          next.delete("entry_unit_weight_kg");
+          next.delete("units_per_entry");
+        }
+      }
       return next;
     });
   }
@@ -192,6 +200,7 @@ export function FreightRecommendationPanel({
         setOpen(false);
         setSuggestions([]);
         setSelectedFields(new Set());
+        setNotice("El borrador cambió en el servidor. Se recargó la versión vigente; realiza una nueva consulta para continuar.");
         await onStaleDraft(controller.signal);
         return;
       }
@@ -295,7 +304,11 @@ export function FreightRecommendationPanel({
                             <span aria-hidden="true">→</span>
                             <span><small>Sugerido</small><strong>{formatValue(row.proposedValue)}</strong></span>
                           </span>
-                          {!row.selectable ? <small className={styles.unavailable}>Visible para comparación; este formulario todavía no expone ese campo.</small> : null}
+                          {!row.selectable ? (
+                            <small className={styles.unavailable}>
+                              {row.unselectableReason || "Visible para comparación; este formulario todavía no expone ese campo."}
+                            </small>
+                          ) : null}
                         </span>
                       </label>
                     ))}
