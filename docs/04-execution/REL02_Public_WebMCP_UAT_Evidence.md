@@ -6,7 +6,9 @@ Validation date: 2026-09-02 (America/Lima)
 
 Public URL: [https://cargomesh.vercel.app](https://cargomesh.vercel.app)
 
-Reported deployed revision: `origin/main@76d03ef`
+Captured UAT revision: `origin/main@76d03ef`
+
+Finalization baseline: `origin/main@f38f9a7` (Vercel deployment successful on 2026-09-03)
 
 Browser surface: external Google Chrome session with WebMCP enabled
 
@@ -137,6 +139,12 @@ rejection evidence from the replacement confirmation instead of implying that
 one booking both rejected and confirmed.
 
 ## Scope note
+
+The run, offer, decision, and booking identifiers above are immutable evidence
+from the captured UAT. Production was subsequently reset to a clean FR-1042
+`PENDING` state for the final recording, so those historical identifiers are
+not expected to appear in the current dashboard. The final release SHA is
+tracked separately and is not substituted for the actual capture revision.
 
 The external Chrome agent controlled the public HTTPS deployment. The three
 registered demo `providerUrl` values resolve to paths on the same Vercel origin.

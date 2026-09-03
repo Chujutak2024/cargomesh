@@ -1,6 +1,6 @@
 # CargoMesh — Team Execution Checklist
 
-> **Version:** 1.5.0
+> **Version:** 1.6.0
 > **Contrato técnico:** v5.6.0  
 > **Duración:** 4 días  
 > **Equipo:** 3 integrantes trabajando en entornos e IAs independientes  
@@ -9,6 +9,8 @@
 ## Current release snapshot — 2026-09-03
 
 The core product is integrated: authenticated intake and drafts, the separate read-only recommendation tool, dynamic `0..N` provider discovery, five provider tools, idempotent Result/Booking Bridges, BALANCED ranking, assisted booking, recovery, tracking and Judge evidence. English is the default UI locale and the ES/EN switch changes presentation copy only.
+
+Release baseline: `origin/main@f38f9a7`, deployed successfully at [https://cargomesh.vercel.app](https://cargomesh.vercel.app). The repository is public under the MIT license. REL-02 technical copy and the approved screenshot set are ready; only the final video URL and verified Devpost submission remain open.
 
 The temporary absence plan and original four-day sequencing below are retained only as historical context. They no longer define active blockers. Durable contracts live in the ADRs and source code; the current release state lives in `main` and the REL-01 evidence.
 
@@ -282,7 +284,7 @@ Una tarea puede comenzar como `PROVISIONAL` o `SPIKE`, pero:
 - se priorizan adapters pequeños antes que reescrituras completas;
 - su autor corrige incompatibilidades con el contrato congelado antes del merge.
 
-Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 están integrados; A-03 permanece en review en el PR #9. Todo trabajo provisional pendiente debe seguir las reglas anteriores antes de integrarse.
+Estado actual: todos los cortes `SH-00` a `REL-01 / G4` están integrados y verificados. Esta sección se conserva únicamente como regla histórica para futuros spikes; no existe trabajo provisional del MVP pendiente de integración.
 
 ## 5. Checklist de construcción
 
@@ -365,7 +367,7 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 es
   En `INT-02A`, *headless* significa «sin la interfaz CargoMesh propiedad de B». La ejecución provider continúa ocurriendo mediante WebMCP en un navegador/runner compatible; C no debe sustituir `document.modelContext` por una llamada directa a la implementación interna de la tool ni fabricar el resultado desde el servidor.
 
 - [x] **B-02. Construir intake y dispatch dinámico**
-  - **Owner:** B. La ausencia temporal no cambia este ownership.
+  - **Owner:** B.
   - **Depende de:** `B-01` y tipos compartidos; la conexión con datos reales consume el ViewModel estable de `INT-02A`.
   - **Qué construir:** formulario prellenado editable y `/dispatch/[id]` con estados visuales `loading/EVALUATING`, `error`, `OPTIONS_READY` y `NO_MATCH`.
   - **Aceptación:** renderiza `0..N` candidatos/ofertas; no asume tres cards; distingue candidato consultado de oferta persistida; no requiere que A o C reescriban su interfaz.
@@ -426,6 +428,7 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 es
 
 - [ ] **REL-02. Preparar handoff Devpost**
   - **Owner:** B redacta; A aporta evidencia WebMCP; C aporta arquitectura y pruebas.
+  - **Estado actual:** historia, guía, runbook, URLs públicas y capturas sanitizadas aprobadas; quedan pendientes únicamente la grabación/carga del video, reemplazar `<FINAL_VIDEO_URL>` y verificar el envío final en Devpost.
   - **Depende de:** `REL-01`.
   - **Qué construir:** historia, screenshots, enlace del repo, instrucciones de demo, evidencia de tools y video menor a tres minutos.
   - **Aceptación:** una persona ajena al equipo entiende el problema, ve la ejecución WebMCP y puede reproducir el Golden Flow.
@@ -455,41 +458,17 @@ Nunca acumulen todo el trabajo hasta la noche del Día 3.
 
 Una tarea terminada en una rama no cierra un gate. El gate se cierra únicamente después de integración y verificación conjunta.
 
-Durante la ausencia temporal de B, `G2A` puede verificarse como checkpoint técnico. `G2` permanece abierto hasta completar `INT-02B` y recibir validación visual de B o una decisión posterior explícita del equipo.
+Todos los gates `G0`–`G4`, incluido el checkpoint `G2A`, están cerrados en el release. La separación histórica entre `G2A` y `G2` se conserva para explicar por qué la validación headless nunca sustituyó la validación visual.
 
-### 6.2 Plan de continuación inmediato
+### 6.2 Plan de cierre actual
 
-1. A revisa el estado real de `feat/a-webmcp-a03`, completa pruebas/evidencia, actualiza el PR #9 y entrega handoff a C sin modificar archivos de B.
-2. C confirma C-02 en `main` y prepara el diseño, contratos de consumo, estados, harness y scripts headless de `INT-02A` que no dependan de código A-03 aún no integrado.
-3. Cuando A-03 esté integrado y verificado, A y C conectan `INT-02A` en una rama de integración; A valida ejecución/cleanup WebMCP y C valida persistencia, idempotencia, ranking y seguridad.
-4. C publica el ViewModel, ejemplos JSON, endpoint o script reproducible y handoff para B. Aunque `G2A` pase, `INT-02` y `G2` permanecen abiertos.
-5. B-02 y B-03 quedan reservadas y sin cambios mientras B está ausente; A y C no implementan placeholders visuales en sus archivos.
-6. Cuando B regrese, actualiza su rama desde `main` sin sobrescribir trabajo local, continúa B-02/B-03 y consume el ViewModel de `INT-02A`.
-7. B implementa/valida `INT-02B` con apoyo de A/C; solo entonces el equipo puede cerrar `INT-02` y `G2`.
+1. Mantener `main` congelado y verde; cualquier corrección debe partir del release actual y pasar revisión proporcional al riesgo.
+2. Conservar FR-1042 en `PENDING` y sin runtime hasta comenzar la grabación final.
+3. Grabar una demostración menor a tres minutos usando el guion aprobado, ocultando credenciales, cookies, tokens e IDs privados.
+4. Subir el video y reemplazar `<FINAL_VIDEO_URL>` en la historia de Devpost.
+5. Completar el formulario oficial, revisar los claims contra la evidencia pública y verificar que Devpost confirme el envío.
 
-### 6.3 Trabajo paralelo permitido durante la ausencia temporal de B
-
-| Integrante | Trabajo exacto permitido hoy | Límites |
-|---|---|---|
-| **A** | completar y publicar A-03; preparar su parte de `INT-02A`; documentar registro, ejecución, cancelación y cleanup de tools WebMCP; entregar handoff a C | no modificar dashboard, dispatch, `RequestTable`, componentes ni fixtures visuales de B |
-| **C** | verificar C-02 en `main`; diseñar orquestador headless; preparar contratos de consumo, estados, pruebas E2E, scripts, fixtures y evidencia; revisar RLS, idempotencia y secretos | no modificar archivos de B ni implementar código que dependa del contrato A-03 antes de su integración; no cambiar contratos congelados sin coordinación |
-| **B** | sin trabajo requerido mientras esté ausente; conserva B-02, B-03 e `INT-02B` | su ausencia no autoriza reasignación ni sustitución de su UI |
-
-### 6.4 Handoff obligatorio de INT-02A para B
-
-Antes de pedir a B que conecte la interfaz, A y C deben entregar:
-
-- contrato versionado del ViewModel y significado de cada campo;
-- ejemplos JSON de `loading`, `error`, `NO_MATCH` y `success`, incluyendo 0, 1 y N ofertas;
-- distinción explícita entre `CandidateProvider`, resultado WebMCP, `CarrierOffer` y opción rankeada;
-- endpoint o script reproducible, precondiciones y comando exacto para probarlo;
-- estados HTTP/aplicación, errores esperados y comportamiento de retry/idempotencia;
-- commit/PR integrado y resultados de typecheck, build, pruebas DB, Golden Flow y búsqueda de secretos;
-- lista de archivos que B puede modificar y lista de fronteras server-side que no debe duplicar;
-- criterios visuales desktop/móvil para loading, error, `NO_MATCH` y success;
-- riesgos, deuda y bloqueos pendientes para `INT-02B`.
-
-B debe actualizar su rama desde `main` con un flujo no destructivo, preservar cualquier trabajo local y usar este handoff como contrato de consumo. A y C apoyan la conexión sin apropiarse de la interfaz.
+Los planes temporales de ausencia de B, `INT-02A` headless y handoff para `INT-02B` están cerrados. Su contexto histórico permanece en [`CargoMesh_Team_Execution_Checklist_v1.2_History.md`](./CargoMesh_Team_Execution_Checklist_v1.2_History.md); no son trabajo activo.
 
 ## 7. Protocolo para trabajar con distintas IAs
 
@@ -593,63 +572,14 @@ Agregar una fila únicamente después de integrar a `main`.
 | 2026-08-30 | `INT-01 / G1` | A + C; valida B | `13b76d8` (#8) | C: discovery 10/10, parámetros de ruta 3/3, typecheck, build, WebMCP/404/cleanup y bundle sin secretos; B: validación visual desktop/móvil aprobada | `A-03`, `B-02`, `C-02` |
 | 2026-08-30 02:02 | `C-02` | C; revisa A | `b11ce1e` (#10) | Aprobación cruzada sobre `da109eb`; C-02 12/12, discovery 10/10, pgTAP 49/49, db lint, typecheck y build en `main`; Golden Flow 89/84/72 y bundle sin secretos | `INT-02A` cuando A-03 esté integrado; diseño/harness headless puede adelantarse sin UI de B; `C-03` cuando exista el contrato A-04 |
 | 2026-08-30 10:51 | `A-03` | A; revisa C | `8a0a5a5` (#9) | Aprobación sobre `324ba358`; A-03/discovery/INT-01 24/24, C-02 12/12, typecheck y build en `main`; `getTools()`, ejecución real de coverage/capacity y cleanup WebMCP; bundle sin secretos | `INT-02A` con A + C; `A-04` |
+| 2026-09-03 | `REL-01 / G4` | A + B + C | `f38f9a7` (#68) | Vercel success; 256/256 release tests; typecheck/build; 147/147 pgTAP; DB lint sin errores; public HTTP smoke; repo público/MIT; bundle y Git sin secretos hospedados | `REL-02`: video y envío final |
 
 ## 9. Bloqueos y decisiones pendientes
 
 | Fecha | Task ID | Bloqueo/decisión | Responsable de resolver | Estado |
 |---|---|---|---|---|
-| 2026-08-29 | `SH-00` | A inició `A-01` en rama separada; normalizar su output sin detener ni reescribir el spike | C + A | Resuelto en PR #2 |
-| 2026-08-29 | `SH-00` | Congelar navegador/build WebMCP, flags y firma observada de `executeTool()` | A + C | Pendiente |
-| 2026-08-30 | `INT-02` | B no está disponible hoy; preservar B-02/B-03 y adelantar solo `INT-02A` headless | A + C preparan handoff; B retoma su ownership al regresar | Temporal; `INT-02B` y `G2` permanecen pendientes |
-
-## 10. Estrategia Git y GitHub recomendada
-
-### Ramas
-
-```text
-feat/a-webmcp-<task>
-feat/b-ui-<task>
-feat/c-data-<task>
-fix/integration-<task>
-```
-
-### Commits
-
-```text
-feat(webmcp): ...
-feat(ui): ...
-feat(data): ...
-test(integration): ...
-docs(team): ...
-```
-
-### Pull Requests
-
-Cada PR debe incluir:
-
-- Task ID del checklist;
-- alcance y archivos modificados;
-- prueba ejecutada;
-- captura o JSON si cambia una tool WebMCP;
-- riesgos conocidos;
-- `Closes #issue` si utilizan GitHub Issues.
-
-## 11. Recomendación adicional: GitHub Issues como estado vivo
-
-Este Markdown debe conservar el plan y los hitos integrados. Para evitar conflictos editándolo simultáneamente, usen GitHub Issues o GitHub Projects como tablero vivo:
-
-- un issue por Task ID;
-- labels `owner-a`, `owner-b`, `owner-c`, `integration`;
-- labels `todo`, `in-progress`, `blocked`, `review`, `done`;
-- cada rama y PR referencia su issue;
-
-## 9. Bloqueos y decisiones pendientes
-
-| Fecha | Task ID | Bloqueo/decisión | Responsable de resolver | Estado |
-|---|---|---|---|---|
-| 2026-08-29 | `SH-00` | A inició `A-01` en rama separada; normalizar su output sin detener ni reescribir el spike | C + A | Resuelto en PR #2 |
-| 2026-08-29 | `SH-00` | Congelar navegador/build WebMCP, flags y firma observada de `executeTool()` | A + C | Pendiente |
-| 2026-08-30 | `INT-02` | B no está disponible hoy; preservar B-02/B-03 y adelantar solo `INT-02A` headless | A + C preparan handoff; B retoma su ownership al regresar | Temporal; `INT-02B` y `G2` permanecen pendientes |
+| 2026-09-03 | `REL-02` | Grabar/subir el video final, reemplazar `<FINAL_VIDEO_URL>` y verificar el envío en Devpost | Equipo | Pendiente externo; no es un bloqueo técnico del producto |
+| 2026-09-03 | External provider origin | El harness cross-origin está validado, pero los tres providers live usan el mismo origin Vercel | Post-hackathon / futura integración | Declarado honestamente; no bloquea la entrega |
 
 ## 10. Estrategia Git y GitHub recomendada
 

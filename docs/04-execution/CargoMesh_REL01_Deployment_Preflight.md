@@ -82,7 +82,7 @@ pnpm release:smoke
 
 The integrated release baseline was verified with:
 
-- 238/238 release tests;
+- 256/256 release tests;
 - `pnpm typecheck` and `pnpm build`;
 - 147/147 pgTAP tests after a local-only reset;
 - `supabase db lint --local` with no error findings;
