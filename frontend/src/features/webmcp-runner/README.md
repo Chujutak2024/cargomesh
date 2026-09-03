@@ -19,7 +19,9 @@ ni ejecutar sus implementaciones internas.
 - una excepción, envelope inválido o envelope `ok:false` queda como fallo
   técnico y nunca fabrica una cotización;
 - abandona cada documento provider antes del siguiente candidato y comprueba
-  que las tools provider ya no estén activas.
+  que ninguna de las cinco tools provider siga activa. La tool read-only
+  `get_freight_request_recommendations` pertenece al intake y no se cuenta como
+  una sexta tool provider.
 
 ## Frontera con el browser controller
 
@@ -134,7 +136,10 @@ provider ni funciones server-only directamente.
 `runExternalWebMcpValidation` composes the production collection runner with
 `createExternalProviderNavigationAdapter`. It accepts only an immutable target
 snapshot supplied by the caller and requires every target to use an HTTP(S)
-origin different from CargoMesh.
+absolute URL with an origin different from CargoMesh. It rejects URL
+credentials, wildcard origins, duplicate effective destinations, and any
+navigation that is not derived from that snapshot with the exact
+`matchingServiceId`.
 
 The returned evidence contains the exact CargoMesh origin, provider origins,
 navigation URLs, `matchingServiceId` values, calls, timestamps, and cleanup
@@ -142,8 +147,11 @@ results. Callers must sanitize the captured records before publishing them. The
 harness does not create candidates, persist records, call provider handlers, or
 turn a synthetic test into public browser evidence.
 
-Polaris and Apex exist only in the integration test as specialized scenario
-inputs. Production remains carrier-agnostic. A real showcase still requires:
+Polaris, Apex, and Velocity are synthetic scenario/roadmap fixtures only; they
+are not live external providers. Andes, Inca, and Pacific are the live demo
+providers, but their currently registered routes share CargoMesh's Vercel
+origin and therefore do not satisfy this external-origin harness. Production
+remains carrier-agnostic. A real external showcase still requires:
 
 1. an externally deployed registered provider origin;
 2. its exact absolute `provider_url` in the discovery snapshot;
