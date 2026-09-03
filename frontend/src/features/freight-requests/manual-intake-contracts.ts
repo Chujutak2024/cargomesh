@@ -43,6 +43,12 @@ export type ManualFreightRequestIntakeFields = {
   entryWidthCm?: number | null;
   entryHeightCm?: number | null;
   totalWeightKg?: number;
+  requiresRefrigeration?: boolean;
+  temperatureMinC?: number | null;
+  temperatureMaxC?: number | null;
+  isHazardous?: boolean;
+  isOversized?: boolean;
+  isFragile?: boolean;
   pickupMode?: "ASAP" | "SCHEDULED";
   pickupWindowStart?: string | null;
   pickupWindowEnd?: string | null;
@@ -81,6 +87,12 @@ const FIELD_NAMES = new Set<keyof ManualFreightRequestIntakeFields>([
   "entryWidthCm",
   "entryHeightCm",
   "totalWeightKg",
+  "requiresRefrigeration",
+  "temperatureMinC",
+  "temperatureMaxC",
+  "isHazardous",
+  "isOversized",
+  "isFragile",
   "pickupMode",
   "pickupWindowStart",
   "pickupWindowEnd",
@@ -109,6 +121,21 @@ function nullablePositiveInteger(value: unknown, field: string): number | null {
     throw invalidInput(`${field} debe ser un entero mayor que cero o null.`);
   }
   return result;
+}
+
+function nullableFiniteNumber(value: unknown, field: string): number | null {
+  if (value === null) return null;
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw invalidInput(`${field} debe ser un número finito o null.`);
+  }
+  return value;
+}
+
+function boolean(value: unknown, field: string): boolean {
+  if (typeof value !== "boolean") {
+    throw invalidInput(`${field} debe ser booleano.`);
+  }
+  return value;
 }
 
 function nullableIsoDate(value: unknown, field: string): string | null {
@@ -177,6 +204,18 @@ export function parseManualFreightRequestIntakeFields(raw: unknown): ManualFreig
     }
     fields.totalWeightKg = raw.totalWeightKg;
   }
+  if ("requiresRefrigeration" in raw) {
+    fields.requiresRefrigeration = boolean(raw.requiresRefrigeration, "requiresRefrigeration");
+  }
+  if ("temperatureMinC" in raw) {
+    fields.temperatureMinC = nullableFiniteNumber(raw.temperatureMinC, "temperatureMinC");
+  }
+  if ("temperatureMaxC" in raw) {
+    fields.temperatureMaxC = nullableFiniteNumber(raw.temperatureMaxC, "temperatureMaxC");
+  }
+  if ("isHazardous" in raw) fields.isHazardous = boolean(raw.isHazardous, "isHazardous");
+  if ("isOversized" in raw) fields.isOversized = boolean(raw.isOversized, "isOversized");
+  if ("isFragile" in raw) fields.isFragile = boolean(raw.isFragile, "isFragile");
   if ("pickupMode" in raw) {
     if (raw.pickupMode !== "ASAP" && raw.pickupMode !== "SCHEDULED") {
       throw invalidInput("pickupMode debe ser ASAP o SCHEDULED.");

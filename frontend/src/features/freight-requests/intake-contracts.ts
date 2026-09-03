@@ -22,6 +22,7 @@ export type FreightRequestIntakeViewModel = {
     profileName: string | null;
     categoryName: string;
     categoryCode: string;
+    description: string | null;
     entryMethod: string;
     quantity: number | null;
     unitsPerEntry: number | null;
@@ -31,6 +32,12 @@ export type FreightRequestIntakeViewModel = {
     heightCm: number | null;
     totalWeightKg: number;
     totalVolumeM3: number | null;
+    requiresRefrigeration: boolean;
+    temperatureMinC: number | null;
+    temperatureMaxC: number | null;
+    isHazardous: boolean;
+    isOversized: boolean;
+    isFragile: boolean;
   };
   route: {
     origin: string;
@@ -104,6 +111,21 @@ function requiredNumber(value: unknown, field: string): number {
 
 function optionalNumber(value: unknown, field: string): number | null {
   return value === null ? null : requiredNumber(value, field);
+}
+
+function optionalFiniteNumber(value: unknown, field: string): number | null {
+  if (value === null) return null;
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`INVALID_FREIGHT_REQUEST_INTAKE: ${field} must be finite.`);
+  }
+  return value;
+}
+
+function requiredBoolean(value: unknown, field: string): boolean {
+  if (typeof value !== "boolean") {
+    throw new Error(`INVALID_FREIGHT_REQUEST_INTAKE: ${field} must be boolean.`);
+  }
+  return value;
 }
 
 function uuid(value: unknown, field: string): string {
@@ -195,6 +217,15 @@ export function parseFreightRequestIntakeViewModel(
 
   const pickupContact = parseContact(raw.route.pickupContact, "route.pickupContact");
   const deliveryContact = parseContact(raw.route.deliveryContact, "route.deliveryContact");
+  const requiresRefrigeration = requiredBoolean(raw.cargo.requiresRefrigeration, "cargo.requiresRefrigeration");
+  const temperatureMinC = optionalFiniteNumber(raw.cargo.temperatureMinC, "cargo.temperatureMinC");
+  const temperatureMaxC = optionalFiniteNumber(raw.cargo.temperatureMaxC, "cargo.temperatureMaxC");
+  if (requiresRefrigeration && (temperatureMinC === null || temperatureMaxC === null)) {
+    throw new Error("INVALID_FREIGHT_REQUEST_INTAKE: refrigeration requires a complete temperature range.");
+  }
+  if (temperatureMinC !== null && temperatureMaxC !== null && temperatureMinC > temperatureMaxC) {
+    throw new Error("INVALID_FREIGHT_REQUEST_INTAKE: temperatureMinC must not exceed temperatureMaxC.");
+  }
 
   return {
     schemaVersion: FREIGHT_REQUEST_INTAKE_SCHEMA_VERSION,
@@ -215,6 +246,7 @@ export function parseFreightRequestIntakeViewModel(
       profileName: optionalString(raw.cargo.profileName, "cargo.profileName"),
       categoryName: requiredString(raw.cargo.categoryName, "cargo.categoryName"),
       categoryCode: requiredString(raw.cargo.categoryCode, "cargo.categoryCode"),
+      description: optionalString(raw.cargo.description, "cargo.description"),
       entryMethod: requiredString(raw.cargo.entryMethod, "cargo.entryMethod"),
       quantity: optionalNumber(raw.cargo.quantity, "cargo.quantity"),
       unitsPerEntry: optionalNumber(raw.cargo.unitsPerEntry, "cargo.unitsPerEntry"),
@@ -224,6 +256,12 @@ export function parseFreightRequestIntakeViewModel(
       heightCm: optionalNumber(raw.cargo.heightCm, "cargo.heightCm"),
       totalWeightKg: requiredNumber(raw.cargo.totalWeightKg, "cargo.totalWeightKg"),
       totalVolumeM3: optionalNumber(raw.cargo.totalVolumeM3, "cargo.totalVolumeM3"),
+      requiresRefrigeration,
+      temperatureMinC,
+      temperatureMaxC,
+      isHazardous: requiredBoolean(raw.cargo.isHazardous, "cargo.isHazardous"),
+      isOversized: requiredBoolean(raw.cargo.isOversized, "cargo.isOversized"),
+      isFragile: requiredBoolean(raw.cargo.isFragile, "cargo.isFragile"),
     },
     route: {
       origin: requiredString(raw.route.origin, "route.origin"),

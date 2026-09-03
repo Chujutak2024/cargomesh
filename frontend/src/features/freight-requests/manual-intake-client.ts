@@ -114,6 +114,12 @@ export function buildManualIntakeFieldsFromForm(
     entryLengthCm: isTotalWeight ? null : (form.lengthCm ?? null),
     entryWidthCm: isTotalWeight ? null : (form.widthCm ?? null),
     entryHeightCm: isTotalWeight ? null : (form.heightCm ?? null),
+    requiresRefrigeration: form.requiresRefrigeration === true,
+    temperatureMinC: form.requiresRefrigeration ? (form.temperatureMinC ?? null) : null,
+    temperatureMaxC: form.requiresRefrigeration ? (form.temperatureMaxC ?? null) : null,
+    isHazardous: form.isHazardous === true,
+    isOversized: form.isOversized === true,
+    isFragile: form.isFragile === true,
     pickupMode: form.pickupMode === "ASAP" ? "ASAP" : "SCHEDULED",
     pickupWindowStart:
       form.pickupMode === "SCHEDULED" && form.pickupWindowStart

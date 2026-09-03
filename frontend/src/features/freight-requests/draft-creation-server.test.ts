@@ -41,6 +41,7 @@ function createMockIntakeViewModel(
       profileName: null,
       categoryName: "Maquinaria",
       categoryCode: "MACHINERY",
+      description: row.cargo_description as string | null,
       entryMethod: row.cargo_entry_method as string,
       quantity: row.entry_quantity as number | null,
       unitsPerEntry: row.units_per_entry as number | null,
@@ -50,6 +51,12 @@ function createMockIntakeViewModel(
       heightCm: row.entry_height_cm as number | null,
       totalWeightKg: row.cargo_weight_kg as number,
       totalVolumeM3: row.cargo_volume_m3 as number | null,
+      requiresRefrigeration: row.requires_refrigeration as boolean,
+      temperatureMinC: row.temperature_min_c as number | null,
+      temperatureMaxC: row.temperature_max_c as number | null,
+      isHazardous: row.is_hazardous as boolean,
+      isOversized: row.is_oversized as boolean,
+      isFragile: row.is_fragile as boolean,
     },
     route: {
       origin: `${row.origin_city}, ${row.origin_country}`,
@@ -272,62 +279,53 @@ test("5. Canonical recalculation: weight, volume, and cross-border derived by se
   assert.equal(insertedDomestic[0].cargo_weight_kg, 3000);
 });
 
-test("6. Active special requirements are explicitly rejected as unsupported (422)", async () => {
-  const { deps } = createTestDependencies();
+test("6. Special transportation requirements persist in the canonical draft", async () => {
+  const { deps, insertedRows } = createTestDependencies();
 
-  const reeferPayload = {
+  await createFreightRequestDraftWithDependencies({
     fields: {
       originCity: "Callao",
       requiresRefrigeration: true,
-    },
-  };
-
-  await assert.rejects(
-    () => createFreightRequestDraftWithDependencies(reeferPayload, deps),
-    (error: unknown) => {
-      assert.ok(error instanceof RecommendationDraftError);
-      assert.equal(error.code, "UNSUPPORTED_SPECIAL_REQUIREMENTS");
-      assert.equal(error.httpStatus, 422);
-      return true;
-    },
-  );
-
-  const hazmatPayload = {
-    fields: {
-      originCity: "Callao",
+      temperatureMinC: -20,
+      temperatureMaxC: -12,
       isHazardous: true,
-    },
-  };
-
-  await assert.rejects(
-    () => createFreightRequestDraftWithDependencies(hazmatPayload, deps),
-    (error: unknown) => {
-      assert.ok(error instanceof RecommendationDraftError);
-      assert.equal(error.code, "UNSUPPORTED_SPECIAL_REQUIREMENTS");
-      assert.equal(error.httpStatus, 422);
-      return true;
-    },
-  );
-
-  const oversizedPayload = {
-    fields: {
-      originCity: "Callao",
       isOversized: true,
+      isFragile: true,
     },
-  };
+  }, deps);
+
+  assert.equal(insertedRows.length, 1);
+  const inserted = insertedRows[0];
+  assert.equal(inserted.requires_refrigeration, true);
+  assert.equal(inserted.temperature_min_c, -20);
+  assert.equal(inserted.temperature_max_c, -12);
+  assert.equal(inserted.is_hazardous, true);
+  assert.equal(inserted.is_oversized, true);
+  assert.equal(inserted.is_fragile, true);
+});
+
+test("7. Special handling rejects an incomplete or incoherent temperature range", async () => {
+  const { deps } = createTestDependencies();
 
   await assert.rejects(
-    () => createFreightRequestDraftWithDependencies(oversizedPayload, deps),
-    (error: unknown) => {
-      assert.ok(error instanceof RecommendationDraftError);
-      assert.equal(error.code, "UNSUPPORTED_SPECIAL_REQUIREMENTS");
-      assert.equal(error.httpStatus, 422);
-      return true;
-    },
+    () => createFreightRequestDraftWithDependencies({
+      fields: { originCity: "Callao", requiresRefrigeration: true },
+    }, deps),
+    /cadena de frío requiere temperatura mínima y máxima/,
+  );
+  await assert.rejects(
+    () => createFreightRequestDraftWithDependencies({
+      fields: {
+        originCity: "Callao",
+        requiresRefrigeration: false,
+        temperatureMinC: 2,
+      },
+    }, deps),
+    /rango térmico requiere activar la cadena de frío/,
   );
 });
 
-test("7. Inactive special flags (false or null) are accepted without error", async () => {
+test("8. Inactive special flags (false or null) are accepted without error", async () => {
   const { deps, insertedRows } = createTestDependencies();
 
   const payload = {
@@ -347,7 +345,7 @@ test("7. Inactive special flags (false or null) are accepted without error", asy
   assert.equal(result.requestCode, "FR-3301");
 });
 
-test("8. Retries on PostgreSQL 23505 unique constraint collision on requestCode and succeeds on second attempt", async () => {
+test("9. Retries on PostgreSQL 23505 unique constraint collision on requestCode and succeeds on second attempt", async () => {
   let codeGenCall = 0;
   let insertCall = 0;
 
@@ -389,7 +387,7 @@ test("8. Retries on PostgreSQL 23505 unique constraint collision on requestCode 
   assert.equal(insertedRows[0].code, "FR-FRESH-2");
 });
 
-test("9. Exhausted collision retries returns a recoverable 409 REQUEST_CODE_COLLISION error, never 500", async () => {
+test("10. Exhausted collision retries returns a recoverable 409 REQUEST_CODE_COLLISION error, never 500", async () => {
   let insertCall = 0;
 
   const { deps } = createTestDependencies({

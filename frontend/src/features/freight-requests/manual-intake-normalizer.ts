@@ -91,6 +91,12 @@ export function normalizeManualFreightRequestIntake(
   setOptional(row, proposed, fields, "entryLengthCm", "entry_length_cm", "entry_length_cm");
   setOptional(row, proposed, fields, "entryWidthCm", "entry_width_cm", "entry_width_cm");
   setOptional(row, proposed, fields, "entryHeightCm", "entry_height_cm", "entry_height_cm");
+  setRequired(row, proposed, fields, "requiresRefrigeration", "requires_refrigeration", "requires_refrigeration");
+  setOptional(row, proposed, fields, "temperatureMinC", "temperature_min_c", "temperature_min_c");
+  setOptional(row, proposed, fields, "temperatureMaxC", "temperature_max_c", "temperature_max_c");
+  setRequired(row, proposed, fields, "isHazardous", "is_hazardous", "is_hazardous");
+  setRequired(row, proposed, fields, "isFragile", "is_fragile", "is_fragile");
+  setRequired(row, proposed, fields, "isOversized", "is_oversized", "is_oversized");
   setRequired(row, proposed, fields, "pickupMode", "pickup_mode", "pickup_mode");
   setOptional(row, proposed, fields, "pickupWindowStart", "pickup_window_start", "pickup_window_start");
   setOptional(row, proposed, fields, "pickupWindowEnd", "pickup_window_end", "pickup_window_end");
@@ -114,6 +120,34 @@ export function normalizeManualFreightRequestIntake(
   }
 
   const normalized = normalizedDraft(row, proposed);
+  const refrigerationWasExplicitlyChanged = owns(fields, "requiresRefrigeration");
+  const temperatureWasExplicitlyChanged =
+    owns(fields, "temperatureMinC") || owns(fields, "temperatureMaxC");
+  if (normalized.fields.requires_refrigeration !== true) {
+    if (temperatureWasExplicitlyChanged &&
+      (fields.temperatureMinC !== null || fields.temperatureMaxC !== null)) {
+      throw new RecommendationDraftError(
+        "INVALID_DRAFT",
+        "El rango térmico requiere activar la cadena de frío.",
+        422,
+      );
+    }
+  } else {
+    const min = normalized.fields.temperature_min_c;
+    const max = normalized.fields.temperature_max_c;
+    if (typeof min !== "number" || typeof max !== "number") {
+      throw new RecommendationDraftError(
+        "INVALID_DRAFT",
+        "La cadena de frío requiere temperatura mínima y máxima.",
+        422,
+      );
+    }
+  }
+  // An explicit false always clears stale temperature values through patchForDatabase.
+  if (refrigerationWasExplicitlyChanged && fields.requiresRefrigeration === false) {
+    delete normalized.fields.temperature_min_c;
+    delete normalized.fields.temperature_max_c;
+  }
   const pickupMode = normalized.fields.pickup_mode;
   const requiredPickup = pickupMode === "ASAP"
     ? now.toISOString()
