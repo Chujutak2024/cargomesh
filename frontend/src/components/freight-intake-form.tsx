@@ -412,10 +412,10 @@ export function FreightIntakeForm({
       return updatedModel;
     } catch (error) {
       const message = error instanceof DraftCreationClientError
-        ? `Error al crear borrador (${error.code}): ${error.message}`
+        ? `Creación de borrador pendiente: ${error.message} (Endpoint POST /api/freight-requests/drafts pendiente de integración por Rol C).`
         : error instanceof Error
-          ? error.message
-          : "No fue posible crear el borrador en el servidor.";
+          ? `Integración pendiente: ${error.message}`
+          : "Creación de borrador pendiente de integración en el backend.";
       setSubmitError(message);
       throw error;
     } finally {
@@ -546,7 +546,7 @@ export function FreightIntakeForm({
           <h1>Nueva solicitud de transporte</h1>
           <p>
             {form.source === "new-draft"
-              ? "Nuevo borrador no persistido. Completa los datos operativos para iniciar la solicitud en el servidor."
+              ? "Nuevo borrador (Plantilla inicial en memoria). Completa los datos; la persistencia mediante POST /api/freight-requests/drafts está pendiente de integración por el backend."
               : form.source === "persisted"
                 ? isEditable
                   ? "Borrador editable activo. Captura tus datos operativos o aplica sugerencias WebMCP."
@@ -558,7 +558,7 @@ export function FreightIntakeForm({
           <div className={styles.draftBadge}>
             <ShieldCheck size={16} aria-hidden="true" />
             {form.source === "new-draft"
-              ? "Nuevo borrador (Sin persistir)"
+              ? "Nuevo borrador (Plantilla inicial · Integración pendiente)"
               : form.source === "persisted"
                 ? (isCleanMode ? "Borrador v1 (Nuevo)" : `Borrador v${form.draftVersion} (${form.status})`)
                 : "Fixture visual"}
@@ -1420,12 +1420,12 @@ export function FreightIntakeForm({
                 <span className={styles.subSectionBadge}>
                   <ShieldAlert size={14} /> 3. Requisitos de manejo
                 </span>
-                <small>CargoMesh solo considerará transportistas compatibles con estos requisitos.</small>
+                <small>Pendiente de persistencia y validación operativa con el writer del backend.</small>
               </div>
 
               <div style={{ marginBottom: "0.75rem" }}>
                 <span style={{ display: "inline-block", fontSize: "0.72rem", color: "var(--muted)", background: "rgba(196, 144, 31, 0.12)", border: "1px solid rgba(196, 144, 31, 0.3)", borderRadius: "6px", padding: "4px 8px" }}>
-                  ℹ Requisitos especiales preparados para el contrato de C: pendiente de persistencia/validación operativa mientras se implementa el writer.
+                  ℹ Requisitos especiales: Pendiente de persistencia y validación operativa mientras C implementa el writer.
                 </span>
               </div>
 
@@ -1484,7 +1484,7 @@ export function FreightIntakeForm({
 
               {isHazardous && (
                 <div className={`${styles.requirementAlert} ${styles.hazardAlert}`}>
-                  ⚠️ <strong>Aviso para matching:</strong> CargoMesh filtrará únicamente transportistas compatibles con mercancía peligrosa (Hazmat).
+                  ⚠️ <strong>Aviso:</strong> Mercancía peligrosa (Hazmat) registrada; pendiente de persistencia y validación operativa con el backend.
                 </div>
               )}
 
@@ -1744,7 +1744,7 @@ export function FreightIntakeForm({
                       isOversized ? "↔ Sobredimensionada" : null,
                     ].filter(Boolean).join(" · ") || "Estándar (Sin requisitos especiales)"}
                   </strong>
-                  <small>Filtro de compatibilidad de carriers</small>
+                  <small>Pendiente de persistencia y validación operativa</small>
                 </div>
               </div>
               <div className={styles.checklistItem}>
@@ -1811,7 +1811,7 @@ export function FreightIntakeForm({
                 onClick={() => void handleCreateDraft()}
               >
                 <FileCheck2 size={17} aria-hidden="true" />
-                {creatingDraft ? "Creando…" : "Crear borrador"}
+                {creatingDraft ? "Conectando…" : "Crear borrador (Integración pendiente)"}
               </button>
             ) : null}
             {isEditable && form.source === "persisted" && Boolean(form.freightRequestId) ? (
@@ -1841,7 +1841,7 @@ export function FreightIntakeForm({
                   ? "Procesando…"
                   : step === steps.length - 1
                     ? form.source === "new-draft"
-                      ? "Crear solicitud en servidor"
+                      ? "Crear borrador (Integración pendiente)"
                       : "Iniciar orquestación"
                     : "Continuar"}
               {submitting ? null : <ArrowRight size={17} aria-hidden="true" />}
@@ -1850,8 +1850,16 @@ export function FreightIntakeForm({
         </section>
 
         <aside className={styles.summaryCard} aria-label="Resumen de la solicitud">
-          <span className={styles.eyebrow}>{readOnly ? "ViewModel persistido (Cerrado)" : isCleanMode ? "Borrador v1 (Nuevo)" : `Borrador v${form.draftVersion}`}</span>
-          <h2>{form.requestId}</h2>
+          <span className={styles.eyebrow}>
+            {readOnly
+              ? "ViewModel persistido (Cerrado)"
+              : form.source === "new-draft"
+                ? "Nuevo borrador (Plantilla inicial)"
+                : isCleanMode
+                  ? "Borrador v1 (Nuevo)"
+                  : `Borrador v${form.draftVersion}`}
+          </span>
+          <h2>{form.requestId || "Borrador sin persistir"}</h2>
           <dl>
             <div>
               <dt>Corredor en vivo</dt>
