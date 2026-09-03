@@ -163,8 +163,10 @@ The five discovered tools were `check_service_coverage`, `check_capacity`, `quot
 
 ## Public links
 
-- Repository: [https://github.com/Chujutak2024/cargomesh](https://github.com/Chujutak2024/cargomesh) — verify public visibility before submission.
+- Repository: [https://github.com/Chujutak2024/cargomesh](https://github.com/Chujutak2024/cargomesh) — public open-source submission.
 - Public demo: [https://cargomesh.vercel.app](https://cargomesh.vercel.app)
+- Demo access: Single-click authenticated access on `/login` via "Acceder como Operador Demo (SUPERVISOR)" / "Sign in as Demo Operator".
+- Demo environment declaration: Evaluator and demonstration environment operating on synthetic scenario fixtures. No real-world cargo dispatch, no PII, and no administrative Supabase privileges.
 - Demo video: `<FINAL_VIDEO_URL>`
 
 ## Testing instructions

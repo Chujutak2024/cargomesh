@@ -33,6 +33,13 @@ WebMCP (`document.modelContext`). The agent coordinates the workflow; carrier
 tools provide structured commercial responses, and a deterministic engine—not
 an LLM—produces the ranking.
 
+### 🌐 Live Deployment & Demo Access
+
+- **Production URL**: [https://cargomesh.vercel.app](https://cargomesh.vercel.app)
+- **Source Repository**: [https://github.com/Chujutak2024/cargomesh](https://github.com/Chujutak2024/cargomesh)
+- **One-Click Demo Access**: Navigate to `/login` and select **"Acceder como Operador Demo (SUPERVISOR)"** (or switch to **EN** for English). Pre-configured authentication grants authenticated session access to the ACME Industrial shipper workspace.
+- **Demonstration Scope & Honest Disclosure**: This deployment is an evaluation and demonstration environment. All carriers, services, route metrics, and historical requests are synthetic demo fixtures. No real commercial shipments are dispatched, and client sessions hold no remote administrative Supabase privileges.
+
 ### Five provider tools
 
 | Tool | Annotation | Role in the provider pipeline |
