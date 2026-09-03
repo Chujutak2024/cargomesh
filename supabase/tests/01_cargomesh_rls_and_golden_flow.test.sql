@@ -1,7 +1,7 @@
 ﻿begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
-select plan(19);
+select plan(21);
 
 -- 1. Schema Structure
 select has_table('public', 'organizations', 'organizations table exists');
@@ -89,7 +89,36 @@ select results_eq(
   'User without organization sees 0 freight requests'
 );
 
--- 7. Check Constraint Violations (As Authorized ACME Member)
+-- 7. FreightRequest writes are manager-only; REQUESTER cannot bypass writers
+-- through the authenticated table grant.
+select ok(
+  not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'freight_requests'
+      and policyname in ('freight_requests_member_insert', 'freight_requests_member_update')
+      and (coalesce(qual, '') || ' ' || coalesce(with_check, '')) ilike '%REQUESTER%'
+  ),
+  'FreightRequest insert and update policies exclude REQUESTER'
+);
+
+select ok(
+  (select coalesce(with_check, '') ilike '%OWNER%' and coalesce(with_check, '') ilike '%SUPERVISOR%'
+   from pg_policies
+   where schemaname = 'public'
+     and tablename = 'freight_requests'
+     and policyname = 'freight_requests_member_insert')
+  and
+  (select coalesce(qual, '') ilike '%OWNER%' and coalesce(qual, '') ilike '%SUPERVISOR%'
+   from pg_policies
+   where schemaname = 'public'
+     and tablename = 'freight_requests'
+     and policyname = 'freight_requests_member_update'),
+  'FreightRequest writes retain active OWNER and SUPERVISOR authorization'
+);
+
+-- 8. Check Constraint Violations (As Authorized ACME Member)
 set local "request.jwt.claims" to '{"sub":"d0000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 select throws_ok(
