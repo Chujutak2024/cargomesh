@@ -241,7 +241,6 @@ test("6. A new draft never calls PATCH or mutates FR-1042", async () => {
   // Verify that an unpersisted draft does not contain FR-1042 UUID or code
   assert.equal(newDraft.freightRequestId, "");
   assert.equal(newDraft.requestId, "");
-  assert.ok((newDraft.freightRequestId as string) !== FR1042_UUID);
 
   // When creating the draft, it sends POST to /api/freight-requests/drafts, never PATCH to FR-1042
   await createFreightRequestDraft({ fields: { originCity: "Lima" } }, undefined, spyFetcher);
