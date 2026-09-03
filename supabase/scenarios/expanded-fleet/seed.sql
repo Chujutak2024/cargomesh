@@ -1,253 +1,14 @@
--- Migration: 20260902100500_seed_carrier_fleet_vehicles.sql
--- Description: Sembrado enriquecido de flota vehicular de camiones para los 4 transportistas registrados
--- Incluye tracto-camiones pesados, furgones refrigerados (Reefer), camiones rígidos y transporte multimodal.
-
-begin;
-
-insert into public.vehicles (
-  id,
-  carrier_id,
-  code,
-  brand,
-  model,
-  license_plate,
-  vehicle_type,
-  capacity_kg,
-  volume_m3,
-  supports_refrigerated,
-  supports_hazardous,
-  supports_oversized,
-  location,
-  status,
-  updated_at
-)
-values
-  -- =========================================================================
-  -- 1. ANDES EXPRESS (b0000000-0000-0000-0000-000000000001) — Carga Pesada & Minería
-  -- =========================================================================
-  (
-    'e0000000-0000-0000-0000-000000000001',
-    'b0000000-0000-0000-0000-000000000001',
-    'AND-TRK-101',
-    'Scania',
-    'R450 Highline 6x4',
-    'V9A-812',
-    'TRACTOR_TRAILER',
-    28000,
-    60,
-    false,
-    true,
-    true,
-    'Callao, PE',
-    'AVAILABLE',
-    now()
-  ),
-  (
-    'e0000000-0000-0000-0000-000000000012',
-    'b0000000-0000-0000-0000-000000000001',
-    'AND-TRK-102',
-    'Volvo',
-    'FH16 540 Lowboy',
-    'V7B-441',
-    'TRACTOR_TRAILER',
-    32000,
-    75,
-    false,
-    true,
-    true,
-    'Arequipa, PE',
-    'AVAILABLE',
-    now()
-  ),
-  (
-    'e0000000-0000-0000-0000-000000000013',
-    'b0000000-0000-0000-0000-000000000001',
-    'AND-TRK-103',
-    'Scania',
-    'G410 Furgón Minero',
-    'V3C-902',
-    'TRACTOR_TRAILER',
-    20000,
-    50,
-    false,
-    false,
-    false,
-    'Tacna, PE',
-    'IN_TRANSIT',
-    now()
-  ),
-
-  -- =========================================================================
-  -- 2. TRANSPORTES INCA (b0000000-0000-0000-0000-000000000002) — Refrigerados & Agro
-  -- =========================================================================
-  (
-    'e0000000-0000-0000-0000-000000000002',
-    'b0000000-0000-0000-0000-000000000002',
-    'INC-TRK-201',
-    'Volvo',
-    'FM 420 Reefer Thermo King',
-    'F4D-319',
-    'TRACTOR_TRAILER',
-    15000,
-    45,
-    true,
-    false,
-    false,
-    'Callao, PE',
-    'AVAILABLE',
-    now()
-  ),
-  (
-    'e0000000-0000-0000-0000-000000000022',
-    'b0000000-0000-0000-0000-000000000002',
-    'INC-TRK-202',
-    'Mercedes-Benz',
-    'Actros 2645 Dry Van',
-    'F8E-220',
-    'TRACTOR_TRAILER',
-    24000,
-    70,
-    false,
-    false,
-    false,
-    'Lima, PE',
-    'AVAILABLE',
-    now()
-  ),
-  (
-    'e0000000-0000-0000-0000-000000000023',
-    'b0000000-0000-0000-0000-000000000002',
-    'INC-TRK-203',
-    'Volvo',
-    'FH 460 Multi-Temp Reefer',
-    'F1G-554',
-    'TRACTOR_TRAILER',
-    18000,
-    52,
-    true,
-    false,
-    false,
-    'Ica, PE',
-    'AVAILABLE',
-    now()
-  ),
-
-  -- =========================================================================
-  -- 3. PACIFIC CARGO LOGISTICS (b0000000-0000-0000-0000-000000000003) — Express & Rápido
-  -- =========================================================================
-  (
-    'e0000000-0000-0000-0000-000000000003',
-    'b0000000-0000-0000-0000-000000000003',
-    'PAC-TRK-301',
-    'Freightliner',
-    'Cascadia 126 Express Van',
-    'C5H-781',
-    'TRACTOR_TRAILER',
-    15000,
-    45,
-    false,
-    false,
-    false,
-    'Callao, PE',
-    'AVAILABLE',
-    now()
-  ),
-  (
-    'e0000000-0000-0000-0000-000000000032',
-    'b0000000-0000-0000-0000-000000000003',
-    'PAC-TRK-302',
-    'Isuzu',
-    'Forward 1400 Box Truck',
-    'C9J-112',
-    'RIGID_TRUCK',
-    8000,
-    30,
-    false,
-    false,
-    false,
-    'Lima, PE',
-    'AVAILABLE',
-    now()
-  ),
-  (
-    'e0000000-0000-0000-0000-000000000033',
-    'b0000000-0000-0000-0000-000000000003',
-    'PAC-TRK-303',
-    'Hino',
-    '700 Series Intermodal',
-    'C2K-909',
-    'TRACTOR_TRAILER',
-    26000,
-    65,
-    false,
-    true,
-    false,
-    'Callao, PE',
-    'AVAILABLE',
-    now()
-  ),
-
-  -- =========================================================================
-  -- 4. NEXO DEMO LOGISTICS (b1000000-0000-0000-0000-000000000001) — Escenarios D1
-  -- =========================================================================
-  (
-    'e1000000-0000-0000-0000-000000000001',
-    'b1000000-0000-0000-0000-000000000001',
-    'NEX-DEMO-101',
-    'Hino',
-    '500 Series Cortina Sider',
-    'D1-LOCAL-101',
-    'RIGID_TRUCK',
-    12000,
-    40,
-    false,
-    false,
-    false,
-    'Lima, PE',
-    'AVAILABLE',
-    now()
-  ),
-  (
-    'e1000000-0000-0000-0000-000000000002',
-    'b1000000-0000-0000-0000-000000000001',
-    'NEX-DEMO-201',
-    'International',
-    'ProStar Furgón Seco',
-    'D1-PECL-201',
-    'TRACTOR_TRAILER',
-    16000,
-    50,
-    false,
-    false,
-    false,
-    'Callao, PE',
-    'AVAILABLE',
-    now()
-  )
-on conflict (code) do update
-set carrier_id = excluded.carrier_id,
-    brand = excluded.brand,
-    model = excluded.model,
-    license_plate = excluded.license_plate,
-    vehicle_type = excluded.vehicle_type,
-    capacity_kg = excluded.capacity_kg,
-    volume_m3 = excluded.volume_m3,
-    supports_refrigerated = excluded.supports_refrigerated,
-    supports_hazardous = excluded.supports_hazardous,
-    supports_oversized = excluded.supports_oversized,
-    location = excluded.location,
-    status = excluded.status,
-    updated_at = excluded.updated_at;
-
-commit;
--- Migration: 20260902101000_seed_additional_organizations.sql
--- Description: Sembrado de 2 organizaciones generadoras de carga (shippers) adicionales
--- enfocadas estrictamente en transporte terrestre en camiones (Agroexportación refrigerada y Materiales de construcción).
+-- =============================================================================
+-- Scenario: expanded-fleet/seed.sql
+-- Description: Sembrado sintético de demostración (Escenario Demo Controlado).
+-- Invariante: NO ES UNA MIGRACIÓN. NO EJECUTAR CON DB PUSH.
+-- Orden de inserción auditado para respetar integridad referencial (FKs).
+-- =============================================================================
 
 begin;
 
 -- =============================================================================
--- 1. ORGANIZACIONES SHIPPERS (Solo transporte terrestre en camión)
+-- 1. ORGANIZACIONES SHIPPERS ADICIONALES (public.organizations)
 -- =============================================================================
 insert into public.organizations (
   id,
@@ -308,7 +69,7 @@ set name = excluded.name,
     updated_at = now();
 
 -- =============================================================================
--- 2. PREFERENCIAS OPERATIVAS DE CADA ORGANIZACIÓN
+-- 2. PREFERENCIAS OPERATIVAS DE CADA ORGANIZACIÓN (public.organization_preferences)
 -- =============================================================================
 insert into public.organization_preferences (
   id,
@@ -354,7 +115,9 @@ set default_strategy = excluded.default_strategy,
     updated_at = now();
 
 -- =============================================================================
--- 3. MIEMBROS DE LA ORGANIZACIÓN (Usuarios Shippers Responsables)
+-- 3. MIEMBROS DE LA ORGANIZACIÓN (public.organization_members)
+-- Condicional: Solo se insertan si el auth_user_id existe previamente en auth.users
+-- para evitar violaciones de la FK organization_members_auth_user_id_fkey.
 -- =============================================================================
 insert into public.organization_members (
   id,
@@ -367,29 +130,22 @@ insert into public.organization_members (
   created_at,
   updated_at
 )
-values
-  (
-    'e0000000-0000-0000-0000-000000000002',
-    'a0000000-0000-0000-0000-000000000002',
-    'd0000000-0000-0000-0000-000000000002',
-    'Lucía Paredes',
-    'lucia.paredes@agrivas.pe',
-    'OWNER',
-    'ACTIVE',
-    now(),
-    now()
-  ),
-  (
-    'e0000000-0000-0000-0000-000000000003',
-    'a0000000-0000-0000-0000-000000000003',
-    'd0000000-0000-0000-0000-000000000003',
-    'Marco Benavides',
-    'marco.benavides@cementosandino.pe',
-    'OWNER',
-    'ACTIVE',
-    now(),
-    now()
-  )
+select
+  m.id,
+  m.organization_id,
+  m.auth_user_id,
+  m.display_name,
+  m.corporate_email,
+  m.role,
+  m.status,
+  m.created_at,
+  m.updated_at
+from (
+  values
+    ('e0000000-0000-0000-0000-000000000002'::uuid, 'a0000000-0000-0000-0000-000000000002'::uuid, 'd0000000-0000-0000-0000-000000000002'::uuid, 'Lucía Paredes', 'lucia.paredes@agrivas.pe', 'OWNER', 'ACTIVE', now(), now()),
+    ('e0000000-0000-0000-0000-000000000003'::uuid, 'a0000000-0000-0000-0000-000000000003'::uuid, 'd0000000-0000-0000-0000-000000000003'::uuid, 'Marco Benavides', 'marco.benavides@cementosandino.pe', 'OWNER', 'ACTIVE', now(), now())
+) as m(id, organization_id, auth_user_id, display_name, corporate_email, role, status, created_at, updated_at)
+where exists (select 1 from auth.users u where u.id = m.auth_user_id)
 on conflict (organization_id, auth_user_id) do update
 set display_name = excluded.display_name,
     corporate_email = excluded.corporate_email,
@@ -398,7 +154,7 @@ set display_name = excluded.display_name,
     updated_at = now();
 
 -- =============================================================================
--- 4. PERFILES DE CARGA PARA SUGERENCIAS INTELIGENTES WEBMCP
+-- 4. PERFILES DE CARGA PARA RECOMENDACIONES (public.organization_cargo_profiles)
 -- =============================================================================
 insert into public.organization_cargo_profiles (
   id,
@@ -472,24 +228,14 @@ values
   )
 on conflict (id) do update
 set profile_name = excluded.profile_name,
-  typical_entry_quantity = excluded.typical_entry_quantity,
-  typical_unit_weight_kg = excluded.typical_unit_weight_kg,
-  default_requirements = excluded.default_requirements,
-  preferred_vehicle_classes = excluded.preferred_vehicle_classes,
-  updated_at = now();
-
-commit;
--- Migration: 20260902102000_seed_international_truck_carriers.sql
--- Description: Sembrado de 3 transportistas internacionales con marcas de clase mundial en inglés
--- enfocados exclusivamente en transporte terrestre por carretera (ROAD FTL):
--- 1. Polaris Cold Chain Logistics (Cadena de frío extremo Reefer FTL)
--- 2. Apex Hazmat Transport (Carga peligrosa y materiales industriales certificados)
--- 3. Velocity Express Freight (Flete express prioritario en 24h)
-
-begin;
+    typical_entry_quantity = excluded.typical_entry_quantity,
+    typical_unit_weight_kg = excluded.typical_unit_weight_kg,
+    default_requirements = excluded.default_requirements,
+    preferred_vehicle_classes = excluded.preferred_vehicle_classes,
+    updated_at = now();
 
 -- =============================================================================
--- 1. REGISTRO DE TRANSPORTISTAS INTERNACIONALES (public.carriers)
+-- 5. TRANSPORTISTAS INTERNACIONALES (public.carriers)
 -- =============================================================================
 insert into public.carriers (
   id,
@@ -532,7 +278,7 @@ values
     'b2000000-0000-0000-0000-000000000003',
     'Velocity Express Freight',
     'VELOCITY_EXPRESS',
-    'REGIONAL_CARRIER',
+    'CARRIER',
     'ACTIVE',
     '/providers/velocity-express',
     false,
@@ -549,7 +295,7 @@ set name = excluded.name,
     updated_at = now();
 
 -- =============================================================================
--- 2. SERVICIOS DE TRANSPORTE (public.carrier_services)
+-- 6. SERVICIOS DE TRANSPORTE (public.carrier_services)
 -- =============================================================================
 insert into public.carrier_services (
   id,
@@ -668,7 +414,7 @@ set carrier_id = excluded.carrier_id,
     updated_at = now();
 
 -- =============================================================================
--- 3. ASOCIACIÓN DE CATEGORÍAS DE CARGA (public.carrier_service_cargo_categories)
+-- 7. ASOCIACIÓN DE CATEGORÍAS DE CARGA (public.carrier_service_cargo_categories)
 -- =============================================================================
 insert into public.carrier_service_cargo_categories (carrier_service_id, cargo_category_id)
 values
@@ -684,238 +430,180 @@ values
 on conflict do nothing;
 
 -- =============================================================================
--- 4. FLOTA DE CAMIONES DEDICADA (public.vehicles)
+-- 8. FLOTA VEHICULAR ENRIQUECIDA (public.vehicles)
+-- Las asociaciones a carriers se resuelven por código de carrier para asegurar
+-- compatibilidad idéntica tanto en entornos con IDs 200000... como b00000...
 -- =============================================================================
-insert into public.vehicles (
-  id,
-  carrier_id,
-  code,
-  brand,
-  model,
-  license_plate,
-  vehicle_type,
-  capacity_kg,
-  volume_m3,
-  supports_refrigerated,
-  supports_hazardous,
-  supports_oversized,
-  location,
-  status,
-  updated_at
-)
-values
-  -- Polaris Camiones Reefer
-  (
-    'e2000000-0000-0000-0000-000000000001',
-    'b2000000-0000-0000-0000-000000000001',
-    'POL-TRK-101',
-    'Volvo',
-    'FM 460 Cryo-Reefer (-25°C)',
-    'P8A-901',
-    'TRACTOR_TRAILER',
-    18000,
-    50,
-    true,
-    false,
-    false,
-    'Callao, PE',
-    'AVAILABLE',
-    now()
-  ),
-  (
-    'e2000000-0000-0000-0000-000000000002',
-    'b2000000-0000-0000-0000-000000000001',
-    'POL-TRK-102',
-    'Scania',
-    'R500 Thermo King Super-II',
-    'P2B-334',
-    'TRACTOR_TRAILER',
-    22000,
-    65,
-    true,
-    false,
-    false,
-    'Ica, PE',
-    'AVAILABLE',
-    now()
-  ),
-  -- Apex Camiones Hazmat Pesados
-  (
-    'e2000000-0000-0000-0000-000000000003',
-    'b2000000-0000-0000-0000-000000000002',
-    'APX-TRK-201',
-    'Kenworth',
-    'T680 Hazmat Certified Hauler',
-    'A5C-881',
-    'TRACTOR_TRAILER',
-    26000,
-    55,
-    false,
-    true,
-    false,
-    'Callao, PE',
-    'AVAILABLE',
-    now()
-  ),
-  (
-    'e2000000-0000-0000-0000-000000000004',
-    'b2000000-0000-0000-0000-000000000002',
-    'APX-TRK-202',
-    'Mack',
-    'Anthem Heavy Duty Hazmat/Lowboy',
-    'A9D-129',
-    'TRACTOR_TRAILER',
-    30000,
-    60,
-    false,
-    true,
-    true,
-    'Arequipa, PE',
-    'AVAILABLE',
-    now()
-  ),
-  -- Velocity Camiones Express
-  (
-    'e2000000-0000-0000-0000-000000000005',
-    'b2000000-0000-0000-0000-000000000003',
-    'VEL-TRK-301',
-    'Freightliner',
-    'Cascadia 116 Rapid Dry Van',
-    'V1E-772',
-    'TRACTOR_TRAILER',
-    12000,
-    40,
-    false,
-    false,
-    false,
-    'Lima, PE',
-    'AVAILABLE',
-    now()
-  ),
-  (
-    'e2000000-0000-0000-0000-000000000006',
-    'b2000000-0000-0000-0000-000000000003',
-    'VEL-TRK-302',
-    'Isuzu',
-    'Giga Forward Express 10T',
-    'V4F-440',
-    'RIGID_TRUCK',
-    10000,
-    35,
-    false,
-    false,
-    false,
-    'Lima, PE',
-    'AVAILABLE',
-    now()
-  )
-on conflict (code) do update
-set carrier_id = excluded.carrier_id,
-    brand = excluded.brand,
-    model = excluded.model,
-    license_plate = excluded.license_plate,
-    vehicle_type = excluded.vehicle_type,
-    capacity_kg = excluded.capacity_kg,
-    volume_m3 = excluded.volume_m3,
-    supports_refrigerated = excluded.supports_refrigerated,
-    supports_hazardous = excluded.supports_hazardous,
-    supports_oversized = excluded.supports_oversized,
-    location = excluded.location,
-    status = excluded.status,
-    updated_at = now();
 
--- =============================================================================
--- 5. HISTORIAL DE RENDIMIENTO Y MÉTRICAS (public.carrier_metrics)
--- =============================================================================
-insert into public.carrier_metrics (
-  id,
-  carrier_id,
-  cargo_category_id,
-  transport_mode,
-  origin_country,
-  origin_city,
-  destination_country,
-  destination_city,
-  completed_freight_requests,
-  successful_freight_requests,
-  success_rate,
-  avg_cost,
-  average_route_cost,
-  avg_delay_hours,
-  cancellation_rate,
-  route_completed_freight_requests,
-  created_at,
-  updated_at
+-- 8.1 Flota Andes Freight (Carga Pesada & Minería)
+insert into public.vehicles (
+  id, carrier_id, code, brand, model, license_plate, vehicle_type,
+  capacity_kg, volume_m3, supports_refrigerated, supports_hazardous,
+  supports_oversized, location, status, updated_at
 )
-values
-  -- Polaris (Alta confiabilidad en frío)
-  (
-    'f2000000-0000-0000-0000-000000000001',
-    'b2000000-0000-0000-0000-000000000001',
-    'c0000000-0000-0000-0000-000000000007',
-    'ROAD',
-    'PE',
-    'Callao',
-    'CL',
-    'Santiago',
-    45,
-    44,
-    97.8,
-    1850,
-    1850,
-    0.5,
-    1.2,
-    45,
-    now(),
-    now()
-  ),
-  -- Apex (Especialista Hazmat con tarifa premium)
-  (
-    'f2000000-0000-0000-0000-000000000002',
-    'b2000000-0000-0000-0000-000000000002',
-    'c0000000-0000-0000-0000-000000000005',
-    'ROAD',
-    'PE',
-    'Callao',
-    'CL',
-    'Santiago',
-    60,
-    58,
-    96.7,
-    2650,
-    2650,
-    0.8,
-    2.0,
-    60,
-    now(),
-    now()
-  ),
-  -- Velocity (Rápido nacional)
-  (
-    'f2000000-0000-0000-0000-000000000003',
-    'b2000000-0000-0000-0000-000000000003',
-    'c0000000-0000-0000-0000-000000000001',
-    'ROAD',
-    'PE',
-    'Lima',
-    'PE',
-    'Arequipa',
-    80,
-    78,
-    97.5,
-    890,
-    890,
-    0.3,
-    1.0,
-    80,
-    now(),
-    now()
-  )
-on conflict (id) do update
-set success_rate = excluded.success_rate,
-    avg_cost = excluded.avg_cost,
-    average_route_cost = excluded.average_route_cost,
-    avg_delay_hours = excluded.avg_delay_hours,
-    updated_at = now();
+select
+  v.id, c.id, v.code, v.brand, v.model, v.license_plate, v.vehicle_type,
+  v.capacity_kg, v.volume_m3, v.supports_refrigerated, v.supports_hazardous,
+  v.supports_oversized, v.location, v.status, now()
+from (
+  values
+    ('e0000000-0000-0000-0000-000000000001'::uuid, 'AND-TRK-101', 'Scania', 'R450 Highline 6x4', 'V9A-812', 'TRACTOR_TRAILER', 28000, 60, false, true, true, 'Callao, PE', 'AVAILABLE'),
+    ('e0000000-0000-0000-0000-000000000012'::uuid, 'AND-TRK-102', 'Volvo', 'FH16 540 Lowboy', 'V7B-441', 'TRACTOR_TRAILER', 32000, 75, false, true, true, 'Arequipa, PE', 'AVAILABLE'),
+    ('e0000000-0000-0000-0000-000000000013'::uuid, 'AND-TRK-103', 'Scania', 'G410 Furgón Minero', 'V3C-902', 'TRACTOR_TRAILER', 20000, 50, false, false, false, 'Tacna, PE', 'IN_TRANSIT')
+) as v(id, code, brand, model, license_plate, vehicle_type, capacity_kg, volume_m3, supports_refrigerated, supports_hazardous, supports_oversized, location, status)
+cross join (select id from public.carriers where code = 'ANDES' limit 1) c
+on conflict (code) do update
+set carrier_id = excluded.carrier_id, brand = excluded.brand, model = excluded.model,
+    license_plate = excluded.license_plate, vehicle_type = excluded.vehicle_type,
+    capacity_kg = excluded.capacity_kg, volume_m3 = excluded.volume_m3,
+    supports_refrigerated = excluded.supports_refrigerated, supports_hazardous = excluded.supports_hazardous,
+    supports_oversized = excluded.supports_oversized, location = excluded.location,
+    status = excluded.status, updated_at = now();
+
+-- 8.2 Flota Inca Express (Refrigerados & Agro)
+insert into public.vehicles (
+  id, carrier_id, code, brand, model, license_plate, vehicle_type,
+  capacity_kg, volume_m3, supports_refrigerated, supports_hazardous,
+  supports_oversized, location, status, updated_at
+)
+select
+  v.id, c.id, v.code, v.brand, v.model, v.license_plate, v.vehicle_type,
+  v.capacity_kg, v.volume_m3, v.supports_refrigerated, v.supports_hazardous,
+  v.supports_oversized, v.location, v.status, now()
+from (
+  values
+    ('e0000000-0000-0000-0000-000000000002'::uuid, 'INC-TRK-201', 'Volvo', 'FM 420 Reefer Thermo King', 'F4D-319', 'TRACTOR_TRAILER', 15000, 45, true, false, false, 'Callao, PE', 'AVAILABLE'),
+    ('e0000000-0000-0000-0000-000000000022'::uuid, 'INC-TRK-202', 'Mercedes-Benz', 'Actros 2645 Dry Van', 'F8E-220', 'TRACTOR_TRAILER', 24000, 70, false, false, false, 'Lima, PE', 'AVAILABLE'),
+    ('e0000000-0000-0000-0000-000000000023'::uuid, 'INC-TRK-203', 'Volvo', 'FH 460 Multi-Temp Reefer', 'F1G-554', 'TRACTOR_TRAILER', 18000, 52, true, false, false, 'Ica, PE', 'AVAILABLE')
+) as v(id, code, brand, model, license_plate, vehicle_type, capacity_kg, volume_m3, supports_refrigerated, supports_hazardous, supports_oversized, location, status)
+cross join (select id from public.carriers where code = 'INCA' limit 1) c
+on conflict (code) do update
+set carrier_id = excluded.carrier_id, brand = excluded.brand, model = excluded.model,
+    license_plate = excluded.license_plate, vehicle_type = excluded.vehicle_type,
+    capacity_kg = excluded.capacity_kg, volume_m3 = excluded.volume_m3,
+    supports_refrigerated = excluded.supports_refrigerated, supports_hazardous = excluded.supports_hazardous,
+    supports_oversized = excluded.supports_oversized, location = excluded.location,
+    status = excluded.status, updated_at = now();
+
+-- 8.3 Flota Pacific Logistics (Express & Rápido)
+insert into public.vehicles (
+  id, carrier_id, code, brand, model, license_plate, vehicle_type,
+  capacity_kg, volume_m3, supports_refrigerated, supports_hazardous,
+  supports_oversized, location, status, updated_at
+)
+select
+  v.id, c.id, v.code, v.brand, v.model, v.license_plate, v.vehicle_type,
+  v.capacity_kg, v.volume_m3, v.supports_refrigerated, v.supports_hazardous,
+  v.supports_oversized, v.location, v.status, now()
+from (
+  values
+    ('e0000000-0000-0000-0000-000000000003'::uuid, 'PAC-TRK-301', 'Freightliner', 'Cascadia 126 Express Van', 'C5H-781', 'TRACTOR_TRAILER', 15000, 45, false, false, false, 'Callao, PE', 'AVAILABLE'),
+    ('e0000000-0000-0000-0000-000000000032'::uuid, 'PAC-TRK-302', 'Isuzu', 'Forward 1400 Box Truck', 'C9J-112', 'RIGID_TRUCK', 8000, 30, false, false, false, 'Lima, PE', 'AVAILABLE'),
+    ('e0000000-0000-0000-0000-000000000033'::uuid, 'PAC-TRK-303', 'Hino', '700 Series Intermodal', 'C2K-909', 'TRACTOR_TRAILER', 26000, 65, false, true, false, 'Callao, PE', 'AVAILABLE')
+) as v(id, code, brand, model, license_plate, vehicle_type, capacity_kg, volume_m3, supports_refrigerated, supports_hazardous, supports_oversized, location, status)
+cross join (select id from public.carriers where code = 'PACIFIC' limit 1) c
+on conflict (code) do update
+set carrier_id = excluded.carrier_id, brand = excluded.brand, model = excluded.model,
+    license_plate = excluded.license_plate, vehicle_type = excluded.vehicle_type,
+    capacity_kg = excluded.capacity_kg, volume_m3 = excluded.volume_m3,
+    supports_refrigerated = excluded.supports_refrigerated, supports_hazardous = excluded.supports_hazardous,
+    supports_oversized = excluded.supports_oversized, location = excluded.location,
+    status = excluded.status, updated_at = now();
+
+-- 8.4 Flota Polaris Cold Chain
+insert into public.vehicles (
+  id, carrier_id, code, brand, model, license_plate, vehicle_type,
+  capacity_kg, volume_m3, supports_refrigerated, supports_hazardous,
+  supports_oversized, location, status, updated_at
+)
+select
+  v.id, c.id, v.code, v.brand, v.model, v.license_plate, v.vehicle_type,
+  v.capacity_kg, v.volume_m3, v.supports_refrigerated, v.supports_hazardous,
+  v.supports_oversized, v.location, v.status, now()
+from (
+  values
+    ('e2000000-0000-0000-0000-000000000001'::uuid, 'POL-TRK-101', 'Volvo', 'FM 460 Cryo-Reefer (-25°C)', 'P8A-901', 'TRACTOR_TRAILER', 18000, 50, true, false, false, 'Callao, PE', 'AVAILABLE'),
+    ('e2000000-0000-0000-0000-000000000002'::uuid, 'POL-TRK-102', 'Scania', 'R500 Thermo King Super-II', 'P2B-334', 'TRACTOR_TRAILER', 22000, 65, true, false, false, 'Ica, PE', 'AVAILABLE')
+) as v(id, code, brand, model, license_plate, vehicle_type, capacity_kg, volume_m3, supports_refrigerated, supports_hazardous, supports_oversized, location, status)
+cross join (select id from public.carriers where code = 'POLARIS_COLD_CHAIN' limit 1) c
+on conflict (code) do update
+set carrier_id = excluded.carrier_id, brand = excluded.brand, model = excluded.model,
+    license_plate = excluded.license_plate, vehicle_type = excluded.vehicle_type,
+    capacity_kg = excluded.capacity_kg, volume_m3 = excluded.volume_m3,
+    supports_refrigerated = excluded.supports_refrigerated, supports_hazardous = excluded.supports_hazardous,
+    supports_oversized = excluded.supports_oversized, location = excluded.location,
+    status = excluded.status, updated_at = now();
+
+-- 8.5 Flota Apex Hazmat
+insert into public.vehicles (
+  id, carrier_id, code, brand, model, license_plate, vehicle_type,
+  capacity_kg, volume_m3, supports_refrigerated, supports_hazardous,
+  supports_oversized, location, status, updated_at
+)
+select
+  v.id, c.id, v.code, v.brand, v.model, v.license_plate, v.vehicle_type,
+  v.capacity_kg, v.volume_m3, v.supports_refrigerated, v.supports_hazardous,
+  v.supports_oversized, v.location, v.status, now()
+from (
+  values
+    ('e2000000-0000-0000-0000-000000000003'::uuid, 'APX-TRK-201', 'Kenworth', 'T680 Hazmat Certified Hauler', 'A5C-881', 'TRACTOR_TRAILER', 30000, 60, false, true, true, 'Callao, PE', 'AVAILABLE'),
+    ('e2000000-0000-0000-0000-000000000004'::uuid, 'APX-TRK-202', 'Freightliner', 'Cascadia Heavy Lowboy', 'A1D-492', 'TRACTOR_TRAILER', 32000, 70, false, true, true, 'Arequipa, PE', 'AVAILABLE')
+) as v(id, code, brand, model, license_plate, vehicle_type, capacity_kg, volume_m3, supports_refrigerated, supports_hazardous, supports_oversized, location, status)
+cross join (select id from public.carriers where code = 'APEX_HAZMAT' limit 1) c
+on conflict (code) do update
+set carrier_id = excluded.carrier_id, brand = excluded.brand, model = excluded.model,
+    license_plate = excluded.license_plate, vehicle_type = excluded.vehicle_type,
+    capacity_kg = excluded.capacity_kg, volume_m3 = excluded.volume_m3,
+    supports_refrigerated = excluded.supports_refrigerated, supports_hazardous = excluded.supports_hazardous,
+    supports_oversized = excluded.supports_oversized, location = excluded.location,
+    status = excluded.status, updated_at = now();
+
+-- 8.6 Flota Velocity Express
+insert into public.vehicles (
+  id, carrier_id, code, brand, model, license_plate, vehicle_type,
+  capacity_kg, volume_m3, supports_refrigerated, supports_hazardous,
+  supports_oversized, location, status, updated_at
+)
+select
+  v.id, c.id, v.code, v.brand, v.model, v.license_plate, v.vehicle_type,
+  v.capacity_kg, v.volume_m3, v.supports_refrigerated, v.supports_hazardous,
+  v.supports_oversized, v.location, v.status, now()
+from (
+  values
+    ('e2000000-0000-0000-0000-000000000005'::uuid, 'VEL-TRK-301', 'Isuzu', 'Giga 6x2 Express Freight', 'T4E-108', 'RIGID_TRUCK', 12000, 40, false, false, false, 'Lima, PE', 'AVAILABLE'),
+    ('e2000000-0000-0000-0000-000000000006'::uuid, 'VEL-TRK-302', 'Hino', '500 Series Urban Fast', 'T9F-773', 'RIGID_TRUCK', 10000, 35, false, false, false, 'Arequipa, PE', 'AVAILABLE')
+) as v(id, code, brand, model, license_plate, vehicle_type, capacity_kg, volume_m3, supports_refrigerated, supports_hazardous, supports_oversized, location, status)
+cross join (select id from public.carriers where code = 'VELOCITY_EXPRESS' limit 1) c
+on conflict (code) do update
+set carrier_id = excluded.carrier_id, brand = excluded.brand, model = excluded.model,
+    license_plate = excluded.license_plate, vehicle_type = excluded.vehicle_type,
+    capacity_kg = excluded.capacity_kg, volume_m3 = excluded.volume_m3,
+    supports_refrigerated = excluded.supports_refrigerated, supports_hazardous = excluded.supports_hazardous,
+    supports_oversized = excluded.supports_oversized, location = excluded.location,
+    status = excluded.status, updated_at = now();
+
+-- 8.7 Flota Nexo Demo (Condicional Aislada: Solo si el carrier NEXO existe en el entorno)
+insert into public.vehicles (
+  id, carrier_id, code, brand, model, license_plate, vehicle_type,
+  capacity_kg, volume_m3, supports_refrigerated, supports_hazardous,
+  supports_oversized, location, status, updated_at
+)
+select
+  v.id, c.id, v.code, v.brand, v.model, v.license_plate, v.vehicle_type,
+  v.capacity_kg, v.volume_m3, v.supports_refrigerated, v.supports_hazardous,
+  v.supports_oversized, v.location, v.status, now()
+from (
+  values
+    ('e1000000-0000-0000-0000-000000000001'::uuid, 'NEX-DEMO-101', 'Hino', '500 Series Cortina Sider', 'D1-LOCAL-101', 'RIGID_TRUCK', 12000, 40, false, false, false, 'Lima, PE', 'AVAILABLE'),
+    ('e1000000-0000-0000-0000-000000000002'::uuid, 'NEX-DEMO-201', 'International', 'ProStar Furgón Seco', 'D1-PECL-201', 'TRACTOR_TRAILER', 16000, 50, false, false, false, 'Callao, PE', 'AVAILABLE')
+) as v(id, code, brand, model, license_plate, vehicle_type, capacity_kg, volume_m3, supports_refrigerated, supports_hazardous, supports_oversized, location, status)
+join public.carriers c on (c.code in ('NEXO', 'NEXO_DEMO') or c.id = 'b1000000-0000-0000-0000-000000000001')
+on conflict (code) do update
+set carrier_id = excluded.carrier_id, brand = excluded.brand, model = excluded.model,
+    license_plate = excluded.license_plate, vehicle_type = excluded.vehicle_type,
+    capacity_kg = excluded.capacity_kg, volume_m3 = excluded.volume_m3,
+    supports_refrigerated = excluded.supports_refrigerated, supports_hazardous = excluded.supports_hazardous,
+    supports_oversized = excluded.supports_oversized, location = excluded.location,
+    status = excluded.status, updated_at = now();
 
 commit;
