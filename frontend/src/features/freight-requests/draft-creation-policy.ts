@@ -60,38 +60,10 @@ export function parseCreateFreightRequestDraftInput(raw: unknown): { fields: Man
     }
   }
 
-  // Reject active special requirements
-  const clientFields = raw.fields as Record<string, unknown>;
-  const hasActiveSpecial =
-    clientFields.requiresRefrigeration === true ||
-    (clientFields.temperatureMinC !== null && clientFields.temperatureMinC !== undefined) ||
-    (clientFields.temperatureMaxC !== null && clientFields.temperatureMaxC !== undefined) ||
-    clientFields.isHazardous === true ||
-    clientFields.isOversized === true ||
-    clientFields.isFragile === true;
-
-  if (hasActiveSpecial) {
-    throw new RecommendationDraftError(
-      "UNSUPPORTED_SPECIAL_REQUIREMENTS",
-      "Los controles especiales (frío, temperatura, hazmat, sobredimensionado, frágil) aún no cuentan con contrato de persistencia en el servidor.",
-      422,
-    );
-  }
-
-  // Strip inactive special flags before validation against whitelist
-  const cleanedFields = { ...clientFields };
-  delete cleanedFields.requiresRefrigeration;
-  delete cleanedFields.temperatureMinC;
-  delete cleanedFields.temperatureMaxC;
-  delete cleanedFields.isHazardous;
-  delete cleanedFields.isOversized;
-  delete cleanedFields.isFragile;
-
-  if (Object.keys(cleanedFields).length === 0) {
+  if (Object.keys(raw.fields).length === 0) {
     return { fields: {} };
   }
-
-  return { fields: parseManualFreightRequestIntakeFields(cleanedFields) };
+  return { fields: parseManualFreightRequestIntakeFields(raw.fields) };
 }
 
 export function createInitialDraftTemplateRow(
@@ -251,12 +223,12 @@ export async function createFreightRequestDraftWithDependencies(
       cargo_volume_m3: normalized.normalized.cargoVolumeM3,
       service_type: "FTL",
       transport_mode: "ROAD",
-      requires_refrigeration: false,
-      temperature_min_c: null,
-      temperature_max_c: null,
-      is_hazardous: false,
-      is_fragile: false,
-      is_oversized: false,
+      requires_refrigeration: normalized.normalized.fields.requires_refrigeration,
+      temperature_min_c: normalized.normalized.fields.temperature_min_c ?? null,
+      temperature_max_c: normalized.normalized.fields.temperature_max_c ?? null,
+      is_hazardous: normalized.normalized.fields.is_hazardous,
+      is_fragile: normalized.normalized.fields.is_fragile,
+      is_oversized: normalized.normalized.fields.is_oversized,
       is_high_value: false,
       is_stackable: true,
       special_instructions: normalized.normalized.fields.special_instructions ?? null,

@@ -37,7 +37,7 @@ async function findPersistedIntakeRecord(
   const { data: freightRequest, error: freightRequestError } = await supabase
     .from("freight_requests")
     .select(
-      "id,code,organization_id,status,draft_version,cargo_category_id,cargo_profile_id,cargo_entry_method,entry_quantity,units_per_entry,cargo_weight_kg,cargo_volume_m3,entry_unit_weight_kg,entry_length_cm,entry_width_cm,entry_height_cm,origin_address,origin_city,origin_country,origin_region,destination_address,destination_city,destination_country,destination_region,pickup_contact_name,pickup_contact_phone,receiver_name,receiver_company,receiver_phone,special_instructions,transport_mode,service_type,pickup_mode,required_pickup,pickup_window_start,pickup_window_end,delivery_deadline,budget_max,optimization_strategy,available_documents,updated_at",
+      "id,code,organization_id,status,draft_version,cargo_category_id,cargo_profile_id,cargo_entry_method,cargo_description,entry_quantity,units_per_entry,cargo_weight_kg,cargo_volume_m3,entry_unit_weight_kg,entry_length_cm,entry_width_cm,entry_height_cm,requires_refrigeration,temperature_min_c,temperature_max_c,is_hazardous,is_fragile,is_oversized,origin_address,origin_city,origin_country,origin_region,destination_address,destination_city,destination_country,destination_region,pickup_contact_name,pickup_contact_phone,receiver_name,receiver_company,receiver_phone,special_instructions,transport_mode,service_type,pickup_mode,required_pickup,pickup_window_start,pickup_window_end,delivery_deadline,budget_max,optimization_strategy,available_documents,updated_at",
     )
     .eq("organization_id", organizationId)
     .eq("code", requestCode)
@@ -111,11 +111,18 @@ async function findPersistedIntakeRecord(
     cargoProfileName: profile?.profile_name ?? null,
     cargoCategoryName: category.name,
     cargoCategoryCode: category.code,
+    cargoDescription: request.cargo_description,
     entryMethod: request.cargo_entry_method,
     quantity: request.entry_quantity,
     unitsPerEntry: request.units_per_entry,
     totalWeightKg: request.cargo_weight_kg,
     totalVolumeM3: request.cargo_volume_m3,
+    requiresRefrigeration: request.requires_refrigeration,
+    temperatureMinC: request.temperature_min_c,
+    temperatureMaxC: request.temperature_max_c,
+    isHazardous: request.is_hazardous,
+    isOversized: request.is_oversized,
+    isFragile: request.is_fragile,
     unitWeightKg: request.entry_unit_weight_kg,
     lengthCm: request.entry_length_cm,
     widthCm: request.entry_width_cm,

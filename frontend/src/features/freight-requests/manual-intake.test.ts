@@ -122,6 +122,31 @@ test("manual scheduled edits retain server validation for coherent dates", () =>
   );
 });
 
+test("manual special handling is canonical, supports subzero ranges, and never remains visual-only", () => {
+  const normalized = normalizeManualFreightRequestIntake(row, {
+    requiresRefrigeration: true,
+    temperatureMinC: -20,
+    temperatureMaxC: -12,
+    isHazardous: true,
+    isFragile: true,
+    isOversized: true,
+  }, undefined);
+  assert.equal(normalized.normalized.fields.requires_refrigeration, true);
+  assert.equal(normalized.normalized.fields.temperature_min_c, -20);
+  assert.equal(normalized.normalized.fields.temperature_max_c, -12);
+  assert.equal(normalized.normalized.fields.is_hazardous, true);
+  assert.equal(normalized.normalized.fields.is_fragile, true);
+  assert.equal(normalized.normalized.fields.is_oversized, true);
+
+  assert.throws(
+    () => normalizeManualFreightRequestIntake(row, {
+      requiresRefrigeration: false,
+      temperatureMinC: 2,
+    }, undefined),
+    /rango térmico requiere activar la cadena de frío/,
+  );
+});
+
 test("buildManualIntakeFieldsFromForm maps form model into manual intake contract fields", async () => {
   const { buildManualIntakeFieldsFromForm } = await import("./manual-intake-client");
   const form = {
@@ -149,6 +174,12 @@ test("buildManualIntakeFieldsFromForm maps form model into manual intake contrac
     heightCm: 40,
     totalWeightKg: 600,
     totalVolumeM3: 0.12,
+    requiresRefrigeration: true,
+    temperatureMinC: 2,
+    temperatureMaxC: 6,
+    isHazardous: true,
+    isOversized: false,
+    isFragile: true,
     pickupMode: "SCHEDULED" as const,
     pickupWindowStart: "2026-09-10T13:00:00.000Z",
     pickupWindowEnd: "2026-09-10T17:00:00.000Z",
@@ -168,6 +199,11 @@ test("buildManualIntakeFieldsFromForm maps form model into manual intake contrac
   assert.equal(fields.receiverName, "Diego Ramos");
   assert.equal(fields.budgetMax, 1000);
   assert.equal(fields.pickupMode, "SCHEDULED");
+  assert.equal(fields.requiresRefrigeration, true);
+  assert.equal(fields.temperatureMinC, 2);
+  assert.equal(fields.temperatureMaxC, 6);
+  assert.equal(fields.isHazardous, true);
+  assert.equal(fields.isFragile, true);
   // PALLETS must not send totalWeightKg and must map document labels to canonical codes
   assert.equal(fields.totalWeightKg, undefined);
   assert.equal(fields.entryQuantity, 2);

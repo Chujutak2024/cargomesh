@@ -36,6 +36,7 @@ const intake: FreightRequestIntakeViewModel = {
     profileName: "Mining spares",
     categoryName: "Machinery",
     categoryCode: "MACHINERY",
+    description: "Componentes para chancadora",
     entryMethod: "TOTAL_WEIGHT",
     quantity: null,
     unitsPerEntry: null,
@@ -45,6 +46,12 @@ const intake: FreightRequestIntakeViewModel = {
     heightCm: null,
     totalWeightKg: 8_250,
     totalVolumeM3: 18.5,
+    requiresRefrigeration: true,
+    temperatureMinC: 2,
+    temperatureMaxC: 6,
+    isHazardous: false,
+    isOversized: false,
+    isFragile: true,
   },
   route: {
     origin: "Callao, PE",
@@ -99,6 +106,10 @@ test("maps the complete persisted intake identity and canonical commercial value
   assert.equal(model.origin, intake.route.origin);
   assert.equal(model.totalWeightKg, 8_250);
   assert.equal(model.totalVolumeM3, 18.5);
+  assert.equal(model.cargoDescription, "Componentes para chancadora");
+  assert.equal(model.requiresRefrigeration, true);
+  assert.equal(model.temperatureMinC, 2);
+  assert.equal(model.isFragile, true);
   assert.equal(model.pickupWindowEnd, intake.execution.pickupWindowEnd);
   assert.deepEqual(model.documents, ["commercial_invoice"]);
 });

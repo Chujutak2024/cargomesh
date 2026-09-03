@@ -25,6 +25,7 @@ const viewModel: FreightRequestIntakeViewModel = {
     profileName: "Mining spares",
     categoryName: "Machinery",
     categoryCode: "MACHINERY",
+    description: "Repuestos de perforación",
     entryMethod: "PALLETS",
     quantity: 10,
     unitsPerEntry: 1,
@@ -34,6 +35,12 @@ const viewModel: FreightRequestIntakeViewModel = {
     lengthCm: 120,
     widthCm: 100,
     heightCm: 150,
+    requiresRefrigeration: false,
+    temperatureMinC: null,
+    temperatureMaxC: null,
+    isHazardous: false,
+    isOversized: false,
+    isFragile: false,
   },
   route: {
     origin: "Callao, PE",
@@ -78,11 +85,18 @@ const persistedRecord: PersistedIntakeRecord = {
   cargoProfileName: viewModel.cargo.profileName,
   cargoCategoryName: viewModel.cargo.categoryName,
   cargoCategoryCode: viewModel.cargo.categoryCode,
+  cargoDescription: viewModel.cargo.description,
   entryMethod: viewModel.cargo.entryMethod,
   quantity: viewModel.cargo.quantity,
   unitsPerEntry: viewModel.cargo.unitsPerEntry,
   totalWeightKg: viewModel.cargo.totalWeightKg,
   totalVolumeM3: viewModel.cargo.totalVolumeM3,
+  requiresRefrigeration: viewModel.cargo.requiresRefrigeration,
+  temperatureMinC: viewModel.cargo.temperatureMinC,
+  temperatureMaxC: viewModel.cargo.temperatureMaxC,
+  isHazardous: viewModel.cargo.isHazardous,
+  isOversized: viewModel.cargo.isOversized,
+  isFragile: viewModel.cargo.isFragile,
   unitWeightKg: viewModel.cargo.unitWeightKg,
   lengthCm: viewModel.cargo.lengthCm,
   widthCm: viewModel.cargo.widthCm,
@@ -144,6 +158,34 @@ test("parses the persisted intake model and preserves the real FreightRequest ID
   assert.equal(result.freightRequestId, "60000000-0000-0000-0000-000000000001");
   assert.equal(result.execution.pickupWindowEnd, "2026-09-02T17:00:00.000Z");
   assert.equal(result.cargo.categoryCode, "MACHINERY");
+  assert.equal(result.cargo.description, "Repuestos de perforación");
+});
+
+test("preserves persisted special handling and validates its temperature range", () => {
+  const result = parseFreightRequestIntakeViewModel({
+    ...viewModel,
+    cargo: {
+      ...viewModel.cargo,
+      requiresRefrigeration: true,
+      temperatureMinC: -20,
+      temperatureMaxC: -12,
+      isHazardous: true,
+      isOversized: true,
+      isFragile: true,
+    },
+  });
+  assert.equal(result.cargo.temperatureMinC, -20);
+  assert.equal(result.cargo.isHazardous, true);
+  assert.equal(result.cargo.isOversized, true);
+  assert.equal(result.cargo.isFragile, true);
+
+  assert.throws(
+    () => parseFreightRequestIntakeViewModel({
+      ...viewModel,
+      cargo: { ...viewModel.cargo, requiresRefrigeration: true, temperatureMinC: null, temperatureMaxC: null },
+    }),
+    /refrigeration requires a complete temperature range/,
+  );
 });
 
 test("rejects an incomplete scheduled intake instead of manufacturing a window", () => {

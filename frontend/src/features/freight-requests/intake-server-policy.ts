@@ -21,11 +21,18 @@ export type PersistedIntakeRecord = {
   cargoProfileName: string | null;
   cargoCategoryName: string;
   cargoCategoryCode: string;
+  cargoDescription: string | null;
   entryMethod: string;
   quantity: number | null;
   unitsPerEntry: number | null;
   totalWeightKg: number;
   totalVolumeM3: number | null;
+  requiresRefrigeration: boolean;
+  temperatureMinC: number | null;
+  temperatureMaxC: number | null;
+  isHazardous: boolean;
+  isOversized: boolean;
+  isFragile: boolean;
   unitWeightKg: number | null;
   lengthCm: number | null;
   widthCm: number | null;
@@ -147,6 +154,7 @@ export async function getFreightRequestIntake(
         profileName: record.cargoProfileName,
         categoryName: record.cargoCategoryName,
         categoryCode: record.cargoCategoryCode,
+        description: record.cargoDescription,
         entryMethod: record.entryMethod,
         quantity: record.quantity,
         unitsPerEntry: record.unitsPerEntry,
@@ -156,6 +164,12 @@ export async function getFreightRequestIntake(
         heightCm: record.heightCm,
         totalWeightKg: record.totalWeightKg,
         totalVolumeM3: record.totalVolumeM3,
+        requiresRefrigeration: record.requiresRefrigeration,
+        temperatureMinC: record.temperatureMinC,
+        temperatureMaxC: record.temperatureMaxC,
+        isHazardous: record.isHazardous,
+        isOversized: record.isOversized,
+        isFragile: record.isFragile,
       },
       route: {
         origin: record.origin,
