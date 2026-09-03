@@ -355,17 +355,21 @@ export function FreightIntakeForm({
   }, [form, persistRecommendation]);
 
   const reloadStaleDraft = useCallback(async (signal: AbortSignal) => {
+    const targetId = form.freightRequestId || initialValue.freightRequestId;
+    if (!targetId) return;
     try {
-      const draft = await fetchFreightRequestDraft(initialValue.freightRequestId, signal);
+      const draft = await fetchFreightRequestDraft(targetId, signal);
       setForm((current) => ({
-        ...current,
-        draftVersion: draft.draftVersion,
+        ...applyFreightRequestDraftToIntake(current, draft),
+        requestId: draft.requestCode,
       }));
+      setDraftLoadError(null);
       setDraftReady(true);
+      setSaveNotice(`Borrador recargado tras cambio en el servidor (v${draft.draftVersion}). Consulta sugerencias nuevamente.`);
     } catch {
       // Background stale notification shouldn't erase user's active inputs
     }
-  }, [initialValue.freightRequestId]);
+  }, [form.freightRequestId, initialValue.freightRequestId]);
 
   function update<K extends keyof FreightIntakeModel>(key: K, value: FreightIntakeModel[K]) {
     if (!readOnly) setForm((current) => ({ ...current, [key]: value }));
@@ -403,6 +407,9 @@ export function FreightIntakeForm({
       const created = await createFreightRequestDraft({ fields }, abortSignal);
       const updatedModel = mapFreightRequestIntakeToForm(created);
       setForm(updatedModel);
+      setDraftReady(true);
+      setDraftLoadError(null);
+      setIsCleanMode(false);
       setSaveNotice(`Borrador creado exitosamente: ${updatedModel.requestId} (v${updatedModel.draftVersion}).`);
       if (typeof window !== "undefined" && window.history) {
         const url = new URL(window.location.href);
@@ -411,12 +418,22 @@ export function FreightIntakeForm({
       }
       return updatedModel;
     } catch (error) {
-      const message = error instanceof DraftCreationClientError
-        ? `Creación de borrador pendiente: ${error.message} (Endpoint POST /api/freight-requests/drafts pendiente de integración por Rol C).`
-        : error instanceof Error
-          ? `Integración pendiente: ${error.message}`
-          : "Creación de borrador pendiente de integración en el backend.";
-      setSubmitError(message);
+      if (
+        error instanceof DraftCreationClientError &&
+        (error.code === "SPECIAL_REQUIREMENTS_UNSUPPORTED" ||
+          error.message.toLowerCase().includes("special requirement"))
+      ) {
+        setSubmitError(
+          "Requisitos especiales (refrigeración, materiales peligrosos, sobredimensionado, frágil) aún no disponibles en la red de carriers. Desactívalos para continuar.",
+        );
+      } else {
+        const message = error instanceof DraftCreationClientError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "No fue posible crear el borrador en el servidor.";
+        setSubmitError(message);
+      }
       throw error;
     } finally {
       setCreatingDraft(false);
@@ -1891,27 +1908,32 @@ export function FreightIntakeForm({
             {(requiresRefrigeration || isHazardous || isFragile || isOversized) ? (
               <div>
                 <dt>Requisitos de manejo</dt>
-                <dd style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem", marginTop: "0.25rem" }}>
-                  {requiresRefrigeration && (
-                    <span style={{ background: "#e1f3fd", color: "#0c6396", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
-                      ❄ Reefer ({tempMin}°C a {tempMax}°C)
-                    </span>
-                  )}
-                  {isHazardous && (
-                    <span style={{ background: "#fef3d6", color: "#8a5700", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
-                      ⚠ Hazmat
-                    </span>
-                  )}
-                  {isFragile && (
-                    <span style={{ background: "#f5eefe", color: "#5b21b6", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
-                      ◇ Frágil
-                    </span>
-                  )}
-                  {isOversized && (
-                    <span style={{ background: "#fae8ff", color: "#86198f", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
-                      ↔ Sobredimensionada
-                    </span>
-                  )}
+                <dd style={{ display: "flex", flexDirection: "column", gap: "0.3rem", marginTop: "0.25rem" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
+                    {requiresRefrigeration && (
+                      <span style={{ background: "#fff2f0", color: "#cf1322", border: "1px solid #ffccc7", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
+                        ❄ Reefer ({tempMin}°C a {tempMax}°C) · Aún no disponible
+                      </span>
+                    )}
+                    {isHazardous && (
+                      <span style={{ background: "#fff2f0", color: "#cf1322", border: "1px solid #ffccc7", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
+                        ⚠ Hazmat · Aún no disponible
+                      </span>
+                    )}
+                    {isFragile && (
+                      <span style={{ background: "#fff2f0", color: "#cf1322", border: "1px solid #ffccc7", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
+                        ◇ Frágil · Aún no disponible
+                      </span>
+                    )}
+                    {isOversized && (
+                      <span style={{ background: "#fff2f0", color: "#cf1322", border: "1px solid #ffccc7", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
+                        ↔ Sobredimensionada · Aún no disponible
+                      </span>
+                    )}
+                  </div>
+                  <small style={{ color: "#cf1322", fontSize: "0.65rem", lineHeight: 1.35 }}>
+                    Requisitos especiales no soportados por los carriers en esta versión (422). No se guardarán en el servidor.
+                  </small>
                 </dd>
               </div>
             ) : null}

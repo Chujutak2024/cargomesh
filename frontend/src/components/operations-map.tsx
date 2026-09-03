@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { MapPin } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
@@ -264,28 +264,78 @@ export function OperationsMap({ model }: { model: OperationsMapModel | null }) {
   }, [locale, route, t]);
 
   if (!model) {
-    return <div className={styles.empty}><MapPin size={27}/><strong>{t("Aún no hay una ruta persistida para mostrar", "No persisted route to display yet")}</strong><p>{t("Cuando la solicitud tenga origen y destino operativos, mostraremos su corredor programado.", "When the request has operational origin and destination, its planned corridor will appear here.")}</p></div>;
+    return (
+      <div className={styles.empty}>
+        <MapPin size={27} />
+        <strong>{t("Aún no hay una ruta persistida para mostrar", "No persisted route to display yet")}</strong>
+        <p>
+          {t(
+            "Cuando la solicitud exista y tenga origen y destino operativos, mostraremos su corredor programado. No se muestra ninguna ruta de reemplazo ante códigos no encontrados.",
+            "When the request exists and has operational origin and destination, its planned corridor will appear here. No fallback route is displayed for missing codes."
+          )}
+        </p>
+      </div>
+    );
   }
 
   if (route.points.length < 2) {
-    return <div className={styles.empty}><MapPin size={27}/><strong>{t("No reconocemos las ubicaciones de esta ruta", "Route locations are not recognized")}</strong><p>{t("La solicitud existe, pero sus ciudades no están disponibles en el catálogo de coordenadas del mapa.", "The request exists, but its cities are not available in the map coordinate catalog.")}</p></div>;
+    return (
+      <div className={styles.empty}>
+        <MapPin size={27} />
+        <strong>{t("No reconocemos las ubicaciones de esta ruta", "Route locations are not recognized")}</strong>
+        <p>
+          {t(
+            "La solicitud existe, pero sus ciudades no están disponibles en el catálogo de coordenadas del mapa.",
+            "The request exists, but its cities are not available in the map coordinate catalog."
+          )}
+        </p>
+      </div>
+    );
   }
 
-  const mapNotice = model.mode === "planned"
-    ? t("Corredor vial programado (Panamericana Sur PE-1S / Ruta 5); aún no hay carrier confirmado ni ubicación en vivo.", "Scheduled highway corridor (Pan-American PE-1S / Route 5); no carrier is confirmed and no live location is available yet.")
-    : route.isNominal
-      ? t("Booking confirmado; aún no hay checkpoints de ubicación reportados por el carrier. Se muestra el corredor programado.", "Booking confirmed; the carrier has not reported location checkpoints yet. The planned corridor is shown.")
-      : t("Ruta basada en checkpoints reportados por el carrier. No es GPS en vivo.", "Route based on carrier-reported checkpoints. This is not live GPS.");
+  const isPlanned = model.mode === "planned";
+  const hasCheckpoints = model.checkpoints.length > 0;
 
-  return <div ref={wrapper} className={styles.wrapper}>
-    <div className={styles.notice}>
-      <strong>{model.requestCode}</strong>
-      <span>{mapNotice}</span>
+  const modeBadge = isPlanned
+    ? t("Ruta planificada", "Planned route")
+    : hasCheckpoints
+      ? t("Eventos confirmados", "Confirmed events")
+      : t("Booking confirmado · Esperando reporte", "Booking confirmed · Awaiting report");
+
+  const mapNotice = isPlanned
+    ? t(
+        "Corredor vial de referencia (Panamericana Sur PE-1S / Ruta 5); no hay carrier asignado ni telemetría en vivo.",
+        "Reference highway corridor (Pan-American PE-1S / Route 5); no carrier is assigned and no live telemetry is available.",
+      )
+    : hasCheckpoints
+      ? t(
+          "Checkpoints reportados por el carrier según contratos de booking. No representa GPS en vivo.",
+          "Checkpoints reported by the carrier according to booking contracts. Does not represent live GPS.",
+        )
+      : t(
+          "Booking confirmado; el carrier aún no ha emitido checkpoints de ubicación. Se muestra el corredor programado.",
+          "Booking confirmed; the carrier has not reported location checkpoints yet. The planned corridor is shown.",
+        );
+
+  return (
+    <div ref={wrapper} className={styles.wrapper}>
+      <div className={styles.notice} role="status" aria-label={t("Estado de seguimiento", "Tracking status")}>
+        <div className={styles.noticeHeader}>
+          <span className={isPlanned ? styles.badgePlanned : hasCheckpoints ? styles.badgeConfirmed : styles.badgeAwaiting}>
+            {modeBadge}
+          </span>
+          <strong>{model.requestCode}</strong>
+        </div>
+        <span className={styles.noticeText}>{mapNotice}</span>
+      </div>
+      <div ref={element} className={styles.map} aria-label={t("Mapa del corredor del despacho", "Shipment corridor map")} />
+      <div className={styles.legend} aria-label={t("Leyenda del mapa", "Map legend")}>
+        <span><i className={styles.endpoint} />{t("Origen / destino", "Origin / destination")}</span>
+        <span><i className={styles.nominalLine} />{t("Ruta planificada", "Planned route")}</span>
+        {hasCheckpoints ? (
+          <span><i className={styles.checkpoint} />{t("Evento confirmado", "Confirmed event")}</span>
+        ) : null}
+      </div>
     </div>
-    <div ref={element} className={styles.map} aria-label={t("Mapa del corredor del despacho", "Shipment corridor map")}/>
-    <div className={styles.legend} aria-label={t("Leyenda del mapa", "Map legend")}>
-      <span><i className={styles.endpoint}/>{t("Origen / destino", "Origin / destination")}</span>
-      <span><i className={route.isNominal ? styles.nominal : styles.checkpoint}/>{route.isNominal ? t("Corredor programado", "Scheduled corridor") : t("Checkpoint", "Checkpoint")}</span>
-    </div>
-  </div>;
+  );
 }

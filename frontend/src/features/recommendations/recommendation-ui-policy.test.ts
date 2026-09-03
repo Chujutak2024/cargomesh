@@ -268,3 +268,23 @@ test("STALE_DRAFT is classified separately from ordinary errors and empty result
     },
   }), "empty");
 });
+
+test("buildRecommendationDiff marks unitized fields unselectable when proposed method is TOTAL_WEIGHT", () => {
+  const form = createFreightIntakeFixture();
+  const rows = buildRecommendationDiff(form, {
+    cargo_entry_method: "TOTAL_WEIGHT",
+    entry_quantity: 15,
+    entry_unit_weight_kg: 500,
+    units_per_entry: 1,
+  });
+  const quantityRow = rows.find((r) => r.field === "entry_quantity");
+  assert.ok(quantityRow, "entry_quantity row should exist");
+  assert.equal(quantityRow.selectable, false);
+  assert.equal(
+    quantityRow.unselectableReason,
+    "No combinable con carga a granel (TOTAL_WEIGHT).",
+  );
+  const methodRow = rows.find((r) => r.field === "cargo_entry_method");
+  assert.ok(methodRow, "cargo_entry_method row should exist");
+  assert.equal(methodRow.selectable, true);
+});
