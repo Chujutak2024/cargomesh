@@ -4,11 +4,11 @@ import test from "node:test";
 
 import { loginCopy } from "./login-copy";
 
-test("keeps Spanish as the active copy and English ready for a future locale switch", () => {
+test("keeps equivalent Spanish and English one-click demo copy", () => {
   assert.equal(loginCopy.es.form.title, "Bienvenido a CargoMesh");
   assert.equal(loginCopy.en.form.title, "Welcome to CargoMesh");
-  assert.equal(loginCopy.es.form.emailLabel, "Correo electrónico");
-  assert.equal(loginCopy.en.form.emailLabel, "Email address");
+  assert.equal(loginCopy.es.form.submit, "Entrar a CargoMesh");
+  assert.equal(loginCopy.en.form.submit, "Enter CargoMesh");
 });
 
 test("provides the same copy keys in every supported locale", () => {
@@ -39,4 +39,7 @@ test("passes locale-selected login copy into the client form and removes redunda
   assert.doesNotMatch(componentSource, />Disponible</);
   assert.doesNotMatch(componentSource, /Autenticación empresarial/);
   assert.doesNotMatch(componentSource, /Supabase Auth/);
+  assert.doesNotMatch(componentSource, /type="password"/);
+  assert.doesNotMatch(componentSource, /name="email"/);
+  assert.match(componentSource, /startDemoSession/);
 });

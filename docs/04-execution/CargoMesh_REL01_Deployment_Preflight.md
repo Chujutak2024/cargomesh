@@ -1,19 +1,19 @@
 # CargoMesh REL-01 — Deployment preflight
 
-> Status: preparatory work only. `INT-03` is integrated in `main`; `REL-01` and `G4` remain open until the public Golden Flow passes.
+> Status: production release verified. The public same-origin demo and the external-provider contract are documented separately so the evidence does not imply independently hosted carrier partners.
 
-## 1. Release blockers visible on 2026-08-31
+## 1. Release status verified on 2026-09-03
 
-| Check | Current state | Required action |
+| Check | Current state | Ongoing rule |
 |---|---|---|
-| Repository visibility | **Blocked:** GitHub reports `PRIVATE` | Project owner changes it to `PUBLIC` only after the final secret scan |
-| Open-source license | Prepared in this branch: MIT | Confirm GitHub detects it after integration |
-| INT-03 | **Complete:** integrated and verified with its replay, recovery and cleanup evidence | Preserve the evidence for the final release package |
-| Public application URL | Pending | Configure the hosting project and production variables |
-| Supabase production project | Pending confirmation | Link one controlled project and apply versioned migrations once |
-| Git history secret scan | No hosted credential detected; two standard local `supabase-demo` tokens exist in old `.env.example` revisions | Enable GitHub secret scanning after making the repository public |
-
-Changing repository visibility remains an owner decision. The preflight never performs it.
+| Repository visibility | **Complete:** public repository | Keep secret scanning enabled |
+| Open-source license | **Complete:** MIT license detected in the repository | Preserve the license in release branches |
+| INT-03 | **Complete:** replay, rejection/recovery and cleanup verified | Preserve the sanitized evidence |
+| Public application URL | **Complete:** `https://cargomesh.vercel.app` | Use this exact origin in public evidence |
+| Supabase production project | **Complete:** hosted project configured with RLS and versioned migrations | Never apply unreviewed Dashboard schema edits |
+| WebMCP public UAT | **Complete for the CargoMesh same-origin demo:** five provider tools, Golden Flow, booking, replay, recovery and cleanup recorded | Do not describe same-origin demo providers as independently hosted partners |
+| External-origin readiness | **Contract/harness verified; independent public carrier origin not claimed** | Run a separate public cross-origin UAT when a registered external provider is deployed |
+| Git history and bundle scan | No hosted privileged credential detected | Repeat before every public release |
 
 ## 2. Recommended deployment shape
 
@@ -38,6 +38,8 @@ Do not promote a preview URL to the final demo URL. WebMCP `exposedTo`, Supabase
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser + server | Supabase publishable key or legacy anon key; never a secret/service-role key |
 | `NEXT_PUBLIC_CARGOMESH_TOOL_CALLER_ORIGINS` | Browser bundle | Comma-separated exact HTTPS origins; no wildcard, path, query or credentials |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only | Hosting secret; never prefix with `NEXT_PUBLIC_` |
+| `CARGOMESH_DEMO_LOGIN_EMAIL` | Server only | Hosted demo identity used only by the one-click login route |
+| `CARGOMESH_DEMO_LOGIN_PASSWORD` | Server only | Rotatable hosted demo password; never send it to the browser or reuse the local seed password |
 | `CARGOMESH_RELEASE_URL` | Operator shell only | Used by release scripts; exact public HTTPS origin |
 
 Store production values in the hosting platform. Never commit `.env.local`, service-role keys, database passwords or Supabase access tokens.
@@ -76,17 +78,19 @@ pnpm release:smoke
 
 `release:smoke` checks the landing page, login and a seeded provider page over the public URL. It does not replace the browser/WebMCP E2E.
 
-### Latest local verification
+### Latest verification baseline
 
-The release branch was verified against the current `main` base with:
+The integrated release baseline was verified with:
 
-- 94/94 TypeScript unit and integration tests;
+- 238/238 release tests;
 - `pnpm typecheck` and `pnpm build`;
-- 120/120 pgTAP tests;
+- 147/147 pgTAP tests after a local-only reset;
 - `supabase db lint --local` with no error findings;
-- `release:preflight` 15/15 using non-sensitive placeholder values only.
+- `release:preflight` 17/17, including private demo-login configuration and bundle non-exposure;
+- 34 generated Next.js routes;
+- public HTTP checks for the three canonical provider pages and their five registered tools.
 
-This is local evidence, not production evidence. The public smoke test and browser WebMCP flow remain required for `REL-01`.
+The canonical public URL is `https://cargomesh.vercel.app`. Sanitized browser evidence is recorded in [`REL02_Public_WebMCP_UAT_Evidence.md`](./REL02_Public_WebMCP_UAT_Evidence.md). Video recording and Devpost submission are intentionally handled as a later, separate activity.
 
 ## 6. Gate G4 evidence package
 
@@ -103,4 +107,4 @@ With INT-03 closed, retain sanitized evidence for:
 9. public repository and detected license;
 10. reset followed by a second successful run.
 
-Only after all ten items pass may C mark `REL-01` and `G4` complete.
+Items 1–10 have production or reproducible local evidence. Any new deployment SHA must repeat the automated preflight, public smoke and clean-browser WebMCP checks before replacing the verified release baseline.

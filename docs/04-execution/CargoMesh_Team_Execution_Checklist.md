@@ -1,10 +1,18 @@
 # CargoMesh — Team Execution Checklist
 
-> **Versión:** 1.1.0
+> **Version:** 1.5.0
 > **Contrato técnico:** v5.6.0  
 > **Duración:** 4 días  
 > **Equipo:** 3 integrantes trabajando en entornos e IAs independientes  
 > **Fuente arquitectónica:** [`ADR-001_Dynamic_Provider_Registry.md`](../00-master/ADR-001_Dynamic_Provider_Registry.md)
+
+## Current release snapshot — 2026-09-03
+
+The core product is integrated: authenticated intake and drafts, the separate read-only recommendation tool, dynamic `0..N` provider discovery, five provider tools, idempotent Result/Booking Bridges, BALANCED ranking, assisted booking, recovery, tracking and Judge evidence. English is the default UI locale and the ES/EN switch changes presentation copy only.
+
+The temporary absence plan and original four-day sequencing below are retained only as historical context. They no longer define active blockers. Durable contracts live in the ADRs and source code; the current release state lives in `main` and the REL-01 evidence.
+
+Honesty boundary: Andes, Inca and Pacific are live providers in the demo but currently use CargoMesh same-origin Vercel routes. The external-origin contract and harness are supported; independently hosted carrier partners are not claimed without a separate public UAT.
 
 ## 1. Objetivo compartido
 
@@ -98,9 +106,9 @@ supabase/**
 
 Los archivos compartidos (`package.json`, layouts raíz, tipos compartidos y variables de entorno) requieren aviso en el chat del equipo antes de modificarse.
 
-### 3.1 Ajuste temporal por disponibilidad de B — 2026-08-30
+### 3.1 Historical availability adjustment — 2026-08-30 (closed)
 
-El Integrante B no está disponible hoy y puede regresar mañana. Este ajuste cambia únicamente la secuencia inmediata; no transfiere ownership ni autoriza a A o C a editar archivos de B.
+This temporary sequencing note is closed. It is retained to explain the earlier split of `INT-02A` and `INT-02B`; it does not represent current team availability or release status.
 
 Reglas temporales:
 
@@ -347,7 +355,7 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 es
   - **Aceptación:** mismo `tool_call_id` + mismo payload deduplica; mismo ID + payload diferente produce conflicto; cero ofertas produce `NO_MATCH`; una o N ofertas producen resultado explicable; los scores del Golden Flow se reproducen desde datos.
   - **Verificar:** tests unitarios del scorer, prueba de doble ingestión, conflicto idempotente, `db lint`, pgTAP y revisión RLS.
 
-- [ ] **INT-02A. Integrar búsqueda completa y ranking headless**
+- [x] **INT-02A. Integrar búsqueda completa y ranking headless**
   - **Owner:** A + C; coordina C.
   - **Depende de:** `A-03` y `C-02`. Antes de integrar A-03, C solo prepara diseño, harness, contratos de consumo y pruebas que no dependan de su implementación.
   - **Qué construir:** un flujo server-side reproducible `FreightRequest → discovery → CandidateProvider[0..N] → matchingServiceId → provider exacto → tools WebMCP → ProviderToolEnvelope → record_provider_result → CarrierOffer[0..N] → BALANCED → FreightRanking`, sin UI de B.
@@ -356,21 +364,21 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 es
 
   En `INT-02A`, *headless* significa «sin la interfaz CargoMesh propiedad de B». La ejecución provider continúa ocurriendo mediante WebMCP en un navegador/runner compatible; C no debe sustituir `document.modelContext` por una llamada directa a la implementación interna de la tool ni fabricar el resultado desde el servidor.
 
-- [ ] **B-02. Construir intake y dispatch dinámico**
+- [x] **B-02. Construir intake y dispatch dinámico**
   - **Owner:** B. La ausencia temporal no cambia este ownership.
   - **Depende de:** `B-01` y tipos compartidos; la conexión con datos reales consume el ViewModel estable de `INT-02A`.
   - **Qué construir:** formulario prellenado editable y `/dispatch/[id]` con estados visuales `loading/EVALUATING`, `error`, `OPTIONS_READY` y `NO_MATCH`.
   - **Aceptación:** renderiza `0..N` candidatos/ofertas; no asume tres cards; distingue candidato consultado de oferta persistida; no requiere que A o C reescriban su interfaz.
   - **Verificar:** fixtures UI con cero, una, tres y cuatro ofertas; luego conectar los ejemplos JSON entregados por `INT-02A`.
 
-- [ ] **INT-02B. Integrar visualmente el ranking headless**
+- [x] **INT-02B. Integrar visualmente el ranking headless**
   - **Owner:** B; apoyan A + C sin asumir ownership visual.
   - **Depende de:** `B-02` e `INT-02A`.
   - **Qué construir:** consumir el ViewModel estable y conectar intake/dispatch con los estados y ofertas ordenadas del flujo headless.
   - **Aceptación:** `loading`, `error`, `NO_MATCH` y `success` se distinguen visualmente; las cards muestran `0..N` ofertas persistidas y ordenadas; ningún componente contiene reglas por carrier.
   - **Verificar:** recorrido visual desktop/móvil con 0, 1, 3 y 4 ofertas, usando el script o endpoint de `INT-02A`.
 
-- [ ] **INT-02. Cerrar búsqueda completa, ranking y presentación**
+- [x] **INT-02. Cerrar búsqueda completa, ranking y presentación**
   - **Owner:** A + B + C.
   - **Depende de:** `INT-02A` e `INT-02B`.
   - **Qué construir:** validar como un solo corte la ejecución headless y su presentación visual, sin duplicar lógica server-side en componentes.
@@ -379,28 +387,28 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 es
 
 ### Día 3 — Booking, evidencia y recuperación
 
-- [ ] **A-04. Implementar tools provider de booking**
+- [x] **A-04. Implementar tools provider de booking**
   - **Owner:** A.
   - **Depende de:** `A-03`.
   - **Qué construir:** `book_freight`, `get_provider_booking_status`, idempotencia provider-side y fixture controls `ACCEPT`, `REJECT`, `NO_RESPONSE`.
   - **Aceptación:** `book_freight` usa `readOnlyHint: false`; repetir la misma key no duplica booking; los controles solo cambian la siguiente respuesta provider.
   - **Verificar:** ejecutar booking dos veces con la misma key y comprobar la misma referencia; probar aceptación y rechazo.
 
-- [ ] **B-03. Completar selección, booking UI y Judge Drawer**
+- [x] **B-03. Completar selección, booking UI y Judge Drawer**
   - **Owner:** B.
   - **Depende de:** `B-02` e `INT-02B`.
   - **Qué construir:** selección humana, espera de confirmación, resultado de booking y drawer de eventos JSON.
   - **Aceptación:** recomendar no selecciona automáticamente; el drawer muestra navegación, tool, persistencia y decisión; no contiene botones que escriban directamente estados comerciales.
   - **Verificar:** recorrido manual desde `OPTIONS_READY` hasta confirmación/rechazo.
 
-- [ ] **C-03. Persistir booking, reset y recuperación mínima**
+- [x] **C-03. Persistir booking, reset y recuperación mínima**
   - **Owner:** C.
   - **Depende de:** `C-02`, contrato de `A-04`.
   - **Qué construir:** booking interno, provider reference, eventos deduplicados, reset server-side y recuperación sobre carriers restantes.
   - **Aceptación:** selección, request de booking y confirmación son estados separados; reset vacía únicamente datos runtime de demo; rechazo no se convierte en confirmación.
   - **Verificar:** test happy path, test reject y dos ejecuciones consecutivas del reset.
 
-- [ ] **INT-03. Ejecutar Golden Flow y contingencia E2E**
+- [x] **INT-03. Ejecutar Golden Flow y contingencia E2E**
   - **Owner:** A + B + C.
   - **Depende de:** `A-04`, `B-03`, `C-03`.
   - **Qué construir:** flujo feliz completo y un flujo de rechazo recuperable.
@@ -409,7 +417,7 @@ Estado actual: `SH-00`, `SH-01`, A-01, A-02, B-01, C-01, `INT-01 / G1` y C-02 es
 
 ### Día 4 — Estabilización y entrega
 
-- [ ] **REL-01. Congelar código, desplegar y probar en entorno limpio**
+- [x] **REL-01. Congelar código, desplegar y probar en entorno limpio**
   - **Owner:** C despliega; A verifica WebMCP; B verifica UX.
   - **Depende de:** `INT-03`.
   - **Qué construir:** despliegue público, configuración segura, datos demo reproducibles y smoke test.
@@ -704,8 +712,8 @@ Para subsanar las observaciones de las pantallas auditadas en `/freight-request/
 
 | Task ID | Componente | Descripción y Requerimientos | Owner | Estado |
 |---|---|---|:---:|:---:|
-| **`B-D1-UX1`** | Intake: Categorías & UUIDs | Reemplazar inputs de texto libre por `<select>` de categorías amigables (*Maquinaria*, *General*, *Agrícola*, *Construcción*). Ocultar UUIDs y código `MACHINERY` de la vista del usuario. | **B** | `todo` |
-| **`B-D1-UX2`** | Intake: Jerarquía Geográfica | Reemplazar texto libre `PE`/`CL` por selectores estructurados: `País` ➔ `Departamento/Región` ➔ `Ciudad` ➔ `Dirección`. Normalizar entradas para `candidate-matcher.ts`. | **B** | `todo` |
-| **`B-D1-UX3`** | Intake: Programación Humana | Reemplazar textos ISO crudos bloqueados por selector *Inmediato (ASAP)* / *Programado (SCHEDULED)*, inputs `<input type="datetime-local">` y badge explicativo de *Estrategia BALANCED*. | **B** | `todo` |
-| **`B-D1-UX4`** | Dashboard: Conexión Real & KPIs | Conectar `DashboardPage` a Supabase server-side (`createServerSupabaseClient`), eliminando definitivamente `freightRequestsFixture` y `dashboardSummaryFixture`. Mostrar estado vacío real (`<PackageOpen />`) y reducir la altura de las tarjetas de métricas (*KPI Ribbon* compacto sin andenes/vehículos falsos). | **B** | `todo` |
+| **`B-D1-UX1`** | Intake: Categorías & UUIDs | Reemplazar inputs de texto libre por `<select>` de categorías amigables (*Maquinaria*, *General*, *Agrícola*, *Construcción*). Ocultar UUIDs y código `MACHINERY` de la vista del usuario. | **B** | `done` |
+| **`B-D1-UX2`** | Intake: Jerarquía Geográfica | Reemplazar texto libre `PE`/`CL` por selectores estructurados: `País` ➔ `Departamento/Región` ➔ `Ciudad` ➔ `Dirección`. Normalizar entradas para `candidate-matcher.ts`. | **B** | `done` |
+| **`B-D1-UX3`** | Intake: Programación Humana | Reemplazar textos ISO crudos bloqueados por selector *Inmediato (ASAP)* / *Programado (SCHEDULED)*, inputs `<input type="datetime-local">` y badge explicativo de *Estrategia BALANCED*. | **B** | `done` |
+| **`B-D1-UX4`** | Dashboard: Conexión Real & KPIs | Conectar `DashboardPage` a Supabase server-side (`createServerSupabaseClient`), eliminando definitivamente `freightRequestsFixture` y `dashboardSummaryFixture`. Mostrar estado vacío real (`<PackageOpen />`) y reducir la altura de las tarjetas de métricas (*KPI Ribbon* compacto sin andenes/vehículos falsos). | **B** | `done` |
 | **`B-D1-MAP`** | Seguimiento: Mapa Leaflet | Integrar mapa interactivo ligero (Leaflet / OpenStreetMap) centrado en el corredor Perú ➔ Chile (Lima, Callao, Arequipa, Tacna, Arica, Santiago) con marcadores de origen/destino y trazado de ruta, vinculado a los eventos reales de tracking. | **B** | `done` |

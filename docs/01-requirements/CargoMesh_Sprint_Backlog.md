@@ -1,9 +1,22 @@
 ﻿# CargoMesh — Backlog de Producto y Cronograma del Hackathon (MVP Scope)
 
-> **Proyecto:** CargoMesh (WebMCP Challenge 2026)  
-> **Versión:** 1.4.0 (Provider Registry Dinámico + Golden Flow Demo)
-> **Fecha límite de entrega:** 02 de Septiembre de 2026  
-> **Catálogo de Requisitos Asociado:** `docs/01-requirements/CargoMesh_Catalogo_Requisitos.md`
+> **Project:** CargoMesh (WebMCP Challenge 2026)
+> **Version:** 1.5.0 (dynamic provider registry + verified Golden Flow)
+> **Release snapshot:** 2026-09-03
+> **Requirements catalog:** [`CargoMesh_Catalogo_Requisitos.md`](./CargoMesh_Catalogo_Requisitos.md)
+
+## Current release status
+
+The `CM-01` through `CM-14` MVP cuts below are integrated and verified. The calendar and detailed stories remain as a historical execution record, not an active to-do list. Current implementation truth lives in `main`, the ADRs and the release evidence.
+
+- Public demo: `https://cargomesh.vercel.app`
+- Provider discovery and orchestration: data-driven `0..N`
+- Demo providers: Andes, Inca and Pacific are live same-origin CargoMesh routes, not independently hosted partners
+- Provider tool set: exactly five canonical provider tools
+- Intake recommendation tool: separate read-only WebMCP tool; it is not a sixth provider tool
+- Decision engine: BALANCED `25/25/20/10/10/10`
+- Tracking: planned corridor before booking and persisted provider events after booking; no invented live GPS
+- Release baseline: typecheck, build, release tests, local pgTAP, lint, public smoke and WebMCP UAT verified
 
 ---
 
@@ -36,7 +49,7 @@
 
 Para no dispersar esfuerzos en pantallas innecesarias, el alcance se limita estrictamente a:
 
-1. **Autenticación:** Login email/password con Supabase Auth. El entorno local usa exclusivamente el fixture `demo.operator@cargomesh.test` con membresía `SUPERVISOR / ACTIVE`; la cuenta hospedada se provisiona por separado y sus credenciales no se almacenan en el repositorio ni se muestran en la UI.
+1. **Authentication:** One-click demo access creates a real Supabase Auth session server-side and still requires an `ACTIVE` membership. Hosted credentials are private deployment variables and never reach the browser.
 2. **Provider Registry + plantilla (`/providers/[carrierSlug]`):** Los candidatos se consultan dinámicamente desde `carriers` y `carrier_services`. La demo aloja páginas livianas para los tres registros seed reutilizando `mockups/provider_*.html`, pero la lógica opera sobre `0..N` carriers y también admite un `provider_url` externo. No son sistemas de gestión interna de flotas.
 3. **Solicitud de Carga:** El formulario Stepper viene pre-llenado con los datos de **FR-1042** (10 pallets $\times$ 800 kg = 8,000 kg, 18 m³, Callao $\rightarrow$ Santiago) para avanzar la demo rápidamente.
 4. **Orquestación & Scoring:** Agente que recorre todos los candidatos descubiertos, ejecuta sus tools, aplica BALANCED sobre las ofertas elegibles y guarda la decisión inmutable.
@@ -66,20 +79,20 @@ Para no dispersar esfuerzos en pantallas innecesarias, el alcance se limita estr
 
 | Clave | Actividad (Alcance Demo) | Épica Padre | Asignado a | Prioridad | Estado |
 |:---:|---|---|:---:|:---:|:---:|
-| `CM-01` | **Login email/password & Supabase SSR Client:** Sesión real con usuario autorizado y membresía `ACTIVE`, sin identidad ficticia en cliente. | ⚡ `EP-1` Auth & Shell | *Fullstack Lead* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-02` | **Layout B2B & Dashboard Base:** Sidebar y tabla de solicitudes mostrando `FR-1042` en estado `PENDING`. | ⚡ `EP-1` Auth & Shell | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-03` | **Stepper FR-1042 (5 Pasos):** Formulario pre-llenado con 10 pallets × 800 kg = 8,000 kg y 18 m³. | ⚡ `EP-2` Intake Carga | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-04` | **Validación & Normalización:** Cálculo automático de peso/volumen total y pre-check de integridad. | ⚡ `EP-2` Intake Carga | *Backend Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-05` | **Provider Registry + plantilla dinámica:** Resolver candidatos desde Supabase y montar `/providers/[carrierSlug]`; Andes, Inca y Pacific son registros seed. | ⚡ `EP-3` WebMCP Tools | *Frontend / Data* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-06` | **Registro WebMCP Tools genérico:** Exponer `quote_freight` y `book_freight` desde la configuración del carrier actual, sin ramas por nombre. | ⚡ `EP-3` WebMCP Tools | *Fullstack Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-07` | **Browser Agent & Result Bridge:** Descubrir `CandidateProvider[0..N]`, navegar cada `provider_url` con WebMCP real y persistir resultados idempotentes. | ⚡ `EP-4` Orquestación & AI | *WebMCP / Data Lead* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-08` | **Decision Engine BALANCED genérico:** Rankear cualquier colección de ofertas elegibles; verificar 89/84/72 solo como caso Golden Flow. | ⚡ `EP-4` Orquestación & AI | *Backend / Data Lead* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-09` | **Vista `/dispatch` Reactiva 0..N:** Mostrar progreso y cards según candidatos/resultados runtime, incluida la ausencia de opciones. | ⚡ `EP-4` Orquestación & AI | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-10` | **Selección & Booking Request:** Clic en "Seleccionar Andes" y paso a espera con cronómetro de 15 min. | ⚡ `EP-5` Booking & Recovery | *Fullstack Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-11` | **Timeline de Tracking:** Vista `/tracking` con hito aduanero de frontera Santa Rosa/Chacalluta y placas. | ⚡ `EP-5` Booking & Recovery | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-12` | **Modal de Recovery:** Flujo de contingencia si Andes rechaza $\rightarrow$ sugerir Inca Logistics en 1 clic. | ⚡ `EP-5` Booking & Recovery | *Backend / AI Lead* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-13` | **Judge Activity Drawer:** Overlay flotante con streaming de eventos, latencias y visor JSON para jueces. | ⚡ `EP-6` Jueces & Demo | *Frontend Dev* | 🔴 Alta | `[ ] Pendiente` |
-| `CM-14` | **Controles de Fixture & Reset:** Switch `ACCEPT/REJECT` y botón para reiniciar la demo en 1 segundo. | ⚡ `EP-6` Jueces & Demo | *Backend Dev* | 🔴 Alta | `[ ] Pendiente` |
+| `CM-01` | **Supabase Auth & SSR Client:** Real authenticated session with `ACTIVE` membership; one-click demo access uses server-managed credentials. | ⚡ `EP-1` Auth & Shell | *Fullstack Lead* | 🔴 High | `[x] Integrated` |
+| `CM-02` | **B2B shell & real dashboard:** Sidebar, persisted request metrics and honest empty state. | ⚡ `EP-1` Auth & Shell | *Frontend Dev* | 🔴 High | `[x] Integrated` |
+| `CM-03` | **Five-step intake:** Existing request loading plus clean, server-created drafts; FR-1042 remains a reproducible demo case. | ⚡ `EP-2` Freight Intake | *Frontend Dev* | 🔴 High | `[x] Integrated` |
+| `CM-04` | **Validation & normalization:** Server canonical totals, optimistic concurrency and persisted handling requirements. | ⚡ `EP-2` Freight Intake | *Backend Dev* | 🔴 High | `[x] Integrated` |
+| `CM-05` | **Dynamic provider registry:** Resolve candidates from Supabase and serve `/providers/[carrierSlug]` with an exact `matchingServiceId`. | ⚡ `EP-3` WebMCP Tools | *Frontend / Data* | 🔴 High | `[x] Integrated` |
+| `CM-06` | **Five generic provider tools:** coverage, capacity, quote, booking and booking status with no carrier-name branching. | ⚡ `EP-3` WebMCP Tools | *Fullstack Dev* | 🔴 High | `[x] Integrated` |
+| `CM-07` | **Browser agent & Result Bridge:** Native `document.modelContext` execution across `CandidateProvider[0..N]` with idempotent persistence and cleanup. | ⚡ `EP-4` Orchestration & AI | *WebMCP / Data Lead* | 🔴 High | `[x] Integrated` |
+| `CM-08` | **Generic BALANCED engine:** Rank any eligible offer collection; 89/84/72 remains the Golden Flow regression case. | ⚡ `EP-4` Orchestration & AI | *Backend / Data Lead* | 🔴 High | `[x] Integrated` |
+| `CM-09` | **Reactive dispatch `0..N`:** Render runtime candidates/results, explanations and the no-match state. | ⚡ `EP-4` Orchestration & AI | *Frontend Dev* | 🔴 High | `[x] Integrated` |
+| `CM-10` | **Assisted selection & booking:** Human selection, server authorization and a 15-minute provider deadline. | ⚡ `EP-5` Booking & Recovery | *Fullstack Dev* | 🔴 High | `[x] Integrated` |
+| `CM-11` | **Tracking timeline:** Planned route while pending; persisted provider events after confirmation, without invented GPS. | ⚡ `EP-5` Booking & Recovery | *Frontend Dev* | 🔴 High | `[x] Integrated` |
+| `CM-12` | **Recovery:** A rejected booking exposes only authorized recovery offers and can confirm an alternative booking. | ⚡ `EP-5` Booking & Recovery | *Backend / AI Lead* | 🔴 High | `[x] Integrated` |
+| `CM-13` | **Judge Activity Drawer:** Readable persisted event, tool, timing, origin mode and cleanup evidence. | ⚡ `EP-6` Judges & Demo | *Frontend Dev* | 🔴 High | `[x] Integrated` |
+| `CM-14` | **Provider fixture controls & server reset:** Deterministic `ACCEPT/REJECT` and authorized demo reset. | ⚡ `EP-6` Judges & Demo | *Backend Dev* | 🔴 High | `[x] Integrated` |
 
 ---
 
@@ -89,7 +102,7 @@ Para no dispersar esfuerzos en pantallas innecesarias, el alcance se limita estr
 * **Como** presentador de la demo,
 * **Quiero** iniciar sesión con un solo clic en "Acceso Demo ACME Mining",
 * **Para** ingresar inmediatamente a la plataforma sin perder tiempo escribiendo contraseñas.
-* **Alcance estricto:** Botón en `/login` que llama a `signInWithPassword` con el usuario ya sembrado y redirige al dashboard.
+* **Alcance estricto:** El botón de `/login` llama a `/api/auth/demo-login`; el Route Handler usa credenciales privadas, valida membresía `ACTIVE`, escribe las cookies de Supabase SSR y redirige al dashboard. No hay credenciales hardcodeadas ni inputs de identidad en el cliente.
 
 ---
 
