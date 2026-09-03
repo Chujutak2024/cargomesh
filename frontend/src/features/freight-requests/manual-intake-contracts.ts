@@ -131,7 +131,7 @@ function documentCodes(value: unknown): string[] {
   return [...new Set(value.map((item) => item.trim()))];
 }
 
-function parseFields(raw: unknown): ManualFreightRequestIntakeFields {
+export function parseManualFreightRequestIntakeFields(raw: unknown): ManualFreightRequestIntakeFields {
   if (!isRecord(raw) || Object.keys(raw).length === 0) {
     throw invalidInput("fields debe incluir al menos un cambio manual.");
   }
@@ -199,7 +199,7 @@ export function parseManualFreightRequestIntakeInput(raw: unknown): ManualFreigh
   if (typeof raw.draftVersion !== "number" || !Number.isInteger(raw.draftVersion) || raw.draftVersion < 1) {
     throw invalidInput("draftVersion debe ser un entero mayor o igual a 1.");
   }
-  return { draftVersion: raw.draftVersion, fields: parseFields(raw.fields) };
+  return { draftVersion: raw.draftVersion, fields: parseManualFreightRequestIntakeFields(raw.fields) };
 }
 
 export function isManualIntakeError(error: unknown): error is RecommendationDraftError {
