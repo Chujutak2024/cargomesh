@@ -242,6 +242,20 @@ export function createBookFreightTool(
       };
       state.referenceByIdempotencyKey[input.idempotency_key] = providerReference;
       state.referenceByOffer[input.provider_offer_reference] = providerReference;
+
+      if (typeof window !== "undefined" && window.sessionStorage) {
+        try {
+          const defaultControl = window.sessionStorage.getItem(
+            `cargomesh:provider-fixture:default-response:${serviceCode}`,
+          );
+          if (defaultControl === "ACCEPT" || defaultControl === "REJECT" || defaultControl === "NO_RESPONSE") {
+            state.nextControlByReference[providerReference] = defaultControl;
+          }
+        } catch {
+          // ignore sessionStorage access errors in sandboxed environments
+        }
+      }
+
       storage.write(serviceCode, state);
 
       return {
