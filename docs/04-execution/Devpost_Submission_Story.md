@@ -145,11 +145,13 @@ Cross-origin access requires exact origin permissions, an immutable discovery sn
 
 Carrier profiles and provider responses used in the demo are deterministic synthetic fixtures. The WebMCP registration and execution, navigation and cleanup, Result Bridge, database persistence, BALANCED evaluation, explicit selection, booking lifecycle, replay handling, and recovery flow are implemented application behavior.
 
-The public browser-agent UAT passed against [https://cargomesh.vercel.app](https://cargomesh.vercel.app) at `origin/main@b1e3457`. Andes, Inca, and Pacific each exposed the same five provider tools through the native `document.modelContext` surface, the exact discovery `serviceId` remained in every provider URL, a real read-only `executeTool()` call returned a valid provider envelope, and leaving the provider document removed all five tools. The current registered demo provider URLs are paths on the CargoMesh deployment; we do not misrepresent that result as proof of an independently hosted provider origin.
+The public browser-agent UAT passed against [https://cargomesh.vercel.app](https://cargomesh.vercel.app) at `origin/main@76d03ef`. Andes, Inca, and Pacific each exposed the same five provider tools through the native `document.modelContext` surface, the exact discovery `serviceId` remained in every provider URL, real `executeTool()` calls produced nine persisted coverage/capacity/quote events, and leaving each provider document removed all five tools. The fresh run produced the deterministic `89 / 84 / 72` ranking with confidence `88`, followed by an explicit Andes selection and a confirmed booking. The current registered demo provider URLs are paths on the CargoMesh deployment; we do not misrepresent that result as proof of an independently hosted provider origin.
 
 ### Public WebMCP UAT evidence
 
-Validated on 2026-09-02 from an external WebMCP-enabled Chrome session:
+Validated on 2026-09-02 from an external WebMCP-enabled Chrome session. Golden
+Flow correlation: run `2a8c3009-10ba-4492-81d9-2ba944a0fed7`, booking
+`ae760cbb-eafa-4c55-ab5e-0dfffb42a127`.
 
 | Provider | Exact public provider document | Native result |
 |---|---|---|
@@ -157,7 +159,7 @@ Validated on 2026-09-02 from an external WebMCP-enabled Chrome session:
 | Inca Logistics | `/providers/inca?serviceId=30000000-0000-0000-0000-000000000003` | Five tools discovered through `document.modelContext.getTools()`. |
 | Pacific Cargo | `/providers/pacific?serviceId=30000000-0000-0000-0000-000000000002` | Five tools discovered through `document.modelContext.getTools()`. |
 
-The five discovered tools were `check_service_coverage`, `check_capacity`, `quote_freight`, `book_freight`, and `get_provider_booking_status`. After full-document navigation to `https://cargomesh.vercel.app/`, `document.modelContext.getTools()` returned an empty list, proving provider cleanup. Sanitized captures are stored for the [FR-1042 intake](../03-ux-ui/screenshots/01-intake-fr1042.png) and [public provider tool surface](../03-ux-ui/screenshots/02-provider-tools-production.png). The complete result and the current Golden Flow blocker are recorded in the [REL-02 public UAT evidence](./REL02_Public_WebMCP_UAT_Evidence.md).
+The five discovered tools were `check_service_coverage`, `check_capacity`, `quote_freight`, `book_freight`, and `get_provider_booking_status`. After full-document navigation to `https://cargomesh.vercel.app/`, the five provider tools were absent, proving provider cleanup. Sanitized captures cover the [FR-1042 intake](../03-ux-ui/screenshots/01-intake-fr1042.png), [public provider tool surface](../03-ux-ui/screenshots/02-provider-tools-production.png), [Judge Drawer trace](../03-ux-ui/screenshots/03-judge-drawer-webmcp-trace.png), [BALANCED ranking](../03-ux-ui/screenshots/04-balanced-ranking.png), [confirmed booking](../03-ux-ui/screenshots/05-confirmed-booking.png), and [cleanup](../03-ux-ui/screenshots/07-provider-cleanup.png). The complete correlation and explicit recovery limitation are recorded in the [REL-02 public UAT evidence](./REL02_Public_WebMCP_UAT_Evidence.md).
 
 ## Public links
 
@@ -283,9 +285,9 @@ Target duration: **2:55–3:00**. The narration below is approximately 385 words
 
 ## Finalization placeholders
 
-- [x] Complete the public browser-agent WebMCP UAT at [https://cargomesh.vercel.app](https://cargomesh.vercel.app) on `origin/main@b1e3457` and attach sanitized provider evidence.
+- [x] Complete the public browser-agent WebMCP UAT at [https://cargomesh.vercel.app](https://cargomesh.vercel.app) on `origin/main@76d03ef` and attach sanitized provider evidence.
 - [ ] Replace `<FINAL_VIDEO_URL>` after the edited video is uploaded.
 - [ ] Confirm the repository is public and the license is detected.
-- [ ] Add final screenshots and their repository paths.
+- [ ] Add the remaining recovery screenshot; intake, tools, trace, ranking, confirmed booking, and cleanup are captured.
 - [ ] Map this story to the live official Devpost fields after the project is initialized with the hackathon workflow.
 - [ ] Perform one final secret scan before making or confirming any public artifact.

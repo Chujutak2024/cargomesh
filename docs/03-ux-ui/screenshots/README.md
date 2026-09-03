@@ -40,11 +40,11 @@ Markdown in the root README or Devpost draft.
 ```markdown
 ![FR-1042 intake: Callao to Santiago](./01-intake-fr1042.png)
 ![Five provider tools visible through WebMCP](./02-provider-tools-production.png)
-<!-- ![Judge Drawer WebMCP execution trace](./03-judge-drawer-webmcp-trace.png) -->
-<!-- ![BALANCED ranking: Andes 89, Inca 84, Pacific 72](./04-balanced-ranking.png) -->
-<!-- ![Confirmed provider booking and event timeline](./05-confirmed-booking.png) -->
+![Judge Drawer WebMCP execution trace](./03-judge-drawer-webmcp-trace.png)
+![BALANCED ranking: Andes 89, Inca 84, Pacific 72](./04-balanced-ranking.png)
+![Confirmed provider booking and event timeline](./05-confirmed-booking.png)
 <!-- ![Recovery from Andes rejection to Inca selection](./06-recovery-andes-to-inca.png) -->
-<!-- ![Provider tool cleanup after navigation](./07-provider-cleanup.png) -->
+![Provider tool cleanup after navigation](./07-provider-cleanup.png)
 ```
 
 ## Devpost-ready captions
@@ -66,7 +66,7 @@ Markdown in the root README or Devpost draft.
 
 ## Completion checklist
 
-- [ ] Capture all seven images from the final HTTPS deployment (intake and provider tools captures complete).
+- [ ] Capture all seven images from the final HTTPS deployment (six complete; recovery remains).
 - [ ] Verify every image against the exact deployed SHA.
 - [ ] Redact secrets and personal information.
 - [ ] Confirm that text remains readable after Devpost compression.

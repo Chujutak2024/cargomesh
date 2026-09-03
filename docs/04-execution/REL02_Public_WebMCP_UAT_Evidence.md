@@ -1,12 +1,12 @@
 # REL-02 Public WebMCP UAT Evidence
 
-Status: provider surface passed; Golden Flow evidence blocked
+Status: provider surface and Golden Flow passed; recovery capture pending
 
 Validation date: 2026-09-02 (America/Lima)
 
 Public URL: [https://cargomesh.vercel.app](https://cargomesh.vercel.app)
 
-Reported deployed revision: `origin/main@b1e3457`
+Reported deployed revision: `origin/main@76d03ef`
 
 Browser surface: external Google Chrome session with WebMCP enabled
 
@@ -62,23 +62,49 @@ five provider tools remained registered.
 
 - [FR-1042 intake](../03-ux-ui/screenshots/01-intake-fr1042.png)
 - [Five provider tools on the Andes production page](../03-ux-ui/screenshots/02-provider-tools-production.png)
+- [Judge Drawer WebMCP trace](../03-ux-ui/screenshots/03-judge-drawer-webmcp-trace.png)
+- [BALANCED ranking](../03-ux-ui/screenshots/04-balanced-ranking.png)
+- [Confirmed Andes booking](../03-ux-ui/screenshots/05-confirmed-booking.png)
+- [Provider cleanup](../03-ux-ui/screenshots/07-provider-cleanup.png)
 
-## Golden Flow blocker
+## Golden Flow result
 
-The authenticated ACME Mining session did not expose the persisted Golden Flow
-claimed by the production handoff:
+The authenticated ACME Mining supervisor executed a fresh FR-1042 run after the
+authorized server-side reset and transition to `PENDING`.
 
-- `/dispatch` displayed zero evaluations;
-- `GET /api/judge/evidence` returned HTTP `200` with `{ "events": [] }`;
-- FR-1042 loaded as draft version `35` with status `DRAFT`;
-- the review step displayed `Dispatch bloqueado`, so no new orchestration could
-  be started without first changing persisted application state.
+Correlation:
 
-For that reason, this run does **not** claim a current Judge Drawer trace,
-`89 / 84 / 72` ranking, confirmed booking, or recovery screenshot for
-`origin/main@b1e3457`. Those four evidence slots remain open until C reconciles
-the production runtime and authorizes a fresh run or provides the exact visible
-run correlation for the authenticated demo organization.
+- orchestration run: `2a8c3009-10ba-4492-81d9-2ba944a0fed7`;
+- booking: `ae760cbb-eafa-4c55-ab5e-0dfffb42a127`;
+- provider reference: `AND-BOOK-48133070`.
+
+The browser flow discovered three candidates and executed coverage, capacity,
+and quote for every provider. The Judge Drawer exposed nine persisted WebMCP
+events and ten navigation records, including the subsequent booking/status
+calls. Each navigation retained the exact `matchingServiceId`, listed the five
+provider tools, and ended with `cleanupToolNames: []`.
+
+The Result Bridge persisted three offers and one decision. Supabase read-only
+verification for the run returned:
+
+| Rank | Provider | Price | Transit | Reliability | Raw BALANCED score |
+|---:|---|---:|---:|---:|---:|
+| 1 | Andes Freight | USD 1,760 | 31 h | 96 | 89.2949 |
+| 2 | Inca Logistics | USD 1,920 | 29 h | 98 | 84.2031 |
+| 3 | Pacific Cargo | USD 1,590 | 60 h | 86 | 72.1667 |
+
+The decision confidence was `88`, the user explicitly selected Andes in
+`ASSISTED` mode, and `get_provider_booking_status` persisted both booking and
+provider status as `CONFIRMED`. No credential, cookie, token, authorization
+reference, anon key, or `service_role` value is included in the captures.
+
+## Recovery status
+
+The confirmed Golden Flow is preserved as evidence. The separate controlled
+`REJECT` → recovery run has not yet been executed in this evidence revision;
+it requires an authorized demo reset because that operation deletes the current
+runtime. It must use a fresh run and must not portray the confirmed booking as
+the same booking that rejected.
 
 ## Scope note
 
