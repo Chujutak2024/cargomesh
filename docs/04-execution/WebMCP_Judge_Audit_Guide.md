@@ -2,9 +2,15 @@
 
 Status: REL-02 technical evidence package  
 
-Runtime audited against: `origin/main@628ed4b`
+Runtime audited against: `origin/main@5a94821`; public read-only WebMCP
+revalidation completed on 2026-09-03.
 
 Audience: WebMCP Challenge judges, technical reviewers, and demo operators
+
+For a short, copy-paste-safe presentation sequence, use the
+[WebMCP demo console runbook](./WebMCP_Demo_Console_Runbook.md). It reads the
+current request identity, version, totals, and execution window from the
+authenticated server response instead of freezing them in presentation code.
 
 ## 1. What this guide proves
 
