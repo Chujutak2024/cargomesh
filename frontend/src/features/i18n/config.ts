@@ -5,7 +5,7 @@ export const SUPPORTED_LOCALES = ["es", "en"] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
 export function parseLocale(value: string | null | undefined): Locale {
-  return value === "en" ? "en" : "es";
+  return value === "es" ? "es" : "en";
 }
 
 export function localeTag(locale: Locale) {
