@@ -19,7 +19,7 @@
     "test:external-navigation": "tsx --test src/features/webmcp-runner/external-provider-navigation-adapter.test.ts",
     "test:freight-intent": "tsx --test src/features/freight-requests/execution-intent.test.ts",
     "test:freight-intake": "tsx --test src/features/freight-requests/intake.test.ts src/features/freight-requests/intake-ui-adapter.test.ts src/features/freight-requests/manual-intake.test.ts src/features/freight-ui/int02a-client.test.ts",
-    "test:dashboard": "tsx --test src/features/dashboard/dashboard-view-model.test.ts",
+    "test:dashboard": "tsx --test src/features/dashboard/dashboard-view-model.test.ts src/features/dashboard/dashboard-map.test.ts",
     "test:a04": "tsx --test src/features/providers/provider-query-tools.test.ts src/features/providers/provider-booking-tools.test.ts",
     "test:booking": "tsx --test src/features/booking/validation.test.ts src/features/booking/server-policy.test.ts src/features/booking/bridge-call-id.test.ts",
     "test:d1-recommendations": "tsx --test src/features/recommendations/recommendation-webmcp-runtime.test.ts src/features/recommendations/recommendation-draft-client.test.ts src/features/recommendations/recommendation-ui-policy.test.ts",

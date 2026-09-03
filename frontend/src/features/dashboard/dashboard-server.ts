@@ -8,6 +8,7 @@ import {
   type PersistedDashboardRequest,
   type PersistedDashboardRun,
 } from "./dashboard-view-model";
+import { buildDashboardOperationsMap } from "./dashboard-map";
 
 export async function getOrganizationDashboard(
   member: AuthenticatedMemberContext,
@@ -56,26 +57,15 @@ export async function getOrganizationDashboard(
   const activeBooking = persistedBookingData.find((booking) =>
     ["CONFIRMED", "IN_TRANSIT"].includes(booking.status) || ["CONFIRMED", "IN_TRANSIT"].includes(booking.provider_booking_status),
   );
-  if (!activeBooking) return { ...model, map: null };
-  const request = requests.find((item) => item.id === activeBooking.freight_request_id);
-  if (!request) return { ...model, map: null };
-  const { data: eventData } = await supabase.from("booking_events")
-    .select("provider_event_id,event_type,occurred_at,payload")
-    .eq("booking_id", activeBooking.id).order("occurred_at", { ascending: true });
-  const checkpoints = ((eventData ?? []) as unknown as Array<{ provider_event_id: string; event_type: string; occurred_at: string; payload: unknown }>).flatMap((event) => {
-    const payload = event.payload;
-    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return [];
-    const location = (payload as Record<string, unknown>).location;
-    if (!location || typeof location !== "object" || Array.isArray(location)) return [];
-    const locationRecord = location as Record<string, unknown>;
-    const city = typeof locationRecord.city === "string" ? locationRecord.city : null;
-    const countryCode = typeof locationRecord.countryCode === "string" ? locationRecord.countryCode : null;
-    return city && countryCode ? [{ id: event.provider_event_id, city, countryCode, label: event.event_type, occurredAt: event.occurred_at }] : [];
-  });
-  return { ...model, map: {
-    bookingId: activeBooking.id, requestCode: request.code,
-    origin: { city: request.origin_city, countryCode: request.origin_country },
-    destination: { city: request.destination_city, countryCode: request.destination_country },
-    checkpoints,
-  } };
+  let eventData: Array<{ provider_event_id: string; event_type: string; occurred_at: string; payload: unknown }> = [];
+  if (activeBooking) {
+    const { data } = await supabase.from("booking_events")
+      .select("provider_event_id,event_type,occurred_at,payload")
+      .eq("booking_id", activeBooking.id).order("occurred_at", { ascending: true });
+    eventData = (data ?? []) as unknown as typeof eventData;
+  }
+  return {
+    ...model,
+    map: buildDashboardOperationsMap(requests, persistedBookingData, eventData),
+  };
 }
