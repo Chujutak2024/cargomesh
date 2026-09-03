@@ -2,25 +2,22 @@
 
 import { MapPin } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
+import type {
+  OperationsMapCheckpoint,
+  OperationsMapModel,
+  OperationsMapPlace,
+} from "@/features/dashboard/operations-map-contract";
 import { useLocale } from "@/features/i18n/locale-provider";
 import styles from "./operations-map.module.css";
 
-type MapPlace = { city: string; countryCode: string };
-type MapCheckpoint = MapPlace & { id: string; label: string; occurredAt: string };
-type RoutePoint = MapPlace & {
+export type { OperationsMapModel } from "@/features/dashboard/operations-map-contract";
+
+type RoutePoint = OperationsMapPlace & {
   coordinates: [number, number];
   id: string;
   kind: "origin" | "checkpoint" | "nominal" | "destination";
   label?: string;
   occurredAt?: string;
-};
-
-export type OperationsMapModel = {
-  bookingId: string;
-  requestCode: string;
-  origin: MapPlace;
-  destination: MapPlace;
-  checkpoints: MapCheckpoint[];
 };
 
 const COORDINATES: Record<string, [number, number]> = {
@@ -85,7 +82,7 @@ const PANAMERICANA_SUR_WAYPOINTS: [number, number][] = [
   [-33.4489, -70.6693], // Santiago
 ];
 
-const PERU_CHILE_CORRIDOR_HUBS: MapPlace[] = [
+const PERU_CHILE_CORRIDOR_HUBS: OperationsMapPlace[] = [
   { city: "Arequipa", countryCode: "PE" },
   { city: "Tacna", countryCode: "PE" },
   { city: "Arica", countryCode: "CL" },
@@ -103,15 +100,15 @@ function normalizedCountry(countryCode: string) {
   return value;
 }
 
-function placeKey(place: MapPlace) {
+function placeKey(place: OperationsMapPlace) {
   return `${normalizedCountry(place.countryCode)}:${normalizedCity(place.city)}`;
 }
 
-function coordinatesFor(place: MapPlace) {
+function coordinatesFor(place: OperationsMapPlace) {
   return COORDINATES[placeKey(place)];
 }
 
-function isPeruChileCorridor(origin: MapPlace, destination: MapPlace): boolean {
+function isPeruChileCorridor(origin: OperationsMapPlace, destination: OperationsMapPlace): boolean {
   const o = placeKey(origin);
   const d = placeKey(destination);
   return (
@@ -131,7 +128,7 @@ function createRoute(model: OperationsMapModel): {
     return { points: [], polylineCoordinates: [], isNominal: false };
   }
 
-  const mappedCheckpoints = model.checkpoints.flatMap<RoutePoint>((checkpoint) => {
+  const mappedCheckpoints = model.checkpoints.flatMap<RoutePoint>((checkpoint: OperationsMapCheckpoint) => {
     const coordinates = coordinatesFor(checkpoint);
     return coordinates ? [{ ...checkpoint, coordinates, kind: "checkpoint" }] : [];
   });
@@ -268,16 +265,24 @@ export function OperationsMap({ model }: { model: OperationsMapModel | null }) {
     return () => { disposed = true; cleanup(); };
   }, [locale, route, t]);
 
-  if (!model || route.points.length < 2) {
-    return <div className={styles.empty}><MapPin size={27}/><strong>{t("Sin ruta autorizada para mostrar", "No authorized route to display")}</strong><p>{t("Se necesitan ubicaciones reconocibles en la solicitud o en los eventos del carrier.", "Recognizable locations are required in the request or carrier events.")}</p></div>;
+  if (!model) {
+    return <div className={styles.empty}><MapPin size={27}/><strong>{t("Aún no hay una ruta persistida para mostrar", "No persisted route to display yet")}</strong><p>{t("Cuando la solicitud tenga origen y destino operativos, mostraremos su corredor programado.", "When the request has operational origin and destination, its planned corridor will appear here.")}</p></div>;
   }
+
+  if (route.points.length < 2) {
+    return <div className={styles.empty}><MapPin size={27}/><strong>{t("No reconocemos las ubicaciones de esta ruta", "Route locations are not recognized")}</strong><p>{t("La solicitud existe, pero sus ciudades no están disponibles en el catálogo de coordenadas del mapa.", "The request exists, but its cities are not available in the map coordinate catalog.")}</p></div>;
+  }
+
+  const mapNotice = model.mode === "planned"
+    ? t("Corredor vial programado (Panamericana Sur PE-1S / Ruta 5); aún no hay carrier confirmado ni ubicación en vivo.", "Scheduled highway corridor (Pan-American PE-1S / Route 5); no carrier is confirmed and no live location is available yet.")
+    : route.isNominal
+      ? t("Booking confirmado; aún no hay checkpoints de ubicación reportados por el carrier. Se muestra el corredor programado.", "Booking confirmed; the carrier has not reported location checkpoints yet. The planned corridor is shown.")
+      : t("Ruta basada en checkpoints reportados por el carrier. No es GPS en vivo.", "Route based on carrier-reported checkpoints. This is not live GPS.");
 
   return <div ref={wrapper} className={styles.wrapper}>
     <div className={styles.notice}>
       <strong>{model.requestCode}</strong>
-      <span>{route.isNominal
-        ? t("Corredor vial programado (Panamericana Sur PE-1S / Ruta 5); aún no hay checkpoints de ubicación en vivo.", "Scheduled highway corridor (Pan-American PE-1S / Route 5); no live location checkpoints reported yet.")
-        : t("Ruta basada en checkpoints reportados por el carrier. No es GPS en vivo.", "Route based on carrier-reported checkpoints. This is not live GPS.")}</span>
+      <span>{mapNotice}</span>
     </div>
     <div ref={element} className={styles.map} aria-label={t("Mapa del corredor del despacho", "Shipment corridor map")}/>
     <div className={styles.legend} aria-label={t("Leyenda del mapa", "Map legend")}>

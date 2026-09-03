@@ -18,6 +18,7 @@ export default async function TrackingDetailPage({ params }: { params: Promise<{
   const fmt = new Intl.DateTimeFormat(localeTag(locale), { dateStyle: "medium", timeStyle: "short" });
   const mapModel: OperationsMapModel = {
     bookingId: booking.bookingId,
+    mode: "live",
     requestCode: request.code,
     origin: { city: request.origin_city, countryCode: request.origin_country },
     destination: { city: request.destination_city, countryCode: request.destination_country },
