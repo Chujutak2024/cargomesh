@@ -73,6 +73,7 @@ test("book_freight exposes a mutating strict schema", () => {
 
   assert.equal(tool.name, "book_freight");
   assert.equal(tool.annotations?.readOnlyHint, false);
+  assert.equal(tool.annotations?.destructiveHint, true);
   assert.equal(
     (tool.inputSchema as { additionalProperties?: boolean }).additionalProperties,
     false,

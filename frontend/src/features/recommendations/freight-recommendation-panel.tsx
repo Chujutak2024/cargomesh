@@ -219,8 +219,8 @@ export function FreightRecommendationPanel({
       <section className={styles.launcher} aria-labelledby="recommendation-title">
         <span className={styles.icon}><Sparkles size={19} aria-hidden="true" /></span>
         <div>
-          <h2 id="recommendation-title">Sugerencias para este borrador</h2>
-          <p>Consulta antecedentes mediante WebMCP y decide campo por campo qué incorporar.</p>
+          <h2 id="recommendation-title">Antecedentes de tu organización</h2>
+          <p>Consulta mediante WebMCP solo el historial autorizado de tu organización y decide campo por campo qué incorporar.</p>
           {registrationError ? <p className={styles.errorText} role="alert">{registrationError}</p> : null}
           {notice ? <p className={styles.notice} role="status">{notice}</p> : null}
         </div>
@@ -232,7 +232,7 @@ export function FreightRecommendationPanel({
           onClick={() => void requestRecommendations()}
         >
           {loading ? <LoaderCircle className={styles.spinner} size={17} aria-hidden="true" /> : <History size={17} aria-hidden="true" />}
-          {loading ? "Consultando…" : webMcpReady ? "Consultar sugerencias" : "WebMCP no disponible"}
+          {loading ? "Consultando…" : webMcpReady ? "Consultar antecedentes" : "WebMCP no disponible"}
         </button>
       </section>
 

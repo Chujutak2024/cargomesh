@@ -19,6 +19,7 @@ export function ProviderWebMcpHost({ provider }: ProviderWebMcpHostProps) {
   const [browserStatus, setBrowserStatus] = useState<
     "checking" | "registering" | "registered" | "unavailable" | "error"
   >("checking");
+  const [registeredToolCount, setRegisteredToolCount] = useState(0);
 
   useEffect(() => {
     const modelContext = document.modelContext;
@@ -32,6 +33,7 @@ export function ProviderWebMcpHost({ provider }: ProviderWebMcpHostProps) {
     let mounted = true;
 
     setBrowserStatus("registering");
+    setRegisteredToolCount(0);
 
     void registerProviderTools(
       modelContext,
@@ -39,9 +41,19 @@ export function ProviderWebMcpHost({ provider }: ProviderWebMcpHostProps) {
       registrationController.signal,
       { exposedTo: CARGOMESH_TOOL_CALLER_ORIGINS },
     )
-      .then((allToolsRegistered) => {
+      .then(async (allToolsRegistered) => {
+        const registeredTools = await modelContext.getTools();
+        const registeredNames = new Set(registeredTools.map((tool) => tool.name));
+        const providerToolCount = REQUIRED_PROVIDER_TOOL_NAMES.filter((toolName) =>
+          registeredNames.has(toolName),
+        ).length;
         if (mounted) {
-          setBrowserStatus(allToolsRegistered ? "registered" : "error");
+          setRegisteredToolCount(providerToolCount);
+          setBrowserStatus(
+            allToolsRegistered && providerToolCount === REQUIRED_PROVIDER_TOOL_NAMES.length
+              ? "registered"
+              : "error",
+          );
         }
       })
       .catch((error: unknown) => {
@@ -67,15 +79,19 @@ export function ProviderWebMcpHost({ provider }: ProviderWebMcpHostProps) {
             Tools disponibles: <code>{REQUIRED_PROVIDER_TOOL_NAMES.join(", ")}</code>
           </h2>
         </div>
-        <p className={styles.status} data-status={browserStatus}>
+        <p
+          className={styles.status}
+          data-status={browserStatus}
+          data-tool-count={registeredToolCount}
+        >
           {browserStatus === "checking" && "Comprobando compatibilidad del navegador…"}
           {browserStatus === "registering" && "WebMCP disponible. Registrando las tools…"}
           {browserStatus === "registered" &&
-            "Las cinco tools provider están registradas y visibles para el agente del navegador."}
+            `document.modelContext.getTools() → ${registeredToolCount}/${REQUIRED_PROVIDER_TOOL_NAMES.length} tools registered`}
           {browserStatus === "unavailable" &&
-            "Este navegador no expone document.modelContext. Usa un entorno WebMCP compatible."}
+            "Browser unsupported: document.modelContext no está disponible."}
           {browserStatus === "error" &&
-            "WebMCP está disponible, pero las tools provider no pudieron registrarse."}
+            `WebMCP disponible, pero getTools() reportó ${registeredToolCount}/${REQUIRED_PROVIDER_TOOL_NAMES.length} tools provider.`}
         </p>
       </section>
 

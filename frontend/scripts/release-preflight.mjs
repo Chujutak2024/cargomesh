@@ -98,7 +98,9 @@ record("Production bundle", staticFiles.length > 0, staticFiles.length > 0 ? `${
 
 const forbidden = [
   { label: "service_role marker", pattern: /service_role/i },
-  { label: "Supabase secret key", pattern: /sb_secret_/i },
+  // Newer supabase-js bundles contain the literal `sb_secret_` as a browser-side
+  // safety guard. Match only a credential-shaped value, not that defensive marker.
+  { label: "Supabase secret key", pattern: /sb_secret_[A-Za-z0-9_-]{10,}/i },
   { label: "service-role environment name", pattern: /SUPABASE_SERVICE_ROLE_KEY/ },
 ];
 if (serviceRoleValue && !/replace-with/i.test(serviceRoleValue)) {

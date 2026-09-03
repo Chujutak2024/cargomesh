@@ -218,7 +218,8 @@ test("registration exposes all five tools cross-origin and the shared signal cle
     assert.equal(options.signal, registrationController.signal);
   }
 
-  const cargoMeshOrigin = "http://localhost:3001";
+  const cargoMeshOrigin = CARGOMESH_TOOL_CALLER_ORIGINS[0];
+  assert.ok(cargoMeshOrigin);
   const crossOriginTools = await modelContext.getTools({
     fromOrigins: [cargoMeshOrigin],
   });

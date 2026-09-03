@@ -153,6 +153,7 @@ export function createBookFreightTool(
     inputSchema: bookFreightInputSchema,
     annotations: {
       readOnlyHint: false,
+      destructiveHint: true,
       untrustedContentHint: false,
     },
     execute: async (rawInput, executionOptions) => {

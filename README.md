@@ -40,12 +40,16 @@ an LLM—produces the ranking.
 | `check_service_coverage` | `readOnlyHint: true` | Verifies corridor, transport mode, service type, cargo category, and cross-border support. |
 | `check_capacity` | `readOnlyHint: true` | Verifies weight, volume, special requirements, pickup window, and delivery deadline. |
 | `quote_freight` | `readOnlyHint: true` | Returns the correlated price, breakdown, transit time, availability class, documents, and quote validity. |
-| `book_freight` | `readOnlyHint: false` | Submits an authorized, idempotent booking request for the selected provider offer. |
+| `book_freight` | `readOnlyHint: false`, `destructiveHint: true` | Submits an authorized, idempotent booking request for the selected provider offer. |
 | `get_provider_booking_status` | `readOnlyHint: true` | Returns provider status, payment state, location, ETA, and deduplicated lifecycle events. |
 
 The evaluator procedure, exact JSON contracts, Golden Flow payloads, recovery
 causality, and cleanup check are documented in the
 [WebMCP Judge Audit Guide](docs/04-execution/WebMCP_Judge_Audit_Guide.md).
+
+WebMCP reduces the fragility of screen-based automation: CargoMesh consumes
+typed, origin-gated tools through `document.modelContext` instead of depending
+on button positions, DOM text extraction, or click synchronization.
 
 ### Decoupled architecture
 

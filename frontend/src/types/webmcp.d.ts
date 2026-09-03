@@ -4,6 +4,11 @@ export {};
 
 declare global {
   namespace WebMCP {
+    interface ToolAnnotations {
+      /** Signals that invoking the tool can create or change commercial state. */
+      destructiveHint?: boolean;
+    }
+
     interface ModelContextExecuteToolOptions {
       signal?: AbortSignal;
     }

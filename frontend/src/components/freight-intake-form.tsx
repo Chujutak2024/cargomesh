@@ -234,36 +234,67 @@ export function FreightIntakeForm({
   const dispatchBlockReason = getFreightIntakeDispatchBlockReason(form);
   const [originCoords, setOriginCoords] = useState(defaultCleanMode ? "" : "-12.0464, -77.0428");
   const [destCoords, setDestCoords] = useState(defaultCleanMode ? "" : "-33.4489, -70.6693");
-  const [requiresRefrigeration, setRequiresRefrigeration] = useState(false);
-  const [tempMin, setTempMin] = useState("-5");
-  const [tempMax, setTempMax] = useState("2");
-  const [isHazardous, setIsHazardous] = useState(false);
-  const [isFragile, setIsFragile] = useState(false);
-  const [isOversized, setIsOversized] = useState(false);
+  const requiresRefrigeration = form.requiresRefrigeration === true;
+  const tempMin = form.temperatureMinC ?? "";
+  const tempMax = form.temperatureMaxC ?? "";
+  const isHazardous = form.isHazardous === true;
+  const isFragile = form.isFragile === true;
+  const isOversized = form.isOversized === true;
   const [palletPreset, setPalletPreset] = useState<"standard" | "euro" | "custom">("standard");
   const [hasBudgetLimit, setHasBudgetLimit] = useState(form.budgetMaxUsd !== null);
-  const [aiBudgetNotice, setAiBudgetNotice] = useState<string | null>(null);
+  const [localBudgetNotice, setLocalBudgetNotice] = useState<string | null>(null);
 
-  const isCallaoToSantiago =
-    (form.originCity.toLowerCase().includes("callao") || form.originCountry === "PE") &&
-    (form.destinationCity.toLowerCase().includes("santiago") || form.destinationCountry === "CL");
+  const estimationContext = form.originCity && form.destinationCity
+    ? `${form.originCity} ➔ ${form.destinationCity} · ${displayNumber(totals.weightKg, " kg")}`
+    : "Completa ruta y peso para mejorar la referencia";
 
-  const historicalCorridorText = isCallaoToSantiago
-    ? "Callao ➔ Santiago · ~USD 1,720"
-    : form.originCity && form.destinationCity
-      ? `${form.originCity} ➔ ${form.destinationCity} · Sin referencia histórica suficiente`
-      : "Sin referencia histórica suficiente";
-
-  function handleSuggestBudget() {
+  function handleEstimateBudget() {
     setHasBudgetLimit(true);
     const weight = totals.weightKg || form.totalWeightKg || 8000;
-    const suggested = isCallaoToSantiago
-      ? 1900
-      : Math.round(620 + weight * 0.105 + 145 + 200);
+    const corridorAdjustment = form.originCountry !== form.destinationCountry ? 350 : 120;
+    const suggested = Math.round(600 + weight * 0.12 + corridorAdjustment);
     update("budgetMaxUsd", suggested);
-    setAiBudgetNotice(
-      `Sugerencia aplicada: USD ${suggested.toLocaleString("en-US")} basada en análisis de corredor y peso (${displayNumber(weight, " kg")}).`
+    setLocalBudgetNotice(
+      `Estimación local orientativa: USD ${suggested.toLocaleString("en-US")} según peso y tipo de corredor. Las cotizaciones provider se obtienen al iniciar el dispatch WebMCP.`
     );
+  }
+
+  function setRequiresRefrigeration(value: boolean) {
+    if (readOnly) return;
+    setForm((current) => ({
+      ...current,
+      requiresRefrigeration: value,
+      temperatureMinC: value ? (current.temperatureMinC ?? -5) : null,
+      temperatureMaxC: value ? (current.temperatureMaxC ?? 2) : null,
+    }));
+  }
+
+  function setTempMin(value: string) {
+    if (readOnly) return;
+    setForm((current) => ({
+      ...current,
+      temperatureMinC: value === "" ? null : Number(value),
+    }));
+  }
+
+  function setTempMax(value: string) {
+    if (readOnly) return;
+    setForm((current) => ({
+      ...current,
+      temperatureMaxC: value === "" ? null : Number(value),
+    }));
+  }
+
+  function setIsHazardous(value: boolean) {
+    if (!readOnly) setForm((current) => ({ ...current, isHazardous: value }));
+  }
+
+  function setIsFragile(value: boolean) {
+    if (!readOnly) setForm((current) => ({ ...current, isFragile: value }));
+  }
+
+  function setIsOversized(value: boolean) {
+    if (!readOnly) setForm((current) => ({ ...current, isOversized: value }));
   }
 
   function handleToggleCleanMode() {
@@ -271,10 +302,6 @@ export function FreightIntakeForm({
       setIsCleanMode(true);
       setOriginCoords("");
       setDestCoords("");
-      setRequiresRefrigeration(false);
-      setIsHazardous(false);
-      setIsFragile(false);
-      setIsOversized(false);
       setPalletPreset("standard");
       setHasBudgetLimit(false);
       setForm((curr) => ({
@@ -309,6 +336,12 @@ export function FreightIntakeForm({
         budgetMaxUsd: null,
         documents: [],
         operationalNotes: "",
+        requiresRefrigeration: false,
+        temperatureMinC: null,
+        temperatureMaxC: null,
+        isHazardous: false,
+        isFragile: false,
+        isOversized: false,
       }));
     } else {
       setIsCleanMode(false);
@@ -418,22 +451,12 @@ export function FreightIntakeForm({
       }
       return updatedModel;
     } catch (error) {
-      if (
-        error instanceof DraftCreationClientError &&
-        (error.code === "SPECIAL_REQUIREMENTS_UNSUPPORTED" ||
-          error.message.toLowerCase().includes("special requirement"))
-      ) {
-        setSubmitError(
-          "Requisitos especiales (refrigeración, materiales peligrosos, sobredimensionado, frágil) aún no disponibles en la red de carriers. Desactívalos para continuar.",
-        );
-      } else {
-        const message = error instanceof DraftCreationClientError
+      const message = error instanceof DraftCreationClientError
+        ? error.message
+        : error instanceof Error
           ? error.message
-          : error instanceof Error
-            ? error.message
-            : "No fue posible crear el borrador en el servidor.";
-        setSubmitError(message);
-      }
+          : "No fue posible crear el borrador en el servidor.";
+      setSubmitError(message);
       throw error;
     } finally {
       setCreatingDraft(false);
@@ -463,18 +486,10 @@ export function FreightIntakeForm({
       return updatedModel;
     } catch (error) {
       if (error instanceof ManualFreightRequestIntakeClientError && error.code === "STALE_DRAFT") {
-        try {
-          const ctrl = new AbortController();
-          const draft = await fetchFreightRequestDraft(initialValue.freightRequestId, ctrl.signal);
-          setForm((curr) => ({
-            ...curr,
-            draftVersion: draft.draftVersion,
-          }));
-          setSubmitError(`Versión sincronizada con el servidor (v${draft.draftVersion}). Presiona Continuar nuevamente.`);
-        } catch {
-          const ctrl = new AbortController();
-          await loadCanonicalDraft(ctrl.signal);
-        }
+        const fresh = await loadPersistedFreightIntake(form.requestId);
+        assertFreshIntakeCorrelation(form, fresh);
+        setForm(fresh);
+        setSubmitError(`El borrador cambió en el servidor. Se recargó el snapshot canónico completo (v${fresh.draftVersion}); revisa los campos antes de continuar.`);
       } else {
         setSubmitError(error instanceof Error ? error.message : "No fue posible guardar los cambios manuales.");
       }
@@ -563,7 +578,7 @@ export function FreightIntakeForm({
           <h1>Nueva solicitud de transporte</h1>
           <p>
             {form.source === "new-draft"
-              ? "Nuevo borrador (Plantilla inicial en memoria). Completa los datos; la persistencia mediante POST /api/freight-requests/drafts está pendiente de integración por el backend."
+              ? "Nuevo borrador sin persistir. Completa los datos y créalo para recibir su código y versión canónicos del servidor."
               : form.source === "persisted"
                 ? isEditable
                   ? "Borrador editable activo. Captura tus datos operativos o aplica sugerencias WebMCP."
@@ -575,7 +590,7 @@ export function FreightIntakeForm({
           <div className={styles.draftBadge}>
             <ShieldCheck size={16} aria-hidden="true" />
             {form.source === "new-draft"
-              ? "Nuevo borrador (Plantilla inicial · Integración pendiente)"
+              ? "Nuevo borrador sin persistir"
               : form.source === "persisted"
                 ? (isCleanMode ? "Borrador v1 (Nuevo)" : `Borrador v${form.draftVersion} (${form.status})`)
                 : "Fixture visual"}
@@ -1437,12 +1452,12 @@ export function FreightIntakeForm({
                 <span className={styles.subSectionBadge}>
                   <ShieldAlert size={14} /> 3. Requisitos de manejo
                 </span>
-                <small>Pendiente de persistencia y validación operativa con el writer del backend.</small>
+                <small>Se guardan en el borrador y se validan con cada provider durante coverage y capacity.</small>
               </div>
 
               <div style={{ marginBottom: "0.75rem" }}>
                 <span style={{ display: "inline-block", fontSize: "0.72rem", color: "var(--muted)", background: "rgba(196, 144, 31, 0.12)", border: "1px solid rgba(196, 144, 31, 0.3)", borderRadius: "6px", padding: "4px 8px" }}>
-                  ℹ Requisitos especiales: Pendiente de persistencia y validación operativa mientras C implementa el writer.
+                  ℹ El servidor conserva estos requisitos; la compatibilidad comercial se confirma al consultar providers WebMCP.
                 </span>
               </div>
 
@@ -1451,6 +1466,7 @@ export function FreightIntakeForm({
                   type="button"
                   className={`${styles.requirementPill} ${requiresRefrigeration ? styles.requirementPillActive : ""}`}
                   onClick={() => setRequiresRefrigeration(!requiresRefrigeration)}
+                  disabled={readOnly}
                 >
                   ❄ Temperatura controlada
                 </button>
@@ -1458,6 +1474,7 @@ export function FreightIntakeForm({
                   type="button"
                   className={`${styles.requirementPill} ${isHazardous ? styles.requirementPillActive : ""}`}
                   onClick={() => setIsHazardous(!isHazardous)}
+                  disabled={readOnly}
                 >
                   ⚠ Mercancía peligrosa (Hazmat)
                 </button>
@@ -1465,6 +1482,7 @@ export function FreightIntakeForm({
                   type="button"
                   className={`${styles.requirementPill} ${isFragile ? styles.requirementPillActive : ""}`}
                   onClick={() => setIsFragile(!isFragile)}
+                  disabled={readOnly}
                 >
                   ◇ Carga frágil
                 </button>
@@ -1472,6 +1490,7 @@ export function FreightIntakeForm({
                   type="button"
                   className={`${styles.requirementPill} ${isOversized ? styles.requirementPillActive : ""}`}
                   onClick={() => setIsOversized(!isOversized)}
+                  disabled={readOnly}
                 >
                   ↔ Sobredimensionada
                 </button>
@@ -1487,6 +1506,7 @@ export function FreightIntakeForm({
                     className={styles.tempInput}
                     value={tempMin}
                     onChange={(e) => setTempMin(e.target.value)}
+                    readOnly={readOnly}
                   />
                   <span style={{ fontSize: "0.74rem", color: "#0c6396" }}>°C a</span>
                   <input
@@ -1494,6 +1514,7 @@ export function FreightIntakeForm({
                     className={styles.tempInput}
                     value={tempMax}
                     onChange={(e) => setTempMax(e.target.value)}
+                    readOnly={readOnly}
                   />
                   <span style={{ fontSize: "0.74rem", color: "#0c6396" }}>°C</span>
                 </div>
@@ -1501,7 +1522,7 @@ export function FreightIntakeForm({
 
               {isHazardous && (
                 <div className={`${styles.requirementAlert} ${styles.hazardAlert}`}>
-                  ⚠️ <strong>Aviso:</strong> Mercancía peligrosa (Hazmat) registrada; pendiente de persistencia y validación operativa con el backend.
+                  ⚠️ <strong>Aviso:</strong> Mercancía peligrosa (Hazmat) registrada. Cada provider confirmará su compatibilidad antes de cotizar.
                 </div>
               )}
 
@@ -1602,7 +1623,7 @@ export function FreightIntakeForm({
                     onClick={() => {
                       setHasBudgetLimit(false);
                       update("budgetMaxUsd", null);
-                      setAiBudgetNotice(null);
+                      setLocalBudgetNotice(null);
                     }}
                   >
                     Sin límite presupuestario
@@ -1625,17 +1646,17 @@ export function FreightIntakeForm({
                   <button
                     type="button"
                     className={styles.aiSuggestBtn}
-                    onClick={handleSuggestBudget}
+                    onClick={handleEstimateBudget}
                   >
-                    <Sparkles size={14} /> Sugerir presupuesto vía IA / WebMCP
+                    <span aria-hidden="true">≈</span> Calcular estimación local
                   </button>
                 )}
               </div>
 
-              {aiBudgetNotice && (
+              {localBudgetNotice && (
                 <div className={styles.aiSuggestNotice}>
                   <Sparkles size={14} />
-                  <span>{aiBudgetNotice}</span>
+                  <span>{localBudgetNotice}</span>
                 </div>
               )}
 
@@ -1653,7 +1674,7 @@ export function FreightIntakeForm({
                   </Field>
                   <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
                     <div className={styles.historicalRefBadge}>
-                      📊 Referencia histórica: <strong>{historicalCorridorText}</strong>
+                      📊 Contexto de la estimación local: <strong>{estimationContext}</strong>
                     </div>
                     <p className={styles.budgetHelpText}>
                       El presupuesto actúa como <strong>Hard Constraint</strong>: cualquier cotización superior será descartada antes de la evaluación.
@@ -1686,7 +1707,7 @@ export function FreightIntakeForm({
                   </span>
                 </div>
                 <div className={styles.strategyWeights}>
-                  25% Costo comercial · 25% SLA y Fiabilidad · 20% Tiempo de tránsito · 30% Capacidad y Disponibilidad
+                  25% Costo · 25% SLA/Confiabilidad · 20% Tiempo · 10% Disponibilidad · 10% Experiencia de ruta · 10% Historial de la organización
                 </div>
                 <div className={styles.strategyPolicyNote}>
                   Garantiza una ponderación transparente y auditable, protegiendo contra anomalías tarifarias o transportistas sin historial probado.
@@ -1828,7 +1849,7 @@ export function FreightIntakeForm({
                 onClick={() => void handleCreateDraft()}
               >
                 <FileCheck2 size={17} aria-hidden="true" />
-                {creatingDraft ? "Conectando…" : "Crear borrador (Integración pendiente)"}
+                {creatingDraft ? "Creando…" : "Crear borrador"}
               </button>
             ) : null}
             {isEditable && form.source === "persisted" && Boolean(form.freightRequestId) ? (
@@ -1858,7 +1879,7 @@ export function FreightIntakeForm({
                   ? "Procesando…"
                   : step === steps.length - 1
                     ? form.source === "new-draft"
-                      ? "Crear borrador (Integración pendiente)"
+                      ? "Crear borrador"
                       : "Iniciar orquestación"
                     : "Continuar"}
               {submitting ? null : <ArrowRight size={17} aria-hidden="true" />}
@@ -1871,7 +1892,7 @@ export function FreightIntakeForm({
             {readOnly
               ? "ViewModel persistido (Cerrado)"
               : form.source === "new-draft"
-                ? "Nuevo borrador (Plantilla inicial)"
+                ? "Nuevo borrador sin persistir"
                 : isCleanMode
                   ? "Borrador v1 (Nuevo)"
                   : `Borrador v${form.draftVersion}`}
@@ -1911,34 +1932,34 @@ export function FreightIntakeForm({
                 <dd style={{ display: "flex", flexDirection: "column", gap: "0.3rem", marginTop: "0.25rem" }}>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
                     {requiresRefrigeration && (
-                      <span style={{ background: "#fff2f0", color: "#cf1322", border: "1px solid #ffccc7", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
-                        ❄ Reefer ({tempMin}°C a {tempMax}°C) · Aún no disponible
+                      <span style={{ background: "#edf8f4", color: "#185c55", border: "1px solid #c2e5d9", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
+                        ❄ Reefer ({tempMin}°C a {tempMax}°C) · Guardado
                       </span>
                     )}
                     {isHazardous && (
-                      <span style={{ background: "#fff2f0", color: "#cf1322", border: "1px solid #ffccc7", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
-                        ⚠ Hazmat · Aún no disponible
+                      <span style={{ background: "#edf8f4", color: "#185c55", border: "1px solid #c2e5d9", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
+                        ⚠ Hazmat · Guardado
                       </span>
                     )}
                     {isFragile && (
-                      <span style={{ background: "#fff2f0", color: "#cf1322", border: "1px solid #ffccc7", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
-                        ◇ Frágil · Aún no disponible
+                      <span style={{ background: "#edf8f4", color: "#185c55", border: "1px solid #c2e5d9", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
+                        ◇ Frágil · Guardado
                       </span>
                     )}
                     {isOversized && (
-                      <span style={{ background: "#fff2f0", color: "#cf1322", border: "1px solid #ffccc7", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
-                        ↔ Sobredimensionada · Aún no disponible
+                      <span style={{ background: "#edf8f4", color: "#185c55", border: "1px solid #c2e5d9", padding: "0.2rem 0.45rem", borderRadius: "0.35rem", fontSize: "0.65rem", fontWeight: 800 }}>
+                        ↔ Sobredimensionada · Guardado
                       </span>
                     )}
                   </div>
-                  <small style={{ color: "#cf1322", fontSize: "0.65rem", lineHeight: 1.35 }}>
-                    Requisitos especiales no soportados por los carriers en esta versión (422). No se guardarán en el servidor.
+                  <small style={{ color: "#185c55", fontSize: "0.65rem", lineHeight: 1.35 }}>
+                    Persistidos en el borrador. Coverage y capacity determinan qué providers pueden atenderlos.
                   </small>
                 </dd>
               </div>
             ) : null}
             <div>
-              <dt>Presupuesto en vivo</dt>
+              <dt>Límite de presupuesto</dt>
               <dd>
                 <strong style={{ color: "#185c55", fontSize: "0.85rem" }}>
                   {form.budgetMaxUsd === null ? "Sin límite presupuestario" : `${form.currency} ${form.budgetMaxUsd.toLocaleString("en-US")}`}
@@ -1958,7 +1979,7 @@ export function FreightIntakeForm({
               <dd>
                 <strong>{form.strategy}</strong>
                 <br />
-                <small style={{ color: "#687573" }}>25% Costo · 25% SLA · 20% Tiempo · 30% Capacidad</small>
+                <small style={{ color: "#687573" }}>25% Costo · 25% SLA · 20% Tiempo · 10% Disponibilidad · 10% Ruta · 10% Historial</small>
               </dd>
             </div>
           </dl>
