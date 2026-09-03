@@ -34,3 +34,9 @@ Este archivo establece las directivas prioritarias que deben respetar todos los 
 - Concurrencia optimista mediante `draft_version` en `freight_requests`.
 - Motor determinístico BALANCED de seis dimensiones (25% costo, 25% SLA/confiabilidad, 20% tiempo de tránsito, 10% disponibilidad, 10% experiencia de ruta y 10% historial de la organización).
 - Golden Flow canónico (`FR-1042` Callao ➔ Santiago) mantiene invariables sus scores oficiales: Andes (89), Inca (84), Pacific (72).
+
+## 5. ⚡ Autonomía de Entrega
+- Los agentes avanzan sin solicitar confirmación del usuario para cambios locales de código o documentación, ramas, pruebas, PRs y lotes verdes de integración a `main`.
+- **Role C (Codex)** puede integrar a `main` los fixes P0 y la documentación aprobada cuando las verificaciones requeridas estén verdes.
+- Solo se requiere autorización explícita antes de: ejecutar operaciones contra Supabase remoto, mutar datos runtime, gestionar secretos o variables de Vercel, o invocar/modificar providers externos reales.
+- Un bloqueo debe comunicarse con evidencia y una alternativa segura; no se deben crear mocks que aparenten una integración real para evitarlo.
