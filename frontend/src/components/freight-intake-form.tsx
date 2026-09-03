@@ -314,6 +314,7 @@ export function FreightIntakeForm({
   }
 
   const loadCanonicalDraft = useCallback(async (signal: AbortSignal) => {
+    if (!initialValue.freightRequestId) return;
     const draft = await fetchFreightRequestDraft(initialValue.freightRequestId, signal);
     setForm((current) => applyFreightRequestDraftToIntake(current, draft));
     setDraftLoadError(null);
@@ -321,7 +322,7 @@ export function FreightIntakeForm({
   }, [initialValue.freightRequestId]);
 
   useEffect(() => {
-    if (initialValue.source !== "persisted" || defaultCleanMode) return;
+    if (initialValue.source !== "persisted" || !initialValue.freightRequestId || defaultCleanMode) return;
     const controller = new AbortController();
     void loadCanonicalDraft(controller.signal).catch((error) => {
       if (controller.signal.aborted) return;
@@ -329,7 +330,7 @@ export function FreightIntakeForm({
       setDraftLoadError(error instanceof Error ? error.message : "No fue posible cargar el borrador vigente desde D1-01.");
     });
     return () => controller.abort();
-  }, [initialValue.source, loadCanonicalDraft, defaultCleanMode]);
+  }, [initialValue.source, initialValue.freightRequestId, loadCanonicalDraft, defaultCleanMode]);
 
   const handleRegistrationChange = useCallback((registered: boolean) => {
     setWebMcpReady(registered);
@@ -378,7 +379,7 @@ export function FreightIntakeForm({
   }
 
   const saveManualDraft = useCallback(async (signal?: AbortSignal) => {
-    if (!isEditable || form.source !== "persisted") return form;
+    if (!isEditable || form.source !== "persisted" || !form.freightRequestId) return form;
     setSaving(true);
     setSubmitError(null);
     setSaveNotice(null);
@@ -491,17 +492,23 @@ export function FreightIntakeForm({
           <span className={styles.eyebrow}>B-02 · Intake de carga</span>
           <h1>Nueva solicitud de transporte</h1>
           <p>
-            {form.source === "persisted"
-              ? isEditable
-                ? "Borrador editable activo. Captura tus datos operativos o aplica sugerencias WebMCP."
-                : "Revisa la solicitud persistida antes de iniciar la evaluación de providers."
-              : "Escenario fixture declarado para regresión visual; no inicia operaciones reales."}
+            {form.source === "new-draft"
+              ? "Nuevo borrador no persistido. Completa los datos operativos para iniciar la solicitud en el servidor."
+              : form.source === "persisted"
+                ? isEditable
+                  ? "Borrador editable activo. Captura tus datos operativos o aplica sugerencias WebMCP."
+                  : "Revisa la solicitud persistida antes de iniciar la evaluación de providers."
+                : "Escenario fixture declarado para regresión visual; no inicia operaciones reales."}
           </p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.45rem" }}>
           <div className={styles.draftBadge}>
             <ShieldCheck size={16} aria-hidden="true" />
-            {isCleanMode ? "Borrador v1 (Nuevo)" : form.source === "persisted" ? `Borrador v${form.draftVersion} (${form.status})` : "Fixture visual"}
+            {form.source === "new-draft"
+              ? "Nuevo borrador (Sin persistir)"
+              : form.source === "persisted"
+                ? (isCleanMode ? "Borrador v1 (Nuevo)" : `Borrador v${form.draftVersion} (${form.status})`)
+                : "Fixture visual"}
           </div>
           {isEditable && (
             <button
@@ -515,18 +522,22 @@ export function FreightIntakeForm({
         </div>
       </header>
 
-      <FreightRecommendationWebMcpHost
-        onRegistrationChange={handleRegistrationChange}
-        onRegistrationError={handleRegistrationError}
-      />
-      {form.source === "persisted" ? <FreightRecommendationPanel
-        form={form}
-        draftVersion={form.draftVersion}
-        webMcpReady={webMcpReady && draftReady}
-        registrationError={draftLoadError ?? recommendationRegistrationError}
-        onApply={applyRecommendation}
-        onStaleDraft={reloadStaleDraft}
-      /> : null}
+      {form.source === "persisted" && Boolean(form.freightRequestId) ? (
+        <>
+          <FreightRecommendationWebMcpHost
+            onRegistrationChange={handleRegistrationChange}
+            onRegistrationError={handleRegistrationError}
+          />
+          <FreightRecommendationPanel
+            form={form}
+            draftVersion={form.draftVersion}
+            webMcpReady={webMcpReady && draftReady}
+            registrationError={draftLoadError ?? recommendationRegistrationError}
+            onApply={applyRecommendation}
+            onStaleDraft={reloadStaleDraft}
+          />
+        </>
+      ) : null}
 
       <ol className={styles.stepper} aria-label="Progreso del formulario">
         {steps.map(({ label, icon: Icon }, index) => (
@@ -1733,7 +1744,7 @@ export function FreightIntakeForm({
             >
               <ArrowLeft size={17} aria-hidden="true" /> Anterior
             </button>
-            {isEditable && form.source === "persisted" ? (
+            {isEditable && form.source === "persisted" && Boolean(form.freightRequestId) ? (
               <button
                 type="button"
                 className={styles.secondaryButton}
