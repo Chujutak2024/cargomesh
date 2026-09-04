@@ -1,13 +1,19 @@
 "use client";
 
 import {
+  BookOpenCheck,
   CheckCircle2,
+  ChevronDown,
   CircleDashed,
   Database,
+  ExternalLink,
   FileJson2,
+  ListChecks,
   LoaderCircle,
   PanelRightOpen,
   ShieldAlert,
+  SquareTerminal,
+  Wrench,
   X,
   XCircle,
 } from "lucide-react";
@@ -21,6 +27,15 @@ import {
   type EvidencePresentationState,
   type ProviderOriginKind,
 } from "@/features/i18n/judge-evidence-presentation";
+import {
+  JUDGE_FLOW_STEPS,
+  JUDGE_TOOL_GUIDE,
+  WEBMCP_CLEANUP_SNIPPET,
+  WEBMCP_CONSOLE_RUNBOOK_URL,
+  WEBMCP_COVERAGE_SNIPPET,
+  WEBMCP_DISCOVERY_SNIPPET,
+  WEBMCP_PUBLIC_UAT_EVIDENCE_URL,
+} from "@/features/i18n/judge-guide-content";
 import { useLocale } from "@/features/i18n/locale-provider";
 import styles from "./judge-drawer.module.css";
 
@@ -142,6 +157,7 @@ export function JudgeDrawer() {
             <button
               className={styles.backdrop}
               type="button"
+              tabIndex={-1}
               aria-label={t("Cerrar evidencia", "Close evidence")}
               onClick={() => setOpen(false)}
             />
@@ -151,6 +167,7 @@ export function JudgeDrawer() {
               role="dialog"
               aria-modal="true"
               aria-labelledby="judge-title"
+              aria-describedby="judge-summary-description"
             >
               <header>
                 <div><span>Golden Flow</span><h2 id="judge-title">Judge Drawer</h2></div>
@@ -170,18 +187,125 @@ export function JudgeDrawer() {
                 </div>
               </section>
 
+              <section className={styles.webMcpSummary} aria-labelledby="webmcp-summary-title">
+                <div className={styles.sectionHeading}>
+                  <BookOpenCheck size={19} aria-hidden="true" />
+                  <div>
+                    <span>{t("Ruta de evaluación", "Evaluator path")}</span>
+                    <h3 id="webmcp-summary-title">{t("Prueba CargoMesh sin ver el video", "Test CargoMesh without the video")}</h3>
+                  </div>
+                </div>
+                <p id="judge-summary-description">{t(
+                  "Sigue el flujo inferior para descubrir y ejecutar WebMCP, generar evidencia persistida mediante la orquestación y comprobar el cleanup. La demo contiene una tool de intake separada y exactamente cinco tools provider.",
+                  "Follow the flow below to discover and execute WebMCP, generate persisted evidence through orchestration, and verify cleanup. The demo contains one separate intake tool and exactly five provider tools.",
+                )}</p>
+                <dl className={styles.surfaceStats} aria-label={t("Resumen de superficies WebMCP", "WebMCP surface summary")}>
+                  <div><dt>{t("tool de intake", "intake tool")}</dt><dd>1</dd></div>
+                  <div><dt>{t("tools provider", "provider tools")}</dt><dd>5</dd></div>
+                  <div><dt>{t("providers descubiertos", "discovered providers")}</dt><dd>0..N</dd></div>
+                </dl>
+                <p className={styles.honestyNote}>{t(
+                  "Andes, Inca y Pacific son fixtures reproducibles del demo y hoy usan rutas del mismo origin de CargoMesh; no representan partners alojados independientemente.",
+                  "Andes, Inca, and Pacific are reproducible demo fixtures and currently use same-origin CargoMesh routes; they are not independently hosted partners.",
+                )}</p>
+                <a className={styles.runbookLink} href={WEBMCP_CONSOLE_RUNBOOK_URL} target="_blank" rel="noreferrer">
+                  {t("Abrir runbook técnico completo", "Open the complete technical runbook")}
+                  <ExternalLink size={14} aria-hidden="true" />
+                </a>
+                <a className={styles.runbookLink} href={WEBMCP_PUBLIC_UAT_EVIDENCE_URL} target="_blank" rel="noreferrer">
+                  {t("Abrir evidencia pública sanitizada", "Open sanitized public evidence")}
+                  <ExternalLink size={14} aria-hidden="true" />
+                </a>
+              </section>
+
               <details className={styles.guide} open>
-                <summary>{t("Cómo verificar esta demo", "How to verify this demo")}</summary>
-                <ol>
-                  <li>{t("Discovery devuelve una colección dinámica de 0..N providers.", "Discovery returns a dynamic collection of 0..N providers.")}</li>
-                  <li>{t("WebMCP ejecuta coverage → capacity → quote en cada portal.", "WebMCP runs coverage → capacity → quote in each portal.")}</li>
-                  <li>{t("Result Bridge persiste resultados y BALANCED ordena las ofertas.", "Result Bridge persists results and BALANCED ranks the offers.")}</li>
-                  <li>{t("Booking y recovery requieren una selección y autorización explícitas.", "Booking and recovery require explicit selection and authorization.")}</li>
+                <summary><ListChecks size={16} aria-hidden="true" /> {t("Paso a paso para el jurado", "Step-by-step judge walkthrough")}<ChevronDown className={styles.disclosureIcon} size={16} aria-hidden="true" /></summary>
+                <ol className={styles.guideSteps}>
+                  {JUDGE_FLOW_STEPS.map((step, index) => (
+                    <li key={step.id}>
+                      <span className={styles.stepNumber} aria-hidden="true">{index + 1}</span>
+                      <div>
+                        <strong>{t(step.title.es, step.title.en)}</strong>
+                        <p>{t(step.description.es, step.description.en)}</p>
+                        <small><b>{t("Debes ver:", "Expected:")}</b> {t(step.expected.es, step.expected.en)}</small>
+                        {step.href && step.linkLabel ? (
+                          <a href={step.href} target="_blank" rel="noreferrer">
+                            {t(step.linkLabel.es, step.linkLabel.en)}
+                            <ExternalLink size={13} aria-hidden="true" />
+                          </a>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
                 </ol>
               </details>
 
+              <details className={styles.toolCatalog}>
+                <summary><Wrench size={16} aria-hidden="true" /> {t("Catálogo WebMCP: 1 intake + 5 provider", "WebMCP catalog: 1 intake + 5 provider")}<ChevronDown className={styles.disclosureIcon} size={16} aria-hidden="true" /></summary>
+                <div className={styles.toolList} role="list">
+                  {JUDGE_TOOL_GUIDE.map((tool) => (
+                    <article key={tool.name} className={styles.toolItem} role="listitem">
+                      <header>
+                        <h4><code>{tool.name}</code></h4>
+                        <span className={tool.scope === "intake" ? styles.scopeIntake : styles.scopeProvider}>
+                          {tool.scope === "intake" ? "INTAKE" : "PROVIDER"}
+                        </span>
+                        <span className={tool.effect === "read-only" ? styles.effectReadOnly : styles.effectStateChanging}>
+                          {tool.effect === "read-only" ? "READ-ONLY" : t("CAMBIA ESTADO", "STATE-CHANGING")}
+                        </span>
+                      </header>
+                      <p>{t(tool.description.es, tool.description.en)}</p>
+                      <small><strong>{t("Resultado:", "Expected result:")}</strong> {t(tool.expected.es, tool.expected.en)}</small>
+                      <small><strong>{t("Host WebMCP:", "WebMCP host:")}</strong> <code>{tool.host}</code></small>
+                      {tool.uiEntry ? (
+                        <small><strong>{t("Acción en UI:", "UI entry:")}</strong> <code>{tool.uiEntry}</code></small>
+                      ) : null}
+                      <div className={styles.annotations} aria-label={t("Anotaciones WebMCP", "WebMCP annotations")}>
+                        <code>readOnlyHint: {String(tool.readOnlyHint)}</code>
+                        {tool.destructiveHint ? <code>destructiveHint: true</code> : null}
+                        <code>untrustedContentHint: {String(tool.untrustedContentHint)}</code>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </details>
+
+              <details className={styles.consoleGuide}>
+                <summary><SquareTerminal size={16} aria-hidden="true" /> {t("Prueba segura en DevTools", "Safe DevTools test")}<ChevronDown className={styles.disclosureIcon} size={16} aria-hidden="true" /></summary>
+                <div className={styles.consoleBody}>
+                  <p>{t(
+                    "Abre primero Andes desde “Inspecciona WebMCP nativo”. Copia cada bloque completo en Console; no escribas tokens, cookies ni credenciales. Estas llamadas manuales prueban el contrato read-only, pero no atraviesan Result Bridge ni persisten eventos u ofertas.",
+                    "First open Andes from “Inspect native WebMCP”. Paste each complete block into Console; never enter tokens, cookies, or credentials. These manual calls prove the read-only contract, but do not cross Result Bridge or persist events or offers.",
+                  )}</p>
+                  <section>
+                    <h4>{t("1. Descubre las cinco tools", "1. Discover the five tools")}</h4>
+                    <pre><code>{WEBMCP_DISCOVERY_SNIPPET}</code></pre>
+                    <small>{t("Debe imprimir cinco filas.", "It must print five rows.")}</small>
+                  </section>
+                  <section>
+                    <h4>{t("2. Ejecuta coverage read-only", "2. Execute read-only coverage")}</h4>
+                    <pre><code>{WEBMCP_COVERAGE_SNIPPET}</code></pre>
+                    <small>{t("Debe devolver ok: true y supported: true para el caso canónico.", "It must return ok: true and supported: true for the canonical case.")}</small>
+                  </section>
+                  <section>
+                    <h4>{t("3. Comprueba cleanup desde la raíz", "3. Verify cleanup from the root")}</h4>
+                    <pre><code>{WEBMCP_CLEANUP_SNIPPET}</code></pre>
+                    <small>{t("Resultado esperado: remainingProviderTools: [].", "Expected result: remainingProviderTools: [].")}</small>
+                  </section>
+                  <p className={styles.consoleWarning}>{t(
+                    "No ejecutes book_freight manualmente. Usa Select en el dispatch para que CargoMesh genere y valide la autorización server-side.",
+                    "Do not run book_freight manually. Use Select in dispatch so CargoMesh can issue and validate server-side authorization.",
+                  )}</p>
+                </div>
+              </details>
+
+              <div className={styles.evidenceHeading}>
+                <span>{t("Evidencia de la organización activa", "Active organization evidence")}</span>
+                <h3>{t("Eventos persistidos", "Persisted events")}</h3>
+              </div>
+
               {loading ? (
-                <div className={styles.empty}><LoaderCircle className={styles.spin} />{t("Cargando evidencia", "Loading evidence")}</div>
+                <div className={styles.empty} role="status" aria-live="polite"><LoaderCircle className={styles.spin} />{t("Cargando evidencia", "Loading evidence")}</div>
               ) : error ? (
                 <div className={styles.empty} role="alert">{error}</div>
               ) : events.length ? (
