@@ -12,6 +12,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   classifyEvidenceState,
   classifyProviderOrigin,
@@ -135,69 +136,72 @@ export function JudgeDrawer() {
         <PanelRightOpen size={18} aria-hidden="true" />
         <span>Judge</span>
       </button>
-      {open ? (
-        <>
-          <button
-            className={styles.backdrop}
-            type="button"
-            aria-label={t("Cerrar evidencia", "Close evidence")}
-            onClick={() => setOpen(false)}
-          />
-          <aside
-            ref={drawer}
-            className={styles.drawer}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="judge-title"
-          >
-            <header>
-              <div><span>Golden Flow</span><h2 id="judge-title">Judge Drawer</h2></div>
-              <button ref={close} type="button" aria-label={t("Cerrar", "Close")} onClick={() => setOpen(false)}>
-                <X size={19} aria-hidden="true" />
-              </button>
-            </header>
+      {open && typeof document !== "undefined" ? (
+        createPortal(
+          <>
+            <button
+              className={styles.backdrop}
+              type="button"
+              aria-label={t("Cerrar evidencia", "Close evidence")}
+              onClick={() => setOpen(false)}
+            />
+            <aside
+              ref={drawer}
+              className={styles.drawer}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="judge-title"
+            >
+              <header>
+                <div><span>Golden Flow</span><h2 id="judge-title">Judge Drawer</h2></div>
+                <button ref={close} type="button" aria-label={t("Cerrar", "Close")} onClick={() => setOpen(false)}>
+                  <X size={19} aria-hidden="true" />
+                </button>
+              </header>
 
-            <section className={styles.note} aria-label={t("Acerca de esta evidencia", "About this evidence")}>
-              <Database size={18} aria-hidden="true" />
-              <div>
-                <strong>{t("Evidencia persistida, no fabricada", "Persisted evidence, not fabricated")}</strong>
-                <p>{t(
-                  "Cada entrada proviene de la organización activa. Los fixtures y el reset de demo permanecen separados de esta vista.",
-                  "Every entry comes from the active organization. Demo fixtures and reset controls remain separate from this view.",
-                )}</p>
-              </div>
-            </section>
+              <section className={styles.note} aria-label={t("Acerca de esta evidencia", "About this evidence")}>
+                <Database size={18} aria-hidden="true" />
+                <div>
+                  <strong>{t("Evidencia persistida, no fabricada", "Persisted evidence, not fabricated")}</strong>
+                  <p>{t(
+                    "Cada entrada proviene de la organización activa. Los fixtures y el reset de demo permanecen separados de esta vista.",
+                    "Every entry comes from the active organization. Demo fixtures and reset controls remain separate from this view.",
+                  )}</p>
+                </div>
+              </section>
 
-            <details className={styles.guide} open>
-              <summary>{t("Cómo verificar esta demo", "How to verify this demo")}</summary>
-              <ol>
-                <li>{t("Discovery devuelve una colección dinámica de 0..N providers.", "Discovery returns a dynamic collection of 0..N providers.")}</li>
-                <li>{t("WebMCP ejecuta coverage → capacity → quote en cada portal.", "WebMCP runs coverage → capacity → quote in each portal.")}</li>
-                <li>{t("Result Bridge persiste resultados y BALANCED ordena las ofertas.", "Result Bridge persists results and BALANCED ranks the offers.")}</li>
-                <li>{t("Booking y recovery requieren una selección y autorización explícitas.", "Booking and recovery require explicit selection and authorization.")}</li>
-              </ol>
-            </details>
+              <details className={styles.guide} open>
+                <summary>{t("Cómo verificar esta demo", "How to verify this demo")}</summary>
+                <ol>
+                  <li>{t("Discovery devuelve una colección dinámica de 0..N providers.", "Discovery returns a dynamic collection of 0..N providers.")}</li>
+                  <li>{t("WebMCP ejecuta coverage → capacity → quote en cada portal.", "WebMCP runs coverage → capacity → quote in each portal.")}</li>
+                  <li>{t("Result Bridge persiste resultados y BALANCED ordena las ofertas.", "Result Bridge persists results and BALANCED ranks the offers.")}</li>
+                  <li>{t("Booking y recovery requieren una selección y autorización explícitas.", "Booking and recovery require explicit selection and authorization.")}</li>
+                </ol>
+              </details>
 
-            {loading ? (
-              <div className={styles.empty}><LoaderCircle className={styles.spin} />{t("Cargando evidencia", "Loading evidence")}</div>
-            ) : error ? (
-              <div className={styles.empty} role="alert">{error}</div>
-            ) : events.length ? (
-              <div className={styles.events}>
-                {events.map((event) => (
-                  <EvidenceCard
-                    key={event.id}
-                    event={event}
-                    cargoMeshOrigin={cargoMeshOrigin}
-                    locale={locale}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className={styles.empty}>{t("No hay eventos de orquestación persistidos.", "No persisted orchestration events.")}</div>
-            )}
-          </aside>
-        </>
+              {loading ? (
+                <div className={styles.empty}><LoaderCircle className={styles.spin} />{t("Cargando evidencia", "Loading evidence")}</div>
+              ) : error ? (
+                <div className={styles.empty} role="alert">{error}</div>
+              ) : events.length ? (
+                <div className={styles.events}>
+                  {events.map((event) => (
+                    <EvidenceCard
+                      key={event.id}
+                      event={event}
+                      cargoMeshOrigin={cargoMeshOrigin}
+                      locale={locale}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.empty}>{t("No hay eventos de orquestación persistidos.", "No persisted orchestration events.")}</div>
+              )}
+            </aside>
+          </>,
+          document.body
+        )
       ) : null}
     </>
   );
