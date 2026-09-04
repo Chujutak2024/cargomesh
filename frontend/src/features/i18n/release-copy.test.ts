@@ -40,6 +40,9 @@ test("provider directory and B-03 preview preserve the public honesty boundary",
 
   assert.match(directory, /same-origin routes/);
   assert.match(directory, /same Vercel origin/);
+  assert.match(directory, /capacity: "18,000 kg · 55 m³"/);
+  assert.match(directory, /capacity: "24,000 kg · 70 m³"/);
+  assert.match(directory, /capacity: "15,000 kg · 45 m³"/);
   assert.doesNotMatch(directory, /independent host|host independiente|LIVE HOSTS/i);
   assert.match(directory, /buildCanonicalDemoProviderHref\(carrier\.slug\)/);
   assert.match(providerPage, /buildCanonicalDemoProviderHref\(tab\.slug\)/);
