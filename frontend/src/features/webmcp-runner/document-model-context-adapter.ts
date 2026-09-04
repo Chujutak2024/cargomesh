@@ -2,6 +2,7 @@ import type {
   Int02aProviderToolName,
   WebMcpRuntimeAdapter,
 } from "./contracts";
+import { createWebMcpExecuteInput } from "./execute-tool-input";
 
 type ModelContextDocument = Pick<Document, "modelContext">;
 
@@ -49,7 +50,7 @@ export function createDocumentModelContextAdapter(
 
       const outputJson = await modelContext.executeTool(
         tool,
-        JSON.stringify(input),
+        createWebMcpExecuteInput(input),
         { signal },
       );
 

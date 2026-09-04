@@ -7,6 +7,7 @@ import type {
   ProviderNavigationAdapter,
   WebMcpRuntimeAdapter,
 } from "./contracts";
+import { createWebMcpExecuteInput } from "./execute-tool-input";
 
 const DEFAULT_NAVIGATION_TIMEOUT_MS = 15_000;
 const DEFAULT_WEBMCP_READY_TIMEOUT_MS = 8_000;
@@ -327,7 +328,7 @@ export function createExternalProviderNavigationAdapter(
 
           const outputJson = await modelContext.executeTool(
             tool,
-            JSON.stringify(input),
+            createWebMcpExecuteInput(input),
             { signal },
           );
           return outputJson === null ? null : JSON.parse(outputJson);

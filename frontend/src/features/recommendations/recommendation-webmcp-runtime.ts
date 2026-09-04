@@ -1,3 +1,5 @@
+import { createWebMcpExecuteInput } from "@/features/webmcp-runner/execute-tool-input";
+
 import {
   GET_FREIGHT_REQUEST_RECOMMENDATIONS_TOOL_NAME,
   type FreightRecommendationInput,
@@ -63,7 +65,7 @@ export async function executeFreightRecommendationToolViaWebMcp(
 
   const outputJson = await modelContext.executeTool(
     registeredTool,
-    JSON.stringify(parsedInput.value),
+    createWebMcpExecuteInput(parsedInput.value),
     { signal },
   );
   if (outputJson === null) {

@@ -173,7 +173,7 @@ test("registration exposes all five tools cross-origin and the shared signal cle
     },
     async executeTool(
       tool: WebMCP.RegisteredTool,
-      inputJson = "{}",
+      input: object | string = {},
       options?: WebMCP.ModelContextExecuteToolOptions,
     ) {
       const registration = registeredTools.get(tool.name);
@@ -181,7 +181,7 @@ test("registration exposes all five tools cross-origin and the shared signal cle
         throw new Error(`Tool '${tool.name}' is not registered.`);
       }
 
-      const result = await registration.tool.execute(JSON.parse(inputJson), {
+      const result = await registration.tool.execute(JSON.parse(String(input)), {
         signal: options?.signal ?? new AbortController().signal,
       });
       return JSON.stringify(result);

@@ -146,14 +146,14 @@ function createModelContext(frame: ReturnType<typeof createFrame>) {
     },
     async executeTool(
       tool: WebMCP.RegisteredTool,
-      inputJson = "{}",
+      rawInput: object | string = {},
       options?: WebMCP.ModelContextExecuteToolOptions,
     ) {
       if (options?.signal?.aborted) {
         throw new DOMException("Execution aborted.", "AbortError");
       }
 
-      const input = JSON.parse(inputJson) as Record<string, unknown>;
+      const input = JSON.parse(String(rawInput)) as Record<string, unknown>;
       executed.push({ origin: tool.origin, toolName: tool.name, input });
 
       const outputByTool: Record<Int02aProviderToolName, unknown> = {
