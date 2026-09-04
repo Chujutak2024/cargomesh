@@ -32,7 +32,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
   const navigation = [
     { label: t("Principal", "Main"), items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/freight-request/new", label: t("Nueva carga", "New shipment"), icon: PackagePlus },
+      { href: "/freight-request/new?requestCode=FR-1042", label: t("Nueva carga", "New shipment"), icon: PackagePlus },
       { href: "/requests", label: t("Mis cargas", "My shipments"), icon: ClipboardList },
       { href: "/dispatch", label: t("Despachos", "Dispatch"), icon: Route },
       { href: "/tracking", label: t("Seguimiento", "Tracking"), icon: MapPinned },

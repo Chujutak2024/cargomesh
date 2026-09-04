@@ -375,19 +375,29 @@ export function FreightIntakeForm({
       setOriginCoords("-12.0464, -77.0428");
       setDestCoords("-33.4489, -70.6693");
       setForm(initialValue);
+      const controller = new AbortController();
+      void loadCanonicalDraft(controller.signal);
     }
   }
 
   const loadCanonicalDraft = useCallback(async (signal: AbortSignal) => {
     if (!initialValue.freightRequestId) return;
     const draft = await fetchFreightRequestDraft(initialValue.freightRequestId, signal);
-    setForm((current) => applyFreightRequestDraftToIntake(current, draft));
+    setForm((current) => isCleanMode
+      ? {
+          ...current,
+          draftVersion: draft.draftVersion,
+          freightRequestId: draft.freightRequestId,
+          requestId: draft.requestCode,
+        }
+      : applyFreightRequestDraftToIntake(current, draft)
+    );
     setDraftLoadError(null);
     setDraftReady(true);
-  }, [initialValue.freightRequestId]);
+  }, [initialValue.freightRequestId, isCleanMode]);
 
   useEffect(() => {
-    if (initialValue.source !== "persisted" || !initialValue.freightRequestId || defaultCleanMode) return;
+    if (initialValue.source !== "persisted" || !initialValue.freightRequestId) return;
     const controller = new AbortController();
     void loadCanonicalDraft(controller.signal).catch((error) => {
       if (controller.signal.aborted) return;
@@ -395,7 +405,7 @@ export function FreightIntakeForm({
       setDraftLoadError(error instanceof Error ? error.message : t("No fue posible cargar el borrador vigente desde D1-01.", "The current draft could not be loaded from D1-01."));
     });
     return () => controller.abort();
-  }, [initialValue.source, initialValue.freightRequestId, loadCanonicalDraft, defaultCleanMode, t]);
+  }, [initialValue.source, initialValue.freightRequestId, loadCanonicalDraft, t]);
 
   const handleRegistrationChange = useCallback((registered: boolean) => {
     setWebMcpReady(registered);

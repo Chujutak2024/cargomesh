@@ -1,6 +1,7 @@
 import { FreightIntakeLoader } from "@/components/freight-intake-loader";
 import { requireOperationalRouteAccess } from "@/features/auth/route-guard";
 import {
+  DEFAULT_INTAKE_REQUEST_CODE,
   isIntakeVisualScenario,
   resolveIntakeRequestCode,
 } from "@/features/freight-requests/intake-ui-adapter";
@@ -17,12 +18,12 @@ export default async function NewFreightRequestPage({
 }) {
   await requireOperationalRouteAccess();
   const query = await searchParams;
-  const hasExplicitCode = typeof query.requestCode === "string" && query.requestCode.trim().length > 0;
+  const requestedCode = resolveIntakeRequestCode(query.requestCode) ?? DEFAULT_INTAKE_REQUEST_CODE;
 
   return (
     <FreightIntakeLoader
-      requestCode={resolveIntakeRequestCode(query.requestCode)}
-      defaultCleanMode={!hasExplicitCode}
+      requestCode={requestedCode}
+      defaultCleanMode={false}
       visualScenario={isIntakeVisualScenario(query.scenario)}
     />
   );
