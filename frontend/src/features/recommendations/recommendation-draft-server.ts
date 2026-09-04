@@ -173,11 +173,18 @@ export function patchForDatabase(normalized: NormalizedDraft, currentVersion: nu
   };
 }
 
-function historySuggestion(row: FreightRequestDraftRow): FreightRecommendationSuggestion {
+function historySuggestion(
+  row: FreightRequestDraftRow,
+  currentCargoCategoryId?: string,
+): FreightRecommendationSuggestion {
   const proposedFields = currentFields(row);
   delete proposedFields.pickup_window_start;
   delete proposedFields.pickup_window_end;
   delete proposedFields.delivery_deadline;
+  const isSameCategory = !currentCargoCategoryId || row.cargo_category_id === currentCargoCategoryId;
+  if (!isSameCategory) {
+    delete proposedFields.cargo_category_id;
+  }
   const historicalSpecifications = jsonObject(row.cargo_specifications);
   const synthetic =
     historicalSpecifications.fixtureProvenance ===
@@ -194,13 +201,19 @@ function historySuggestion(row: FreightRequestDraftRow): FreightRecommendationSu
   ) {
     delete proposedFields.special_instructions;
   }
+  const reasonCodes = synthetic
+    ? (isSameCategory
+        ? ["SAME_CORRIDOR", "SAME_CATEGORY", "SYNTHETIC_DEMO_HISTORY"]
+        : ["SAME_CORRIDOR", "SYNTHETIC_DEMO_HISTORY"])
+    : (isSameCategory
+        ? ["SAME_CORRIDOR", "SAME_CATEGORY"]
+        : ["SAME_CORRIDOR"]);
+
   return {
     suggestionId: `history:${row.id}:v1`,
     sourceType: synthetic ? "SYNTHETIC_RECOMMENDATION_HISTORY" : "ORGANIZATION_HISTORY",
     sourceRequestId: row.id,
-    reasonCodes: synthetic
-      ? ["SAME_CORRIDOR", "SAME_CATEGORY", "SYNTHETIC_DEMO_HISTORY"]
-      : ["SAME_CORRIDOR", "SAME_CATEGORY"],
+    reasonCodes,
     explanation: synthetic
       ? "Antecedente sintético compatible para revisión humana; no representa una tarifa ni disponibilidad vigente."
       : "Antecedente de la misma organización y corredor para revisión humana.",
@@ -229,7 +242,7 @@ export async function getFreightRequestRecommendations(
   }
 
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("freight_requests")
     .select(FREIGHT_REQUEST_DRAFT_SELECT)
     .eq("organization_id", current.organization_id)
@@ -251,11 +264,31 @@ export async function getFreightRequestRecommendations(
     );
   }
 
+  let rows = (data as unknown as FreightRequestDraftRow[] | null ?? []);
+  if (rows.length === 0) {
+    const fallback = await supabase
+      .from("freight_requests")
+      .select(FREIGHT_REQUEST_DRAFT_SELECT)
+      .eq("organization_id", current.organization_id)
+      .neq("id", current.id)
+      .eq("status", "BOOKED")
+      .eq("origin_country", current.origin_country)
+      .eq("origin_city", current.origin_city)
+      .eq("destination_country", current.destination_country)
+      .eq("destination_city", current.destination_city)
+      .eq("cross_border", current.cross_border)
+      .order("updated_at", { ascending: false })
+      .limit(3);
+    if (!fallback.error && fallback.data && fallback.data.length > 0) {
+      rows = fallback.data as unknown as FreightRequestDraftRow[];
+    }
+  }
+
   return {
     schemaVersion: "1.0",
     freightRequestId: current.id,
     draftVersion: current.draft_version,
-    suggestions: (data as unknown as FreightRequestDraftRow[] | null ?? []).map(historySuggestion),
+    suggestions: rows.map((row) => historySuggestion(row, current.cargo_category_id)),
   };
 }
 
