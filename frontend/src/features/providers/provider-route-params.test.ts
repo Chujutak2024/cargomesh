@@ -50,9 +50,9 @@ test("accepts the matchingServiceId attached by provider discovery navigation", 
 
 test("builds canonical same-origin demo links without weakening dynamic discovery", () => {
   const cases = [
-    ["andes", "/providers/andes?serviceId=40000000-0000-0000-0000-000000000001"],
-    ["inca", "/providers/inca?serviceId=40000000-0000-0000-0000-000000000002"],
-    ["pacific", "/providers/pacific?serviceId=40000000-0000-0000-0000-000000000003"],
+    ["andes", "/providers/andes?serviceId=30000000-0000-0000-0000-000000000001"],
+    ["inca", "/providers/inca?serviceId=30000000-0000-0000-0000-000000000003"],
+    ["pacific", "/providers/pacific?serviceId=30000000-0000-0000-0000-000000000002"],
   ] as const;
 
   for (const [slug, expectedHref] of cases) {

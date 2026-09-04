@@ -28,7 +28,7 @@ must not be described as independently hosted partner domains.
 
 Open:
 
-`https://cargomesh.vercel.app/providers/andes?serviceId=40000000-0000-0000-0000-000000000001`
+`https://cargomesh.vercel.app/providers/andes?serviceId=30000000-0000-0000-0000-000000000001`
 
 Run in DevTools:
 
@@ -178,7 +178,7 @@ booking or persist a CarrierOffer by itself.
 
 Open:
 
-`https://cargomesh.vercel.app/providers/inca?serviceId=40000000-0000-0000-0000-000000000002`
+`https://cargomesh.vercel.app/providers/inca?serviceId=30000000-0000-0000-0000-000000000003`
 
 Run the complete block from section 3 again. Full-document navigation creates
 a new WebMCP context, so always rediscover the tool object with `getTools()`.

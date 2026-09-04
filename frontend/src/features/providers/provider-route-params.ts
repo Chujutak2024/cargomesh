@@ -7,9 +7,9 @@ export type ProviderSearchParams = {
 // Stable demo navigation targets only. Discovery and provider resolution remain
 // registry-driven and must never use this map as a carrier allowlist.
 export const CANONICAL_DEMO_PROVIDER_SERVICE_IDS = {
-  andes: "40000000-0000-0000-0000-000000000001",
-  inca: "40000000-0000-0000-0000-000000000002",
-  pacific: "40000000-0000-0000-0000-000000000003",
+  andes: "30000000-0000-0000-0000-000000000001",
+  inca: "30000000-0000-0000-0000-000000000003",
+  pacific: "30000000-0000-0000-0000-000000000002",
 } as const;
 
 export type CanonicalDemoProviderSlug = keyof typeof CANONICAL_DEMO_PROVIDER_SERVICE_IDS;

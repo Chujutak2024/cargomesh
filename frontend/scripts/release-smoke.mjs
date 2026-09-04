@@ -10,13 +10,23 @@ if (baseUrl.protocol !== "https:") {
   throw new Error("CARGOMESH_RELEASE_URL must use HTTPS.");
 }
 
-// Canonical Andes service from the Golden Flow seed. Keep this distinct from
-// the demo Auth user UUID, which also uses a stable seed identity.
-const serviceId = "40000000-0000-0000-0000-000000000001";
 const targets = [
   { name: "landing", path: "/" },
   { name: "login", path: "/login" },
-  { name: "provider", path: `/providers/andes?serviceId=${serviceId}` },
+  // Exact carrier_services.id values from the public demo registry. Keep these
+  // distinct from stable Auth, carrier, and fixture identities.
+  {
+    name: "provider-andes",
+    path: "/providers/andes?serviceId=30000000-0000-0000-0000-000000000001",
+  },
+  {
+    name: "provider-inca",
+    path: "/providers/inca?serviceId=30000000-0000-0000-0000-000000000003",
+  },
+  {
+    name: "provider-pacific",
+    path: "/providers/pacific?serviceId=30000000-0000-0000-0000-000000000002",
+  },
 ];
 
 for (const target of targets) {
