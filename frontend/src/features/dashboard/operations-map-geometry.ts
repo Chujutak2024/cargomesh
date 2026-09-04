@@ -255,7 +255,9 @@ export function createOperationsMapRoute(model: OperationsMapModel): OperationsM
     };
   }
 
-  const followsRoadCorridor = supportsCanonicalCorridor(model.origin, model.destination);
+  const supportsRoadCorridor = supportsCanonicalCorridor(model.origin, model.destination);
+  const followsRoadCorridor = supportsRoadCorridor
+    && nearestCorridorIndex(originCoord) !== nearestCorridorIndex(destinationCoord);
   const polylineCoordinates = followsRoadCorridor
     ? canonicalCorridorSlice(originCoord, destinationCoord)
     : [originCoord, destinationCoord];

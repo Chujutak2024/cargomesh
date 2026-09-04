@@ -157,3 +157,18 @@ test("every selectable logistics city has a map anchor", () => {
 
   assert.deepEqual(missing, []);
 });
+
+test("a validated route outside the detailed spine remains visible without claiming road geometry", () => {
+  const route = createOperationsMapRoute({
+    bookingId: null,
+    mode: "planned",
+    requestCode: "FR-NORTH",
+    origin: { city: "Paita", countryCode: "PE" },
+    destination: { city: "Trujillo", countryCode: "PE" },
+    checkpoints: [],
+  });
+
+  assert.equal(route.followsRoadCorridor, false);
+  assert.equal(route.polylineCoordinates.length, 2);
+  assert.equal(route.points.length, 2);
+});

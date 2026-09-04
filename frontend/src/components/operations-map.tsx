@@ -149,11 +149,16 @@ export function OperationsMap({ model }: { model: OperationsMapModel | null }) {
       ? t("Eventos confirmados", "Confirmed events")
       : t("Booking confirmado · Esperando reporte", "Booking confirmed · Awaiting report");
 
-  const mapNotice = isPlanned
+  const mapNotice = isPlanned && route.followsRoadCorridor
     ? t(
         "Corredor vial de referencia (Panamericana Sur PE-1S / Ruta 5); no hay carrier asignado ni telemetría en vivo.",
         "Reference highway corridor (Pan-American PE-1S / Route 5); no carrier is assigned and no live telemetry is available.",
       )
+    : isPlanned
+      ? t(
+          "Referencia geográfica basada en el origen y destino persistidos; el detalle vial de este corredor aún no está disponible y no se representa telemetría en vivo.",
+          "Geographic reference based on the persisted origin and destination; detailed road geometry is not yet available for this corridor and no live telemetry is shown.",
+        )
     : hasCheckpoints
       ? t(
           "Checkpoints reportados por el carrier según contratos de booking. No representa GPS en vivo.",
