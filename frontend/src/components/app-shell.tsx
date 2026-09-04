@@ -22,6 +22,7 @@ import { useState, type ReactNode } from "react";
 import { LanguageSwitcher } from "./language-switcher";
 import { JudgeDrawer } from "./judge-drawer";
 import { useLocale } from "@/features/i18n/locale-provider";
+import { buildCanonicalDemoProviderHref } from "@/features/providers/provider-route-params";
 import styles from "./app-shell.module.css";
 
 type ShellIdentity = { organizationName: string; displayName: string; role: string } | null;
@@ -40,9 +41,9 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
     ] },
     { label: t("Carriers WebMCP", "WebMCP Carriers"), items: [
       { href: "/providers", label: t("Directorio de Carriers", "Carriers Directory"), icon: Waypoints },
-      { href: "/providers/andes", label: "Andes Express", icon: Truck },
-      { href: "/providers/inca", label: "Transportes Inca", icon: Truck },
-      { href: "/providers/pacific", label: "Pacific Cargo", icon: Truck },
+      { href: buildCanonicalDemoProviderHref("andes"), label: "Andes Express", icon: Truck },
+      { href: buildCanonicalDemoProviderHref("inca"), label: "Transportes Inca", icon: Truck },
+      { href: buildCanonicalDemoProviderHref("pacific"), label: "Pacific Cargo", icon: Truck },
     ] },
     { label: t("Gestión", "Management"), items: [
       { href: "/organization", label: t("Organización", "Organization"), icon: Building2 },

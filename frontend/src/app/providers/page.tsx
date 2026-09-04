@@ -16,6 +16,7 @@ import {
 
 import { translate } from "@/features/i18n/config";
 import { getRequestLocale } from "@/features/i18n/server";
+import { buildCanonicalDemoProviderHref } from "@/features/providers/provider-route-params";
 import styles from "./providers-directory.module.css";
 
 export const dynamic = "force-dynamic";
@@ -122,7 +123,7 @@ const LIVE_CARRIERS = [
       "Constrained pickup availability window",
     ],
   },
-];
+] as const;
 
 const ROADMAP_CARRIERS = [
   {
@@ -166,8 +167,8 @@ export default async function ProvidersDirectoryPage() {
           <p>
             {translate(
               locale,
-              "Directorio operativo de transportistas conectados mediante el estándar WebMCP. Cada carrier opera un host independiente con tools en document.modelContext para consulta de cobertura, capacidad, cotización determinística y reserva transfronteriza.",
-              "Operational directory of carriers connected via WebMCP. Each carrier runs an independent host with tools in document.modelContext for coverage queries, capacity, deterministic quoting, and cross-border booking.",
+              "Directorio de tres providers WebMCP ejecutables en rutas dedicadas del demo CargoMesh. Actualmente comparten el mismo origin de Vercel; cada portal registra cinco tools en document.modelContext.",
+              "Directory of three executable WebMCP providers on dedicated CargoMesh demo routes. They currently share the same Vercel origin; each portal registers five tools in document.modelContext.",
             )}
           </p>
         </div>
@@ -177,15 +178,15 @@ export default async function ProvidersDirectoryPage() {
         <div className={styles.statCard}>
           <span className={styles.statIcon} aria-hidden="true"><Truck size={20} /></span>
           <div className={styles.statText}>
-            <small>{translate(locale, "Carriers en vivo", "Live carriers")}</small>
-            <strong>3 {translate(locale, "Providers WebMCP", "WebMCP Providers")}</strong>
+            <small>{translate(locale, "Providers del demo", "Demo providers")}</small>
+            <strong>3 {translate(locale, "rutas same-origin", "same-origin routes")}</strong>
           </div>
         </div>
         <div className={styles.statCard}>
           <span className={styles.statIcon} aria-hidden="true"><Zap size={20} /></span>
           <div className={styles.statText}>
-            <small>{translate(locale, "Tools registradas", "Registered tools")}</small>
-            <strong>15 {translate(locale, "Tools en document.modelContext", "Tools in document.modelContext")}</strong>
+            <small>{translate(locale, "Tools por portal activo", "Tools per active portal")}</small>
+            <strong>5 {translate(locale, "tools provider", "provider tools")}</strong>
           </div>
         </div>
         <div className={styles.statCard}>
@@ -208,7 +209,7 @@ export default async function ProvidersDirectoryPage() {
         <h2>{translate(locale, "Providers WebMCP Operativos", "Active WebMCP Providers")}</h2>
         <span className={styles.sectionBadge}>
           <span className={styles.dotLive} aria-hidden="true" />
-          3 LIVE HOSTS
+          3 SAME-ORIGIN ROUTES
         </span>
       </div>
 
@@ -267,9 +268,12 @@ export default async function ProvidersDirectoryPage() {
             <div className={styles.cardFooter}>
               <span className={styles.statusLive}>
                 <span className={styles.dotLive} aria-hidden="true" />
-                {translate(locale, "Host WebMCP activo", "WebMCP host active")}
+                {translate(locale, "Ruta WebMCP activa del demo", "Active demo WebMCP route")}
               </span>
-              <Link href={`/providers/${carrier.slug}`} className={styles.primaryBtn}>
+              <Link
+                href={buildCanonicalDemoProviderHref(carrier.slug)}
+                className={styles.primaryBtn}
+              >
                 {translate(locale, "Ver Portal Carrier", "Open Carrier Portal")}
                 <ChevronRight size={15} aria-hidden="true" />
               </Link>

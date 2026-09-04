@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { buildProviderNavigationUrl } from "@/features/discovery/provider-navigation";
 
 import {
+  buildCanonicalDemoProviderHref,
+  CANONICAL_DEMO_PROVIDER_SERVICE_IDS,
   getProviderServiceId,
   isProviderServiceId,
 } from "./provider-route-params";
@@ -43,4 +46,31 @@ test("accepts the matchingServiceId attached by provider discovery navigation", 
     }),
     seededServiceId,
   );
+});
+
+test("builds canonical same-origin demo links without weakening dynamic discovery", () => {
+  const cases = [
+    ["andes", "/providers/andes?serviceId=40000000-0000-0000-0000-000000000001"],
+    ["inca", "/providers/inca?serviceId=40000000-0000-0000-0000-000000000002"],
+    ["pacific", "/providers/pacific?serviceId=40000000-0000-0000-0000-000000000003"],
+  ] as const;
+
+  for (const [slug, expectedHref] of cases) {
+    assert.equal(buildCanonicalDemoProviderHref(slug), expectedHref);
+    assert.equal(
+      new URL(expectedHref, "https://cargomesh.vercel.app").searchParams.get("serviceId"),
+      CANONICAL_DEMO_PROVIDER_SERVICE_IDS[slug],
+    );
+  }
+});
+
+test("provider config requires one exact service and has no first-service fallback", () => {
+  const source = readFileSync(new URL("./get-provider-page-config.ts", import.meta.url), "utf8");
+
+  assert.match(source, /!isProviderServiceId\(serviceId\)/);
+  assert.match(source, /\.eq\("id", serviceId\)/);
+  assert.match(source, /\.eq\("carrier_id", carrier\.id\)/);
+  assert.doesNotMatch(source, /CANONICAL_PROVIDER_CONFIGS/);
+  assert.doesNotMatch(source, /\.order\("created_at"/);
+  assert.doesNotMatch(source, /\.limit\(1\)/);
 });

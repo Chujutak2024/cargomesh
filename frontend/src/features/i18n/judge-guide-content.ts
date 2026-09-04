@@ -1,3 +1,5 @@
+import { buildCanonicalDemoProviderHref } from "@/features/providers/provider-route-params";
+
 export type JudgeGuideCopy = {
   es: string;
   en: string;
@@ -32,7 +34,10 @@ export const CANONICAL_APP_ORIGIN = "https://cargomesh.vercel.app";
 
 export const CANONICAL_LOGIN_URL = `${CANONICAL_APP_ORIGIN}/login`;
 
-export const CANONICAL_ANDES_PROVIDER_URL = `${CANONICAL_APP_ORIGIN}/providers/andes?serviceId=30000000-0000-0000-0000-000000000001`;
+export const CANONICAL_ANDES_PROVIDER_URL = new URL(
+  buildCanonicalDemoProviderHref("andes"),
+  CANONICAL_APP_ORIGIN,
+).toString();
 
 export const CANONICAL_INTAKE_URL = `${CANONICAL_APP_ORIGIN}/freight-request/new?requestCode=FR-1042`;
 
@@ -197,8 +202,8 @@ export const JUDGE_FLOW_STEPS: readonly JudgeFlowStep[] = [
     id: "inspect-provider",
     title: { es: "Inspecciona WebMCP nativo", en: "Inspect native WebMCP" },
     description: {
-      es: "Esta es una URL técnica directa en otra pestaña, no una sección del menú. Abre Andes con su serviceId exacto; ejecuta getTools() y luego coverage read-only.",
-      en: "This is a direct technical URL in another tab, not a sidebar section. Open Andes with its exact serviceId; run getTools(), then read-only coverage.",
+      es: "Abre Andes desde el directorio lateral o con este enlace canónico en otra pestaña. Conserva su serviceId exacto; ejecuta getTools() y luego coverage read-only.",
+      en: "Open Andes from the sidebar directory or with this canonical link in another tab. Preserve its exact serviceId; run getTools(), then read-only coverage.",
     },
     expected: { es: "Cinco tools provider y un envelope con supported: true.", en: "Five provider tools and an envelope with supported: true." },
     href: CANONICAL_ANDES_PROVIDER_URL,

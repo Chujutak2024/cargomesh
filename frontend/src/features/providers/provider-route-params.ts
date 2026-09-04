@@ -4,6 +4,21 @@ export type ProviderSearchParams = {
   serviceId?: string | string[];
 };
 
+// Stable demo navigation targets only. Discovery and provider resolution remain
+// registry-driven and must never use this map as a carrier allowlist.
+export const CANONICAL_DEMO_PROVIDER_SERVICE_IDS = {
+  andes: "40000000-0000-0000-0000-000000000001",
+  inca: "40000000-0000-0000-0000-000000000002",
+  pacific: "40000000-0000-0000-0000-000000000003",
+} as const;
+
+export type CanonicalDemoProviderSlug = keyof typeof CANONICAL_DEMO_PROVIDER_SERVICE_IDS;
+
+export function buildCanonicalDemoProviderHref(slug: CanonicalDemoProviderSlug): string {
+  const serviceId = CANONICAL_DEMO_PROVIDER_SERVICE_IDS[slug];
+  return `/providers/${slug}?serviceId=${encodeURIComponent(serviceId)}`;
+}
+
 export function isProviderServiceId(value: unknown): value is string {
   return typeof value === "string" && POSTGRES_UUID_PATTERN.test(value);
 }

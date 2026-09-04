@@ -6,6 +6,8 @@ import { localeTag, translate } from "@/features/i18n/config";
 import { getRequestLocale } from "@/features/i18n/server";
 import { getProviderPageConfig } from "@/features/providers/get-provider-page-config";
 import {
+  buildCanonicalDemoProviderHref,
+  type CanonicalDemoProviderSlug,
   getProviderServiceId,
   type ProviderSearchParams,
 } from "@/features/providers/provider-route-params";
@@ -19,6 +21,15 @@ type ProviderPageProps = {
   params: Promise<{ carrierSlug: string }>;
   searchParams: Promise<ProviderSearchParams>;
 };
+
+const DEMO_PROVIDER_TABS: ReadonlyArray<{
+  slug: CanonicalDemoProviderSlug;
+  label: string;
+}> = [
+  { slug: "andes", label: "🏔️ Andes Express" },
+  { slug: "inca", label: "🏛️ Transportes Inca" },
+  { slug: "pacific", label: "🌊 Pacific Cargo" },
+];
 
 export async function generateMetadata({
   params,
@@ -65,15 +76,15 @@ export default async function ProviderPage({ params, searchParams }: ProviderPag
         <Link href="/providers" className={styles.carrierTab}>
           ← {translate(locale, "Todos los carriers", "All carriers")}
         </Link>
-        <Link href="/providers/andes" className={`${styles.carrierTab} ${carrierSlug === "andes" ? styles.carrierTabActive : ""}`}>
-          🏔️ Andes Express
-        </Link>
-        <Link href="/providers/inca" className={`${styles.carrierTab} ${carrierSlug === "inca" ? styles.carrierTabActive : ""}`}>
-          🏛️ Transportes Inca
-        </Link>
-        <Link href="/providers/pacific" className={`${styles.carrierTab} ${carrierSlug === "pacific" ? styles.carrierTabActive : ""}`}>
-          🌊 Pacific Cargo
-        </Link>
+        {DEMO_PROVIDER_TABS.map((tab) => (
+          <Link
+            key={tab.slug}
+            href={buildCanonicalDemoProviderHref(tab.slug)}
+            className={`${styles.carrierTab} ${carrierSlug === tab.slug ? styles.carrierTabActive : ""}`}
+          >
+            {tab.label}
+          </Link>
+        ))}
       </nav>
       <header className={styles.header}>
         <div>

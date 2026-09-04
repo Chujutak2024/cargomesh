@@ -81,7 +81,7 @@ test("exposes recovery alternatives as fixture-only 0, 1 and N collections", () 
   assert.equal("bookingId" in four.recoveryOptions[0], false);
 });
 
-test("matches offer by carrierCode and populates deadline and trackingHref", () => {
+test("matches offers without fabricating a deadline or tracking target", () => {
   const andesFixture = getBookingUiFixture({
     requestCode: "FR-1042",
     scenario: "pending-provider-confirmation",
@@ -90,7 +90,7 @@ test("matches offer by carrierCode and populates deadline and trackingHref", () 
   });
   assert.equal(andesFixture.selectedOffer?.offerId, "offer-demo-1");
   assert.equal(andesFixture.selectedOffer?.carrierCode, "ANDES_DEMO");
-  assert.ok(andesFixture.providerResponseDeadline);
+  assert.equal("providerResponseDeadline" in andesFixture, false);
 
   const confirmedFixture = getBookingUiFixture({
     requestCode: "FR-1042",
@@ -100,5 +100,24 @@ test("matches offer by carrierCode and populates deadline and trackingHref", () 
   });
   assert.equal(confirmedFixture.selectedOffer?.offerId, "offer-demo-2");
   assert.equal(confirmedFixture.selectedOffer?.carrierCode, "INCA_DEMO");
-  assert.equal(confirmedFixture.trackingHref, "/tracking/FR-1042");
+  assert.equal("trackingHref" in confirmedFixture, false);
+});
+
+test("fixture evidence never claims WebMCP execution, navigation or persistence", () => {
+  for (const scenario of ["booking-pending", "pending-provider-confirmation", "confirmed", "rejected"] as const) {
+    const fixture = getBookingUiFixture({
+      requestCode: "FR-1042",
+      scenario,
+      offerSet: "three",
+      offerId: "offer-demo-1",
+    });
+    const serialized = JSON.stringify(fixture.evidence);
+
+    assert.doesNotMatch(serialized, /document\.modelContext/);
+    assert.doesNotMatch(serialized, /ANDES-2026|INCA-2026/);
+    assert.match(serialized, /B03_VISUAL_FIXTURE/);
+    assert.match(serialized, /"persisted":false/);
+    assert.match(serialized, /"navigationPerformed":false/);
+    assert.match(serialized, /"executed":false/);
+  }
 });

@@ -72,24 +72,15 @@ export function getBookingUiFixture(input: {
     : null;
   const status = bookingStatusCopy(input.scenario);
   const showRecovery = ["rejected", "expired", "no-response", "recovery", "error"].includes(input.scenario);
-  const providerResponseDeadline = input.scenario === "pending-provider-confirmation"
-    ? new Date(Date.now() + 15 * 60 * 1000).toISOString()
-    : undefined;
-  const trackingHref = input.scenario === "confirmed"
-    ? `/tracking/${encodeURIComponent(input.requestCode)}`
-    : undefined;
-
   return {
     requestCode: input.requestCode,
-    fixtureLabel: "Vista local B-03 · sin persistencia real",
+    fixtureLabel: "Simulador visual B-03 · sin ejecución ni persistencia real",
     isFixture: true,
     scenario: input.scenario,
     status,
     selectedOffer,
     availableOfferCount: offers.length,
     returnHref: `/dispatch/${encodeURIComponent(input.requestCode)}?scenario=${input.offerSet === "zero" ? "no-match" : input.offerSet}`,
-    trackingHref,
-    providerResponseDeadline,
     timeline: bookingTimeline(input.scenario, Boolean(selectedOffer)),
     evidence: buildEvidence(input.scenario, input.requestCode, selectedOffer, selectedAttempt?.providerUrl ?? null),
     showRecovery,
@@ -119,30 +110,30 @@ function bookingStatusCopy(scenario: BookingUiScenario) {
     return {
       code: "PENDING_PROVIDER_CONFIRMATION",
       tone: "waiting" as const,
-      eyebrow: "Solicitud enviada",
-      title: "Esperando confirmación del transportista",
-      message: "El provider está revisando disponibilidad y condiciones finales.",
-      nextAction: "CargoMesh seguirá mostrando la evidencia sin cambiar el estado comercial desde la interfaz.",
+      eyebrow: "Vista de solicitud enviada",
+      title: "Estado visual: esperando confirmación",
+      message: "Este simulador representa cómo se vería una solicitud pendiente; no contactó al provider.",
+      nextAction: "Elige ACCEPT o REJECT para revisar el siguiente estado visual.",
     };
   }
   if (scenario === "confirmed") {
     return {
       code: "CONFIRMED",
       tone: "success" as const,
-      eyebrow: "Reserva confirmada",
-      title: "El transportista confirmó la operación",
-      message: "La reserva está lista para continuar a seguimiento cuando ese módulo esté integrado.",
-      nextAction: "Tracking permanece deshabilitado en este corte visual.",
+      eyebrow: "Vista de reserva confirmada",
+      title: "Estado visual: CONFIRMED",
+      message: "La pantalla ilustra el resultado esperado; no creó una reserva ni recibió una respuesta del provider.",
+      nextAction: "Usa el flujo persistido para validar booking y tracking reales.",
     };
   }
   if (scenario === "rejected") {
     return {
       code: "REJECTED",
       tone: "danger" as const,
-      eyebrow: "Respuesta del transportista",
-      title: "La solicitud no fue aceptada",
-      message: "La oferta seleccionada no pudo confirmarse. Puedes volver a las opciones disponibles.",
-      nextAction: "La recuperación real será orquestada por los módulos de A y C.",
+      eyebrow: "Vista de rechazo",
+      title: "Estado visual: REJECTED",
+      message: "La pantalla ilustra un rechazo comercial; el provider no fue consultado desde este simulador.",
+      nextAction: "Revisa visualmente las alternativas; el flujo real usa recoveryOfferIds del servidor.",
     };
   }
   if (scenario === "expired") {
@@ -151,8 +142,8 @@ function bookingStatusCopy(scenario: BookingUiScenario) {
       tone: "danger" as const,
       eyebrow: "Plazo vencido",
       title: "La solicitud de reserva expiró",
-      message: "El provider no confirmó dentro del plazo persistido.",
-      nextAction: "Revisa las ofertas de recovery autorizadas por el servidor.",
+      message: "Esta vista ilustra un plazo vencido; no existe un deadline persistido por este simulador.",
+      nextAction: "El flujo real obtiene el plazo y las alternativas desde BookingViewModel v1.",
     };
   }
   if (scenario === "cancelled") {
@@ -181,8 +172,8 @@ function bookingStatusCopy(scenario: BookingUiScenario) {
       tone: "progress" as const,
       eyebrow: "Continuidad operativa",
       title: "Preparando una oferta de recuperación",
-      message: "La nueva selección permanece asistida y conserva la reserva anterior como evidencia.",
-      nextAction: "La respuesta real será persistida como una nueva reserva.",
+      message: "Esta vista permite revisar cómo se presentaría una selección asistida alternativa.",
+      nextAction: "No se crea ni reemplaza ninguna reserva desde el simulador.",
     };
   }
   return {
@@ -213,59 +204,51 @@ function buildEvidence(
   providerUrl: string | null,
 ) {
   const isRecoveredInca = selectedOffer?.carrierCode === "INCA_DEMO" || selectedOffer?.offerId === "offer-demo-2";
-  const carrierRef = isRecoveredInca ? "INCA-2026-REC-001" : "ANDES-2026-B03-001";
-  const activeUrl = providerUrl ?? (isRecoveredInca ? "/providers/inca" : "/providers/andes");
-
-  const toolSummary = scenario === "booking-pending"
-    ? "book_freight preparado (Esperando confirmación del operador)"
+  const illustratedProviderUrl = providerUrl ?? (isRecoveredInca ? "/providers/inca" : "/providers/andes");
+  const visualState = bookingStatusCopy(scenario).code;
+  const intendedToolName = scenario === "booking-pending" || scenario === "pending-provider-confirmation"
+    ? "book_freight"
+    : "get_provider_booking_status";
+  const illustrativeEvents = scenario === "booking-pending"
+    ? ["OFFER_SELECTED"]
     : scenario === "pending-provider-confirmation"
-      ? "book_freight ejecutado mediante document.modelContext"
+      ? ["OFFER_SELECTED", "BOOKING_REQUESTED"]
       : scenario === "confirmed"
-        ? `get_provider_booking_status → CONFIRMED (${selectedOffer?.displayName ?? "Carrier"})`
-        : scenario === "rejected"
-          ? "get_provider_booking_status → REJECTED (Andes Freight)"
-          : "Ejecución WebMCP de reserva registrada";
-
-  const toolPayload = scenario === "booking-pending"
-    ? { toolName: "book_freight", status: "PENDING_EXECUTION", executionSurface: "document.modelContext", directHandlerCall: false }
-    : scenario === "pending-provider-confirmation"
-      ? {
-          toolName: "book_freight",
-          executionSurface: "document.modelContext",
-          status: "PENDING_PROVIDER_CONFIRMATION",
-          providerReference: carrierRef,
-          providerOfferReference: selectedOffer?.providerOfferReference ?? "ANDES-OFFER-DEMO",
-          directHandlerCall: false,
-        }
-      : {
-          toolName: "get_provider_booking_status",
-          executionSurface: "document.modelContext",
-          providerBookingStatus: scenario === "confirmed" ? "CONFIRMED" : "REJECTED",
-          providerReference: carrierRef,
-          directHandlerCall: false,
-        };
+        ? ["OFFER_SELECTED", "BOOKING_REQUESTED", "BOOKING_CONFIRMED"]
+        : ["OFFER_SELECTED", "BOOKING_REQUESTED", "BOOKING_REJECTED"];
 
   return [
     {
       key: "navigation",
       label: "Navegación",
-      summary: selectedOffer ? `Destino provider WebMCP: ${activeUrl}` : "Sin navegación: falta selección humana",
-      payload: { requestCode, providerUrl: activeUrl, matchingServiceId: selectedOffer?.matchingServiceId ?? null },
+      summary: selectedOffer ? `Ruta ilustrativa del provider: ${illustratedProviderUrl}` : "Sin ruta ilustrativa: falta selección humana",
+      payload: {
+        requestCode,
+        illustratedProviderUrl,
+        matchingServiceId: selectedOffer?.matchingServiceId ?? null,
+        navigationPerformed: false,
+      },
     },
     {
       key: "tool",
       label: "Tool",
-      summary: toolSummary,
-      payload: toolPayload,
+      summary: `Paso visual asociado a ${intendedToolName}; la tool no fue ejecutada`,
+      payload: {
+        intendedToolName,
+        visualState,
+        executed: false,
+        executionSurface: "B03_VISUAL_FIXTURE",
+      },
     },
     {
       key: "persistence",
       label: "Persistencia",
-      summary: scenario === "booking-pending" ? "Sin escritura preliminar" : `Referencia: ${carrierRef}`,
+      summary: "Desactivada: el simulador no crea ni actualiza bookings",
       payload: {
-        entityType: "CARRIER_BOOKING",
-        providerReference: scenario === "booking-pending" ? null : carrierRef,
-        providerBookingStatus: scenario === "booking-pending" ? "BOOKING_PENDING" : scenario === "pending-provider-confirmation" ? "PENDING_PROVIDER_CONFIRMATION" : scenario === "confirmed" ? "CONFIRMED" : "REJECTED",
+        persisted: false,
+        bookingId: null,
+        providerReference: null,
+        visualState,
       },
     },
     {
@@ -277,21 +260,18 @@ function buildEvidence(
         selectedOfferId: selectedOffer?.offerId ?? null,
         selectionMode: "ASSISTED",
         automaticSelection: false,
+        fixtureOnly: true,
+        persisted: false,
       },
     },
     {
       key: "events",
       label: "Eventos",
-      summary: `Secuencia: ${scenario.toUpperCase().replaceAll("-", "_")}`,
+      summary: `Secuencia visual: ${scenario.toUpperCase().replaceAll("-", "_")}`,
       payload: {
-        events: scenario === "booking-pending"
-          ? ["OFFER_SELECTED"]
-          : scenario === "pending-provider-confirmation"
-            ? ["OFFER_SELECTED", "BOOKING_REQUESTED"]
-            : scenario === "confirmed"
-              ? ["OFFER_SELECTED", "BOOKING_REQUESTED", "BOOKING_CONFIRMED"]
-              : ["OFFER_SELECTED", "BOOKING_REQUESTED", "BOOKING_REJECTED"],
-        source: "document.modelContext",
+        illustrativeEvents,
+        source: "B03_VISUAL_FIXTURE",
+        persisted: false,
       },
     },
   ] as const;

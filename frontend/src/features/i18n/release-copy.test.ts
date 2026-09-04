@@ -31,6 +31,26 @@ test("the judge flow exposes bilingual intake, recommendation, provider and book
   assert.match(booking, /Causal evidence/);
 });
 
+test("provider directory and B-03 preview preserve the public honesty boundary", () => {
+  const directory = source("../../app/providers/page.tsx");
+  const providerPage = source("../../app/providers/[carrierSlug]/page.tsx");
+  const shell = source("../../components/app-shell.tsx");
+  const booking = source("../../components/booking-workspace.tsx");
+  const bookingFixtures = source("../freight-ui/booking-ui-fixtures.ts");
+
+  assert.match(directory, /same-origin routes/);
+  assert.match(directory, /same Vercel origin/);
+  assert.doesNotMatch(directory, /independent host|host independiente|LIVE HOSTS/i);
+  assert.match(directory, /buildCanonicalDemoProviderHref\(carrier\.slug\)/);
+  assert.match(providerPage, /buildCanonicalDemoProviderHref\(tab\.slug\)/);
+  assert.match(shell, /buildCanonicalDemoProviderHref\("andes"\)/);
+
+  assert.match(booking, /B-03 visual simulator/);
+  assert.doesNotMatch(booking, /createBookFreightTool|createGetProviderBookingStatusTool|sessionStorage|\.execute\(/);
+  assert.doesNotMatch(bookingFixtures, /document\.modelContext|ANDES-2026-B03|INCA-2026-REC/);
+  assert.match(bookingFixtures, /B03_VISUAL_FIXTURE/);
+});
+
 test("canonical protocol values remain untranslated", () => {
   const intake = source("../../components/freight-intake-form.tsx");
   const provider = source("../../app/providers/[carrierSlug]/provider-webmcp-host.tsx");
