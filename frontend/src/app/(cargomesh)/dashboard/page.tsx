@@ -88,7 +88,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <p>{translate(locale, "Consulta solicitudes, booking y eventos persistidos sin métricas de flota o capacidad simuladas.", "Review persisted requests, bookings, and events without simulated fleet or capacity metrics.")}</p>
         </div>
         {hasRequests ? (
-          <Link className={styles.primaryAction} href="/freight-request/new">
+          <Link className={styles.primaryAction} href="/freight-request/new?requestCode=FR-1042">
             <Plus size={17} aria-hidden="true" />
             <span>{translate(locale, "Nueva carga", "New shipment")}<small>{translate(locale, "Abrir intake", "Open intake")}</small></span>
           </Link>

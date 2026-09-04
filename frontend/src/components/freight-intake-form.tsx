@@ -367,6 +367,10 @@ export function FreightIntakeForm({
         isOversized: false,
       }));
     } else {
+      if (initialValue.source !== "persisted" || !initialValue.freightRequestId) {
+        window.location.href = "/freight-request/new?requestCode=FR-1042";
+        return;
+      }
       setIsCleanMode(false);
       setOriginCoords("-12.0464, -77.0428");
       setDestCoords("-33.4489, -70.6693");
