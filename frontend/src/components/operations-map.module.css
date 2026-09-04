@@ -1,6 +1,6 @@
 .wrapper {
   --map-brass: #a9791f;
-  --map-line: #cfd8d4;
+  --map-line: #16766d;
   position: relative;
   min-height: 25rem;
   overflow: hidden;
@@ -103,7 +103,7 @@
   display: inline-block;
   width: 1.1rem;
   height: 0;
-  border-top: 2px dashed #185c55;
+  border-top: 2px dashed var(--map-line);
   border-radius: 0 !important;
 }
 .empty { display: grid; min-height: 19rem; place-content: center; justify-items: center; gap: 0.55rem; padding: 1.5rem; color: #687573; text-align: center; background: #f4f8f6; }

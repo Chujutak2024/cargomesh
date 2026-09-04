@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { buildDashboardOperationsMap } from "./dashboard-map";
+import {
+  createOperationsMapRoute,
+  operationsMapCoordinatesFor,
+} from "./operations-map-geometry";
 import type { PersistedDashboardBooking, PersistedDashboardRequest } from "./dashboard-view-model";
+import { LATAM_LOGISTICS_DIRECTORY } from "../freight-requests/geography-data";
 
 const callaoToSantiago: PersistedDashboardRequest = {
   id: "request-fr1042",
@@ -73,9 +78,11 @@ test("an active booking upgrades the same corridor to live and exposes only pers
   }]);
 });
 
-test("draft-only requests never manufacture a planned operational route", () => {
+test("a newly persisted draft is available as an explicitly planned route", () => {
   const map = buildDashboardOperationsMap([{ ...callaoToSantiago, status: "DRAFT" }], []);
-  assert.equal(map, null);
+  assert.equal(map?.requestCode, "FR-1042");
+  assert.equal(map?.mode, "planned");
+  assert.equal(map?.bookingId, null);
 });
 
 test("an explicit requestCode selects its own persisted planned route over another active booking", () => {
@@ -106,4 +113,47 @@ test("an explicit requestCode selects its own persisted planned route over anoth
 test("an explicit unknown requestCode never falls back to another organization request", () => {
   const map = buildDashboardOperationsMap([callaoToSantiago], [], [], "FR-9999");
   assert.equal(map, null);
+});
+
+test("the canonical Callao-Santiago route uses a detailed road vector", () => {
+  const model = buildDashboardOperationsMap([callaoToSantiago], []);
+  assert.ok(model);
+  const route = createOperationsMapRoute(model);
+
+  assert.equal(route.followsRoadCorridor, true);
+  assert.equal(route.isNominal, true);
+  assert.ok(route.polylineCoordinates.length > 100);
+  assert.deepEqual(route.polylineCoordinates[0], operationsMapCoordinatesFor(model.origin));
+  assert.deepEqual(route.polylineCoordinates.at(-1), operationsMapCoordinatesFor(model.destination));
+});
+
+test("a partial Peru-Chile route slices the canonical corridor without Callao/Santiago backtracking", () => {
+  const model = {
+    bookingId: null,
+    mode: "planned" as const,
+    requestCode: "FR-PARTIAL",
+    origin: { city: "Arequipa", countryCode: "PE" },
+    destination: { city: "Antofagasta", countryCode: "CL" },
+    checkpoints: [],
+  };
+  const route = createOperationsMapRoute(model);
+
+  assert.equal(route.followsRoadCorridor, true);
+  assert.deepEqual(route.polylineCoordinates[0], operationsMapCoordinatesFor(model.origin));
+  assert.deepEqual(route.polylineCoordinates.at(-1), operationsMapCoordinatesFor(model.destination));
+  assert.ok(route.polylineCoordinates.every(([latitude]) => latitude < -15 && latitude > -25));
+});
+
+test("every selectable logistics city has a map anchor", () => {
+  const missing = LATAM_LOGISTICS_DIRECTORY.flatMap((country) =>
+    country.regions.flatMap((region) =>
+      region.hubs.flatMap((hub) =>
+        operationsMapCoordinatesFor({ city: hub.city, countryCode: country.code })
+          ? []
+          : [`${country.code}:${region.name}:${hub.city}`],
+      ),
+    ),
+  );
+
+  assert.deepEqual(missing, []);
 });

@@ -111,3 +111,10 @@ test("620px media query stacks subSectionHeader vertically on mobile", () => {
     "620px media query must set .subSectionHeader to flex-direction: column"
   );
 });
+
+test("special handling textarea has an explicit light CargoMesh surface", () => {
+  const rule = css.match(/\.notesTextarea\s*\{[^}]*\}/);
+  assert.ok(rule, ".notesTextarea rule must exist");
+  assert.match(rule[0], /background:\s*#f4fbf8/);
+  assert.match(rule[0], /color:\s*#1f302d/);
+});

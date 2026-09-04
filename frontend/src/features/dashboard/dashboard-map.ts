@@ -9,6 +9,7 @@ type PersistedBookingEvent = {
 };
 
 const PLANNED_REQUEST_STATUSES = new Set([
+  "DRAFT",
   "PENDING",
   "ORCHESTRATING",
   "AWAITING_SELECTION",

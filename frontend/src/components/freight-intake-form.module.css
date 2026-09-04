@@ -118,7 +118,11 @@
 .checklistItem strong { font-size: 0.8rem; color: #1f302d; font-weight: 800; }
 .checklistItem small { font-size: 0.68rem; color: #687573; }
 
-.notesTextarea { width: 100%; border: 1px solid #d7dfdc; border-radius: 0.7rem; padding: 0.65rem 0.8rem; font-family: inherit; font-size: 0.76rem; color: #1f302d; resize: vertical; min-height: 4.5rem; }
+.notesTextarea { width: 100%; min-width: 0; max-width: 100%; min-height: 5.5rem; border: 1px solid #c2ddd5; border-radius: 0.7rem; padding: 0.7rem 0.8rem; background: #f4fbf8; color: #1f302d; caret-color: #185c55; font-family: inherit; font-size: 0.76rem; line-height: 1.5; resize: vertical; box-shadow: inset 0 1px 2px rgb(18 60 58 / 4%); }
+.notesTextarea::placeholder { color: #71837f; opacity: 1; }
+.notesTextarea:hover { border-color: #9fcfc2; background: #f0faf6; }
+.notesTextarea:focus { border-color: #2bae9a; outline: 3px solid rgb(43 174 154 / 16%); outline-offset: 1px; background: #ffffff; }
+.notesTextarea[readonly] { cursor: default; background: #edf4f1; color: #687573; }
 .advancedRouteSection { margin-top: 0.6rem; border-top: 1px dashed #e1e7e4; padding-top: 0.65rem; }
 .advancedRouteSection summary { font-size: 0.72rem; font-weight: 750; color: #2b7d72; cursor: pointer; user-select: none; margin-bottom: 0.75rem; }
 .advancedRouteSection summary:hover { color: #185c55; }
