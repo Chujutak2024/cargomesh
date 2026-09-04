@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { localeTag, translate } from "@/features/i18n/config";
@@ -29,9 +30,7 @@ export async function generateMetadata({
     getRequestLocale(),
   ]);
   const serviceId = getProviderServiceId(resolvedSearchParams);
-  const provider = serviceId
-    ? await getProviderPageConfig(carrierSlug, serviceId)
-    : null;
+  const provider = await getProviderPageConfig(carrierSlug, serviceId);
 
   if (!provider) {
     return { title: `${translate(locale, "Provider no encontrado", "Provider not found")} | CargoMesh` };
@@ -54,11 +53,6 @@ export default async function ProviderPage({ params, searchParams }: ProviderPag
     getRequestLocale(),
   ]);
   const serviceId = getProviderServiceId(resolvedSearchParams);
-
-  if (!serviceId) {
-    notFound();
-  }
-
   const provider = await getProviderPageConfig(carrierSlug, serviceId);
 
   if (!provider) {
@@ -67,6 +61,11 @@ export default async function ProviderPage({ params, searchParams }: ProviderPag
 
   return (
     <main className={styles.main}>
+      <div style={{ marginBottom: "1.5rem" }}>
+        <Link href="/dashboard" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--muted)", textDecoration: "none", fontSize: "0.82rem", fontWeight: 600 }}>
+          ← {translate(locale, "Volver al Control Tower", "Return to Control Tower")}
+        </Link>
+      </div>
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Registered WebMCP provider</p>

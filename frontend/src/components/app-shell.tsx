@@ -12,6 +12,7 @@ import {
   Route,
   Search,
   ShieldAlert,
+  Truck,
   Waypoints,
   X,
 } from "lucide-react";
@@ -37,6 +38,11 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
       { href: "/dispatch", label: t("Despachos", "Dispatch"), icon: Route },
       { href: "/tracking", label: t("Seguimiento", "Tracking"), icon: MapPinned },
     ] },
+    { label: t("Carriers WebMCP", "WebMCP Carriers"), items: [
+      { href: "/providers/andes", label: "Andes Express", icon: Truck },
+      { href: "/providers/inca", label: "Transportes Inca", icon: Truck },
+      { href: "/providers/pacific", label: "Pacific Cargo", icon: Truck },
+    ] },
     { label: t("Gestión", "Management"), items: [
       { href: "/organization", label: t("Organización", "Organization"), icon: Building2 },
       { href: "/supervisor/exceptions", label: t("Excepciones", "Exceptions"), icon: ShieldAlert },
@@ -50,6 +56,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
     ["/freight-request/new", t("Nueva carga", "New shipment"), t("Intake guiado de FreightRequest", "Guided FreightRequest intake")],
     ["/booking/", "Booking", t("Selección humana y confirmación", "Human selection and confirmation")],
     ["/dispatch", t("Despachos", "Dispatch"), t("Evaluación dinámica de opciones", "Dynamic option evaluation")],
+    ["/providers/", "WebMCP Carrier", t("Portal del transportista con tools WebMCP", "Carrier portal with WebMCP tools")],
     ["/requests", t("Mis cargas", "My shipments"), t("Solicitudes de la organización", "Organization requests")],
     ["/tracking", t("Seguimiento", "Tracking"), t("Eventos reportados por carriers", "Carrier-reported events")],
     ["/organization", t("Organización", "Organization"), t("Perfil, miembros y políticas", "Profile, members, and policies")],

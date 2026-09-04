@@ -233,6 +233,15 @@ export function FreightRecommendationPanel({
     ({ field, selectable }) => selectable && selectedFields.has(field),
   ).length;
 
+  const visibleDiff = useMemo(() => {
+    return diff.filter((row) => {
+      if (row.selectable) return true;
+      if (row.field === "cargo_category_id" || row.field === "cargo_specifications") return false;
+      if (JSON.stringify(row.currentValue) === JSON.stringify(row.proposedValue)) return false;
+      return true;
+    });
+  }, [diff]);
+
   return (
     <>
       <section className={styles.launcher} aria-labelledby="recommendation-title">
@@ -308,7 +317,7 @@ export function FreightRecommendationPanel({
 
                   <fieldset className={styles.diffList}>
                     <legend>{t("Selecciona los campos que deseas aplicar", "Select the fields you want to apply")}</legend>
-                    {diff.map((row) => (
+                    {visibleDiff.map((row) => (
                       <label key={row.field} className={!row.selectable ? styles.diffDisabled : undefined}>
                         <input
                           type="checkbox"
@@ -317,11 +326,11 @@ export function FreightRecommendationPanel({
                           onChange={() => toggleField(row.field)}
                         />
                         <span className={styles.diffContent}>
-                          <span className={styles.diffTitle}>{locale === "en" ? (FIELD_LABELS_EN[row.field] ?? row.label) : row.label}<code>{row.field}</code></span>
+                          <span className={styles.diffTitle}>{locale === "en" ? (FIELD_LABELS_EN[row.field] ?? row.label) : row.label}</span>
                           <span className={styles.values}>
-                            <span><small>{t("Actual", "Current")}</small><strong>{formatValue(row.currentValue, t)}</strong></span>
+                            <span><small>{t("Actual", "Current")}</small><strong>{formatValue(row.currentValue, row.field, t)}</strong></span>
                             <span aria-hidden="true">→</span>
-                            <span><small>{t("Sugerido", "Suggested")}</small><strong>{formatValue(row.proposedValue, t)}</strong></span>
+                            <span><small>{t("Sugerido", "Suggested")}</small><strong>{formatValue(row.proposedValue, row.field, t)}</strong></span>
                           </span>
                           {!row.selectable ? (
                             <small className={styles.unavailable}>
@@ -360,11 +369,20 @@ export function FreightRecommendationPanel({
   );
 }
 
-function formatValue(value: RecommendationJsonValue | undefined, t: (spanish: string, english: string) => string) {
+function formatValue(value: RecommendationJsonValue | undefined, field: string | undefined, t: (spanish: string, english: string) => string) {
   if (value === undefined || value === null || value === "") return t("No informado", "Not provided");
   if (typeof value === "boolean") return value ? t("Sí", "Yes") : "No";
-  if (Array.isArray(value)) return value.length ? value.map(String).join(", ") : t("Ninguno", "None");
-  if (typeof value === "object") return JSON.stringify(value);
+  if (typeof value === "string" && value.startsWith("10000000-")) {
+    return t("Maquinaria / Repuestos mineros", "Machinery / Mining spares");
+  }
+  if (typeof value === "object" && !Array.isArray(value)) {
+    return t("Estándar", "Standard");
+  }
+  if (Array.isArray(value)) {
+    return value.length
+      ? value.map((v) => String(v).replace(/_/g, " ")).join(", ")
+      : t("Ninguno", "None");
+  }
   return String(value);
 }
 
