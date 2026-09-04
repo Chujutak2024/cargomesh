@@ -80,3 +80,25 @@ test("exposes recovery alternatives as fixture-only 0, 1 and N collections", () 
   assert.equal(pending.recoveryOptions.length, 0);
   assert.equal("bookingId" in four.recoveryOptions[0], false);
 });
+
+test("matches offer by carrierCode and populates deadline and trackingHref", () => {
+  const andesFixture = getBookingUiFixture({
+    requestCode: "FR-1042",
+    scenario: "pending-provider-confirmation",
+    offerSet: "three",
+    offerId: "ANDES_DEMO",
+  });
+  assert.equal(andesFixture.selectedOffer?.offerId, "offer-demo-1");
+  assert.equal(andesFixture.selectedOffer?.carrierCode, "ANDES_DEMO");
+  assert.ok(andesFixture.providerResponseDeadline);
+
+  const confirmedFixture = getBookingUiFixture({
+    requestCode: "FR-1042",
+    scenario: "confirmed",
+    offerSet: "three",
+    offerId: "INCA_DEMO",
+  });
+  assert.equal(confirmedFixture.selectedOffer?.offerId, "offer-demo-2");
+  assert.equal(confirmedFixture.selectedOffer?.carrierCode, "INCA_DEMO");
+  assert.equal(confirmedFixture.trackingHref, "/tracking/FR-1042");
+});

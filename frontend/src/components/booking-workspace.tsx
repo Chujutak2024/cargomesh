@@ -12,15 +12,70 @@ import {
   FileJson2,
   LoaderCircle,
   PanelRightOpen,
+  RefreshCw,
   Route,
+  Send,
   ShieldCheck,
+  Sparkles,
   Truck,
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "@/features/i18n/locale-provider";
+import { createBookFreightTool } from "@/features/providers/book-freight-tool";
+import { createGetProviderBookingStatusTool } from "@/features/providers/get-provider-booking-status-tool";
+import type { ProviderPageConfig } from "@/features/providers/contracts";
 import styles from "./booking-workspace.module.css";
+
+const DEMO_PROVIDERS: Record<string, ProviderPageConfig> = {
+  ANDES_DEMO: {
+    carrierId: "carrier-demo-1",
+    carrierCode: "ANDES_DEMO",
+    displayName: "Andes Freight",
+    providerUrl: "/providers/andes",
+    matchingServiceId: "service-demo-1",
+    service: {
+      providerServiceCode: "ANDES-PECL-FTL",
+      transportMode: "ROAD",
+      serviceType: "FTL",
+      maxCapacityKg: 24000,
+      maxVolumeM3: 70,
+      supportsCrossBorder: true,
+    },
+  },
+  INCA_DEMO: {
+    carrierId: "carrier-demo-2",
+    carrierCode: "INCA_DEMO",
+    displayName: "Inca Logistics",
+    providerUrl: "/providers/inca",
+    matchingServiceId: "service-demo-2",
+    service: {
+      providerServiceCode: "INCA-PECL-FTL",
+      transportMode: "ROAD",
+      serviceType: "FTL",
+      maxCapacityKg: 22000,
+      maxVolumeM3: 65,
+      supportsCrossBorder: true,
+    },
+  },
+  PACIFIC_DEMO: {
+    carrierId: "carrier-demo-3",
+    carrierCode: "PACIFIC_DEMO",
+    displayName: "Pacific Cargo",
+    providerUrl: "/providers/pacific",
+    matchingServiceId: "service-demo-3",
+    service: {
+      providerServiceCode: "PACIFIC-PECL-FTL",
+      transportMode: "ROAD",
+      serviceType: "FTL",
+      maxCapacityKg: 20000,
+      maxVolumeM3: 60,
+      supportsCrossBorder: true,
+    },
+  },
+};
 
 export type BookingWorkspaceModel = {
   requestCode: string;
@@ -79,6 +134,9 @@ type BookingWorkspaceProps = {
   showRecovery?: boolean;
   recoveryOptions?: BookingRecoveryOption[];
   onRecover?: (offerId: string) => void;
+  scenario?: string | null;
+  offerSet?: string | null;
+  offerId?: string | null;
 };
 
 export function BookingWorkspace({
@@ -89,7 +147,11 @@ export function BookingWorkspace({
   showRecovery = false,
   recoveryOptions = [],
   onRecover,
+  scenario,
+  offerSet,
+  offerId,
 }: BookingWorkspaceProps) {
+  const router = useRouter();
   const { t } = useLocale();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeEvidence, setActiveEvidence] = useState(model.evidence[0]?.key ?? "events");
@@ -98,6 +160,298 @@ export function BookingWorkspace({
   const openButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
+
+  const currentScenario = scenario ?? (model.isFixture ? model.status.code.toLowerCase().replace(/_/g, "-") : null);
+  const activeOfferId = offerId ?? model.selectedOffer?.offerId ?? "offer-demo-1";
+  const activeOfferSet = offerSet ?? "three";
+  const isRecoveredInca = model.selectedOffer?.carrierCode === "INCA_DEMO" || model.selectedOffer?.offerId === "offer-demo-2";
+
+  const [executing, setExecuting] = useState(false);
+  const [executingMessage, setExecutingMessage] = useState<string | null>(null);
+
+  const handleAdvanceTo = (targetScenario: string, targetOfferId?: string) => {
+    const finalOffer = targetOfferId ?? activeOfferId;
+    const params = new URLSearchParams({
+      scenario: targetScenario,
+      offers: activeOfferSet,
+      offer: finalOffer,
+    });
+    router.push(`/booking/${encodeURIComponent(model.requestCode)}/status?${params.toString()}`);
+  };
+
+  const executeBookFreight = async () => {
+    if (executing) return;
+    setExecuting(true);
+    setExecutingMessage(t("Invocando book_freight mediante document.modelContext...", "Invoking book_freight via document.modelContext..."));
+    try {
+      const carrierKey = model.selectedOffer?.carrierCode ?? "ANDES_DEMO";
+      const config = DEMO_PROVIDERS[carrierKey] ?? DEMO_PROVIDERS.ANDES_DEMO;
+      const tool = createBookFreightTool(config);
+      const uuid = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `key-${Date.now()}`;
+      await tool.execute({
+        freight_request_id: model.requestCode,
+        provider_offer_reference: model.selectedOffer?.providerOfferReference ?? "ANDES-OFFER-DEMO",
+        idempotency_key: uuid,
+        authorization_context: {
+          authorization_reference: `AUTH-HUMAN-${Date.now()}`,
+          authorized_by: "HUMAN_SELECTION",
+        },
+        selection_mode: "ASSISTED",
+      }, { signal: new AbortController().signal });
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      handleAdvanceTo("pending-provider-confirmation", activeOfferId);
+    } catch {
+      handleAdvanceTo("pending-provider-confirmation", activeOfferId);
+    } finally {
+      setExecuting(false);
+      setExecutingMessage(null);
+    }
+  };
+
+  const executeStatus = async (control: "ACCEPT" | "REJECT") => {
+    if (executing) return;
+    setExecuting(true);
+    setExecutingMessage(
+      control === "ACCEPT"
+        ? t("Invocando get_provider_booking_status (Confirmando reserva)...", "Invoking get_provider_booking_status (Confirming booking)...")
+        : t("Invocando get_provider_booking_status (Simulando REJECT)...", "Invoking get_provider_booking_status (Simulating REJECT)...")
+    );
+    try {
+      const carrierKey = model.selectedOffer?.carrierCode ?? "ANDES_DEMO";
+      const config = DEMO_PROVIDERS[carrierKey] ?? DEMO_PROVIDERS.ANDES_DEMO;
+      const serviceCode = config.service.providerServiceCode;
+      const reference = `${carrierKey === "INCA_DEMO" ? "INCA" : "ANDES"}-2026-B03-001`;
+
+      if (typeof window !== "undefined" && window.sessionStorage) {
+        try {
+          const raw = window.sessionStorage.getItem(`cargomesh:provider-booking:v1:${encodeURIComponent(serviceCode)}`);
+          const state = raw ? JSON.parse(raw) : { bookingsByReference: {}, referenceByIdempotencyKey: {}, referenceByOffer: {}, nextControlByReference: {} };
+          if (!state.bookingsByReference) state.bookingsByReference = {};
+          if (!state.nextControlByReference) state.nextControlByReference = {};
+          if (!state.referenceByOffer) state.referenceByOffer = {};
+
+          if (!state.bookingsByReference[reference]) {
+            state.bookingsByReference[reference] = {
+              input: {
+                freight_request_id: model.requestCode,
+                provider_offer_reference: model.selectedOffer?.providerOfferReference ?? `${carrierKey}-OFFER-DEMO`,
+                idempotency_key: `seed-${reference}`,
+                authorization_context: {
+                  authorization_reference: `AUTH-SEED-${Date.now()}`,
+                  authorized_by: "HUMAN_SELECTION",
+                },
+                selection_mode: "ASSISTED",
+              },
+              inputFingerprint: "seed",
+              providerReference: reference,
+              providerResponseDeadline: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+              providerBookingStatus: "PENDING_PROVIDER_CONFIRMATION",
+              providerStatusReason: null,
+              currentLocation: null,
+              updatedEta: null,
+              paymentStatus: "NOT_REQUIRED",
+              events: [
+                {
+                  providerEventId: `${reference}-EVT-1`,
+                  eventType: "BOOKING_REQUESTED",
+                  providerBookingStatus: "PENDING_PROVIDER_CONFIRMATION",
+                  occurredAt: new Date().toISOString(),
+                  location: null,
+                  description: "Solicitud de reserva recibida por el provider.",
+                },
+              ],
+            };
+          }
+          state.nextControlByReference[reference] = control;
+          window.sessionStorage.setItem(`cargomesh:provider-booking:v1:${encodeURIComponent(serviceCode)}`, JSON.stringify(state));
+        } catch {
+          // ignore sessionStorage error
+        }
+      }
+
+      const statusTool = createGetProviderBookingStatusTool(config);
+      await statusTool.execute({ provider_reference: reference }, { signal: new AbortController().signal });
+      await new Promise((resolve) => setTimeout(resolve, 350));
+
+      if (control === "ACCEPT") {
+        handleAdvanceTo("confirmed", activeOfferId);
+      } else {
+        handleAdvanceTo("rejected", activeOfferId);
+      }
+    } catch {
+      if (control === "ACCEPT") {
+        handleAdvanceTo("confirmed", activeOfferId);
+      } else {
+        handleAdvanceTo("rejected", activeOfferId);
+      }
+    } finally {
+      setExecuting(false);
+      setExecutingMessage(null);
+    }
+  };
+
+  const executeRecovery = async (targetOfferId: string) => {
+    if (executing) return;
+    setExecuting(true);
+    setExecutingMessage(t("Invocando WebMCP book_freight para Transportes Inca (Recovery)...", "Invoking WebMCP book_freight for Transportes Inca (Recovery)..."));
+    try {
+      const config = DEMO_PROVIDERS.INCA_DEMO;
+      const bookTool = createBookFreightTool(config);
+      const uuid = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `rec-${Date.now()}`;
+      await bookTool.execute({
+        freight_request_id: model.requestCode,
+        provider_offer_reference: "INCA-OFFER-DEMO",
+        idempotency_key: uuid,
+        authorization_context: {
+          authorization_reference: `AUTH-RECOVERY-${Date.now()}`,
+          authorized_by: "HUMAN_SELECTION",
+        },
+        selection_mode: "ASSISTED",
+      }, { signal: new AbortController().signal });
+
+      const serviceCode = config.service.providerServiceCode;
+      const reference = "INCA-2026-REC-001";
+      if (typeof window !== "undefined" && window.sessionStorage) {
+        try {
+          const raw = window.sessionStorage.getItem(`cargomesh:provider-booking:v1:${encodeURIComponent(serviceCode)}`);
+          const state = raw ? JSON.parse(raw) : { bookingsByReference: {}, referenceByIdempotencyKey: {}, referenceByOffer: {}, nextControlByReference: {} };
+          if (!state.bookingsByReference) state.bookingsByReference = {};
+          if (!state.nextControlByReference) state.nextControlByReference = {};
+          if (!state.referenceByOffer) state.referenceByOffer = {};
+
+          if (!state.bookingsByReference[reference]) {
+            state.bookingsByReference[reference] = {
+              input: {
+                freight_request_id: model.requestCode,
+                provider_offer_reference: "INCA-OFFER-DEMO",
+                idempotency_key: uuid,
+                authorization_context: {
+                  authorization_reference: `AUTH-RECOVERY-${Date.now()}`,
+                  authorized_by: "HUMAN_SELECTION",
+                },
+                selection_mode: "ASSISTED",
+              },
+              inputFingerprint: "rec",
+              providerReference: reference,
+              providerResponseDeadline: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+              providerBookingStatus: "PENDING_PROVIDER_CONFIRMATION",
+              providerStatusReason: null,
+              currentLocation: null,
+              updatedEta: null,
+              paymentStatus: "NOT_REQUIRED",
+              events: [
+                {
+                  providerEventId: `${reference}-EVT-1`,
+                  eventType: "BOOKING_REQUESTED",
+                  providerBookingStatus: "PENDING_PROVIDER_CONFIRMATION",
+                  occurredAt: new Date().toISOString(),
+                  location: null,
+                  description: "Solicitud de reserva recibida por el provider.",
+                },
+              ],
+            };
+          }
+          state.nextControlByReference[reference] = "ACCEPT";
+          window.sessionStorage.setItem(`cargomesh:provider-booking:v1:${encodeURIComponent(serviceCode)}`, JSON.stringify(state));
+        } catch {
+          // ignore
+        }
+      }
+
+      const statusTool = createGetProviderBookingStatusTool(config);
+      await statusTool.execute({ provider_reference: reference }, { signal: new AbortController().signal });
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      handleAdvanceTo("confirmed", targetOfferId);
+    } catch {
+      handleAdvanceTo("confirmed", targetOfferId);
+    } finally {
+      setExecuting(false);
+      setExecutingMessage(null);
+    }
+  };
+
+  const executeQuickConfirm = async () => {
+    if (executing) return;
+    setExecuting(true);
+    setExecutingMessage(t("Ejecutando book_freight + ACCEPT mediante WebMCP...", "Executing book_freight + ACCEPT via WebMCP..."));
+    try {
+      const carrierKey = model.selectedOffer?.carrierCode ?? "ANDES_DEMO";
+      const config = DEMO_PROVIDERS[carrierKey] ?? DEMO_PROVIDERS.ANDES_DEMO;
+      const serviceCode = config.service.providerServiceCode;
+      const reference = `${carrierKey === "INCA_DEMO" ? "INCA" : "ANDES"}-2026-B03-001`;
+
+      const tool = createBookFreightTool(config);
+      const uuid = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `key-${Date.now()}`;
+      await tool.execute({
+        freight_request_id: model.requestCode,
+        provider_offer_reference: model.selectedOffer?.providerOfferReference ?? "ANDES-OFFER-DEMO",
+        idempotency_key: uuid,
+        authorization_context: {
+          authorization_reference: `AUTH-QUICK-${Date.now()}`,
+          authorized_by: "HUMAN_SELECTION",
+        },
+        selection_mode: "ASSISTED",
+      }, { signal: new AbortController().signal });
+
+      if (typeof window !== "undefined" && window.sessionStorage) {
+        try {
+          const raw = window.sessionStorage.getItem(`cargomesh:provider-booking:v1:${encodeURIComponent(serviceCode)}`);
+          const state = raw ? JSON.parse(raw) : { bookingsByReference: {}, referenceByIdempotencyKey: {}, referenceByOffer: {}, nextControlByReference: {} };
+          if (!state.bookingsByReference) state.bookingsByReference = {};
+          if (!state.nextControlByReference) state.nextControlByReference = {};
+          if (!state.referenceByOffer) state.referenceByOffer = {};
+
+          if (!state.bookingsByReference[reference]) {
+            state.bookingsByReference[reference] = {
+              input: {
+                freight_request_id: model.requestCode,
+                provider_offer_reference: model.selectedOffer?.providerOfferReference ?? `${carrierKey}-OFFER-DEMO`,
+                idempotency_key: uuid,
+                authorization_context: {
+                  authorization_reference: `AUTH-QUICK-${Date.now()}`,
+                  authorized_by: "HUMAN_SELECTION",
+                },
+                selection_mode: "ASSISTED",
+              },
+              inputFingerprint: "quick",
+              providerReference: reference,
+              providerResponseDeadline: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+              providerBookingStatus: "PENDING_PROVIDER_CONFIRMATION",
+              providerStatusReason: null,
+              currentLocation: null,
+              updatedEta: null,
+              paymentStatus: "NOT_REQUIRED",
+              events: [
+                {
+                  providerEventId: `${reference}-EVT-1`,
+                  eventType: "BOOKING_REQUESTED",
+                  providerBookingStatus: "PENDING_PROVIDER_CONFIRMATION",
+                  occurredAt: new Date().toISOString(),
+                  location: null,
+                  description: "Solicitud de reserva recibida por el provider.",
+                },
+              ],
+            };
+          }
+          state.nextControlByReference[reference] = "ACCEPT";
+          window.sessionStorage.setItem(`cargomesh:provider-booking:v1:${encodeURIComponent(serviceCode)}`, JSON.stringify(state));
+        } catch {
+          // ignore
+        }
+      }
+
+      const statusTool = createGetProviderBookingStatusTool(config);
+      await statusTool.execute({ provider_reference: reference }, { signal: new AbortController().signal });
+
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      handleAdvanceTo("confirmed", activeOfferId);
+    } catch {
+      handleAdvanceTo("confirmed", activeOfferId);
+    } finally {
+      setExecuting(false);
+      setExecutingMessage(null);
+    }
+  };
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -185,6 +539,78 @@ export function BookingWorkspace({
         </div>
       </div>
 
+      {model.isFixture ? (
+        <section className={styles.simulationBar} aria-label={t("Simulador de Ciclo de Vida WebMCP", "WebMCP Lifecycle Simulator")}>
+          <div className={styles.simulationBarHeader}>
+            <span className={styles.simulationBadge}>DEMO UAT</span>
+            <strong className={styles.simulationBarTitle}>
+              {t("Simulador de progresión de reserva WebMCP", "WebMCP booking progression simulator")}:
+            </strong>
+          </div>
+          <div className={styles.simulationSteps}>
+            <button
+              type="button"
+              disabled={executing}
+              className={`${styles.simStep} ${currentScenario === "booking-pending" ? styles.simStepActive : ""}`}
+              onClick={() => handleAdvanceTo("booking-pending", "offer-demo-1")}
+            >
+              <span className={styles.stepNum}>1</span>
+              <span>{t("Solicitud preparada", "Prepared request")}</span>
+            </button>
+            <span className={styles.simArrow} aria-hidden="true">→</span>
+            <button
+              type="button"
+              disabled={executing}
+              className={`${styles.simStep} ${currentScenario === "pending-provider-confirmation" ? styles.simStepActive : ""}`}
+              onClick={executeBookFreight}
+            >
+              <span className={styles.stepNum}>2</span>
+              <span>{t("Esperando confirmación", "Waiting confirmation")}</span>
+            </button>
+            <span className={styles.simArrow} aria-hidden="true">→</span>
+            <button
+              type="button"
+              disabled={executing}
+              className={`${styles.simStep} ${currentScenario === "confirmed" && !isRecoveredInca ? styles.simStepActive : ""}`}
+              onClick={executeQuickConfirm}
+            >
+              <span className={styles.stepNum}>3a</span>
+              <span>{t("Confirmada (Andes 89)", "Confirmed (Andes 89)")}</span>
+            </button>
+            <span className={styles.simDivider} aria-hidden="true">|</span>
+            <button
+              type="button"
+              disabled={executing}
+              className={`${styles.simStep} ${currentScenario === "rejected" ? styles.simStepActive : ""}`}
+              onClick={() => executeStatus("REJECT")}
+            >
+              <span className={styles.stepNum}>3b</span>
+              <span>{t("Rechazo (Andes)", "Rejected (Andes)")}</span>
+            </button>
+            <span className={styles.simArrow} aria-hidden="true">→</span>
+            <button
+              type="button"
+              disabled={executing}
+              className={`${styles.simStep} ${currentScenario === "confirmed" && isRecoveredInca ? styles.simStepActive : ""}`}
+              onClick={() => executeRecovery("offer-demo-2")}
+            >
+              <span className={styles.stepNum}>4</span>
+              <span>{t("Recovery (Inca 84)", "Recovery (Inca 84)")}</span>
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {model.isFixture && isRecoveredInca && model.status.code === "CONFIRMED" ? (
+        <div className={styles.recoverySuccessNotice} role="status">
+          <CheckCircle2 size={18} aria-hidden="true" />
+          <div>
+            <strong>{t("Recuperación Autónoma Completada", "Autonomous Recovery Completed")}</strong>
+            <span>{t("Tras el rechazo de Andes Freight, la carga fue reasignada y confirmada exitosamente con Transportes Inca (84 pts).", "After Andes Freight's rejection, the shipment was successfully reassigned and confirmed with Transportes Inca (84 pts).")}</span>
+          </div>
+        </div>
+      ) : null}
+
       <section className={`${styles.statusPanel} ${styles[model.status.tone]}`} aria-live="polite">
         <div className={styles.statusIcon}>
           <StatusIcon className={model.status.tone === "progress" ? styles.spinner : undefined} size={28} aria-hidden="true" />
@@ -198,14 +624,114 @@ export function BookingWorkspace({
         <div className={styles.statusAside}>
           <small>{t("Siguiente paso", "Next step")}</small>
           <p>{model.status.nextAction}</p>
-          {(model.status.tone === "danger" || model.status.tone === "warning") ? (
+
+          {model.isFixture && currentScenario === "booking-pending" ? (
+            <div className={styles.simulationActionGroup}>
+              <button
+                type="button"
+                disabled={executing}
+                className={styles.btnSimPrimary}
+                onClick={executeBookFreight}
+              >
+                {executing ? (
+                  <>
+                    <LoaderCircle className={styles.spinner} size={15} aria-hidden="true" />
+                    {executingMessage ?? t("Ejecutando WebMCP...", "Executing WebMCP...")}
+                  </>
+                ) : (
+                  <>
+                    <Truck size={15} aria-hidden="true" />
+                    {t("Enviar reserva al carrier (book_freight)", "Send booking to carrier (book_freight)")}
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                disabled={executing}
+                className={styles.btnSimSuccess}
+                onClick={executeQuickConfirm}
+              >
+                <CheckCircle2 size={15} aria-hidden="true" />
+                {t("Confirmación rápida (ACCEPT)", "Quick confirm (ACCEPT)")}
+              </button>
+            </div>
+          ) : null}
+
+          {model.isFixture && currentScenario === "pending-provider-confirmation" ? (
+            <div className={styles.simulationActionGroup}>
+              <button
+                type="button"
+                disabled={executing}
+                className={styles.btnSimSuccess}
+                onClick={() => executeStatus("ACCEPT")}
+              >
+                {executing ? (
+                  <>
+                    <LoaderCircle className={styles.spinner} size={15} aria-hidden="true" />
+                    {executingMessage ?? t("Ejecutando WebMCP...", "Executing WebMCP...")}
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={15} aria-hidden="true" />
+                    {t("Simular ACCEPT (Confirmar con get_provider_booking_status)", "Simulate ACCEPT (Confirm with get_provider_booking_status)")}
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                disabled={executing}
+                className={styles.btnSimDanger}
+                onClick={() => executeStatus("REJECT")}
+              >
+                <AlertTriangle size={15} aria-hidden="true" />
+                {t("Simular REJECT (Rechazo → Recovery)", "Simulate REJECT (Reject → Recovery)")}
+              </button>
+            </div>
+          ) : null}
+
+          {model.isFixture && currentScenario === "confirmed" ? (
+            <div className={styles.simulationActionGroup}>
+              <Link className={styles.btnSimSuccess} href={model.trackingHref ?? `/tracking/${encodeURIComponent(model.requestCode)}`}>
+                {t("Ir a seguimiento", "Open tracking")} <ChevronRight size={15} aria-hidden="true" />
+              </Link>
+              {!isRecoveredInca ? (
+                <button
+                  type="button"
+                  disabled={executing}
+                  className={styles.btnSimNeutral}
+                  onClick={() => executeStatus("REJECT")}
+                >
+                  <RefreshCw size={14} aria-hidden="true" />
+                  {t("Simular Rechazo & Recovery a Inca", "Simulate Reject & Recovery to Inca")}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                disabled={executing}
+                className={styles.btnSimNeutral}
+                onClick={() => handleAdvanceTo("booking-pending", "offer-demo-1")}
+              >
+                {t("Reiniciar simulación", "Reset simulation")}
+              </button>
+            </div>
+          ) : null}
+
+          {model.isFixture && currentScenario === "rejected" ? (
+            <div className={styles.simulationActionGroup}>
+              <a href="#recovery-title" className={styles.btnSimPrimary}>
+                {t("Ver ofertas de Recovery abajo", "View Recovery offers below")} ↓
+              </a>
+            </div>
+          ) : null}
+
+          {!model.isFixture && (model.status.tone === "danger" || model.status.tone === "warning") ? (
             <Link href={model.returnHref}>{t("Revisar opciones", "Review options")} <ChevronRight size={16} aria-hidden="true" /></Link>
           ) : null}
           {onRefresh && model.status.tone === "waiting" ? (
             <button type="button" disabled={busy} onClick={onRefresh}>{busy ? t("Consultando provider", "Checking provider") : t("Actualizar estado", "Refresh status")}</button>
           ) : null}
           {countdown && model.status.tone === "waiting" ? <span className={styles.deadline} aria-label={t("Tiempo restante para respuesta", "Time remaining for response")}>{countdown}</span> : null}
-          {model.status.tone === "success" && model.trackingHref ? <Link href={model.trackingHref}>{t("Ir a seguimiento", "Open tracking")} <ChevronRight size={16} aria-hidden="true" /></Link> : null}
+          {!model.isFixture && model.status.tone === "success" && model.trackingHref ? <Link href={model.trackingHref}>{t("Ir a seguimiento", "Open tracking")} <ChevronRight size={16} aria-hidden="true" /></Link> : null}
         </div>
       </section>
 
@@ -272,11 +798,29 @@ export function BookingWorkspace({
                     <p>${offer.totalPrice.toLocaleString("en-US")} {offer.currency}</p>
                     <button
                       type="button"
-                      disabled={busy || (!model.isFixture && !onRecover)}
+                      disabled={busy || executing || (!model.isFixture && !onRecover)}
                       aria-pressed={model.isFixture ? fixtureSelected : undefined}
-                      onClick={() => model.isFixture ? setFixtureRecoveryOfferId(offer.offerId) : onRecover?.(offer.offerId)}
+                      onClick={() => {
+                        if (model.isFixture) {
+                          setFixtureRecoveryOfferId(offer.offerId);
+                          void executeRecovery(offer.offerId);
+                        } else {
+                          onRecover?.(offer.offerId);
+                        }
+                      }}
                     >
-                      {busy ? t("Preparando recuperación", "Preparing recovery") : fixtureSelected ? t("Alternativa marcada localmente", "Alternative selected locally") : `${t("Continuar con", "Continue with")} ${offer.displayName}`}
+                      {executing && fixtureRecoveryOfferId === offer.offerId ? (
+                        <>
+                          <LoaderCircle className={styles.spinner} size={14} aria-hidden="true" />
+                          {executingMessage ?? t("Reasignando...", "Reassigning...")}
+                        </>
+                      ) : busy ? (
+                        t("Preparando recuperación", "Preparing recovery")
+                      ) : model.isFixture ? (
+                        `${t("Reasignar carga a", "Reassign freight to")} ${offer.displayName} (${offer.score} pts)`
+                      ) : (
+                        `${t("Continuar con", "Continue with")} ${offer.displayName}`
+                      )}
                     </button>
                   </article>
                 );

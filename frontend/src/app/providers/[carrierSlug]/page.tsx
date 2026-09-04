@@ -60,12 +60,21 @@ export default async function ProviderPage({ params, searchParams }: ProviderPag
   }
 
   return (
-    <main className={styles.main}>
-      <div style={{ marginBottom: "1.5rem" }}>
-        <Link href="/dashboard" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--muted)", textDecoration: "none", fontSize: "0.82rem", fontWeight: 600 }}>
-          ← {translate(locale, "Volver al Control Tower", "Return to Control Tower")}
+    <div className={styles.main}>
+      <nav className={styles.carrierTabs} aria-label={translate(locale, "Navegación de carriers", "Carrier navigation")}>
+        <Link href="/providers" className={styles.carrierTab}>
+          ← {translate(locale, "Todos los carriers", "All carriers")}
         </Link>
-      </div>
+        <Link href="/providers/andes" className={`${styles.carrierTab} ${carrierSlug === "andes" ? styles.carrierTabActive : ""}`}>
+          🏔️ Andes Express
+        </Link>
+        <Link href="/providers/inca" className={`${styles.carrierTab} ${carrierSlug === "inca" ? styles.carrierTabActive : ""}`}>
+          🏛️ Transportes Inca
+        </Link>
+        <Link href="/providers/pacific" className={`${styles.carrierTab} ${carrierSlug === "pacific" ? styles.carrierTabActive : ""}`}>
+          🌊 Pacific Cargo
+        </Link>
+      </nav>
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Registered WebMCP provider</p>
@@ -102,6 +111,6 @@ export default async function ProviderPage({ params, searchParams }: ProviderPag
         <span>Provider URL</span>
         <code>{provider.providerUrl}</code>
       </footer>
-    </main>
+    </div>
   );
 }

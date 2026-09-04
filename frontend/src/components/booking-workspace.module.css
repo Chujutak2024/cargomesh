@@ -118,3 +118,227 @@
   .evidenceSummary { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+.simulationBar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border: 1px solid #cfe1dc;
+  border-radius: 0.9rem;
+  padding: 0.8rem 1.1rem;
+  background: #ffffff;
+  box-shadow: 0 0.4rem 1.5rem rgb(18 60 58 / 4%);
+}
+
+.simulationBarHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.simulationBadge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  background: #185c55;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+}
+
+.simulationBarTitle {
+  color: #123c3a;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.simulationSteps {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.simStep {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.2rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #dbe2df;
+  border-radius: 0.6rem;
+  background: #f4f7f5;
+  color: #52605e;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 160ms ease;
+  text-decoration: none;
+}
+
+.simStep:hover {
+  background: #eef8f4;
+  border-color: #2bae9a;
+  color: #185c55;
+}
+
+.simStepActive {
+  background: #185c55 !important;
+  border-color: #185c55 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0.2rem 0.8rem rgb(24 92 85 / 25%);
+}
+
+.stepNum {
+  display: inline-grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 0.6rem;
+  font-weight: 850;
+}
+
+.simStepActive .stepNum {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.simArrow {
+  color: #9aa8a4;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.simDivider {
+  color: #ccd6d3;
+  font-size: 0.85rem;
+  margin: 0 0.2rem;
+}
+
+.simulationActionGroup {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.btnSimPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.9rem;
+  border: 0;
+  border-radius: 0.65rem;
+  background: #185c55;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+
+.btnSimPrimary:hover {
+  background: #123c3a;
+}
+
+.btnSimSuccess {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #2bae9a;
+  border-radius: 0.65rem;
+  background: #ddf3ea;
+  color: #185c55;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 150ms ease;
+}
+
+.btnSimSuccess:hover {
+  background: #c3ebd9;
+}
+
+.btnSimDanger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #d96b63;
+  border-radius: 0.65rem;
+  background: #fff0ee;
+  color: #a44740;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 150ms ease;
+}
+
+.btnSimDanger:hover {
+  background: #ffe3df;
+}
+
+.btnSimNeutral {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #dbe2df;
+  border-radius: 0.65rem;
+  background: #ffffff;
+  color: #52605e;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 750;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 150ms ease;
+}
+
+.btnSimNeutral:hover {
+  border-color: #687573;
+  color: #1f2928;
+}
+
+.recoverySuccessNotice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid #57c79a;
+  border-radius: 0.85rem;
+  padding: 0.85rem 1rem;
+  background: #ddf3ea;
+  color: #123c3a;
+}
+
+.recoverySuccessNotice > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.recoverySuccessNotice strong {
+  font-size: 0.75rem;
+  color: #185c55;
+}
+
+.recoverySuccessNotice span {
+  font-size: 0.68rem;
+  color: #34413f;
+}

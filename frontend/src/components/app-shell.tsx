@@ -39,6 +39,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
       { href: "/tracking", label: t("Seguimiento", "Tracking"), icon: MapPinned },
     ] },
     { label: t("Carriers WebMCP", "WebMCP Carriers"), items: [
+      { href: "/providers", label: t("Directorio de Carriers", "Carriers Directory"), icon: Waypoints },
       { href: "/providers/andes", label: "Andes Express", icon: Truck },
       { href: "/providers/inca", label: "Transportes Inca", icon: Truck },
       { href: "/providers/pacific", label: "Pacific Cargo", icon: Truck },
@@ -54,9 +55,9 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
   ];
   const contexts = [
     ["/freight-request/new", t("Nueva carga", "New shipment"), t("Intake guiado de FreightRequest", "Guided FreightRequest intake")],
-    ["/booking/", "Booking", t("Selección humana y confirmación", "Human selection and confirmation")],
+    ["/booking", "Booking", t("Selección humana y confirmación", "Human selection and confirmation")],
     ["/dispatch", t("Despachos", "Dispatch"), t("Evaluación dinámica de opciones", "Dynamic option evaluation")],
-    ["/providers/", "WebMCP Carrier", t("Portal del transportista con tools WebMCP", "Carrier portal with WebMCP tools")],
+    ["/providers", "Carriers WebMCP", t("Portal y herramientas WebMCP de transportistas", "Carrier portal and WebMCP tools")],
     ["/requests", t("Mis cargas", "My shipments"), t("Solicitudes de la organización", "Organization requests")],
     ["/tracking", t("Seguimiento", "Tracking"), t("Eventos reportados por carriers", "Carrier-reported events")],
     ["/organization", t("Organización", "Organization"), t("Perfil, miembros y políticas", "Profile, members, and policies")],
@@ -99,7 +100,10 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
             <div className={styles.navSection} key={section.label}>
               <p>{section.label}</p>
               {section.items.map(({ href, label, icon: Icon }) => {
-                const active = pathname === href || pathname.startsWith(`${href}/`);
+                const hrefPath = href.split("?")[0];
+                const active = href === "/providers"
+                  ? pathname === "/providers"
+                  : pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
                 return (
                   <Link key={href} href={href} aria-current={active ? "page" : undefined} className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`} onClick={() => setOpen(false)}>
                     <Icon size={17} strokeWidth={1.8} aria-hidden="true" />

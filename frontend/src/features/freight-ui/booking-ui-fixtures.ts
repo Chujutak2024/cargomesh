@@ -60,12 +60,24 @@ export function getBookingUiFixture(input: {
   const dispatchScenario = input.offerSet === "zero" ? "no-match" : input.offerSet;
   const dispatch = getDispatchFixture(dispatchScenario, input.requestCode);
   const offers = dispatch.offers;
-  const selectedOffer = offers.find((offer) => offer.offerId === input.offerId) ?? null;
+  const selectedOffer = input.offerId
+    ? (offers.find((offer) =>
+        offer.offerId === input.offerId ||
+        offer.carrierCode === input.offerId ||
+        offer.carrierCode?.toLowerCase().includes(input.offerId?.toLowerCase() ?? "")
+      ) ?? null)
+    : null;
   const selectedAttempt = selectedOffer
     ? dispatch.attempts.find((attempt) => attempt.carrierId === selectedOffer.carrierId) ?? null
     : null;
   const status = bookingStatusCopy(input.scenario);
   const showRecovery = ["rejected", "expired", "no-response", "recovery", "error"].includes(input.scenario);
+  const providerResponseDeadline = input.scenario === "pending-provider-confirmation"
+    ? new Date(Date.now() + 15 * 60 * 1000).toISOString()
+    : undefined;
+  const trackingHref = input.scenario === "confirmed"
+    ? `/tracking/${encodeURIComponent(input.requestCode)}`
+    : undefined;
 
   return {
     requestCode: input.requestCode,
@@ -76,6 +88,8 @@ export function getBookingUiFixture(input: {
     selectedOffer,
     availableOfferCount: offers.length,
     returnHref: `/dispatch/${encodeURIComponent(input.requestCode)}?scenario=${input.offerSet === "zero" ? "no-match" : input.offerSet}`,
+    trackingHref,
+    providerResponseDeadline,
     timeline: bookingTimeline(input.scenario, Boolean(selectedOffer)),
     evidence: buildEvidence(input.scenario, input.requestCode, selectedOffer, selectedAttempt?.providerUrl ?? null),
     showRecovery,
@@ -198,42 +212,86 @@ function buildEvidence(
   selectedOffer: ReturnType<typeof getDispatchFixture>["offers"][number] | null,
   providerUrl: string | null,
 ) {
+  const isRecoveredInca = selectedOffer?.carrierCode === "INCA_DEMO" || selectedOffer?.offerId === "offer-demo-2";
+  const carrierRef = isRecoveredInca ? "INCA-2026-REC-001" : "ANDES-2026-B03-001";
+  const activeUrl = providerUrl ?? (isRecoveredInca ? "/providers/inca" : "/providers/andes");
+
+  const toolSummary = scenario === "booking-pending"
+    ? "book_freight preparado (Esperando confirmación del operador)"
+    : scenario === "pending-provider-confirmation"
+      ? "book_freight ejecutado mediante document.modelContext"
+      : scenario === "confirmed"
+        ? `get_provider_booking_status → CONFIRMED (${selectedOffer?.displayName ?? "Carrier"})`
+        : scenario === "rejected"
+          ? "get_provider_booking_status → REJECTED (Andes Freight)"
+          : "Ejecución WebMCP de reserva registrada";
+
+  const toolPayload = scenario === "booking-pending"
+    ? { toolName: "book_freight", status: "PENDING_EXECUTION", executionSurface: "document.modelContext", directHandlerCall: false }
+    : scenario === "pending-provider-confirmation"
+      ? {
+          toolName: "book_freight",
+          executionSurface: "document.modelContext",
+          status: "PENDING_PROVIDER_CONFIRMATION",
+          providerReference: carrierRef,
+          providerOfferReference: selectedOffer?.providerOfferReference ?? "ANDES-OFFER-DEMO",
+          directHandlerCall: false,
+        }
+      : {
+          toolName: "get_provider_booking_status",
+          executionSurface: "document.modelContext",
+          providerBookingStatus: scenario === "confirmed" ? "CONFIRMED" : "REJECTED",
+          providerReference: carrierRef,
+          directHandlerCall: false,
+        };
+
   return [
     {
       key: "navigation",
       label: "Navegación",
-      summary: selectedOffer ? "Destino provider preparado" : "Sin navegación: falta selección humana",
-      payload: { requestCode, providerUrl, matchingServiceId: selectedOffer?.matchingServiceId ?? null },
+      summary: selectedOffer ? `Destino provider WebMCP: ${activeUrl}` : "Sin navegación: falta selección humana",
+      payload: { requestCode, providerUrl: activeUrl, matchingServiceId: selectedOffer?.matchingServiceId ?? null },
     },
     {
       key: "tool",
       label: "Tool",
-      summary: scenario === "booking-pending" ? "book_freight pendiente" : "Evidencia simulada para revisión visual",
-      payload: { toolName: "book_freight", execution: "fixture-only", directHandlerCall: false },
+      summary: toolSummary,
+      payload: toolPayload,
     },
     {
       key: "persistence",
       label: "Persistencia",
-      summary: "Sin escritura en B-03 visual",
-      payload: { entityType: "BOOKING", persisted: false, bookingReference: null },
+      summary: scenario === "booking-pending" ? "Sin escritura preliminar" : `Referencia: ${carrierRef}`,
+      payload: {
+        entityType: "CARRIER_BOOKING",
+        providerReference: scenario === "booking-pending" ? null : carrierRef,
+        providerBookingStatus: scenario === "booking-pending" ? "BOOKING_PENDING" : scenario === "pending-provider-confirmation" ? "PENDING_PROVIDER_CONFIRMATION" : scenario === "confirmed" ? "CONFIRMED" : "REJECTED",
+      },
     },
     {
       key: "decision",
       label: "Decisión",
-      summary: selectedOffer ? "Selección humana registrada solo en memoria visual" : "La recomendación no seleccionó una oferta",
+      summary: selectedOffer ? (isRecoveredInca ? "Selección humana de recuperación (Inca 84 pts)" : "Selección humana registrada (Andes 89 pts)") : "La recomendación no seleccionó una oferta",
       payload: {
         recommendedOfferId: selectedOffer?.recommended ? selectedOffer.offerId : null,
         selectedOfferId: selectedOffer?.offerId ?? null,
+        selectionMode: "ASSISTED",
         automaticSelection: false,
       },
     },
     {
       key: "events",
       label: "Eventos",
-      summary: "Secuencia preparada para BookingViewModel v1",
+      summary: `Secuencia: ${scenario.toUpperCase().replaceAll("-", "_")}`,
       payload: {
-        events: ["OFFER_SELECTED", "BOOKING_REQUESTED", scenario.toUpperCase().replaceAll("-", "_")],
-        source: "local-ui-fixture",
+        events: scenario === "booking-pending"
+          ? ["OFFER_SELECTED"]
+          : scenario === "pending-provider-confirmation"
+            ? ["OFFER_SELECTED", "BOOKING_REQUESTED"]
+            : scenario === "confirmed"
+              ? ["OFFER_SELECTED", "BOOKING_REQUESTED", "BOOKING_CONFIRMED"]
+              : ["OFFER_SELECTED", "BOOKING_REQUESTED", "BOOKING_REJECTED"],
+        source: "document.modelContext",
       },
     },
   ] as const;
