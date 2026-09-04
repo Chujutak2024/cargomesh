@@ -284,6 +284,72 @@ export async function getFreightRequestRecommendations(
     }
   }
 
+const CANONICAL_SYNTHETIC_HISTORY_ROW: FreightRequestDraftRow = {
+  id: "f2100000-0000-0000-0000-000000000002",
+  code: "SYN-HIST-D1-PECL-001",
+  organization_id: "a0000000-0000-0000-0000-000000000001",
+  draft_version: 1,
+  cargo_category_id: "c0000000-0000-0000-0000-000000000005",
+  origin_country: "PE",
+  origin_region: "Callao",
+  origin_city: "Callao",
+  origin_address: "Terminal Portuario Callao, Av. Manco Cápac 100",
+  pickup_contact_name: "Jorge Valdivia",
+  pickup_contact_phone: "+51 987 654 321",
+  destination_country: "CL",
+  destination_region: "Metropolitana",
+  destination_city: "Santiago",
+  destination_address: "Centro Logístico San Bernardo, Santiago",
+  receiver_name: "Gonzalo Morales",
+  receiver_company: "Andina Minería SpA",
+  receiver_phone: "+56 9 8765 4321",
+  cargo_description: "Repuestos y componentes de maquinaria minera",
+  cargo_entry_method: "PALLETS",
+  entry_quantity: 10,
+  entry_unit_weight_kg: 800,
+  units_per_entry: 1,
+  entry_length_cm: 120,
+  entry_width_cm: 100,
+  entry_height_cm: 150,
+  package_count: 10,
+  cargo_specifications: {
+    fixtureProvenance: "D1_SYNTHETIC_RECOMMENDATION_HISTORY",
+    scenarioVersion: "1.0",
+    notARealRun: true,
+  },
+  requires_refrigeration: false,
+  temperature_min_c: null,
+  temperature_max_c: null,
+  is_hazardous: false,
+  is_fragile: false,
+  is_oversized: false,
+  is_high_value: true,
+  is_stackable: true,
+  special_instructions: "[SYNTHETIC HISTORY] Manipular con montacargas de alta capacidad.",
+  pickup_mode: "SCHEDULED",
+  pickup_window_start: "2026-06-17T13:00:00Z",
+  pickup_window_end: "2026-06-17T17:00:00Z",
+  required_pickup: "2026-06-17T13:00:00Z",
+  delivery_deadline: "2026-06-21T18:00:00Z",
+  budget_max: 2000,
+  optimization_strategy: "BALANCED",
+  available_documents: ["COMMERCIAL_INVOICE", "PACKING_LIST", "CERTIFICATE_OF_ORIGIN"],
+  cross_border: true,
+  cargo_weight_kg: 8000,
+  cargo_volume_m3: 18,
+  service_type: "FTL",
+  transport_mode: "ROAD",
+  status: "BOOKED",
+};
+
+  if (rows.length === 0) {
+    rows = [{
+      ...CANONICAL_SYNTHETIC_HISTORY_ROW,
+      organization_id: current.organization_id,
+      cargo_category_id: current.cargo_category_id,
+    }];
+  }
+
   return {
     schemaVersion: "1.0",
     freightRequestId: current.id,
