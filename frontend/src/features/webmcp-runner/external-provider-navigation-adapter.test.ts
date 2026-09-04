@@ -60,10 +60,16 @@ function createModelContext(
   behavior: {
     extraToolName?: string;
     keepProviderToolsAfterCleanup?: boolean;
+    executeError?: Error;
   } = {},
 ) {
   const getToolsOptions: Array<{ fromOrigins?: string[] } | undefined> = [];
-  const executed: Array<{ toolName: string; inputJson: string }> = [];
+  const executed: Array<{
+    toolName: string;
+    inputJson: string;
+    receivedAs: "object" | "string";
+  }> = [];
+  let executeAttempts = 0;
   const providerOrigin = new URL(navigationUrl).origin;
   const toolNames = behavior.extraToolName
     ? [...REQUIRED_PROVIDER_TOOL_NAMES, behavior.extraToolName]
@@ -88,13 +94,29 @@ function createModelContext(
       }
       return [];
     },
-    async executeTool(registeredTool: WebMCP.RegisteredTool, inputJson = "{}") {
-      executed.push({ toolName: registeredTool.name, inputJson });
+    async executeTool(
+      registeredTool: WebMCP.RegisteredTool,
+      input: object | string = {},
+    ) {
+      executeAttempts += 1;
+      executed.push({
+        toolName: registeredTool.name,
+        inputJson: String(input),
+        receivedAs: typeof input === "string" ? "string" : "object",
+      });
+      if (behavior.executeError) throw behavior.executeError;
       return JSON.stringify({ ok: true, data: { supported: true } });
     },
   } as WebMCP.ModelContext;
 
-  return { modelContext, getToolsOptions, executed };
+  return {
+    modelContext,
+    getToolsOptions,
+    executed,
+    get executeAttempts() {
+      return executeAttempts;
+    },
+  };
 }
 
 test("uses the registered external origin for getTools/executeTool and preserves cleanup", async () => {
@@ -128,8 +150,10 @@ test("uses the registered external origin for getTools/executeTool and preserves
     {
       toolName: "check_service_coverage",
       inputJson: JSON.stringify({ origin: "Callao", destination: "Santiago" }),
+      receivedAs: "object",
     },
   ]);
+  assert.equal(context.executeAttempts, 1);
   assert.equal(
     context.getToolsOptions.some(
       (options) => options?.fromOrigins?.[0] === "https://provider.example",
@@ -184,6 +208,45 @@ test("rejects a registered provider URL when matchingServiceId is changed", asyn
     /PROVIDER_DESTINATION_MISMATCH/,
   );
   assert.equal(frame.src, BASE_URL);
+});
+
+test("never retries a failed destructive provider tool", async () => {
+  const frame = createFrame();
+  const context = createModelContext(frame, {
+    executeError: new DOMException("Execution aborted.", "AbortError"),
+  });
+  const adapter = createExternalProviderNavigationAdapter({
+    baseUrl: BASE_URL,
+    frame: frame.frame,
+    documentHost: { modelContext: context.modelContext },
+    navigationTimeoutMs: 100,
+    webMcpReadyTimeoutMs: 100,
+  });
+  await adapter.bindRegisteredCandidates?.([candidate]);
+  const session = await adapter.open(navigationUrl, candidate);
+  const bookingRuntime = session.runtime as unknown as {
+    executeTool(
+      toolName: "book_freight",
+      input: Record<string, unknown>,
+      signal: AbortSignal,
+    ): Promise<unknown>;
+  };
+
+  await assert.rejects(
+    bookingRuntime.executeTool(
+      "book_freight",
+      {
+        freight_request_id: "request-1",
+        provider_offer_reference: "offer-1",
+      },
+      new AbortController().signal,
+    ),
+    (error: unknown) => error instanceof DOMException && error.name === "AbortError",
+  );
+
+  assert.equal(context.executeAttempts, 1);
+  assert.equal(context.executed[0]?.receivedAs, "object");
+  assert.deepEqual(await session.leaveAndGetActiveToolNames(BASE_URL), []);
 });
 
 test("rejects duplicated effective destinations in the discovery snapshot", async () => {

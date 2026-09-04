@@ -16,7 +16,7 @@ declare global {
     interface ModelContext {
       executeTool(
         tool: RegisteredTool,
-        inputJson?: string,
+        input?: object | string,
         options?: ModelContextExecuteToolOptions,
       ): Promise<string | null>;
     }

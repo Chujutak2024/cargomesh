@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { createWebMcpExecuteInput } from "@/features/webmcp-runner/execute-tool-input";
+
 import {
   GET_FREIGHT_REQUEST_RECOMMENDATIONS_TOOL_NAME,
   type FreightRecommendationInput,
@@ -62,13 +64,19 @@ function recommendationBody(
   };
 }
 
-function createModelContextHarness() {
+function createModelContextHarness(
+  inputContract: "legacy-domstring" | "current-object" = "legacy-domstring",
+) {
   const registered = new Map<string, WebMCP.ModelContextTool>();
   const registrationOptions = new Map<
     string,
     WebMCP.ModelContextRegisterToolOptions
   >();
   const executions: Array<{ name: string; inputJson: string }> = [];
+  const executeAttempts: Array<{
+    input: object | string;
+    signal: AbortSignal | undefined;
+  }> = [];
   const modelContext = {
     async registerTool(
       tool: WebMCP.ModelContextTool,
@@ -92,11 +100,21 @@ function createModelContextHarness() {
     },
     async executeTool(
       tool: WebMCP.RegisteredTool,
-      inputJson = "{}",
+      input: object | string = {},
       options?: WebMCP.ModelContextExecuteToolOptions,
     ) {
+      executeAttempts.push({ input, signal: options?.signal });
       const implementation = registered.get(tool.name);
       if (!implementation) throw new Error("Tool is not registered.");
+      if (
+        inputContract === "current-object" &&
+        (typeof input !== "object" || input === null || Array.isArray(input))
+      ) {
+        throw new TypeError("WebMCP executeTool requires an object input.");
+      }
+      const inputJson = inputContract === "current-object"
+        ? JSON.stringify(input)
+        : String(input);
       executions.push({ name: tool.name, inputJson });
       const output = await implementation.execute(JSON.parse(inputJson), {
         signal: options?.signal ?? new AbortController().signal,
@@ -107,15 +125,31 @@ function createModelContextHarness() {
 
   return {
     documentHost: { modelContext },
+    executeAttempts,
     executions,
     registered,
     registrationOptions,
   };
 }
 
+test("one compatible input preserves the same payload for object and DOMString hosts", () => {
+  const compatibleInput = createWebMcpExecuteInput(input);
+  const expectedJson = JSON.stringify(input);
+
+  assert.equal(typeof compatibleInput, "object");
+  assert.equal(String(compatibleInput), expectedJson);
+  assert.equal(JSON.stringify(compatibleInput), expectedJson);
+  assert.deepEqual(Object.keys(compatibleInput), Object.keys(input));
+  assert.throws(
+    () => createWebMcpExecuteInput({ toJSON: () => undefined }),
+    /WEBMCP_INVALID_EXECUTION_INPUT/,
+  );
+});
+
 test("getTools and executeTool cross document.modelContext with a strict read-only tool", async () => {
   const harness = createModelContextHarness();
   const registrationController = new AbortController();
+  const executionController = new AbortController();
   const requests: Array<{ url: string; init?: RequestInit }> = [];
 
   assert.equal(
@@ -149,10 +183,13 @@ test("getTools and executeTool cross document.modelContext with a strict read-on
   const result = await executeFreightRecommendationToolViaWebMcp(
     harness.documentHost,
     input,
-    new AbortController().signal,
+    executionController.signal,
   );
 
   assert.equal(result.ok, true);
+  assert.equal(harness.executeAttempts.length, 1);
+  assert.equal(typeof harness.executeAttempts[0]?.input, "object");
+  assert.equal(harness.executeAttempts[0]?.signal, executionController.signal);
   assert.equal(harness.executions.length, 1);
   assert.equal(
     harness.executions[0]?.name,
@@ -169,6 +206,35 @@ test("getTools and executeTool cross document.modelContext with a strict read-on
 
   registrationController.abort();
   assert.deepEqual(await harness.documentHost.modelContext.getTools(), []);
+});
+
+test("executeTool supports the current object-input WebMCP contract without retrying", async () => {
+  const harness = createModelContextHarness("current-object");
+  const registrationController = new AbortController();
+  await registerFreightRecommendationTool(
+    harness.documentHost,
+    registrationController.signal,
+    {
+      request: async () => Response.json(recommendationBody()),
+    },
+  );
+
+  const executionController = new AbortController();
+  const result = await executeFreightRecommendationToolViaWebMcp(
+    harness.documentHost,
+    input,
+    executionController.signal,
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(harness.executeAttempts.length, 1);
+  assert.equal(typeof harness.executeAttempts[0]?.input, "object");
+  assert.equal(harness.executeAttempts[0]?.signal, executionController.signal);
+  assert.equal(harness.executions.length, 1);
+  assert.deepEqual(
+    JSON.parse(harness.executions[0]?.inputJson ?? "{}"),
+    input,
+  );
 });
 
 test("HTTP 409 becomes a STALE_DRAFT tool response through executeTool", async () => {
