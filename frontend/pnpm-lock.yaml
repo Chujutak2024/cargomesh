@@ -17,6 +17,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      hono:
+        specifier: 4.7.10
+        version: 4.7.10
       leaflet:
         specifier: 1.9.4
         version: 1.9.4
@@ -41,6 +44,9 @@ importers:
       webmcp-types:
         specifier: ^0.1.5
         version: 0.1.5
+      zod:
+        specifier: 3.24.4
+        version: 3.24.4
     devDependencies:
       '@types/leaflet':
         specifier: 1.9.21
@@ -645,6 +651,10 @@ packages:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
 
+  hono@4.7.10:
+    resolution: {integrity: sha512-QkACju9MiN59CKSY5JsGZCYmPZkA6sIW6OFCUp7qDjZu6S6KHtJHhAc9Uy9mV9F8PJ1/HQ3ybZF2yjCa/73fvQ==}
+    engines: {node: '>=16.9.0'}
+
   iceberg-js@0.8.1:
     resolution: {integrity: sha512-1dhVQZXhcHje7798IVM+xoo/1ZdVfzOMIc8/rgVSijRK38EDqOJoGula9N/8ZI5RD8QTxNQtK/Gozpr+qUqRRA==}
     engines: {node: '>=20.0.0'}
@@ -930,6 +940,9 @@ packages:
 
   webmcp-types@0.1.5:
     resolution: {integrity: sha512-QAfuzNJ+hiY2JLpPbD/6xZruLQlsqtWUDqQCRruqD0dbtZHDg6IUZ2K0zctlRokwuscGlr47i6hKv8mQPSQLhw==}
+
+  zod@3.24.4:
+    resolution: {integrity: sha512-OdqJE9UDRPwWsrHjLN2F8bPxvwJBK22EHLWtanu0LSYr5YqzsaaW3RMgmjwr8Rypg5k+meEJdSPXJZXE/yqOMg==}
 
 snapshots:
 
@@ -1357,6 +1370,8 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
+  hono@4.7.10: {}
+
   iceberg-js@0.8.1: {}
 
   is-binary-path@2.1.0:
@@ -1638,3 +1653,5 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   webmcp-types@0.1.5: {}
+
+  zod@3.24.4: {}
