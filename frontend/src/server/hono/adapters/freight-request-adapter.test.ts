@@ -2,13 +2,15 @@
  * Adapter unit tests: adaptV2ToLegacyService
  *
  * Verifies that the V2 flat public input is correctly transformed to the
- * legacy { fields: ManualFreightRequestIntakeFields } shape that the service
- * parser expects.
+ * legacy { fields: ManualFreightRequestIntakeFields } shape.
  *
  * Key regression: if the adapter output is not { fields: {...} }, then
  * parseCreateFreightRequestDraftInput will throw:
  *   "El payload admite únicamente la clave 'fields'."
- * These tests catch that class of bug at the unit level.
+ *
+ * Second regression: if totalWeightKg is set with PALLETS entry method,
+ * the normalizer throws:
+ *   "totalWeightKg solo se aplica con TOTAL_WEIGHT."
  *
  * Run: tsx --test src/server/hono/adapters/freight-request-adapter.test.ts
  */
@@ -49,21 +51,12 @@ describe("adaptV2ToLegacyService — structural contract", () => {
     );
   });
 
-  it("regression: output is not a flat object (would break parseCreateFreightRequestDraftInput)", () => {
+  it("regression: output is not a flat object (parseCreateFreightRequestDraftInput guard)", () => {
     const result = adaptV2ToLegacyService(BASE_INPUT);
-    // If result had originCity at top level, parser would throw
-    assert.ok(
-      !Object.hasOwn(result, "originCity"),
-      "originCity must not be at top level",
-    );
-    assert.ok(
-      !Object.hasOwn(result, "cargoWeightKg"),
-      "cargoWeightKg must not be at top level",
-    );
-    assert.ok(
-      !Object.hasOwn(result, "packageCount"),
-      "packageCount must not be at top level",
-    );
+    // These fields must be INSIDE fields, not at top level
+    assert.ok(!Object.hasOwn(result, "originCity"), "originCity must not be at top level");
+    assert.ok(!Object.hasOwn(result, "cargoWeightKg"), "cargoWeightKg must not be at top level");
+    assert.ok(!Object.hasOwn(result, "packageCount"), "packageCount must not be at top level");
   });
 });
 
@@ -88,14 +81,30 @@ describe("adaptV2ToLegacyService — field mapping", () => {
     assert.equal(result.fields.destinationCity, "Santiago");
   });
 
-  it("maps cargoWeightKg → totalWeightKg", () => {
+  it("maps cargoWeightKg → entryUnitWeightKg (weight per pallet = total / count)", () => {
+    // 8000kg / 10 pallets = 800kg per pallet
     const result = adaptV2ToLegacyService(BASE_INPUT);
-    assert.equal(result.fields.totalWeightKg, 8000);
+    assert.equal(result.fields.entryUnitWeightKg, 800);
+  });
+
+  it("does NOT set totalWeightKg (invalid with PALLETS entry method)", () => {
+    // Critical: normalizer throws if totalWeightKg is set with non-TOTAL_WEIGHT method
+    const result = adaptV2ToLegacyService(BASE_INPUT);
+    assert.ok(
+      !Object.hasOwn(result.fields, "totalWeightKg"),
+      "totalWeightKg must never be set — it is incompatible with PALLETS entry method",
+    );
   });
 
   it("maps packageCount → entryQuantity", () => {
     const result = adaptV2ToLegacyService(BASE_INPUT);
     assert.equal(result.fields.entryQuantity, 10);
+  });
+
+  it("computes entryUnitWeightKg correctly for odd division", () => {
+    // 1000kg / 3 pallets = 333.33kg per pallet (rounded to 2 decimals)
+    const result = adaptV2ToLegacyService({ ...BASE_INPUT, cargoWeightKg: 1000, packageCount: 3 });
+    assert.equal(result.fields.entryUnitWeightKg, 333.33);
   });
 
   it("maps budgetUsd → budgetMax when provided", () => {
@@ -104,8 +113,7 @@ describe("adaptV2ToLegacyService — field mapping", () => {
   });
 
   it("does NOT set budgetMax when budgetUsd is omitted", () => {
-    const { budgetUsd: _omit, ...inputWithoutBudget } = { ...BASE_INPUT, budgetUsd: undefined };
-    const result = adaptV2ToLegacyService(inputWithoutBudget as CreateFreightRequestInput);
+    const result = adaptV2ToLegacyService({ ...BASE_INPUT, budgetUsd: undefined });
     assert.ok(!Object.hasOwn(result.fields, "budgetMax"), "budgetMax should not be set");
   });
 
@@ -131,7 +139,7 @@ describe("adaptV2ToLegacyService — special handling flags", () => {
     assert.equal(result.fields.isHazardous, true);
   });
 
-  it("does NOT set isHazardous when false (not in fields)", () => {
+  it("does NOT set isHazardous when false (template provides default)", () => {
     const result = adaptV2ToLegacyService({ ...BASE_INPUT, isHazardous: false });
     assert.ok(!Object.hasOwn(result.fields, "isHazardous"));
   });
@@ -170,8 +178,16 @@ describe("adaptV2ToLegacyService — excluded fields (service contract enforceme
 
   it("does NOT include isCrossBorder in fields (service derives from countries)", () => {
     const result = adaptV2ToLegacyService(BASE_INPUT);
-    assert.ok(!Object.hasOwn(result.fields, "isCrossBorder"), "isCrossBorder must not be in fields");
-    assert.ok(!Object.hasOwn(result.fields, "cross_border"), "cross_border must not be in fields");
+    assert.ok(!Object.hasOwn(result.fields, "isCrossBorder"));
+    assert.ok(!Object.hasOwn(result.fields, "cross_border"));
+  });
+
+  it("does NOT include totalWeightKg in fields (incompatible with PALLETS default)", () => {
+    const result = adaptV2ToLegacyService(BASE_INPUT);
+    assert.ok(
+      !Object.hasOwn(result.fields, "totalWeightKg"),
+      "totalWeightKg is invalid with PALLETS entry method",
+    );
   });
 
   it("does NOT include any prohibited identity fields", () => {

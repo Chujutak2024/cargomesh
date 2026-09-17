@@ -29,7 +29,7 @@ CargoMesh is a Next.js 15 application. The full codebase lives under `frontend/`
 | `/api/judge/evidence` | GET | inline in route handler |
 | `/api/organization/preferences` | PATCH | inline in route handler |
 
-**Note:** 7 routes have stub directories but no `route.ts` file. These need to be implemented as part of V2 or as standalone tasks before Hono migration of those verticals.
+**Note (verified 2026-09-17):** ALL 20 route paths have `route.ts` implementations. Earlier drafts of this document incorrectly listed 7 as stubs — those stubs have since been filled. The accurate inventory below was verified by inspecting the file tree directly.
 
 ## Target Architecture
 

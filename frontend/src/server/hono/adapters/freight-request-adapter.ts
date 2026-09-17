@@ -8,20 +8,21 @@
  *
  * This adapter performs the structural transformation without touching either
  * the public contract or the legacy service. It must stay in sync with
- * ManualFreightRequestIntakeFields in manual-intake-contracts.ts.
+ * ManualFreightRequestIntakeFields in manual-intake-contracts.ts and with
+ * the normalizer's validation rules in manual-intake-normalizer.ts.
  *
- * IMPORTANT: Only map fields that ManualFreightRequestIntakeFields actually
- * supports. Do NOT pass transportMode / serviceType / strategy here — the
- * service hardcodes those to ROAD / FTL / BALANCED and they are not accepted
- * in the fields object (they are prohibited keys or ignored silently).
+ * KEY MAPPING RULE (from normalizer):
+ *   - totalWeightKg is only valid when cargoEntryMethod === "TOTAL_WEIGHT"
+ *   - The service template defaults to cargoEntryMethod = "PALLETS"
+ *   - For PALLETS, weight is derived from entryQuantity × entryUnitWeightKg
+ *   - So we NEVER set totalWeightKg; instead we set entryQuantity + entryUnitWeightKg
  *
- * Auth note: organizationId and memberId are assigned server-side by the
- * service. They must NEVER appear in the fields object (PROHIBITED_CLIENT_KEYS).
+ * Auth note: organizationId and memberId are assigned server-side. They must
+ * NEVER appear in the fields object (PROHIBITED_CLIENT_KEYS guard in the policy).
  */
 
 import type {
   ManualFreightRequestIntakeFields,
-  OfficialCargoCategoryCode,
   SupportedCountryCode,
 } from "@/features/freight-requests/manual-intake-contracts";
 import type { CreateFreightRequestInput } from "@/shared/schemas/freight-request";
@@ -42,6 +43,9 @@ export type LegacyCreateFreightRequestInput = {
  * - Optional fields are included only when explicitly provided.
  * - transportMode / serviceType / strategy are intentionally excluded
  *   (service controls these; they are not in ManualFreightRequestIntakeFields).
+ * - totalWeightKg is intentionally excluded: the service template uses PALLETS
+ *   entry method, and totalWeightKg is only valid with TOTAL_WEIGHT entry method.
+ *   Weight is expressed as entryUnitWeightKg × entryQuantity instead.
  * - Country codes are uppercased to match SupportedCountryCode.
  */
 export function adaptV2ToLegacyService(
@@ -57,17 +61,16 @@ export function adaptV2ToLegacyService(
   fields.destinationCountry = input.destinationCountry.toUpperCase() as SupportedCountryCode;
   fields.destinationCity = input.destinationCity;
 
-  // ── Cross-border flag ─────────────────────────────────────────────────────
-  // Note: ManualFreightRequestIntakeFields does not expose cross_border directly.
-  // The normalizer derives it from origin/destination country pair. No mapping needed.
-
-  // ── Cargo weight ──────────────────────────────────────────────────────────
-  // totalWeightKg maps directly to the template override.
-  fields.totalWeightKg = input.cargoWeightKg;
-
-  // ── Package count expressed as entry quantity for PALLETS entry method ────
-  // The service default entry method is PALLETS; entry_quantity ≈ package_count.
+  // ── Cargo weight — expressed as pallet units, NOT totalWeightKg ──────────
+  // Reason: the service template defaults to PALLETS entry method.
+  // The normalizer throws if totalWeightKg is set with a non-TOTAL_WEIGHT method.
+  // We use entryQuantity (package count) + entryUnitWeightKg (weight per unit).
+  // The service computes total weight as quantity × unitWeight.
   fields.entryQuantity = input.packageCount;
+  if (input.packageCount > 0 && input.cargoWeightKg > 0) {
+    // Round to 2 decimal places to avoid floating point noise
+    fields.entryUnitWeightKg = Math.round((input.cargoWeightKg / input.packageCount) * 100) / 100;
+  }
 
   // ── Budget ────────────────────────────────────────────────────────────────
   if (input.budgetUsd !== undefined && input.budgetUsd !== null) {
@@ -80,6 +83,7 @@ export function adaptV2ToLegacyService(
   }
 
   // ── Special handling flags ────────────────────────────────────────────────
+  // Only set when true — false flags remain unset and the service uses the template default
   if (input.requiresRefrigeration === true) {
     fields.requiresRefrigeration = true;
   }
@@ -93,11 +97,13 @@ export function adaptV2ToLegacyService(
     fields.isOversized = true;
   }
 
-  // ── Volume ────────────────────────────────────────────────────────────────
-  // cargoVolumeM3 has no direct field in ManualFreightRequestIntakeFields.
-  // The normalizer derives volume from entry dimensions (entryLengthCm, etc.).
-  // For the V2 bootstrap we do not map it here; it will use the template default.
-  // TODO(v2): add volume mapping when the V2 schema supports dimensional input.
+  // ── Intentionally excluded ────────────────────────────────────────────────
+  // transportMode  — service hardcodes ROAD, not in ManualFreightRequestIntakeFields
+  // serviceType    — service hardcodes FTL, not in ManualFreightRequestIntakeFields
+  // strategy       — service hardcodes BALANCED (optimization_strategy)
+  // isCrossBorder  — service derives from origin/destination country pair
+  // totalWeightKg  — only valid with TOTAL_WEIGHT entry method (see above)
+  // cargoVolumeM3  — no direct field; derived from entry dimensions
 
   return { fields };
 }
