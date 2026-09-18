@@ -1,5 +1,5 @@
 import { DispatchView, OrchestrationDispatch } from "@/components/dispatch-view";
-import { requireOperationalRouteAccess } from "@/features/auth/route-guard";
+import { requireOperationalRouteAccess } from "@/server/auth/route-guard";
 import { resolveExplicitDispatchScenario } from "@/features/freight-ui/dispatch-policies";
 import { getDispatchFixture } from "@/features/freight-ui/ui-fixtures";
 

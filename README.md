@@ -12,6 +12,18 @@
 
 ## 📑 Specification Metadata
 
+### Source layout
+
+The deployable application is in `frontend/` (a full-stack Next.js app).
+Its active TypeScript backend is in [`frontend/src/server/`](frontend/src/server/README.md):
+shared services, authentication, database clients, Hono REST and MCP.
+Pages and route entry points are in `src/app/`; UI components are in
+`src/components/`; domain contracts, pure rules and client workflows are in
+`src/features/`; cross-cutting schemas are in `src/shared/`.
+`supabase/` contains database migrations, scenarios and SQL tests.
+The root [`backend/`](backend/README.md) is an unused legacy Python scaffold.
+
+
 | Parameter | Specification Value |
 |:---|:---|
 | **Project Name** | **CargoMesh Network** |

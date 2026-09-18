@@ -1,9 +1,9 @@
 import { ClipboardList, Plus } from "lucide-react";
 import Link from "next/link";
 import { RequestDirectory } from "@/components/request-directory";
-import { requireOperationalRouteAccess } from "@/features/auth/route-guard";
-import { getOrganizationDashboard } from "@/features/dashboard/dashboard-server";
-import { getRequestLocale } from "@/features/i18n/server";
+import { requireOperationalRouteAccess } from "@/server/auth/route-guard";
+import { getOrganizationDashboard } from "@/server/services/dashboard/dashboard-server";
+import { getRequestLocale } from "@/server/i18n/server";
 import { localeTag, translate } from "@/features/i18n/config";
 import styles from "../operational-page.module.css";
 

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
-import { requireAuthenticatedMember } from "@/lib/supabase/auth";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { requireAuthenticatedMember } from "@/server/auth/member";
+import { createServerSupabaseClient } from "@/server/db/supabase/server";
 
 async function getShellIdentity() {
   try {

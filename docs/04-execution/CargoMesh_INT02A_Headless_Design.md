@@ -324,7 +324,7 @@ La transición final debe ejecutarse una sola vez por run. Repetir la evaluació
 
 ### 9.1 C — server-side y persistencia
 
-- `frontend/src/features/orchestration/start-run.ts`
+- `frontend/src/server/services/orchestration/start-run.ts`
 - `frontend/src/features/orchestration/view-model.ts`
 - `frontend/src/features/orchestration/contracts.ts`
 - `frontend/src/app/api/orchestration/runs/route.ts`

@@ -1,9 +1,9 @@
 import { Route } from "lucide-react";
 import Link from "next/link";
-import { requireOperationalRouteAccess } from "@/features/auth/route-guard";
-import { getRequestLocale } from "@/features/i18n/server";
+import { requireOperationalRouteAccess } from "@/server/auth/route-guard";
+import { getRequestLocale } from "@/server/i18n/server";
 import { localeTag, translate } from "@/features/i18n/config";
-import { getDispatchQueue } from "@/features/operations/operations-server";
+import { getDispatchQueue } from "@/server/services/operations/operations-server";
 import styles from "../operational-page.module.css";
 
 export const dynamic = "force-dynamic";

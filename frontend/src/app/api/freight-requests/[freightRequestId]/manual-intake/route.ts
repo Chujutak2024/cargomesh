@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import {
   RecommendationDraftError,
   persistManualFreightRequestIntake,
-} from "@/features/freight-requests/manual-intake-server";
+} from "@/server/services/freight-requests/manual-intake-server";
 
 export const dynamic = "force-dynamic";
 const privateNoStore = { "cache-control": "private, no-store" };

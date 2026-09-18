@@ -50,7 +50,7 @@ freightRequestsRouter.post("/", authMiddleware, async (c) => {
 
   // Step 4: Call the existing service function (unchanged)
   const { createFreightRequestDraftServer } = await import(
-    "@/features/freight-requests/draft-creation-server"
+    "@/server/services/freight-requests/draft-creation-server"
   );
 
   const result = await createFreightRequestDraftServer(legacyInput);

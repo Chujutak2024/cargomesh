@@ -4,7 +4,7 @@ import {
   RecommendationDraftError,
   applyFreightRequestRecommendation,
   getFreightRequestDraft,
-} from "@/features/recommendations/recommendation-draft-server";
+} from "@/server/services/recommendations/recommendation-draft-server";
 
 export const dynamic = "force-dynamic";
 

@@ -1,5 +1,5 @@
 import { FreightIntakeLoader } from "@/components/freight-intake-loader";
-import { requireOperationalRouteAccess } from "@/features/auth/route-guard";
+import { requireOperationalRouteAccess } from "@/server/auth/route-guard";
 import {
   DEFAULT_INTAKE_REQUEST_CODE,
   isIntakeVisualScenario,

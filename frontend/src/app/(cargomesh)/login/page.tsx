@@ -1,8 +1,8 @@
 import { DemoLogin } from "@/components/demo-login";
-import { redirectAuthenticatedMemberFromLogin } from "@/features/auth/route-guard";
+import { redirectAuthenticatedMemberFromLogin } from "@/server/auth/route-guard";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { loginCopy } from "@/features/auth/login-copy";
-import { getRequestLocale } from "@/features/i18n/server";
+import { getRequestLocale } from "@/server/i18n/server";
 import { Activity, Boxes, Network, Route, ShieldCheck } from "lucide-react";
 import styles from "./page.module.css";
 

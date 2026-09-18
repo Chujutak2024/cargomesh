@@ -85,12 +85,12 @@ describe("POST /api/v2/freight/requests", () => {
 
 ### 4. MCP Tool Tests (NEW — to be added per tool)
 
-**Location:** `frontend/src/mcp/tools/**/*.test.ts`  
+**Location:** `frontend/src/server/mcp/tools/**/*.test.ts`  
 **Runner:** `tsx --test`  
 **Pattern:** Each MCP tool has a test that:
 - Calls the tool handler with a valid input (mocked service call)
 - Asserts the MCP response content structure
-- Tests the `HUMAN_APPROVAL_REQUIRED` gate on destructive tools (authorize_and_book, recover_booking)
+- Tests missing/fabricated/expired trusted human approval before booking/recovery preparation, changed terms, and same-operation replay; a true boolean alone must not authorize
 - Tests input schema validation
 
 ### 5. E2E Golden Flow Tests (PLANNED)
@@ -107,7 +107,7 @@ describe("POST /api/v2/freight/requests", () => {
 7. booking confirmation
 8. Recovery flow (Andes REJECTED → Inca rebook)
 
-**Implementation approach:** Node.js test script that calls the Hono API routes directly (no browser). Uses the local Supabase instance. Resets the demo state before each run.
+**Implementation approach:** API/service tests may run in Node with explicit test doubles, but live WebMCP E2E requires a browser with document.modelContext and real provider navigation. HTTP-only tests cannot certify provider execution. Use local Supabase/scenario data; runtime resets require explicit authorization.
 
 **Status:** PLANNED for post-Slice-2.
 
@@ -132,7 +132,7 @@ npx supabase test db
 cd frontend && pnpm release:preflight
 ```
 
-**The current baseline (before any V2 changes):**
+**Historical baseline reported before V2 (not rerun by this documentation change):**
 - TypeScript: PASS (0 errors)
 - Test suite: PASS (runs via `pnpm test:release`)
 - Build: PASS (37 routes, 19.6s)
@@ -150,3 +150,5 @@ cd frontend && pnpm release:preflight
 Any time a service function in `features/` is called from a new context (Hono route or MCP tool), the existing tests for that feature module serve as regression coverage. No new test needs to duplicate what the existing tests already cover.
 
 Before migrating a vertical, run the relevant existing tests to confirm they still pass on `feature/architecture`. This is the baseline. After adding the Hono route, they must still pass.
+
+MCP-specific milestone gates and known blockers are specified in [MCP_TOOL_CONTRACTS.md](./MCP_TOOL_CONTRACTS.md). test:mcp is included in test:release. Its 36 tests exercise the real SDK transport/client, route handler, creation policy and normalizer with injected auth/database boundaries. M2 covers concurrent duplicate/conflicting creates, response loss, read-after-write failure, current-state replay and authorization. Existing Hono tests are still outside test:release and were run separately (42 passed). Typecheck, test:release and production build passed. The M2 migration and all 13 assertions in pgTAP test 08 passed on local PostgreSQL 17.6, inside a transaction that rolled back schema/test data/member-role changes. Permanent migration application and authenticated MCP smoke tests remain pending; the local database has zero orchestration runs.

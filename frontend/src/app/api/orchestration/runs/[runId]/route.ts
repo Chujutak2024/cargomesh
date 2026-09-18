@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OrchestrationError } from "@/features/orchestration/contracts";
-import { get_orchestration_view_model } from "@/features/orchestration/view-model-server";
+import { get_orchestration_view_model } from "@/server/services/orchestration/view-model-server";
 
 export const dynamic = "force-dynamic";
 

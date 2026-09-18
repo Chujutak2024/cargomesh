@@ -65,7 +65,7 @@ test("builds canonical same-origin demo links without weakening dynamic discover
 });
 
 test("provider config requires one exact service and has no first-service fallback", () => {
-  const source = readFileSync(new URL("./get-provider-page-config.ts", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../../server/services/providers/get-provider-page-config.ts", import.meta.url), "utf8");
 
   assert.match(source, /!isProviderServiceId\(serviceId\)/);
   assert.match(source, /\.eq\("id", serviceId\)/);

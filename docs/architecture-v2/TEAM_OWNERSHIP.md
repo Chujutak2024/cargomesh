@@ -5,15 +5,15 @@
 ### Engineer 1 — Alexa+ / MCP / AWS / Bedrock
 
 **Primary ownership:**
-- `frontend/src/mcp/` (entire new directory)
+- `frontend/src/server/mcp/` (entire new directory)
 - `docs/architecture-v2/MCP_ARCHITECTURE.md`
 - `docs/architecture-v2/AMAZON_HACKATHON.md`
 - Alexa+ skill configuration (external, not in this repo)
 - AWS Bedrock integration (`frontend/src/lib/bedrock.ts`)
 
 **Secondary touch points:**
-- `frontend/src/app/api/mcp/route.ts` (new Next.js catch-all for MCP transport)
-- `frontend/next.config.ts` (if Bedrock requires Edge runtime config)
+- `frontend/src/app/mcp/route.ts` (proposed /mcp endpoint)
+- Node.js runtime and deployment configuration only when later milestones require it
 
 **Does NOT own:**
 - Business logic in `features/`
@@ -31,7 +31,7 @@ Requires service function signatures from Engineer 2 before implementing MCP too
 - `frontend/src/server/hono/` (entire new directory)
 - `frontend/src/app/api/v2/[[...route]]/route.ts`
 - `frontend/src/shared/schemas/` and `frontend/src/shared/types/`
-- `frontend/src/server/services/` (service re-export wrappers)
+- Shared service contracts/auth seams; a server/services re-export tree is optional
 - Gap route implementations: `[bookingId]`, `[runId]`, `intake/[requestCode]`, `[id]/draft`, `[id]/execution-intent`, `[id]/manual-intake`, `[id]/recommendations`
 
 **Secondary touch points:**
@@ -88,7 +88,7 @@ E3 depends on E2's Hono routes having the same response shape as the current Nex
 **Critical rule:** The WebMCP provider pages (`/providers/[carrierSlug]`) and the WebMCP runner MUST remain stable throughout V2. They are the backbone of the Golden Flow and have existing TypeScript tests. No changes to `features/webmcp-runner/` or `features/providers/` unless fixing a demonstrated bug.
 
 **Cross-team interface:**  
-E4 is the authority on what the WebMCP execution contract requires (tool input/output shapes). E1 (MCP) needs to know that `find_freight_options` and `authorize_and_book` will trigger the runner — E4 provides the trigger interface.
+E4 is the authority on what the WebMCP execution contract requires (tool input/output shapes). E1 (MCP) needs to know that `find_freight_options` and `authorize_and_book` will trigger the runner — E4 must agree a trigger/executor interface; no remote dispatch interface is implemented in the inspected source. See MCP_TOOL_CONTRACTS.md.
 
 ---
 
@@ -117,7 +117,7 @@ E5 is the gatekeeper. No vertical is considered DONE until E5 has reviewed its t
 | Area | Risk | Mitigation |
 |---|---|---|
 | `frontend/package.json` | High — Hono, MCP SDK, Zod, AWS SDK all add deps | Coordinate dep adds via a single PR per milestone |
-| `frontend/src/features/booking/booking-bridge.ts` | Medium — E1 (MCP) and E2 (Hono) both call it | E2 owns the file; E1 imports, does not modify |
+| `frontend/src/server/services/booking/booking-bridge.ts` | Medium — E1 (MCP) and E2 (Hono) both call it | E2 owns the file; E1 imports, does not modify |
 | `frontend/src/features/orchestration/` | Medium — E1 (MCP) and E4 (runner) both depend on it | E4 owns the files; others import |
 | `frontend/next.config.ts` | Low | Coordinate any changes as a single PR |
 | `supabase/tests/` | Low | E5 adds new files, does not modify existing |

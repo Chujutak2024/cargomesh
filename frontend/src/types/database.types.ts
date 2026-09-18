@@ -742,6 +742,8 @@ export type Database = {
           created_at: string
           cross_border: boolean
           draft_version: number
+          creation_idempotency_key: string | null
+          creation_payload_hash: string | null
           delivery_deadline: string | null
           destination_address: string | null
           destination_city: string
@@ -801,6 +803,8 @@ export type Database = {
           created_at?: string
           cross_border?: boolean
           draft_version?: number
+          creation_idempotency_key?: string | null
+          creation_payload_hash?: string | null
           delivery_deadline?: string | null
           destination_address?: string | null
           destination_city: string
@@ -860,6 +864,8 @@ export type Database = {
           created_at?: string
           cross_border?: boolean
           draft_version?: number
+          creation_idempotency_key?: string | null
+          creation_payload_hash?: string | null
           delivery_deadline?: string | null
           destination_address?: string | null
           destination_city?: string

@@ -1,9 +1,9 @@
 import { Building2, CreditCard, ShieldCheck, Users } from "lucide-react";
 import { OrganizationPolicies } from "@/components/organization-policies";
-import { requireOperationalRouteAccess } from "@/features/auth/route-guard";
+import { requireOperationalRouteAccess } from "@/server/auth/route-guard";
 import { translate } from "@/features/i18n/config";
-import { getRequestLocale } from "@/features/i18n/server";
-import { getOrganizationProfile } from "@/features/operations/operations-server";
+import { getRequestLocale } from "@/server/i18n/server";
+import { getOrganizationProfile } from "@/server/services/operations/operations-server";
 import styles from "../operational-page.module.css";
 import orgStyles from "./organization.module.css";
 

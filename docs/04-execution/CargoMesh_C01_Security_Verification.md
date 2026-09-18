@@ -49,7 +49,7 @@ rg -n "SUPABASE_SERVICE_ROLE_KEY|service_role" src
 rg -n "SUPABASE_SERVICE_ROLE_KEY|service_role" .next/static
 ```
 
-Las referencias de `service_role` solo son aceptables en módulos `server-only`, como `src/lib/supabase/admin.ts`; `.next/static` debe devolver cero coincidencias. El módulo discovery no importa `createAdminClient`.
+Las referencias de `service_role` solo son aceptables en módulos `server-only`, como `src/server/db/supabase/admin.ts`; `.next/static` debe devolver cero coincidencias. El módulo discovery no importa `createAdminClient`.
 
 ## Handoff para A — INT-01
 

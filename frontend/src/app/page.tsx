@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { landingCopy } from "@/features/landing/landing-copy";
-import { getRequestLocale } from "@/features/i18n/server";
+import { getRequestLocale } from "@/server/i18n/server";
 import styles from "./page.module.css";
 
 const flowIcons = [ClipboardList, Network, BarChart3, RefreshCw];

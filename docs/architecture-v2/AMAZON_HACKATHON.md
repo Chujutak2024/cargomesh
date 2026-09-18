@@ -1,5 +1,7 @@
 # CargoMesh — Amazon Developer Hackathon
 
+> Status update: Hono bootstrap/draft creation and two MCP local tools (read/creation) exist. M2 requires permanent migration application and an authenticated MCP smoke test; local SQL checks passed. The other four MCP tools, remote auth, Alexa+ and Bedrock remain planned. The voice demo below is a target script, not execution evidence. See [MCP_TOOL_CONTRACTS.md](./MCP_TOOL_CONTRACTS.md) for missing submission, executor, auth and approval dependencies.
+
 ## What CargoMesh Was Before the Hackathon
 
 CargoMesh is a pre-existing, fully functional B2B freight orchestration platform. The following components were **built, tested, and deployed before any hackathon work began:**
@@ -23,8 +25,8 @@ The hackathon adaptation introduces **new components on top of this verified fou
 
 | Component | Description | Status |
 |---|---|---|
-| CargoMesh MCP Server | 6 MCP tools via Streamable HTTP at `/mcp` | PLANNED |
-| Hono API Layer | Cleaner HTTP interface to existing service layer at `/api/v2/` | PLANNED |
+| CargoMesh MCP Server | Local Streamable HTTP at `/mcp` with get_freight_options; other tools planned | PARTIAL, LOCAL ONLY |
+| Hono API Layer | Health and freight draft creation at `/api/v2/`; other verticals planned | PARTIAL |
 | Alexa+ Skill | Alexa+ skill configuration that calls CargoMesh MCP tools | PLANNED |
 | Bedrock Haiku Integration | Optional explanation text generation from scoring data | PLANNED |
 | `cargomesh-mcp` npm package | Open-source MCP tool schema package | PLANNED |
@@ -39,7 +41,7 @@ Alexa+ is the **front door for voice-driven enterprise freight workflows.** It d
 5. Polls `get_freight_options` until `OPTIONS_READY`
 6. Reads the recommendation aloud (using the `explanation` field)
 7. Asks the user to confirm ("Say 'confirm' to book with Andes Freight for $1,760")
-8. Calls `authorize_and_book` with `confirmed_by_human: true`
+8. Calls `authorize_and_book` with `confirmed_by_human: true` and a trusted confirmation reference bound to the accepted terms (approval mechanism not implemented)
 9. Reports confirmation or triggers recovery if rejected
 
 **Alexa+ is the UI. CargoMesh is the brain.**
@@ -48,7 +50,7 @@ Alexa+ is the **front door for voice-driven enterprise freight workflows.** It d
 
 The CargoMesh MCP server is the API between Alexa+ and the CargoMesh business core. It:
 - Translates MCP tool calls into service function calls
-- Enforces the `confirmed_by_human` gate on destructive operations
+- Will require trusted human approval evidence before booking/recovery preparation; a caller boolean alone is insufficient
 - Returns structured data that Alexa+ can speak aloud
 - Is not a new backend — it is a new interface to the existing service layer
 
@@ -114,7 +116,7 @@ Kiro Crew is the primary AWS Builder evidence. The team is using Kiro Crew activ
 - `packages/cargomesh-mcp/README.md` with usage example
 - The package must contain working, usable code — not documentation only
 
-## Demo Golden Flow (≤3 minutes)
+## Target Demo Golden Flow (≤3 minutes; not yet an implemented Alexa flow)
 
 ### Pre-conditions
 - Local Supabase running with demo seed data (FR-1042, ACME Mining, 3 carrier fixtures)
@@ -169,7 +171,7 @@ To clearly separate the pre-existing CargoMesh from the hackathon additions, the
 - `docs/architecture-v2/` (this directory)
 - `frontend/src/server/hono/` (Hono API layer)
 - `frontend/src/app/api/v2/` (Hono catch-all)
-- `frontend/src/mcp/` (MCP server)
+- `frontend/src/server/mcp/` (MCP server)
 - `frontend/src/lib/bedrock.ts` (Bedrock integration)
 - `frontend/src/shared/` (shared schemas)
 - `packages/cargomesh-mcp/` (open-source package)

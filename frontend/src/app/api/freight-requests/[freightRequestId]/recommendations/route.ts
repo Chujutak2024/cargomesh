@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import {
   RecommendationDraftError,
   getFreightRequestRecommendations,
-} from "@/features/recommendations/recommendation-draft-server";
+} from "@/server/services/recommendations/recommendation-draft-server";
 
 export const dynamic = "force-dynamic";
 

@@ -1,6 +1,6 @@
 import { BookingStatusClient } from "@/components/booking-status-client";
 import { BookingWorkspace } from "@/components/booking-workspace";
-import { requireOperationalRouteAccess } from "@/features/auth/route-guard";
+import { requireOperationalRouteAccess } from "@/server/auth/route-guard";
 import {
   getBookingUiFixture,
   resolveBookingOfferSet,

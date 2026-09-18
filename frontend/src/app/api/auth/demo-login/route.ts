@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/server/db/supabase/server";
 
 const noStore = { "Cache-Control": "no-store, private" };
 

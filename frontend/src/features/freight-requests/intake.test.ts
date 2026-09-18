@@ -11,7 +11,7 @@ import {
   getFreightRequestIntake,
   type FreightRequestIntakeDependencies,
   type PersistedIntakeRecord,
-} from "./intake-server-policy";
+} from "../../server/services/freight-requests/intake-server-policy";
 
 const viewModel: FreightRequestIntakeViewModel = {
   schemaVersion: "1.0",

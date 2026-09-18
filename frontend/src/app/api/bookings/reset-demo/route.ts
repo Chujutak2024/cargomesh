@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BookingBridgeError, reset_demo_booking_runtime } from "@/features/booking";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/server/db/supabase/admin";
 
 export const dynamic = "force-dynamic";
 

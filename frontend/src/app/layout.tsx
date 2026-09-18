@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { LocaleProvider } from "@/features/i18n/locale-provider";
-import { getRequestLocale } from "@/features/i18n/server";
+import { getRequestLocale } from "@/server/i18n/server";
 
 import "leaflet/dist/leaflet.css";
 import "./globals.css";

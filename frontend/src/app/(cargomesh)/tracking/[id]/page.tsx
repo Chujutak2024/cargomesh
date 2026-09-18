@@ -2,10 +2,10 @@ import { ArrowLeft, Clock3, MapPin, Radio } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { OperationsMap, type OperationsMapModel } from "@/components/operations-map";
-import { requireOperationalRouteAccess } from "@/features/auth/route-guard";
+import { requireOperationalRouteAccess } from "@/server/auth/route-guard";
 import { localeTag, translate } from "@/features/i18n/config";
-import { getRequestLocale } from "@/features/i18n/server";
-import { getTrackingDetail } from "@/features/operations/operations-server";
+import { getRequestLocale } from "@/server/i18n/server";
+import { getTrackingDetail } from "@/server/services/operations/operations-server";
 import styles from "../../operational-page.module.css";
 import detailStyles from "./tracking-detail.module.css";
 

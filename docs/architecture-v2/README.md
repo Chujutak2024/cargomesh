@@ -1,7 +1,7 @@
 # CargoMesh Architecture V2 — Entry Point
 
-> **Branch:** `feature/architecture`  
-> **Status:** Documentation phase — no application code changed yet.
+> **Documentation branch:** `codex/c-mcp-contracts`
+> **Status:** Hono bootstrap/draft creation and MCP local read/creation tools exist. M2 needs permanent migration application and an authenticated MCP smoke test; local SQL checks passed. The other MCP tools, remote auth, Alexa+ and Bedrock remain planned. See the [local MCP guide](../../frontend/src/server/mcp/README.md).
 
 ## What This Is
 
@@ -13,16 +13,11 @@ CargoMesh is an agentic B2B freight orchestration platform for LATAM cross-borde
 
 The V2 architecture makes the core CargoMesh business logic reachable via two independent interfaces:
 
-```
-Enterprise UI  ──────┐
-                     ├──► Hono API Layer ──► Service Layer ──► Supabase / RPCs
-Alexa+ / MCP  ───────┘
-                                                  │
-                                            CargoMesh Core
-                                                  │
-                                          Provider WebMCP
-                                                  │
-                                          Carrier Portals
+```text
+Enterprise UI -> Hono REST --\
+                             -> Shared services -> Core -> Supabase/RPC
+Agent client  -> MCP -------/                        |
+                                                    -> WebMCP executor -> Providers
 ```
 
 ## Actors
@@ -32,16 +27,18 @@ Alexa+ / MCP  ───────┘
 | Enterprise Supervisor / ACME Mining | Creates freight requests, reviews ranked options, approves bookings |
 | Alexa+ Agent | Voice-driven interface; calls CargoMesh MCP tools |
 | CargoMesh MCP Server | Exposes 6 high-level workflow tools; shares the service layer |
-| CargoMesh Hono API | HTTP interface to the service layer; used by the web UI and can be called by MCP |
+| CargoMesh Hono API | HTTP interface to the service layer; used by the web UI; MCP calls shared services directly |
 | Provider WebMCP Runtime | Browser-based agent that navigates carrier portals and collects quotes |
 | Carrier / Provider | Hosts `/providers/[carrierSlug]` page; registers 5 WebMCP tools |
 
-## Golden Flow (V2 — Alexa+ Path)
+## Target Golden Flow (not implemented for MCP/Alexa+)
 
 ```
 User speaks to Alexa+
   → create_freight_request (MCP)
+  → [Missing shared submission: DRAFT to PENDING]
   → find_freight_options (MCP)           # starts orchestration run
+    → [Missing durable dispatch to a WebMCP browser executor]
     → Provider WebMCP execution × N carriers
     → Result Bridge persists quotes
     → Decision Engine scores + ranks (deterministic, BALANCED)
@@ -105,6 +102,7 @@ User speaks to Alexa+
 | [MIGRATION_PLAN.md](./MIGRATION_PLAN.md) | Current → target migration strategy, vertical slice sequence, rollback |
 | [APPLICATION_SCOPE.md](./APPLICATION_SCOPE.md) | Enterprise + Carrier app scope, Golden Flow screens, explicit exclusions |
 | [API_AND_SERVICE_CONVENTIONS.md](./API_AND_SERVICE_CONVENTIONS.md) | Hono structure, Zod validation, error/response envelopes, service patterns |
+| [MCP_TOOL_CONTRACTS.md](./MCP_TOOL_CONTRACTS.md) | Verified services, proposed contracts, auth spike, gaps and milestones |
 | [MCP_ARCHITECTURE.md](./MCP_ARCHITECTURE.md) | 6 MCP tools: inputs, outputs, authorization, idempotency, error behavior |
 | [TEAM_OWNERSHIP.md](./TEAM_OWNERSHIP.md) | 5-engineer workstream map, directories, cross-team interfaces |
 | [TESTING_STRATEGY.md](./TESTING_STRATEGY.md) | Unit, service, API, DB, MCP, E2E, release verification gates |

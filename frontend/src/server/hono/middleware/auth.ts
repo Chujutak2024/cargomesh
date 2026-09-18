@@ -1,5 +1,5 @@
 import { createMiddleware } from "hono/factory";
-import type { AuthenticatedMemberContext } from "@/lib/supabase/auth";
+import type { AuthenticatedMemberContext } from "@/server/auth/member";
 import { errorResponse } from "@/shared/schemas/api-envelope";
 
 // ---------------------------------------------------------------------------
@@ -22,7 +22,7 @@ export const authMiddleware = createMiddleware<{ Variables: AuthVariables }>(
     // graph at import time (Hono's module system is not Next.js server-only
     // aware). The import is safe because this middleware only runs server-side.
     const { requireAuthenticatedMember } = await import(
-      "@/lib/supabase/auth"
+      "@/server/auth/member"
     );
 
     try {

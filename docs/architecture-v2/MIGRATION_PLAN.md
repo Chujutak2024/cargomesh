@@ -2,30 +2,30 @@
 
 ## Current Architecture Summary
 
-CargoMesh is a Next.js 15 application. The full codebase lives under `frontend/`. All API routes are Next.js Route Handlers (`src/app/api/***/route.ts`). Business logic is in `src/features/`. There is no Hono, no MCP server, no shared Zod schemas outside of feature modules.
+CargoMesh is a Next.js 15 application. Application code lives under `frontend/`; API routes use Next.js Route Handlers and Hono, with business logic in `src/features/`. Hono bootstrap/draft creation and MCP at `/mcp` exist. MCP exposes get_freight_options and create_freight_request in an opt-in authenticated local preview. Creation requires permanent M2 migration application and an authenticated MCP smoke test; local SQL checks passed. See [MCP_TOOL_CONTRACTS.md](./MCP_TOOL_CONTRACTS.md) for service mapping, gaps and milestones.
 
-**Current API route inventory (22 routes):**
+**Legacy API route inventory (20 paths; Hono catch-all additional):**
 
 | Route | Method(s) | Feature module called |
 |---|---|---|
-| `/api/auth/demo-login` | POST | `lib/supabase/server` (inline) |
-| `/api/bookings/prepare` | POST | `features/booking/booking-bridge.ts` |
-| `/api/bookings/record-provider` | POST | `features/booking/booking-bridge.ts` |
-| `/api/bookings/record-status` | POST | `features/booking/booking-bridge.ts` |
-| `/api/bookings/recover` | POST | `features/booking/booking-bridge.ts` |
-| `/api/bookings/reset-demo` | GET, POST | `features/booking/booking-bridge.ts` |
-| `/api/bookings/[bookingId]` | GET, PATCH | (PLANNED — route stub exists, no `route.ts`) |
-| `/api/freight-requests/drafts` | POST | `features/freight-requests/draft-creation-server.ts` |
-| `/api/freight-requests/intake/[requestCode]` | GET | (PLANNED — route stub exists, no `route.ts`) |
-| `/api/freight-requests/[id]/draft` | PATCH | (PLANNED — route stub exists, no `route.ts`) |
-| `/api/freight-requests/[id]/execution-intent` | POST | (PLANNED — route stub exists, no `route.ts`) |
-| `/api/freight-requests/[id]/manual-intake` | POST | (PLANNED — route stub exists, no `route.ts`) |
-| `/api/freight-requests/[id]/recommendations` | GET | (PLANNED — route stub exists, no `route.ts`) |
-| `/api/orchestration/candidates` | GET | `features/discovery/get-candidate-provider-pages.ts` |
-| `/api/orchestration/runs` | POST | `features/orchestration/start-run.ts` |
-| `/api/orchestration/runs/[runId]` | GET | (PLANNED — route stub exists, no `route.ts`) |
-| `/api/orchestration/evaluate-offers` | POST | `features/decision-engine/evaluate-offers.ts` |
-| `/api/orchestration/record-result` | POST | `features/result-bridge/record-provider-result.ts` |
+| `/api/auth/demo-login` | POST | `server/db/supabase/server` (inline) |
+| `/api/bookings/prepare` | POST | `server/services/booking/booking-bridge.ts` |
+| `/api/bookings/record-provider` | POST | `server/services/booking/booking-bridge.ts` |
+| `/api/bookings/record-status` | POST | `server/services/booking/booking-bridge.ts` |
+| `/api/bookings/recover` | POST | `server/services/booking/booking-bridge.ts` |
+| `/api/bookings/reset-demo` | GET, POST | `server/services/booking/booking-bridge.ts` |
+| `/api/bookings/[bookingId]` | GET | Existing legacy route; see source for method and service |
+| `/api/freight-requests/drafts` | POST | `server/services/freight-requests/draft-creation-server.ts` |
+| `/api/freight-requests/intake/[requestCode]` | GET | Existing legacy route; see source for method and service |
+| `/api/freight-requests/[id]/draft` | GET, PATCH | Existing legacy route; see source for method and service |
+| `/api/freight-requests/[id]/execution-intent` | GET | Existing legacy route; see source for method and service |
+| `/api/freight-requests/[id]/manual-intake` | PATCH | Existing legacy route; see source for method and service |
+| `/api/freight-requests/[id]/recommendations` | GET | Existing legacy route; see source for method and service |
+| `/api/orchestration/candidates` | GET | `server/services/discovery/get-candidate-provider-pages.ts` |
+| `/api/orchestration/runs` | POST | `server/services/orchestration/start-run.ts` |
+| `/api/orchestration/runs/[runId]` | GET | Existing legacy route; see source for method and service |
+| `/api/orchestration/evaluate-offers` | POST | `server/services/decision-engine/evaluate-offers.ts` |
+| `/api/orchestration/record-result` | POST | `server/services/result-bridge/record-provider-result.ts` |
 | `/api/judge/evidence` | GET | inline in route handler |
 | `/api/organization/preferences` | PATCH | inline in route handler |
 
@@ -35,8 +35,8 @@ CargoMesh is a Next.js 15 application. The full codebase lives under `frontend/`
 
 See `ARCHITECTURE_V2.md`. In brief:
 - Hono app mounted at `/api/v2/` via the Next.js catch-all route `src/app/api/v2/[[...route]]/route.ts`
-- Service layer: same `src/features/` functions, gradually re-exported through `src/server/services/`
-- MCP server at `/mcp` (separate Next.js API route or Hono route)
+- Service layer: same `src/features/` functions; a re-export tree is not a prerequisite
+- Proposed MCP endpoint at `src/app/mcp/route.ts`, directly calling shared services
 - Shared Zod schemas in `src/shared/schemas/`
 
 ## Migration Strategy: Vertical Strangler
@@ -78,62 +78,62 @@ Migration priority is the complete Golden Flow. Non-Golden-Flow routes are lower
 
 ### Slice 1: Authentication / Context
 **Scope:** Hono auth middleware properly resolves `AuthenticatedMemberContext` from Supabase session.  
-**Re-uses:** `lib/supabase/auth.ts` → `requireAuthenticatedMember()` unchanged.  
+**Re-uses:** `server/auth/member.ts` → `requireAuthenticatedMember()` unchanged.  
 **New:** Hono middleware that calls the existing function and injects context into `c.set('member', ...)`.  
 **Tests:** Auth test calling `/api/v2/*` with and without valid session.
 
 ### Slice 2: Freight Request Creation
 **Scope:** `POST /api/v2/freight/requests` → calls `createFreightRequestDraftServer`.  
-**Re-uses:** `features/freight-requests/draft-creation-server.ts` unchanged.  
+**Re-uses:** `server/services/freight-requests/draft-creation-server.ts` unchanged.  
 **New:** Hono route file, Zod input schema for freight request creation.  
 **Tests:** Create a freight request via the Hono route; assert the DB row; assert the response envelope.
 
 ### Slice 3: Freight Request Intake / Read
 **Scope:** `GET /api/v2/freight/requests/:requestCode` → load intake view model.  
-**Re-uses:** `features/freight-requests/intake-server.ts`.  
-**Note:** This fills the gap for `GET /api/freight-requests/intake/[requestCode]` which currently has no `route.ts`.
+**Re-uses:** `server/services/freight-requests/intake-server.ts`.  
+**Note:** The legacy read route already exists; this slice adds its Hono counterpart.
 
 ### Slice 4: Provider Discovery
 **Scope:** `GET /api/v2/orchestration/candidates?freightRequestId=:id` → `get_candidate_provider_pages`.  
-**Re-uses:** `features/discovery/get-candidate-provider-pages.ts` unchanged.  
+**Re-uses:** `server/services/discovery/get-candidate-provider-pages.ts` unchanged.  
 **Tests:** Discovery returns the correct 3 candidates for FR-1042.
 
 ### Slice 5: Orchestration Start
 **Scope:** `POST /api/v2/orchestration/runs` → `start_orchestration_run`.  
-**Re-uses:** `features/orchestration/start-run.ts` unchanged.
+**Re-uses:** `server/services/orchestration/start-run.ts` unchanged.
 
 ### Slice 6: Result Bridge
 **Scope:** `POST /api/v2/orchestration/results` → `record_provider_result`.  
-**Re-uses:** `features/result-bridge/record-provider-result.ts` unchanged.
+**Re-uses:** `server/services/result-bridge/record-provider-result.ts` unchanged.
 
 ### Slice 7: Decision Engine
 **Scope:** `POST /api/v2/orchestration/evaluate` → `evaluate_offers`.  
-**Re-uses:** `features/decision-engine/evaluate-offers.ts` unchanged.
+**Re-uses:** `server/services/decision-engine/evaluate-offers.ts` unchanged.
 
 ### Slice 8: Orchestration Run View Model
 **Scope:** `GET /api/v2/orchestration/runs/:runId` → view model assembly.  
-**Re-uses:** `features/orchestration/view-model-server.ts`.  
-**Note:** This fills the gap for `GET /api/orchestration/runs/[runId]` which currently has no `route.ts`.
+**Re-uses:** `server/services/orchestration/view-model-server.ts`.  
+**Note:** The legacy read route already exists; this slice adds its Hono counterpart.
 
 ### Slice 9: Booking Authorization
 **Scope:** `POST /api/v2/bookings/prepare` → `prepare_booking`.  
-**Re-uses:** `features/booking/booking-bridge.ts`.
+**Re-uses:** `server/services/booking/booking-bridge.ts`.
 
 ### Slice 10: Booking Record + Status
 **Scope:** `POST /api/v2/bookings/record-provider` and `POST /api/v2/bookings/record-status`.  
-**Re-uses:** `features/booking/booking-bridge.ts`.
+**Re-uses:** `server/services/booking/booking-bridge.ts`.
 
 ### Slice 11: Booking Read
 **Scope:** `GET /api/v2/bookings/:bookingId`.  
-**Note:** Fills the gap for `GET /api/bookings/[bookingId]` which currently has no `route.ts`.
+**Note:** The legacy read route already exists; this slice adds its Hono counterpart.
 
 ### Slice 12: Booking Recovery
 **Scope:** `POST /api/v2/bookings/recover` → `prepare_booking_recovery`.
 
 ### Slice 13: MCP Server
-**Scope:** `POST /mcp` — Streamable HTTP MCP transport. 6 tools.  
+**Scope:** Proposed `/mcp` transport, incremental tool registration. This is not blocked on migrating every Hono route. Remote auth, submission and WebMCP dispatch gaps must be resolved per the tool contracts.
 **Re-uses:** All service functions from Slices 1–12.  
-**New:** `@modelcontextprotocol/sdk`, MCP tool files under `src/mcp/tools/`.
+**New:** `@modelcontextprotocol/sdk`, MCP tool files under `src/server/mcp/tools/`.
 
 ## Compatibility Strategy
 
@@ -147,7 +147,7 @@ The UI and WebMCP runner continue using legacy paths until the Hono path is vali
 
 ## Rollback Strategy
 
-Each vertical slice is on a separate commit. Rolling back a vertical means reverting those commits. The service layer functions (`features/`) are never modified during migration (only wrapped/re-exported), so a rollback cannot break the legacy routes.
+Each vertical slice is on a separate commit. Rolling back a vertical means reverting those commits. The service layer functions (`server/services/`) are never modified during migration (only wrapped/re-exported), so a rollback cannot break the legacy routes.
 
 If the Hono bootstrap causes a build failure, revert the single commit that added it. The Next.js catch-all route is additive — removing it removes Hono entirely with no collateral damage.
 
@@ -157,7 +157,7 @@ If the Hono bootstrap causes a build failure, revert the single commit that adde
 |---|---|---|---|
 | Hono version incompatible with Next.js 15 App Router | Low | Medium | Pin Hono version; test build on Day 1 |
 | Auth middleware diverges from `requireAuthenticatedMember` | Low | High | Hono middleware calls the same function — no divergence possible |
-| Stub route gaps (`[bookingId]`, `[runId]`, etc.) block MCP | Medium | Medium | Fill stubs as part of Slices 3, 8, 11 |
+| Missing shared submission, remote WebMCP dispatch and auth context | High | High | Resolve the explicit gates in MCP_TOOL_CONTRACTS.md |
 | Supabase client import conflicts in Hono context | Low | Medium | Server-only imports tested explicitly in Slice 0 |
 | pnpm-workspace collision with new packages | Low | Low | Not adding a monorepo — Hono stays inside `frontend/` |
 

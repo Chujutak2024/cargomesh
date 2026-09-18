@@ -2,6 +2,8 @@
 
 ## Hono Route Structure
 
+The tree below is a target inventory; only health and freight creation are currently mounted. MCP contracts are specified in [MCP_TOOL_CONTRACTS.md](./MCP_TOOL_CONTRACTS.md).
+
 All Hono routes are mounted at `/api/v2/` via a Next.js catch-all route.
 
 ```
@@ -70,34 +72,21 @@ This envelope is identical to the existing Next.js route handlers — no change 
 All request bodies are validated with Zod at the Hono route level before calling the service function.
 
 ```typescript
-// Example: freight request creation
-import { z } from "zod";
-
-const CreateFreightRequestSchema = z.object({
-  organizationId: z.string().uuid(),
-  originCountry: z.string().min(2).max(3),
-  originCity: z.string().min(1),
-  destinationCountry: z.string().min(2).max(3),
-  destinationCity: z.string().min(1),
-  cargoWeightKg: z.number().positive(),
-  cargoVolumeM3: z.number().positive().nullable().optional(),
-  packageCount: z.number().int().positive(),
-  isCrossBorder: z.boolean(),
-  transportMode: z.enum(["ROAD", "AIR", "SEA", "RAIL"]),
-  serviceType: z.enum(["FTL", "LTL"]),
-});
+// Use the existing verified public schema; do not recreate broader enums.
+import { CreateFreightRequestSchema } from "@/shared/schemas/freight-request";
+// ROAD / FTL / BALANCED only; identity assigned server-side.
 ```
 
 **Rule:** Zod schemas live in `src/shared/schemas/`. They are imported by both Hono routes and MCP tool handlers. Service functions may do additional semantic validation but assume structural validation has already happened.
 
 ## Authentication / Context
 
-The Hono auth middleware calls `requireAuthenticatedMember()` from `lib/supabase/auth.ts` and injects the result into the Hono context:
+The Hono auth middleware calls `requireAuthenticatedMember()` from `server/auth/member.ts` and injects the result into the Hono context:
 
 ```typescript
 // middleware/auth.ts
-import { requireAuthenticatedMember } from "@/lib/supabase/auth";
-import type { AuthenticatedMemberContext } from "@/lib/supabase/auth";
+import { requireAuthenticatedMember } from "@/server/auth/member";
+import type { AuthenticatedMemberContext } from "@/server/auth/member";
 
 type Variables = { member: AuthenticatedMemberContext };
 
@@ -109,6 +98,8 @@ export const authMiddleware = createMiddleware<{ Variables: Variables }>(
   }
 );
 ```
+
+This authenticates browser cookie sessions, not arbitrary Bearer tokens. The service retains its own auth checks during migration.
 
 Route handlers access the member context via `c.get("member")`. They do NOT call `requireAuthenticatedMember()` themselves.
 
@@ -125,7 +116,7 @@ Route handlers access the member context via `c.get("member")`. They do NOT call
 **Pattern for a service function:**
 
 ```typescript
-// features/freight-requests/draft-creation-server.ts (existing pattern)
+// server/services/freight-requests/draft-creation-server.ts (existing pattern)
 export async function createFreightRequestDraftServer(
   rawInput: unknown
 ): Promise<FreightRequestIntakeViewModel> {
@@ -141,19 +132,12 @@ export async function createFreightRequestDraftServer(
 ```typescript
 app.post("/freight/requests", authMiddleware, async (c) => {
   const body = CreateFreightRequestSchema.parse(await c.req.json());
-  const result = await createFreightRequestDraftServer(body);
+  const result = await createFreightRequestDraftServer(adaptV2ToLegacyService(body));
   return c.json({ ok: true, data: result }, 201);
 });
 ```
 
-**MCP tool uses it like:**
-```typescript
-// mcp/tools/create_freight_request.ts
-server.tool("create_freight_request", CreateFreightRequestSchema.shape, async (input) => {
-  const result = await createFreightRequestDraftServer(input);
-  return { content: [{ type: "text", text: JSON.stringify(result) }] };
-});
-```
+**MCP (proposed):** call shared services directly after validating a verified request context. The current cookie-bound services need a remote auth seam. Creation must pass the actual `{ fields }` contract, not the flat Hono payload. See the tool contracts for the proposed strict input subset. Share neutral adapters when appropriate; do not introduce a dependency from MCP to Hono transport.
 
 ## Naming Conventions
 

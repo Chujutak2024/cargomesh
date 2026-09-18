@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import {
   FreightRequestExecutionIntentError,
   getFreightRequestExecutionIntent,
-} from "@/features/freight-requests/execution-intent-server";
+} from "@/server/services/freight-requests/execution-intent-server";
 
 export const dynamic = "force-dynamic";
 

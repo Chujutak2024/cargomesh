@@ -237,7 +237,7 @@ describe("POST /freight/requests — Level 2: real adapter + real service policy
     // and this test fails with 500 instead of 201.
 
     const { createFreightRequestDraftWithDependencies } = await import(
-      "@/features/freight-requests/draft-creation-policy"
+      "@/server/services/freight-requests/draft-creation-policy"
     );
     const { adaptV2ToLegacyService } = await import(
       "@/server/hono/adapters/freight-request-adapter"
@@ -302,7 +302,7 @@ describe("POST /freight/requests — Level 2: real adapter + real service policy
     // The real resolveMember mock simulates what requireAuthenticatedMember does when
     // requiredRole: "SUPERVISOR" is requested but member is REQUESTER: it throws FORBIDDEN.
     const { createFreightRequestDraftWithDependencies } = await import(
-      "@/features/freight-requests/draft-creation-policy"
+      "@/server/services/freight-requests/draft-creation-policy"
     );
     const { adaptV2ToLegacyService } = await import(
       "@/server/hono/adapters/freight-request-adapter"

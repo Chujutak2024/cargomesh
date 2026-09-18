@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import {
   RecommendationDraftError,
   createFreightRequestDraftServer,
-} from "@/features/freight-requests/draft-creation-server";
+} from "@/server/services/freight-requests/draft-creation-server";
 
 export const dynamic = "force-dynamic";
 const privateNoStore = { "cache-control": "private, no-store" };

@@ -2,53 +2,16 @@
 
 ## Target Architecture Overview
 
+Status: Hono bootstrap/draft creation and MCP local read/creation adapters exist; M2 requires permanent migration application and an authenticated MCP smoke test; local SQL checks passed. Remote execution/auth adapters remain proposed. See [MCP_TOOL_CONTRACTS.md](./MCP_TOOL_CONTRACTS.md) for verified contracts and blockers.
+
+```text
+Enterprise UI -> Hono REST --\
+                             -> Shared services -> Core -> Supabase/RPC
+Agent client  -> MCP -------/                        |
+                                                    -> WebMCP executor -> Providers
 ```
-┌───────────────────────────────────────────────────────────────────────┐
-│                         CargoMesh V2                                  │
-│                                                                       │
-│  ┌─────────────────┐   ┌──────────────────────────────────────────┐  │
-│  │  Enterprise UI  │   │           Alexa+                         │  │
-│  │  (Next.js/React)│   │                                          │  │
-│  └────────┬────────┘   └───────────────┬──────────────────────────┘  │
-│           │                            │                              │
-│           │ HTTP                       │ MCP (Streamable HTTP)        │
-│           ▼                            ▼                              │
-│  ┌─────────────────────────────────────────────────────────────┐     │
-│  │                   Hono API Layer                            │     │
-│  │  /api/v2/*  (strangler alongside existing /api/*)           │     │
-│  │  Auth middleware → Service dispatch → Response envelope     │     │
-│  └──────────────────────────┬──────────────────────────────────┘     │
-│                             │                                         │
-│  ┌──────────────────────────▼──────────────────────────────────┐     │
-│  │                   Service Layer                             │     │
-│  │  freight/     orchestration/    decision/                   │     │
-│  │  booking/     discovery/        recovery/                   │     │
-│  │  auth/        recommendations/                              │     │
-│  │                                                             │     │
-│  │  ← These are the SAME functions already in features/        │     │
-│  │    Re-exported or moved, not rewritten                      │     │
-│  └──────────────────────────┬──────────────────────────────────┘     │
-│                             │                                         │
-│  ┌──────────────────────────▼──────────────────────────────────┐     │
-│  │                   Domain / Shared Schemas                   │     │
-│  │  Zod schemas, TypeScript types, domain error classes        │     │
-│  └──────────────────────────┬──────────────────────────────────┘     │
-│                             │                                         │
-│  ┌──────────────────────────▼──────────────────────────────────┐     │
-│  │                   Supabase / RPCs                           │     │
-│  │  17 tables · 8 stored procedures · 22 RLS policies          │     │
-│  │  Session client (anon) · Admin client (service_role)         │     │
-│  └─────────────────────────────────────────────────────────────┘     │
-│                                                                       │
-│  ┌─────────────────────────────────────────────────────────────┐     │
-│  │          CargoMesh Orchestration (separate concern)         │     │
-│  │                                                             │     │
-│  │  WebMCP Runner → Provider Pages → Carrier WebMCP Tools      │     │
-│  │  check_service_coverage / check_capacity / quote_freight    │     │
-│  │  book_freight / get_provider_booking_status                 │     │
-│  └─────────────────────────────────────────────────────────────┘     │
-└───────────────────────────────────────────────────────────────────────┘
-```
+
+MCP must not call Hono over HTTP in the same process. The browser executor is a separate execution boundary whose remote dispatch and durable reconciliation are not implemented.
 
 ## Layer Responsibilities
 
@@ -80,11 +43,11 @@
 - Know about WebMCP, provider navigation, or carrier scoring  
 - Duplicate error handling already in service functions  
 
-**Files:** `frontend/src/server/hono/` (TARGET — does not exist yet)
+**Files:** `frontend/src/server/hono/` (bootstrap and draft creation exist; remaining verticals are planned)
 
 ### Service Layer
 
-**Owns:** All CargoMesh business logic. The existing `features/` directory already IS the service layer. V2 formalizes this and makes it importable by both Hono routes and MCP tools.
+**Owns:** Authenticated use cases and persistence in `frontend/src/server/services/<domain>/`. Both Hono and MCP import these services directly. Pure domain contracts, calculations and browser workflows remain organized by feature in `frontend/src/features/`.
 
 **Does:**  
 - Validates input semantics (beyond schema: business rules)  
@@ -93,19 +56,15 @@
 - Returns typed domain results  
 - Throws typed domain errors (not HTTP errors)  
 
-**Current locations (authoritative, do not move unless migrating a vertical):**  
-- `frontend/src/features/auth/` — `requireAuthenticatedMember`, route guards  
-- `frontend/src/features/freight-requests/` — draft creation, intake, execution intent, manual intake  
-- `frontend/src/features/discovery/` — `get_candidate_provider_pages`  
-- `frontend/src/features/orchestration/` — `start_orchestration_run`, view model  
-- `frontend/src/features/result-bridge/` — `record_provider_result`  
-- `frontend/src/features/decision-engine/` — `evaluate_offers`, `evaluateBalancedOffers`  
-- `frontend/src/features/booking/` — `prepare_booking`, `record_provider_booking`, `record_provider_booking_status`, `prepare_booking_recovery`, `reset_demo_booking_runtime`  
-- `frontend/src/features/webmcp-runner/` — orchestration runner, provider runner  
-- `frontend/src/features/recommendations/` — D1 recommendation draft  
-- `frontend/src/features/providers/` — WebMCP tool registrations  
+**Current locations:**
+- `frontend/src/server/services/` — freight requests, discovery, orchestration, result bridge, evaluation, booking, recommendations and server view loaders.
+- `frontend/src/server/auth/` — authenticated member resolution and page guards.
+- `frontend/src/server/db/supabase/` — server session and administrative clients.
+- `frontend/src/server/hono/` and `frontend/src/server/mcp/` — independent transports using the same services.
+- `frontend/src/features/decision-engine/` — pure deterministic BALANCED calculations.
+- `frontend/src/features/webmcp-runner/` and `frontend/src/features/providers/` — browser executor and provider tool runtime.
 
-**Target location (after migration):** Service functions will live in `frontend/src/server/services/` as thin wrappers or re-exports that standardize the interface without duplicating logic.
+These are direct file relocations, not duplicate implementations or re-export wrappers. Next.js route entry points stay in `src/app/`. The application directory remains `frontend/` to preserve the existing deployment root. See the [backend layout guide](../../frontend/src/server/README.md). `pnpm check:architecture` checks browser/server and transport/service dependency boundaries.
 
 ### Domain / Shared Schemas
 
@@ -127,19 +86,19 @@
 
 ### MCP Layer
 
-**Owns:** 6 MCP tool definitions, Streamable HTTP transport handler, tool input/output schemas, `confirmed_by_human` authorization gate.
+**Owns:** 6 MCP tool definitions, Streamable HTTP transport handler, tool input/output schemas, verified human approval gate (a caller boolean is insufficient).
 
 **Does:** Receives MCP tool calls from Alexa+, validates input, calls the service layer (same functions as Hono routes), returns MCP-formatted results.
 
 **Does NOT:** Contain business logic. Does not call Supabase directly. Does not duplicate service function logic.
 
-**Files:** `frontend/src/mcp/` (TARGET — does not exist yet)
+**Files:** `frontend/src/server/mcp/` (local read and creation implemented; remaining tools planned)
 
 ### WebMCP Provider Runtime
 
 **Owns:** The browser-based orchestration runner that navigates to `/providers/[carrierSlug]` pages and invokes the 5 low-level carrier tools (`check_service_coverage`, `check_capacity`, `quote_freight`, `book_freight`, `get_provider_booking_status`).
 
-**Does NOT change in V2.** This subsystem is entirely preserved as-is. The Alexa+/MCP layer does not call provider tools directly — it calls `find_freight_options` on the MCP server, which triggers the WebMCP runner.
+**Does NOT change in V2.** This subsystem is entirely preserved as-is. The Alexa+/MCP layer does not call provider tools directly — it calls `find_freight_options` on the MCP server, whose future shared coordinator must dispatch a WebMCP executor. Run creation alone does not trigger the runner.
 
 ## Dependency Direction Rules
 
@@ -162,11 +121,11 @@ Hono API routes    →  Service Layer            ✓ (the primary path)
 MCP tools          →  Service Layer            ✓ (same as Hono)
 Service Layer      →  Supabase clients         ✓
 Service Layer      →  Domain types             ✓
-Hono middleware    →  lib/supabase/auth.ts      ✓ (shared auth)
-MCP tools          →  lib/supabase/auth.ts      ✓ (shared auth)
+Hono middleware    →  server/auth/member.ts      ✓ (shared auth)
+MCP tools          →  server/auth/member.ts      ✓ (shared auth)
 ```
 
-## Mermaid: Golden Flow Data Flow
+## Mermaid: Target Golden Flow Data Flow (not implemented)
 
 ```mermaid
 sequenceDiagram
@@ -184,6 +143,7 @@ sequenceDiagram
     S-->>M: FreightRequestIntakeViewModel
     M-->>A: { freight_request_id, request_code }
 
+    Note over S,DB: Missing prerequisite: validated DRAFT to PENDING submission
     A->>M: find_freight_options({ freight_request_id })
     M->>S: start_orchestration_run(input)
     S->>DB: RPC start_orchestration_run
@@ -191,7 +151,8 @@ sequenceDiagram
     S-->>M: { run_id, status: "RUNNING" }
     M-->>A: { run_id }
 
-    Note over W,P: Async: WebMCP Runner executes
+    Note over S,W: Missing durable dispatch / execution coordinator
+    Note over W,P: Target: WebMCP Runner executes
     W->>P: navigate /providers/andes?serviceId=...
     P->>W: check_service_coverage → check_capacity → quote_freight
     W->>S: record_provider_result(toolOutput)
@@ -203,16 +164,17 @@ sequenceDiagram
     DB-->>S: { decision_id, run_status: OPTIONS_READY }
 
     A->>M: get_freight_options({ run_id })
-    M->>S: getOrchestrationRunViewModel(run_id)
+    M->>S: get_orchestration_view_model(run_id)
     S->>DB: SELECT orchestration_runs + freight_decisions + carrier_offers
     DB-->>S: ranked offers
-    S-->>M: RankedOption[] + explanation
-    M-->>A: { options, recommended_offer_id, explanation }
+    S-->>M: OrchestrationViewModel
+    M-->>A: { ok: true, data: OrchestrationViewModel }
 
     Note over A: Alexa+ reads recommendation aloud
     Note over A: User says "confirm"
 
     A->>M: authorize_and_book({ offer_id, confirmed_by_human: true })
+    Note over M,S: Verify trusted human confirmation before preparation
     M->>S: prepare_booking(input)
     S->>DB: RPC prepare_booking_authorization
     DB-->>S: { authorization_reference, idempotency_key }
@@ -225,23 +187,24 @@ sequenceDiagram
     M-->>A: { booking_id }
 
     A->>M: get_booking_status({ booking_id })
-    M->>S: getBookingStatus(booking_id)
+    M->>S: get_booking_view_model(booking_id)
+    Note over W,DB: Separate provider status refresh/persistence required before CONFIRMED
     S->>DB: SELECT bookings + booking_events
     DB-->>S: { status: CONFIRMED }
-    S-->>M: { status: CONFIRMED, carrier_name, reference }
+    S-->>M: BookingViewModel with persisted provider status
     M-->>A: confirmed
 ```
 
-## Current Architecture (V1 — Baseline)
+## Historical Architecture (V1 — Baseline)
 
 The current application is a single Next.js 15 App Router application. All API logic lives in Next.js Route Handlers under `src/app/api/`. Route handlers are thin: they call feature functions and map errors to HTTP responses. Feature functions in `src/features/` contain the actual business logic.
 
 **What already works well (do not change):**
-- Feature module structure in `src/features/` is already a de-facto service layer
+- Server services are grouped by domain in `src/server/services/`; pure rules and client workflows remain in `src/features/`
 - Supabase client separation (session / admin) is correct and well-tested
 - `requireAuthenticatedMember()` is a clean auth boundary
 - RPC pattern (admin client calls privileged Supabase RPCs) is correct
-- All 147 pgTAP tests pass; all TypeScript tests pass; production build is clean
+- Historic baseline reports pgTAP/TypeScript/build passing; this documentation change does not rerun or certify that baseline
 
 **What V2 adds without breaking what works:**
 - Hono API layer as an alternative HTTP interface to the same feature functions

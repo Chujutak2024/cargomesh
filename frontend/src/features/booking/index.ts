@@ -1,3 +1,3 @@
 export * from "./contracts";
-export * from "./booking-bridge";
+export * from "../../server/services/booking/booking-bridge";
 export * from "./bridge-call-id";

@@ -10,10 +10,10 @@ import Link from "next/link";
 
 import { RequestTable } from "@/components/request-table";
 import { OperationsMap } from "@/components/operations-map";
-import { requireOperationalRouteAccess } from "@/features/auth/route-guard";
-import { getOrganizationDashboard } from "@/features/dashboard/dashboard-server";
+import { requireOperationalRouteAccess } from "@/server/auth/route-guard";
+import { getOrganizationDashboard } from "@/server/services/dashboard/dashboard-server";
 import type { DashboardViewModel } from "@/features/dashboard/dashboard-view-model";
-import { getRequestLocale } from "@/features/i18n/server";
+import { getRequestLocale } from "@/server/i18n/server";
 import { localeTag, translate } from "@/features/i18n/config";
 import styles from "./page.module.css";
 

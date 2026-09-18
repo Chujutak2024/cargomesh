@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedMember } from "@/lib/supabase/auth";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { requireAuthenticatedMember } from "@/server/auth/member";
+import { createServerSupabaseClient } from "@/server/db/supabase/server";
 
 export async function PATCH(request: Request) {
   try {

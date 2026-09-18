@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 import { translate } from "@/features/i18n/config";
-import { getRequestLocale } from "@/features/i18n/server";
+import { getRequestLocale } from "@/server/i18n/server";
 import { buildCanonicalDemoProviderHref } from "@/features/providers/provider-route-params";
 import styles from "./providers-directory.module.css";
 

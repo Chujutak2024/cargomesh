@@ -3,8 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { localeTag, translate } from "@/features/i18n/config";
-import { getRequestLocale } from "@/features/i18n/server";
-import { getProviderPageConfig } from "@/features/providers/get-provider-page-config";
+import { getRequestLocale } from "@/server/i18n/server";
+import { getProviderPageConfig } from "@/server/services/providers/get-provider-page-config";
 import {
   buildCanonicalDemoProviderHref,
   type CanonicalDemoProviderSlug,
