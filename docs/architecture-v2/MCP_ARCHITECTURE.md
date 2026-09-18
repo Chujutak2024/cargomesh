@@ -2,7 +2,7 @@
 
 Status: M1 bootstrap and M2 creation code implemented locally on top of application commit `d26c5e4`. M2 requires permanent migration application and an authenticated MCP smoke test; local SQL checks passed; later milestones are proposed.
 
-The authoritative service inventory, six contracts, authentication spike and milestones are in [MCP_TOOL_CONTRACTS.md](./MCP_TOOL_CONTRACTS.md). The [local preview guide](../../frontend/src/server/mcp/README.md) documents the implemented `/mcp` endpoint, `get_freight_options` and `create_freight_request`. OAuth, Alexa+, Bedrock, AgentCore and Strands remain unimplemented.
+The authoritative service inventory, six contracts, authentication spike and milestones are in [MCP_TOOL_CONTRACTS.md](./MCP_TOOL_CONTRACTS.md). The [local preview guide](../../cargomesh/src/server/mcp/README.md) documents the implemented `/mcp` endpoint, `get_freight_options` and `create_freight_request`. OAuth, Alexa+, Bedrock, AgentCore and Strands remain unimplemented.
 
 ## Milestone 1 implementation
 
@@ -30,7 +30,7 @@ Hono bootstrap and draft creation already exist. A separate server/services re-e
 ## Structure (search, booking and recovery remain proposed)
 
 ```text
-frontend/src/
+cargomesh/src/
   app/mcp/route.ts               # implemented local /mcp endpoint, Node.js runtime
   server/mcp/
     server.ts                   # registration

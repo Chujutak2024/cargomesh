@@ -7,7 +7,7 @@ The tree below is a target inventory; only health and freight creation are curre
 All Hono routes are mounted at `/api/v2/` via a Next.js catch-all route.
 
 ```
-frontend/src/
+cargomesh/src/
   app/
     api/
       v2/

@@ -5,14 +5,14 @@
 ### Engineer 1 — Alexa+ / MCP / AWS / Bedrock
 
 **Primary ownership:**
-- `frontend/src/server/mcp/` (entire new directory)
+- `cargomesh/src/server/mcp/` (entire new directory)
 - `docs/architecture-v2/MCP_ARCHITECTURE.md`
 - `docs/architecture-v2/AMAZON_HACKATHON.md`
 - Alexa+ skill configuration (external, not in this repo)
-- AWS Bedrock integration (`frontend/src/lib/bedrock.ts`)
+- AWS Bedrock integration (`cargomesh/src/lib/bedrock.ts`)
 
 **Secondary touch points:**
-- `frontend/src/app/mcp/route.ts` (proposed /mcp endpoint)
+- `cargomesh/src/app/mcp/route.ts` (proposed /mcp endpoint)
 - Node.js runtime and deployment configuration only when later milestones require it
 
 **Does NOT own:**
@@ -28,14 +28,14 @@ Requires service function signatures from Engineer 2 before implementing MCP too
 ### Engineer 2 — Core / APIs / Supabase Integration
 
 **Primary ownership:**
-- `frontend/src/server/hono/` (entire new directory)
-- `frontend/src/app/api/v2/[[...route]]/route.ts`
-- `frontend/src/shared/schemas/` and `frontend/src/shared/types/`
+- `cargomesh/src/server/hono/` (entire new directory)
+- `cargomesh/src/app/api/v2/[[...route]]/route.ts`
+- `cargomesh/src/shared/schemas/` and `cargomesh/src/shared/types/`
 - Shared service contracts/auth seams; a server/services re-export tree is optional
 - Gap route implementations: `[bookingId]`, `[runId]`, `intake/[requestCode]`, `[id]/draft`, `[id]/execution-intent`, `[id]/manual-intake`, `[id]/recommendations`
 
 **Secondary touch points:**
-- `frontend/src/features/` (reading only, no rewrites unless a bug is found)
+- `cargomesh/src/features/` (reading only, no rewrites unless a bug is found)
 - `supabase/migrations/` (additive only — new columns, new test files)
 
 **Does NOT own:**
@@ -51,10 +51,10 @@ E2 owns the service function contract that E1 depends on. E2 also owns the Hono 
 ### Engineer 3 — Client UX / UI
 
 **Primary ownership:**
-- `frontend/src/app/(cargomesh)/` (all enterprise UI pages)
-- `frontend/src/components/` (shared components)
-- `frontend/src/features/freight-ui/` (UI state, view models for booking workspace)
-- `frontend/src/features/i18n/` (copy, translations)
+- `cargomesh/src/app/(cargomesh)/` (all enterprise UI pages)
+- `cargomesh/src/components/` (shared components)
+- `cargomesh/src/features/freight-ui/` (UI state, view models for booking workspace)
+- `cargomesh/src/features/i18n/` (copy, translations)
 - CSS modules
 
 **Secondary touch points:**
@@ -73,11 +73,11 @@ E3 depends on E2's Hono routes having the same response shape as the current Nex
 ### Engineer 4 — Carrier Application / WebMCP
 
 **Primary ownership:**
-- `frontend/src/app/providers/` (carrier-facing provider directory and WebMCP host pages)
-- `frontend/src/features/providers/` (5 WebMCP tool implementations)
-- `frontend/src/features/webmcp-runner/` (orchestration runner, provider runner)
-- `frontend/src/features/result-bridge/` (Result Bridge)
-- `frontend/src/features/discovery/` (candidate discovery)
+- `cargomesh/src/app/providers/` (carrier-facing provider directory and WebMCP host pages)
+- `cargomesh/src/features/providers/` (5 WebMCP tool implementations)
+- `cargomesh/src/features/webmcp-runner/` (orchestration runner, provider runner)
+- `cargomesh/src/features/result-bridge/` (Result Bridge)
+- `cargomesh/src/features/discovery/` (candidate discovery)
 - `supabase/scenarios/` (demo scenario seeds, not migrations)
 
 **Does NOT own:**
@@ -96,7 +96,7 @@ E4 is the authority on what the WebMCP execution contract requires (tool input/o
 
 **Primary ownership:**
 - `supabase/tests/` (pgTAP test files — may add new test files, NEVER modify existing ones)
-- `frontend/src/features/**/*.test.ts` (ensuring all existing tests pass)
+- `cargomesh/src/features/**/*.test.ts` (ensuring all existing tests pass)
 - New integration test harness for Hono routes
 - New test files for MCP tool handlers
 - `packages/cargomesh-mcp/` (open-source npm package — PLANNED)
@@ -116,10 +116,10 @@ E5 is the gatekeeper. No vertical is considered DONE until E5 has reviewed its t
 
 | Area | Risk | Mitigation |
 |---|---|---|
-| `frontend/package.json` | High — Hono, MCP SDK, Zod, AWS SDK all add deps | Coordinate dep adds via a single PR per milestone |
-| `frontend/src/server/services/booking/booking-bridge.ts` | Medium — E1 (MCP) and E2 (Hono) both call it | E2 owns the file; E1 imports, does not modify |
-| `frontend/src/features/orchestration/` | Medium — E1 (MCP) and E4 (runner) both depend on it | E4 owns the files; others import |
-| `frontend/next.config.ts` | Low | Coordinate any changes as a single PR |
+| `cargomesh/package.json` | High — Hono, MCP SDK, Zod, AWS SDK all add deps | Coordinate dep adds via a single PR per milestone |
+| `cargomesh/src/server/services/booking/booking-bridge.ts` | Medium — E1 (MCP) and E2 (Hono) both call it | E2 owns the file; E1 imports, does not modify |
+| `cargomesh/src/features/orchestration/` | Medium — E1 (MCP) and E4 (runner) both depend on it | E4 owns the files; others import |
+| `cargomesh/next.config.ts` | Low | Coordinate any changes as a single PR |
 | `supabase/tests/` | Low | E5 adds new files, does not modify existing |
 
 ## Cross-Team Integration Responsibilities

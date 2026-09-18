@@ -43,11 +43,11 @@ MCP must not call Hono over HTTP in the same process. The browser executor is a 
 - Know about WebMCP, provider navigation, or carrier scoring  
 - Duplicate error handling already in service functions  
 
-**Files:** `frontend/src/server/hono/` (bootstrap and draft creation exist; remaining verticals are planned)
+**Files:** `cargomesh/src/server/hono/` (bootstrap and draft creation exist; remaining verticals are planned)
 
 ### Service Layer
 
-**Owns:** Authenticated use cases and persistence in `frontend/src/server/services/<domain>/`. Both Hono and MCP import these services directly. Pure domain contracts, calculations and browser workflows remain organized by feature in `frontend/src/features/`.
+**Owns:** Authenticated use cases and persistence in `cargomesh/src/server/services/<domain>/`. Both Hono and MCP import these services directly. Pure domain contracts, calculations and browser workflows remain organized by feature in `cargomesh/src/features/`.
 
 **Does:**  
 - Validates input semantics (beyond schema: business rules)  
@@ -57,14 +57,14 @@ MCP must not call Hono over HTTP in the same process. The browser executor is a 
 - Throws typed domain errors (not HTTP errors)  
 
 **Current locations:**
-- `frontend/src/server/services/` — freight requests, discovery, orchestration, result bridge, evaluation, booking, recommendations and server view loaders.
-- `frontend/src/server/auth/` — authenticated member resolution and page guards.
-- `frontend/src/server/db/supabase/` — server session and administrative clients.
-- `frontend/src/server/hono/` and `frontend/src/server/mcp/` — independent transports using the same services.
-- `frontend/src/features/decision-engine/` — pure deterministic BALANCED calculations.
-- `frontend/src/features/webmcp-runner/` and `frontend/src/features/providers/` — browser executor and provider tool runtime.
+- `cargomesh/src/server/services/` — freight requests, discovery, orchestration, result bridge, evaluation, booking, recommendations and server view loaders.
+- `cargomesh/src/server/auth/` — authenticated member resolution and page guards.
+- `cargomesh/src/server/db/supabase/` — server session and administrative clients.
+- `cargomesh/src/server/hono/` and `cargomesh/src/server/mcp/` — independent transports using the same services.
+- `cargomesh/src/features/decision-engine/` — pure deterministic BALANCED calculations.
+- `cargomesh/src/features/webmcp-runner/` and `cargomesh/src/features/providers/` — browser executor and provider tool runtime.
 
-These are direct file relocations, not duplicate implementations or re-export wrappers. Next.js route entry points stay in `src/app/`. The application directory remains `frontend/` to preserve the existing deployment root. See the [backend layout guide](../../frontend/src/server/README.md). `pnpm check:architecture` checks browser/server and transport/service dependency boundaries.
+These are direct file relocations, not duplicate implementations or re-export wrappers. Next.js route entry points stay in `src/app/`. The application directory remains `cargomesh/` to preserve the existing deployment root. See the [backend layout guide](../../cargomesh/src/server/README.md). `pnpm check:architecture` checks browser/server and transport/service dependency boundaries.
 
 ### Domain / Shared Schemas
 
@@ -72,7 +72,7 @@ These are direct file relocations, not duplicate implementations or re-export wr
 
 **Does NOT:** Import from `server-only` packages. Does not contain Supabase client code.
 
-**Current state:** Partially exists as `contracts.ts` files within each feature module. V2 consolidates shared cross-cutting schemas into `frontend/src/shared/schemas/` and `frontend/src/shared/types/`.
+**Current state:** Partially exists as `contracts.ts` files within each feature module. V2 consolidates shared cross-cutting schemas into `cargomesh/src/shared/schemas/` and `cargomesh/src/shared/types/`.
 
 ### Supabase / RPC Layer
 
@@ -92,7 +92,7 @@ These are direct file relocations, not duplicate implementations or re-export wr
 
 **Does NOT:** Contain business logic. Does not call Supabase directly. Does not duplicate service function logic.
 
-**Files:** `frontend/src/server/mcp/` (local read and creation implemented; remaining tools planned)
+**Files:** `cargomesh/src/server/mcp/` (local read and creation implemented; remaining tools planned)
 
 ### WebMCP Provider Runtime
 

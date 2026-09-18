@@ -87,22 +87,22 @@ Los PR críticos de C sobre RLS, funciones privilegiadas o persistencia deben re
 
 ```text
 Integrante A
-frontend/src/app/providers/[carrierSlug]/**
-frontend/src/features/providers/**
-frontend/src/types/webmcp.d.ts
+cargomesh/src/app/providers/[carrierSlug]/**
+cargomesh/src/features/providers/**
+cargomesh/src/types/webmcp.d.ts
 
 Integrante B
-frontend/src/app/(cargomesh)/**
-frontend/src/components/**
-frontend/src/features/freight-ui/**
-frontend/src/features/judge/**
+cargomesh/src/app/(cargomesh)/**
+cargomesh/src/components/**
+cargomesh/src/features/freight-ui/**
+cargomesh/src/features/judge/**
 
 Integrante C
-frontend/src/app/api/**
-frontend/src/lib/supabase/**
-frontend/src/features/discovery/**
-frontend/src/features/decision-engine/**
-frontend/src/features/result-bridge/**
+cargomesh/src/app/api/**
+cargomesh/src/lib/supabase/**
+cargomesh/src/features/discovery/**
+cargomesh/src/features/decision-engine/**
+cargomesh/src/features/result-bridge/**
 supabase/**
 ```
 
@@ -302,7 +302,7 @@ Estado actual: todos los cortes `SH-00` a `REL-01 / G4` están integrados y veri
   - **Depende de:** `SH-00`.
   - **Qué construir:** estructura mínima de Next.js, variables de entorno de ejemplo, módulo de tipos compartidos y límites de ownership.
   - **Aceptación:** `npm install`, `npm run dev` y `npm run build` funcionan; los contratos de la sección 4 están disponibles sin datos comerciales runtime hardcodeados.
-  - **Verificar:** `cd frontend && npm run build`.
+  - **Verificar:** `cd cargomesh && npm run build`.
 
 - [x] **A-01. Crear la plantilla dinámica de página provider**
   - **Owner:** A.
@@ -310,7 +310,7 @@ Estado actual: todos los cortes `SH-00` a `REL-01 / G4` están integrados y veri
   - **Depende de:** puede desarrollarse como spike; requiere `SH-00` y `SH-01` antes de integrarse.
   - **Qué construir:** `/providers/[carrierSlug]` como Server Component, resolución server-side `carrierSlug → carrierCode`, página `404` y Client Component para WebMCP.
   - **Aceptación:** cualquier carrier registrado/configurado usa la misma página; no existen directorios ni condiciones por nombre comercial; `service_role` no aparece en el bundle cliente.
-  - **Verificar:** abrir un slug válido y uno inexistente; ejecutar `rg -n "if.*(ANDES|INCA|PACIFIC)|switch.*carrier" frontend/src` y esperar cero coincidencias de lógica.
+  - **Verificar:** abrir un slug válido y uno inexistente; ejecutar `rg -n "if.*(ANDES|INCA|PACIFIC)|switch.*carrier" cargomesh/src` y esperar cero coincidencias de lógica.
 
 - [x] **A-02. Registrar y ejecutar `quote_freight`**
   - **Owner:** A.

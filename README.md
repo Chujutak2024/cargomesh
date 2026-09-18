@@ -14,14 +14,14 @@
 
 ### Source layout
 
-The deployable application is in `frontend/` (a full-stack Next.js app).
-Its active TypeScript backend is in [`frontend/src/server/`](frontend/src/server/README.md):
+The deployable application is in `cargomesh/` (the full-stack Next.js app).
+Its active TypeScript backend is in [`cargomesh/src/server/`](cargomesh/src/server/README.md):
 shared services, authentication, database clients, Hono REST and MCP.
 Pages and route entry points are in `src/app/`; UI components are in
 `src/components/`; domain contracts, pure rules and client workflows are in
 `src/features/`; cross-cutting schemas are in `src/shared/`.
 `supabase/` contains database migrations, scenarios and SQL tests.
-The root [`backend/`](backend/README.md) is an unused legacy Python scaffold.
+The old Python scaffold was removed; the active backend is documented under `cargomesh/src/server/`.
 
 
 | Parameter | Specification Value |
@@ -372,12 +372,12 @@ cargomesh/
 │   ├── seed.sql                               # Local-only Demo Auth user & ACME SUPERVISOR seed
 │   ├── tests/                                 # Automated pgTAP database test suite
 │   └── snippets/                              # Standalone validation scripts
-├── frontend/                                  # 🚀 Next.js 15 full-stack MVP
+├── cargomesh/                                  # 🚀 Next.js 15 full-stack MVP
 │   ├── src/app/                               # App Router, Route Handlers and /providers/[carrierSlug]
 │   ├── src/components/                        # Modular UI components
 │   ├── src/lib/                               # Provider discovery, WebMCP contracts, Supabase and Decision Engine
 │   └── package.json                           # Next.js 15, React 19 and Supabase SSR
-├── backend/                                   # Reserved for post-MVP services; not part of the hackathon critical path
+├──                                    # Reserved for post-MVP services; not part of the hackathon critical path
 ├── .gitignore                                 # Git security exclusions (.env, node_modules, temp files)
 └── README.md                                  # Executive technical specification (This document)
 ```

@@ -1,0 +1,7 @@
+.switcher { display: inline-flex; min-height: 2.75rem; align-items: center; gap: 0.45rem; border: 1px solid rgb(104 117 115 / 25%); border-radius: 0.65rem; padding: 0.35rem 0.45rem 0.35rem 0.65rem; color: inherit; background: rgb(255 255 255 / 6%); font: inherit; }
+.switcher select { min-height: 2rem; border: 0; border-radius: 0.4rem; padding: 0 0.35rem; background: transparent; color: inherit; font: inherit; font-size: 0.7rem; font-weight: 800; cursor: pointer; }
+.switcher option { color: #1f2928; background: #fff; }
+.label { font-size: 0.67rem; font-weight: 700; }
+.compact .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+.compact { border-color: #dde3e0; background: #fff; color: #52605e; }
+.switcher:focus-within { outline: 3px solid rgb(43 174 154 / 30%); outline-offset: 2px; }

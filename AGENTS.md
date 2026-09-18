@@ -11,7 +11,7 @@ Este archivo establece las directivas prioritarias que deben respetar todos los 
 - Para declarar un carrier como proveedor WebMCP operativo, debe contar con:
   1. Su ruta `/providers/[carrierSlug]` en Next.js.
   2. Sus 5 tools registradas en `document.modelContext`.
-  3. Sus fixtures de capacidad en `frontend/src/features/providers/provider-capability-fixtures.ts`.
+  3. Sus fixtures de capacidad en `cargomesh/src/features/providers/provider-capability-fixtures.ts`.
   4. Sus tarifas de cotización en `quote-freight-tool.ts`.
 - Cualquier carrier que solo exista en la base de datos se debe documentar como **"Dato de escenario / Roadmap"**, nunca como tool en vivo.
 - En la evidencia pública actual, solo Andes, Inca y Pacific pueden declararse providers WebMCP live del demo al cumplir ruta, cinco tools, capacidad y tarifa ejecutables. Sus `providerUrl` son rutas del mismo origin Vercel de CargoMesh y no prueban providers alojados independientemente.

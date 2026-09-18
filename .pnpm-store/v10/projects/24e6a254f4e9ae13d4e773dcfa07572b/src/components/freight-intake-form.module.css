@@ -1,0 +1,184 @@
+.page { display: grid; width: 100%; max-width: 92rem; margin: 0 auto; gap: 1rem; }
+.hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.hero h1 { margin: 0.25rem 0 0.35rem; color: #123c3a; font-size: clamp(1.7rem, 3vw, 2.35rem); letter-spacing: -0.045em; }
+.hero p { max-width: 44rem; margin: 0; color: #687573; font-size: 0.82rem; line-height: 1.6; }
+.eyebrow { color: #2b7d72; font-size: 0.6rem; font-weight: 850; letter-spacing: 0.12em; text-transform: uppercase; }
+.draftBadge { display: inline-flex; min-height: 2.75rem; align-items: center; gap: 0.45rem; border: 1px solid #cfe1dc; border-radius: 0.75rem; padding: 0 0.8rem; background: #edf8f4; color: #185c55; font-size: 0.68rem; font-weight: 800; white-space: nowrap; }
+.stepper { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0; padding: 0.35rem; border: 1px solid #dde3e0; border-radius: 1rem; background: #fff; list-style: none; overflow-x: auto; }
+.stepper li { min-width: 7.4rem; }
+.step { display: grid; width: 100%; min-height: 4.35rem; grid-template-columns: 2rem 1fr; grid-template-rows: 1fr 1fr; column-gap: 0.55rem; align-items: center; border: 0; border-radius: 0.75rem; padding: 0.55rem; background: transparent; color: #7a8784; font-family: inherit; text-align: left; cursor: pointer; }
+.step > span { display: grid; width: 2rem; height: 2rem; grid-row: 1 / 3; place-items: center; border-radius: 0.58rem; background: #edf1ef; }
+.step small { align-self: end; font-size: 0.52rem; font-weight: 750; text-transform: uppercase; }
+.step strong { align-self: start; font-size: 0.68rem; }
+.step:hover { background: #f2f8f5; }
+.step:disabled { cursor: wait; opacity: 0.65; }
+.stepActive { background: #edf8f4; color: #185c55; }
+.stepActive > span { background: #185c55; color: #fff; }
+.stepDone { color: #2b7d72; }
+.stepDone > span { background: #ddf3ea; color: #185c55; }
+.formLayout { display: grid; min-width: 0; gap: 1rem; align-items: start; }
+.formCard, .summaryCard { min-width: 0; border: 1px solid #dde3e0; border-radius: 1rem; background: #fff; box-shadow: 0 0.6rem 2rem rgb(18 60 58 / 4%); }
+.formCard { padding: clamp(1rem, 2.5vw, 1.6rem); }
+.formHeading { margin-bottom: 1.25rem; }
+.formHeading h2 { margin: 0.25rem 0 0.35rem; color: #1f2928; font-size: 1.15rem; letter-spacing: -0.025em; }
+.formHeading p { margin: 0; color: #687573; font-size: 0.75rem; line-height: 1.55; }
+.fieldGrid { display: grid; gap: 0.9rem; }
+.fieldGrid label, .subSectionCard label { display: grid; min-width: 0; gap: 0.4rem; color: #3c4a48; font-size: 0.66rem; font-weight: 780; }
+.fieldGrid input, .fieldGrid select, .subSectionCard input, .subSectionCard select { width: 100%; min-width: 0; max-width: 100%; min-height: 2.85rem; border: 1px solid #d7dfdc; border-radius: 0.7rem; padding: 0 0.75rem; background: #fbfcfa; color: #1f2928; font: inherit; font-size: 0.78rem; }
+.fieldGrid input[readonly], .subSectionCard input[readonly] { color: #687573; background: #f1f4f2; }
+.fieldGrid input:focus, .fieldGrid select:focus, .subSectionCard input:focus, .subSectionCard select:focus { border-color: #2bae9a; outline: 3px solid rgb(43 174 154 / 16%); outline-offset: 1px; }
+.infoBox { display: flex; align-items: flex-start; gap: 0.5rem; margin: 1rem 0 0; border-radius: 0.75rem; padding: 0.75rem; background: #edf8f4; color: #3d625d; font-size: 0.68rem; line-height: 1.5; }
+.infoBox svg { flex: 0 0 auto; }
+.totals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.7rem; margin-top: 1rem; }
+.totals > div { display: grid; gap: 0.15rem; border: 1px solid #cfe1dc; border-radius: 0.75rem; padding: 0.8rem; background: #f4fbf8; }
+.totals small { color: #687573; font-size: 0.58rem; }
+.totals strong { color: #185c55; font-size: 1rem; }
+.documentFieldset { display: grid; gap: 0.65rem; margin: 1rem 0 0; border: 1px solid #dde3e0; border-radius: 0.8rem; padding: 0.9rem; }
+.documentFieldset legend { padding: 0 0.25rem; color: #3c4a48; font-size: 0.67rem; font-weight: 800; }
+.documentFieldset label { display: flex; min-height: 2rem; align-items: center; gap: 0.55rem; color: #52605e; font-size: 0.72rem; }
+.documentFieldset input { width: 1rem; height: 1rem; accent-color: #185c55; }
+.reviewGrid { display: grid; gap: 0.7rem; }
+.reviewGrid > div { display: grid; gap: 0.2rem; border-bottom: 1px solid #e6ebe8; padding: 0.15rem 0 0.75rem; }
+.reviewGrid small { color: #7a8784; font-size: 0.58rem; text-transform: uppercase; }
+.reviewGrid strong { color: #263331; font-size: 0.75rem; line-height: 1.45; }
+.readyNotice { display: flex; gap: 0.65rem; margin-top: 1rem; border: 1px solid #bcded4; border-radius: 0.8rem; padding: 0.85rem; background: #e9f8f2; color: #185c55; }
+.readyNotice > span { display: grid; gap: 0.16rem; }
+.readyNotice strong { font-size: 0.74rem; }
+.readyNotice small { color: #55736e; font-size: 0.62rem; line-height: 1.45; }
+.searchingState { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; border: 1px solid #9fd4c8; border-radius: 0.8rem; padding: 0.85rem; background: #edf8f4; color: #185c55; }
+.searchingState > span:last-child { display: grid; gap: 0.18rem; }
+.searchingState strong { font-size: 0.74rem; }
+.searchingState small { color: #55736e; font-size: 0.62rem; line-height: 1.5; }
+.searchingIcon { display: grid; width: 2.35rem; height: 2.35rem; flex: 0 0 auto; place-items: center; border-radius: 0.65rem; background: #185c55; color: #ffffff; }
+.spinner { animation: spin 850ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.7rem; margin-top: 1.4rem; padding-top: 1rem; border-top: 1px solid #e4e9e6; }
+.primaryButton, .secondaryButton { display: inline-flex; min-height: 2.85rem; align-items: center; justify-content: center; gap: 0.45rem; border-radius: 0.72rem; padding: 0 0.9rem; font-family: inherit; font-size: 0.7rem; font-weight: 800; cursor: pointer; }
+.primaryButton { border: 0; background: #185c55; color: #fff; }
+.primaryButton:hover { background: #123c3a; }
+.primaryButton:disabled { cursor: wait; opacity: 0.7; }
+.secondaryButton { border: 1px solid #d7dfdc; background: #fff; color: #52605e; }
+.secondaryButton:disabled { opacity: 0.45; cursor: not-allowed; }
+.summaryCard { display: grid; gap: 0.85rem; padding: 1rem; }
+.summaryCard h2 { margin: -0.4rem 0 0; color: #123c3a; font-size: 1.05rem; }
+.summaryCard dl { display: grid; gap: 0.7rem; margin: 0; }
+.summaryCard dl div { display: grid; gap: 0.15rem; border-bottom: 1px solid #e6ebe8; padding-bottom: 0.65rem; }
+.summaryCard dt { color: #7a8784; font-size: 0.57rem; text-transform: uppercase; }
+.summaryCard dd { margin: 0; color: #34413f; font-size: 0.7rem; font-weight: 700; line-height: 1.45; }
+.summaryCard p { display: flex; gap: 0.45rem; margin: 0; color: #687573; font-size: 0.62rem; line-height: 1.5; }
+.summaryCard p svg { flex: 0 0 auto; color: #2b7d72; }
+.submitError { flex: 1 1 100%; margin: 0; border-radius: 0.65rem; padding: 0.65rem 0.75rem; background: #fff0ee; color: #a44740; font-size: 0.65rem; line-height: 1.45; }
+.phoneInputGroup { display: flex; width: 100%; gap: 0.4rem; align-items: center; }
+.dialBadge { display: inline-flex; align-items: center; justify-content: center; min-height: 2.85rem; padding: 0 0.75rem; border: 1px solid #d7dfdc; border-radius: 0.7rem; background: #edf4f1; color: #185c55; font-size: 0.76rem; font-weight: 800; white-space: nowrap; }
+.cleanDraftButton { display: inline-flex; min-height: 2.75rem; align-items: center; gap: 0.35rem; border: 1px dashed #2b7d72; border-radius: 0.65rem; padding: 0.4rem 0.75rem; background: #f0faf6; color: #185c55; font-family: inherit; font-size: 0.68rem; font-weight: 750; cursor: pointer; transition: all 0.15s ease; }
+.cleanDraftButton:hover { background: #ddf3ea; border-style: solid; }
+.subSectionCard { min-width: 0; border: 1px solid #dde3e0; border-radius: 0.85rem; padding: 1.1rem; background: #fbfdfc; display: grid; gap: 0.85rem; }
+.subSectionHeader { min-width: 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem; border-bottom: 1px solid #edf1ef; padding-bottom: 0.65rem; margin-bottom: 0.25rem; }
+.subSectionBadge { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; font-weight: 800; color: #185c55; background: #edf8f4; padding: 0.25rem 0.65rem; border-radius: 0.5rem; }
+.subSectionHeader small { color: #687573; font-size: 0.68rem; }
+.runnerFrame { position: fixed; width: 1px; height: 1px; overflow: hidden; border: 0; clip-path: inset(50%); opacity: 0; pointer-events: none; }
+
+/* STEP 2: CARGO IMPROVEMENTS */
+.profileBanner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; background: #f0faf6; border: 1px solid #c2e5d9; border-radius: 0.75rem; padding: 0.75rem 1rem; }
+.profileBannerContent { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.profileBannerBadge { display: inline-flex; align-items: center; gap: 0.3rem; background: #185c55; color: #ffffff; font-size: 0.68rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 0.4rem; }
+.profileBannerContent strong { font-size: 0.78rem; color: #185c55; }
+.profileChangeBtn { min-height: 2.75rem; background: transparent; border: none; color: #2b7d72; font-size: 0.7rem; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 0.2rem 0.4rem; font-family: inherit; }
+.profileChangeBtn:hover { color: #185c55; }
+
+.badgeGroup { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.4rem; }
+.badgeItem { display: inline-flex; align-items: center; gap: 0.35rem; background: #eef3f1; border: 1px solid #d4dfdc; color: #2e4340; font-size: 0.72rem; font-weight: 750; padding: 0.3rem 0.65rem; border-radius: 0.5rem; }
+
+.dimensionRow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; align-items: center; }
+.dimensionInputGroup { display: flex; flex-direction: column; gap: 0.25rem; }
+.dimensionInputGroup span { font-size: 0.66rem; color: #687573; font-weight: 600; }
+
+.totalsCards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin-top: 0.5rem; }
+.totalCard { background: #ffffff; border: 1px solid #dce4e1; border-radius: 0.75rem; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.2rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03); }
+.totalCardLabel { font-size: 0.64rem; font-weight: 800; color: #687573; letter-spacing: 0.04em; text-transform: uppercase; }
+.totalCardValue { font-size: 1.15rem; font-weight: 850; color: #185c55; }
+.totalCardSub { font-size: 0.65rem; color: #7f8e8a; }
+
+.requirementPillGroup { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.requirementPill { display: inline-flex; min-height: 2.75rem; align-items: center; gap: 0.4rem; padding: 0.5rem 0.85rem; border-radius: 0.65rem; border: 1px solid #d4dfdc; background: #ffffff; font-size: 0.75rem; font-weight: 700; color: #3d4f4b; cursor: pointer; transition: all 0.15s ease; user-select: none; }
+.requirementPill:hover { border-color: #2b7d72; background: #f6fbf9; }
+.requirementPillActive { border-color: #2b7d72; background: #edf8f4; color: #185c55; font-weight: 800; box-shadow: 0 0 0 1px #2b7d72; }
+
+.requirementAlert { border-radius: 0.65rem; padding: 0.6rem 0.85rem; font-size: 0.72rem; line-height: 1.45; }
+.hazardAlert { background: #fff8eb; border: 1px solid #fbd89a; color: #8a5700; }
+.tempRangeRow { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; background: #f0f7fb; border: 1px solid #cee1ee; border-radius: 0.65rem; padding: 0.6rem 0.85rem; }
+.tempInput { width: 4.5rem; padding: 0.35rem 0.5rem; border: 1px solid #b4d1e5; border-radius: 0.45rem; font-family: inherit; font-size: 0.78rem; text-align: center; }
+
+/* STEP 4: PRE-FLIGHT CHECKLIST */
+.checklistGrid { display: grid; gap: 0.65rem; margin-bottom: 1.15rem; }
+.checklistItem { display: flex; align-items: flex-start; gap: 0.75rem; background: #ffffff; border: 1px solid #e1e7e4; border-radius: 0.75rem; padding: 0.75rem 1rem; }
+.checklistIcon { display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: #edf8f4; color: #185c55; flex: 0 0 auto; margin-top: 0.1rem; }
+.checklistItem > div { display: flex; flex-direction: column; gap: 0.15rem; }
+.checklistLabel { font-size: 0.64rem; font-weight: 750; color: #687573; text-transform: uppercase; letter-spacing: 0.03em; }
+.checklistItem strong { font-size: 0.8rem; color: #1f302d; font-weight: 800; }
+.checklistItem small { font-size: 0.68rem; color: #687573; }
+
+.notesTextarea { width: 100%; min-width: 0; max-width: 100%; min-height: 5.5rem; border: 1px solid #c2ddd5; border-radius: 0.7rem; padding: 0.7rem 0.8rem; background: #f4fbf8; color: #1f302d; caret-color: #185c55; font-family: inherit; font-size: 0.76rem; line-height: 1.5; resize: vertical; box-shadow: inset 0 1px 2px rgb(18 60 58 / 4%); }
+.notesTextarea::placeholder { color: #71837f; opacity: 1; }
+.notesTextarea:hover { border-color: #9fcfc2; background: #f0faf6; }
+.notesTextarea:focus { border-color: #2bae9a; outline: 3px solid rgb(43 174 154 / 16%); outline-offset: 1px; background: #ffffff; }
+.notesTextarea[readonly] { cursor: default; background: #edf4f1; color: #687573; }
+.advancedRouteSection { margin-top: 0.6rem; border-top: 1px dashed #e1e7e4; padding-top: 0.65rem; }
+.advancedRouteSection summary { font-size: 0.72rem; font-weight: 750; color: #2b7d72; cursor: pointer; user-select: none; margin-bottom: 0.75rem; }
+.advancedRouteSection summary:hover { color: #185c55; }
+
+/* STEP 3: SEGMENTED CONTROLS & STRATEGY */
+.segmentedGroup { display: inline-flex; border: 1px solid #d4dfdc; border-radius: 0.75rem; padding: 0.25rem; background: #f6f8f7; gap: 0.25rem; }
+.segmentedBtn { min-height: 2.75rem; border: 0; background: transparent; padding: 0.45rem 0.85rem; border-radius: 0.55rem; font-family: inherit; font-size: 0.72rem; font-weight: 700; color: #55736e; cursor: pointer; transition: all 0.15s ease; }
+.segmentedBtnActive { background: #ffffff; color: #185c55; font-weight: 800; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.strategyCard { background: #ffffff; border: 1px solid #d9e6e2; border-radius: 0.8rem; padding: 0.85rem 1rem; margin-top: 0.5rem; }
+.strategyCardHeader { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
+.strategyBadge { display: inline-flex; align-items: center; gap: 0.3rem; background: #edf8f4; color: #185c55; border: 1px solid #c2e5d9; padding: 0.25rem 0.6rem; border-radius: 0.45rem; font-size: 0.72rem; font-weight: 800; }
+.strategyWeights { font-size: 0.72rem; color: #2e4340; font-weight: 600; line-height: 1.4; }
+.strategyPolicyNote { font-size: 0.65rem; color: #687573; margin-top: 0.25rem; }
+.historicalRefBadge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.68rem; color: #2b7d72; background: #edf8f4; padding: 0.3rem 0.6rem; border-radius: 0.45rem; margin-top: 0.4rem; }
+.budgetHelpText { font-size: 0.66rem; color: #687573; line-height: 1.45; margin-top: 0.4rem; }
+
+/* CONTEXT IDENTITY CARDS */
+.contextGrid { min-width: 0; display: grid; gap: 0.75rem; margin-bottom: 0.75rem; }
+.contextInfoCard { min-width: 0; background: #ffffff; border: 1px solid #e1e7e4; border-radius: 0.75rem; padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.contextLabel { font-size: 0.65rem; font-weight: 750; color: #687573; text-transform: uppercase; letter-spacing: 0.03em; }
+.contextValue { font-size: 0.85rem; font-weight: 800; color: #1f302d; display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; min-width: 0; word-break: break-word; }
+.contextSub { font-size: 0.68rem; color: #2b7d72; font-weight: 600; min-width: 0; word-break: break-word; }
+.rolePill { display: inline-flex; align-items: center; padding: 0.15rem 0.45rem; border-radius: 0.35rem; font-size: 0.62rem; font-weight: 800; background: #edf8f4; color: #185c55; border: 1px solid #c2e5d9; }
+
+/* AI SUGGESTION BUTTON */
+.aiSuggestBtn { display: inline-flex; min-height: 2.75rem; align-items: center; gap: 0.35rem; padding: 0.4rem 0.75rem; border-radius: 0.55rem; background: #edf8f4; border: 1px solid #2b7d72; color: #185c55; font-family: inherit; font-size: 0.7rem; font-weight: 750; cursor: pointer; transition: all 0.15s ease; }
+.aiSuggestBtn:hover { background: #dcf2eb; }
+.aiSuggestNotice { display: flex; align-items: center; gap: 0.4rem; background: #edf8f4; border: 1px solid #b7e4d5; border-radius: 0.55rem; padding: 0.45rem 0.7rem; font-size: 0.68rem; color: #185c55; margin-top: 0.4rem; }
+
+.cleanDraftButton:focus-visible,
+.profileChangeBtn:focus-visible,
+.requirementPill:focus-visible,
+.segmentedBtn:focus-visible,
+.aiSuggestBtn:focus-visible,
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.step:focus-visible {
+  outline: 3px solid rgb(43 174 154 / 32%);
+  outline-offset: 2px;
+}
+
+@media (min-width: 700px) {
+  .fieldGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fieldWide { grid-column: 1 / -1; }
+  .contextGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .checklistGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reviewGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 980px) { .formLayout { grid-template-columns: minmax(0, 1fr) 18rem; } .summaryCard { position: sticky; top: 6.2rem; } }
+@media (max-width: 699px) {
+  .stepper { grid-template-columns: repeat(5, minmax(0, 1fr)); overflow: visible; }
+  .stepper li { min-width: 0; }
+  .step { min-height: 3.65rem; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; justify-items: center; gap: 0.18rem; padding: 0.35rem 0.12rem; text-align: center; }
+  .step > span { width: 1.8rem; height: 1.8rem; grid-row: auto; }
+  .step small { display: none; }
+  .step strong { width: 100%; overflow: hidden; font-size: 0.48rem; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (max-width: 620px) { .hero { align-items: flex-start; flex-direction: column; } .draftBadge { width: 100%; justify-content: center; } .actions { flex-direction: column-reverse; } .primaryButton, .secondaryButton { width: 100%; } .subSectionCard { padding: 0.85rem 0.75rem; } .subSectionHeader { flex-direction: column; align-items: flex-start; } }
+@media (prefers-reduced-motion: reduce) { .step, .primaryButton { transition: none; } .spinner { animation: none; } }

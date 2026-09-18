@@ -1,0 +1,367 @@
+.page {
+  display: grid;
+  width: 100%;
+  max-width: 100rem;
+  margin: 0 auto;
+  gap: 1.25rem;
+}
+
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  border-bottom: 1px solid #dce4e1;
+  padding-bottom: 1.25rem;
+}
+
+.eyebrow {
+  color: #2b7d72;
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 0.25rem 0 0.35rem;
+  color: #123c3a;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  letter-spacing: -0.04em;
+}
+
+.hero p {
+  max-width: 52rem;
+  margin: 0;
+  color: #52605e;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.statsBar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.75rem;
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid #dbe2df;
+  border-radius: 0.85rem;
+  padding: 0.85rem 1rem;
+  background: #ffffff;
+  box-shadow: 0 0.5rem 1.8rem rgba(18, 60, 58, 0.03);
+}
+
+.statIcon {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.75rem;
+  background: #edf8f4;
+  color: #185c55;
+}
+
+.statText {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.statText small {
+  color: #7a8784;
+  font-size: 0.58rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statText strong {
+  color: #123c3a;
+  font-size: 0.95rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  border-bottom: 1px solid #e5eae8;
+  padding-bottom: 0.5rem;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  color: #123c3a;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.sectionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  background: #ddf3ea;
+  color: #185c55;
+  font-size: 0.6rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+  gap: 1.1rem;
+}
+
+.carrierCard {
+  position: relative;
+  display: grid;
+  gap: 0.9rem;
+  border: 1px solid #dbe2df;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: #ffffff;
+  box-shadow: 0 0.8rem 2.2rem rgba(18, 60, 58, 0.04);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.carrierCard:hover {
+  transform: translateY(-2px);
+  border-color: #2bae9a;
+  box-shadow: 0 1.2rem 2.8rem rgba(18, 60, 58, 0.08);
+}
+
+.carrierCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.carrierIdentity {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.carrierIconBox {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.85rem;
+  background: #123c3a;
+  color: #ffffff;
+}
+
+.carrierTitles {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.carrierTitles h3 {
+  margin: 0;
+  color: #1f2928;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.carrierTitles small {
+  color: #7a8784;
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-size: 0.65rem;
+  font-weight: 750;
+}
+
+.scoreBadge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  border-radius: 0.65rem;
+  padding: 0.35rem 0.65rem;
+  background: #edf8f4;
+  color: #185c55;
+  text-align: right;
+}
+
+.scoreBadge strong {
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.scoreBadge small {
+  font-size: 0.52rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.carrierDetails {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  border-top: 1px solid #f0f3f2;
+  border-bottom: 1px solid #f0f3f2;
+  padding: 0.75rem 0;
+}
+
+.detailItem {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.detailItem span {
+  color: #7a8784;
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.detailItem strong {
+  color: #34413f;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.toolsSection {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.toolsHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #52605e;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.toolsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.toolPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid #dce4e1;
+  border-radius: 0.55rem;
+  padding: 0.2rem 0.55rem;
+  background: #f4f7f5;
+  color: #185c55;
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-size: 0.62rem;
+  font-weight: 750;
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.35rem;
+}
+
+.primaryBtn {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 0;
+  border-radius: 0.7rem;
+  padding: 0 1rem;
+  background: #185c55;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+
+.primaryBtn:hover {
+  background: #123c3a;
+}
+
+.statusLive {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #185c55;
+  font-size: 0.64rem;
+  font-weight: 850;
+}
+
+.dotLive {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #2bae9a;
+  box-shadow: 0 0 0 3px rgba(43, 174, 154, 0.25);
+}
+
+.roadmapGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 0.9rem;
+}
+
+.roadmapCard {
+  display: grid;
+  gap: 0.5rem;
+  border: 1px dashed #d0dad7;
+  border-radius: 0.85rem;
+  padding: 1rem;
+  background: #fafcfb;
+}
+
+.roadmapCard h4 {
+  margin: 0;
+  color: #52605e;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.roadmapCard p {
+  margin: 0;
+  color: #7a8784;
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.roadmapTag {
+  display: inline-flex;
+  width: max-content;
+  border-radius: 0.45rem;
+  padding: 0.15rem 0.5rem;
+  background: #f0f3f2;
+  color: #7a8784;
+  font-size: 0.55rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+@media (max-width: 48rem) {
+  .hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

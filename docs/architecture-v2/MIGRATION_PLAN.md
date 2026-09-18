@@ -2,7 +2,7 @@
 
 ## Current Architecture Summary
 
-CargoMesh is a Next.js 15 application. Application code lives under `frontend/`; API routes use Next.js Route Handlers and Hono, with business logic in `src/features/`. Hono bootstrap/draft creation and MCP at `/mcp` exist. MCP exposes get_freight_options and create_freight_request in an opt-in authenticated local preview. Creation requires permanent M2 migration application and an authenticated MCP smoke test; local SQL checks passed. See [MCP_TOOL_CONTRACTS.md](./MCP_TOOL_CONTRACTS.md) for service mapping, gaps and milestones.
+CargoMesh is a Next.js 15 application. Application code lives under `cargomesh/`; API routes use Next.js Route Handlers and Hono, with business logic in `src/features/`. Hono bootstrap/draft creation and MCP at `/mcp` exist. MCP exposes get_freight_options and create_freight_request in an opt-in authenticated local preview. Creation requires permanent M2 migration application and an authenticated MCP smoke test; local SQL checks passed. See [MCP_TOOL_CONTRACTS.md](./MCP_TOOL_CONTRACTS.md) for service mapping, gaps and milestones.
 
 **Legacy API route inventory (20 paths; Hono catch-all additional):**
 
@@ -66,12 +66,12 @@ Migration priority is the complete Golden Flow. Non-Golden-Flow routes are lower
 ### Slice 0: Hono Bootstrap (no business logic)
 **Scope:** Introduce Hono, mount in Next.js, health route, auth middleware, response envelope, error handler.  
 **Files created:**
-- `frontend/src/server/hono/app.ts`
-- `frontend/src/server/hono/middleware/auth.ts`
-- `frontend/src/server/hono/middleware/error-handler.ts`
-- `frontend/src/server/hono/routes/health.ts`
-- `frontend/src/app/api/v2/[[...route]]/route.ts`
-- `frontend/src/shared/schemas/api-envelope.ts`
+- `cargomesh/src/server/hono/app.ts`
+- `cargomesh/src/server/hono/middleware/auth.ts`
+- `cargomesh/src/server/hono/middleware/error-handler.ts`
+- `cargomesh/src/server/hono/routes/health.ts`
+- `cargomesh/src/app/api/v2/[[...route]]/route.ts`
+- `cargomesh/src/shared/schemas/api-envelope.ts`
 
 **Tests:** `GET /api/v2/health` returns `{ ok: true }`. Auth middleware returns 401 on unauthenticated request.  
 **Done when:** TypeScript passes, build passes, health route works.
@@ -159,7 +159,7 @@ If the Hono bootstrap causes a build failure, revert the single commit that adde
 | Auth middleware diverges from `requireAuthenticatedMember` | Low | High | Hono middleware calls the same function — no divergence possible |
 | Missing shared submission, remote WebMCP dispatch and auth context | High | High | Resolve the explicit gates in MCP_TOOL_CONTRACTS.md |
 | Supabase client import conflicts in Hono context | Low | Medium | Server-only imports tested explicitly in Slice 0 |
-| pnpm-workspace collision with new packages | Low | Low | Not adding a monorepo — Hono stays inside `frontend/` |
+| pnpm-workspace collision with new packages | Low | Low | Not adding a monorepo — Hono stays inside `cargomesh/` |
 
 ## Definition of Done — Per Vertical
 

@@ -173,7 +173,7 @@ The five discovered tools were `check_service_coverage`, `check_capacity`, `quot
 
 ## Testing instructions
 
-From `frontend`:
+From `cargomesh`:
 
 ```powershell
 pnpm install --frozen-lockfile

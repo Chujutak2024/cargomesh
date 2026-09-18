@@ -2,7 +2,7 @@
 
 **SHA verificado:** `76792c8` (`fix(data): support safe internal provider routes`).
 
-Ejecutar desde `frontend/` después de levantar el frontend local y Supabase local.
+Ejecutar desde `cargomesh/` después de levantar el frontend local y Supabase local.
 
 ```powershell
 pnpm test:discovery

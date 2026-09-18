@@ -11,7 +11,7 @@
 
 ### 1. TypeScript Unit Tests (existing, run with `tsx --test`)
 
-**Location:** `frontend/src/features/**/*.test.ts`  
+**Location:** `cargomesh/src/features/**/*.test.ts`  
 **Runner:** `tsx --test` (Node.js native test runner)  
 **Command:** `pnpm test:release` (runs all suites)  
 
@@ -59,7 +59,7 @@
 
 ### 3. Hono Route Tests (NEW — to be added per vertical)
 
-**Location:** `frontend/src/server/hono/routes/**/*.test.ts`  
+**Location:** `cargomesh/src/server/hono/routes/**/*.test.ts`  
 **Runner:** `tsx --test`  
 **Pattern:** Each Hono route file has a corresponding `.test.ts` that:
 - Calls the route handler with a mocked Hono context
@@ -85,7 +85,7 @@ describe("POST /api/v2/freight/requests", () => {
 
 ### 4. MCP Tool Tests (NEW — to be added per tool)
 
-**Location:** `frontend/src/server/mcp/tools/**/*.test.ts`  
+**Location:** `cargomesh/src/server/mcp/tools/**/*.test.ts`  
 **Runner:** `tsx --test`  
 **Pattern:** Each MCP tool has a test that:
 - Calls the tool handler with a valid input (mocked service call)
@@ -117,19 +117,19 @@ The following must ALL pass before any merge to `main`:
 
 ```bash
 # Gate 1: TypeScript — zero errors
-cd frontend && pnpm typecheck
+cd cargomesh && pnpm typecheck
 
 # Gate 2: TypeScript unit tests — all suites pass
-cd frontend && pnpm test:release
+cd cargomesh && pnpm test:release
 
 # Gate 3: Production build — clean with no errors
-cd frontend && pnpm build
+cd cargomesh && pnpm build
 
 # Gate 4: Database tests — 147/147 pass (requires local Supabase running)
 npx supabase test db
 
 # Gate 5: Release preflight (env checks, bundle scan)
-cd frontend && pnpm release:preflight
+cd cargomesh && pnpm release:preflight
 ```
 
 **Historical baseline reported before V2 (not rerun by this documentation change):**

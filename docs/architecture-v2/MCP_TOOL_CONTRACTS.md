@@ -2,7 +2,7 @@
 
 Status: M1 local bootstrap and M2 draft-creation code implemented on branch `codex/c-mcp-contracts`. M2 requires the new SQL migration; authenticated MCP-to-database verification is pending. Other tools/milestones remain proposed. Initial source analysis: 2026-09-18 against application commit `d26c5e4`.
 
-The [local guide](../../frontend/src/server/mcp/README.md) covers the implemented endpoint and registered tools, get_freight_options and create_freight_request. No OAuth, Alexa+, Bedrock, AgentCore or Strands is implemented. Existing exports and proposed adapters are distinguished below. Historical test results are not a fresh verification of this checkout.
+The [local guide](../../cargomesh/src/server/mcp/README.md) covers the implemented endpoint and registered tools, get_freight_options and create_freight_request. No OAuth, Alexa+, Bedrock, AgentCore or Strands is implemented. Existing exports and proposed adapters are distinguished below. Historical test results are not a fresh verification of this checkout.
 
 ## Scope
 
@@ -14,20 +14,20 @@ BALANCED retains six dimensions: cost 25%, reliability 25%, transit 20%, availab
 
 | Capability | Existing source/export | Actual input/output and storage |
 |---|---|---|
-| Create | [draft-creation-server.ts](../../frontend/src/server/services/freight-requests/draft-creation-server.ts), `createFreightRequestDraftServer` | `{ fields: ManualFreightRequestIntakeFields }` -> `FreightRequestIntakeViewModel`; session INSERT freight_requests, category and intake reads |
-| Creation policy | [draft-creation-policy.ts](../../frontend/src/server/services/freight-requests/draft-creation-policy.ts), `createFreightRequestDraftWithDependencies` | Injectable dependencies; server-derived identity; defaults and normalization; DRAFT/version 1 |
-| V2 adapter | [freight-request-adapter.ts](../../frontend/src/server/hono/adapters/freight-request-adapter.ts), `adaptV2ToLegacyService` | Flat input -> legacy fields; direct volume omitted, per-unit weight rounded |
-| Intake/intent | [intake-server.ts](../../frontend/src/server/services/freight-requests/intake-server.ts), `getFreightRequestIntake`; [execution-intent-server.ts](../../frontend/src/server/services/freight-requests/execution-intent-server.ts), `getFreightRequestExecutionIntent` | Read-only. Intent does not submit a draft |
-| Edit | [manual-intake-server.ts](../../frontend/src/server/services/freight-requests/manual-intake-server.ts), `persistManualFreightRequestIntake` | Request UUID plus draftVersion/fields; optimistic editing in DRAFT/PENDING, not submission |
-| Discovery | [get-candidate-provider-pages.ts](../../frontend/src/server/services/discovery/get-candidate-provider-pages.ts), `get_candidate_provider_pages` | Request ID/code -> corridor/cargo/candidates; reads requests, carriers, services/category compatibility |
-| Start | [start-run.ts](../../frontend/src/server/services/orchestration/start-run.ts), `start_orchestration_run` | `{ freightRequestId, idempotencyKey }` -> `StartOrchestrationRunResult`; same-name RPC |
-| Browser collection | [orchestration-runner.ts](../../frontend/src/features/webmcp-runner/orchestration-runner.ts), `runInt02aOrchestration`; [provider-runner.ts](../../frontend/src/features/webmcp-runner/provider-runner.ts), `runProviderCollection` | Requires navigation/runtime adapters and inputs; orchestration coordinator uses legacy HTTP APIs |
-| Result persistence | [record-provider-result.ts](../../frontend/src/server/services/result-bridge/record-provider-result.ts), `record_provider_result` | Call record plus trusted origin -> persistence result; RPC record_provider_result, events/offers and canonical payload dedupe |
-| Evaluate | [evaluate-offers.ts](../../frontend/src/server/services/decision-engine/evaluate-offers.ts), `evaluate_offers` | Run UUID -> BalancedDecisionEvaluation plus nullable decisionId; evaluateBalancedOffers and RPC persist_balanced_decision |
-| Read options | [view-model-server.ts](../../frontend/src/server/services/orchestration/view-model-server.ts), `get_orchestration_view_model` | Run UUID -> OrchestrationViewModel; SELECT runs/requests/events/offers/decisions |
-| Booking/recovery | [booking-bridge.ts](../../frontend/src/server/services/booking/booking-bridge.ts) | prepare_booking, record_provider_booking, record_provider_booking_status, get_booking_view_model, prepare_booking_recovery; separate steps |
-| Browser booking | [booking-client.ts](../../frontend/src/features/freight-ui/booking-client.ts) | startAssistedBooking, startAssistedRecovery, refreshProviderBookingStatus; browser coordination, not a ready Node service |
-| Auth | [auth.ts](../../frontend/src/server/auth/member.ts), `requireAuthenticatedMember`; [server.ts](../../frontend/src/server/db/supabase/server.ts) | Next.js cookie session, auth.getUser, ACTIVE organization membership; optional org/role restriction |
+| Create | [draft-creation-server.ts](../../cargomesh/src/server/services/freight-requests/draft-creation-server.ts), `createFreightRequestDraftServer` | `{ fields: ManualFreightRequestIntakeFields }` -> `FreightRequestIntakeViewModel`; session INSERT freight_requests, category and intake reads |
+| Creation policy | [draft-creation-policy.ts](../../cargomesh/src/server/services/freight-requests/draft-creation-policy.ts), `createFreightRequestDraftWithDependencies` | Injectable dependencies; server-derived identity; defaults and normalization; DRAFT/version 1 |
+| V2 adapter | [freight-request-adapter.ts](../../cargomesh/src/server/hono/adapters/freight-request-adapter.ts), `adaptV2ToLegacyService` | Flat input -> legacy fields; direct volume omitted, per-unit weight rounded |
+| Intake/intent | [intake-server.ts](../../cargomesh/src/server/services/freight-requests/intake-server.ts), `getFreightRequestIntake`; [execution-intent-server.ts](../../cargomesh/src/server/services/freight-requests/execution-intent-server.ts), `getFreightRequestExecutionIntent` | Read-only. Intent does not submit a draft |
+| Edit | [manual-intake-server.ts](../../cargomesh/src/server/services/freight-requests/manual-intake-server.ts), `persistManualFreightRequestIntake` | Request UUID plus draftVersion/fields; optimistic editing in DRAFT/PENDING, not submission |
+| Discovery | [get-candidate-provider-pages.ts](../../cargomesh/src/server/services/discovery/get-candidate-provider-pages.ts), `get_candidate_provider_pages` | Request ID/code -> corridor/cargo/candidates; reads requests, carriers, services/category compatibility |
+| Start | [start-run.ts](../../cargomesh/src/server/services/orchestration/start-run.ts), `start_orchestration_run` | `{ freightRequestId, idempotencyKey }` -> `StartOrchestrationRunResult`; same-name RPC |
+| Browser collection | [orchestration-runner.ts](../../cargomesh/src/features/webmcp-runner/orchestration-runner.ts), `runInt02aOrchestration`; [provider-runner.ts](../../cargomesh/src/features/webmcp-runner/provider-runner.ts), `runProviderCollection` | Requires navigation/runtime adapters and inputs; orchestration coordinator uses legacy HTTP APIs |
+| Result persistence | [record-provider-result.ts](../../cargomesh/src/server/services/result-bridge/record-provider-result.ts), `record_provider_result` | Call record plus trusted origin -> persistence result; RPC record_provider_result, events/offers and canonical payload dedupe |
+| Evaluate | [evaluate-offers.ts](../../cargomesh/src/server/services/decision-engine/evaluate-offers.ts), `evaluate_offers` | Run UUID -> BalancedDecisionEvaluation plus nullable decisionId; evaluateBalancedOffers and RPC persist_balanced_decision |
+| Read options | [view-model-server.ts](../../cargomesh/src/server/services/orchestration/view-model-server.ts), `get_orchestration_view_model` | Run UUID -> OrchestrationViewModel; SELECT runs/requests/events/offers/decisions |
+| Booking/recovery | [booking-bridge.ts](../../cargomesh/src/server/services/booking/booking-bridge.ts) | prepare_booking, record_provider_booking, record_provider_booking_status, get_booking_view_model, prepare_booking_recovery; separate steps |
+| Browser booking | [booking-client.ts](../../cargomesh/src/features/freight-ui/booking-client.ts) | startAssistedBooking, startAssistedRecovery, refreshProviderBookingStatus; browser coordination, not a ready Node service |
+| Auth | [auth.ts](../../cargomesh/src/server/auth/member.ts), `requireAuthenticatedMember`; [server.ts](../../cargomesh/src/server/db/supabase/server.ts) | Next.js cookie session, auth.getUser, ACTIVE organization membership; optional org/role restriction |
 
 `executeIntentServer`, `getOrchestrationRunViewModel` and `getBookingStatus` from earlier docs are not the verified exports. Legacy GET execution-intent, PATCH manual-intake, booking read and run read routes exist. Hono currently mounts health and draft creation. MCP M1 adds a shared orchestration read schema alongside the existing creation schema.
 
@@ -56,7 +56,7 @@ All tools authenticate a principal and authorize the resource. Current services 
 
 **Purpose / LLM description:** Create a ROAD/FTL/BALANCED draft from explicit route and cargo. Does not submit, quote or book. Retry an ambiguous response with the same idempotencyKey and input.
 
-**Underlying service:** createFreightRequestDraftServer accepts `{ fields: ManualFreightRequestIntakeFields }`, including partial/empty fields. Full grammar: [manual-intake-contracts.ts](../../frontend/src/features/freight-requests/manual-intake-contracts.ts). Output is [FreightRequestIntakeViewModel](../../frontend/src/features/freight-requests/intake-contracts.ts), including organization/operator, normalized cargo/route/execution.
+**Underlying service:** createFreightRequestDraftServer accepts `{ fields: ManualFreightRequestIntakeFields }`, including partial/empty fields. Full grammar: [manual-intake-contracts.ts](../../cargomesh/src/features/freight-requests/manual-intake-contracts.ts). Output is [FreightRequestIntakeViewModel](../../cargomesh/src/features/freight-requests/intake-contracts.ts), including organization/operator, normalized cargo/route/execution.
 
 **Implemented service:** `createIdempotentFreightRequestDraftServer` wraps the same creation policy/normalizer, session-based INSERT and intake reader. Hono's existing creation route remains unchanged; it can adopt this shared service when its contract accepts a key.
 
@@ -119,7 +119,7 @@ Receipt retention follows the request row: administrative deletion removes the k
 
 **Input schema:** `{ freightRequestId: UUID, idempotencyKey: NonEmpty }`, key length 1..200; existing start-service shape.
 
-**Output schema:** existing [StartOrchestrationRunResult](../../frontend/src/features/orchestration/contracts.ts):
+**Output schema:** existing [StartOrchestrationRunResult](../../cargomesh/src/features/orchestration/contracts.ts):
 
 ```typescript
 type FindOutput = {
@@ -151,7 +151,7 @@ type FindOutput = {
 
 **Input schema:** `{ runId: UUID }` -> get_orchestration_view_model(runId).
 
-**Output schema:** exact [OrchestrationViewModel](../../frontend/src/features/orchestration/contracts.ts). Base: schemaVersion "1.0", runId, freightRequestId, requestCode, startedAt, nullable completedAt, candidateCount, completedCandidateCount, attempts/warnings. Branches:
+**Output schema:** exact [OrchestrationViewModel](../../cargomesh/src/features/orchestration/contracts.ts). Base: schemaVersion "1.0", runId, freightRequestId, requestCode, startedAt, nullable completedAt, candidateCount, completedCandidateCount, attempts/warnings. Branches:
 
 | status | Payload |
 |---|---|
@@ -160,7 +160,7 @@ type FindOutput = {
 | NO_MATCH | reason, FreightRanking, offers empty |
 | success | FreightRanking, RankedOfferView[] |
 
-Nested types in that file and [decision contracts](../../frontend/src/features/decision-engine/contracts.ts) are normative schema references, not arbitrary JSON. RankedOfferView includes identity, price/currency, transit, rank/score, eligibility/reasons/recommendation and optional capacity/estimates/reliability/six subscores. Do not invent per-offer confidence, recovery availability or Bedrock explanation. Implement validators for every referenced nested type.
+Nested types in that file and [decision contracts](../../cargomesh/src/features/decision-engine/contracts.ts) are normative schema references, not arbitrary JSON. RankedOfferView includes identity, price/currency, transit, rank/score, eligibility/reasons/recommendation and optional capacity/estimates/reliability/six subscores. Do not invent per-offer confidence, recovery availability or Bedrock explanation. Implement validators for every referenced nested type.
 
 **Authentication / authorization:** session/RLS and organization check. **Human confirmation:** none. **Effects / transitions:** none; SELECT runs/requests/events/offers/decisions. No RPC. **Idempotency:** read-only, values may change.
 
@@ -182,7 +182,7 @@ Current ASSISTED permits active membership; any stricter enterprise role policy 
 
 **Input schema (proposed):** `{ freightRequestId: UUID, offerId: UUID, bookingIdempotencyKey: NonEmpty, confirmed_by_human: true, confirmationReference: NonEmpty }`.
 
-**Underlying service contracts:** prepare_booking accepts `{ freightRequestId, offerId, selectionMode, bookingIdempotencyKey }` and returns PreparedBookingAuthorization: authorization/decision/request/offer/carrier/service/provider-offer references, context, mode, key, expiresAt, deduplicated. It does not return bookingId. record_provider_booking takes RecordProviderBookingInput plus trusted origin, returns `{ bookingId, status: "INSERTED" | "DEDUPLICATED", deduplicated }`. Full types: [booking contracts](../../frontend/src/features/booking/contracts.ts).
+**Underlying service contracts:** prepare_booking accepts `{ freightRequestId, offerId, selectionMode, bookingIdempotencyKey }` and returns PreparedBookingAuthorization: authorization/decision/request/offer/carrier/service/provider-offer references, context, mode, key, expiresAt, deduplicated. It does not return bookingId. record_provider_booking takes RecordProviderBookingInput plus trusted origin, returns `{ bookingId, status: "INSERTED" | "DEDUPLICATED", deduplicated }`. Full types: [booking contracts](../../cargomesh/src/features/booking/contracts.ts).
 
 **Success output schema (proposed):** `{ bookingId: UUID, freightRequestId: UUID, offerId: UUID, providerBookingStatus: ProviderBookingStatus, deduplicated: boolean }`. Initial successful record is PENDING_PROVIDER_CONFIRMATION. A later replay reads actual current provider status; never downgrade confirmed to pending. ProviderBookingStatus is the existing pending/CONFIRMED/REJECTED/EXPIRED/IN_TRANSIT/DELIVERED/CANCELLED enum. Success requires a persisted booking, not just authorization.
 
@@ -202,7 +202,7 @@ Current ASSISTED permits active membership; any stricter enterprise role policy 
 
 **Input schema:** `{ bookingId: UUID }` -> get_booking_view_model.
 
-**Output schema:** [BookingViewModel](../../frontend/src/features/booking/contracts.ts): schemaVersion, bookingId, freightRequestId, offerId, carrierId, providerReference, status, providerBookingStatus, providerResponseDeadline, paymentStatus, nullable paymentUrl, selectionMode, canRecover, recoveryOfferIds, events. Event: providerEventId, eventType, nullable providerBookingStatus, occurredAt, nullable location/description. No top-level carrier name or ETA is returned by this service.
+**Output schema:** [BookingViewModel](../../cargomesh/src/features/booking/contracts.ts): schemaVersion, bookingId, freightRequestId, offerId, carrierId, providerReference, status, providerBookingStatus, providerResponseDeadline, paymentStatus, nullable paymentUrl, selectionMode, canRecover, recoveryOfferIds, events. Event: providerEventId, eventType, nullable providerBookingStatus, occurredAt, nullable location/description. No top-level carrier name or ETA is returned by this service.
 
 Current typed status: PENDING_PROVIDER_CONFIRMATION, CONFIRMED, REJECTED, EXPIRED, IN_TRANSIT, COMPLETED, CANCELLED. SQL recovery also writes REBOOKED, absent from this type. Reconcile DB/type/validator before exposing recovered bookings; do not cast away or silently remap it. This is an unresolved release gate.
 
@@ -253,7 +253,7 @@ Spike deliverable: decision on identity mapping, org selection, RLS strategy, pe
 
 ## Incremental milestones
 
-Paths below are proposed relative to frontend/src unless specified. Focused tests plus relevant existing regression suites are required. M1-M6 are restricted local development with authenticated access or explicitly labeled test doubles; real auth M7 precedes remote M8. Browser evidence is required for M3/M5/M6, not just mocks.
+Paths below are proposed relative to cargomesh/src unless specified. Focused tests plus relevant existing regression suites are required. M1-M6 are restricted local development with authenticated access or explicitly labeled test doubles; real auth M7 precedes remote M8. Browser evidence is required for M3/M5/M6, not just mocks.
 
 | Milestone | Expected files | Dependencies | Tests | Risk / Definition of Done |
 |---|---|---|---|---|

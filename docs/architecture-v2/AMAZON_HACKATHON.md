@@ -159,20 +159,20 @@ Alexa+ calls `recover_booking` → CONFIRMED with Inca.
 To clearly separate the pre-existing CargoMesh from the hackathon additions, the following structure is used:
 
 **Pre-existing (fingerprinted by the baseline verification report):**
-- All of `frontend/src/features/`
-- All of `frontend/src/lib/supabase/`
-- All of `frontend/src/app/(cargomesh)/`
-- All of `frontend/src/app/providers/`
-- All of `frontend/src/app/api/` (existing routes)
+- All of `cargomesh/src/features/`
+- All of `cargomesh/src/lib/supabase/`
+- All of `cargomesh/src/app/(cargomesh)/`
+- All of `cargomesh/src/app/providers/`
+- All of `cargomesh/src/app/api/` (existing routes)
 - All of `supabase/migrations/`
 - All of `supabase/tests/`
 
 **New for the hackathon (created on `feature/architecture` branch and subsequent branches):**
 - `docs/architecture-v2/` (this directory)
-- `frontend/src/server/hono/` (Hono API layer)
-- `frontend/src/app/api/v2/` (Hono catch-all)
-- `frontend/src/server/mcp/` (MCP server)
-- `frontend/src/lib/bedrock.ts` (Bedrock integration)
-- `frontend/src/shared/` (shared schemas)
+- `cargomesh/src/server/hono/` (Hono API layer)
+- `cargomesh/src/app/api/v2/` (Hono catch-all)
+- `cargomesh/src/server/mcp/` (MCP server)
+- `cargomesh/src/lib/bedrock.ts` (Bedrock integration)
+- `cargomesh/src/shared/` (shared schemas)
 - `packages/cargomesh-mcp/` (open-source package)
 - `supabase/scenarios/amazon-hackathon/` (demo seed)

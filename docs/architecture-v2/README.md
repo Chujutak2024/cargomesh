@@ -1,7 +1,7 @@
 # CargoMesh Architecture V2 — Entry Point
 
 > **Documentation branch:** `codex/c-mcp-contracts`
-> **Status:** Hono bootstrap/draft creation and MCP local read/creation tools exist. M2 needs permanent migration application and an authenticated MCP smoke test; local SQL checks passed. The other MCP tools, remote auth, Alexa+ and Bedrock remain planned. See the [local MCP guide](../../frontend/src/server/mcp/README.md).
+> **Status:** Hono bootstrap/draft creation and MCP local read/creation tools exist. M2 needs permanent migration application and an authenticated MCP smoke test; local SQL checks passed. The other MCP tools, remote auth, Alexa+ and Bedrock remain planned. See the [local MCP guide](../../cargomesh/src/server/mcp/README.md).
 
 ## What This Is
 
