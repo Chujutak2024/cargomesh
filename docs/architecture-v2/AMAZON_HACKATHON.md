@@ -99,22 +99,52 @@ Kiro Crew is the primary AWS Builder evidence. The team is using Kiro Crew activ
 - Alexa+ skill registered and connected to the MCP endpoint
 - Demo video: user → Alexa+ → CargoMesh MCP → carrier WebMCP → recommendation → booking → confirmation
 
-### AWS Builder Mini Challenge
-- Kiro Crew usage throughout development (session transcripts)
-- Amazon Bedrock Haiku integration for explanation text (optional but recommended)
+### AWS Builder Mini Challenge ($5,000 cash + $5,000 AWS credits)
+- **Regla de Oro Oficial de Amazon:** *"Building with Kiro Crew qualifies on its own, you don't also need to call a separate AWS runtime service."*
+- **Estrategia CargoMesh (Doble Impacto):**
+  1. **Kiro Crew:** Utilizado activamente en el diseño, prompts de arquitectura, descomposición de tareas y pair programming (transcripciones exportables).
+  2. **Amazon Bedrock Claude 3 Haiku:** En `lib/bedrock.ts` para locución concisa de la recomendación BALANCED.
 
 **Evidence required:**
-- Kiro Crew dashboard session exports showing the development workflow
-- Code showing `lib/bedrock.ts` Bedrock integration
-- Bedrock call traces (AWS CloudWatch or session logs)
+- Kiro Crew dashboard session exports showing the development workflow.
+- Code showing `lib/bedrock.ts` Bedrock integration.
+- Bedrock call traces (AWS CloudWatch or session logs).
 
-### Open Source Mini Challenge
-- `cargomesh-mcp` npm package: TypeScript MCP tool schemas + `confirmed_by_human` authorization gate pattern
+### Open Source Mini Challenge ($5,000 cash + $5,000 AWS credits)
+- `cargomesh-mcp` npm package: TypeScript MCP tool schemas + `confirmed_by_human` authorization gate pattern.
+- Licencia Open Source (MIT).
 
 **Evidence required:**
-- Published npm package (`npm publish` receipt)
-- `packages/cargomesh-mcp/README.md` with usage example
-- The package must contain working, usable code — not documentation only
+- Published npm package (`npm publish` receipt / GitHub package URL).
+- `packages/cargomesh-mcp/README.md` with usage example.
+- The package must contain working, usable code — not documentation only.
+
+### 🌟 Bonus Points: Friction Logs (+10% Judging Bonus)
+Amazon otorga hasta un **10% adicional de bonificación** sobre el puntaje total si se entregan Friction Logs estructurados.
+Cada entrada debe incluir obligatoriamente los 6 campos requeridos por Devpost:
+1. **Task Attempted:** Qué se intentó hacer.
+2. **Steps Taken:** Pasos seguidos paso a paso.
+3. **Expected vs. Actual:** Qué debía ocurrir vs. qué error o comportamiento ocurrió.
+4. **Severity Rating:** Clasificación de impacto (Blocker / High / Medium / Low).
+5. **Workaround Used:** Cómo se sorteó el problema temporalmente.
+6. **Actionable Suggestion:** Recomendación concreta para el equipo de desarrollo de Amazon/MCP/Kiro.
+
+### 📝 Product Feedback (Obligatorio en Devpost)
+Devpost exige feedback de cada herramienta, API o SDK utilizado:
+- **Herramientas evaluadas:** `@modelcontextprotocol/sdk: 1.30.0`, Kiro Crew, Amazon Bedrock Claude 3 Haiku, Hono v4.
+- **Campos a responder:** Para qué se usó, qué funcionó bien, qué necesita mejoras, cómo se sintió el onboarding, y si volverías a construir con ella.
+
+### 🔒 Repositorio Privado y Revisores de Amazon
+Si el repositorio se mantiene o cambia a privado para el concurso, se deben añadir como colaboradores en GitHub a:
+- `testing@devpost.com`
+- Developer Relations de Amazon:
+  - `chris-trag` (Chris Traganos)
+  - `knmeiss` (Kourtney Meiss)
+  - `giolaq` (Giovanni Laquidara)
+  - `anishamalde` (Anisha Malde)
+  - `mosesroth` (Moses Roth)
+  - `emersonsklar` (Emerson Sklar)
+> ⚠️ **Invariante Crítico:** Las invitaciones de GitHub caducan a los 7 días. Deben enviarse el **Lunes 19 de Octubre al momento de postular**, no con semanas de anticipación.
 
 ## Target Demo Golden Flow (≤3 minutes; not yet an implemented Alexa flow)
 
