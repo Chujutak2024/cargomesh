@@ -89,9 +89,11 @@ Result: PASS
 
 The verified total is 160/160: 147 historical assertions plus 13 idempotency assertions. The HAC-7 title/description and the “1. Cimientos V2” milestone still need their 147/147 wording corrected by the project lead.
 
-### 4.3 Release preflight blocker
+### 4.3 Release preflight ownership and pending hosted evidence
 
-The final preflight is designed for a hosted HTTPS release and failed because the operator shell does not contain the project's hosted deployment configuration:
+The final preflight is designed for a hosted HTTPS release and reads production-owned configuration, including server-only credentials. It must therefore be executed by Cristhian Chujutalli in his already configured deployment environment. BE-3 will not request or receive those secrets; only the dated, sanitized command output will be incorporated here.
+
+The following output is a **diagnostic-only** inventory produced in the BE-3 environment with `pnpm release:preflight -- --report-only`. It is not a passing result and is not used inside `release:verify`:
 
 ```text
 FAIL  CARGOMESH_RELEASE_URL: missing or placeholder
@@ -110,7 +112,19 @@ Release preflight: 6/16 checks passed.
 
 Checks that did pass include Node.js, wildcard rejection, license presence, production bundle presence, client-bundle secret scanning, and Git-history hosted-secret scanning.
 
-No credentials were fabricated, copied into the repository, or printed into this report. A maintainer must provide the real hosted values through an approved secret channel before `release:verify` can be certified 100% green.
+No credentials were fabricated, copied into the repository, or printed into this report.
+
+#### Authoritative hosted preflight — pending
+
+| Evidence field | Value |
+| --- | --- |
+| Operator | Cristhian Chujutalli |
+| Execution environment | Operator-owned shell with the existing Supabase and Vercel production configuration |
+| Command | `pnpm release:preflight` (without `--report-only`) |
+| Execution date | **Pending** |
+| Raw sanitized result | **Pending** |
+
+This section will be completed only from the output supplied by Cristhian, attributed to him and dated. Secret values must remain redacted. Until that evidence is present and passing, the hosted release preflight is pending and the full release gate is not certified.
 
 ## 5. Reproduction commands
 
@@ -138,7 +152,7 @@ The earlier statement that the manifest lived under `frontend/` was removed: it 
 
 ## 7. Explicitly excluded
 
-- No GitHub Actions workflow without Tech Lead approval.
+- No GitHub Actions workflow is committed without Tech Lead approval; a local untracked proposal may be reviewed separately.
 - No hosted secrets or Vercel/Supabase remote configuration changes.
 - No changes to the versioned `.pnpm-store/`.
 - No merge into `codex/c-mcp-contracts` or `main`.
@@ -146,10 +160,12 @@ The earlier statement that the manifest lived under `frontend/` was removed: it 
 
 ## 8. Current verdict
 
-- Hono: **42/42 PASS**.
-- pgTAP: **160/160 PASS**.
-- TypeScript: **0 errors**.
-- Production build: **PASS**.
-- Full `release:verify`: **FAIL**, exclusively because hosted release environment variables are unavailable (`release:preflight` 6/16).
+- Hono in the BE-3 local environment: **42/42 PASS**.
+- pgTAP in the BE-3 local Supabase environment: **160/160 PASS**.
+- TypeScript in the BE-3 local environment: **0 errors**.
+- Production build in the BE-3 local environment: **PASS**.
+- Node test chain in the BE-3 local environment: **366/366 PASS**.
+- Hosted preflight in Cristhian's configured environment: **PENDING EVIDENCE**.
+- Full `release:verify` in the BE-3 environment: **FAIL** at `release:preflight` (`6/16` diagnostic checks passed because production-owned variables are absent).
 
-The local code and database gates are green; the release gate is not yet certifiable as 100% green.
+Therefore, the local code and database gates are green, but the overall release gate is **not yet verified** and must not be represented as 100% passing. The PR must remain Draft until the Friday 25 Gate-1 session; before it can become Ready for review, the hosted preflight evidence must also be incorporated or the Tech Lead must explicitly disposition that requirement.
