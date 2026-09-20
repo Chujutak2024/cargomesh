@@ -13,9 +13,7 @@
  *
  * KEY MAPPING RULE (from normalizer):
  *   - totalWeightKg is only valid when cargoEntryMethod === "TOTAL_WEIGHT"
- *   - The service template defaults to cargoEntryMethod = "PALLETS"
- *   - For PALLETS, weight is derived from entryQuantity × entryUnitWeightKg
- *   - So we NEVER set totalWeightKg; instead we set entryQuantity + entryUnitWeightKg
+ *   - Unitized methods derive weight from entryQuantity × unitsPerEntry × entryUnitWeightKg
  *
  * Auth note: organizationId and memberId are assigned server-side. They must
  * NEVER appear in the fields object (PROHIBITED_CLIENT_KEYS guard in the policy).
@@ -53,23 +51,44 @@ export function adaptV2ToLegacyService(
 ): LegacyCreateFreightRequestInput {
   const fields: ManualFreightRequestIntakeFields = {};
 
+  fields.cargoCategoryCode = input.cargoCategoryCode ?? "MACHINERY";
+
   // ── Origin ──────────────────────────────────────────────────────────────
   fields.originCountry = input.originCountry.toUpperCase() as SupportedCountryCode;
   fields.originCity = input.originCity;
+  fields.originRegion = input.originRegion ?? null;
+  fields.originAddress = input.originAddress ?? null;
+  fields.pickupContactName = input.pickupContactName ?? null;
+  fields.pickupContactPhone = input.pickupContactPhone ?? null;
 
   // ── Destination ──────────────────────────────────────────────────────────
   fields.destinationCountry = input.destinationCountry.toUpperCase() as SupportedCountryCode;
   fields.destinationCity = input.destinationCity;
+  fields.destinationRegion = input.destinationRegion ?? null;
+  fields.destinationAddress = input.destinationAddress ?? null;
+  fields.receiverName = input.receiverName ?? null;
+  fields.receiverCompany = input.receiverCompany ?? null;
+  fields.receiverPhone = input.receiverPhone ?? null;
 
-  // ── Cargo weight — expressed as pallet units, NOT totalWeightKg ──────────
-  // Reason: the service template defaults to PALLETS entry method.
-  // The normalizer throws if totalWeightKg is set with a non-TOTAL_WEIGHT method.
-  // We use entryQuantity (package count) + entryUnitWeightKg (weight per unit).
-  // The service computes total weight as quantity × unitWeight.
-  fields.entryQuantity = input.packageCount;
-  if (input.packageCount > 0 && input.cargoWeightKg > 0) {
-    // Round to 2 decimal places to avoid floating point noise
-    fields.entryUnitWeightKg = Math.round((input.cargoWeightKg / input.packageCount) * 100) / 100;
+  // ── Cargo ───────────────────────────────────────────────────────────────
+  const cargoEntryMethod = input.cargoEntryMethod ?? "PALLETS";
+  fields.cargoEntryMethod = cargoEntryMethod;
+  if (cargoEntryMethod === "TOTAL_WEIGHT") {
+    fields.totalWeightKg = input.cargoWeightKg;
+  } else {
+    fields.entryQuantity = input.packageCount;
+    fields.unitsPerEntry = input.unitsPerEntry ?? 1;
+    fields.entryUnitWeightKg = input.entryUnitWeightKg
+      ?? Math.round((input.cargoWeightKg / input.packageCount / fields.unitsPerEntry) * 100) / 100;
+    if (input.entryLengthCm !== undefined && input.entryLengthCm !== null) {
+      fields.entryLengthCm = input.entryLengthCm;
+    }
+    if (input.entryWidthCm !== undefined && input.entryWidthCm !== null) {
+      fields.entryWidthCm = input.entryWidthCm;
+    }
+    if (input.entryHeightCm !== undefined && input.entryHeightCm !== null) {
+      fields.entryHeightCm = input.entryHeightCm;
+    }
   }
 
   // ── Budget ────────────────────────────────────────────────────────────────
@@ -81,11 +100,21 @@ export function adaptV2ToLegacyService(
   if (input.cargoDescription !== undefined && input.cargoDescription !== null) {
     fields.cargoDescription = input.cargoDescription;
   }
+  fields.specialInstructions = input.specialInstructions ?? null;
+  fields.availableDocuments = input.availableDocuments ?? [];
+
+  // ── Schedule ────────────────────────────────────────────────────────────
+  fields.pickupMode = input.pickupMode ?? "ASAP";
+  fields.pickupWindowStart = input.pickupWindowStart ?? null;
+  fields.pickupWindowEnd = input.pickupWindowEnd ?? null;
+  fields.deliveryDeadline = input.deliveryDeadline ?? null;
 
   // ── Special handling flags ────────────────────────────────────────────────
   // Only set when true — false flags remain unset and the service uses the template default
   if (input.requiresRefrigeration === true) {
     fields.requiresRefrigeration = true;
+    fields.temperatureMinC = input.temperatureMinC ?? null;
+    fields.temperatureMaxC = input.temperatureMaxC ?? null;
   }
   if (input.isHazardous === true) {
     fields.isHazardous = true;
@@ -102,7 +131,6 @@ export function adaptV2ToLegacyService(
   // serviceType    — service hardcodes FTL, not in ManualFreightRequestIntakeFields
   // strategy       — service hardcodes BALANCED (optimization_strategy)
   // isCrossBorder  — service derives from origin/destination country pair
-  // totalWeightKg  — only valid with TOTAL_WEIGHT entry method (see above)
   // cargoVolumeM3  — no direct field; derived from entry dimensions
 
   return { fields };

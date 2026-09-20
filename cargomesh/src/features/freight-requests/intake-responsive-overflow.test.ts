@@ -112,9 +112,15 @@ test("620px media query stacks subSectionHeader vertically on mobile", () => {
   );
 });
 
-test("special handling textarea has an explicit light CargoMesh surface", () => {
+test("HAC-8 uses the dark tokens, four steps, and Judge Drawer safety spacing", () => {
   const rule = css.match(/\.notesTextarea\s*\{[^}]*\}/);
   assert.ok(rule, ".notesTextarea rule must exist");
-  assert.match(rule[0], /background:\s*#f4fbf8/);
-  assert.match(rule[0], /color:\s*#1f302d/);
+  assert.match(rule[0], /background:\s*#0e1d19/);
+  assert.match(rule[0], /color:\s*#f3f7f5/);
+  assert.match(css, /\.stepper\s*\{[^}]*repeat\(4,/);
+  assert.match(css, /\.page\s*\{[^}]*padding-bottom:\s*6rem/);
+  assert.ok(
+    css.includes(".formLayout { grid-template-columns: minmax(0, 1fr) 18rem; padding-right: 5rem; }"),
+    "desktop form layout must reserve space for the Judge Drawer",
+  );
 });

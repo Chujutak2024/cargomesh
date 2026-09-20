@@ -1,8 +1,8 @@
 ﻿import {
-  parseFreightRequestIntakeViewModel,
   type FreightRequestIntakeViewModel,
 } from "./intake-contracts";
 import type { ManualFreightRequestIntakeFields } from "./manual-intake-contracts";
+import { createFreightRequest, FreightRequestHonoClientError } from "@/server/hono/client";
 
 export class DraftCreationClientError extends Error {
   constructor(public readonly code: string, message: string) {
@@ -24,52 +24,44 @@ export type CreateFreightRequestDraftInput = {
   fields: CreateFreightRequestDraftFields;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-async function readJson(response: Response) {
-  try {
-    return await response.json();
-  } catch {
-    throw new DraftCreationClientError(
-      "DRAFT_CREATION_UNAVAILABLE",
-      "El servicio de creación de borradores devolvió una respuesta no válida.",
-    );
-  }
-}
-
 export async function createFreightRequestDraft(
   input: CreateFreightRequestDraftInput,
   signal?: AbortSignal,
   request: typeof fetch = fetch,
 ): Promise<FreightRequestIntakeViewModel> {
-  const response = await request("/api/freight-requests/drafts", {
-    method: "POST",
-    headers: { Accept: "application/json", "Content-Type": "application/json" },
-    credentials: "same-origin",
-    cache: "no-store",
-    body: JSON.stringify(input),
-    signal,
-  });
+  const fields = input.fields;
+  const packageCount = Math.trunc(fields.entryQuantity ?? 1);
+  const cargoWeightKg = fields.totalWeightKg
+    ?? packageCount * (fields.unitsPerEntry ?? 1) * (fields.entryUnitWeightKg ?? 0);
+  const cargoVolumeM3 = [fields.entryLengthCm, fields.entryWidthCm, fields.entryHeightCm]
+    .every((value) => typeof value === "number")
+    ? packageCount * (fields.unitsPerEntry ?? 1) * (fields.entryLengthCm ?? 0) * (fields.entryWidthCm ?? 0) * (fields.entryHeightCm ?? 0) / 1_000_000
+    : null;
 
-  const payload = await readJson(response);
-
-  if (!response.ok) {
-    const error = isRecord(payload) && isRecord(payload.error) ? payload.error : {};
-    const code = typeof error.code === "string" ? error.code : "DRAFT_CREATION_FAILED";
-    const message = typeof error.message === "string"
-      ? error.message
-      : "No fue posible crear el borrador en el servidor.";
-    throw new DraftCreationClientError(code, message);
+  try {
+    return await createFreightRequest({
+      originCity: fields.originCity ?? "",
+      originCountry: fields.originCountry ?? "PE",
+      destinationCity: fields.destinationCity ?? "",
+      destinationCountry: fields.destinationCountry ?? "CL",
+      cargoWeightKg,
+      cargoVolumeM3,
+      packageCount,
+      isCrossBorder: (fields.originCountry ?? "PE") !== (fields.destinationCountry ?? "CL"),
+      transportMode: "ROAD",
+      serviceType: "FTL",
+      strategy: "BALANCED",
+      budgetUsd: fields.budgetMax ?? null,
+      cargoDescription: fields.cargoDescription ?? null,
+      requiresRefrigeration: fields.requiresRefrigeration === true,
+      isHazardous: fields.isHazardous === true,
+      isFragile: fields.isFragile === true,
+      isOversized: fields.isOversized === true,
+    }, signal, request);
+  } catch (error) {
+    if (error instanceof FreightRequestHonoClientError) {
+      throw new DraftCreationClientError(error.code, error.message);
+    }
+    throw error;
   }
-
-  if (!isRecord(payload) || payload.ok !== true || !Object.hasOwn(payload, "data")) {
-    throw new DraftCreationClientError(
-      "INVALID_CANONICAL_INTAKE",
-      "El servidor no devolvió el intake canónico del nuevo borrador.",
-    );
-  }
-
-  return parseFreightRequestIntakeViewModel(payload.data);
 }

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  createCanonicalFreightRequestDraftModel,
   createNewDraftIntakeModel,
   createFreightIntakeFixture,
 } from "@/features/freight-ui/ui-fixtures";
@@ -10,11 +11,12 @@ import {
   resolveIntakeRequestCode,
   mapFreightRequestIntakeToForm,
 } from "./intake-ui-adapter";
+import { buildHonoFreightRequestInputFromForm } from "./manual-intake-client";
 import {
-  createFreightRequestDraft,
-  DraftCreationClientError,
-  type CreateFreightRequestDraftInput,
-} from "./draft-creation-client";
+  createFreightRequest,
+  FreightRequestHonoClientError,
+  submitFreightRequest,
+} from "@/server/hono/client";
 import type { FreightRequestIntakeViewModel } from "./intake-contracts";
 
 const FR1042_UUID = "60000000-0000-0000-0000-000000000001";
@@ -86,6 +88,12 @@ const mockCanonicalCreatedDraft: FreightRequestIntakeViewModel = {
   updatedAt: "2026-09-02T20:30:00.000Z",
 };
 
+const mockCanonicalSubmittedDraft: FreightRequestIntakeViewModel = {
+  ...mockCanonicalCreatedDraft,
+  draftVersion: 2,
+  status: "PENDING",
+};
+
 test("1. Unpersisted new draft initializes with source 'new-draft', empty IDs, and draftVersion 0 without touching FR-1042", () => {
   const model = createNewDraftIntakeModel();
 
@@ -95,6 +103,14 @@ test("1. Unpersisted new draft initializes with source 'new-draft', empty IDs, a
   assert.equal(model.draftVersion, 0);
   assert.notEqual(model.freightRequestId, FR1042_UUID);
   assert.notEqual(model.requestId, FR1042_CODE);
+  assert.equal(model.originCity, "");
+  assert.equal(model.destinationCity, "");
+
+  const canonical = createCanonicalFreightRequestDraftModel(new Date("2026-09-20T12:00:00.000Z"));
+  assert.equal(canonical.originRegion, "Callao");
+  assert.equal(canonical.destinationCity, "Santiago");
+  assert.equal(canonical.quantity, 10);
+  assert.equal(canonical.source, "new-draft");
 
   // Dispatch must be blocked for unpersisted drafts
   const blockReason = getFreightIntakeDispatchBlockReason(model);
@@ -110,7 +126,7 @@ test("2. Explicit ?requestCode=FR-1042 resolves the canonical code while omitted
   assert.equal(resolveIntakeRequestCode(["FR-1042"]), null);
 });
 
-test("3. POST client calls /api/freight-requests/drafts with typed payload and adopts canonical snapshot", async () => {
+test("3. Hono V2 POST creates a typed DRAFT v1 and adopts the canonical snapshot", async () => {
   let requestedUrl = "";
   let requestedMethod = "";
   let requestBody: any = null;
@@ -125,29 +141,18 @@ test("3. POST client calls /api/freight-requests/drafts with typed payload and a
     });
   }) as typeof fetch;
 
-  const input: CreateFreightRequestDraftInput = {
-    fields: {
-      cargoCategoryCode: "MACHINERY",
-      originCountry: "PE",
-      originCity: "Callao",
-      destinationCountry: "CL",
-      destinationCity: "Santiago",
-      cargoDescription: "Repuestos mineros de prueba",
-      requiresRefrigeration: false,
-      temperatureMinC: null,
-      temperatureMaxC: null,
-      isHazardous: false,
-      isOversized: false,
-      isFragile: false,
-    },
-  };
+  const form = createCanonicalFreightRequestDraftModel();
+  form.cargoDescription = "Repuestos mineros de prueba";
+  const input = buildHonoFreightRequestInputFromForm(form);
 
-  const result = await createFreightRequestDraft(input, undefined, mockFetcher);
+  const result = await createFreightRequest(input, undefined, mockFetcher);
 
-  assert.equal(requestedUrl, "/api/freight-requests/drafts");
+  assert.equal(requestedUrl, "/api/v2/freight/requests");
   assert.equal(requestedMethod, "POST");
-  assert.equal(requestBody.fields.originCity, "Callao");
-  assert.equal(requestBody.fields.cargoCategoryCode, "MACHINERY");
+  assert.equal(requestBody.originCity, "Callao");
+  assert.equal(requestBody.destinationCity, "Santiago");
+  assert.equal(requestBody.packageCount, 10);
+  assert.equal(requestBody.cargoWeightKg, 8000);
 
   // Adopts server's canonical snapshot
   assert.equal(result.freightRequestId, "70000000-0000-0000-0000-000000000001");
@@ -163,7 +168,7 @@ test("3. POST client calls /api/freight-requests/drafts with typed payload and a
   assert.equal(mappedForm.draftVersion, 1);
 });
 
-test("4. Server error on POST throws DraftCreationClientError and does NOT invent fake IDs", async () => {
+test("4. Hono V2 creation errors stay actionable and never invent fake IDs", async () => {
   const mockFetcher = (async () => {
     return new Response(
       JSON.stringify({
@@ -174,20 +179,16 @@ test("4. Server error on POST throws DraftCreationClientError and does NOT inven
     );
   }) as typeof fetch;
 
-  const input: CreateFreightRequestDraftInput = {
-    fields: {
-      cargoCategoryCode: "MACHINERY",
-      originCity: "Callao",
-      destinationCity: "Santiago",
-    },
-  };
+  const input = buildHonoFreightRequestInputFromForm(
+    createCanonicalFreightRequestDraftModel(),
+  );
 
   await assert.rejects(
     async () => {
-      await createFreightRequestDraft(input, undefined, mockFetcher);
+      await createFreightRequest(input, undefined, mockFetcher);
     },
     (err: any) => {
-      assert.ok(err instanceof DraftCreationClientError);
+      assert.ok(err instanceof FreightRequestHonoClientError);
       assert.equal(err.code, "ORGANIZATION_NOT_AUTHORIZED");
       assert.match(err.message, /Membresía inactiva/);
       return true;
@@ -195,7 +196,7 @@ test("4. Server error on POST throws DraftCreationClientError and does NOT inven
   );
 });
 
-test("5. Special requirements (refrigeration, hazmat, oversized, fragile) are captured in POST payload", async () => {
+test("5. Hono V2 payload preserves the supported special-handling flags", async () => {
   let capturedBody: any = null;
 
   const mockFetcher = (async (_input: RequestInfo | URL, init?: RequestInit) => {
@@ -206,57 +207,71 @@ test("5. Special requirements (refrigeration, hazmat, oversized, fragile) are ca
     });
   }) as typeof fetch;
 
-  const input: CreateFreightRequestDraftInput = {
-    fields: {
-      cargoCategoryCode: "AGRICULTURAL",
-      originCity: "Ica",
-      destinationCity: "Santiago",
-      requiresRefrigeration: true,
-      temperatureMinC: 2,
-      temperatureMaxC: 6,
-      isHazardous: true,
-      isOversized: false,
-      isFragile: true,
-    },
-  };
+  const form = createCanonicalFreightRequestDraftModel();
+  form.originCity = "Ica";
+  form.requiresRefrigeration = true;
+  form.temperatureMinC = 2;
+  form.temperatureMaxC = 6;
+  form.isHazardous = true;
+  form.isOversized = false;
+  form.isFragile = true;
+  const input = buildHonoFreightRequestInputFromForm(form);
 
-  await createFreightRequestDraft(input, undefined, mockFetcher);
+  await createFreightRequest(input, undefined, mockFetcher);
 
-  assert.equal(capturedBody.fields.requiresRefrigeration, true);
-  assert.equal(capturedBody.fields.temperatureMinC, 2);
-  assert.equal(capturedBody.fields.temperatureMaxC, 6);
-  assert.equal(capturedBody.fields.isHazardous, true);
-  assert.equal(capturedBody.fields.isFragile, true);
-  assert.equal(capturedBody.fields.isOversized, false);
+  assert.equal(capturedBody.requiresRefrigeration, true);
+  assert.equal(capturedBody.isHazardous, true);
+  assert.equal(capturedBody.isFragile, true);
+  assert.equal(capturedBody.isOversized, false);
 });
 
-test("6. A new draft never calls PATCH or mutates FR-1042", async () => {
+test("6. Create and submit use only Hono V2 and send expected_draft_version", async () => {
   const calledUrls: string[] = [];
   const calledMethods: string[] = [];
+  const calledBodies: any[] = [];
 
   const spyFetcher = (async (url: RequestInfo | URL, init?: RequestInit) => {
     calledUrls.push(String(url));
     calledMethods.push(init?.method ?? "GET");
-    return new Response(JSON.stringify({ ok: true, data: mockCanonicalCreatedDraft }), {
-      status: 201,
+    calledBodies.push(JSON.parse(String(init?.body)));
+    const isSubmit = String(url).endsWith("/submit");
+    return new Response(JSON.stringify({
+      ok: true,
+      data: isSubmit ? mockCanonicalSubmittedDraft : mockCanonicalCreatedDraft,
+    }), {
+      status: isSubmit ? 200 : 201,
       headers: { "Content-Type": "application/json" },
     });
   }) as typeof fetch;
 
-  const newDraft = createNewDraftIntakeModel();
+  const newDraft = createCanonicalFreightRequestDraftModel();
 
   // Verify that an unpersisted draft does not contain FR-1042 UUID or code
   assert.equal(newDraft.freightRequestId, "");
   assert.equal(newDraft.requestId, "");
 
-  // When creating the draft, it sends POST to /api/freight-requests/drafts, never PATCH to FR-1042
-  await createFreightRequestDraft({ fields: { originCity: "Lima" } }, undefined, spyFetcher);
+  const created = await createFreightRequest(
+    buildHonoFreightRequestInputFromForm(newDraft),
+    undefined,
+    spyFetcher,
+  );
+  const submitted = await submitFreightRequest(
+    created.freightRequestId,
+    created.draftVersion,
+    undefined,
+    spyFetcher,
+  );
+
+  assert.equal(calledUrls[0], "/api/v2/freight/requests");
+  assert.equal(calledUrls[1], `/api/v2/freight/requests/${created.freightRequestId}/submit`);
+  assert.deepEqual(calledMethods, ["POST", "POST"]);
+  assert.equal(calledBodies[1].expected_draft_version, 1);
+  assert.equal(calledBodies[1].draftVersion, 1);
+  assert.equal(submitted.status, "PENDING");
 
   for (let i = 0; i < calledUrls.length; i++) {
     assert.ok(!calledUrls[i].includes(FR1042_UUID), `URL must not contain FR-1042 UUID: ${calledUrls[i]}`);
     assert.ok(!calledUrls[i].includes(FR1042_CODE), `URL must not contain FR-1042 code: ${calledUrls[i]}`);
-    if (calledMethods[i] === "PATCH") {
-      assert.fail(`Must not execute PATCH for a new draft: ${calledUrls[i]}`);
-    }
+    assert.ok(!calledUrls[i].startsWith("/api/freight-requests"), `Must not call a legacy endpoint: ${calledUrls[i]}`);
   }
 });

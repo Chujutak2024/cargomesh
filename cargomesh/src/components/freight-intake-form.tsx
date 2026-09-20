@@ -5,31 +5,17 @@ import {
   FileCheck2, Layers, LoaderCircle, MapPin, PackageCheck, ShieldAlert, ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useLocale } from "@/features/i18n/locale-provider";
 
-import {
-  applyExecutionIntentToIntake, buildProviderRunnerInputs, buildRealDispatchPath,
-  cacheInt02aViewModel, createInt02aIdempotencyKey,
-} from "@/features/freight-ui/int02a-client";
 import type { FreightIntakeModel } from "@/features/freight-ui/view-models";
-import { fetchFreightRequestExecutionIntent } from "@/features/freight-requests/execution-intent-client";
 import {
-  assertExecutionIntentCorrelation, assertFreshIntakeCorrelation,
-  getFreightIntakeDispatchBlockReason, loadPersistedFreightIntake,
   mapFreightRequestIntakeToForm,
 } from "@/features/freight-requests/intake-ui-adapter";
 import {
-  buildManualIntakeFieldsFromForm,
-  persistManualFreightRequestIntake,
-  ManualFreightRequestIntakeClientError,
+  buildHonoFreightRequestInputFromForm,
   mapDocumentToCanonicalCode,
 } from "@/features/freight-requests/manual-intake-client";
-import {
-  createFreightRequestDraft,
-  DraftCreationClientError,
-} from "@/features/freight-requests/draft-creation-client";
 import {
   LATAM_LOGISTICS_DIRECTORY,
   getCountryByCode,
@@ -49,12 +35,19 @@ import {
   fetchFreightRequestDraft,
   persistFreightRecommendationDraft,
 } from "@/features/recommendations/recommendation-draft-client";
-import { createExternalProviderNavigationAdapter } from "@/features/webmcp-runner";
-import { runInt02aOrchestration } from "@/features/webmcp-runner/orchestration-runner";
+import { createCanonicalFreightRequestDraftModel } from "@/features/freight-ui/ui-fixtures";
+import {
+  createFreightRequest,
+  FreightRequestHonoClientError,
+  submitFreightRequest,
+} from "@/server/hono/client";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import styles from "./freight-intake-form.module.css";
 
 const steps = [
-  { label: "Contexto", labelEn: "Context", icon: Building2 }, { label: "Ruta", labelEn: "Route", icon: MapPin },
+  { label: "Contexto y ruta", labelEn: "Context & route", icon: MapPin },
   { label: "Carga", labelEn: "Cargo", icon: Boxes }, { label: "Programación", labelEn: "Schedule", icon: CalendarClock },
   { label: "Revisión", labelEn: "Review", icon: PackageCheck },
 ];
@@ -185,7 +178,6 @@ export function FreightIntakeForm({
   defaultCleanMode?: boolean;
   persistRecommendation?: PersistRecommendationAcceptance;
 }) {
-  const router = useRouter();
   const { localeTag, t } = useLocale();
   const displayNumber = useCallback((value: number | null, suffix = "") => (
     value === null ? t("No registrado", "Not recorded") : `${value.toLocaleString(localeTag)}${suffix}`
@@ -194,7 +186,6 @@ export function FreightIntakeForm({
     value ? value.replace("T", " ").replace(".000Z", " UTC") : t("No aplica", "Not applicable")
   ), [t]);
   const [step, setStep] = useState(0);
-  const [isCleanMode, setIsCleanMode] = useState(defaultCleanMode);
   const [form, setForm] = useState<FreightIntakeModel>(() => {
     if (defaultCleanMode) {
       return {
@@ -233,7 +224,6 @@ export function FreightIntakeForm({
     return initialValue;
   });
   const [submitting, setSubmitting] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [creatingDraft, setCreatingDraft] = useState(false);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -241,11 +231,9 @@ export function FreightIntakeForm({
   const [recommendationRegistrationError, setRecommendationRegistrationError] = useState<string | null>(null);
   const [draftReady, setDraftReady] = useState(initialValue.source !== "persisted");
   const [draftLoadError, setDraftLoadError] = useState<string | null>(null);
-  const runnerFrameRef = useRef<HTMLIFrameElement>(null);
-  const isEditable = form.status === "DRAFT" || form.status === "PENDING";
+  const isEditable = form.status === "DRAFT";
   const readOnly = !isEditable;
   const totals = useMemo(() => getDisplayedTotals(form), [form]);
-  const dispatchBlockReason = localizeDispatchBlockReason(getFreightIntakeDispatchBlockReason(form), t);
   const [originCoords, setOriginCoords] = useState(defaultCleanMode ? "" : "-12.0464, -77.0428");
   const [destCoords, setDestCoords] = useState(defaultCleanMode ? "" : "-33.4489, -70.6693");
   const requiresRefrigeration = form.requiresRefrigeration === true;
@@ -320,81 +308,30 @@ export function FreightIntakeForm({
     if (!readOnly) setForm((current) => ({ ...current, isOversized: value }));
   }
 
-  function handleToggleCleanMode() {
-    if (!isCleanMode) {
-      setIsCleanMode(true);
-      setOriginCoords("");
-      setDestCoords("");
-      setPalletPreset("standard");
-      setHasBudgetLimit(false);
-      setForm((curr) => ({
-        ...curr,
-        draftVersion: curr.draftVersion,
-        cargoProfile: "",
-        originRegion: "",
-        originCity: "",
-        originAddress: "",
-        origin: "",
-        destinationRegion: "",
-        destinationCity: "",
-        destinationAddress: "",
-        destination: "",
-        pickupContactName: "",
-        pickupContactPhone: "",
-        pickupContact: "",
-        receiverName: "",
-        receiverCompany: "",
-        receiverPhone: "",
-        deliveryContact: "",
-        quantity: null,
-        unitWeightKg: null,
-        unitsPerEntry: 1,
-        lengthCm: null,
-        widthCm: null,
-        heightCm: null,
-        totalWeightKg: 0,
-        cargoWeightKg: 0,
-        totalVolumeM3: null,
-        cargoVolumeM3: null,
-        budgetMaxUsd: null,
-        documents: [],
-        operationalNotes: "",
-        requiresRefrigeration: false,
-        temperatureMinC: null,
-        temperatureMaxC: null,
-        isHazardous: false,
-        isFragile: false,
-        isOversized: false,
-      }));
-    } else {
-      if (initialValue.source !== "persisted" || !initialValue.freightRequestId) {
-        window.location.href = "/freight-request/new?requestCode=FR-1042";
-        return;
-      }
-      setIsCleanMode(false);
-      setOriginCoords("-12.0464, -77.0428");
-      setDestCoords("-33.4489, -70.6693");
-      setForm(initialValue);
-      const controller = new AbortController();
-      void loadCanonicalDraft(controller.signal);
+  function handleLoadCanonicalScenario() {
+    setForm(createCanonicalFreightRequestDraftModel());
+    setStep(0);
+    setOriginCoords("-12.0464, -77.0428");
+    setDestCoords("-33.4489, -70.6693");
+    setPalletPreset("standard");
+    setHasBudgetLimit(true);
+    setSubmitError(null);
+    setSaveNotice(t(
+      "Escenario canónico FR-1042 cargado: Callao ➔ Santiago, 10 pallets.",
+      "Canonical FR-1042 scenario loaded: Callao ➔ Santiago, 10 pallets.",
+    ));
+    if (typeof window !== "undefined" && window.history) {
+      window.history.replaceState({}, "", "/freight-request/new");
     }
   }
 
   const loadCanonicalDraft = useCallback(async (signal: AbortSignal) => {
     if (!initialValue.freightRequestId) return;
     const draft = await fetchFreightRequestDraft(initialValue.freightRequestId, signal);
-    setForm((current) => isCleanMode
-      ? {
-          ...current,
-          draftVersion: draft.draftVersion,
-          freightRequestId: draft.freightRequestId,
-          requestId: draft.requestCode,
-        }
-      : applyFreightRequestDraftToIntake(current, draft)
-    );
+    setForm((current) => applyFreightRequestDraftToIntake(current, draft));
     setDraftLoadError(null);
     setDraftReady(true);
-  }, [initialValue.freightRequestId, isCleanMode]);
+  }, [initialValue.freightRequestId]);
 
   useEffect(() => {
     if (initialValue.source !== "persisted" || !initialValue.freightRequestId) return;
@@ -464,22 +401,18 @@ export function FreightIntakeForm({
     setSaveNotice(null);
     try {
       const abortSignal = signal ?? new AbortController().signal;
-      const baseFields = buildManualIntakeFieldsFromForm(form);
-      const fields = {
-        ...baseFields,
-        requiresRefrigeration,
-        temperatureMinC: requiresRefrigeration && tempMin !== "" ? Number(tempMin) : null,
-        temperatureMaxC: requiresRefrigeration && tempMax !== "" ? Number(tempMax) : null,
-        isHazardous,
-        isOversized,
-        isFragile,
-      };
-      const created = await createFreightRequestDraft({ fields }, abortSignal);
+      const input = buildHonoFreightRequestInputFromForm(form);
+      const created = await createFreightRequest(input, abortSignal);
+      if (created.status !== "DRAFT" || created.draftVersion !== 1) {
+        throw new FreightRequestHonoClientError(
+          "INVALID_CANONICAL_INTAKE",
+          "La creación Hono V2 debe devolver un borrador DRAFT con draft_version = 1.",
+        );
+      }
       const updatedModel = mapFreightRequestIntakeToForm(created);
       setForm(updatedModel);
       setDraftReady(true);
       setDraftLoadError(null);
-      setIsCleanMode(false);
       setSaveNotice(t(`Borrador creado exitosamente: ${updatedModel.requestId} (v${updatedModel.draftVersion}).`, `Draft created successfully: ${updatedModel.requestId} (v${updatedModel.draftVersion}).`));
       if (typeof window !== "undefined" && window.history) {
         const url = new URL(window.location.href);
@@ -488,7 +421,7 @@ export function FreightIntakeForm({
       }
       return updatedModel;
     } catch (error) {
-      const message = error instanceof DraftCreationClientError
+      const message = error instanceof FreightRequestHonoClientError
         ? error.message
         : error instanceof Error
           ? error.message
@@ -498,98 +431,54 @@ export function FreightIntakeForm({
     } finally {
       setCreatingDraft(false);
     }
-  }, [form, requiresRefrigeration, tempMin, tempMax, isHazardous, isOversized, isFragile, t]);
-
-  const saveManualDraft = useCallback(async (signal?: AbortSignal) => {
-    if (!isEditable || form.source !== "persisted" || !form.freightRequestId) return form;
-    setSaving(true);
-    setSubmitError(null);
-    setSaveNotice(null);
-    try {
-      const abortSignal = signal ?? new AbortController().signal;
-      const fields = buildManualIntakeFieldsFromForm(form);
-      const input = {
-        draftVersion: form.draftVersion,
-        fields,
-      };
-      const updated = await persistManualFreightRequestIntake(
-        form.freightRequestId,
-        input,
-        abortSignal,
-      );
-      const updatedModel = mapFreightRequestIntakeToForm(updated);
-      setForm(updatedModel);
-      setSaveNotice(t(`Borrador guardado exitosamente (v${updatedModel.draftVersion}).`, `Draft saved successfully (v${updatedModel.draftVersion}).`));
-      return updatedModel;
-    } catch (error) {
-      if (error instanceof ManualFreightRequestIntakeClientError && error.code === "STALE_DRAFT") {
-        const fresh = await loadPersistedFreightIntake(form.requestId);
-        assertFreshIntakeCorrelation(form, fresh);
-        setForm(fresh);
-        setSubmitError(t(`El borrador cambió en el servidor. Se recargó el snapshot canónico completo (v${fresh.draftVersion}); revisa los campos antes de continuar.`, `The draft changed on the server. The complete canonical snapshot was reloaded (v${fresh.draftVersion}); review the fields before continuing.`));
-      } else {
-        setSubmitError(error instanceof Error ? error.message : t("No fue posible guardar los cambios manuales.", "The manual changes could not be saved."));
-      }
-      throw error;
-    } finally {
-      setSaving(false);
-    }
-  }, [form, isEditable, loadCanonicalDraft, t]);
+  }, [form, t]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (step < steps.length - 1) {
-      if (isEditable && form.source === "persisted") {
-        if (form.originCity && form.destinationCity && (totals.weightKg ?? 0) > 0) {
-          try {
-            await saveManualDraft();
-          } catch (err) {
-            console.warn("Auto-save on step transition deferred:", err);
-          }
-        }
-      }
       setStep((current) => current + 1);
       return;
     }
-    if (step === steps.length - 1 && form.source === "new-draft") {
-      try {
-        await handleCreateDraft();
-      } catch {
-        return;
-      }
-      return;
-    }
-    if (dispatchBlockReason) { setSubmitError(dispatchBlockReason); return; }
-    const runnerFrame = runnerFrameRef.current;
-    if (!runnerFrame) { setSubmitError(t("No fue posible preparar el navegador para evaluar los providers.", "The browser could not be prepared to evaluate providers.")); return; }
 
     setSubmitting(true);
     setSubmitError(null);
+    setSaveNotice(null);
     try {
-      if (isEditable && form.source === "persisted") {
-        await saveManualDraft();
+      let currentDraft = form;
+      if (currentDraft.source === "new-draft") {
+        currentDraft = await handleCreateDraft();
       }
-      const freshIntake = await loadPersistedFreightIntake(form.requestId);
-      assertFreshIntakeCorrelation(form, freshIntake);
-      const freshBlockReason = localizeDispatchBlockReason(getFreightIntakeDispatchBlockReason(freshIntake), t);
-      if (freshBlockReason) throw new Error(freshBlockReason);
 
-      const executionIntent = await fetchFreightRequestExecutionIntent(freshIntake.freightRequestId);
-      assertExecutionIntentCorrelation(freshIntake, executionIntent);
-      const executionModel = applyExecutionIntentToIntake(freshIntake, executionIntent);
-      setForm(executionModel);
+      if (!currentDraft.freightRequestId || currentDraft.draftVersion < 1) {
+        throw new FreightRequestHonoClientError(
+          "INVALID_CANONICAL_INTAKE",
+          "El servidor no devolvió un borrador válido para enviar.",
+        );
+      }
 
-      const evidence = await runInt02aOrchestration({
-        freightRequestId: executionModel.freightRequestId,
-        idempotencyKey: createInt02aIdempotencyKey(executionModel.freightRequestId),
-        baseUrl: window.location.origin,
-        navigation: createExternalProviderNavigationAdapter({ frame: runnerFrame, baseUrl: window.location.origin }),
-        createInputs: () => buildProviderRunnerInputs(executionModel, executionIntent),
-      });
-      cacheInt02aViewModel(evidence.start.runId, evidence.viewModel);
-      router.push(buildRealDispatchPath(evidence.start.runId));
+      const submitted = await submitFreightRequest(
+        currentDraft.freightRequestId,
+        currentDraft.draftVersion,
+      );
+      const submittedModel = mapFreightRequestIntakeToForm(submitted);
+      setForm(submittedModel);
+      setDraftReady(true);
+      setSaveNotice(t(
+        `Solicitud ${submittedModel.requestId} enviada correctamente (PENDING, v${submittedModel.draftVersion}).`,
+        `Request ${submittedModel.requestId} submitted successfully (PENDING, v${submittedModel.draftVersion}).`,
+      ));
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : t("No fue posible completar la evaluación.", "The evaluation could not be completed."));
+      if (error instanceof FreightRequestHonoClientError && error.code === "STALE_DRAFT") {
+        setSubmitError(t(
+          "No se pudo enviar: otra sesión modificó este borrador. Recarga la solicitud y revisa la versión antes de reintentar.",
+          "The request could not be submitted because another session modified this draft. Reload it and review the version before retrying.",
+        ));
+      } else {
+        setSubmitError(error instanceof Error
+          ? error.message.replace(/^INVALID_ARGUMENT:\s*/, "")
+          : t("No fue posible enviar la solicitud.", "The request could not be submitted."));
+      }
+    } finally {
       setSubmitting(false);
     }
   }
@@ -624,27 +513,33 @@ export function FreightIntakeForm({
           </p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.45rem" }}>
-          <div className={styles.draftBadge}>
+          <Badge
+            className={styles.draftBadge}
+            variant={form.status === "DRAFT" ? "draft" : form.status === "PENDING" ? "pending" : "confirmed"}
+          >
             <ShieldCheck size={16} aria-hidden="true" />
             {form.source === "new-draft"
               ? t("Nuevo borrador sin persistir", "New unsaved draft")
               : form.source === "persisted"
-                ? (isCleanMode ? t("Borrador v1 (Nuevo)", "Draft v1 (New)") : `${t("Borrador", "Draft")} v${form.draftVersion} (${form.status})`)
+                ? `${t("Borrador", "Draft")} v${form.draftVersion} (${form.status})`
                 : t("Fixture visual", "Visual fixture")}
-          </div>
-          {isEditable && (
-            <button
-              type="button"
-              className={styles.cleanDraftButton}
-              onClick={handleToggleCleanMode}
-            >
-              {isCleanMode ? t("⚡ Cargar caso canónico FR-1042", "⚡ Load canonical FR-1042 case") : t("🧹 Iniciar borrador en blanco (v1)", "🧹 Start a blank draft (v1)")}
-            </button>
-          )}
+          </Badge>
+          <Button
+            type="button"
+            variant="secondary"
+            className={styles.cleanDraftButton}
+            onClick={handleLoadCanonicalScenario}
+            disabled={submitting || creatingDraft}
+          >
+            {t(
+              "Cargar Escenario Canónico (Callao ➔ Santiago)",
+              "Load Canonical Scenario (Callao ➔ Santiago)",
+            )}
+          </Button>
         </div>
       </header>
 
-      {form.source === "persisted" && Boolean(form.freightRequestId) ? (
+      {form.source === "persisted" && form.status === "DRAFT" && Boolean(form.freightRequestId) ? (
         <>
           <FreightRecommendationWebMcpHost
             onRegistrationChange={handleRegistrationChange}
@@ -664,22 +559,23 @@ export function FreightIntakeForm({
       <ol className={styles.stepper} aria-label={t("Progreso del formulario", "Form progress")}>
         {steps.map(({ label, labelEn, icon: Icon }, index) => (
           <li key={label}>
-            <button
+            <Button
               type="button"
+              variant="ghost"
               className={`${styles.step} ${index === step ? styles.stepActive : ""} ${index < step ? styles.stepDone : ""}`}
               aria-current={index === step ? "step" : undefined}
               onClick={() => setStep(index)}
-              disabled={submitting || saving}
+              disabled={submitting || creatingDraft}
             >
               <span>{index < step ? <Check size={16} aria-hidden="true" /> : <Icon size={16} aria-hidden="true" />}</span>
               <small>{t("Paso", "Step")} {index + 1}</small>
               <strong>{t(label, labelEn)}</strong>
-            </button>
+            </Button>
           </li>
         ))}
       </ol>
 
-      <form className={styles.formLayout} onSubmit={submit} aria-busy={submitting || saving}>
+      <form className={styles.formLayout} onSubmit={submit} aria-busy={submitting || creatingDraft}>
         <section className={styles.formCard} aria-labelledby={`step-title-${step}`}>
           {step === 0 ? <>
             <FormHeading
@@ -719,7 +615,7 @@ export function FreightIntakeForm({
 
               <Field label={t("Supervisor responsable", "Responsible supervisor")} wide>
                 {readOnly ? (
-                  <input value={form.requester || "CargoMesh Demo Operator — Supervisor de Operaciones"} readOnly />
+                  <Input value={form.requester || "CargoMesh Demo Operator — Supervisor de Operaciones"} readOnly />
                 ) : (
                   <select
                     value={form.operatorMemberId || DEMO_OPERATORS[0].id}
@@ -756,7 +652,7 @@ export function FreightIntakeForm({
 
               <Field label={t("Perfil de carga", "Cargo profile")} wide>
                 {readOnly ? (
-                  <input value={form.cargoProfile ? localizedCargoCategory : t("Personalizado", "Custom")} readOnly />
+                  <Input value={form.cargoProfile ? localizedCargoCategory : t("Personalizado", "Custom")} readOnly />
                 ) : (
                   <select
                     value={
@@ -799,7 +695,7 @@ export function FreightIntakeForm({
             </div>
           </> : null}
 
-          {step === 1 ? <>
+          {step === 0 ? <>
             <FormHeading
               id="step-title-1"
               title={t("Origen y destino", "Origin and destination")}
@@ -817,7 +713,7 @@ export function FreightIntakeForm({
               <div className={styles.fieldGrid}>
                 <Field label={t("País de origen", "Origin country")}>
                   {readOnly ? (
-                    <input value={`${originCountryData.flag} ${originCountryData.name} (${originCountryData.code})`} readOnly />
+                    <Input value={`${originCountryData.flag} ${originCountryData.name} (${originCountryData.code})`} readOnly />
                   ) : (
                     <select
                       value={form.originCountry}
@@ -845,7 +741,7 @@ export function FreightIntakeForm({
                 </Field>
                 <Field label={t("Departamento / Región", "State / Region")}>
                   {readOnly ? (
-                    <input value={form.originRegion || t("No registrado", "Not recorded")} readOnly />
+                    <Input value={form.originRegion || t("No registrado", "Not recorded")} readOnly />
                   ) : (
                     <select
                       value={originSelectedRegion.name}
@@ -871,7 +767,7 @@ export function FreightIntakeForm({
                 </Field>
                 <Field label={t("Ciudad", "City")}>
                   {readOnly ? (
-                    <input value={form.originCity} readOnly />
+                    <Input value={form.originCity} readOnly />
                   ) : (
                     <select
                       value={form.originCity}
@@ -894,7 +790,7 @@ export function FreightIntakeForm({
                   )}
                 </Field>
                 <Field label={t("Dirección de recojo", "Pickup address")}>
-                  <input
+                  <Input
                     readOnly={readOnly}
                     placeholder={t("ej. Av. Néstor Gambetta 100, Almacén Central", "e.g. 100 Néstor Gambetta Ave., Central Warehouse")}
                     value={form.originAddress}
@@ -907,7 +803,7 @@ export function FreightIntakeForm({
                 <summary><span>{t("👤 Datos operativos de contacto y ubicación (opcional) ▾", "👤 Operational contact and location details (optional) ▾")}</span></summary>
                 <div className={styles.fieldGrid}>
                   <Field label={t("Contacto de recojo", "Pickup contact")}>
-                    <input
+                    <Input
                       readOnly={readOnly}
                       placeholder={t("ej. Ana Pérez", "e.g. Ana Pérez")}
                       value={form.pickupContactName}
@@ -924,7 +820,7 @@ export function FreightIntakeForm({
                   <Field label={t("Teléfono de recojo", "Pickup phone")}>
                     <div className={styles.phoneInputGroup}>
                       <span className={styles.dialBadge}>{getCountryDialCode(form.originCountry)}</span>
-                      <input
+                      <Input
                         readOnly={readOnly}
                         placeholder="999 555 101"
                         type="tel"
@@ -943,7 +839,7 @@ export function FreightIntakeForm({
                     </div>
                   </Field>
                   <Field label={t("Ubicación precisa (Lat, Lng) — opcional", "Precise location (Lat, Lng) — optional")} wide>
-                    <input
+                    <Input
                       readOnly={readOnly}
                       placeholder="ej. -12.0464, -77.0428"
                       value={originCoords}
@@ -965,7 +861,7 @@ export function FreightIntakeForm({
               <div className={styles.fieldGrid}>
                 <Field label={t("País de destino", "Destination country")}>
                   {readOnly ? (
-                    <input value={`${destCountryData.flag} ${destCountryData.name} (${destCountryData.code})`} readOnly />
+                    <Input value={`${destCountryData.flag} ${destCountryData.name} (${destCountryData.code})`} readOnly />
                   ) : (
                     <select
                       value={form.destinationCountry}
@@ -993,7 +889,7 @@ export function FreightIntakeForm({
                 </Field>
                 <Field label={t("Departamento / Región", "State / Region")}>
                   {readOnly ? (
-                    <input value={form.destinationRegion || t("No registrado", "Not recorded")} readOnly />
+                    <Input value={form.destinationRegion || t("No registrado", "Not recorded")} readOnly />
                   ) : (
                     <select
                       value={destSelectedRegion.name}
@@ -1019,7 +915,7 @@ export function FreightIntakeForm({
                 </Field>
                 <Field label={t("Ciudad", "City")}>
                   {readOnly ? (
-                    <input value={form.destinationCity} readOnly />
+                    <Input value={form.destinationCity} readOnly />
                   ) : (
                     <select
                       value={form.destinationCity}
@@ -1042,7 +938,7 @@ export function FreightIntakeForm({
                   )}
                 </Field>
                 <Field label={t("Dirección de entrega", "Delivery address")}>
-                  <input
+                  <Input
                     readOnly={readOnly}
                     placeholder={t("ej. Av. Logística 200, Centro de Distribución", "e.g. 200 Logistics Ave., Distribution Center")}
                     value={form.destinationAddress}
@@ -1055,7 +951,7 @@ export function FreightIntakeForm({
                 <summary><span>{t("👤 Datos operativos de contacto y ubicación (opcional) ▾", "👤 Operational contact and location details (optional) ▾")}</span></summary>
                 <div className={styles.fieldGrid}>
                   <Field label={t("Empresa de entrega", "Receiving company")}>
-                    <input
+                    <Input
                       readOnly={readOnly}
                       placeholder={t("ej. Destino Minero S.A.", "e.g. Mining Destination Inc.")}
                       value={form.receiverCompany}
@@ -1070,7 +966,7 @@ export function FreightIntakeForm({
                     />
                   </Field>
                   <Field label={t("Contacto de entrega", "Delivery contact")}>
-                    <input
+                    <Input
                       readOnly={readOnly}
                       placeholder={t("ej. Diego Ramos", "e.g. Diego Ramos")}
                       value={form.receiverName}
@@ -1087,7 +983,7 @@ export function FreightIntakeForm({
                   <Field label={t("Teléfono de entrega", "Delivery phone")}>
                     <div className={styles.phoneInputGroup}>
                       <span className={styles.dialBadge}>{getCountryDialCode(form.destinationCountry)}</span>
-                      <input
+                      <Input
                         readOnly={readOnly}
                         placeholder="999 000 222"
                         type="tel"
@@ -1106,7 +1002,7 @@ export function FreightIntakeForm({
                     </div>
                   </Field>
                   <Field label={t("Ubicación precisa (Lat, Lng) — opcional", "Precise location (Lat, Lng) — optional")}>
-                    <input
+                    <Input
                       readOnly={readOnly}
                       placeholder="ej. -33.4489, -70.6693"
                       value={destCoords}
@@ -1120,7 +1016,7 @@ export function FreightIntakeForm({
             {/* SECCIÓN 3: INSTRUCCIONES DE RUTA */}
             <div className={styles.subSectionCard} style={{ marginTop: "1rem" }}>
               <Field label={t("Instrucciones de ruta (opcional)", "Route instructions (optional)")} wide>
-                <input
+                <Input
                   readOnly={readOnly}
                   placeholder={t("ej. Indicaciones para aduana o almacén", "e.g. Customs or warehouse instructions")}
                   value={form.operationalNotes}
@@ -1130,7 +1026,7 @@ export function FreightIntakeForm({
             </div>
           </> : null}
 
-          {step === 2 ? <>
+          {step === 1 ? <>
             <FormHeading
               id="step-title-2"
               title={t("Características de la carga", "Cargo characteristics")}
@@ -1146,13 +1042,13 @@ export function FreightIntakeForm({
                   </span>
                   <strong>{localizedCargoCategory} · {form.organization}</strong>
                 </div>
-                <button
+                <Button
                   type="button"
                   className={styles.profileChangeBtn}
                   onClick={() => setStep(0)}
                 >
                   {t("Cambiar en Paso 1", "Change in Step 1")}
-                </button>
+                </Button>
               </div>
             ) : null}
 
@@ -1170,7 +1066,7 @@ export function FreightIntakeForm({
               <div className={styles.fieldGrid}>
                 <Field label={t("Categoría logística", "Logistics category")}>
                   {readOnly ? (
-                    <input value={localizedCargoCategory} readOnly />
+                    <Input value={localizedCargoCategory} readOnly />
                   ) : (
                     <select
                       value={form.cargoCategoryCode}
@@ -1197,7 +1093,7 @@ export function FreightIntakeForm({
                   )}
                 </Field>
                 <Field label={t("Descripción de la carga", "Cargo description")}>
-                  <input
+                  <Input
                     type="text"
                     readOnly={readOnly}
                     placeholder={t("ej. Repuestos y maquinaria minera", "e.g. Mining parts and machinery")}
@@ -1207,7 +1103,7 @@ export function FreightIntakeForm({
                 </Field>
                 <Field label={t("Presentación / embalaje", "Packaging / presentation")} wide>
                   {readOnly ? (
-                    <input value={form.entryMethod} readOnly />
+                    <Input value={form.entryMethod} readOnly />
                   ) : (
                     <select
                       value={form.entryMethod}
@@ -1242,7 +1138,7 @@ export function FreightIntakeForm({
                       onChange={(value) => update("totalWeightKg", value ?? 0)}
                     />
                     <Field label={t("Volumen total estimado (m³) — opcional", "Estimated total volume (m³) — optional")}>
-                      <input
+                      <Input
                         type="number"
                         step="0.1"
                         readOnly={readOnly}
@@ -1259,7 +1155,7 @@ export function FreightIntakeForm({
                         <div className={styles.dimensionRow}>
                           <div className={styles.dimensionInputGroup}>
                             <span>{t("Largo (cm)", "Length (cm)")}</span>
-                            <input
+                            <Input
                               type="number"
                               readOnly={readOnly}
                               value={nullableNumber(form.lengthCm)}
@@ -1269,7 +1165,7 @@ export function FreightIntakeForm({
                           </div>
                           <div className={styles.dimensionInputGroup}>
                             <span>{t("Ancho (cm)", "Width (cm)")}</span>
-                            <input
+                            <Input
                               type="number"
                               readOnly={readOnly}
                               value={nullableNumber(form.widthCm)}
@@ -1279,7 +1175,7 @@ export function FreightIntakeForm({
                           </div>
                           <div className={styles.dimensionInputGroup}>
                             <span>{t("Alto (cm)", "Height (cm)")}</span>
-                            <input
+                            <Input
                               type="number"
                               readOnly={readOnly}
                               value={nullableNumber(form.heightCm)}
@@ -1344,7 +1240,7 @@ export function FreightIntakeForm({
                           {t("Dimensiones del pallet", "Pallet dimensions")}
                         </span>
                         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.6rem" }}>
-                          <button
+                          <Button
                             type="button"
                             className={`${styles.requirementPill} ${palletPreset === "standard" ? styles.requirementPillActive : ""}`}
                             onClick={() => {
@@ -1353,8 +1249,8 @@ export function FreightIntakeForm({
                             }}
                           >
                             {t("Estándar", "Standard")} (120 × 100 cm)
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
                             className={`${styles.requirementPill} ${palletPreset === "euro" ? styles.requirementPillActive : ""}`}
                             onClick={() => {
@@ -1363,19 +1259,19 @@ export function FreightIntakeForm({
                             }}
                           >
                             {t("Europeo", "Euro")} (120 × 80 cm)
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
                             className={`${styles.requirementPill} ${palletPreset === "custom" ? styles.requirementPillActive : ""}`}
                             onClick={() => setPalletPreset("custom")}
                           >
                             {t("Personalizado", "Custom")}
-                          </button>
+                          </Button>
                         </div>
                         <div className={styles.dimensionRow}>
                           <div className={styles.dimensionInputGroup}>
                             <span>{t("Largo (cm)", "Length (cm)")}</span>
-                            <input
+                            <Input
                               type="number"
                               readOnly={readOnly || palletPreset !== "custom"}
                               value={nullableNumber(form.lengthCm ?? 120)}
@@ -1385,7 +1281,7 @@ export function FreightIntakeForm({
                           </div>
                           <div className={styles.dimensionInputGroup}>
                             <span>{t("Ancho (cm)", "Width (cm)")}</span>
-                            <input
+                            <Input
                               type="number"
                               readOnly={readOnly || palletPreset !== "custom"}
                               value={nullableNumber(form.widthCm ?? 100)}
@@ -1395,7 +1291,7 @@ export function FreightIntakeForm({
                           </div>
                           <div className={styles.dimensionInputGroup}>
                             <span>{t("Alto con carga (cm)", "Loaded height (cm)")}</span>
-                            <input
+                            <Input
                               type="number"
                               readOnly={readOnly}
                               value={nullableNumber(form.heightCm)}
@@ -1413,7 +1309,7 @@ export function FreightIntakeForm({
                         <div className={styles.dimensionRow}>
                           <div className={styles.dimensionInputGroup}>
                             <span>{t("Largo (cm)", "Length (cm)")}</span>
-                            <input
+                            <Input
                               type="number"
                               readOnly={readOnly}
                               value={nullableNumber(form.lengthCm)}
@@ -1423,7 +1319,7 @@ export function FreightIntakeForm({
                           </div>
                           <div className={styles.dimensionInputGroup}>
                             <span>{t("Ancho (cm)", "Width (cm)")}</span>
-                            <input
+                            <Input
                               type="number"
                               readOnly={readOnly}
                               value={nullableNumber(form.widthCm)}
@@ -1433,7 +1329,7 @@ export function FreightIntakeForm({
                           </div>
                           <div className={styles.dimensionInputGroup}>
                             <span>{t("Alto (cm)", "Height (cm)")}</span>
-                            <input
+                            <Input
                               type="number"
                               readOnly={readOnly}
                               value={nullableNumber(form.heightCm)}
@@ -1499,38 +1395,38 @@ export function FreightIntakeForm({
               </div>
 
               <div className={styles.requirementPillGroup}>
-                <button
+                <Button
                   type="button"
                   className={`${styles.requirementPill} ${requiresRefrigeration ? styles.requirementPillActive : ""}`}
                   onClick={() => setRequiresRefrigeration(!requiresRefrigeration)}
                   disabled={readOnly}
                 >
                   {t("❄ Temperatura controlada", "❄ Temperature controlled")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   className={`${styles.requirementPill} ${isHazardous ? styles.requirementPillActive : ""}`}
                   onClick={() => setIsHazardous(!isHazardous)}
                   disabled={readOnly}
                 >
                   {t("⚠ Mercancía peligrosa (Hazmat)", "⚠ Hazardous materials (Hazmat)")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   className={`${styles.requirementPill} ${isFragile ? styles.requirementPillActive : ""}`}
                   onClick={() => setIsFragile(!isFragile)}
                   disabled={readOnly}
                 >
                   {t("◇ Carga frágil", "◇ Fragile cargo")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   className={`${styles.requirementPill} ${isOversized ? styles.requirementPillActive : ""}`}
                   onClick={() => setIsOversized(!isOversized)}
                   disabled={readOnly}
                 >
                   {t("↔ Sobredimensionada", "↔ Oversized")}
-                </button>
+                </Button>
               </div>
 
               {requiresRefrigeration && (
@@ -1538,7 +1434,7 @@ export function FreightIntakeForm({
                   <span style={{ fontSize: "0.74rem", fontWeight: 700, color: "#0c6396" }}>
                     {t("Rango de temperatura requerido:", "Required temperature range:")}
                   </span>
-                  <input
+                  <Input
                     type="number"
                     className={styles.tempInput}
                     value={tempMin}
@@ -1546,7 +1442,7 @@ export function FreightIntakeForm({
                     readOnly={readOnly}
                   />
                   <span style={{ fontSize: "0.74rem", color: "#0c6396" }}>°C a</span>
-                  <input
+                  <Input
                     type="number"
                     className={styles.tempInput}
                     value={tempMax}
@@ -1576,7 +1472,7 @@ export function FreightIntakeForm({
             </div>
           </> : null}
 
-          {step === 3 ? <>
+          {step === 2 ? <>
             <FormHeading
               id="step-title-3"
               title={t("Programación y preferencias", "Schedule and preferences")}
@@ -1594,7 +1490,7 @@ export function FreightIntakeForm({
               <div className={styles.fieldGrid}>
                 <Field label={t("Modo de recojo", "Pickup mode")}>
                   {readOnly ? (
-                    <input readOnly value={form.pickupMode} />
+                    <Input readOnly value={form.pickupMode} />
                   ) : (
                     <select
                       value={form.pickupMode}
@@ -1611,7 +1507,7 @@ export function FreightIntakeForm({
                 {form.pickupMode === "SCHEDULED" ? (
                   <>
                     <Field label={t("Inicio de ventana de recojo", "Pickup window start")}>
-                      <input
+                      <Input
                         type="datetime-local"
                         readOnly={readOnly}
                         value={toDatetimeLocalValue(form.pickupWindowStart)}
@@ -1619,7 +1515,7 @@ export function FreightIntakeForm({
                       />
                     </Field>
                     <Field label={t("Fin de ventana de recojo", "Pickup window end")}>
-                      <input
+                      <Input
                         type="datetime-local"
                         readOnly={readOnly}
                         value={toDatetimeLocalValue(form.pickupWindowEnd)}
@@ -1627,7 +1523,7 @@ export function FreightIntakeForm({
                       />
                     </Field>
                     <Field label={t("Deadline de entrega en destino", "Destination delivery deadline")}>
-                      <input
+                      <Input
                         type="datetime-local"
                         readOnly={readOnly}
                         value={toDatetimeLocalValue(form.deliveryDeadline)}
@@ -1637,7 +1533,7 @@ export function FreightIntakeForm({
                   </>
                 ) : (
                   <Field label={t("Recojo requerido", "Required pickup")} wide>
-                    <input readOnly value={t("ASAP · Recolección prioritaria en el primer turno disponible", "ASAP · Priority pickup in the first available slot")} />
+                    <Input readOnly value={t("ASAP · Recolección prioritaria en el primer turno disponible", "ASAP · Priority pickup in the first available slot")} />
                   </Field>
                 )}
               </div>
@@ -1654,7 +1550,7 @@ export function FreightIntakeForm({
 
               <div style={{ marginTop: "0.4rem", marginBottom: "0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
                 <div className={styles.segmentedGroup}>
-                  <button
+                  <Button
                     type="button"
                     className={`${styles.segmentedBtn} ${!hasBudgetLimit ? styles.segmentedBtnActive : ""}`}
                     onClick={() => {
@@ -1664,8 +1560,8 @@ export function FreightIntakeForm({
                     }}
                   >
                     {t("Sin límite presupuestario", "No budget limit")}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     className={`${styles.segmentedBtn} ${hasBudgetLimit ? styles.segmentedBtnActive : ""}`}
                     onClick={() => {
@@ -1676,17 +1572,17 @@ export function FreightIntakeForm({
                     }}
                   >
                     {t("Definir presupuesto máximo", "Set maximum budget")}
-                  </button>
+                  </Button>
                 </div>
 
                 {!readOnly && (
-                  <button
+                  <Button
                     type="button"
                     className={styles.aiSuggestBtn}
                     onClick={handleEstimateBudget}
                   >
                     <span aria-hidden="true">≈</span> {t("Calcular estimación local", "Calculate local estimate")}
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -1700,7 +1596,7 @@ export function FreightIntakeForm({
               {hasBudgetLimit ? (
                 <div className={styles.fieldGrid}>
                   <Field label={`${t("Presupuesto máximo", "Maximum budget")} (${form.currency})`}>
-                    <input
+                    <Input
                       min="1"
                       required={!readOnly}
                       readOnly={readOnly}
@@ -1763,7 +1659,7 @@ export function FreightIntakeForm({
               <fieldset className={styles.documentFieldset} style={{ border: 0, padding: 0, margin: "0.5rem 0 0" }}>
                 {documentOptions.map((doc) => (
                   <label key={doc.code}>
-                    <input
+                    <Input
                       type="checkbox"
                       disabled={readOnly}
                       checked={form.documents.map(mapDocumentToCanonicalCode).includes(doc.code)}
@@ -1776,7 +1672,7 @@ export function FreightIntakeForm({
             </div>
           </> : null}
 
-          {step === 4 ? <>
+          {step === 3 ? <>
             <FormHeading
               id="step-title-4"
               title={t("Revisión de solicitud", "Request review")}
@@ -1852,16 +1748,16 @@ export function FreightIntakeForm({
               <div className={styles.searchingState} role="status" aria-live="polite">
                 <span className={styles.searchingIcon}><LoaderCircle className={styles.spinner} size={22} aria-hidden="true" /></span>
                 <span>
-                  <strong>{t("Orquestando con WebMCP", "Orchestrating with WebMCP")}</strong>
-                  <small>{t("Estamos consultando los transportistas registrados en tiempo real. Serás dirigido al despacho cuando termine la evaluación.", "We are querying registered carriers in real time. You will be taken to dispatch when evaluation finishes.")}</small>
+                  <strong>{t("Enviando solicitud", "Submitting request")}</strong>
+                  <small>{t("CargoMesh crea el borrador DRAFT y valida su versión antes de pasarlo a PENDING.", "CargoMesh creates the DRAFT and validates its version before transitioning it to PENDING.")}</small>
                 </span>
               </div>
             ) : (
               <div className={styles.readyNotice}>
                 <FileCheck2 size={20} aria-hidden="true" />
                 <span>
-                  <strong>{dispatchBlockReason ? t("Dispatch bloqueado", "Dispatch blocked") : t("CargoMesh está listo para buscar capacidad logística compatible.", "CargoMesh is ready to find compatible logistics capacity.")}</strong>
-                  <small>{dispatchBlockReason ?? t("Al iniciar orquestación, el agente WebMCP visitará cada carrier para validar cobertura, capacidad y cotización.", "When orchestration starts, the WebMCP agent visits each carrier to validate coverage, capacity, and quote.")}</small>
+                  <strong>{t("La solicitud está lista para enviarse.", "The request is ready to submit.")}</strong>
+                  <small>{t("El envío usa Hono V2 y expected_draft_version para impedir actualizaciones concurrentes.", "Submission uses Hono V2 and expected_draft_version to prevent concurrent updates.")}</small>
                 </span>
               </div>
             )}
@@ -1870,57 +1766,45 @@ export function FreightIntakeForm({
           <footer className={styles.actions}>
             {saveNotice ? <p className={styles.infoBox} role="status">{saveNotice}</p> : null}
             {submitError ? <p className={styles.submitError} role="alert">{submitError}</p> : null}
-            <button
+            <Button
               type="button"
+              variant="secondary"
               className={styles.secondaryButton}
-              disabled={step === 0 || submitting || saving}
+              disabled={step === 0 || submitting || creatingDraft}
               onClick={() => setStep((current) => current - 1)}
             >
               <ArrowLeft size={17} aria-hidden="true" /> {t("Anterior", "Back")}
-            </button>
+            </Button>
             {form.source === "new-draft" ? (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 className={styles.secondaryButton}
-                disabled={submitting || saving || creatingDraft}
+                disabled={submitting || creatingDraft}
                 onClick={() => void handleCreateDraft()}
               >
                 <FileCheck2 size={17} aria-hidden="true" />
                 {creatingDraft ? t("Creando…", "Creating…") : t("Crear borrador", "Create draft")}
-              </button>
+              </Button>
             ) : null}
-            {isEditable && form.source === "persisted" && Boolean(form.freightRequestId) ? (
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                disabled={submitting || saving || creatingDraft}
-                onClick={() => void saveManualDraft()}
-              >
-                <FileCheck2 size={17} aria-hidden="true" />
-                {saving ? t("Guardando…", "Saving…") : t("Guardar borrador", "Save draft")}
-              </button>
-            ) : null}
-            <button
+            <Button
               type="submit"
+              variant="primary"
               className={styles.primaryButton}
+              isLoading={submitting}
               disabled={
                 submitting ||
-                saving ||
                 creatingDraft ||
-                (step === steps.length - 1 && form.source !== "new-draft" && dispatchBlockReason !== null)
+                (step === steps.length - 1 && form.status !== "DRAFT")
               }
             >
-              {submitting
-                ? <><LoaderCircle className={styles.spinner} size={17} aria-hidden="true" /> {t("Orquestando con WebMCP…", "Orchestrating with WebMCP…")}</>
-                : saving || creatingDraft
-                  ? t("Procesando…", "Processing…")
-                  : step === steps.length - 1
-                    ? form.source === "new-draft"
-                      ? t("Crear borrador", "Create draft")
-                      : t("Iniciar orquestación", "Start orchestration")
-                    : t("Continuar", "Continue")}
+              {creatingDraft
+                ? t("Creando borrador…", "Creating draft…")
+                : step === steps.length - 1
+                  ? t("Enviar solicitud", "Submit request")
+                  : t("Siguiente", "Next")}
               {submitting ? null : <ArrowRight size={17} aria-hidden="true" />}
-            </button>
+            </Button>
           </footer>
         </section>
 
@@ -1930,9 +1814,7 @@ export function FreightIntakeForm({
               ? t("ViewModel persistido (Cerrado)", "Persisted ViewModel (Closed)")
               : form.source === "new-draft"
                 ? t("Nuevo borrador sin persistir", "New unsaved draft")
-                : isCleanMode
-                  ? t("Borrador v1 (Nuevo)", "Draft v1 (New)")
-                  : `${t("Borrador", "Draft")} v${form.draftVersion}`}
+                : `${t("Borrador", "Draft")} v${form.draftVersion}`}
           </span>
           <h2>{form.requestId || t("Borrador sin persistir", "Unsaved draft")}</h2>
           <dl>
@@ -2024,34 +1906,16 @@ export function FreightIntakeForm({
             <ShieldCheck size={16} aria-hidden="true" />
             {readOnly
               ? t("El servidor conserva la fuente de verdad; esta vista no inventa ni reemplaza valores ausentes.", "The server remains the source of truth; this view neither invents nor replaces missing values.")
-              : t("Persistencia manual atómica con recálculo de peso/volumen en servidor y control STALE_DRAFT.", "Atomic manual persistence with server-side weight/volume recalculation and STALE_DRAFT control.")}
+              : t("Persistencia mediante Hono V2 con control optimista de versión y manejo explícito de STALE_DRAFT.", "Persistence through Hono V2 with optimistic version control and explicit STALE_DRAFT handling.")}
           </p>
         </aside>
       </form>
-      <iframe ref={runnerFrameRef} className={styles.runnerFrame} src="/" title={t("Ejecución WebMCP de providers", "WebMCP provider execution")} aria-hidden="true" tabIndex={-1} />
     </div>
   );
 }
 
 function FormHeading({ id, title, description }: { id: string; title: string; description: string }) { const { t } = useLocale(); return <header className={styles.formHeading}><span className={styles.eyebrow}>{t("Configuración", "Configuration")}</span><h2 id={id}>{title}</h2><p>{description}</p></header>; }
 function Field({ label, wide = false, children }: { label: string; wide?: boolean; children: React.ReactNode }) { return <label className={wide ? styles.fieldWide : undefined}><span>{label}</span>{children}</label>; }
-function NumberField({ label, value, readOnly, onChange }: { label: string; value: number | null; readOnly: boolean; onChange: (value: number | null) => void }) { return <Field label={label}><input min="1" required={!readOnly} readOnly={readOnly} type="number" value={nullableNumber(value)} onChange={(event) => onChange(event.target.value ? Number(event.target.value) : null)} /></Field>; }
+function NumberField({ label, value, readOnly, onChange }: { label: string; value: number | null; readOnly: boolean; onChange: (value: number | null) => void }) { return <Field label={label}><Input min="1" required={!readOnly} readOnly={readOnly} type="number" value={nullableNumber(value)} onChange={(event) => onChange(event.target.value ? Number(event.target.value) : null)} /></Field>; }
 function InfoBox({ children }: { children: React.ReactNode }) { return <p className={styles.infoBox}><ShieldCheck size={17} aria-hidden="true" /> {children}</p>; }
 function ReviewItem({ label, value }: { label: string; value: string }) { return <div><small>{label}</small><strong>{value}</strong></div>; }
-
-function localizeDispatchBlockReason(
-  reason: string | null,
-  t: (spanish: string, english: string) => string,
-) {
-  if (!reason) return null;
-  if (reason.startsWith("La solicitud está en estado ")) {
-    const status = reason.slice("La solicitud está en estado ".length).split(" ")[0];
-    return t(reason, `The request is in ${status} status and cannot start a new evaluation.`);
-  }
-  const translations: Record<string, string> = {
-    "Debes crear y guardar la solicitud en el servidor antes de iniciar la orquestación.": "You must create and save the request on the server before starting orchestration.",
-    "El escenario fixture es exclusivamente visual y no puede iniciar un dispatch real.": "The fixture scenario is visual only and cannot start a real dispatch.",
-    "La solicitud no tiene un volumen canónico compatible con el runner actual.": "The request does not have a canonical volume compatible with the current runner.",
-  };
-  return t(reason, translations[reason] ?? reason);
-}
