@@ -156,7 +156,7 @@ The earlier statement that the manifest lived under `frontend/` was removed: it 
 - No hosted secrets or Vercel/Supabase remote configuration changes.
 - No changes to the versioned `.pnpm-store/`.
 - No merge into `codex/c-mcp-contracts` or `main`.
-- The PR remains Draft until the hosted preflight blocker is resolved or explicitly dispositioned by the Tech Lead.
+- The PR remains Draft until the Friday 25 Gate-1 session; the hosted preflight evidence must be resolved or explicitly dispositioned by the Tech Lead before Ready for review.
 
 ## 8. Current verdict
 
