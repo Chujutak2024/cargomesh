@@ -1,14 +1,23 @@
-# CargoMesh MCP local preview (Milestones 1–2)
+# CargoMesh MCP local preview
 
 Implemented: `/mcp` on the Next.js Node runtime, official SDK `1.30.0`, tested protocol `2025-11-25`, stateless Streamable HTTP with JSON responses. Two registered tools call shared feature services directly: `get_freight_options` reads persisted orchestration; `create_freight_request` creates an idempotent DRAFT. Neither uses Hono HTTP, starts runs, contacts providers or books freight.
 
 The SDK retains its protocol negotiation behavior for older supported clients. Compatibility testing here targets 2025-11-25. No MCP sessions, standalone SSE subscriptions, OAuth, bearer authentication, Alexa, AWS or Bedrock integration are implemented.
 
+| MCP tool | Current state |
+| --- | --- |
+| `create_freight_request` | Implemented; real `/mcp` → service → authenticated member → local Supabase INSERT and persisted-row read verified. |
+| `get_freight_options` | Implemented read adapter; protocol/service tests pass, but no local persisted orchestration run was available for a live read smoke test. |
+| `find_freight_options` | Proposed contract; not registered. |
+| `authorize_and_book` | Proposed contract; not registered. |
+| `get_booking_status` | Proposed contract; not registered. |
+| `recover_booking` | Proposed contract; not registered. |
+
 ## Start locally
 
-Use the project's existing local Supabase configuration and an existing authenticated CargoMesh member. This implementation does not provision users or seed runs.
+Use the project's existing local Supabase configuration and an authenticated CargoMesh member. `supabase/seed.sql` already provisions the local demo SUPERVISOR; the optional `supabase/scenarios/mcp-local/seed.sql` provisions a REQUESTER for the denial test. Neither is production data.
 
-Creation additionally requires [the idempotency migration](../../../../supabase/migrations/20260918120000_c_draft_creation_idempotency.sql) applied to the intended local database. The migration was tested in a rolled-back local transaction and has not been applied permanently. Do not run a remote `db push` as part of local testing. PostgreSQL checks are in [test 08](../../../../supabase/tests/08_draft_creation_idempotency.test.sql); they require the existing local ACME/FR-1042 scenario and roll back their test rows. Docker was started successfully. All 13 SQL assertions passed on local PostgreSQL 17.6, including duplicate keys, immutable receipts, manager-only writes, member spoofing and anonymous denial. The local database contains zero orchestration runs, so the authenticated M1 existing-run smoke test remains pending.
+Creation requires [the idempotency migration](../../../../supabase/migrations/20260918120000_c_draft_creation_idempotency.sql) applied to the intended database. It was applied to the local Supabase database for this verification; no remote `db push` was run. PostgreSQL checks are in [test 08](../../../../supabase/tests/08_draft_creation_idempotency.test.sql). The local database contains zero orchestration runs, so the authenticated M1 existing-run smoke test remains pending.
 
 ## Creation contract
 
@@ -23,7 +32,7 @@ $env:CARGOMESH_MCP_LOCAL_ENABLED = 'true'
 pnpm dev --hostname 127.0.0.1
 ```
 
-Open CargoMesh at `http://localhost:3000` and sign in. Use that same origin for MCP requests. The feature flag is server-only and defaults off. The endpoint returns 404 outside development/test, even when the flag is true. `pnpm start` therefore does not enable this local preview. Keep the development server bound to loopback; do not expose it through a tunnel/proxy.
+Open CargoMesh at the same loopback origin as the development server and sign in. The feature flag is server-only and defaults off. The endpoint returns 404 outside development/test, even when the flag is true. `pnpm start` therefore does not enable this local preview. Keep the development server bound to loopback; do not expose it through a tunnel/proxy.
 
 Every request, including initialize/list, requires the current CargoMesh cookie session. The domain read independently checks session, RLS visibility and organization membership. A Bearer header is not a session. Remote clients without cookie integration are not supported until the auth milestone; do not distribute browser cookies or add a service-role bypass.
 
@@ -70,8 +79,10 @@ pnpm test:release
 pnpm build
 ```
 
-Tests exercise the actual handler, SDK client/server/transport and existing pure view-model builder. Only authentication and the database service boundary are injected. They cover protocol negotiation, list/call, all view states, input/output validation, disabled/production access, Host/Origin rejection, auth failures, downstream access denial, safe diagnostics, concurrency and body limits. They do not certify live Supabase RLS or a real authenticated DB read; perform that read separately against an authorized local environment. No remote database or provider calls are made by these tests.
+The default tests exercise the handler, SDK client/server/transport and existing pure view-model builder with injected auth/database boundaries. The separate `pnpm test:mcp:local` test exercises the running Next route, real Supabase session and RLS, service insertion, row readback, replay/conflict and failure cases. It is intentionally excluded from `test:mcp` because it needs local Docker and a running Next development server. No remote database or provider calls are made.
 
-Verification: typecheck, test:release (including 36 MCP/creation tests), 42 additional existing Hono tests, and Next.js production build passed. The build registers /mcp but the handler remains disabled in production. Creation coverage includes concurrent same/different payloads, code collisions, lost write responses, read-after-write failure, replay after edits, permission revocation and organization/member scoping. TypeScript storage/auth are injected. Separately, the migration and all 13 pgTAP assertions passed against local PostgreSQL 17.6 and were rolled back. Permanent migration application and an authenticated MCP end-to-end smoke test remain pending; no provider smoke test was run.
+The build registers `/mcp` but the handler remains disabled in production. The local integration test confirmed a persisted DRAFT with expected organization/member, route, cargo and strategy using an authenticated SUPERVISOR, plus anonymous denial, REQUESTER denial, invalid input, idempotent replay/conflict, and a database INSERT failure whose SQL detail stayed private. It uses new UUIDs for each run and deletes only its own draft afterward through local Docker SQL so the Golden Flow pgTAP fixture remains intact. No provider smoke test was run.
+
+To reproduce the local integration test, work from the repository root to start Supabase and apply the migration **locally**. Apply [the requester scenario seed](../../../../supabase/scenarios/mcp-local/seed.sql) to the local database only. In one PowerShell terminal from `cargomesh/`, obtain `API_URL` and `ANON_KEY` from `supabase status -o json`, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, set `CARGOMESH_MCP_LOCAL_ENABLED=true`, then run `pnpm dev --hostname 127.0.0.1 --port 3100`. In a second terminal set the same two Supabase variables and `CARGOMESH_MCP_TEST_PASSWORD` to the local-only password in `supabase/seed.sql`, then run `pnpm test:mcp:local`. Docker must be available for the exact-ID local cleanup. The test refuses non-loopback app or Supabase URLs. Run `supabase test db` from the repository root for pgTAP. The local test is a separate opt-in command and must never target hosted Supabase.
 
 Later tools remain unregistered until their documented submission, executor, approval and auth dependencies are implemented. See [contracts](../../../../docs/architecture-v2/MCP_TOOL_CONTRACTS.md).

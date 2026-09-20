@@ -2,7 +2,7 @@
 
 Status: M1 local bootstrap and M2 draft-creation code implemented on branch `codex/c-mcp-contracts`. M2 requires the new SQL migration; authenticated MCP-to-database verification is pending. Other tools/milestones remain proposed. Initial source analysis: 2026-09-18 against application commit `d26c5e4`.
 
-The [local guide](../../cargomesh/src/server/mcp/README.md) covers the implemented endpoint and registered tools, get_freight_options and create_freight_request. No OAuth, Alexa+, Bedrock, AgentCore or Strands is implemented. Existing exports and proposed adapters are distinguished below. Historical test results are not a fresh verification of this checkout.
+The [local guide](../../cargomesh/src/server/mcp/README.md) covers the implemented endpoint and registered tools, get_freight_options and create_freight_request. The create tool's real local Next → authenticated Supabase → persisted row path has been verified. The get tool's live persisted-run read remains unverified because the local database has no orchestration run. The other four proposed tools below are not registered. No OAuth, Alexa+, Bedrock, AgentCore or Strands is implemented. [Sample Alexa+ tool arguments](alexa-sample-request-payload.json) and [example utterances](alexa-sample-utterances.md) illustrate a possible future client; they are not an integration. Historical test results are not a fresh verification of this checkout.
 
 ## Scope
 

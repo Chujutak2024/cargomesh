@@ -187,6 +187,15 @@ test("local browser Origin is accepted; protocol access still requires authentic
   assert.equal(h.authCalls(), 1);
 });
 
+test("Next localhost URL normalization accepts a 127.0.0.1 Host on the same port", async () => {
+  const h = harness();
+  const response = await h.handle(rpc("tools/list", {}, {
+    headers: { ...headers, Host: "127.0.0.1:3000", Origin: "http://127.0.0.1:3000" },
+  }));
+  assert.equal(response.status, 200);
+  assert.equal(h.authCalls(), 1);
+});
+
 for (const [message, status] of [["UNAUTHENTICATED: secret", 401], ["FORBIDDEN: secret", 403], ["database secret", 500]] as const) {
   test(`authentication failure ${status} gates initialize/list/call without leaking details`, async () => {
     const h = harness({ authError: new Error(message) });

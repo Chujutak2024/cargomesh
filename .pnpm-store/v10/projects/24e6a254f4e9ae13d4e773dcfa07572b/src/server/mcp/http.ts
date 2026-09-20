@@ -23,9 +23,17 @@ function isLocalRequest(request: Request): boolean {
   if (url.protocol !== "http:" && url.protocol !== "https:") return false;
   if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) return false;
   const host = request.headers.get("host");
-  if (host !== null && host !== url.host) return false;
+  // Next may normalize Request.url to localhost even when bound to 127.0.0.1.
+  // Both authorities must remain loopback and refer to the same port.
+  let requestOrigin = url.origin;
+  if (host !== null) {
+    let hostUrl: URL;
+    try { hostUrl = new URL(`${url.protocol}//${host}`); } catch { return false; }
+    if (hostUrl.host !== host || !["localhost", "127.0.0.1", "[::1]"].includes(hostUrl.hostname) || hostUrl.port !== url.port) return false;
+    requestOrigin = hostUrl.origin;
+  }
   const origin = request.headers.get("origin");
-  return (origin === null || origin === url.origin) && request.headers.get("sec-fetch-site") !== "cross-site";
+  return (origin === null || origin === requestOrigin) && request.headers.get("sec-fetch-site") !== "cross-site";
 }
 
 export function createMcpHttpHandler(dependencies: Dependencies = {

@@ -1,9 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import { createMcpHttpHandler } from "./http";
 import { creationInput } from "./creation-test-fixture";
+import { CreateFreightRequestInputSchema } from "@/shared/schemas/freight-creation";
 import { RecommendationDraftError } from "@/features/recommendations/recommendation-draft-contracts";
 import type { CreateFreightRequest } from "./tools/create-freight-request";
+
+test("Alexa+ example is exactly valid create_freight_request tool arguments", () => {
+  const file = new URL("../../../../docs/architecture-v2/alexa-sample-request-payload.json", import.meta.url);
+  const raw = JSON.parse(readFileSync(file, "utf8"));
+  assert.deepEqual(CreateFreightRequestInputSchema.parse(raw), raw);
+});
 
 function harness(create: CreateFreightRequest, authError?: Error) {
   const handle = createMcpHttpHandler({

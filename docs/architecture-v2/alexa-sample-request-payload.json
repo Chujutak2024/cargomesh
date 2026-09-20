@@ -1,0 +1,25 @@
+{
+  "idempotencyKey": "51c939ba-8b2f-4b1e-a53f-e97ad1b30c8a",
+  "fields": {
+    "cargoCategoryCode": "MACHINERY",
+    "originCountry": "PE",
+    "originRegion": "Callao",
+    "originCity": "Callao",
+    "destinationCountry": "CL",
+    "destinationRegion": "Región Metropolitana",
+    "destinationCity": "Santiago",
+    "cargoEntryMethod": "PALLETS",
+    "entryQuantity": 2,
+    "entryUnitWeightKg": 800,
+    "unitsPerEntry": 1,
+    "entryLengthCm": 120,
+    "entryWidthCm": 100,
+    "entryHeightCm": 150,
+    "pickupMode": "SCHEDULED",
+    "pickupWindowStart": "2026-10-15T12:00:00Z",
+    "pickupWindowEnd": "2026-10-16T12:00:00Z",
+    "deliveryDeadline": "2026-10-19T12:00:00Z",
+    "budgetMax": null,
+    "availableDocuments": []
+  }
+}
