@@ -69,3 +69,25 @@ export const CreateFreightRequestSchema = z.object({
 });
 
 export type CreateFreightRequestInput = z.infer<typeof CreateFreightRequestSchema>;
+
+export const SubmitFreightRequestSchema = z.object({
+  draftVersion: z
+    .number()
+    .int()
+    .positive()
+    .describe("Current draft version for optimistic concurrency"),
+});
+
+export type SubmitFreightRequestInput = z.infer<typeof SubmitFreightRequestSchema>;
+
+export const SubmitFreightRequestParamsSchema = z.object({
+  freightRequestId: z.string().uuid().describe("Target freight request UUID"),
+  draftVersion: z
+    .number()
+    .int()
+    .positive()
+    .describe("Current draft version for optimistic concurrency"),
+});
+
+export type SubmitFreightRequestParams = z.infer<typeof SubmitFreightRequestParamsSchema>;
+

@@ -61,13 +61,15 @@ type MockOptions = {
   authFails?: boolean;
   serviceResult?: unknown;
   serviceError?: Error;
+  submitResult?: unknown;
+  submitError?: Error & { code?: string; httpStatus?: number };
 };
 
 async function buildTestApp(opts: MockOptions = {}) {
   const { adaptV2ToLegacyService } = await import(
     "@/server/hono/adapters/freight-request-adapter"
   );
-  const { CreateFreightRequestSchema } = await import(
+  const { CreateFreightRequestSchema, SubmitFreightRequestSchema } = await import(
     "@/shared/schemas/freight-request"
   );
   const { successResponse, errorResponse } = await import(
@@ -121,6 +123,49 @@ async function buildTestApp(opts: MockOptions = {}) {
       return c.json(errorResponse("SERVICE_ERROR", opts.serviceError.message), 500);
     }
     return c.json(successResponse(opts.serviceResult ?? {}), 201);
+  });
+
+  app.post("/freight/requests/:id/submit", async (c) => {
+    if (opts.authFails) {
+      return c.json(errorResponse("UNAUTHENTICATED", "Authentication required."), 401);
+    }
+
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(errorResponse("INVALID_ARGUMENT", "Request body must be valid JSON."), 400);
+    }
+
+    let input;
+    try {
+      input = SubmitFreightRequestSchema.parse(body);
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "errors" in err) {
+        const zodErr = err as { errors: Array<{ path: string[]; message: string }> };
+        const msg = zodErr.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join("; ");
+        return c.json(errorResponse("VALIDATION_ERROR", msg), 400);
+      }
+      return c.json(errorResponse("VALIDATION_ERROR", "Schema validation failed."), 400);
+    }
+
+    if (opts.submitError) {
+      const status = (opts.submitError.httpStatus ?? 500) as Parameters<typeof c.json>[1];
+      return c.json(
+        errorResponse(opts.submitError.code ?? "SERVICE_ERROR", opts.submitError.message),
+        status,
+      );
+    }
+
+    return c.json(
+      successResponse(
+        opts.submitResult ?? {
+          status: "PENDING",
+          draftVersion: input.draftVersion + 1,
+        },
+      ),
+      200,
+    );
   });
 
   return app;
@@ -378,3 +423,79 @@ describe("Response envelope contract", () => {
     assert.ok(!("data" in json), "should not have data");
   });
 });
+
+// ─── POST /freight/requests/:id/submit ───────────────────────────────────────
+
+describe("POST /freight/requests/:id/submit — Transition DRAFT -> PENDING", () => {
+  it("returns 200 with ok:true and updated intake data", async () => {
+    const app = await buildTestApp({
+      submitResult: { status: "PENDING", draftVersion: 2, requestCode: "FR-3001" },
+    });
+    const res = await app.request(
+      "/freight/requests/10000000-0000-0000-0000-000000000001/submit",
+      jsonRequest({ draftVersion: 1 }),
+    );
+    assert.equal(res.status, 200);
+    const json = (await res.json()) as Record<string, unknown>;
+    assert.equal(json.ok, true);
+    const data = json.data as Record<string, unknown>;
+    assert.equal(data.status, "PENDING");
+    assert.equal(data.draftVersion, 2);
+  });
+
+  it("returns 400 when body is not valid JSON", async () => {
+    const app = await buildTestApp();
+    const res = await app.request(
+      "/freight/requests/10000000-0000-0000-0000-000000000001/submit",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "invalid-json",
+      },
+    );
+    assert.equal(res.status, 400);
+    const json = (await res.json()) as Record<string, unknown>;
+    assert.equal(json.ok, false);
+  });
+
+  it("returns 400 when draftVersion is missing or invalid", async () => {
+    const app = await buildTestApp();
+    const resMissing = await app.request(
+      "/freight/requests/10000000-0000-0000-0000-000000000001/submit",
+      jsonRequest({}),
+    );
+    assert.equal(resMissing.status, 400);
+
+    const resInvalid = await app.request(
+      "/freight/requests/10000000-0000-0000-0000-000000000001/submit",
+      jsonRequest({ draftVersion: -1 }),
+    );
+    assert.equal(resInvalid.status, 400);
+  });
+
+  it("returns 401 when unauthenticated", async () => {
+    const app = await buildTestApp({ authFails: true });
+    const res = await app.request(
+      "/freight/requests/10000000-0000-0000-0000-000000000001/submit",
+      jsonRequest({ draftVersion: 1 }),
+    );
+    assert.equal(res.status, 401);
+  });
+
+  it("returns 409 when draft version is stale", async () => {
+    const staleErr = Object.assign(new Error("El borrador cambió."), {
+      code: "STALE_DRAFT",
+      httpStatus: 409,
+    });
+    const app = await buildTestApp({ submitError: staleErr });
+    const res = await app.request(
+      "/freight/requests/10000000-0000-0000-0000-000000000001/submit",
+      jsonRequest({ draftVersion: 1 }),
+    );
+    assert.equal(res.status, 409);
+    const json = (await res.json()) as Record<string, unknown>;
+    assert.equal(json.ok, false);
+    assert.equal((json.error as Record<string, unknown>).code, "STALE_DRAFT");
+  });
+});
+

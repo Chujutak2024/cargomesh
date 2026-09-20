@@ -118,3 +118,11 @@ export async function createIdempotentFreightRequestDraftServer(rawInput: unknow
     },
   });
 }
+
+export {
+  submitFreightRequestDraftServer,
+  submitFreightRequestDraftWithDependencies,
+  type DraftSubmissionDependencies,
+  type SubmitFreightRequestDraftInput,
+} from "./draft-submission-server";
+

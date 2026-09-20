@@ -57,4 +57,39 @@ freightRequestsRouter.post("/", authMiddleware, async (c) => {
   return c.json(successResponse(result), 201);
 });
 
+// ---------------------------------------------------------------------------
+// POST /freight/requests/:id/submit — CargoMesh V2
+//
+// Transitions a FreightRequest from DRAFT to PENDING.
+// Validates minimum required fields (origin, destination, cargo category, weight, pickup),
+// verifies optimistic concurrency via draftVersion, and returns the updated intake.
+// ---------------------------------------------------------------------------
+freightRequestsRouter.post("/:id/submit", authMiddleware, async (c) => {
+  const freightRequestId = c.req.param("id");
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    const { errorResponse } = await import("@/shared/schemas/api-envelope");
+    return c.json(
+      errorResponse("INVALID_ARGUMENT", "Request body must be valid JSON."),
+      400,
+    );
+  }
+
+  const { SubmitFreightRequestSchema } = await import(
+    "@/shared/schemas/freight-request"
+  );
+  const input = SubmitFreightRequestSchema.parse(body);
+
+  const { submitFreightRequestDraftServer } = await import(
+    "@/server/services/freight-requests/draft-creation-server"
+  );
+
+  const result = await submitFreightRequestDraftServer(freightRequestId, input);
+  return c.json(successResponse(result), 200);
+});
+
 export { freightRequestsRouter };
+
