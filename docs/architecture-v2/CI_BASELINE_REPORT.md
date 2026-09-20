@@ -156,7 +156,7 @@ The earlier statement that the manifest lived under `frontend/` was removed: it 
 - No hosted secrets or Vercel/Supabase remote configuration changes.
 - No changes to the versioned `.pnpm-store/`.
 - No merge into `codex/c-mcp-contracts` or `main`.
-- The PR remains Draft until the Friday 25 Gate-1 session; the hosted preflight evidence must be resolved or explicitly dispositioned by the Tech Lead before Ready for review.
+- No merge before the collective Gate-1 session on Friday, September 25; the Tech Lead explicitly accepted the local gates for Ready for review on 2026-09-20 while the hosted preflight remains tracked separately.
 
 ## 8. Current verdict
 
@@ -168,4 +168,4 @@ The earlier statement that the manifest lived under `frontend/` was removed: it 
 - Hosted preflight in Cristhian's configured environment: **PENDING EVIDENCE**.
 - Full `release:verify` in the BE-3 environment: **FAIL** at `release:preflight` (`6/16` diagnostic checks passed because production-owned variables are absent).
 
-Therefore, the local code and database gates are green, but the overall release gate is **not yet verified** and must not be represented as 100% passing. The PR must remain Draft until the Friday 25 Gate-1 session; before it can become Ready for review, the hosted preflight evidence must also be incorporated or the Tech Lead must explicitly disposition that requirement.
+Therefore, the local code and database gates are green, but the overall release gate is **not yet verified** and must not be represented as 100% passing. Following the Tech Lead's explicit disposition (2026-09-20), the local gates were accepted and this PR moved to Ready for review. It remains unmerged by design: integration into `codex/c-mcp-contracts` happens collectively during the Gate-1 session on Friday, September 25. The hosted release preflight remains pending and is tracked separately; this report does not claim a fully verified `release:verify`.
