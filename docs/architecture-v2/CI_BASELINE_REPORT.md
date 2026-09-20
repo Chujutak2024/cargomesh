@@ -2,7 +2,7 @@
 
 ## 1. Purpose and scope
 
-This report certifies the local CI baseline implemented for HAC-7. It covers the complete Hono freight-request harness, the local pgTAP database suite, TypeScript, the production build, and the existing release preflight. It does not claim a green result for checks that require hosted release credentials.
+This report certifies the local CI baseline implemented for HAC-7. It covers the complete Hono freight-request harness, the local pgTAP database suite, TypeScript, the production build, and the disposition of the existing hosted release preflight. It does not claim a green result for checks that require hosted release credentials.
 
 The Hono gate intentionally expands the ticket's single-file command. The route suite contains 15 tests, but the adapter suite contains another 27 contract tests that would otherwise remain outside `test:release`. The implemented command therefore executes both files:
 
@@ -41,7 +41,7 @@ The local Studio port is `56323`, as configured by `supabase/config.toml`; the `
 pnpm test:mcp && pnpm test:hono
 ```
 
-No GitHub Actions workflow is included. The Tech Lead decision on that optional, separate commit is still pending.
+The Tech Lead approved the branch-restricted GitHub Actions workflow on 2026-09-20. It is included as a separate HAC-7 commit and runs only for pull requests targeting `codex/c-mcp-contracts`.
 
 ## 4. Verification results
 
@@ -89,9 +89,11 @@ Result: PASS
 
 The verified total is 160/160: 147 historical assertions plus 13 idempotency assertions. The HAC-7 title/description and the “1. Cimientos V2” milestone still need their 147/147 wording corrected by the project lead.
 
-### 4.3 Release preflight ownership and pending hosted evidence
+### 4.3 Release preflight disposition — HAC-21
 
-The final preflight is designed for a hosted HTTPS release and reads production-owned configuration, including server-only credentials. It must therefore be executed by Cristhian Chujutalli in his already configured deployment environment. BE-3 will not request or receive those secrets; only the dated, sanitized command output will be incorporated here.
+On 2026-09-20, the Tech Lead formally removed `release:preflight` from the HAC-7 Definition of Done and transferred its resolution to **HAC-21 (Preflight y Configuración Hospedada)**, owned by Cristhian and Axel after September 22. The remote environment is frozen through **2026-09-22 23:59** for the jury evaluation of the previous hackathon, so developers must not execute the hosted preflight locally or change the remote configuration during that window.
+
+The `release:verify` script remains unchanged in `package.json` and still ends with `pnpm release:preflight`. Consequently, it does not pass end to end in the BE-3 environment. Removing or bypassing that command would weaken the release gate and is outside BE-3 authority; HAC-21 owns the hosted configuration and final resolution.
 
 The following output is a **diagnostic-only** inventory produced in the BE-3 environment with `pnpm release:preflight -- --report-only`. It is not a passing result and is not used inside `release:verify`:
 
@@ -112,19 +114,7 @@ Release preflight: 6/16 checks passed.
 
 Checks that did pass include Node.js, wildcard rejection, license presence, production bundle presence, client-bundle secret scanning, and Git-history hosted-secret scanning.
 
-No credentials were fabricated, copied into the repository, or printed into this report.
-
-#### Authoritative hosted preflight — pending
-
-| Evidence field | Value |
-| --- | --- |
-| Operator | Cristhian Chujutalli |
-| Execution environment | Operator-owned shell with the existing Supabase and Vercel production configuration |
-| Command | `pnpm release:preflight` (without `--report-only`) |
-| Execution date | **Pending** |
-| Raw sanitized result | **Pending** |
-
-This section will be completed only from the output supplied by Cristhian, attributed to him and dated. Secret values must remain redacted. Until that evidence is present and passing, the hosted release preflight is pending and the full release gate is not certified.
+No credentials were fabricated, requested, copied into the repository, or printed into this report. The diagnostic is retained as historical evidence of the scope boundary; it is not a request for hosted evidence under HAC-7. All further preflight execution, evidence, and configuration work belongs to HAC-21 after the freeze.
 
 ## 5. Reproduction commands
 
@@ -138,8 +128,12 @@ pnpm test:hono
 cd ..
 npx supabase test db
 cd cargomesh
-pnpm release:verify
+pnpm typecheck
+pnpm test:release
+pnpm build
 ```
+
+Do not run `pnpm release:verify` locally during the remote-environment freeze: it still invokes the hosted `release:preflight`. HAC-21 owns that verification path.
 
 ## 6. Friction evidence
 
@@ -152,8 +146,8 @@ The earlier statement that the manifest lived under `frontend/` was removed: it 
 
 ## 7. Explicitly excluded
 
-- No GitHub Actions workflow is committed without Tech Lead approval; a local untracked proposal may be reviewed separately.
-- No hosted secrets or Vercel/Supabase remote configuration changes.
+- No hosted preflight execution or Vercel/Supabase remote configuration changes; those belong to HAC-21 after the freeze.
+- No hosted secrets are requested or committed.
 - No changes to the versioned `.pnpm-store/`.
 - No merge into `codex/c-mcp-contracts` or `main`.
 - No merge before the collective Gate-1 session on Friday, September 25; the Tech Lead explicitly accepted the local gates for Ready for review on 2026-09-20 while the hosted preflight remains tracked separately.
@@ -165,7 +159,7 @@ The earlier statement that the manifest lived under `frontend/` was removed: it 
 - TypeScript in the BE-3 local environment: **0 errors**.
 - Production build in the BE-3 local environment: **PASS**.
 - Node test chain in the BE-3 local environment: **366/366 PASS**.
-- Hosted preflight in Cristhian's configured environment: **PENDING EVIDENCE**.
+- Hosted preflight: **OUT OF SCOPE FOR HAC-7 — transferred to HAC-21 by Tech Lead disposition on 2026-09-20**.
 - Full `release:verify` in the BE-3 environment: **FAIL** at `release:preflight` (`6/16` diagnostic checks passed because production-owned variables are absent).
 
-Therefore, the local code and database gates are green, but the overall release gate is **not yet verified** and must not be represented as 100% passing. Following the Tech Lead's explicit disposition (2026-09-20), the local gates were accepted and this PR moved to Ready for review. It remains unmerged by design: integration into `codex/c-mcp-contracts` happens collectively during the Gate-1 session on Friday, September 25. The hosted release preflight remains pending and is tracked separately; this report does not claim a fully verified `release:verify`.
+Therefore, the local code and database gates are green, but the overall release gate is **not yet verified** and must not be represented as 100% passing. Following the Tech Lead's explicit disposition (2026-09-20), the local gates were accepted and this PR moved to Ready for review. It remains unmerged by design: integration into `codex/c-mcp-contracts` happens collectively during the Gate-1 session on Friday, September 25. The hosted release preflight is tracked separately in HAC-21 after the remote freeze; this report does not claim a fully verified `release:verify`.
