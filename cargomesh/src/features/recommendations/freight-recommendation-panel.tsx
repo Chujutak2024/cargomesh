@@ -81,6 +81,12 @@ export function FreightRecommendationPanel({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const launchButtonRef = useRef<HTMLButtonElement>(null);
   const modalRef = useRef<HTMLElement>(null);
+  const displayedRegistrationError = registrationError?.startsWith("WEBMCP_UNAVAILABLE")
+    ? t(
+        "WebMCP no está habilitado en este navegador. Activa “WebMCP for testing” en Chrome y reinicia el navegador.",
+        "WebMCP is not enabled in this browser. Enable “WebMCP for testing” in Chrome and restart the browser.",
+      )
+    : registrationError;
 
   const suggestion = suggestions[activeSuggestion];
   const diff = useMemo(
@@ -249,7 +255,7 @@ export function FreightRecommendationPanel({
         <div>
           <h2 id="recommendation-title">{t("Antecedentes de tu organización", "Your organization history")}</h2>
           <p>{t("Consulta mediante WebMCP solo el historial autorizado de tu organización y decide campo por campo qué incorporar.", "Use WebMCP to query only your organization's authorized history, then choose field by field what to apply.")}</p>
-          {registrationError ? <p className={styles.errorText} role="alert">{registrationError}</p> : null}
+          {displayedRegistrationError ? <p className={styles.errorText} role="alert">{displayedRegistrationError}</p> : null}
           {notice ? <p className={styles.notice} role="status">{notice}</p> : null}
         </div>
         <button
