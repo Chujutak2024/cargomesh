@@ -17,6 +17,8 @@ create table public.mcp_audit_events (
 
 create index mcp_audit_events_organization_started_idx
   on public.mcp_audit_events (organization_id, started_at desc);
+create index mcp_audit_events_member_idx
+  on public.mcp_audit_events (member_id);
 alter table public.mcp_audit_events enable row level security;
 
 create policy mcp_audit_events_member_select on public.mcp_audit_events

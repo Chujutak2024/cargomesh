@@ -5,11 +5,20 @@ import { extractMcpAuditInput, extractMcpAuditOutput } from "./audit";
 test("records only actual MCP tool calls with safe input fields", () => {
   const call = { method: "tools/call", id: 7, params: {
     name: "create_freight_request", arguments: {
-      idempotencyKey: "secret-key", authorization: "Bearer sensitive", email: "user@example.com",
+      idempotencyKey: "TEST_IDEMPOTENCY_SECRET",
+      password: "TEST_PASSWORD",
+      authorization: "Bearer TEST_AUTH_TOKEN",
+      access_token: "TEST_ACCESS_TOKEN",
+      refresh_token: "TEST_REFRESH_TOKEN",
+      api_key: "TEST_API_KEY",
+      cookie: "TEST_COOKIE",
+      service_role: "TEST_SERVICE_ROLE",
+      email: "user@example.com",
     },
   }};
   const audit = extractMcpAuditInput(call);
   assert.deepEqual(audit, { toolName: "create_freight_request", requestId: "7", inputPayload: null });
+  assert.doesNotMatch(JSON.stringify(audit), /TEST_(?:IDEMPOTENCY_SECRET|PASSWORD|AUTH_TOKEN|ACCESS_TOKEN|REFRESH_TOKEN|API_KEY|COOKIE|SERVICE_ROLE)/);
   assert.equal(extractMcpAuditInput({ method: "tools/list", params: {} }), null);
   assert.equal(extractMcpAuditInput({ method: "tools/call", params: { name: "bad;name" } }), null);
   assert.deepEqual(extractMcpAuditInput({ method: "tools/call", id: "abc", params: {
