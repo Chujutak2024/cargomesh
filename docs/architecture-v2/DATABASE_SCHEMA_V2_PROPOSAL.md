@@ -14,8 +14,8 @@
 
 Para garantizar la integridad del sistema actual de CargoMesh:
 * **No se destruye ni se reescribe ninguna de las 20 migraciones existentes.**
-* Las 17 tablas de la base de datos, los 147 tests pgTAP, las 22 políticas RLS y la idempotencia criptográfica (`20260918120000_c_draft_creation_idempotency.sql`) permanecen **100% operativos y en verde**.
-* Toda la nueva funcionalidad multimodal, multi-sede (clientes y transportistas), matriz de ruteo O-D y tarificación dinámica se introduce mediante **nuevas tablas satélite y columnas aditivas con valores por defecto (`DEFAULT`)**.
+* Las 19 tablas de la base de datos, los 160 tests pgTAP, las 27 políticas RLS y la idempotencia criptográfica (`20260918120000_c_draft_creation_idempotency.sql`) permanecen **100% operativos y en verde**.
+* Toda la nueva funcionalidad multimodal, multi-sede (clientes y transportistas), matriz de ruteo O-D y tarificación dinámica se introduce mediante **nuevas tablas satélite y columnas aditivas con valores por defecto (`DEFAULT`)**, sin alterar constraints legacy.
 
 ---
 
@@ -271,7 +271,7 @@ ALTER TABLE public.freight_requests
     ADD COLUMN IF NOT EXISTS cargo_category_v2 cargo_category_v2_enum NOT NULL DEFAULT 'GENERAL_DRY',
     ADD COLUMN IF NOT EXISTS packaging_type packaging_type_enum NOT NULL DEFAULT 'PALLET_STANDARD_WOOD',
     ADD COLUMN IF NOT EXISTS total_cbm NUMERIC(10, 3),
-    ADD COLUMN IF NOT EXISTS chargable_weight_kg NUMERIC(12, 2),
+    ADD COLUMN IF NOT EXISTS chargeable_weight_kg NUMERIC(12, 2),
     ADD COLUMN IF NOT EXISTS is_stackable BOOLEAN DEFAULT TRUE,
     ADD COLUMN IF NOT EXISTS max_stacking_tiers INTEGER DEFAULT 1,
     ADD COLUMN IF NOT EXISTS hazmat_class TEXT,
@@ -280,6 +280,86 @@ ALTER TABLE public.freight_requests
     ADD COLUMN IF NOT EXISTS approval_status TEXT NOT NULL DEFAULT 'AUTO_APPROVED' CHECK (approval_status IN ('AUTO_APPROVED', 'PENDING_SUPERVISOR_APPROVAL', 'APPROVED', 'REJECTED')),
     ADD COLUMN IF NOT EXISTS supervisor_approved_by UUID REFERENCES public.organization_members(id),
     ADD COLUMN IF NOT EXISTS supervisor_approved_at TIMESTAMPTZ;
+```
+
+### C. Tabla de Políticas Comerciales y Pesos MCDA: `commercial_scoring_policies`
+```sql
+CREATE TABLE public.commercial_scoring_policies (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+    policy_name TEXT NOT NULL DEFAULT 'DEFAULT_BALANCED',
+    
+    -- Los 6 pesos de ponderación determinística (deben sumar exactamente 1.000)
+    cost_weight NUMERIC(4, 3) NOT NULL DEFAULT 0.250,
+    sla_weight NUMERIC(4, 3) NOT NULL DEFAULT 0.250,
+    time_weight NUMERIC(4, 3) NOT NULL DEFAULT 0.200,
+    availability_weight NUMERIC(4, 3) NOT NULL DEFAULT 0.100,
+    route_experience_weight NUMERIC(4, 3) NOT NULL DEFAULT 0.100,
+    org_history_weight NUMERIC(4, 3) NOT NULL DEFAULT 0.100,
+    
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    
+    -- Restricción formal auditable por pgTAP: los 6 pesos deben sumar exactamente 1.000
+    CONSTRAINT chk_mcda_weights_sum CHECK (
+        (cost_weight + sla_weight + time_weight + availability_weight + route_experience_weight + org_history_weight) = 1.000
+    ),
+    CONSTRAINT scoring_policy_org_unique UNIQUE (organization_id, policy_name)
+);
+```
+
+### D. Gobernanza de Estado: Cero Regresiones a `freight_requests_status_check`
+Para garantizar que los **160 tests pgTAP** permanezcan 100% operativos:
+* **No se modifica la constraint existente `freight_requests_status_check`**: Se mantiene estrictamente en `('DRAFT','PENDING','ORCHESTRATING','AWAITING_SELECTION','BOOKING','BOOKED','FAILED','CANCELLED')`.
+* La compuerta humana se administra a través de la columna aditiva **`approval_status`** (`'AUTO_APPROVED'`, `'PENDING_SUPERVISOR_APPROVAL'`, `'APPROVED'`, `'REJECTED'`).
+* El seguimiento físico del flete (`IN_TRANSIT`, `DELIVERED`) le corresponde a la tabla satélite existente **`bookings`** (`bookings.status` y `bookings.provider_booking_status`), respetando la Separación de Responsabilidades (SoC).
+
+### E. Políticas RLS para las Tablas Satélite Multimodal V2
+```sql
+-- 1. facilities (Aislamiento Multi-Tenant estricto por organización)
+ALTER TABLE public.facilities ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY facilities_member_select ON public.facilities
+    FOR SELECT TO authenticated
+    USING (organization_id IN (
+        SELECT organization_id FROM public.organization_members WHERE auth_user_id = auth.uid()
+    ));
+
+CREATE POLICY facilities_member_write ON public.facilities
+    FOR ALL TO authenticated
+    USING (organization_id IN (
+        SELECT organization_id FROM public.organization_members 
+        WHERE auth_user_id = auth.uid() AND role IN ('OWNER', 'SUPERVISOR')
+    ));
+
+-- 2. carrier_depots (Lectura pública para shippers autenticados para cálculo deadhead)
+ALTER TABLE public.carrier_depots ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY carrier_depots_read_all ON public.carrier_depots
+    FOR SELECT TO authenticated USING (true);
+
+-- 3. route_corridors (Matriz de referencia O-D lectura pública autenticada)
+ALTER TABLE public.route_corridors ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY route_corridors_read_all ON public.route_corridors
+    FOR SELECT TO authenticated USING (true);
+
+-- 4. commercial_scoring_policies (Aislamiento por organización)
+ALTER TABLE public.commercial_scoring_policies ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY scoring_policies_member_select ON public.commercial_scoring_policies
+    FOR SELECT TO authenticated
+    USING (organization_id IN (
+        SELECT organization_id FROM public.organization_members WHERE auth_user_id = auth.uid()
+    ));
+
+CREATE POLICY scoring_policies_member_write ON public.commercial_scoring_policies
+    FOR ALL TO authenticated
+    USING (organization_id IN (
+        SELECT organization_id FROM public.organization_members 
+        WHERE auth_user_id = auth.uid() AND role IN ('OWNER', 'SUPERVISOR')
+    ));
 ```
 
 ---
@@ -361,4 +441,4 @@ erDiagram
 1. **La duda de los 3 carriers queda resuelta:** La base de datos ahora aloja **6 carriers**, permitiendo que la subasta inversa inDrive muestre un mercado denso con ofertas de carretera, mar, riel y aire.
 2. **Las rutas ya no son simples números:** El modelo `route_corridors` almacena la **Matriz Origen-Destino (O-D)** con peajes, altitud máxima de cordillera (4,100 msnm), demoras en aduana fronteriza (4-8h) y polilíneas GeoJSON para dibujar rutas multicolor en Leaflet/Google Maps.
 3. **Los carriers tienen bases físicas (`carrier_depots`):** Permite calcular distancias de posicionamiento real y justificar por qué Andes o Inca tienen disponibilidad inmediata en el sur del Perú y Chile.
-4. **Cero impacto negativo en Sprint 1:** Las tablas `facilities`, `carrier_depots`, `route_corridors` y las nuevas columnas son **aditivas**. Todo el código existente de `freight_requests` y los **147 tests pgTAP siguen pasando en verde**.
+4. **Cero impacto negativo en Sprint 1:** Las tablas `facilities`, `carrier_depots`, `route_corridors` y las nuevas columnas son **aditivas**. Todo el código existente de `freight_requests` y los **160 tests pgTAP siguen pasando en verde**.

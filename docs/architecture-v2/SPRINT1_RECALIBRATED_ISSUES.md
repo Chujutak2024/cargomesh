@@ -235,7 +235,7 @@
 ### 1.1 Objetivo
 - **Qué problema resuelve:** El motor de scoring de fletes debe ser estrictamente determinístico y transparente ante el jurado de Amazon. Si el ranking cambia aleatoriamente o no respeta la ponderación de las 6 dimensiones, el proyecto pierde credibilidad técnica. Además, el hackathon otorga un **+10% de bonificación directa en la calificación** si se documentan formalmente los obstáculos y soluciones técnicas encontradas (Friction Logs).
 - **Para quién:** Jurado calificador de Devpost, Tech Lead y equipo de desarrollo.
-- **Resultado esperado:** Suite de pruebas unitarias automatizadas en Vitest/Node para la lógica pura del motor MCDA de 6 dimensiones comprobando el Golden Flow (Andes 89, Inca 84, Pacific 72), verificación de 0 regresiones en los 147 tests pgTAP, y redacción de los 3 Friction Logs canónicos (`FL-01` a `FL-03`).
+- **Resultado esperado:** Suite de pruebas unitarias automatizadas en Vitest/Node para la lógica pura del motor MCDA de 6 dimensiones comprobando el Golden Flow (Andes 89, Inca 84, Pacific 72), verificación de 0 regresiones en los 160 tests pgTAP, y redacción de los 3 Friction Logs canónicos (`FL-01` a `FL-03`).
 
 ### 1.2 Herramientas y Tecnologías Requeridas
 - **Testing Frameworks:** Vitest / Node Native Test Runner (`tsx --test`), pgTAP con Supabase CLI (`npx supabase test db`).
@@ -257,7 +257,7 @@
     * Transportes Inca: Score final de **84 / 100** (Opción Rápida).
     * Pacific Cargo: Score final de **72 / 100** (Opción Económica).
 - **Paso 2: Verificación de Cero Regresiones en Base de Datos:**
-  - Ejecutar la suite completa de base de datos con `npx supabase test db` y comprobar que las 147 aserciones existentes pasen en verde.
+  - Ejecutar la suite completa de base de datos con `npx supabase test db` y comprobar que las 160 aserciones existentes pasen en verde.
 - **Paso 3: Redacción de Friction Logs Oficiales para el +10% de Bonificación:**
   - Documentar 3 incidentes reales o de configuración con la plantilla oficial:
     * `FL-01.md`: Solución de timeout de voz en Alexa (>8s) mediante la directiva *Progressive Response* y cache geohash de matrices O-D.
@@ -267,7 +267,7 @@
 
 ### 1.4 Entrega Final (Definition of Done - DoD)
 - [ ] Suite de pruebas `mcda-scoring-engine.test.ts` pasando al 100% con Vitest / Node.
-- [ ] Verificación de que `npx supabase test db` mantenga las 147 pruebas pgTAP en verde.
+- [ ] Verificación de que `npx supabase test db` mantenga las 160 pruebas pgTAP en verde.
 - [ ] TypeScript compila con 0 errores (`pnpm typecheck`).
 - [ ] 3 Friction Logs (`FL-01.md`, `FL-02.md`, `FL-03.md`) creados y sincronizados en local y Google Drive.
 - [ ] Pull Request en GitHub hacia `codex/c-mcp-contracts` con `Closes HAC-7` en estado Ready for review.
@@ -315,7 +315,7 @@
   - `docs/04-execution/friction-logs/FL-03.md`
 - **Métricas de Pruebas Obtenidas:**
   - TypeScript: `0 errores`
-  - pgTAP: `147 / 147 tests passing`
+  - pgTAP: `160 / 160 tests passing`
   - Unit Tests: `100% passing`
 - **Estado del DoD:** `100% CUMPLIDO`
 
@@ -457,7 +457,7 @@
 ## 🎯 1. Contexto Detallado de la Tarea
 
 ### 1.1 Objetivo
-- **Qué problema resuelve:** La plataforma requería persistencia aditiva en PostgreSQL para el modelo multimodal V2 (`facilities` de clientes, `carrier_depots` de transportistas, matriz O-D `route_corridors` y nuevas columnas de taxonomía CBM y apilabilidad en `freight_requests`), sin romper ninguna de las 20 migraciones existentes ni los 147 tests pgTAP, y garantizando deduplicación criptográfica obligatoria por SHA-256 (`creation_idempotency_key`) y control optimista (`draft_version`).
+- **Qué problema resuelve:** La plataforma requería persistencia aditiva en PostgreSQL para el modelo multimodal V2 (`facilities` de clientes, `carrier_depots` de transportistas, matriz O-D `route_corridors` y nuevas columnas de taxonomía CBM y apilabilidad en `freight_requests`), sin romper ninguna de las 20 migraciones existentes ni los 160 tests pgTAP, y garantizando deduplicación criptográfica obligatoria por SHA-256 (`creation_idempotency_key`) y control optimista (`draft_version`).
 - **Para quién:** Todo el backend (Hono V2), frontend (Luis y Juan Antonio) y agentes de IA.
 - **Resultado esperado:** Base de datos Supabase actualizada localmente con las tablas satélite V2, seed canónico de ACME Mining y los 6 carriers cargado, endpoint `POST /api/v2/freight-requests` validando idempotencia y método `submitDraft()` habilitando la transición controlada de `DRAFT` a `PENDING`.
 
@@ -470,18 +470,18 @@
 - **Paso 1: Migración DDL Aditiva en Supabase (`20260921000000_v2_multimodal_satellite_tables.sql`):**
   - Crear tipos enumerados: `cargo_category_v2_enum`, `packaging_type_enum`, `freight_flow_type_enum`, `preferred_transport_mode_enum`.
   - Crear tablas satélite: `facilities`, `carrier_depots`, `route_corridors`, `commercial_scoring_policies`.
-  - Alterar `freight_requests` agregando: `origin_facility_id`, `destination_facility_id`, `cargo_category_v2`, `packaging_type`, `total_cbm`, `chargable_weight_kg`, `is_stackable`, `flow_type`.
+  - Alterar `freight_requests` agregando: `origin_facility_id`, `destination_facility_id`, `cargo_category_v2`, `packaging_type`, `total_cbm`, `chargeable_weight_kg`, `is_stackable`, `flow_type`.
 - **Paso 2: Carga de Seeds Canónicos:**
   - En `supabase/scenarios/amazon_hackathon/seed.sql`, sembrar las 5 sedes de ACME Mining (Callao, Las Bambas, Arequipa, San Antonio, Santiago) y los 6 carriers con sus patios físicos (`carrier_depots`).
 - **Paso 3: Servicio de Idempotencia y Transición a PENDING:**
   - En `src/server/services/freight-requests/`, verificar que al recibir `creation_idempotency_key` idéntico con el mismo payload hash, se retorne el flete existente con `replayed: true`.
   - Implementar la función `submitDraft(id, expected_draft_version)` que incremente `draft_version + 1` y pase el estatus a `PENDING`.
 - **Paso 4: Verificación Integral de Base de Datos:**
-  - Ejecutar `npx supabase test db` comprobando que las pruebas pasen al 100% en verde.
+  - Ejecutar `npx supabase test db` comprobando que las pruebas pasen al 100% en verde (160 tests pgTAP).
 
 ### 1.4 Entrega Final (Definition of Done - DoD)
 - [ ] Migración aditiva aplicada exitosamente en PostgreSQL local.
-- [ ] Cero regresiones: 147 tests pgTAP y nuevas aserciones de idempotencia en verde.
+- [ ] Cero regresiones: 160 tests pgTAP y nuevas aserciones de idempotencia en verde.
 - [ ] Endpoints Hono V2 respondiendo con formato `{ ok: true, data: ... }`.
 - [ ] Concurrencia optimista validada (error `409 STALE_DRAFT` si desajusta versión).
 - [ ] TypeScript compila con 0 errores (`pnpm typecheck`).

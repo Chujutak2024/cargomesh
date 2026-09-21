@@ -82,10 +82,10 @@ Cada integrante cuenta con una asignación clara y de alto impacto que alimenta 
 - **Asignado:** Cristhian Chujutalli (BE-2 & Tech Lead) | 🌿 **Rama:** `feat/be2-hac-6-draft-idempotency`
 - **Objetivo:** Implementar las tablas satélite (`facilities`, `carrier_depots`, `route_corridors`, `commercial_scoring_policies`) y columnas aditivas de taxonomía en Supabase local, junto con el endpoint idempotente `POST /api/v2/freight-requests` y su transición segura a `PENDING`.
 - **Criterios de Aceptación:**
-  - [ ] Migración SQL aplicada localmente sin romper ninguna de las 20 migraciones existentes ni los 147 tests pgTAP.
+  - [ ] Migración SQL aplicada localmente sin romper ninguna de las 20 migraciones existentes ni los 160 tests pgTAP.
   - [ ] Tablas `facilities`, `carrier_depots` y `route_corridors` creadas con índices espaciales/coordenadas.
   - [ ] Enumeradores `cargo_category_v2_enum` y `packaging_type_enum` registrados.
-  - [ ] Columnas `total_cbm`, `chargable_weight_kg`, `is_stackable` y `flow_type` agregadas a `freight_requests`.
+  - [ ] Columnas `total_cbm`, `chargeable_weight_kg`, `is_stackable` y `flow_type` agregadas a `freight_requests`.
   - [ ] Endpoint `POST /api/v2/freight-requests` valida `creation_idempotency_key` (SHA-256) y crea borrador con `draft_version = 1`.
   - [ ] Método `submitDraft()` valida campos requeridos y transiciona a `status = 'PENDING'`.
 
@@ -208,7 +208,7 @@ Juan Antonio (`HAC-20`), Cristhian y Axel verificarán estos 6 puntos antes de c
 3. **Inglés para Jueces:** Al poner el selector de idioma en `en`, toda la interfaz se visualiza en inglés correcto sin textos quemados en español.
 4. **Judge Drawer Operativo:** El panel lateral registra eventos con timestamps y estado 200.
 5. **Evidencias Kiro Crew:** Prompts y transcripciones de la semana guardados en `01_Kiro_Crew_Evidencias/` en Google Drive.
-6. **Pipeline Verde:** `pnpm release:verify` pasando con 0 errores de TypeScript y 147/147 tests pgTAP en verde.
+6. **Pipeline Verde:** `pnpm release:verify` pasando con 0 errores de TypeScript y 160/160 tests pgTAP en verde.
 
 ---
 
@@ -218,7 +218,7 @@ Para que Axel, Cristhian y Jean Paul no duden de qué software o comandos usar:
 | Componente Backend | Herramienta Oficial | Entorno / Acceso Local |
 |---|---|---|
 | **Base de Datos & RLS** | Supabase CLI Local (PostgreSQL 15) | Comandos: `npx supabase start`, `npx supabase db reset`.<br>Interfaz visual: Supabase Studio en `http://127.0.0.1:54323`. |
-| **Testing de Base de Datos** | pgTAP | Comando: `npx supabase test db` (147 pruebas automatizadas). |
+| **Testing de Base de Datos** | pgTAP | Comando: `npx supabase test db` (160 pruebas automatizadas). |
 | **API Backend V2** | Hono v4 + TypeScript + Zod | En `cargomesh/src/server/hono/`. Tipado estricto con schemas compartidos. |
 | **Servidor MCP** | `@modelcontextprotocol/sdk: 1.30.0` | Streamable HTTP en `src/server/mcp/http.ts`. Se prueba con `pnpm test:mcp`. |
 | **Simulador de Alexa** | Alexa Developer Console | Consola web oficial (`developer.amazon.com/alexa/console/ask`) en pestaña Test con el simulador de voz y texto. |

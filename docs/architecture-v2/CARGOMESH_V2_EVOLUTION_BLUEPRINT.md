@@ -410,7 +410,7 @@ ALTER TABLE freight_requests
     ADD COLUMN IF NOT EXISTS cargo_category_v2 cargo_category_v2_enum DEFAULT 'GENERAL_DRY',
     ADD COLUMN IF NOT EXISTS packaging_type packaging_type_enum DEFAULT 'PALLET_STANDARD_WOOD',
     ADD COLUMN IF NOT EXISTS total_cbm NUMERIC(10, 3),
-    ADD COLUMN IF NOT EXISTS chargable_weight_kg NUMERIC(12, 2),
+    ADD COLUMN IF NOT EXISTS chargeable_weight_kg NUMERIC(12, 2),
     ADD COLUMN IF NOT EXISTS is_stackable BOOLEAN DEFAULT TRUE,
     ADD COLUMN IF NOT EXISTS required_approver_role user_role_enum DEFAULT 'REQUESTER',
     ADD COLUMN IF NOT EXISTS approved_by_user_id UUID REFERENCES auth.users(id);

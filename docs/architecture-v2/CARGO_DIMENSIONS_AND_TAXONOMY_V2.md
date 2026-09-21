@@ -50,7 +50,7 @@ graph TD
 
 ---
 
-## 📏 3. Dimensiones Físicas, Cubicaje (CBM) y Peso Imputable (Chargable Weight)
+## 📏 3. Dimensiones Físicas, Cubicaje (CBM) y Peso Imputable (Chargeable Weight)
 
 Para evitar pérdidas financieras a los transportistas y cobrar precios justos en dólares, CargoMesh implementa el cálculo estándar de **Peso Imputable**:
 
@@ -62,7 +62,7 @@ $$\text{CBM} = \left( \frac{\text{Largo (cm)} \times \text{Ancho (cm)} \times \t
 * **Carga Aérea (Factor IATA):** $1 \text{ CBM} \approx 167 \text{ kg} \quad \left( \text{Peso Volumétrico} = \frac{\text{Largo} \times \text{Ancho} \times \text{Alto}}{6,000} \right)$
 * **Cabotaje Marítimo (Regla W/M):** $1 \text{ CBM} \approx 1,000 \text{ kg}$ ($1 \text{ Tonelada}$ métrica)
 
-### C. Peso Imputable (Chargable Weight):
+### C. Peso Imputable (Chargeable Weight):
 $$\text{Peso Imputable (kg)} = \max(\text{Peso Bruto Real (kg)}, \text{Peso Volumétrico (kg)})$$
 
 ---
@@ -174,34 +174,19 @@ export const CargoDimensionsSpecificationSchema = z.object({
 ---
 
 ## 🗄️ 7. Extensión de Base de Datos en Supabase (DDL SQL Aditivo)
+> ⚠️ **Nota de Gobernanza DDL:** La definición formal y ejecutable de estos enumeradores y columnas reside exclusivamente en [`DATABASE_SCHEMA_V2_PROPOSAL.md`](./DATABASE_SCHEMA_V2_PROPOSAL.md). Este bloque se incluye únicamente con fines de documentación y referencia.
 
 ```sql
--- 1. Nuevos Enumeradores de Carga y Empaque
-CREATE TYPE cargo_category_v2_enum AS ENUM (
-    'MINING_BULK',
-    'HEAVY_MACHINERY',
-    'COLD_CHAIN',
-    'HAZMAT',
-    'HIGH_VALUE',
-    'GENERAL_DRY'
-);
+-- 1. Nuevos Enumeradores de Carga y Empaque (Definidos en DATABASE_SCHEMA_V2_PROPOSAL.md)
+-- cargo_category_v2_enum ('MINING_BULK', 'HEAVY_MACHINERY', 'COLD_CHAIN', 'HAZMAT', 'HIGH_VALUE', 'GENERAL_DRY')
+-- packaging_type_enum ('PALLET_STANDARD_WOOD', 'PALLET_EURO', 'CONTAINER_20GP', 'CONTAINER_40HC', 'BIG_BAG', 'DRUM_BARREL', 'WOODEN_CRATE')
 
-CREATE TYPE packaging_type_enum AS ENUM (
-    'PALLET_STANDARD_WOOD',
-    'PALLET_EURO',
-    'CONTAINER_20GP',
-    'CONTAINER_40HC',
-    'BIG_BAG',
-    'DRUM_BARREL',
-    'WOODEN_CRATE'
-);
-
--- 2. Extensión a freight_requests
+-- 2. Extensión Aditiva a freight_requests
 ALTER TABLE public.freight_requests
     ADD COLUMN IF NOT EXISTS cargo_category_v2 cargo_category_v2_enum DEFAULT 'GENERAL_DRY',
     ADD COLUMN IF NOT EXISTS packaging_type packaging_type_enum DEFAULT 'PALLET_STANDARD_WOOD',
     ADD COLUMN IF NOT EXISTS total_cbm numeric(10, 3),
-    ADD COLUMN IF NOT EXISTS chargable_weight_kg numeric(12, 2),
+    ADD COLUMN IF NOT EXISTS chargeable_weight_kg numeric(12, 2),
     ADD COLUMN IF NOT EXISTS is_stackable boolean DEFAULT TRUE,
     ADD COLUMN IF NOT EXISTS max_stacking_tiers integer DEFAULT 1,
     ADD COLUMN IF NOT EXISTS hazmat_class text,
