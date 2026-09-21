@@ -4,7 +4,6 @@ import { execFileSync } from "node:child_process";
 import test from "node:test";
 import { createServerClient } from "@supabase/ssr";
 import { CreateFreightRequestInputSchema, CreatedFreightRequestSchema } from "@/shared/schemas/freight-creation";
-import { buildRegisteredProviderNavigationUrl } from "@/features/discovery/provider-navigation";
 
 // This optional suite calls the running Next route and local Supabase, without
 // substituting the MCP handler, auth or persistence service.
@@ -59,6 +58,23 @@ function input() {
   });
 }
 
+function autonomousWorkerInput() {
+  const baseline = input();
+  return CreateFreightRequestInputSchema.parse({
+    ...baseline,
+    fields: {
+      ...baseline.fields,
+      originRegion: "Callao",
+      originCity: "Lima",
+      destinationRegion: "Santiago",
+      destinationCity: "Valparaiso",
+      entryQuantity: 3,
+      entryUnitWeightKg: 950,
+      budgetMax: 3_500,
+    },
+  });
+}
+
 let rpcId = 0;
 async function rpc(method: string, params: unknown, cookie = "") {
   const response = await fetch(`${base}/mcp`, {
@@ -81,14 +97,6 @@ function toolResult(body: any) {
 
 function localSql(sql: string) {
   return execFileSync("docker", ["exec", "supabase_db_cargomesh", "psql", "-v", "ON_ERROR_STOP=1", "-U", "postgres", "-d", "postgres", "-c", sql], { encoding: "utf8" });
-}
-
-async function api(path: string, body: unknown, cookie: string) {
-  const response = await fetch(`${base}${path}`, {
-    method: "POST", headers: { "Content-Type": "application/json", Cookie: cookie },
-    body: JSON.stringify(body),
-  });
-  return { status: response.status, body: await response.json() };
 }
 
 test("real /mcp creates and reads a local Supabase draft; failures stay safe", { timeout: 120_000 }, async (t) => {
@@ -191,14 +199,14 @@ test("real /mcp creates and reads a local Supabase draft; failures stay safe", {
   assert.deepEqual(failedRows, []);
 });
 
-test("real MCP find/get persist and read local orchestration with a synthetic quote", { timeout: 120_000 }, async (t) => {
+test("real MCP flow reaches provider WebMCP through the autonomous browser worker", { timeout: 240_000 }, async (t) => {
   assert.ok(supabaseUrl && anonKey && password);
   localOnly(base);
   localOnly(supabaseUrl);
 
   const supervisor = clientWithCookies();
   assert.ifError((await supervisor.client.auth.signInWithPassword({ email: supervisorEmail, password })).error);
-  const args = input();
+  const args = autonomousWorkerInput();
   const created = toolResult((await rpc("tools/call", {
     name: "create_freight_request", arguments: args,
   }, supervisor.cookie())).body);
@@ -208,6 +216,16 @@ test("real MCP find/get persist and read local orchestration with a synthetic qu
     const result = localSql(`delete from public.freight_requests where id = '${receipt.freightRequestId}' and organization_id = '${organizationId}' and requested_by_member_id = '${supervisorMemberId}' and creation_idempotency_key = '${args.idempotencyKey}'`);
     assert.match(result, /DELETE 1/);
   });
+  const { data: dynamicRequest, error: dynamicRequestError } = await supervisor.client
+    .from("freight_requests")
+    .select("origin_city,destination_city,cargo_weight_kg,budget_max")
+    .eq("id", receipt.freightRequestId)
+    .single();
+  assert.ifError(dynamicRequestError);
+  assert.equal(dynamicRequest?.origin_city, "Lima");
+  assert.equal(dynamicRequest?.destination_city, "Valparaiso");
+  assert.equal(Number(dynamicRequest?.cargo_weight_kg), 2_850);
+  assert.equal(Number(dynamicRequest?.budget_max), 3_500);
 
   const key = `mcp-find-${randomUUID()}`;
   const findArgs = { freightRequestId: receipt.freightRequestId, idempotencyKey: key };
@@ -300,49 +318,36 @@ test("real MCP find/get persist and read local orchestration with a synthetic qu
   }, supervisor.cookie())).body);
   assert.equal(secondKey.structuredContent.error.code, "FREIGHT_REQUEST_NOT_READY");
 
-  const candidate = started.candidates[0];
-  const now = Date.now();
-  const startedAt = new Date(now).toISOString();
-  const completedAt = new Date(now + 100).toISOString();
-  const providerResult = {
-    schemaVersion: "1.0", orchestrationRunId: started.runId,
-    freightRequestId: receipt.freightRequestId, carrierId: candidate.carrierId,
-    matchingServiceId: candidate.matchingServiceId, providerUrl: candidate.providerUrl,
-    navigationUrl: buildRegisteredProviderNavigationUrl(candidate.providerUrl, candidate.matchingServiceId, base),
-    toolName: "quote_freight", attemptNumber: 1,
-    toolCallId: ["cm:int02a:v1", started.runId, receipt.freightRequestId, candidate.carrierId, candidate.matchingServiceId, "quote_freight", 1].join(":"),
-    toolInput: { freight_request_id: receipt.freightRequestId },
-    toolOutput: { ok: true, data: {
-      schemaVersion: "1.0", freightRequestId: receipt.freightRequestId,
-      providerOfferReference: `MCP-LOCAL-${randomUUID()}`, price: 1760, currency: "USD",
-      priceBreakdown: { lineHaul: 1500, handling: 115, customsCoordination: 145 },
-      estimatedPickup: new Date(now + 24 * 60 * 60 * 1000).toISOString(),
-      estimatedDelivery: new Date(now + 48 * 60 * 60 * 1000).toISOString(),
-      transitHours: 24, availableCapacityKg: 10000,
-      availabilityClass: "AVAILABLE_IN_WINDOW", crossBorderSupported: true,
-      customsCoordinationIncluded: true, requiredDocuments: [],
-      borderHandlingNotes: "Local test fixture", validUntil: new Date(now + 72 * 60 * 60 * 1000).toISOString(),
-    } },
-    startedAt, completedAt, durationMs: 100, status: "COMPLETED", technicalError: null,
-  };
-  const recorded = await api("/api/orchestration/record-result", providerResult, supervisor.cookie());
-  assert.equal(recorded.status, 200, JSON.stringify({ body: recorded.body, providerUrl: candidate.providerUrl, navigationUrl: providerResult.navigationUrl, base }));
-  assert.equal(recorded.body.ok, true);
-  const evaluated = await api("/api/orchestration/evaluate-offers", { orchestrationRunId: started.runId }, supervisor.cookie());
-  assert.equal(evaluated.status, 200, JSON.stringify(evaluated.body));
-  assert.equal(evaluated.body.ok, true);
+  const workerOutput = execFileSync(
+    process.execPath,
+    ["scripts/autonomous-webmcp-worker.mjs", started.runId],
+    {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      timeout: 200_000,
+      env: {
+        ...process.env,
+        CARGOMESH_WEBMCP_WORKER_BASE_URL: base,
+        CARGOMESH_WEBMCP_WORKER_AUTH: "cookie",
+        CARGOMESH_WEBMCP_WORKER_COOKIE: supervisor.cookie(),
+      },
+    },
+  );
+  const workerEvidence = JSON.parse(workerOutput);
+  assert.equal(workerEvidence.worker, "AUTONOMOUS_PROVIDER_EXECUTION_V1");
+  assert.equal(workerEvidence.providerKind, "DEMO_AUTO_OFFER_CARRIERS");
+  assert.equal(workerEvidence.runId, started.runId);
+  assert.equal(workerEvidence.status, "success");
 
   const complete = toolResult((await rpc("tools/call", {
     name: "get_freight_options", arguments: getArgs,
   }, supervisor.cookie())).body);
   assert.equal(complete.structuredContent.ok, true);
   assert.equal(complete.structuredContent.data.status, "success");
-  assert.equal(complete.structuredContent.data.offers.length, 1);
-  assert.equal(complete.structuredContent.data.offers[0].carrierId, candidate.carrierId);
+  assert.ok(complete.structuredContent.data.offers.length > 0);
   const { data: offers, error: offersError } = await supervisor.client.from("carrier_offers")
     .select("id,carrier_id,price").eq("orchestration_run_id", started.runId);
   assert.ifError(offersError);
-  assert.equal(offers?.length, 1);
-  assert.equal(complete.structuredContent.data.offers[0].offerId, offers?.[0].id);
-  assert.equal(complete.structuredContent.data.ranking.recommendedOfferId, offers?.[0].id);
+  assert.equal(offers?.length, complete.structuredContent.data.offers.length);
+  assert.ok(offers?.some((offer) => offer.id === complete.structuredContent.data.ranking.recommendedOfferId));
 });

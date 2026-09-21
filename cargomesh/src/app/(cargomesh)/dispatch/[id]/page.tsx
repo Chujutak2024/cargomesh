@@ -5,7 +5,10 @@ import { getDispatchFixture } from "@/features/freight-ui/ui-fixtures";
 
 type DispatchPageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ scenario?: string | string[] }>;
+  searchParams: Promise<{
+    scenario?: string | string[];
+    autonomous?: string | string[];
+  }>;
 };
 
 export default async function DispatchPage({ params, searchParams }: DispatchPageProps) {
@@ -16,5 +19,10 @@ export default async function DispatchPage({ params, searchParams }: DispatchPag
   if (scenario) {
     return <DispatchView model={getDispatchFixture(scenario, id)} fixtureScenario={scenario} />;
   }
-  return <OrchestrationDispatch runId={id} />;
+  return (
+    <OrchestrationDispatch
+      runId={id}
+      autonomous={resolvedSearchParams.autonomous === "1"}
+    />
+  );
 }

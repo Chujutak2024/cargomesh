@@ -35,7 +35,13 @@ type DispatchViewProps = {
   fixtureScenario?: string;
 };
 
-export function OrchestrationDispatch({ runId }: { runId: string }) {
+export function OrchestrationDispatch({
+  runId,
+  autonomous = false,
+}: {
+  runId: string;
+  autonomous?: boolean;
+}) {
   const { t } = useLocale();
   const [model, setModel] = useState<OrchestrationViewModel | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +50,7 @@ export function OrchestrationDispatch({ runId }: { runId: string }) {
   const [executing, setExecuting] = useState(false);
   const [executionError, setExecutionError] = useState<string | null>(null);
   const runnerFrameRef = useRef<HTMLIFrameElement>(null);
+  const autonomousStartRef = useRef(false);
 
   const retry = useCallback(() => setRefreshKey((current) => current + 1), []);
 
@@ -95,7 +102,7 @@ export function OrchestrationDispatch({ runId }: { runId: string }) {
     };
   }, [refreshKey, runId, t]);
 
-  async function continueInBrowser() {
+  const continueInBrowser = useCallback(async () => {
     if (!model || model.status !== "loading" || executing || !runnerFrameRef.current) return;
     setExecuting(true);
     setExecutionError(null);
@@ -128,13 +135,51 @@ export function OrchestrationDispatch({ runId }: { runId: string }) {
     } finally {
       setExecuting(false);
     }
-  }
+  }, [executing, model, retry, t]);
+
+  useEffect(() => {
+    if (
+      !autonomous ||
+      autonomousStartRef.current ||
+      !model ||
+      model.status !== "loading" ||
+      !runnerFrameRef.current
+    ) {
+      return;
+    }
+
+    autonomousStartRef.current = true;
+    void continueInBrowser();
+  }, [autonomous, continueInBrowser, model]);
 
   if (loading) return <TransportState title={t("Cargando evaluación", "Loading evaluation")} message={t("Consultando la evidencia persistida del proceso.", "Reading the persisted process evidence.")} busy />;
   if (error || !model) return <TransportState title={t("No pudimos abrir la evaluación", "We could not open the evaluation")} message={error ?? t("La respuesta no contiene una evaluación válida.", "The response does not contain a valid evaluation.")} onRetry={retry} />;
+  const autonomousStatus = executionError
+    ? "error"
+    : executing
+      ? "running"
+      : model.status === "success"
+        ? "success"
+        : model.status === "NO_MATCH"
+          ? "no-match"
+          : model.status === "error"
+            ? "error"
+            : "waiting";
+
   return <>
+    {autonomous ? (
+      <output
+        id="cargomesh-autonomous-worker-status"
+        data-status={autonomousStatus}
+        data-run-id={runId}
+        data-error={executionError ?? ""}
+        hidden
+      >
+        {autonomousStatus}
+      </output>
+    ) : null}
     <DispatchView model={model} onRetry={retry} />
-    {model.status === "loading" ? (
+    {model.status === "loading" && !autonomous ? (
       <section className={styles.browserContinuation}>
         <p>{t("Este proceso requiere abrir los providers WebMCP en tu navegador.", "This run needs your browser to open the WebMCP providers.")}</p>
         <button type="button" className={styles.primaryLink} disabled={executing} onClick={() => { void continueInBrowser(); }}>

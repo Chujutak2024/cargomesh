@@ -5,6 +5,34 @@ Este módulo implementa la frontera browser-side de A para `INT-02A`.
 `runInt02aOrchestration` lo conecta con las APIs server-side de C sin importar
 ni ejecutar sus implementaciones internas.
 
+## Autonomous Provider Execution V1
+
+El worker local continúa un orchestration run ya creado por MCP sin depender
+del botón de `/dispatch`:
+
+```powershell
+pnpm worker:webmcp -- <runId>
+```
+
+Requiere que CargoMesh esté ejecutándose en el origin local configurado por
+`CARGOMESH_WEBMCP_WORKER_BASE_URL` (por defecto
+`http://127.0.0.1:3000`). El proceso abre Chrome headless con WebMCP nativo,
+crea la sesión mediante `/api/auth/demo-login`, navega el run y espera su
+estado persistido final. Para una sesión local ya autenticada puede usarse
+`CARGOMESH_WEBMCP_WORKER_AUTH=existing-profile` junto con
+`CARGOMESH_WEBMCP_WORKER_PROFILE_DIR`.
+
+El único dato comercial recibido por el worker es `runId`. Solicitud,
+candidatos, URLs, servicios y parámetros de las tools se reconstruyen desde
+estado persistido mediante las APIs autenticadas existentes. Result Bridge es
+la única vía de persistencia de resultados y Decision Engine conserva la
+autoridad sobre el ranking.
+
+Andes, Inca y Pacific son **DEMO AUTO-OFFER CARRIERS**. Sus páginas WebMCP
+representan la respuesta automática del carrier con datos sintéticos. No son
+integraciones con sistemas externos reales. El worker no implementa todavía
+carriers MANUAL/HYBRID, una cola durable ni leases distribuidos.
+
 ## Invariantes
 
 - procesa `CandidateProvider[0..N]` secuencialmente;

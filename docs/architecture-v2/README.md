@@ -1,7 +1,12 @@
 # CargoMesh Architecture V2 — Entry Point
 
-> **Documentation branch:** `codex/c-mcp-contracts`
-> **Status:** Hono bootstrap/draft creation and MCP local read/creation tools exist. M2 needs permanent migration application and an authenticated MCP smoke test; local SQL checks passed. The other MCP tools, remote auth, Alexa+ and Bedrock remain planned. See the [local MCP guide](../../cargomesh/src/server/mcp/README.md).
+> **Status:** This directory mixes verified implementation documentation with
+> the corrected CargoMesh V2 target architecture. The four documents marked
+> **TARGET V2** describe planned evolution and must not be read as proof that
+> every entity or workflow already exists. The current verified MCP baseline
+> exposes `create_freight_request`, `submit_freight_request`,
+> `find_freight_options` and `get_freight_options`. See the
+> [local MCP guide](../../cargomesh/src/server/mcp/README.md).
 
 ## What This Is
 
@@ -26,19 +31,19 @@ Agent client  -> MCP -------/                        |
 |---|---|
 | Enterprise Supervisor / ACME Mining | Creates freight requests, reviews ranked options, approves bookings |
 | Alexa+ Agent | Voice-driven interface; calls CargoMesh MCP tools |
-| CargoMesh MCP Server | Exposes 6 high-level workflow tools; shares the service layer |
+| CargoMesh MCP Server | Currently exposes 4 verified workflow tools; booking tools remain planned |
 | CargoMesh Hono API | HTTP interface to the service layer; used by the web UI; MCP calls shared services directly |
 | Provider WebMCP Runtime | Browser-based agent that navigates carrier portals and collects quotes |
 | Carrier / Provider | Hosts `/providers/[carrierSlug]` page; registers 5 WebMCP tools |
 
-## Target Golden Flow (not implemented for MCP/Alexa+)
+## Golden Flow status
 
 ```
 User speaks to Alexa+
   → create_freight_request (MCP)
-  → [Missing shared submission: DRAFT to PENDING]
+  → submit_freight_request (MCP)         # DRAFT to PENDING
   → find_freight_options (MCP)           # starts orchestration run
-    → [Missing durable dispatch to a WebMCP browser executor]
+    → local autonomous WebMCP worker     # V1 implemented; durable dispatch remains planned
     → Provider WebMCP execution × N carriers
     → Result Bridge persists quotes
     → Decision Engine scores + ranks (deterministic, BALANCED)
@@ -98,6 +103,10 @@ User speaks to Alexa+
 
 | Document | Contents |
 |---|---|
+| [CARGOMESH_V2_EVOLUTION_BLUEPRINT.md](./CARGOMESH_V2_EVOLUTION_BLUEPRINT.md) | **TARGET V2:** marketplace evolution, carrier-owned offers and delivery phases |
+| [DATABASE_SCHEMA_V2_PROPOSAL.md](./DATABASE_SCHEMA_V2_PROPOSAL.md) | **TARGET V2:** additive schema proposal; it is not the current database |
+| [BACKEND_DOMAIN_AND_PERSISTENCE_DIAGRAMS.md](./BACKEND_DOMAIN_AND_PERSISTENCE_DIAGRAMS.md) | **TARGET V2:** corrected domain ownership and persistence boundaries |
+| [CARGO_DIMENSIONS_AND_TAXONOMY_V2.md](./CARGO_DIMENSIONS_AND_TAXONOMY_V2.md) | **TARGET V2:** richer industrial cargo model and dimensions |
 | [ARCHITECTURE_V2.md](./ARCHITECTURE_V2.md) | Target architecture, layer responsibilities, dependency rules, diagrams |
 | [MIGRATION_PLAN.md](./MIGRATION_PLAN.md) | Current → target migration strategy, vertical slice sequence, rollback |
 | [APPLICATION_SCOPE.md](./APPLICATION_SCOPE.md) | Enterprise + Carrier app scope, Golden Flow screens, explicit exclusions |
