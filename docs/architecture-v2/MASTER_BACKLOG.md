@@ -76,6 +76,7 @@ Cada integrante cuenta con una asignación clara y de alto impacto que alimenta 
 ---
 
 ## 📋 2. Fichas Técnicas Detalladas de las Tareas Recalibradas (Sprint 1)
+> 📄 **Fichas Completas Estandarizadas para Linear (6 Secciones):** Consulta [`docs/architecture-v2/SPRINT1_RECALIBRATED_ISSUES.md`](./SPRINT1_RECALIBRATED_ISSUES.md) para copiar y pegar directamente las plantillas con contexto, restricciones, ramas, coordinación y friction logs.
 
 ### 🔴 HAC-6 — [BE-2] Migración Aditiva V2 + Servicio Backend DRAFT a PENDING
 - **Asignado:** Cristhian Chujutalli (BE-2 & Tech Lead) | 🌿 **Rama:** `feat/be2-hac-6-draft-idempotency`
