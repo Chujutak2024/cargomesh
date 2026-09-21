@@ -1,5 +1,7 @@
 # CargoMesh ⬡
 
+> **CargoMesh V2 (Amazon Developer Hackathon):** los contratos vigentes de esta nueva versión están en [docs/v2-amazon/](docs/v2-amazon/README.md). El contenido WebMCP que sigue documenta la V1 histórica y no define el alcance de V2.
+
 > **Autonomous Agentic Freight Orchestration for Cross-Border B2B Logistics**  
 > *Technical Specification v5.6.0 — Google WebMCP Challenge 2026*
 
