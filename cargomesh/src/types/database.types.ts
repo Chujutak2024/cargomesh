@@ -9,6 +9,69 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      mcp_audit_events: {
+        Row: {
+          id: string
+          organization_id: string
+          member_id: string
+          source: string
+          tool_name: string
+          request_id: string | null
+          started_at: string
+          duration_ms: number
+          http_status: number
+          status: string
+          input_payload: Json | null
+          output_payload: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          member_id: string
+          source?: string
+          tool_name: string
+          request_id?: string | null
+          started_at: string
+          duration_ms: number
+          http_status: number
+          status: string
+          input_payload?: Json | null
+          output_payload?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          member_id?: string
+          source?: string
+          tool_name?: string
+          request_id?: string | null
+          started_at?: string
+          duration_ms?: number
+          http_status?: number
+          status?: string
+          input_payload?: Json | null
+          output_payload?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_audit_events_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcp_audit_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_events: {
         Row: {
           booking_id: string

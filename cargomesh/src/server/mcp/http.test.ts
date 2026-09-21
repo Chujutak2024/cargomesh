@@ -5,6 +5,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { OrchestrationError, type OrchestrationViewModel } from "@/features/orchestration/contracts";
 import { buildOrchestrationViewModel, type ViewModelSource } from "@/features/orchestration/view-model";
 import { createMcpHttpHandler } from "./http";
+import type { McpAuditEventInput } from "./audit";
 
 const RUN = "90000000-0000-0000-0000-000000000001";
 const REQUEST = "f2000000-0000-0000-0000-000000000001";
@@ -59,6 +60,27 @@ function rpc(method: string, params: unknown = {}, overrides: RequestInit = {}, 
   });
 }
 const call = (args: unknown = { runId: RUN }) => rpc("tools/call", { name: "get_freight_options", arguments: args });
+
+test("persists observed MCP outcomes only after authentication and preserves SDK response", async () => {
+  const recorded: McpAuditEventInput[] = [];
+  const handle = createMcpHttpHandler({
+    configuration: () => ({ enabled: true, environment: "test" }),
+    authenticate: async () => {},
+    read: async () => view(),
+    record: async (event) => { recorded.push(event); },
+  });
+  const response = await handle(call());
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).result.structuredContent.ok, true);
+  assert.equal(recorded.length, 1);
+  assert.equal(recorded[0].toolName, "get_freight_options");
+  assert.equal(recorded[0].status, "success");
+  assert.equal(recorded[0].httpStatus, 200);
+  assert.deepEqual(recorded[0].inputPayload, { runId: RUN });
+  assert.ok(recorded[0].durationMs >= 0);
+  await handle(rpc("tools/list"));
+  assert.equal(recorded.length, 1);
+});
 
 test("official MCP client initializes, lists and calls the actual HTTP/SDK stack", async () => {
   const h = harness();

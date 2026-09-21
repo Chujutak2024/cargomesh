@@ -56,6 +56,19 @@ type Evidence = {
   created_at: string;
 };
 
+type McpAuditEvent = {
+  id: string;
+  source: "mcp";
+  tool_name: string;
+  request_id: string | null;
+  started_at: string;
+  duration_ms: number;
+  http_status: number;
+  status: "success" | "error";
+  input_payload: unknown;
+  output_payload: unknown;
+};
+
 const statusClass: Record<EvidencePresentationState, string> = {
   pending: styles.statusPending,
   "commercial-success": styles.statusSuccess,
@@ -78,6 +91,11 @@ export function JudgeDrawer() {
   const [events, setEvents] = useState<Evidence[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<"webmcp" | "mcp">("webmcp");
+  const [mcpEvents, setMcpEvents] = useState<McpAuditEvent[]>([]);
+  const [mcpLoading, setMcpLoading] = useState(false);
+  const [mcpError, setMcpError] = useState("");
+  const [mcpRefresh, setMcpRefresh] = useState(0);
   const [cargoMeshOrigin, setCargoMeshOrigin] = useState<string | null>(null);
   const drawer = useRef<HTMLElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -106,6 +124,26 @@ export function JudgeDrawer() {
       ))
       .finally(() => setLoading(false));
   }, [open, t]);
+
+  useEffect(() => {
+    if (!open || activeTab !== "mcp") return;
+    const controller = new AbortController();
+    setMcpLoading(true);
+    setMcpError("");
+    void fetch("/api/judge/mcp-logs", { cache: "no-store", credentials: "same-origin", signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(response.status === 401
+          ? t("Inicia sesión para ver los logs MCP.", "Sign in to view MCP logs.")
+          : t("No fue posible cargar los logs MCP.", "Could not load MCP logs."));
+        const data = await response.json() as { events: McpAuditEvent[] };
+        setMcpEvents(data.events);
+      })
+      .catch((reason: unknown) => {
+        if (!controller.signal.aborted) setMcpError(reason instanceof Error ? reason.message : t("No fue posible cargar los logs MCP.", "Could not load MCP logs."));
+      })
+      .finally(() => { if (!controller.signal.aborted) setMcpLoading(false); });
+    return () => controller.abort();
+  }, [open, activeTab, mcpRefresh, t]);
 
   useEffect(() => {
     if (!open) return;
@@ -299,6 +337,22 @@ export function JudgeDrawer() {
                 </div>
               </details>
 
+              <div className={styles.tabs} role="tablist" aria-label={t("Fuentes de evidencia", "Evidence sources")}>
+                <button id="webmcp-tab" type="button" role="tab" aria-selected={activeTab === "webmcp"}
+                  aria-controls="webmcp-panel" tabIndex={activeTab === "webmcp" ? 0 : -1}
+                  onClick={() => setActiveTab("webmcp")}
+                  onKeyDown={(event) => { if (event.key === "ArrowRight" || event.key === "ArrowLeft") { event.preventDefault(); setActiveTab("mcp"); document.getElementById("mcp-tab")?.focus(); } }}>
+                  {t("WebMCP / orquestación", "WebMCP / orchestration")}
+                </button>
+                <button id="mcp-tab" type="button" role="tab" aria-selected={activeTab === "mcp"}
+                  aria-controls="mcp-panel" tabIndex={activeTab === "mcp" ? 0 : -1}
+                  onClick={() => setActiveTab("mcp")}
+                  onKeyDown={(event) => { if (event.key === "ArrowRight" || event.key === "ArrowLeft") { event.preventDefault(); setActiveTab("webmcp"); document.getElementById("webmcp-tab")?.focus(); } }}>
+                  {t("Alexa / logs MCP", "Alexa / MCP logs")}
+                </button>
+              </div>
+
+              <div id="webmcp-panel" role="tabpanel" aria-labelledby="webmcp-tab" hidden={activeTab !== "webmcp"}>
               <div className={styles.evidenceHeading}>
                 <span>{t("Evidencia de la organización activa", "Active organization evidence")}</span>
                 <h3>{t("Eventos persistidos", "Persisted events")}</h3>
@@ -322,6 +376,22 @@ export function JudgeDrawer() {
               ) : (
                 <div className={styles.empty}>{t("No hay eventos de orquestación persistidos.", "No persisted orchestration events.")}</div>
               )}
+              </div>
+              <div id="mcp-panel" role="tabpanel" aria-labelledby="mcp-tab" hidden={activeTab !== "mcp"}>
+                <div className={styles.evidenceHeading}>
+                  <span>{t("Endpoint local /mcp · organización activa", "Local /mcp endpoint · active organization")}</span>
+                  <h3>{t("Llamadas MCP registradas", "Recorded MCP calls")}</h3>
+                  <p>{t("Alexa no está identificada como origen: todavía no hay llamadas Alexa verificadas.", "Alexa is not identified as a source: no verified Alexa calls have been captured yet.")}</p>
+                  <button type="button" className={styles.refresh} onClick={() => setMcpRefresh((value) => value + 1)}>
+                    {t("Actualizar logs", "Refresh logs")}
+                  </button>
+                </div>
+                {mcpLoading ? <div className={styles.empty} role="status">{t("Cargando logs MCP", "Loading MCP logs")}</div>
+                  : mcpError ? <div className={styles.empty} role="alert">{mcpError}</div>
+                  : mcpEvents.length ? <div className={styles.events}>
+                    {mcpEvents.map((event) => <McpLogCard key={event.id} event={event} locale={locale} />)}
+                  </div> : <div className={styles.empty} role="status">{t("Aún no hay llamadas MCP registradas.", "No MCP calls recorded yet.")}</div>}
+              </div>
             </aside>
           </>,
           document.body
@@ -329,6 +399,33 @@ export function JudgeDrawer() {
       ) : null}
     </>
   );
+}
+
+function McpLogCard({ event, locale }: { event: McpAuditEvent; locale: "es" | "en" }) {
+  const { t } = useLocale();
+  return <details className={styles.eventCard}>
+    <summary>
+      <FileJson2 size={16} aria-hidden="true" />
+      <span className={styles.eventTitle}><strong>{event.tool_name}</strong>
+        <small>MCP · {formatTimestamp(event.started_at, locale)}</small></span>
+      <span className={`${styles.statusBadge} ${event.status === "success" ? styles.statusSuccess : styles.statusError}`}>
+        {event.status === "success" ? t("Éxito", "Success") : t("Error", "Error")}
+      </span>
+    </summary>
+    <div className={styles.eventBody}>
+      <dl>
+        <dt>{t("Origen", "Source")}</dt><dd>MCP</dd>
+        <dt>{t("ID de solicitud", "Request ID")}</dt><dd>{event.request_id ?? "—"}</dd>
+        <dt>{t("Fecha y hora", "Timestamp")}</dt><dd>{formatTimestamp(event.started_at, locale)}</dd>
+        <dt>{t("Latencia", "Latency")}</dt><dd>{event.duration_ms} ms</dd>
+        <dt>HTTP</dt><dd>{event.http_status}</dd>
+      </dl>
+      <h3>{t("Entrada sanitizada", "Sanitized input")}</h3>
+      <pre>{event.input_payload == null ? t("No disponible (datos sensibles omitidos)", "Unavailable (sensitive data omitted)") : JSON.stringify(event.input_payload, null, 2)}</pre>
+      <h3>{t("Salida sanitizada", "Sanitized output")}</h3>
+      <pre>{event.output_payload == null ? t("No disponible", "Unavailable") : JSON.stringify(event.output_payload, null, 2)}</pre>
+    </div>
+  </details>;
 }
 
 function EvidenceCard({ event, cargoMeshOrigin, locale }: {

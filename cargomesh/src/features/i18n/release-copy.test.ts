@@ -135,3 +135,15 @@ test("Judge Drawer exposes the bilingual no-video path, catalog, and safe consol
   assert.match(drawer, /No ejecutes book_freight manualmente/);
   assert.match(drawer, /do not cross Result Bridge or persist events or offers/);
 });
+
+test("Judge Drawer separates recorded MCP events from Alexa and WebMCP evidence", () => {
+  const drawer = source("../../components/judge-drawer.tsx");
+  assert.match(drawer, /role="tablist"/);
+  assert.match(drawer, /aria-selected={activeTab === "mcp"}/);
+  assert.match(drawer, /Alexa \/ logs MCP/);
+  assert.match(drawer, /Alexa \/ MCP logs/);
+  assert.match(drawer, /no verified Alexa calls have been captured yet/);
+  assert.match(drawer, /No MCP calls recorded yet/);
+  assert.match(drawer, /Aún no hay llamadas MCP registradas/);
+  assert.match(drawer, /\/api\/judge\/mcp-logs/);
+});

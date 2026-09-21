@@ -266,6 +266,29 @@ test("REJECT becomes a valid commercial status with one stable terminal event", 
   assert.equal(replacement.ok, true);
 });
 
+test("Andes fixture consumes ACCEPT and REJECT on separate bookings", async () => {
+  const andes: ProviderPageConfig = {
+    ...provider, carrierCode: "ANDES", displayName: "Andes Cargo",
+    providerUrl: "/providers/andes", service: { ...provider.service, providerServiceCode: "ANDES-PECL-FTL" },
+  };
+  const storage = createInMemoryProviderBookingStorage();
+  const control = createProviderFixtureController(andes.service.providerServiceCode, storage);
+  const book = createBookFreightTool(andes, { storage });
+  const status = createGetProviderBookingStatusTool(andes, { storage });
+  for (const desired of ["ACCEPT", "REJECT"] as const) {
+    const result = await execute<ProviderBookFreightResult>(book, {
+      ...assistedInput, provider_offer_reference: `ANDES-${desired}`,
+      idempotency_key: `cm:andes:${desired.toLowerCase()}:v1`,
+    });
+    assert.equal(result.ok, true);
+    if (!result.ok) continue;
+    control.setNextResponse(result.data.providerReference, desired);
+    const next = await execute<ProviderBookingStatusResult>(status, { provider_reference: result.data.providerReference });
+    assert.equal(next.ok && next.data.providerBookingStatus, desired === "ACCEPT" ? "CONFIRMED" : "REJECTED");
+    assert.equal(storage.read(andes.service.providerServiceCode).nextControlByReference[result.data.providerReference], undefined);
+  }
+});
+
 test("NO_RESPONSE is consumed while provider status remains pending", async () => {
   const input: BookFreightInput = {
     ...assistedInput,

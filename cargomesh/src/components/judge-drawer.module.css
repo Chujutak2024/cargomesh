@@ -465,6 +465,12 @@ details[open] > summary .disclosureIcon {
   margin: 1.1rem 0.9rem 0.65rem;
 }
 
+.tabs { display: flex; gap: 0.35rem; margin: 1rem 0.9rem 0; border-bottom: 1px solid #d7e0dc; }
+.tabs button, .refresh { border: 0; border-radius: 0.4rem 0.4rem 0 0; background: transparent; color: #34413f; cursor: pointer; padding: 0.65rem; font: inherit; font-size: 0.77rem; }
+.tabs button[aria-selected="true"] { border-bottom: 3px solid #185c55; color: #185c55; font-weight: 800; }
+.refresh { width: fit-content; border: 1px solid #185c55; border-radius: 0.4rem; color: #185c55; }
+.tabs button:focus-visible, .refresh:focus-visible { outline: 3px solid #2bae9a; outline-offset: 2px; }
+
 .events {
   display: grid;
   gap: 0.65rem;

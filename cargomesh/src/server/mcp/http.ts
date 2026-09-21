@@ -4,12 +4,14 @@ import { publicMcpError } from "./errors";
 import { createCargoMeshMcpServer } from "./server";
 import { readPersistedFreightOptions, type ReadFreightOptions } from "./tools/get-freight-options";
 import type { CreateFreightRequest } from "./tools/create-freight-request";
+import { extractMcpAuditInput, extractMcpAuditOutput, persistMcpAuditEvent, type McpAuditEventInput } from "./audit";
 
 type Dependencies = {
   authenticate: () => Promise<void>;
   read: ReadFreightOptions;
   create?: CreateFreightRequest;
   configuration: () => { enabled: boolean; environment: string | undefined };
+  record?: (event: McpAuditEventInput) => Promise<void>;
 };
 
 function responseError(status: number, message: string): Response {
@@ -35,6 +37,7 @@ export function createMcpHttpHandler(dependencies: Dependencies = {
     enabled: process.env.CARGOMESH_MCP_LOCAL_ENABLED === "true",
     environment: process.env.NODE_ENV,
   }),
+  record: persistMcpAuditEvent,
 }) {
   return async function handleMcpRequest(request: Request): Promise<Response> {
     const config = dependencies.configuration();
@@ -87,6 +90,10 @@ export function createMcpHttpHandler(dependencies: Dependencies = {
     const boundedRequest = new Request(request.url, {
       method: "POST", headers: request.headers, body, signal: request.signal,
     });
+    let auditCall: ReturnType<typeof extractMcpAuditInput> = null;
+    try { auditCall = extractMcpAuditInput(JSON.parse(new TextDecoder().decode(body))); } catch { /* SDK validates malformed JSON. */ }
+    const startedAt = new Date().toISOString();
+    const startedMs = performance.now();
     const server = createCargoMeshMcpServer(dependencies.read, dependencies.create);
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined, enableJsonResponse: true,
@@ -95,8 +102,26 @@ export function createMcpHttpHandler(dependencies: Dependencies = {
       await server.connect(transport);
       const response = await transport.handleRequest(boundedRequest);
       response.headers.set("Cache-Control", "no-store");
+      if (auditCall && dependencies.record) {
+        let output: ReturnType<typeof extractMcpAuditOutput> = { status: "error", outputPayload: null };
+        try { output = extractMcpAuditOutput(await response.clone().json()); } catch { /* HTTP status is still recorded. */ }
+        try {
+          await dependencies.record({ ...auditCall, startedAt,
+            durationMs: Math.max(0, Math.round(performance.now() - startedMs)),
+            httpStatus: response.status,
+            status: response.ok ? output.status : "error",
+            outputPayload: output.outputPayload });
+        } catch { console.error("MCP audit persistence unavailable"); }
+      }
       return response;
     } catch {
+      if (auditCall && dependencies.record) {
+        try {
+          await dependencies.record({ ...auditCall, startedAt,
+            durationMs: Math.max(0, Math.round(performance.now() - startedMs)),
+            httpStatus: 500, status: "error", outputPayload: null });
+        } catch { console.error("MCP audit persistence unavailable"); }
+      }
       return responseError(500, "MCP request failed.");
     } finally {
       // JSON mode resolves after the tool response. No stream/session survives.
