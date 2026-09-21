@@ -112,11 +112,12 @@ test("620px media query stacks subSectionHeader vertically on mobile", () => {
   );
 });
 
-test("HAC-8 uses the dark tokens, four steps, and Judge Drawer safety spacing", () => {
+test("HAC-8 uses the application light surfaces, four steps, and Judge Drawer safety spacing", () => {
   const rule = css.match(/\.notesTextarea\s*\{[^}]*\}/);
   assert.ok(rule, ".notesTextarea rule must exist");
-  assert.match(rule[0], /background:\s*#0e1d19/);
-  assert.match(rule[0], /color:\s*#f3f7f5/);
+  assert.match(rule[0], /background:\s*#ffffff/);
+  assert.match(rule[0], /color:\s*#263331/);
+  assert.match(css, /\.formCard, \.summaryCard\s*\{[^}]*background:\s*#ffffff/);
   assert.match(css, /\.stepper\s*\{[^}]*repeat\(4,/);
   assert.match(css, /\.page\s*\{[^}]*padding-bottom:\s*6rem/);
   assert.ok(
