@@ -1,6 +1,13 @@
 # CargoMesh V2 — Taxonomía Industrial de Cargas, Dimensiones y Modelo de Precios en USD
 ## Especificación de Tipos de Carga, Factor Volumétrico (CBM) y Recargos Dinámicos
 
+> 📚 **Suite Documental de Arquitectura V2:**  
+> • **Blueprint Maestro:** [CARGOMESH_V2_EVOLUTION_BLUEPRINT.md](./CARGOMESH_V2_EVOLUTION_BLUEPRINT.md)  
+> • **Esquema de Base de Datos:** [DATABASE_SCHEMA_V2_PROPOSAL.md](./DATABASE_SCHEMA_V2_PROPOSAL.md)  
+> • **Diagramas de Dominio y Persistencia:** [BACKEND_DOMAIN_AND_PERSISTENCE_DIAGRAMS.md](./BACKEND_DOMAIN_AND_PERSISTENCE_DIAGRAMS.md)  
+> • **Taxonomía de Carga y Precios USD:** [CARGO_DIMENSIONS_AND_TAXONOMY_V2.md](./CARGO_DIMENSIONS_AND_TAXONOMY_V2.md) *(Este documento)*  
+> • **Plan Operativo y Sprints:** [MASTER_BACKLOG.md](./MASTER_BACKLOG.md)
+
 ---
 
 ## 🧭 1. El Problema en V1 vs. La Realidad Logística en V2

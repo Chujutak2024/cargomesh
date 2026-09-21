@@ -1,6 +1,13 @@
 # CargoMesh V2 — Blueprint Maestro de Evolución Multimodal y Enterprise
 ## Plataforma de Orquestación Logística Autónoma (Voz Alexa+, Servidor MCP Oficial y Gobernanza Determinista)
 
+> 📚 **Suite Documental de Arquitectura V2:**  
+> • **Blueprint Maestro:** [CARGOMESH_V2_EVOLUTION_BLUEPRINT.md](./CARGOMESH_V2_EVOLUTION_BLUEPRINT.md) *(Este documento)*  
+> • **Esquema de Base de Datos:** [DATABASE_SCHEMA_V2_PROPOSAL.md](./DATABASE_SCHEMA_V2_PROPOSAL.md)  
+> • **Diagramas de Dominio y Persistencia:** [BACKEND_DOMAIN_AND_PERSISTENCE_DIAGRAMS.md](./BACKEND_DOMAIN_AND_PERSISTENCE_DIAGRAMS.md)  
+> • **Taxonomía de Carga y Precios USD:** [CARGO_DIMENSIONS_AND_TAXONOMY_V2.md](./CARGO_DIMENSIONS_AND_TAXONOMY_V2.md)  
+> • **Plan Operativo y Sprints:** [MASTER_BACKLOG.md](./MASTER_BACKLOG.md)
+
 ---
 
 ## 🧭 1. Resumen Ejecutivo y Nueva Visión del Proyecto
@@ -354,13 +361,14 @@ graph TD
 ## 🗄️ 15. Roadmap de Base de Datos (Evolución Aditiva en Supabase)
 
 ```sql
--- 1. Enumeradores Multimodales y Direccionales
-CREATE TYPE transport_mode_enum AS ENUM ('ROAD', 'MARITIME', 'RAIL', 'AIR', 'MULTIMODAL_OPTIMAL');
+-- 1. Enumeradores Multimodales, Direccionales y de Carga
+CREATE TYPE preferred_transport_mode_enum AS ENUM ('ROAD', 'MARITIME', 'RAIL', 'AIR', 'MULTIMODAL_OPTIMAL');
 CREATE TYPE user_role_enum AS ENUM ('OWNER', 'SUPERVISOR', 'REQUESTER');
-CREATE TYPE cargo_category_enum AS ENUM ('PALLETS', 'CONTAINER_20GP', 'CONTAINER_40HC', 'BULK_HOPPER', 'AIR_CRATE');
 CREATE TYPE freight_flow_type_enum AS ENUM ('OUTBOUND', 'INBOUND', 'INTERNAL_TRANSFER');
+CREATE TYPE cargo_category_v2_enum AS ENUM ('MINING_BULK', 'HEAVY_MACHINERY', 'COLD_CHAIN', 'HAZMAT', 'HIGH_VALUE', 'GENERAL_DRY');
+CREATE TYPE packaging_type_enum AS ENUM ('PALLET_STANDARD_WOOD', 'PALLET_EURO', 'CONTAINER_20GP', 'CONTAINER_40HC', 'BIG_BAG', 'DRUM_BARREL', 'WOODEN_CRATE');
 
--- 2. Sedes de la Organización (Facilities)
+-- 2. Sedes de la Organización (Facilities) - Ver DATABASE_SCHEMA_V2_PROPOSAL.md
 CREATE TABLE facilities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -370,6 +378,7 @@ CREATE TABLE facilities (
     latitude NUMERIC(10, 7) NOT NULL,
     longitude NUMERIC(10, 7) NOT NULL,
     has_dock BOOLEAN DEFAULT TRUE,
+    has_weighbridge BOOLEAN DEFAULT FALSE,
     has_rail_spur BOOLEAN DEFAULT FALSE,
     special_requirements TEXT[],
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -397,8 +406,12 @@ ALTER TABLE freight_requests
     ADD COLUMN IF NOT EXISTS flow_type freight_flow_type_enum DEFAULT 'OUTBOUND',
     ADD COLUMN IF NOT EXISTS origin_facility_id UUID REFERENCES facilities(id),
     ADD COLUMN IF NOT EXISTS destination_facility_id UUID REFERENCES facilities(id),
-    ADD COLUMN IF NOT EXISTS transport_mode_preferred transport_mode_enum DEFAULT 'ROAD',
-    ADD COLUMN IF NOT EXISTS cargo_category cargo_category_enum DEFAULT 'PALLETS',
+    ADD COLUMN IF NOT EXISTS transport_mode_preferred preferred_transport_mode_enum DEFAULT 'ROAD',
+    ADD COLUMN IF NOT EXISTS cargo_category_v2 cargo_category_v2_enum DEFAULT 'GENERAL_DRY',
+    ADD COLUMN IF NOT EXISTS packaging_type packaging_type_enum DEFAULT 'PALLET_STANDARD_WOOD',
+    ADD COLUMN IF NOT EXISTS total_cbm NUMERIC(10, 3),
+    ADD COLUMN IF NOT EXISTS chargable_weight_kg NUMERIC(12, 2),
+    ADD COLUMN IF NOT EXISTS is_stackable BOOLEAN DEFAULT TRUE,
     ADD COLUMN IF NOT EXISTS required_approver_role user_role_enum DEFAULT 'REQUESTER',
     ADD COLUMN IF NOT EXISTS approved_by_user_id UUID REFERENCES auth.users(id);
 ```

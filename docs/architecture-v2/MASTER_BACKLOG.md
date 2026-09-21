@@ -3,6 +3,13 @@
 **Periodo:** Sábado 19 de Septiembre al Lunes 19 de Octubre de 2026  
 **Rama Base:** `codex/c-mcp-contracts` (⚠️ **Regla de Oro:** ¡NUNCA hacer ramas ni merge directo a `main`!)
 
+> 📚 **Suite Documental de Arquitectura V2:**  
+> • **Blueprint Maestro:** [CARGOMESH_V2_EVOLUTION_BLUEPRINT.md](./CARGOMESH_V2_EVOLUTION_BLUEPRINT.md)  
+> • **Esquema de Base de Datos:** [DATABASE_SCHEMA_V2_PROPOSAL.md](./DATABASE_SCHEMA_V2_PROPOSAL.md)  
+> • **Diagramas de Dominio y Persistencia:** [BACKEND_DOMAIN_AND_PERSISTENCE_DIAGRAMS.md](./BACKEND_DOMAIN_AND_PERSISTENCE_DIAGRAMS.md)  
+> • **Taxonomía de Carga y Precios USD:** [CARGO_DIMENSIONS_AND_TAXONOMY_V2.md](./CARGO_DIMENSIONS_AND_TAXONOMY_V2.md)  
+> • **Plan Operativo y Sprints:** [MASTER_BACKLOG.md](./MASTER_BACKLOG.md) *(Este documento)*
+
 ---
 
 ## 👥 1. Asignaciones por Desarrollador (2 Tareas por Integrante - Sprint 1)

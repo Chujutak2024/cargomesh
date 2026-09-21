@@ -1,6 +1,13 @@
 # CargoMesh V2 — Propuesta de Esquema de Base de Datos y Modelo de Datos Multimodal
 ## Documento Técnico de Evolución Aditiva en PostgreSQL (Supabase)
 
+> 📚 **Suite Documental de Arquitectura V2:**  
+> • **Blueprint Maestro:** [CARGOMESH_V2_EVOLUTION_BLUEPRINT.md](./CARGOMESH_V2_EVOLUTION_BLUEPRINT.md)  
+> • **Esquema de Base de Datos:** [DATABASE_SCHEMA_V2_PROPOSAL.md](./DATABASE_SCHEMA_V2_PROPOSAL.md) *(Este documento)*  
+> • **Diagramas de Dominio y Persistencia:** [BACKEND_DOMAIN_AND_PERSISTENCE_DIAGRAMS.md](./BACKEND_DOMAIN_AND_PERSISTENCE_DIAGRAMS.md)  
+> • **Taxonomía de Carga y Precios USD:** [CARGO_DIMENSIONS_AND_TAXONOMY_V2.md](./CARGO_DIMENSIONS_AND_TAXONOMY_V2.md)  
+> • **Plan Operativo y Sprints:** [MASTER_BACKLOG.md](./MASTER_BACKLOG.md)
+
 ---
 
 ## 🧭 1. Principio Rector: Evolución Aditiva (Cero Regresiones)
@@ -223,20 +230,31 @@ CREATE TYPE freight_flow_type_enum AS ENUM (
     'INTERNAL_TRANSFER'    -- Movimiento entre dos sedes propias de la organización
 );
 
-CREATE TYPE cargo_unit_type_enum AS ENUM (
-    'PALLETS',             -- Carga paletizada estándar (120x100 cm)
-    'CONTAINER_20GP',      -- Contenedor marítimo estándar 20 pies
-    'CONTAINER_40HC',      -- Contenedor marítimo High Cube 40 pies
-    'BULK_HOPPER',         -- Carga a granel en tolva
-    'AIR_CRATE'            -- Bulto aéreo certificado
-);
-
 CREATE TYPE preferred_transport_mode_enum AS ENUM (
     'ROAD',
     'MARITIME',
     'RAIL',
     'AIR',
     'MULTIMODAL_OPTIMAL'
+);
+
+CREATE TYPE cargo_category_v2_enum AS ENUM (
+    'MINING_BULK',         -- Concentrados y mineral a granel (tolvas 6x4, vagones)
+    'HEAVY_MACHINERY',     -- Maquinaria pesada y sobredimensionada (cama-baja)
+    'COLD_CHAIN',          -- Perecibles y cadena de frío (-20°C a +4°C)
+    'HAZMAT',              -- Materiales peligrosos y químicos IMO 1-9
+    'HIGH_VALUE',          -- Carga crítica de alto valor y repuestos express
+    'GENERAL_DRY'          -- Mercadería general paletizada o consolidada
+);
+
+CREATE TYPE packaging_type_enum AS ENUM (
+    'PALLET_STANDARD_WOOD',-- Pallet madera estándar 120x100 cm
+    'PALLET_EURO',         -- Pallet europeo 120x80 cm
+    'CONTAINER_20GP',      -- Contenedor marítimo estándar 20 pies
+    'CONTAINER_40HC',      -- Contenedor marítimo High Cube 40 pies
+    'BIG_BAG',             -- Saco industrial 1-2 toneladas
+    'DRUM_BARREL',         -- Tambor de 200 L para químicos
+    'WOODEN_CRATE'         -- Caja de madera reforzada
 );
 
 ALTER TABLE public.freight_requests
@@ -249,8 +267,16 @@ ALTER TABLE public.freight_requests
     ADD COLUMN IF NOT EXISTS destination_latitude NUMERIC(10, 7),
     ADD COLUMN IF NOT EXISTS destination_longitude NUMERIC(10, 7),
     ADD COLUMN IF NOT EXISTS calculated_distance_km NUMERIC(10, 2),
-    ADD COLUMN IF NOT EXISTS cargo_unit_type cargo_unit_type_enum NOT NULL DEFAULT 'PALLETS',
     ADD COLUMN IF NOT EXISTS transport_mode_preferred preferred_transport_mode_enum NOT NULL DEFAULT 'ROAD',
+    ADD COLUMN IF NOT EXISTS cargo_category_v2 cargo_category_v2_enum NOT NULL DEFAULT 'GENERAL_DRY',
+    ADD COLUMN IF NOT EXISTS packaging_type packaging_type_enum NOT NULL DEFAULT 'PALLET_STANDARD_WOOD',
+    ADD COLUMN IF NOT EXISTS total_cbm NUMERIC(10, 3),
+    ADD COLUMN IF NOT EXISTS chargable_weight_kg NUMERIC(12, 2),
+    ADD COLUMN IF NOT EXISTS is_stackable BOOLEAN DEFAULT TRUE,
+    ADD COLUMN IF NOT EXISTS max_stacking_tiers INTEGER DEFAULT 1,
+    ADD COLUMN IF NOT EXISTS hazmat_class TEXT,
+    ADD COLUMN IF NOT EXISTS un_number TEXT,
+    ADD COLUMN IF NOT EXISTS declared_value_usd NUMERIC(14, 2),
     ADD COLUMN IF NOT EXISTS approval_status TEXT NOT NULL DEFAULT 'AUTO_APPROVED' CHECK (approval_status IN ('AUTO_APPROVED', 'PENDING_SUPERVISOR_APPROVAL', 'APPROVED', 'REJECTED')),
     ADD COLUMN IF NOT EXISTS supervisor_approved_by UUID REFERENCES public.organization_members(id),
     ADD COLUMN IF NOT EXISTS supervisor_approved_at TIMESTAMPTZ;
