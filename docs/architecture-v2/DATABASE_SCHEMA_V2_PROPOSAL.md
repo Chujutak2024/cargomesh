@@ -8,15 +8,15 @@
 Para garantizar la integridad del sistema actual de CargoMesh:
 * **No se destruye ni se reescribe ninguna de las 20 migraciones existentes.**
 * Las 17 tablas de la base de datos, los 147 tests pgTAP, las 22 políticas RLS y la idempotencia criptográfica (`20260918120000_c_draft_creation_idempotency.sql`) permanecen **100% operativos y en verde**.
-* Toda la nueva funcionalidad multimodal, multi-sede, de ruteo con Google Maps y de tarifas dinámicas se introduce mediante **nuevas tablas satélite y columnas opcionales con valores por defecto (`DEFAULT`)**.
+* Toda la nueva funcionalidad multimodal, multi-sede (clientes y transportistas), matriz de ruteo O-D y tarificación dinámica se introduce mediante **nuevas tablas satélite y columnas aditivas con valores por defecto (`DEFAULT`)**.
 
 ---
 
-## 🏢 2. Módulo de Clientes (Shippers): Sedes, Gobernanza y Créditos
+## 🏢 2. Módulo de Clientes (Shippers): Sedes Físicas y Gobernanza
 
-Actualmente, `organizations` solo contiene información básica (`name`, `code`, `default_currency`). En la logística industrial real, una empresa generadora de carga (ej. **ACME Mining Perú**) opera múltiples instalaciones físicas con requerimientos específicos.
+Una empresa generadora de carga industrial (ej. **ACME Mining Perú**) opera múltiples instalaciones físicas con requerimientos operacionales y de acceso específicos.
 
-### A. Nueva Tabla: `facilities` (Sedes y Almacenes de la Organización)
+### A. Tabla: `facilities` (Sedes y Almacenes del Cliente)
 Permite al cliente registrar sus campamentos mineros, depósitos fiscales, muelles portuarios y plantas de refinación:
 
 ```sql
@@ -48,7 +48,7 @@ CREATE TABLE public.facilities (
     -- Especificaciones de muelle y patio de maniobras
     has_loading_dock BOOLEAN NOT NULL DEFAULT TRUE,
     dock_bays_count INTEGER NOT NULL DEFAULT 2,
-    has_weighbridge BOOLEAN NOT NULL DEFAULT FALSE,      -- Báscula para pesaje de camiones
+    has_weighbridge BOOLEAN NOT NULL DEFAULT FALSE,      -- Báscula para pesaje de camiones 60T
     has_rail_spur BOOLEAN NOT NULL DEFAULT FALSE,        -- Desvío ferroviario directo a la planta
     max_vehicle_length_meters NUMERIC(5, 2) DEFAULT 22.0,-- Capacidad para camiones bi-tren o camas-bajas
     
@@ -81,19 +81,52 @@ ALTER TABLE public.organizations
     ADD COLUMN IF NOT EXISTS max_auto_approval_budget_usd NUMERIC(14, 2) DEFAULT 5000.00;
 ```
 
-### C. Gobernanza RBAC en `organization_members` (Confirmación del Modelo Actual)
-La tabla `organization_members` ya cuenta con el constraint `role in ('OWNER', 'REQUESTER', 'SUPERVISOR')`. Se formalizan las atribuciones:
-* **`OWNER` (Dueño Único):** Configura sedes (`facilities`), fija el límite de auto-aprobación (`max_auto_approval_budget_usd`) y administra contratos de carriers.
-* **`SUPERVISOR` (Jefe Logístico):** Aprueba solicitudes de flete que excedan los \$5,000 USD y autoriza reservas transfronterizas.
-* **`REQUESTER` (Operador en Campo):** Crea borradores por voz (Alexa) o web; si el presupuesto supera los \$5,000 USD, queda automáticamente en estado `PENDING_SUPERVISOR_APPROVAL`.
-
 ---
 
-## 🚛 3. Módulo de Carriers: Multimodalidad, Flotas y Tarificación Paramétrica
+## 🚛 3. Módulo de Carriers: Sedes Operativas por País (Patios/Hubs) y Flotas
 
-En V1, los carriers tenían servicios de carretera planos. En V2, el carrier se convierte en una entidad multimodal con tarificación algorítmica por distancia real.
+Los carriers no son flotantes en el vacío: **tienen bases físicas, talleres y patios de relevo en diferentes países y ciudades**. Esto es fundamental porque la distancia de posicionamiento (*deadhead* o qué tan cerca está la base del carrier del origen de la carga) determina su disponibilidad y su costo base.
 
-### A. Extensión a la Tabla `carriers`: Tarifas Base y Geocercas
+### A. Nueva Tabla: `carrier_depots` (Sedes y Terminales del Transportista)
+```sql
+CREATE TYPE depot_type_enum AS ENUM (
+    'MAIN_HEADQUARTERS',    -- Casa matriz y base central de operaciones
+    'MAINTENANCE_YARD',     -- Patio de maniobras y taller mecánico de flota
+    'BORDER_CROSSING_POST', -- Agencia aduanera y patio de relevo fronterizo (ej. Tacna/Arica)
+    'PORT_BERTH_OFFICE',    -- Oficina de muelle portuario (para navieras de cabotaje)
+    'INTERMODAL_RAMP'       -- Terminal de transferencia tren-camión
+);
+
+CREATE TABLE public.carrier_depots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    carrier_id UUID NOT NULL REFERENCES public.carriers(id) ON DELETE CASCADE,
+    depot_code TEXT NOT NULL,
+    name TEXT NOT NULL,
+    depot_type depot_type_enum NOT NULL DEFAULT 'MAINTENANCE_YARD',
+    
+    country_code TEXT NOT NULL, -- 'PE', 'CL'
+    city TEXT NOT NULL,
+    address TEXT NOT NULL,
+    latitude NUMERIC(10, 7) NOT NULL,
+    longitude NUMERIC(10, 7) NOT NULL,
+    geohash TEXT,
+    
+    -- Capacidades operativas del patio
+    assigned_fleet_capacity INTEGER NOT NULL DEFAULT 15, -- Cantidad de camiones/contenedores basados aquí
+    has_cold_storage_plugs BOOLEAN NOT NULL DEFAULT FALSE, -- Conexiones eléctricas para contenedores reefer
+    has_hazardous_permit BOOLEAN NOT NULL DEFAULT FALSE,
+    customs_brokerage_enabled BOOLEAN NOT NULL DEFAULT FALSE, -- Puede hacer trámites de aduana de exportación
+    
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT carrier_depot_unique UNIQUE (carrier_id, depot_code)
+);
+
+CREATE INDEX idx_carrier_depots_carrier ON public.carrier_depots(carrier_id);
+CREATE INDEX idx_carrier_depots_country ON public.carrier_depots(country_code, city);
+```
+
+### B. Extensión a la Tabla `carriers`: Parámetros de Tarificación Dinámica
 ```sql
 ALTER TABLE public.carriers
     ADD COLUMN IF NOT EXISTS transport_modes TEXT[] DEFAULT ARRAY['ROAD']::TEXT[],
@@ -106,15 +139,13 @@ ALTER TABLE public.carriers
     ADD COLUMN IF NOT EXISTS hub_ports TEXT[] DEFAULT ARRAY[]::TEXT[];
 ```
 
-### B. Extensión a la Tabla `vehicles`: Categorización Multimodal y Telemetría
-Actualmente, `vehicles` solo maneja camiones genéricos. Se amplía para soportar el catálogo de activos de transporte multimodal:
-
+### C. Catálogo de Activos y Tipos de Vehículos en `vehicles`
 ```sql
 CREATE TYPE asset_mode_enum AS ENUM (
-    'ROAD_TRUCK',          -- Tractocamión con semirremolque
-    'ROAD_REEFER',         -- Furgón refrigerado
-    'ROAD_FLATBED',        -- Cama-baja para maquinaria pesada
-    'ROAD_HOPPER',         -- Tolva mineralera
+    'ROAD_TRUCK',          -- Tractocamión con semirremolque estándar
+    'ROAD_REEFER',         -- Furgón refrigerado con generador autónomo
+    'ROAD_FLATBED',        -- Cama-baja para maquinaria minera sobredimensionada
+    'ROAD_HOPPER',         -- Tolva bimodal para concentrado de mineral
     'MARITIME_CONTAINER',  -- Contenedor marítimo en buque (20GP, 40HC, Reefer)
     'RAIL_WAGON',          -- Vagón tolva o plataforma ferroviaria
     'AIR_FREIGHTER_CRATE'  -- Pallet aéreo consolidado (ULD)
@@ -122,10 +153,10 @@ CREATE TYPE asset_mode_enum AS ENUM (
 
 ALTER TABLE public.vehicles
     ADD COLUMN IF NOT EXISTS asset_mode asset_mode_enum DEFAULT 'ROAD_TRUCK',
+    ADD COLUMN IF NOT EXISTS home_depot_id UUID REFERENCES public.carrier_depots(id),
     ADD COLUMN IF NOT EXISTS plate_or_registration_number TEXT,
-    ADD COLUMN IF NOT EXISTS max_teu_capacity NUMERIC(4, 1) DEFAULT 0.0, -- Capacidad en contenedores estándar
+    ADD COLUMN IF NOT EXISTS max_teu_capacity NUMERIC(4, 1) DEFAULT 0.0,
     ADD COLUMN IF NOT EXISTS tare_weight_kg NUMERIC(10, 2),
-    ADD COLUMN IF NOT EXISTS telemetry_device_id TEXT,
     ADD COLUMN IF NOT EXISTS telemetry_protocol TEXT DEFAULT 'SIMULATED' CHECK (telemetry_protocol IN ('GEOTAB', 'SAMSARA', 'AIS_MARINE', 'SIMULATED')),
     ADD COLUMN IF NOT EXISTS last_known_latitude NUMERIC(10, 7),
     ADD COLUMN IF NOT EXISTS last_known_longitude NUMERIC(10, 7),
@@ -134,11 +165,57 @@ ALTER TABLE public.vehicles
 
 ---
 
-## 🗺️ 4. Módulo de Ruteo, Mapas y Direccionalidad de Carga
+## 🗺️ 4. Módulo de Ruteo Avanzado: Matriz Origen-Destino (O-D Matrix) y Tramos Complejos
 
-Este módulo resuelve la conexión con Google Maps API y los flujos Inbound / Outbound.
+Las rutas no son una simple línea recta: son **corredores multimodales con tramos (legs), pasos cordilleranos, aduanas y tiempos de descanso obligatorios**.
 
-### A. Extensión a `freight_requests`: Direccionalidad y Coordenadas
+```mermaid
+graph LR
+    O["🏭 Sede Mina Las Bambas<br>(Apurímac, 4,100 msnm)"] -->|Tramo 1: Carretera de Montaña (950 km)| H1["🚢 Puerto del Callao<br>(Báscula y Muelle APM)"]
+    H1 -->|Tramo 2: Cabotaje Marítimo (1,350 MN)| H2["🚢 Puerto San Antonio<br>(Aduana Chile)"]
+    H2 -->|Tramo 3: Última Milla Vial/Tren (110 km)| D["🏢 Planta Fundición<br>(Santiago de Chile)"]
+```
+
+### A. Estructura de la Matriz Origen-Destino (O-D Matrix): `route_corridors`
+Permite precargar y calcular matrices entre todas las sedes de clientes y depósitos de carriers:
+
+```sql
+CREATE TABLE public.route_corridors (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    corridor_code TEXT NOT NULL UNIQUE, -- ej. 'PE_BAMBAS_TO_PE_CALLAO', 'CROSS_CALLAO_TO_SANTIAGO'
+    origin_name TEXT NOT NULL,
+    origin_country TEXT NOT NULL,
+    origin_latitude NUMERIC(10, 7) NOT NULL,
+    origin_longitude NUMERIC(10, 7) NOT NULL,
+    
+    destination_name TEXT NOT NULL,
+    destination_country TEXT NOT NULL,
+    destination_latitude NUMERIC(10, 7) NOT NULL,
+    destination_longitude NUMERIC(10, 7) NOT NULL,
+
+    -- Datos de matriz O-D
+    total_road_distance_km NUMERIC(10, 2) NOT NULL,
+    total_nautical_miles NUMERIC(10, 2) DEFAULT 0.0,
+    estimated_driving_hours NUMERIC(6, 2) NOT NULL,
+    estimated_maritime_hours NUMERIC(6, 2) DEFAULT 0.0,
+    toll_booths_count INTEGER DEFAULT 8,
+    estimated_tolls_cost_usd NUMERIC(8, 2) DEFAULT 120.00,
+    
+    -- Análisis topográfico y fronterizo
+    max_elevation_meters NUMERIC(6, 1) DEFAULT 4100.0, -- Cruces de cordillera
+    border_crossing_names TEXT[] DEFAULT ARRAY[]::TEXT[], -- ej. ['SANTA_ROSA_CHACALLUTA']
+    border_customs_delay_hours NUMERIC(4, 1) DEFAULT 0.0,
+    
+    -- Polilínea codificada para trazabilidad en mapas (Leaflet / Google Maps)
+    encoded_polyline_geojson JSONB NOT NULL,
+    
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_route_corridors_od ON public.route_corridors(origin_country, destination_country);
+```
+
+### B. Extensión a `freight_requests`: Direccionalidad Inbound/Outbound y Trazabilidad
 ```sql
 CREATE TYPE freight_flow_type_enum AS ENUM (
     'OUTBOUND',            -- Envío desde sede propia a cliente/puerto externo
@@ -166,12 +243,12 @@ ALTER TABLE public.freight_requests
     ADD COLUMN IF NOT EXISTS flow_type freight_flow_type_enum NOT NULL DEFAULT 'OUTBOUND',
     ADD COLUMN IF NOT EXISTS origin_facility_id UUID REFERENCES public.facilities(id),
     ADD COLUMN IF NOT EXISTS destination_facility_id UUID REFERENCES public.facilities(id),
+    ADD COLUMN IF NOT EXISTS matched_corridor_id UUID REFERENCES public.route_corridors(id),
     ADD COLUMN IF NOT EXISTS origin_latitude NUMERIC(10, 7),
     ADD COLUMN IF NOT EXISTS origin_longitude NUMERIC(10, 7),
     ADD COLUMN IF NOT EXISTS destination_latitude NUMERIC(10, 7),
     ADD COLUMN IF NOT EXISTS destination_longitude NUMERIC(10, 7),
     ADD COLUMN IF NOT EXISTS calculated_distance_km NUMERIC(10, 2),
-    ADD COLUMN IF NOT EXISTS estimated_transit_hours NUMERIC(6, 2),
     ADD COLUMN IF NOT EXISTS cargo_unit_type cargo_unit_type_enum NOT NULL DEFAULT 'PALLETS',
     ADD COLUMN IF NOT EXISTS transport_mode_preferred preferred_transport_mode_enum NOT NULL DEFAULT 'ROAD',
     ADD COLUMN IF NOT EXISTS approval_status TEXT NOT NULL DEFAULT 'AUTO_APPROVED' CHECK (approval_status IN ('AUTO_APPROVED', 'PENDING_SUPERVISOR_APPROVAL', 'APPROVED', 'REJECTED')),
@@ -179,132 +256,83 @@ ALTER TABLE public.freight_requests
     ADD COLUMN IF NOT EXISTS supervisor_approved_at TIMESTAMPTZ;
 ```
 
-### B. Nueva Tabla: `route_matrix_cache` (Caché de Rutas de Google Maps)
-Para reducir la latencia de voz en Alexa a menos de 500 ms y evitar costos redundantes en Google Maps API:
+---
 
-```sql
-CREATE TABLE public.route_matrix_cache (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    origin_geohash TEXT NOT NULL,
-    destination_geohash TEXT NOT NULL,
-    origin_name TEXT NOT NULL,
-    destination_name TEXT NOT NULL,
-    road_distance_km NUMERIC(10, 2) NOT NULL,
-    estimated_drive_minutes INTEGER NOT NULL,
-    border_crossings TEXT[] DEFAULT ARRAY[]::TEXT[],
-    elevation_max_meters NUMERIC(6, 1) DEFAULT 0.0,
-    has_toll_roads BOOLEAN DEFAULT TRUE,
-    encoded_polyline TEXT, -- Para renderizado instantáneo en el mapa Leaflet de la web
-    hit_count INTEGER DEFAULT 1,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT route_cache_unique_pair UNIQUE (origin_geohash, destination_geohash)
-);
+## 🏎️ 5. El Ecosistema de 6 Carriers en Base de Datos (Marketplace inDrive)
 
-CREATE INDEX idx_route_cache_lookup ON public.route_matrix_cache(origin_geohash, destination_geohash);
-```
+Para responder a la preocupación de: *"¿Tener solo 3 candidatos no es muy poco?"*:
+* **En la Base de Datos:** Se cargan **6 carriers completos** con flotas, tarifas paramétricas y sedes. Esto permite que una búsqueda despliegue hasta 5 o 6 cotizaciones reales compitiendo en la subasta inversa.
+* **En el Protocolo de Honestidad (`AGENTS.md`):**
+  * **Carriers Live Demo:** Andes, Pacific e Inca cuentan con el flujo completo de prueba en vivo.
+  * **Carriers de Escenario Competitivo (Database Carriers):** Polaris, Apex y SouthAir cotizan en base a sus tarifas de DB para demostrar la densidad del mercado inDrive.
+
+### Catálogo de los 6 Carriers en el Seed:
+
+| Carrier | Código | Modo Principal | Patios y Sedes Físicas (`carrier_depots`) | Especialidad & Tarifa Base | Rol en la Demo |
+|---|---|---|---|---|---|
+| **Andes Express** | `ANDES` | `ROAD` | Lima (Callao), Arequipa, Tacna, Santiago | FTL Carretera estándar (\$1.20/km) | **Live Demo Provider #1** (Golden Flow Winner) |
+| **Pacific Cargo Lines** | `PACIFIC` | `MARITIME` | Muelle Callao, Muelle San Antonio, Valparaíso | Cabotaje marítimo contenedores (\$0.25/km náutico) | **Live Demo Provider #2** (Opción Económica) |
+| **Transportes Inca** | `INCA` | `RAIL` + `ROAD` | Estación Matarani, Arequipa, La Joya, Lima | Intermodal Express andino (\$1.35/km) | **Live Demo Provider #3** (Opción Rápida) |
+| **Polaris Heavy Haul** | `POLARIS` | `ROAD` | Antofagasta, Calama, Iquique, Arequipa | Camas-bajas para minería pesada y HAZMAT (\$1.80/km) | **Scenario Competitor** (Subasta inDrive) |
+| **Apex Cold Logistics** | `APEX` | `ROAD` | Lima (Lurín), Trujillo, Santiago (San Bernardo) | Furgones refrigerados pharma y alimentos (\$1.50/km) | **Scenario Competitor** (Subasta inDrive) |
+| **SouthAir Cargo** | `SOUTHAIR` | `AIR` | Aeropuerto Jorge Chávez (LIM), Santiago (SCL) | Carga aérea express de repuestos críticos (\$4.80/kg-km) | **Roadmap Competitor** (Ultra-Urgencias) |
 
 ---
 
-## ⚖️ 5. Módulo de Políticas Comerciales: `commercial_scoring_policies`
+## 🌱 6. Sedes y Patios Canónicos (Scenario Seed Data)
 
-Permite almacenar las ponderaciones MCDA de cada cliente (reemplazando heurísticas cableadas en código):
+Ubicados en `supabase/scenarios/amazon_hackathon/seed.sql` (cumpliendo la regla estricta de no contaminar migraciones):
 
-```sql
-CREATE TABLE public.commercial_scoring_policies (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
-    policy_name TEXT NOT NULL DEFAULT 'ACME Balanced Policy',
-    
-    -- Vector de ponderación MCDA / TOPSIS (Suma = 1.000)
-    cost_weight NUMERIC(4, 3) NOT NULL DEFAULT 0.250,
-    sla_weight NUMERIC(4, 3) NOT NULL DEFAULT 0.250,
-    time_weight NUMERIC(4, 3) NOT NULL DEFAULT 0.200,
-    availability_weight NUMERIC(4, 3) NOT NULL DEFAULT 0.100,
-    route_experience_weight NUMERIC(4, 3) NOT NULL DEFAULT 0.100,
-    org_history_weight NUMERIC(4, 3) NOT NULL DEFAULT 0.100,
-    
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT check_weights_sum CHECK (
-        (cost_weight + sla_weight + time_weight + availability_weight + route_experience_weight + org_history_weight) = 1.000
-    )
-);
-```
+### A. Sedes del Cliente (ACME Mining Perú):
+1. **`FAC-CALLAO` (Sede Central & Puerto):**
+   * *Nombre:* Almacén Fiscal Callao — Terminal Marítimo
+   * *Coordenadas:* Lat `-12.0565`, Lng `-77.1420` (6 muelles, báscula de pesaje 60T).
+2. **`FAC-BAMBAS` (Campamento Minero Apurímac):**
+   * *Nombre:* Minera Las Bambas — Campamento Challhuahuacho
+   * *Coordenadas:* Lat `-14.0950`, Lng `-72.3160` (4,100 msnm, requiere tracción 6x4 y SCTR).
+3. **`FAC-AREQUIPA` (Centro de Abastecimiento Sur):**
+   * *Nombre:* Centro Logístico Arequipa — Parque Industrial Río Seco
+   * *Coordenadas:* Lat `-16.3988`, Lng `-71.5350`.
+4. **`FAC-SANANTONIO` (Terminal Portuario Chile):**
+   * *Nombre:* Muelle Portuario San Antonio (DP World)
+   * *Coordenadas:* Lat `-33.5833`, Lng `-71.6167` (Recepción de buques feeder).
+5. **`FAC-SANTIAGO` (Planta Fundición Destino):**
+   * *Nombre:* Planta de Fundición & Refinación Santiago
+   * *Coordenadas:* Lat `-33.4489`, Lng `-70.6693` (Descarga urbana restringida).
+
+### B. Patios Operativos de los Carriers (`carrier_depots`):
+* **Andes Express:** Patio Callao (50 tractos), Patio Relevo Arequipa, Patio Fronterizo Tacna, Terminal Santiago Quilicura.
+* **Pacific Cargo:** Terminal de Contenedores Callao APM, Muelle San Antonio Sitio 1.
+* **Transportes Inca:** Estación Ferroviaria Matarani, Patio Intermodal La Joya.
+* **Polaris Heavy:** Base de Maquinaria Minera Antofagasta (Chile), Patio Arequipa.
 
 ---
 
-## 📊 6. Relaciones y Diagrama Entidad-Relación (ERD)
+## 📊 7. Diagrama de Relaciones Completo (ERD V2)
 
 ```mermaid
 erDiagram
-    organizations ||--o{ facilities : "posee sedes físicas"
-    organizations ||--o{ organization_members : "tiene miembros con roles"
-    organizations ||--o{ commercial_scoring_policies : "define políticas de scoring"
-    organizations ||--o{ freight_requests : "emite solicitudes"
+    organizations ||--o{ facilities : "posee sedes de carga"
+    organizations ||--o{ organization_members : "tiene miembros (Owner/Supervisor)"
+    organizations ||--o{ commercial_scoring_policies : "define pesos MCDA 6D"
+    
+    carriers ||--o{ carrier_depots : "opera patios y bases físicas"
+    carriers ||--o{ vehicles : "posee flota multimodal"
+    carrier_depots ||--o{ vehicles : "alberga activos en su base"
     
     facilities ||--o{ freight_requests : "origen (facility_id)"
     facilities ||--o{ freight_requests : "destino (facility_id)"
+    route_corridors ||--o{ freight_requests : "matriz O-D y trazabilidad"
     
-    carriers ||--o{ vehicles : "opera flota de vehículos"
-    carriers ||--o{ carrier_services : "ofrece servicios por modo"
-    
-    freight_requests ||--o{ route_matrix_cache : "consulta distancia en caché"
-    freight_requests ||--o{ carrier_offers : "recibe cotizaciones rankeadas"
+    freight_requests ||--o{ carrier_offers : "recibe ofertas estilo inDrive"
+    carriers ||--o{ carrier_offers : "emite cotización dinámica"
 ```
 
 ---
 
-## 🌱 7. Datos de Escenario Canónicos (Seed Data para Pruebas del Jurado)
+## 🎯 8. Veredicto y Compatibilidad con el Código Actual
 
-Siguiendo la **Regla 1 de `AGENTS.md`** (*NUNCA agregar INSERTs de prueba en `supabase/migrations/`*), estos datos se ubicarán en `supabase/scenarios/amazon_hackathon/seed.sql`:
-
-### A. Sedes de ACME Mining Perú (`facilities`):
-1. **`FAC-CALLAO` (Sede Central & Puerto):**
-   * *Nombre:* Terminal Portuario Callao — Depósito Fiscal
-   * *Coordenadas:* Lat `-12.0565`, Lng `-77.1420`
-   * *Capacidad:* 6 muelles, báscula 60T, acceso a muelle marítimo APM Terminals.
-2. **`FAC-BAMBAS` (Campamento Minero Apurímac):**
-   * *Nombre:* Minera Las Bambas — Campamento Central Challhuahuacho
-   * *Coordenadas:* Lat `-14.0950`, Lng `-72.3160` (Altitud: 4,100 msnm)
-   * *Requisito:* Tracción 6x4, choferes con SCTR y pase minero vigente.
-3. **`FAC-AREQUIPA` (Hub Logístico Sur):**
-   * *Nombre:* Centro Logístico Arequipa — Parque Industrial Río Seco
-   * *Coordenadas:* Lat `-16.3988`, Lng `-71.5350`
-   * *Capacidad:* Almacén de insumos químicos y repuestos de maquinaria.
-4. **`FAC-SANANTONIO` (Muelle de Cabotaje Chile):**
-   * *Nombre:* Terminal Portuario San Antonio (DP World)
-   * *Coordenadas:* Lat `-33.5833`, Lng `-71.6167`
-   * *Capacidad:* Recepción de buques portacontenedores de cabotaje costero.
-5. **`FAC-SANTIAGO` (Destino Final Refinería):**
-   * *Nombre:* Planta de Fundición & Refinación Santiago
-   * *Coordenadas:* Lat `-33.4489`, Lng `-70.6693`
-   * *Restricción:* Ventana de descarga urbana exclusiva 06:00 a 11:00 hrs.
-
-### B. Carriers Multimodales Parametrizados:
-1. **Andes Express (`CARRIER_ANDES`):**
-   * *Modo:* `ROAD` (Terrestre)
-   * *Tarifa Base:* \$1.20 USD/km | Manejo Muelle: \$120 USD.
-   * *Flota:* Tractos Volvo FH 6x4, tolvas y camas-bajas.
-   * *SLA Histórico:* 99% | *Corredor Insignia:* Callao ➔ Santiago (3,450 km = \$4,260 USD aprox).
-2. **Pacific Cargo Lines (`CARRIER_PACIFIC`):**
-   * *Modo:* `MARITIME` (Cabotaje)
-   * *Tarifa Base:* \$0.25 USD/km equivalente náutico | Manejo Puerto: \$350 USD.
-   * *Flota:* 4 Buques Feeder porta-contenedores (`20GP` y `40HC`).
-   * *SLA Histórico:* 90% | *Corredor:* Callao ➔ San Antonio (1,350 MN = \$2,400 USD aprox, ahorro 40%).
-3. **Transportes Inca (`CARRIER_INCA`):**
-   * *Modo:* `RAIL` + `ROAD` (Intermodal Rápido)
-   * *Tarifa Base:* \$1.35 USD/km | Manejo: \$180 USD.
-   * *SLA Histórico:* 95% | *Tránsito:* 36h express (Alta prioridad).
-
----
-
-## 🎯 8. Validación de Compatibilidad con el Código Actual
-
-| Módulo Actual | Impacto de la Propuesta | Medida de Protección |
-|---|---|---|
-| **`HAC-6` Idempotencia DDL** | Cero impacto | La columna `creation_idempotency_key` y el hash SHA-256 en `freight_requests` se preservan intactos. |
-| **147 Tests pgTAP** | Cero impacto | Ningún campo existente se renombra ni se cambia de tipo. Todos los tests corren sin modificación. |
-| **Servidor MCP `/mcp`** | Positivo | La tool `create_freight_request` ahora puede aceptar opcionalmente `originFacilityId` y `destinationFacilityId`. |
-| **Hono API `/api/v2/freight`** | Positivo | Endpoints V2 leen sedes (`/facilities`) y consultan la matriz de distancias sin alterar rutas anteriores. |
+1. **La duda de los 3 carriers queda resuelta:** La base de datos ahora aloja **6 carriers**, permitiendo que la subasta inversa inDrive muestre un mercado denso con ofertas de carretera, mar, riel y aire.
+2. **Las rutas ya no son simples números:** El modelo `route_corridors` almacena la **Matriz Origen-Destino (O-D)** con peajes, altitud máxima de cordillera (4,100 msnm), demoras en aduana fronteriza (4-8h) y polilíneas GeoJSON para dibujar rutas multicolor en Leaflet/Google Maps.
+3. **Los carriers tienen bases físicas (`carrier_depots`):** Permite calcular distancias de posicionamiento real y justificar por qué Andes o Inca tienen disponibilidad inmediata en el sur del Perú y Chile.
+4. **Cero impacto negativo en Sprint 1:** Las tablas `facilities`, `carrier_depots`, `route_corridors` y las nuevas columnas son **aditivas**. Todo el código existente de `freight_requests` y los **147 tests pgTAP siguen pasando en verde**.
