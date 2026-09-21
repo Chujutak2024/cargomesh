@@ -1,10 +1,15 @@
 # CargoMesh V2 — Blueprint Maestro de Evolución Multimodal y Enterprise
-## Plataforma de Orquestación Logística Autónoma (Voz Alexa+, WebMCP y Gobernanza Determinista)
+## Plataforma de Orquestación Logística Autónoma (Voz Alexa+, Servidor MCP Oficial y Gobernanza Determinista)
 
 ---
 
 ## 🧭 1. Resumen Ejecutivo y Nueva Visión del Proyecto
-CargoMesh evoluciona de un despachador local de camiones a un **Sistema Operativo Logístico Multimodal Empresarial**. La plataforma conecta a generadores de carga industrial (**Shippers** con múltiples sedes y gobernanza estricta) con redes de transportistas (**Carriers** con flotas de camiones, barcos, trenes y aviones), orquestados mediante agentes de voz (**Alexa Skills Kit + Amazon Bedrock**) y ejecutados por protocolos de herramientas web (**WebMCP**).
+CargoMesh evoluciona de un despachador local de camiones a un **Sistema Operativo Logístico Multimodal Empresarial**. La plataforma conecta a generadores de carga industrial (**Shippers** con múltiples sedes y gobernanza estricta) con redes de transportistas (**Carriers** con flotas de camiones, barcos, trenes y aviones), orquestados mediante agentes de voz (**Alexa Skills Kit + Amazon Bedrock**) y ejecutados por un **Servidor MCP Oficial de Streamable HTTP**.
+
+> ⚠️ **Claridad Arquitectónica Crucial (Alexa MCP vs. WebMCP):**  
+> Para la evaluación de Amazon y la integración de voz, el protocolo del sistema es **100% el SERVIDOR MCP OFICIAL de Alexa (`@modelcontextprotocol/sdk: 1.30.0` montado en `/mcp` con transporte Streamable HTTP según la especificación `2025-11-25+`)**.  
+> Alexa corre en la nube de Amazon o en un dispositivo Echo y se comunica exclusivamente con este endpoint HTTP en el backend.  
+> Las páginas `/providers/[carrierSlug]` en el frontend funcionan como el **Portal Web de los Transportistas**, pero **Alexa no depende del navegador**: toda la tarificación, ruteo y orquestación se resuelve en el backend mediante el **Pricing Engine dinámico** y los **Shared Services**.
 
 ```mermaid
 graph TD
@@ -13,7 +18,7 @@ graph TD
         WEB["💻 Enterprise Shipper Web<br>(Workspace Next.js / Stepper V2)"]
     end
 
-    subgraph "Capa de Orquestación & Inteligencia"
+    subgraph "Capa de Orquestación & Inteligencia (Backend)"
         MCP["⚡ Servidor CargoMesh MCP (/mcp)<br>Streamable HTTP (Spec 2025-11-25+)"]
         TOKEN_OPT["🎯 Token Optimizer & SSML Engine<br>(Ahorro 85% Tokens / <700ms Latencia)"]
         ROUTING_MCP["📍 Route & Geocoding MCP Tool<br>(Google Maps API + Geocodificación)"]
@@ -23,7 +28,7 @@ graph TD
         BEDROCK["🧠 Amazon Bedrock (Claude 3 Haiku)<br>(Síntesis Explicativa de Voz)"]
     end
 
-    subgraph "Capa de Ejecución de Carriers (WebMCP / 4PL)"
+    subgraph "Capa de Ejecución de Carriers (Modelo 4PL)"
         ANDES["🚛 Andes Express (Road / Camiones)"]
         PACIFIC["🚢 Pacific Lines (Maritime / Cabotaje)"]
         INCA["🚆 Inca Logistics (Rail / Intermodal)"]
@@ -91,17 +96,13 @@ En lugar de imponer un único proveedor cerrado, CargoMesh adopta un modelo tran
 
 ---
 
-## 🤝 4. ¿1 Solo Carrier o Múltiples Carriers Combinados? (Veredicto Arquitectónico)
+## 🤝 4. ¿1 Solo Carrier o Múltiples Carriers Combinados? (Veredicto 4PL)
 
 ### Análisis de la Problemática:
-* **Ruta de 1 Solo Carrier (End-to-End / Puerta a Puerta):**
-  * *Ventajas:* Menor complejidad legal, un único responsable ante siniestros, una sola Guía de Remisión / Bill of Lading (B/L).
-  * *Desventajas:* Costoso para rutas de más de 2,000 km cruzando fronteras o zonas costeras donde el camión compite contra el barco.
-* **Ruta de Múltiples Carriers (Intermodal / Multitramo):**
-  * *Ventajas:* Reduce el costo total hasta en un **40%** (ej. tramo largo en buque de cabotaje y última milla en camión).
-  * *Desventajas:* Fricción de transbordo en terminales, riesgo de descoordinación de horarios.
+* **Ruta de 1 Solo Carrier (End-to-End / Puerta a Puerta):** Menor complejidad legal, un único responsable ante siniestros, una sola Guía de Remisión / Bill of Lading (B/L).
+* **Ruta de Múltiples Carriers (Intermodal / Multitramo):** Reduce el costo total hasta en un **40%** en distancias largas (ej. tramo largo en buque de cabotaje y tramos capilares en camión).
 
-### La Solución Arquitectónica: Estrategia Híbrida como Operador 4PL
+### La Solución de CargoMesh: Estrategia Híbrida como Operador 4PL
 CargoMesh opera como un **Orquestador Logístico Integral (Lead Logistics Provider / 4PL)** ofreciendo ambas posibilidades:
 
 ```mermaid
@@ -141,13 +142,13 @@ $$\text{Precio Cotizado} = \left[ (\text{Distancia\_Km} \times \text{Tarifa\_Bas
 * **Carga Aérea (`AIR`):** \$4.20 a \$5.50 USD por kg / km.
 
 ### 2. Multiplicadores por Especificación de Carga:
-* **Cadena de Frío (`COLD_CHAIN`):** `+30%` (consumo de combustible del generador térmico y monitoreo continuo).
-* **Carga Peligrosa (`HAZMAT`):** `+25%` (seguro especial y certificación de conductor).
-* **Sobredimensionada (`OVERSIZED`):** `+40%` (escolta vial, permisos de carretera y peajes especiales).
+* **Cadena de Frío (`COLD_CHAIN`):** `+30%`.
+* **Carga Peligrosa (`HAZMAT`):** `+25%`.
+* **Sobredimensionada (`OVERSIZED`):** `+40%`.
 
 ### 3. Descuentos por Perfil de Cliente y Flete de Retorno (Backhaul):
 * **Loyalty Tier de la Organización:** Shippers corporativos de alto volumen (ej. ACME Mining: Tier Platinum) reciben un **descuento automático negociado del -10% al -15%**.
-* **Flete de Retorno (Backhaul Discount):** Si el carrier tiene un camión o contenedor desocupado retornando a su base en esa fecha exacta, aplica un **descuento de oportunidad de hasta el -25%**, evitando viajes en vacío.
+* **Flete de Retorno (Backhaul Discount):** Si el carrier tiene un camión o contenedor desocupado retornando a su base en esa fecha exacta, aplica un **descuento de oportunidad de hasta el -25%**.
 
 ---
 
@@ -178,7 +179,6 @@ interface CarrierProfile {
     specializations: ('HAZMAT' | 'COLD_CHAIN' | 'OVERSIZED' | 'HEAVY_HAUL')[];
     containers_supported: ('20GP' | '40HC' | 'REEFER' | 'FLATRACK')[];
   };
-  webmcp_endpoint: string;
   reliability_history: {
     on_time_delivery_rate: number; // 0.0 a 1.0
     claims_ratio: number;
@@ -189,14 +189,39 @@ interface CarrierProfile {
 
 ---
 
-## 📍 7. Nuevo MCP de Ruteo y Búsqueda Geográfica: `resolve_freight_route`
+## 🗺️ 7. Ruteo Inteligente con Google Maps API y Soporte Dinámico Multiciudad
 
-Para que el usuario pueda interactuar con Alexa mencionando cualquier dirección, origen o destino de forma natural, creamos una tool MCP especializada en geocodificación y análisis de ruta con Google Maps.
+> 🌟 **Superando el "Hardcoding":**  
+> Aunque el **Corredor Callao ➔ Santiago** se utiliza como el *Golden Flow* canónico para la grabación del video oficial por su espectacularidad transfronteriza, el sistema es **100% dinámico y multiciudad**. Cualquier par de ciudades o sedes ingresadas por voz o web calcula distancias reales y cotizaciones precisas.
 
-### ¿Cómo interactúa el usuario por voz con Alexa?
-> **Usuario:** *"Alexa, pídele a CargoMesh que calcule la ruta desde Minera Las Bambas hasta el Puerto de San Antonio para 25 toneladas de concentrado."*
+```mermaid
+graph TD
+    QUERY["Usuario indica en Alexa o Web:<br>'De Origen X a Destino Y'"]
+    GMAPS["🗺️ Google Maps Routes API<br>Calcula latitud, longitud y distancia real (km)"]
+    GEO_FILTER["🛡️ Filtro de Geocercas<br>¿Qué carriers operan en ese corredor?"]
+    PRICING["💲 Motor Dinámico de Tarifas<br>Precio = (Distancia * Tarifa_Modo) + Handling"]
+    MCDA["⚖️ Motor MCDA Determinista<br>Rankea las ofertas reales"]
 
-### Contrato de la Tool MCP:
+    QUERY --> GMAPS
+    GMAPS --> GEO_FILTER
+    GEO_FILTER --> PRICING
+    PRICING --> MCDA
+```
+
+### Red Estratégica de Sedes Corporativas de Prueba:
+Para pruebas exhaustivas de jurados y desarrolladores, el sistema incluye 5 sedes con coordenadas reales:
+1. 🏭 **Sede Central Callao** (Lima, Perú) — Puerto marítimo y almacén fiscal.
+2. ⛏️ **Mina Las Bambas** (Apurímac, Perú) — Campamento minero andino de alta altitud.
+3. 📦 **Hub Logístico Arequipa** (Arequipa, Perú) — Terminal terrestre del sur del Perú.
+4. 🚢 **Terminal Portuario San Antonio** (Valparaíso, Chile) — Muelle de contenedores.
+5. 🏢 **Planta de Refinación Santiago** (Santiago, Chile) — Parque industrial urbano.
+
+Cualquier combinación (ej. *Callao ➔ Arequipa*, *Apurímac ➔ Callao*, *Santiago ➔ San Antonio*) calcula su ruta en Google Maps, aplica el filtro de geocercas y cotiza en vivo.
+
+---
+
+## 📍 8. Nuevo MCP de Ruteo y Búsqueda Geográfica: `resolve_freight_route`
+
 ```typescript
 export const ResolveFreightRouteInputSchema = z.object({
   flowType: z.enum(['OUTBOUND', 'INBOUND', 'INTERNAL_TRANSFER']).default('OUTBOUND'),
@@ -245,38 +270,20 @@ export const ResolveFreightRouteOutputSchema = z.object({
 
 ---
 
-## ⚖️ 8. Algoritmo Determinista de Consolidación (MCDA / TOPSIS)
-Abandonamos aproximaciones heurísticas aleatorias en favor de un **Análisis de Decisión Multicriterio (MCDA)** estrictamente auditable, formal y matemático.
-
-### Política Canónica de Evaluación (ACME Mining Perú):
-* **25% Costo Financiero:** Minimización del precio cotizado total.
-* **25% SLA & Confiabilidad:** Maximización del récord histórico de cumplimiento del transportista.
-* **20% Tiempo de Tránsito:** Minimización de horas estimadas de entrega.
-* **10% Disponibilidad de Flota:** Capacidad de respuesta y margen de camiones/contenedores en fecha solicitada.
-* **10% Experiencia en Ruta:** Horas de tránsito del carrier en ese corredor geográfico específico.
-* **10% Historial con la Organización:** Relación contractual previa y desempeño acumulado con ACME Mining.
-
-### Formulación Matemática (Normalización Min-Max & Ponderación WSM/TOPSIS):
-Para cada cotización $i$ en el criterio $j$:
-
-$$\text{Para criterios de Minimización (Costo, Tiempo): } \quad R_{ij} = \frac{\max_k(x_{kj}) - x_{ij}}{\max_k(x_{kj}) - \min_k(x_{kj})}$$
-
-$$\text{Para criterios de Maximización (SLA, Disponibilidad, Exp, Historial): } \quad R_{ij} = \frac{x_{ij} - \min_k(x_{kj})}{\max_k(x_{kj}) - \min_k(x_{kj})}$$
-
-$$\text{Puntaje Final } S_i = \sum_{j=1}^{6} w_j \cdot R_{ij} \times 100 \quad \text{donde } \sum w_j = 1.0$$
+## ⚖️ 9. Algoritmo Determinista de Consolidación (MCDA / TOPSIS)
+* **25% Costo Financiero** (Minimización)
+* **25% SLA & Confiabilidad** (Maximización)
+* **20% Tiempo de Tránsito** (Minimización)
+* **10% Disponibilidad de Flota** (Maximización)
+* **10% Experiencia en Ruta** (Maximización)
+* **10% Historial con la Organización** (Maximización)
 
 * **Ventaja Innegociable:** El resultado es 100% determinista (mismos inputs = mismos scores exactos). **Amazon Bedrock no calcula ni altera los puntajes**, únicamente los recibe y genera la locución natural explicativa.
 
 ---
 
-## 🏢 9. Definición del Cliente Empresarial (Shipper) y Gobernanza RBAC
+## 🏢 10. Definición del Cliente Empresarial (Shipper) y Gobernanza RBAC
 
-### Estructura de Sedes (`facilities`):
-* **Sede Mina (Apurímac):** Requiere vehículos con tracción 6x4, choferes con SCTR y pases mineros activos.
-* **Sede Puerto (Callao):** Depósito fiscal con muelles de carga, montacargas y báscula electrónica.
-* **Sede Destino (Santiago de Chile):** Planta de refinación con ventanas horarias estrictas de descarga.
-
-### Jerarquía de Roles y Aprobación Financiera:
 ```mermaid
 graph TD
     OWNER["👑 OWNER (Dueño Original)"]
@@ -292,7 +299,7 @@ graph TD
 
 ---
 
-## 🔍 10. Auditoría de Adaptación de los MCPs Actuales (Gaps y Evolución)
+## 🔍 11. Auditoría de Adaptación de los MCPs Actuales (Gaps y Evolución)
 
 | Campo en Schema Actual | Estado Actual (V1) | Brecha frente a V2 | Evolución Requerida (Aditiva) |
 |---|---|---|---|
@@ -304,28 +311,18 @@ graph TD
 
 ---
 
-## 💡 11. Autocompletado y Motor de Sugerencias en Tiempo Real (`/api/v2/freight/suggestions`)
+## 💡 12. Autocompletado y Motor de Sugerencias en Tiempo Real (`/api/v2/freight/suggestions`)
 
-### A. Autocompletado en Frontend:
 1. **Google Places Autocomplete:** Búsqueda predictiva de direcciones en tiempo real conforme el usuario tipea.
 2. **Facility Quick-Picker:** Menú desplegable con las sedes corporativas de ACME Mining para autocompletar en 1 clic.
-
-### B. Motor de Sugerencias Inteligentes (`POST /api/v2/freight/suggestions`):
-Consulta ligera en segundo plano (debounced a 300 ms) que devuelve:
-* **Modo Recomendado:** Sugerencia de tren o barco si el peso supera las 25 toneladas.
-* **Tarifa Benchmark de Referencia:** Rango de precios histórico estimado (\$3,000 a \$3,500 USD).
-* **Disponibilidad de Flota:** Capacidad de camiones/contenedores en tiempo real.
+3. **Motor de Sugerencias Inteligentes (`POST /api/v2/freight/suggestions`):**
+   * *Modo Recomendado:* Sugerencia de tren o barco si el peso supera las 25 toneladas.
+   * *Tarifa Benchmark de Referencia:* Rango de precios histórico estimado (\$3,000 a \$3,500 USD).
+   * *Disponibilidad de Flota:* Capacidad de camiones/contenedores en tiempo real.
 
 ---
 
-## 📋 12. Rediseño del Flujo de Rellenado Manual (Stepper V2 Enterprise)
-
-```mermaid
-graph LR
-    P1["1. Dirección & Flujo<br>(Envío / Traída / Sedes / Google Maps)"] --> P2["2. Activo & Carga<br>(Pallet, Contenedor, Tolva + HAZMAT)"]
-    P2 --> P3["3. Modo & Política<br>(Recomendado / Road / Sea / Rail)"]
-    P3 --> P4["4. Ventanas & Resumen<br>(Horarios, Presupuesto y Enviar)"]
-```
+## 📋 13. Rediseño del Flujo de Rellenado Manual (Stepper V2 Enterprise)
 
 * **Paso 1 (Dirección & Flujo):** Selector de Flujo (`OUTBOUND` vs `INBOUND`) + Selector de Sede o autocompletado con Google Maps + mapa previo.
 * **Paso 2 (Activo & Carga):** Tarjetas visuales para Pallets, Contenedores (`20GP`/`40HC`), Tolvas o Paquetería Aérea + toggles de Frío y HAZMAT.
@@ -335,7 +332,7 @@ graph LR
 
 ---
 
-## 🎙️ 13. Arquitectura MCP para Alexa: Servidores en Uso y Estrategias de Ahorro de Tokens
+## 🎙️ 14. Arquitectura del Servidor MCP para Alexa y Ahorro de Tokens
 
 ### Herramientas MCP Core (Streamable HTTP en `/mcp` con SDK 1.30.0):
 1. `create_freight_request`: Creación idempotente en estado `DRAFT`.
@@ -351,17 +348,6 @@ graph LR
 * **Progressive Disclosure:** Alexa solo dice la opción #1; las opciones secundarias se consultan solo si el usuario pide detalles.
 * **Pre-Validación de Slots (`validate_freight_intent_slots`):** Previene errores de reconocimiento fonético.
 * **Caché Geohash / Matrices de Distancia:** Evita quemar tokens enviando coordenadas GPS crudas a Bedrock.
-
----
-
-## 🌐 14. Red de Providers WebMCP para Carriers Multimodales
-
-| Carrier | Modo Principal | Flota Típica | Tools WebMCP Expuestas en `/providers/[slug]` |
-|---|---|---|---|
-| **Andes Express** | `ROAD` (Terrestre) | 45 Tractocamiones Volvo FH, furgones secos y reefer | `quote_freight`, `reserve_capacity`, `confirm_booking`, `get_fleet_telemetry`, `submit_pod` |
-| **Pacific Cargo Lines** | `MARITIME` (Cabotaje) | 4 Buques portacontenedores costeros (Feeder) | `quote_container_voyage`, `check_berth_availability`, `reserve_container_slot`, `issue_bill_of_lading`, `get_vessel_eta` |
-| **Inca Logistics & Rail** | `RAIL` + `ROAD` (Intermodal) | 12 Locomotoras GE, vagones tolva y flota capilar | `quote_intermodal_freight`, `check_terminal_ramp`, `reserve_rail_car`, `dispatch_first_mile`, `track_waybill` |
-| **SouthAir Cargo (Roadmap)** | `AIR` (Carga Aérea) | 2 Boeing 737-800BCF (Freighters) | `quote_air_cargo`, `check_pallet_space`, `book_airway_bill`, `track_flight_status`, `confirm_customs_clearance` |
 
 ---
 
@@ -419,7 +405,22 @@ ALTER TABLE freight_requests
 
 ---
 
-## 📅 16. Plan de Implementación Progresiva (Fases de Desarrollo)
+## 🛡️ 16. Auditoría de Huecos Críticos y Estrategia de Blindaje ante el Jurado
+
+Para garantizar el máximo puntaje en la evaluación del jurado de Amazon Devpost ($190K Pool), identificamos y blindamos los 5 riesgos de arquitectura:
+
+| Hueco / Riesgo Detectado | Consecuencia Potencial | Solución Técnica de Blindaje |
+|---|---|---|
+| **1. Scope Creep vs. Working Demo** | Penalización si los evaluadores ven maquetas sin terminar. | **Estrategia Vertical Slice:** El corredor *Callao ➔ Santiago* funciona 100% en vivo de punta a punta. Los carriers en vivo son Andes (Tierra) y Pacific (Mar). Cualquier modo adicional se etiqueta explícitamente como "Roadmap" cumpliendo la Honestidad Técnica. |
+| **2. Latencia de Voz en Alexa (> 8 seg)** | Timeout sonoro de Alexa: *"There was a problem with the skill"*. | **Directiva Progressive Response:** Alexa reproduce un audio preliminar en 300 ms mientras el backend consulta Google Maps y cotiza. Además, distancias frecuentes se cachean en memoria y el fallback SSML responde en < 600 ms. |
+| **3. Autenticación y RLS en Alexa** | Los jueces dudarán de cómo Alexa sabe qué permisos y sedes tiene el usuario. | **Bearer Token Mapeado a Organización:** La cabecera HTTP de la llamada MCP incluye el token vinculado a la organización `ACME Mining Peru` y al usuario `OWNER`. Se documenta el flujo de producción con Alexa Account Linking OAuth2. |
+| **4. Desconexión Nube vs. Navegador** | Confusión sobre si Alexa requiere que el navegador del carrier esté abierto. | **Arquitectura Desacoplada:** El servidor MCP `/mcp` corre en Node.js de forma autónoma. En el video de demostración se utiliza **Split-Screen**: a la izquierda el simulador de Alexa hablando y a la derecha la interfaz web reflejando las llamadas en tiempo real con HTTP 200. |
+| **5. Seguridad Financiera Verbal** | Descalificación si una IA gasta dinero sin consentimiento humano explícito. | **Compuerta Humana en 2 Pasos:** `authorize_and_book` exige confirmación verbal explícita vinculando un `confirmationReference` criptográfico. Si la cotización supera el límite del operador (> $5,000 USD), el sistema bloquea la auto-aprobación y exige firma de un `SUPERVISOR`. |
+| **⭐ Multiplicador: Bono del +10%** | Pérdida de puntos extras por descuidar la categoría de feedback. | **3 Friction Logs Oficiales:** Registro detallado de incidentes y soluciones técnicas de AWS/MCP en `docs/04-execution/friction-logs/` (FL-01, FL-02, FL-03) para reclamar el bono máximo del jurado. |
+
+---
+
+## 📅 17. Plan de Implementación Progresiva (Fases de Desarrollo)
 
 | Ciclo | Enfoque | Entregables Principales |
 |---|---|---|
