@@ -145,5 +145,6 @@ test("Judge Drawer separates recorded MCP events from Alexa and WebMCP evidence"
   assert.match(drawer, /no verified Alexa calls have been captured yet/);
   assert.match(drawer, /No MCP calls recorded yet/);
   assert.match(drawer, /Aún no hay llamadas MCP registradas/);
+  assert.match(drawer, /"200 OK"/);
   assert.match(drawer, /\/api\/judge\/mcp-logs/);
 });

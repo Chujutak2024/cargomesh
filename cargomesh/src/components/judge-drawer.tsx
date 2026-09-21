@@ -409,7 +409,9 @@ function McpLogCard({ event, locale }: { event: McpAuditEvent; locale: "es" | "e
       <span className={styles.eventTitle}><strong>{event.tool_name}</strong>
         <small>MCP · {formatTimestamp(event.started_at, locale)}</small></span>
       <span className={`${styles.statusBadge} ${event.status === "success" ? styles.statusSuccess : styles.statusError}`}>
-        {event.status === "success" ? t("Éxito", "Success") : t("Error", "Error")}
+        {event.http_status === 200
+          ? "200 OK"
+          : `${event.http_status} ${event.status === "success" ? t("Éxito", "Success") : t("Error", "Error")}`}
       </span>
     </summary>
     <div className={styles.eventBody}>
