@@ -12,38 +12,40 @@
 
 ---
 
-## 👥 1. Asignaciones por Desarrollador (2 Tareas por Integrante - Sprint 1)
-Cada miembro tiene asignada 1 tarea técnica pesada + 1 tarea de soporte/gestión:
+## 👥 1. Asignaciones por Desarrollador (Sprint 1 Recalibrado — V2 Multimodal & Enterprise)
+**Periodo:** 19 al 25 de Septiembre de 2026 | **Hito:** Gate-1 de Integración (Viernes 25 Sep)
 
-### 🔴 Cristhian Chujutalli — BE-2 & Tech Lead
-- **Tarea 1 (Técnica):** `HAC-6` — Aplicar migración SQL de idempotencia y servicio backend `DRAFT ➔ PENDING` (Límite: Miércoles 23 Sep).  
-  🌿 **Rama:** `feat/be2-hac-6-draft-idempotency`
-- **Tarea 2 (Liderazgo):** `HAC-10` — [GATE-1] Coordinar sesión de integración conjunta y Demo Interna (Límite: Viernes 25 Sep).  
-  🌿 **Rama:** `feat/cycle-1-integration` ➔ Merge final a `codex/c-mcp-contracts`.
+Cada integrante cuenta con una asignación clara y de alto impacto que alimenta el Golden Flow y la arquitectura V2:
 
-### 🟠 Axel Arista — BE-1 / Alexa & Cloud Lead
-- **Tarea 1 (Técnica):** `HAC-5` — Configurar Skill en Alexa Developer Console y verificar servidor `/mcp` local (Límite: Miércoles 23 Sep).  
-  🌿 **Rama:** `feat/be1-hac-5-alexa-skill-base`
-- **Tarea 2 (Soporte):** `HAC-17` — Llenar formulario oficial de Devpost para solicitar $150 de créditos AWS gratuitos (Límite: Lunes 21 Sep).  
-  ⚡ **Tipo:** Gestión externa / AWS Console (No requiere rama).
+### 🔴 Cristhian Chujutalli — BE-2 & Tech Lead (Arquitectura de Datos y Motor de Fletes)
+- **Tarea 1 (Core Backend & DB V2):** `HAC-6` — Aplicar migración aditiva V2 (`facilities`, `carrier_depots`, `route_corridors`, taxonomía en `freight_requests`) + servicio de idempotencia backend.  
+  🌿 **Rama:** `feat/be2-hac-6-draft-idempotency` | ⏱️ **Límite:** Miércoles 23 Sep.
+- **Tarea 2 (Liderazgo & Integración):** `HAC-10` — [GATE-1] Coordinar sesión sincrónica de integración dual (Web + Alexa creando fletes en Supabase) y demo interna.  
+  🌿 **Rama:** `feat/cycle-1-integration` ➔ Merge a `codex/c-mcp-contracts` | ⏱️ **Límite:** Viernes 25 Sep.
 
-### 🟣 Jean Paul — BE-3 / CI, QA & Automation Lead
-- **Tarea 1 (Técnica):** `HAC-7` — Asegurar suite CI Baseline (147 pgTAP tests en verde) y arnés de Hono V2 (Límite: Miércoles 23 Sep).  
-  🌿 **Rama:** `feat/be3-hac-7-ci-baseline-runner`
-- **Tarea 2 (Soporte):** `HAC-18` — Crear estructura de carpetas en Google Drive para evidencias de Kiro Crew y videos (Límite: Lunes 21 Sep).  
-  ⚡ **Tipo:** Gestión en Google Drive (No requiere rama).
+### 🟠 Axel Arista — BE-1 / Alexa & Cloud Lead (Voz y Servidor MCP Oficial)
+- **Tarea 1 (Voz & Protocolo MCP):** `HAC-5` — Configurar Skill en Alexa Developer Console con slots V2, conectar al endpoint Streamable HTTP `/mcp` y configurar Progressive Response.  
+  🌿 **Rama:** `feat/be1-hac-5-alexa-skill-base` | ⏱️ **Límite:** Miércoles 23 Sep.
+- **Tarea 2 (Soporte & Cloud):** `HAC-17` — Llenar formulario oficial de Devpost para solicitar $150 de créditos AWS y verificar cuotas Bedrock en us-east-1.  
+  ⚡ **Tipo:** Gestión externa en AWS / Devpost | ⏱️ **Límite:** Lunes 21 Sep (Listo para cerrar en Done).
 
-### 🔵 Luis — FE-1 / Enterprise Shipper Lead
-- **Tarea 1 (Soporte previo):** `HAC-19` — Estandarizar componentes base (Botón Dorado `#d2a95f`, inputs, badges) según `FRONTEND_GUIDELINES.md` (Límite: Martes 22 Sep).  
-  🌿 **Rama:** `feat/fe1-hac-19-design-tokens-components`
-- **Tarea 2 (Técnica):** `HAC-8` — Migrar formulario stepper `/freight-request/new` a endpoints Hono V2 (Límite: Miércoles 23 Sep).  
-  🌿 **Rama:** `feat/fe1-hac-8-intake-stepper-hono`
+### 🟣 Jean Paul — BE-3 / CI, QA & Friction Logs Lead (Blindaje y Calificación)
+- **Tarea 1 (Testing del Motor MCDA 6D):** `HAC-7` — Crear suite de pruebas unitarias para el motor determinístico BALANCED (verificar scores Andes 89, Inca 84, Pacific 72) y asegurar 0 errores en CI.  
+  🌿 **Rama:** `feat/be3-hac-7-ci-baseline-runner` | ⏱️ **Límite:** Miércoles 23 Sep.
+- **Tarea 2 (Bono del Jurado +10%):** `HAC-18` — [OPS] Estructura en Google Drive para evidencias de Kiro Crew ($5K Builder Award) y catalogación de Friction Logs (`FL-01` a `FL-03`).  
+  ⚡ **Estado:** ✅ Completado (Enlace anclado en Linear).
 
-### 🟡 Juan Antonio Coronado — FE-2 / Carrier Surface & Audit Lead
-- **Tarea 1 (Técnica):** `HAC-9` — Auditar las 5 tools en `/providers/*` y habilitar pestaña MCP en Judge Drawer (Límite: Miércoles 23 Sep).  
-  🌿 **Rama:** `feat/fe2-hac-9-carrier-tools-audit`
-- **Tarea 2 (Auditoría):** `HAC-20` — [QA / AUDIT] Ejecutar Auditoría Estricta de Reglas del Jurado antes del Gate 1 (Límite: Jueves 24 Sep).  
-  ⚡ **Tipo:** Auditoría en local (Reportar blockers a Cristhian).
+### 🔵 Luis — FE-1 / Enterprise Shipper Lead (Experiencia de Usuario de Carga)
+- **Tarea 1 (Diseño Base):** `HAC-19` — Estandarizar componentes base (Botón Dorado `#d2a95f`, inputs industriales, badges de estatus) según `FRONTEND_GUIDELINES.md`.  
+  🌿 **Rama:** `feat/fe1-hac-19-design-tokens-components` | ⏱️ **Límite:** Martes 22 Sep.
+- **Tarea 2 (Stepper Enterprise V2):** `HAC-8` — Formulario Stepper `/freight-request/new` con Sedes del Shipper (`facilities`), Taxonomía/CBM (`cargo_category_v2`) y Subasta Inversa inDrive.  
+  🌿 **Rama:** `feat/fe1-hac-8-intake-stepper-hono` | ⏱️ **Límite:** Miércoles 23 Sep.
+
+### 🟡 Juan Antonio Coronado — FE-2 / Carrier Surface & Map Visualization Lead (Visualización "WOW")
+- **Tarea 1 (Mapa Multimodal Interactivo):** `HAC-9` — Componente de Mapa de Corredores (Callao ➔ Santiago / Las Bambas ➔ Callao) mostrando tramos carretera/marítimo/riel, altitud 4,100m, pasos fronterizos y patios de carriers (`carrier_depots`).  
+  🌿 **Rama:** `feat/fe2-hac-9-carrier-tools-audit` | ⏱️ **Límite:** Miércoles 23 Sep.
+- **Tarea 2 (Gobernanza & Compuerta Humana):** `HAC-20` — [QA / AUDIT] Validar compuerta financiera (> $5,000 USD requiere aprobación de supervisor) y auditoría de reglas del jurado.  
+  ⚡ **Tipo:** Auditoría y verificación de UI en local | ⏱️ **Límite:** Jueves 24 Sep.
 
 ---
 
@@ -66,13 +68,104 @@ Cada miembro tiene asignada 1 tarea técnica pesada + 1 tarea de soporte/gestió
 ```
 
 ### Criterios de Aceptación (Definition of Done):
-- [ ] Carpeta principal y las 4 subcarpetas creadas en Google Drive.
-- [ ] Acceso de edición compartido con los correos de los 5 integrantes del equipo.
-- [ ] Enlace al Drive anclado en Linear:
-  - En Linear, ir al proyecto **CargoMesh V2 — Alexa Hackathon**.
-  - En la barra lateral derecha, en **Links** -> presionar `+ Add link` -> pegar la URL del Drive.
-- [ ] Dejar el enlace como comentario en el ticket `HAC-18` y mover a Done.
-- [ ] *Nota operativa:* Para la siguiente semana ya debe estar implementada y utilizada correctamente para todas las asignaciones del equipo.
+- [x] Carpeta principal y las 4 subcarpetas creadas en Google Drive.
+- [x] Acceso de edición compartido con los correos de los 5 integrantes del equipo.
+- [x] Enlace al Drive anclado en Linear: Enlace en Links del proyecto.
+- [x] Dejar el enlace como comentario en el ticket `HAC-18` y mover a Done.
+
+---
+
+## 📋 2. Fichas Técnicas Detalladas de las Tareas Recalibradas (Sprint 1)
+
+### 🔴 HAC-6 — [BE-2] Migración Aditiva V2 + Servicio Backend DRAFT a PENDING
+- **Asignado:** Cristhian Chujutalli (BE-2 & Tech Lead) | 🌿 **Rama:** `feat/be2-hac-6-draft-idempotency`
+- **Objetivo:** Implementar las tablas satélite (`facilities`, `carrier_depots`, `route_corridors`, `commercial_scoring_policies`) y columnas aditivas de taxonomía en Supabase local, junto con el endpoint idempotente `POST /api/v2/freight-requests` y su transición segura a `PENDING`.
+- **Criterios de Aceptación:**
+  - [ ] Migración SQL aplicada localmente sin romper ninguna de las 20 migraciones existentes ni los 147 tests pgTAP.
+  - [ ] Tablas `facilities`, `carrier_depots` y `route_corridors` creadas con índices espaciales/coordenadas.
+  - [ ] Enumeradores `cargo_category_v2_enum` y `packaging_type_enum` registrados.
+  - [ ] Columnas `total_cbm`, `chargable_weight_kg`, `is_stackable` y `flow_type` agregadas a `freight_requests`.
+  - [ ] Endpoint `POST /api/v2/freight-requests` valida `creation_idempotency_key` (SHA-256) y crea borrador con `draft_version = 1`.
+  - [ ] Método `submitDraft()` valida campos requeridos y transiciona a `status = 'PENDING'`.
+
+---
+
+### 🟠 HAC-5 — [BE-1] Configurar Alexa Skill con Slots V2 y Servidor MCP Oficial
+- **Asignado:** Axel Arista (BE-1 / Alexa & Cloud Lead) | 🌿 **Rama:** `feat/be1-hac-5-alexa-skill-base`
+- **Objetivo:** Conectar Alexa Skills Kit con el endpoint oficial `@modelcontextprotocol/sdk: 1.30.0` Streamable HTTP (`/mcp`), soportando los slots multimodales y Progressive Response para latencias de ruteo.
+- **Criterios de Aceptación:**
+  - [ ] Skill configurada en Alexa Developer Console con invocación `"cargo mesh"`.
+  - [ ] Intents configurados: `ShipFreightIntent` (origen, destino, bultos, presupuesto USD) y `ConfirmBookingIntent`.
+  - [ ] Conexión verificada contra el endpoint local `/mcp` mediante Streamable HTTP.
+  - [ ] Directiva *Progressive Response* implementada para emitir audio de espera mientras se cotiza en Bedrock / Google Maps.
+  - [ ] Generación de voz con SSML enriquecido (`<speak>...</speak>`) resumiendo la mejor opción del ranking.
+  - [ ] JSON del modelo de interacción exportado a `docs/architecture-v2/alexa-interaction-model.json`.
+
+---
+
+### 🔵 HAC-8 — [FE-1] Stepper Enterprise V2: Sedes, Taxonomía/CBM y Subasta inDrive
+- **Asignado:** Luis (FE-1 / Enterprise Shipper Lead) | 🌿 **Rama:** `feat/fe1-hac-8-intake-stepper-hono`
+- **Objetivo:** Transformar el formulario `/freight-request/new` en el Stepper Enterprise de 3 pasos que alimenta la arquitectura multimodal.
+- **Criterios de Aceptación:**
+  - [ ] **Paso 1 (Sedes & Flujo):** Selector de Facility origen y destino (`FAC-CALLAO`, `FAC-BAMBAS`, `FAC-SANTIAGO`, etc.) con badge de país y tipo de flujo (`OUTBOUND`, `INBOUND`, `INTERNAL_TRANSFER`).
+  - [ ] **Paso 2 (Carga & Cubicaje):** Selector de las 6 categorías industriales (`MINING_BULK`, `HEAVY_MACHINERY`, `COLD_CHAIN`, `HAZMAT`, `HIGH_VALUE`, `GENERAL_DRY`), empaque (`PALLETS`, `CONTAINER_20GP`, `BIG_BAG`, etc.), inputs de dimensiones (L x W x H en cm), cálculo automático de CBM vs. peso real, y toggle `is_stackable` (+20% recargo si es false).
+  - [ ] **Paso 3 (Subasta inDrive):** Despliegue de ofertas recibidas de los carriers en tiempo real, ordenadas por Score MCDA, destacando al ganador #1 con desglose transparente de costos en USD.
+  - [ ] Conexión contra los endpoints de Hono V2 con validación Zod en cliente.
+
+---
+
+### 🔵 HAC-19 — [FE-1] Estandarización de Componentes Base y Tokens de Diseño
+- **Asignado:** Luis (FE-1 / Enterprise Shipper Lead) | 🌿 **Rama:** `feat/fe1-hac-19-design-tokens-components`
+- **Objetivo:** Unificar los tokens visuales, tipografías y componentes UI reutilizables según `FRONTEND_GUIDELINES.md`.
+- **Criterios de Aceptación:**
+  - [ ] Botón de acción principal con acento dorado institucional (`#d2a95f` / hover `#b88d44`).
+  - [ ] Componentes de input industrial para pesaje, volumen y selector de unidades.
+  - [ ] Badges semánticos para estatus de fletes (`DRAFT`, `PENDING`, `OPTIONS_READY`, `BOOKED`).
+  - [ ] Soporte completo de selector de idioma `es` / `en` sin textos duros.
+
+---
+
+### 🟡 HAC-9 — [FE-2] Visualizador de Mapa de Corredores Multimodales y Patios
+- **Asignado:** Juan Antonio Coronado (FE-2) | 🌿 **Rama:** `feat/fe2-hac-9-carrier-tools-audit`
+- **Objetivo:** Implementar el componente visual de mapa interactivo (Leaflet o Google Maps) que grafica el corredor multimodal O-D y las bases operativas de los carriers.
+- **Criterios de Aceptación:**
+  - [ ] Renderizado de polilínea GeoJSON para el corredor Callao ➔ Santiago y Las Bambas ➔ Callao.
+  - [ ] Tramos codificados por color según el modo de transporte (Carretera: Azul, Cabotaje: Cian, Riel: Naranja).
+  - [ ] Marcadores interactivos para las sedes de ACME Mining (`facilities`) y patios de transportistas (`carrier_depots`).
+  - [ ] Infowindow con datos del corredor: distancia en km / millas náuticas, peajes, altitud máxima (4,100 msnm) y aduanas fronterizas.
+
+---
+
+### 🟡 HAC-20 — [FE-2] Auditoría de Gobernanza y Compuerta Financiera (> $5,000 USD)
+- **Asignado:** Juan Antonio Coronado (FE-2) | ⚡ **Tipo:** Auditoría y verificación de UI en local
+- **Objetivo:** Verificar la integridad de los contratos comerciales, la honestidad de carriers y el comportamiento de la compuerta humana en fletes de alto valor.
+- **Criterios de Aceptación:**
+  - [ ] Verificación de que solo Andes, Inca y Pacific figuren como carriers live, rotulando a Polaris y Apex como datos de escenario.
+  - [ ] Comprobación en UI: si una cotización supera los $5,000 USD y el usuario es `REQUESTER`, se bloquea el booking automático y se despliega el banner `"Requiere Aprobación de Supervisor"`.
+  - [ ] Verificación de que el botón de confirmación de booking exija el `confirmationReference` de voz emitido por Alexa.
+  - [ ] Redacción del informe en `docs/04-execution/SPRINT1_AUDIT_REPORT.md`.
+
+---
+
+### 🟣 HAC-7 — [BE-3] Suite de Pruebas del Motor MCDA 6D + Logging de Friction Logs
+- **Asignado:** Jean Paul (BE-3 / CI & QA Lead) | 🌿 **Rama:** `feat/be3-hac-7-ci-baseline-runner`
+- **Objetivo:** Desarrollar las pruebas automatizadas del motor determinístico BALANCED (MCDA 6D) asegurando el Golden Flow, y documentar los Friction Logs para el bono del 10% del jurado.
+- **Criterios de Aceptación:**
+  - [ ] Suite de pruebas en Vitest / Node comprobando la fórmula de los 6 pesos (Costo 25%, SLA 25%, Tiempo 20%, Disponibilidad 10%, Ruta 10%, Historial 10%).
+  - [ ] Verificación exacta de los scores canónicos Callao ➔ Santiago: Andes Express (89), Transportes Inca (84), Pacific Cargo (72).
+  - [ ] Verificación de que `pnpm test` y `npx supabase test db` pasen al 100% en verde sin warnings.
+  - [ ] Redacción de 3 Friction Logs documentando bloqueos resueltos en `docs/04-execution/friction-logs/FL-01.md` a `FL-03.md`.
+
+---
+
+### 🔴 HAC-10 — [Tech Lead / BE-2] GATE-1: Integración Dual Web/Voz y Demo Interna
+- **Asignado:** Cristhian Chujutalli (BE-2 & Tech Lead) | 🌿 **Rama:** `feat/cycle-1-integration` ➔ `codex/c-mcp-contracts`
+- **Objetivo:** Sesión sincrónica de cierre de Sprint 1 donde se fusionan las ramas de los 5 integrantes y se ejecuta la primera prueba de humo integral.
+- **Criterios de Aceptación:**
+  - [ ] Merge limpio sin conflictos de las 5 ramas de desarrollo hacia `feat/cycle-1-integration`.
+  - [ ] Prueba de humo 1 (Web): Crear flete desde el Stepper Enterprise V2 ➔ Ver oferta en Subasta inDrive ➔ Persistencia en Supabase.
+  - [ ] Prueba de humo 2 (Alexa): Hablarle al simulador de Alexa ➔ Invocar `/mcp` ➔ Crear flete con idempotencia ➔ Confirmar booking por voz.
+  - [ ] Merge final autorizado a `codex/c-mcp-contracts` (congelando la base para Sprint 2).
 
 ---
 
