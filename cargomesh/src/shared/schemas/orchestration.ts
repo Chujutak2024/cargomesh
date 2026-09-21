@@ -8,6 +8,26 @@ const toolName = z.enum(["check_service_coverage", "check_capacity", "quote_frei
 
 export const GetFreightOptionsInputSchema = z.object({ runId: uuid }).strict();
 
+export const FindFreightOptionsInputSchema = z.object({
+  freightRequestId: uuid,
+  idempotencyKey: z.string().trim().min(1).max(200),
+}).strict();
+
+export const StartedFreightOptionsSchema = z.object({
+  runId: uuid,
+  freightRequestId: uuid,
+  status: z.enum(["RUNNING", "OPTIONS_READY", "NO_MATCH", "FAILED", "CANCELLED"]),
+  deduplicated: z.boolean(),
+  candidates: z.array(z.object({
+    carrierId: uuid, carrierCode: z.string().min(1), displayName: z.string().min(1),
+    providerUrl: z.string().min(1), matchingServiceId: uuid,
+  })),
+});
+
+export const FindFreightOptionsOutputSchema = z.object({
+  ok: z.literal(true), data: StartedFreightOptionsSchema,
+});
+
 const ranking = z.object({
   orchestrationRunId: uuid,
   strategy: z.literal("BALANCED"),

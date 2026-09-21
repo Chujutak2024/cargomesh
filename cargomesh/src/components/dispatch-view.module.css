@@ -1,4 +1,9 @@
 .page { display: grid; width: 100%; max-width: 100rem; margin: 0 auto; gap: 1rem; }
+.browserContinuation { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.75rem; border: 1px solid #dde3e0; border-radius: 1rem; padding: 1rem; background: #fff; }
+.browserContinuation p { margin: 0; color: #52605e; font-size: 0.72rem; }
+.browserContinuation button { border: 0; }
+.browserContinuation button:disabled { opacity: 0.6; cursor: wait; }
+.runnerFrame { position: fixed; width: 1px; height: 1px; overflow: hidden; border: 0; clip-path: inset(50%); opacity: 0; pointer-events: none; }
 .hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
 .hero > div { min-width: 0; }
 .hero h1 { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin: 0.28rem 0 0.35rem; color: #123c3a; font-size: clamp(1.55rem, 3vw, 2.2rem); letter-spacing: -0.045em; }

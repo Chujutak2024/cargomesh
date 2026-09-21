@@ -41,3 +41,12 @@ export const CreatedFreightRequestSchema = z.object({
 export const CreateFreightRequestOutputSchema = z.object({ ok: z.literal(true), data: CreatedFreightRequestSchema });
 export type CreateFreightRequestInput = z.infer<typeof CreateFreightRequestInputSchema>;
 export type CreatedFreightRequest = z.infer<typeof CreatedFreightRequestSchema>;
+
+export const SubmitFreightRequestInputSchema = z.object({
+  freightRequestId: z.string().uuid(), draftVersion: z.number().int().positive(),
+}).strict();
+export const SubmittedFreightRequestSchema = z.object({
+  freightRequestId: z.string().uuid(), requestCode: z.string().min(1),
+  status: z.literal("PENDING"), draftVersion: z.number().int().positive(), replayed: z.boolean(),
+});
+export const SubmitFreightRequestOutputSchema = z.object({ ok: z.literal(true), data: SubmittedFreightRequestSchema });

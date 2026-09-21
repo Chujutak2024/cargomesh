@@ -70,7 +70,7 @@ test("official MCP client initializes, lists and calls the actual HTTP/SDK stack
     await client.connect(transport);
     assert.equal(client.getServerVersion()?.name, "cargomesh");
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map((tool) => tool.name), ["get_freight_options", "create_freight_request"]);
+    assert.deepEqual(tools.map((tool) => tool.name), ["get_freight_options", "create_freight_request", "submit_freight_request", "find_freight_options"]);
     assert.equal(tools[0].annotations?.readOnlyHint, true);
     assert.equal(tools[0].annotations?.destructiveHint, false);
     assert.equal(tools[0].inputSchema.additionalProperties, false);
@@ -132,7 +132,7 @@ test("invalid UUID, missing arguments and unknown keys never reach the service",
 
 test("unregistered mutation tools and unknown protocol methods do not reach domain code", async () => {
   const h = harness();
-  for (const name of ["find_freight_options", "authorize_and_book", "recover_booking"]) {
+  for (const name of ["authorize_and_book", "get_booking_status", "recover_booking"]) {
     const body = await (await h.handle(rpc("tools/call", { name, arguments: {} }))).json();
     assert.ok(body.error || body.result?.isError);
   }

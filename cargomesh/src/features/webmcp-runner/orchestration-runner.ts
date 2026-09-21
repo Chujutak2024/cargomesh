@@ -69,6 +69,10 @@ export type RunInt02aOrchestrationOptions = {
   now?: RunnerClock;
 };
 
+export type ResumeInt02aOrchestrationOptions = Omit<RunInt02aOrchestrationOptions, "freightRequestId" | "idempotencyKey"> & {
+  start: StartedOrchestrationRun;
+};
+
 export type Int02aApiStage =
   | "START_RUN"
   | "RECORD_RESULT"
@@ -320,6 +324,23 @@ export async function runInt02aOrchestration(
     ),
   );
   const start = parseStartedRun(startData, options.freightRequestId);
+
+  return executeStartedRun(options, start);
+}
+
+/** Continue a run already created by MCP without creating another run. */
+export async function resumeInt02aOrchestration(
+  options: ResumeInt02aOrchestrationOptions,
+): Promise<Int02aOrchestrationEvidence> {
+  const start = parseStartedRun(options.start, options.start.freightRequestId);
+  return executeStartedRun(options, start);
+}
+
+async function executeStartedRun(
+  options: Omit<RunInt02aOrchestrationOptions, "freightRequestId" | "idempotencyKey">,
+  start: StartedOrchestrationRun,
+): Promise<Int02aOrchestrationEvidence> {
+  const fetcher = options.fetcher ?? fetch;
 
   if (start.deduplicated && start.status !== "RUNNING") {
     const viewModel = await readCorrelatedViewModel(

@@ -1,8 +1,8 @@
 # CargoMesh MCP tool contracts
 
-Status: M1 local bootstrap and M2 draft-creation code implemented on branch `codex/c-mcp-contracts`. M2 requires the new SQL migration; authenticated MCP-to-database verification is pending. Other tools/milestones remain proposed. Initial source analysis: 2026-09-18 against application commit `d26c5e4`.
+Status: M1 local bootstrap, M2 draft creation and the M3 submit/find/get adapters are implemented on `feature/alexa/v1,0`. Local authenticated create, submit, find, persisted loading/completed get, replay and role/cross-organization denial were verified. Full M3 still requires an autonomous provider executor; the current browser continuation is manual. Initial source analysis: 2026-09-18 against application commit `d26c5e4`.
 
-The [local guide](../../cargomesh/src/server/mcp/README.md) covers the implemented endpoint and registered tools, get_freight_options and create_freight_request. The create tool's real local Next → authenticated Supabase → persisted row path has been verified. The get tool's live persisted-run read remains unverified because the local database has no orchestration run. The other four proposed tools below are not registered. No OAuth, Alexa+, Bedrock, AgentCore or Strands is implemented. [Sample Alexa+ tool arguments](alexa-sample-request-payload.json) and [example utterances](alexa-sample-utterances.md) illustrate a possible future client; they are not an integration. Historical test results are not a fresh verification of this checkout.
+The [local guide](../../cargomesh/src/server/mcp/README.md) covers the four registered tools: create_freight_request, submit_freight_request, find_freight_options and get_freight_options. Local Next → authenticated Supabase persistence and readback are verified; the completed-offer test uses a synthetic Result Bridge fixture, not an external provider. The booking/status/recovery tools below are not registered. No OAuth, Alexa+, Bedrock, AgentCore or Strands is implemented. [Sample Alexa+ tool arguments](alexa-sample-request-payload.json) and [example utterances](alexa-sample-utterances.md) illustrate a possible future client; they are not an integration.
 
 ## Scope
 
@@ -33,11 +33,12 @@ BALANCED retains six dimensions: cost 25%, reliability 25%, transit 20%, availab
 
 ## MCP -> core map
 
-The get_freight_options and create_freight_request adapters are implemented; other adapters below are proposed.
+The create_freight_request, submit_freight_request, find_freight_options and get_freight_options adapters are implemented; booking/status/recovery adapters below are proposed.
 
 | MCP tool | Adapter -> service | RPC / DB | Transition | Side effect | Human confirmation | Idempotency |
 |---|---|---|---|---|---|---|
 | create_freight_request | Fields adapter -> createIdempotentFreightRequestDraftServer -> existing creation policy | Session INSERT requests; receipt/category/intake SELECT | New DRAFT/version 1; replay returns current state | Draft | No commercial approval | Unique org/member/key + immutable input hash; requires migration |
+| submit_freight_request | Versioned adapter -> submitFreightRequest -> persisted snapshot validation | Session SELECT and conditional UPDATE under RLS | DRAFT/version N -> PENDING/version N+1 | Submission receipt | No booking approval | Exact retry replays while PENDING; stale version rejected |
 | find_freight_options | Coordinator -> start_orchestration_run; executor -> record_provider_result/evaluate_offers | start/result/decision RPCs | PENDING -> ORCHESTRATING -> AWAITING_SELECTION; NO_MATCH returns request to PENDING | Run, quotes, events, offers, decision | No | Request/key; call IDs/payload; durable dispatch missing |
 | get_freight_options | Read adapter -> get_orchestration_view_model | SELECT runs/requests/events/offers/decisions | None | None | No | Read-only; values may change |
 | authorize_and_book | Approval/coordinator -> prepare_booking -> WebMCP -> record_provider_booking | prepare_booking_authorization; record_provider_booking_result | Request AWAITING_SELECTION -> BOOKING; booking initially pending | Selection, authorization, reservation/event | Yes, before preparation | Booking key/bridge call ID; external reconciliation required |
@@ -46,7 +47,7 @@ The get_freight_options and create_freight_request adapters are implemented; oth
 
 ## Common proposed wire rules
 
-TypeScript shapes below are schema specifications; runtime validators are implemented for get_freight_options and create_freight_request. UUID means validated UUID string; DateTime means ISO date-time; Positive means finite number >0; NonEmpty means trimmed nonempty string. Inputs reject additional properties; output projection removes unknown fields. Optional and nullable are distinct. Implement runtime schemas covering nested types before registration.
+TypeScript shapes below are schema specifications; runtime validators are implemented for create_freight_request, find_freight_options and get_freight_options. UUID means validated UUID string; DateTime means ISO date-time; Positive means finite number >0; NonEmpty means trimmed nonempty string. Inputs reject additional properties; output projection removes unknown fields. Optional and nullable are distinct. Implement runtime schemas covering nested types before registration.
 
 Success: `{ ok: true, data: T }`. Domain error: `{ ok: false, error: { code, message } }` with MCP isError true. Structured output and text fallback must agree. Transport auth/protocol errors precede domain dispatch. Sanitize database details, warnings and secrets. Common errors: INVALID_ARGUMENT, UNAUTHENTICATED, FORBIDDEN, and NOT_FOUND where applicable.
 
@@ -111,9 +112,15 @@ Receipt retention follows the request row: administrative deletion removes the k
 
 **Errors:** SDK input-validation errors, INVALID_INPUT, INVALID_DRAFT, IDEMPOTENCY_CONFLICT, REQUEST_CODE_COLLISION, DRAFT_CREATION_UNAVAILABLE, auth/read failures. Raw database diagnostics are never returned.
 
-**Completeness / adapter / risks:** shared service, MCP adapter, migration and tests implemented; the migration and 13 PostgreSQL/RLS checks passed locally inside a rolled-back transaction. Permanent migration application and authenticated MCP smoke tests remain pending. The local database has no orchestration runs for the M1 persisted-read smoke test. Hono's flat adapter ignores direct volume and rounds unit weight; MCP forwards the explicit fields directly. No inspected service submits DRAFT -> PENDING; that must be a shared validated use case, not a direct MCP DB update.
+**Completeness / adapter / risks:** shared service, MCP adapter, migration and tests implemented; migration and authenticated MCP-to-local-database readback passed. Hono's flat adapter ignores direct volume and rounds unit weight; MCP forwards the explicit fields directly. Submission is an explicit separate MCP action.
 
-## 2. find_freight_options
+## 2. submit_freight_request
+
+**Purpose:** Confirm a complete persisted DRAFT for option discovery without implicitly booking or contacting providers.
+
+**Input:** `{ freightRequestId: UUID, draftVersion: positive integer }` from the latest creation/edit receipt. The service checks the authenticated active OWNER/SUPERVISOR, RLS visibility, stored cargo/route/schedule, and DRAFT/version preconditions. A conditional update advances status to PENDING and increments draftVersion. An exact retry while still PENDING returns the same receipt with `replayed: true`; conflicting status/version returns `STALE_DRAFT`. Errors are sanitized. Local integration verifies role denial, tenant isolation and replay.
+
+## 3. find_freight_options
 
 **Purpose / LLM description:** Start/resume an initial quote search for a PENDING request with a stable key; return run identity and poll get_freight_options. Run creation does not mean offers exist.
 
@@ -141,11 +148,11 @@ type FindOutput = {
 
 **Idempotency:** request/key uniqueness and locking prevent competing initial runs; replay returns snapshot/current run status. Result Bridge dedupes call identity/canonical payload. TypeScript evaluation requires RUNNING; coordinator must read completed state before re-evaluation, even where RPC has replay logic.
 
-**Errors:** INVALID_ARGUMENT, NOT_FOUND, FORBIDDEN, FREIGHT_REQUEST_NOT_READY, ORCHESTRATION_START_FAILED; downstream result/evaluation errors. Proposed EXECUTION_UNAVAILABLE rejects before mutation when no executor exists. Failure after run creation needs durable resumption, not a no-effect claim.
+**Errors:** SDK input-validation errors, NOT_FOUND, FORBIDDEN, FREIGHT_REQUEST_NOT_READY, ORCHESTRATION_START_FAILED; downstream result/evaluation errors. No EXECUTION_UNAVAILABLE preflight exists; a RUNNING run can wait for browser continuation.
 
-**Completeness / adapter / risks:** primitives exist; remote coordinator, durable dispatch and DRAFT submission missing. No fire-and-forget work after HTTP completion. No provider-handler imports to impersonate browser execution. Tool unavailable until real dispatch/resume and correlation work.
+**Completeness / adapter / risks:** MCP adapter and existing start service persist a run; `/dispatch/<runId>` now offers explicit browser continuation through the existing WebMCP runner, Result Bridge and evaluation. Local integration verified start/replay, loading read and a synthetic persisted offer/ranking; runner tests verify browser handoff with injected navigation. Real browser execution still needs manual verification. Remote coordinator and autonomous dispatch remain missing. No fire-and-forget work occurs after HTTP completion and no provider handler is imported to impersonate browser execution.
 
-## 3. get_freight_options
+## 4. get_freight_options
 
 **Purpose / LLM description:** Read persisted progress and ranked options. Does not call providers or recalculate scores. Eligibility/expiry must be rechecked at booking.
 
@@ -166,7 +173,7 @@ Nested types in that file and [decision contracts](../../cargomesh/src/features/
 
 **Errors:** INVALID_ARGUMENT, NOT_FOUND, ORCHESTRATION_VIEW_MODEL_FAILED, auth errors. A persisted `error` branch differs from a failed tool read.
 
-**Completeness / adapter / risks:** service, local MCP adapter and shared runtime schema implemented for M1. View discriminants are preserved. Technical warning codes/messages and error diagnostics are replaced with safe values; ranking/offers are preserved. Disabled by default and always disabled in production pending real remote auth. Live authenticated database verification is separate from the injected service tests.
+**Completeness / adapter / risks:** service, local MCP adapter and shared runtime schema implemented. View discriminants are preserved. Technical warning codes/messages and error diagnostics are replaced with safe values; ranking/offers are preserved. Local authenticated reads of both a RUNNING run and a persisted synthetic quote/ranking passed. Disabled by default and always disabled in production pending real remote auth.
 
 ## Shared human approval requirement
 
@@ -176,7 +183,7 @@ Verify evidence in shared services before either preparation RPC, which already 
 
 Current ASSISTED permits active membership; any stricter enterprise role policy is a proposed shared policy, not existing enforcement. Authentication itself does not authorize commercial consent.
 
-## 4. authorize_and_book
+## 5. authorize_and_book
 
 **Purpose / LLM description:** Book exactly the offer explicitly approved by a person. Never infer approval from a recommendation or approval of different terms.
 
@@ -196,7 +203,7 @@ Current ASSISTED permits active membership; any stricter enterprise role policy 
 
 **Completeness / adapter / risks:** primitives/browser coordinator exist; remote coordinator/approval evidence missing. Durable operation lookup and a structured uncertain-outcome response must be finalized before registration. Ambiguous timeout never means retry with a fresh key.
 
-## 5. get_booking_status
+## 6. get_booking_status
 
 **Purpose / LLM description:** Read last persisted booking/payment state, events and recovery candidates. No provider contact or freshness guarantee.
 
@@ -212,7 +219,7 @@ Current typed status: PENDING_PROVIDER_CONFIRMATION, CONFIRMED, REJECTED, EXPIRE
 
 **Completeness / adapter / risks:** read service exists; adapter and state reconciliation needed. canRecover derives from old status, not assurance of replacement success. Offer read filters by request/eligibility/expiry/excluding previous offer; it does not explicitly restrict to original run. Remote refresh is a separate workflow with writes.
 
-## 6. recover_booking
+## 7. recover_booking
 
 **Purpose / LLM description:** Reserve a human-approved replacement after rejection, expiry or cancellation. Ask for new approval of replacement terms; never automatically select/book a fallback.
 
@@ -274,4 +281,4 @@ New dispatch/state support may need additive DDL and local pgTAP tests. Syntheti
 
 Core owner: submission, creation idempotency, auth seam, booking states/errors. WebMCP owner: executor trigger/lifetime, result correlation and retry strategy preserving actual provider boundary. Agent Platform: transport adapters after dependencies are ready.
 
-The initial phase created documentation only; M1/M2 now implement local read/creation adapters and tests. M2 passed 13 local PostgreSQL/RLS checks in a rolled-back transaction; permanent migration application and authenticated MCP smoke tests remain pending. Check links, export references and diff whitespace. Do not claim tests passed from historic documentation; implementation requires relevant regression tests and build/typecheck gates. No remote DB or provider operations are part of this verification.
+M1/M2/M3 adapters and local tests are implemented. MCP can now submit a DRAFT to PENDING, then start a run; provider execution still requires manual continuation in the signed-in browser. Local integration drives the full create → submit → find → synthetic Result Bridge → evaluate → get sequence without manual action, but it does not prove unattended provider execution or external provider availability. No remote DB or provider operations are part of this verification.

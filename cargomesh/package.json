@@ -11,7 +11,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "check:architecture": "node scripts/check-architecture.mjs",
-    "test:mcp": "tsx --test src/server/mcp/http.test.ts src/server/mcp/create-freight-request.test.ts src/server/services/freight-requests/idempotent-draft-creation.test.ts",
+    "test:mcp": "tsx --test src/server/mcp/http.test.ts src/server/mcp/create-freight-request.test.ts src/server/mcp/submit-freight-request.test.ts src/server/mcp/find-freight-options.test.ts src/server/services/freight-requests/idempotent-draft-creation.test.ts src/server/services/freight-requests/submit-request.test.ts",
     "test:mcp:local": "tsx --test src/server/mcp/local-integration.test.ts",
     "test:auth": "tsx --test src/features/auth/password-login.test.ts src/features/auth/demo-login-client.test.ts src/features/auth/route-access-policy.test.ts src/features/auth/login-copy.test.ts",
     "test:i18n": "tsx --test src/features/i18n/config.test.ts src/features/i18n/judge-evidence-presentation.test.ts src/features/i18n/release-copy.test.ts",

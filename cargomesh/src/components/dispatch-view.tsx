@@ -18,6 +18,12 @@ import { createBookingPreviewHref } from "@/features/freight-ui/booking-ui-fixtu
 import { startAssistedBooking } from "@/features/freight-ui/booking-client";
 import type { DispatchFixtureScenario } from "@/features/freight-ui/view-models";
 import { takeCachedInt02aViewModel } from "@/features/freight-ui/int02a-client";
+import { buildProviderRunnerInputs } from "@/features/freight-ui/int02a-client";
+import { fetchFreightRequestIntake } from "@/features/freight-requests/intake-client";
+import { mapFreightRequestIntakeToForm } from "@/features/freight-requests/intake-ui-adapter";
+import { fetchFreightRequestExecutionIntent } from "@/features/freight-requests/execution-intent-client";
+import { createExternalProviderNavigationAdapter } from "@/features/webmcp-runner";
+import { resumeInt02aOrchestration } from "@/features/webmcp-runner/orchestration-runner";
 import { localeTag } from "@/features/i18n/config";
 import { classifyProviderOrigin, type ProviderOriginKind } from "@/features/i18n/judge-evidence-presentation";
 import { useLocale } from "@/features/i18n/locale-provider";
@@ -35,6 +41,9 @@ export function OrchestrationDispatch({ runId }: { runId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [executing, setExecuting] = useState(false);
+  const [executionError, setExecutionError] = useState<string | null>(null);
+  const runnerFrameRef = useRef<HTMLIFrameElement>(null);
 
   const retry = useCallback(() => setRefreshKey((current) => current + 1), []);
 
@@ -86,9 +95,56 @@ export function OrchestrationDispatch({ runId }: { runId: string }) {
     };
   }, [refreshKey, runId, t]);
 
+  async function continueInBrowser() {
+    if (!model || model.status !== "loading" || executing || !runnerFrameRef.current) return;
+    setExecuting(true);
+    setExecutionError(null);
+    try {
+      const intake = await fetchFreightRequestIntake(model.requestCode);
+      const intent = await fetchFreightRequestExecutionIntent(model.freightRequestId);
+      if (intake.freightRequestId !== model.freightRequestId ||
+          intent.freightRequestId !== model.freightRequestId ||
+          intent.requestCode !== model.requestCode || intent.status !== "ORCHESTRATING") {
+        throw new Error("La solicitud cambió durante la evaluación. Actualiza la página.");
+      }
+      const form = mapFreightRequestIntakeToForm(intake);
+      const evidence = await resumeInt02aOrchestration({
+        start: {
+          runId: model.runId, freightRequestId: model.freightRequestId,
+          status: "RUNNING", deduplicated: true,
+          candidates: model.attempts.map(({ carrierId, carrierCode, displayName, providerUrl, matchingServiceId }) =>
+            ({ carrierId, carrierCode, displayName, providerUrl, matchingServiceId })),
+        },
+        baseUrl: window.location.origin,
+        navigation: createExternalProviderNavigationAdapter({
+          frame: runnerFrameRef.current, baseUrl: window.location.origin,
+        }),
+        createInputs: () => buildProviderRunnerInputs(form, intent),
+      });
+      if (isOrchestrationViewModel(evidence.viewModel)) setModel(evidence.viewModel);
+      retry();
+    } catch (reason) {
+      setExecutionError(reason instanceof Error ? reason.message : t("No fue posible completar la evaluación.", "Could not complete the evaluation."));
+    } finally {
+      setExecuting(false);
+    }
+  }
+
   if (loading) return <TransportState title={t("Cargando evaluación", "Loading evaluation")} message={t("Consultando la evidencia persistida del proceso.", "Reading the persisted process evidence.")} busy />;
   if (error || !model) return <TransportState title={t("No pudimos abrir la evaluación", "We could not open the evaluation")} message={error ?? t("La respuesta no contiene una evaluación válida.", "The response does not contain a valid evaluation.")} onRetry={retry} />;
-  return <DispatchView model={model} onRetry={retry} />;
+  return <>
+    <DispatchView model={model} onRetry={retry} />
+    {model.status === "loading" ? (
+      <section className={styles.browserContinuation}>
+        <p>{t("Este proceso requiere abrir los providers WebMCP en tu navegador.", "This run needs your browser to open the WebMCP providers.")}</p>
+        <button type="button" className={styles.primaryLink} disabled={executing} onClick={() => { void continueInBrowser(); }}>
+          {executing ? t("Consultando providers…", "Querying providers…") : t("Continuar consulta de providers", "Continue provider search")}
+        </button>
+        {executionError ? <p role="alert">{executionError}</p> : null}
+      </section>
+    ) : null}
+    <iframe ref={runnerFrameRef} className={styles.runnerFrame} src="/" title={t("Ejecución WebMCP de providers", "WebMCP provider execution")} aria-hidden="true" tabIndex={-1} />
+  </>;
 }
 
 export function DispatchView({ model, onRetry, fixtureScenario }: DispatchViewProps) {

@@ -7,6 +7,7 @@ import {
   INT02A_PROVIDER_TOOL_NAMES,
   Int02aApiError,
   runInt02aOrchestration,
+  resumeInt02aOrchestration,
   type Int02aFetch,
   type Int02aProviderToolName,
   type ProviderNavigationAdapter,
@@ -185,6 +186,29 @@ function runnerEvidence() {
     cleanup: [] as string[],
   };
 }
+
+test("resumes an MCP-started run through the existing provider and persistence pipeline", async () => {
+  const calls: FetchCall[] = [];
+  const browser = runnerEvidence();
+  const provider = candidate(1);
+  const result = await resumeInt02aOrchestration({
+    start: { runId: RUN_ID, freightRequestId: REQUEST_ID, status: "RUNNING",
+      deduplicated: true, candidates: [provider] },
+    baseUrl: BASE_URL,
+    navigation: createNavigation(browser),
+    createInputs: () => inputs,
+    fetcher: createApi([provider], calls),
+  });
+  assert.equal(result.mode, "EXECUTED");
+  assert.deepEqual(browser.executed, [...INT02A_PROVIDER_TOOL_NAMES]);
+  assert.deepEqual(calls.map((call) => `${call.method} ${new URL(call.url).pathname}`), [
+    "POST /api/orchestration/record-result",
+    "POST /api/orchestration/record-result",
+    "POST /api/orchestration/record-result",
+    "POST /api/orchestration/evaluate-offers",
+    `GET /api/orchestration/runs/${RUN_ID}`,
+  ]);
+});
 
 test("runs the 0-provider flow and still evaluates and stores the ViewModel evidence", async () => {
   const fetchCalls: FetchCall[] = [];

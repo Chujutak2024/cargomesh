@@ -4,11 +4,15 @@ import { publicMcpError } from "./errors";
 import { createCargoMeshMcpServer } from "./server";
 import { readPersistedFreightOptions, type ReadFreightOptions } from "./tools/get-freight-options";
 import type { CreateFreightRequest } from "./tools/create-freight-request";
+import type { FindFreightOptions } from "./tools/find-freight-options";
+import type { SubmitFreightRequest } from "./tools/submit-freight-request";
 
 type Dependencies = {
   authenticate: () => Promise<void>;
   read: ReadFreightOptions;
   create?: CreateFreightRequest;
+  find?: FindFreightOptions;
+  submit?: SubmitFreightRequest;
   configuration: () => { enabled: boolean; environment: string | undefined };
 };
 
@@ -95,7 +99,7 @@ export function createMcpHttpHandler(dependencies: Dependencies = {
     const boundedRequest = new Request(request.url, {
       method: "POST", headers: request.headers, body, signal: request.signal,
     });
-    const server = createCargoMeshMcpServer(dependencies.read, dependencies.create);
+    const server = createCargoMeshMcpServer(dependencies.read, dependencies.create, dependencies.find, dependencies.submit);
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined, enableJsonResponse: true,
     });

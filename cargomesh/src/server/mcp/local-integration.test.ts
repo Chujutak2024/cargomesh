@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import test from "node:test";
 import { createServerClient } from "@supabase/ssr";
 import { CreateFreightRequestInputSchema, CreatedFreightRequestSchema } from "@/shared/schemas/freight-creation";
+import { buildRegisteredProviderNavigationUrl } from "@/features/discovery/provider-navigation";
 
 // This optional suite calls the running Next route and local Supabase, without
 // substituting the MCP handler, auth or persistence service.
@@ -13,6 +14,7 @@ const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 const password = process.env.CARGOMESH_MCP_TEST_PASSWORD ?? "";
 const supervisorEmail = process.env.CARGOMESH_MCP_TEST_SUPERVISOR_EMAIL ?? "demo.operator@cargomesh.test";
 const requesterEmail = "mcp.requester@cargomesh.test";
+const isolatedEmail = "mcp.isolated@cargomesh.test";
 const organizationId = "a0000000-0000-0000-0000-000000000001";
 const supervisorMemberId = "e0000000-0000-0000-0000-000000000001";
 
@@ -75,6 +77,18 @@ function toolResult(body: any) {
   const result = body.result;
   assert.deepEqual(JSON.parse(result.content[0].text), result.structuredContent);
   return result;
+}
+
+function localSql(sql: string) {
+  return execFileSync("docker", ["exec", "supabase_db_cargomesh", "psql", "-v", "ON_ERROR_STOP=1", "-U", "postgres", "-d", "postgres", "-c", sql], { encoding: "utf8" });
+}
+
+async function api(path: string, body: unknown, cookie: string) {
+  const response = await fetch(`${base}${path}`, {
+    method: "POST", headers: { "Content-Type": "application/json", Cookie: cookie },
+    body: JSON.stringify(body),
+  });
+  return { status: response.status, body: await response.json() };
 }
 
 test("real /mcp creates and reads a local Supabase draft; failures stay safe", { timeout: 120_000 }, async (t) => {
@@ -175,4 +189,160 @@ test("real /mcp creates and reads a local Supabase draft; failures stay safe", {
     .select("id").eq("creation_idempotency_key", failedInput.idempotencyKey);
   assert.ifError(failedRowsError);
   assert.deepEqual(failedRows, []);
+});
+
+test("real MCP find/get persist and read local orchestration with a synthetic quote", { timeout: 120_000 }, async (t) => {
+  assert.ok(supabaseUrl && anonKey && password);
+  localOnly(base);
+  localOnly(supabaseUrl);
+
+  const supervisor = clientWithCookies();
+  assert.ifError((await supervisor.client.auth.signInWithPassword({ email: supervisorEmail, password })).error);
+  const args = input();
+  const created = toolResult((await rpc("tools/call", {
+    name: "create_freight_request", arguments: args,
+  }, supervisor.cookie())).body);
+  assert.equal(created.structuredContent.ok, true);
+  const receipt = CreatedFreightRequestSchema.parse(created.structuredContent.data);
+  t.after(() => {
+    const result = localSql(`delete from public.freight_requests where id = '${receipt.freightRequestId}' and organization_id = '${organizationId}' and requested_by_member_id = '${supervisorMemberId}' and creation_idempotency_key = '${args.idempotencyKey}'`);
+    assert.match(result, /DELETE 1/);
+  });
+
+  const key = `mcp-find-${randomUUID()}`;
+  const findArgs = { freightRequestId: receipt.freightRequestId, idempotencyKey: key };
+  const draftFind = toolResult((await rpc("tools/call", {
+    name: "find_freight_options", arguments: findArgs,
+  }, supervisor.cookie())).body);
+  assert.equal(draftFind.isError, true);
+  assert.equal(draftFind.structuredContent.error.code, "FREIGHT_REQUEST_NOT_READY");
+
+  const submissionArgs = { freightRequestId: receipt.freightRequestId, draftVersion: receipt.draftVersion };
+  const requester = clientWithCookies();
+  assert.ifError((await requester.client.auth.signInWithPassword({ email: requesterEmail, password })).error);
+  const deniedSubmit = toolResult((await rpc("tools/call", {
+    name: "submit_freight_request", arguments: submissionArgs,
+  }, requester.cookie())).body);
+  assert.equal(deniedSubmit.structuredContent.error.code, "FORBIDDEN");
+  const submitted = toolResult((await rpc("tools/call", {
+    name: "submit_freight_request", arguments: submissionArgs,
+  }, supervisor.cookie())).body);
+  assert.equal(submitted.structuredContent.ok, true, JSON.stringify(submitted.structuredContent));
+  assert.equal(submitted.structuredContent.data.status, "PENDING");
+  assert.equal(submitted.structuredContent.data.draftVersion, receipt.draftVersion + 1);
+  assert.equal(submitted.structuredContent.data.replayed, false);
+  const { data: confirmedRow, error: confirmedError } = await supervisor.client.from("freight_requests")
+    .select("status,draft_version,confirmed_at,confirmed_by_member_id")
+    .eq("id", receipt.freightRequestId).single();
+  assert.ifError(confirmedError);
+  assert.equal(confirmedRow?.status, "PENDING");
+  assert.equal(confirmedRow?.draft_version, receipt.draftVersion + 1);
+  assert.equal(confirmedRow?.confirmed_by_member_id, supervisorMemberId);
+  assert.ok(confirmedRow?.confirmed_at);
+  const submissionReplay = toolResult((await rpc("tools/call", {
+    name: "submit_freight_request", arguments: submissionArgs,
+  }, supervisor.cookie())).body);
+  assert.equal(submissionReplay.structuredContent.data.replayed, true);
+
+  const find = toolResult((await rpc("tools/call", {
+    name: "find_freight_options", arguments: findArgs,
+  }, supervisor.cookie())).body);
+  assert.equal(find.structuredContent.ok, true);
+  const started = find.structuredContent.data;
+  assert.equal(started.freightRequestId, receipt.freightRequestId);
+  assert.equal(started.status, "RUNNING");
+  assert.equal(started.deduplicated, false);
+  assert.ok(started.candidates.length > 0);
+
+  const { data: run, error: runError } = await supervisor.client.from("orchestration_runs")
+    .select("id,freight_request_id,status,idempotency_key,candidate_snapshot")
+    .eq("id", started.runId).single();
+  assert.ifError(runError);
+  assert.equal(run?.freight_request_id, receipt.freightRequestId);
+  assert.equal(run?.status, "RUNNING");
+  assert.equal(run?.idempotency_key, key);
+  assert.deepEqual(run?.candidate_snapshot, started.candidates);
+
+  const replay = toolResult((await rpc("tools/call", {
+    name: "find_freight_options", arguments: findArgs,
+  }, supervisor.cookie())).body);
+  assert.equal(replay.structuredContent.data.runId, started.runId);
+  assert.equal(replay.structuredContent.data.deduplicated, true);
+
+  const getArgs = { runId: started.runId };
+  const loading = toolResult((await rpc("tools/call", {
+    name: "get_freight_options", arguments: getArgs,
+  }, supervisor.cookie())).body);
+  assert.equal(loading.structuredContent.data.status, "loading");
+  assert.equal(loading.structuredContent.data.candidateCount, started.candidates.length);
+  assert.deepEqual(loading.structuredContent.data.offers, []);
+
+  const anonymousFind = await rpc("tools/call", { name: "find_freight_options", arguments: findArgs });
+  const anonymousGet = await rpc("tools/call", { name: "get_freight_options", arguments: getArgs });
+  assert.equal(anonymousFind.status, 401);
+  assert.equal(anonymousGet.status, 401);
+  const isolated = clientWithCookies();
+  assert.ifError((await isolated.client.auth.signInWithPassword({ email: isolatedEmail, password })).error);
+  const crossOrgFind = toolResult((await rpc("tools/call", {
+    name: "find_freight_options", arguments: findArgs,
+  }, isolated.cookie())).body);
+  const crossOrgGet = toolResult((await rpc("tools/call", {
+    name: "get_freight_options", arguments: getArgs,
+  }, isolated.cookie())).body);
+  assert.equal(crossOrgFind.structuredContent.error.code, "NOT_FOUND");
+  assert.equal(crossOrgGet.structuredContent.error.code, "NOT_FOUND");
+  const crossOrgSubmit = toolResult((await rpc("tools/call", {
+    name: "submit_freight_request", arguments: submissionArgs,
+  }, isolated.cookie())).body);
+  assert.equal(crossOrgSubmit.structuredContent.error.code, "NOT_FOUND");
+  const secondKey = toolResult((await rpc("tools/call", {
+    name: "find_freight_options", arguments: { ...findArgs, idempotencyKey: randomUUID() },
+  }, supervisor.cookie())).body);
+  assert.equal(secondKey.structuredContent.error.code, "FREIGHT_REQUEST_NOT_READY");
+
+  const candidate = started.candidates[0];
+  const now = Date.now();
+  const startedAt = new Date(now).toISOString();
+  const completedAt = new Date(now + 100).toISOString();
+  const providerResult = {
+    schemaVersion: "1.0", orchestrationRunId: started.runId,
+    freightRequestId: receipt.freightRequestId, carrierId: candidate.carrierId,
+    matchingServiceId: candidate.matchingServiceId, providerUrl: candidate.providerUrl,
+    navigationUrl: buildRegisteredProviderNavigationUrl(candidate.providerUrl, candidate.matchingServiceId, base),
+    toolName: "quote_freight", attemptNumber: 1,
+    toolCallId: ["cm:int02a:v1", started.runId, receipt.freightRequestId, candidate.carrierId, candidate.matchingServiceId, "quote_freight", 1].join(":"),
+    toolInput: { freight_request_id: receipt.freightRequestId },
+    toolOutput: { ok: true, data: {
+      schemaVersion: "1.0", freightRequestId: receipt.freightRequestId,
+      providerOfferReference: `MCP-LOCAL-${randomUUID()}`, price: 1760, currency: "USD",
+      priceBreakdown: { lineHaul: 1500, handling: 115, customsCoordination: 145 },
+      estimatedPickup: new Date(now + 24 * 60 * 60 * 1000).toISOString(),
+      estimatedDelivery: new Date(now + 48 * 60 * 60 * 1000).toISOString(),
+      transitHours: 24, availableCapacityKg: 10000,
+      availabilityClass: "AVAILABLE_IN_WINDOW", crossBorderSupported: true,
+      customsCoordinationIncluded: true, requiredDocuments: [],
+      borderHandlingNotes: "Local test fixture", validUntil: new Date(now + 72 * 60 * 60 * 1000).toISOString(),
+    } },
+    startedAt, completedAt, durationMs: 100, status: "COMPLETED", technicalError: null,
+  };
+  const recorded = await api("/api/orchestration/record-result", providerResult, supervisor.cookie());
+  assert.equal(recorded.status, 200, JSON.stringify({ body: recorded.body, providerUrl: candidate.providerUrl, navigationUrl: providerResult.navigationUrl, base }));
+  assert.equal(recorded.body.ok, true);
+  const evaluated = await api("/api/orchestration/evaluate-offers", { orchestrationRunId: started.runId }, supervisor.cookie());
+  assert.equal(evaluated.status, 200, JSON.stringify(evaluated.body));
+  assert.equal(evaluated.body.ok, true);
+
+  const complete = toolResult((await rpc("tools/call", {
+    name: "get_freight_options", arguments: getArgs,
+  }, supervisor.cookie())).body);
+  assert.equal(complete.structuredContent.ok, true);
+  assert.equal(complete.structuredContent.data.status, "success");
+  assert.equal(complete.structuredContent.data.offers.length, 1);
+  assert.equal(complete.structuredContent.data.offers[0].carrierId, candidate.carrierId);
+  const { data: offers, error: offersError } = await supervisor.client.from("carrier_offers")
+    .select("id,carrier_id,price").eq("orchestration_run_id", started.runId);
+  assert.ifError(offersError);
+  assert.equal(offers?.length, 1);
+  assert.equal(complete.structuredContent.data.offers[0].offerId, offers?.[0].id);
+  assert.equal(complete.structuredContent.data.ranking.recommendedOfferId, offers?.[0].id);
 });
