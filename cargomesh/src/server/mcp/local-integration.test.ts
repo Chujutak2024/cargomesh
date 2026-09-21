@@ -17,6 +17,21 @@ const isolatedEmail = "mcp.isolated@cargomesh.test";
 const organizationId = "a0000000-0000-0000-0000-000000000001";
 const supervisorMemberId = "e0000000-0000-0000-0000-000000000001";
 
+type WorkerAttemptEvidence = {
+  carrierCode: string;
+  status: string;
+  completedTools: string[];
+};
+
+type FinalOfferEvidence = {
+  carrierCode: string;
+  providerOfferReference: string;
+  totalPrice: number;
+  score: number;
+  rank: number;
+  recommended: boolean;
+};
+
 function localOnly(value: string) {
   const url = new URL(value);
   assert.ok(["localhost", "127.0.0.1", "[::1]"].includes(url.hostname), "integration targets must be local");
@@ -71,6 +86,11 @@ function autonomousWorkerInput() {
       entryQuantity: 3,
       entryUnitWeightKg: 950,
       budgetMax: 3_500,
+      availableDocuments: [
+        "COMMERCIAL_INVOICE",
+        "PACKING_LIST",
+        "CERTIFICATE_OF_ORIGIN",
+      ],
     },
   });
 }
@@ -81,7 +101,8 @@ async function rpc(method: string, params: unknown, cookie = "") {
     method: "POST",
     headers: {
       "Content-Type": "application/json", Accept: "application/json, text/event-stream",
-      "MCP-Protocol-Version": "2025-11-25", ...(cookie ? { Cookie: cookie } : {}),
+      "MCP-Protocol-Version": "2025-11-25", Connection: "close",
+      ...(cookie ? { Cookie: cookie } : {}),
     },
     body: JSON.stringify({ jsonrpc: "2.0", id: ++rpcId, method, params }),
   });
@@ -337,7 +358,43 @@ test("real MCP flow reaches provider WebMCP through the autonomous browser worke
   assert.equal(workerEvidence.worker, "AUTONOMOUS_PROVIDER_EXECUTION_V1");
   assert.equal(workerEvidence.providerKind, "DEMO_AUTO_OFFER_CARRIERS");
   assert.equal(workerEvidence.runId, started.runId);
-  assert.equal(workerEvidence.status, "success");
+  assert.equal(workerEvidence.status, "success", JSON.stringify(workerEvidence));
+  const workerView = workerEvidence.viewModel as {
+    candidateCount: number;
+    attempts: WorkerAttemptEvidence[];
+  };
+  assert.equal(workerView.candidateCount, 3);
+  assert.deepEqual(
+    workerView.attempts.map((attempt) => ({
+      carrierCode: attempt.carrierCode,
+      status: attempt.status,
+      completedTools: attempt.completedTools,
+    })),
+    ["ANDES", "INCA", "PACIFIC"].map((carrierCode) => ({
+      carrierCode,
+      status: "QUOTED",
+      completedTools: ["check_service_coverage", "check_capacity", "quote_freight"],
+    })),
+  );
+
+  const { data: events, error: eventsError } = await supervisor.client
+    .from("orchestration_events")
+    .select("carrier_id,tool_name,input_payload,output_payload,status,execution_status,persisted_entity_type,persisted_entity_id")
+    .eq("orchestration_run_id", started.runId);
+  assert.ifError(eventsError);
+  assert.equal(events?.length, 9);
+  for (const event of events ?? []) {
+    const toolInput = event.input_payload as Record<string, unknown>;
+    assert.equal(toolInput.origin, "Lima, PE");
+    assert.equal(toolInput.destination, "Valparaiso, CL");
+    assert.equal(event.status, "SUCCEEDED");
+    assert.equal(event.execution_status, "COMPLETED");
+    assert.equal((event.output_payload as { ok?: unknown })?.ok, true);
+    if (event.tool_name === "quote_freight") {
+      assert.equal(event.persisted_entity_type, "CARRIER_OFFER");
+      assert.ok(event.persisted_entity_id);
+    }
+  }
 
   const complete = toolResult((await rpc("tools/call", {
     name: "get_freight_options", arguments: getArgs,
@@ -345,9 +402,59 @@ test("real MCP flow reaches provider WebMCP through the autonomous browser worke
   assert.equal(complete.structuredContent.ok, true);
   assert.equal(complete.structuredContent.data.status, "success");
   assert.ok(complete.structuredContent.data.offers.length > 0);
+  const finalOffers = complete.structuredContent.data.offers as FinalOfferEvidence[];
   const { data: offers, error: offersError } = await supervisor.client.from("carrier_offers")
     .select("id,carrier_id,price").eq("orchestration_run_id", started.runId);
   assert.ifError(offersError);
   assert.equal(offers?.length, complete.structuredContent.data.offers.length);
   assert.ok(offers?.some((offer) => offer.id === complete.structuredContent.data.ranking.recommendedOfferId));
+
+  const [{ data: finalRequest, error: finalRequestError }, { data: finalRun, error: finalRunError }, { data: decision, error: decisionError }] =
+    await Promise.all([
+      supervisor.client.from("freight_requests").select("status").eq("id", receipt.freightRequestId).single(),
+      supervisor.client.from("orchestration_runs").select("status").eq("id", started.runId).single(),
+      supervisor.client.from("freight_decisions")
+        .select("optimization_strategy,recommended_offer_id,confidence_score,ranking_snapshot")
+        .eq("orchestration_run_id", started.runId)
+        .single(),
+    ]);
+  assert.ifError(finalRequestError);
+  assert.ifError(finalRunError);
+  assert.ifError(decisionError);
+  assert.equal(finalRequest?.status, "AWAITING_SELECTION");
+  assert.equal(finalRun?.status, "OPTIONS_READY");
+  assert.equal(decision?.optimization_strategy, "BALANCED");
+  assert.equal(decision?.recommended_offer_id, complete.structuredContent.data.ranking.recommendedOfferId);
+
+  console.log("AUTONOMOUS_MCP_GOLDEN_FLOW_EVIDENCE", JSON.stringify({
+    request: {
+      id: receipt.freightRequestId,
+      code: receipt.requestCode,
+      origin: "Lima, PE",
+      destination: "Valparaiso, CL",
+      cargoWeightKg: 2_850,
+      budgetMax: 3_500,
+      status: finalRequest?.status,
+    },
+    run: { id: started.runId, status: finalRun?.status },
+    providers: workerView.attempts.map((attempt) => ({
+      carrierCode: attempt.carrierCode,
+      completedTools: attempt.completedTools,
+    })),
+    offers: finalOffers.map((offer) => ({
+      carrierCode: offer.carrierCode,
+      providerOfferReference: offer.providerOfferReference,
+      totalPrice: offer.totalPrice,
+      score: offer.score,
+      rank: offer.rank,
+      recommended: offer.recommended,
+    })),
+    decision: {
+      strategy: decision?.optimization_strategy,
+      confidence: Number(decision?.confidence_score),
+      recommendedOfferId: decision?.recommended_offer_id,
+    },
+    resultBridgeEventCount: events?.length,
+    getFreightOptionsStatus: complete.structuredContent.data.status,
+  }));
 });
