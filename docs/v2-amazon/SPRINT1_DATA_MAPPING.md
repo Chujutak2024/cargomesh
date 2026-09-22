@@ -1,6 +1,6 @@
 # HAC-21 — mapeo aditivo de sedes y servicios ROAD V2
 
-Estado: contrato de datos implementado en la migración `20260922053512_v2_road_facilities_services.sql`. La ejecución del reset y pgTAP debe constar en el PR antes de cerrar la issue.
+Estado: contrato de datos implementado en la migración `20260922053512_v2_road_facilities_services.sql`. Reset local y pgTAP ejecutados el 2026-09-22; el merge y cierre de la issue siguen sujetos al gate del integrador.
 
 ## Entidad → tabla → relación
 
@@ -33,6 +33,7 @@ Las áreas pueden ser por país, región, ciudad o código postal; la exclusión
 - Migración aditiva y sin seeds V2 en `supabase/migrations/`; los tres carriers y FR-1042 históricos permanecen fixtures V1.
 - `supabase/tests/09_v2_road_network.test.sql` cubre RLS, aislamiento, ownership, socio sin referencia, sede sin cobertura y dirección A→B sin B→A. Sus filas son transaccionales y hacen `rollback`.
 - Comandos locales: `pnpm dlx supabase start`, `pnpm dlx supabase db reset`, `pnpm dlx supabase test db`; requieren Docker. Ejecutar además las pruebas existentes de idempotencia/DRAFT y `pnpm typecheck` en `cargomesh/`.
+- Evidencia ejecutada sobre la rama HAC-21 basada en el HEAD V2 remoto: `pnpm dlx supabase db reset --local` aplicó todas las migraciones y el seed local sin errores; `pnpm dlx supabase test db` pasó 9 archivos y 183 aserciones (23 nuevas de ROAD); `pnpm typecheck`, `pnpm test:release` y las 3 pruebas Zod nuevas también pasaron. El reset se limitó a la instancia Docker `supabase_db_cargomesh`, que antes contenía únicamente ACME/FR-1042.
 - Fuera de HAC-21: capacidad y reservas por fecha, flota, motor de elegibilidad completo, scoring, routing Google Maps, estimación de aduana, booking, seeds V2 y mutación del catálogo por carriers. Esos alcances requieren sus propias issues/contratos; ningún modo distinto de ROAD queda implementado aquí.
 
 Véase [contrato de cobertura](./CARRIER_COVERAGE_AND_SERVICEABILITY.md) y [contratos de dominio](./DOMAIN_CONTRACTS.md).
