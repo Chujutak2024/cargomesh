@@ -21,6 +21,7 @@ Lee `../../../docs/v2-amazon/ARCHITECTURE.md`, `DOMAIN_CONTRACTS.md` y `ALEXA_MC
 - Los datos sintéticos V2 viven en `supabase/scenarios/v2-*/seed.sql`.
 - Modela carriers y modos mediante datos y adaptadores extensibles, no condicionales por nombre.
 - Alexa+ y Web comparten servicios de aplicación; la capa de voz adapta slots, confirmaciones y SSML.
+- Un `/mcp` que solo acepta localhost/cookies o responde 404 en producción es un prototipo local, no integración Alexa+ live. Antes de declarar acceso remoto, verificar identidad, autorización por organización, transporte, pruebas y demo. Las tools `find/get` del runner WebMCP V1 no satisfacen por sí solas el discovery V2.
 - No declares una tool o integración como live sin autenticación, implementación, datos, pruebas y evidencia E2E.
 - Descubre y ejecuta la batería de pruebas real; no uses conteos históricos como criterio de aceptación.
 

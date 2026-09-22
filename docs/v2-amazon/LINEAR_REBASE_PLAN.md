@@ -1,77 +1,35 @@
-# Plan propuesto para reconstruir Linear
+# Rebase de Linear para CargoMesh V2
 
-Este documento es una propuesta. No autoriza cambios automáticos en Linear.
+Este documento registra la auditoría y el orden de carga. **La carga de Sprint 1 se aplicó en Linear el 22 de septiembre de 2026**: HITO 1 corregido, HAC-21…26 creadas y HAC-17/18 ajustadas sin cambio de estado. Las [ocho fichas](./linear_sprint1_v2_rebase_proposal.md) aplican la [plantilla A/B/C](./LINEAR_ISSUE_TEMPLATE.md); el [roadmap](./cargomesh_v2_milestones_architecture_roadmap.md) audita Hitos 0–5.
 
-## Estado auditado el 21 de septiembre de 2026
+## Estado verificado el 21 de septiembre de 2026
 
-- Workspace conectado: `HackatonTeamCargoMesh`.
-- Proyecto actual: `P-HAC-1 — CargoMesh V2 — Alexa Hackathon`, con los cinco miembros y fecha objetivo 19 de octubre de 2026.
-- Ciclo actual: `Sprint 1`, del 19 al 26 de septiembre.
-- Las diez issues HAC-5 a HAC-10 y HAC-17 a HAC-20 están en `Canceled`.
-- Estados disponibles: `Backlog`, `Pendiente`, `In Progress`, `In Review`, `Done`, `Canceled` y `Duplicate`.
-- No existen todavía labels específicas para V1/V2, MCP, AWS Builder u Open Source.
+- Proyecto `P-HAC-1` con cinco miembros y Hitos 0–5 ya creados. Mantenerlos y corregir descripciones, no duplicarlos.
+- Sprint 1 (19–25 sep Lima): HAC-17 (créditos AWS) y HAC-18 (Drive) en `In Review`; HAC-5…10, HAC-19 y HAC-20 en `Canceled`. No existen nuevas issues V2 de Sprint 1.
+- HAC-18 tenía due date **21 sep**: desde 22 sep está vencida si no se validó; verificar estado antes de editarla. HAC-17 vence 25 sep.
+- Sprint 2 tiene HAC-11…16 `Pendiente`, con premisas intermedias; por instrucción del equipo se ignoran por ahora.
+- PR #80 ya entró a `codex/v2-amazon-contracts`, pero MCP local no prueba Alexa+ remota ni discovery V2. PR #81/#82 siguen sujetos al gate. El fallo de Vercel preview por rootDirectory no autoriza cambiar producción.
+- HITO 1 cargado omite a Axel, Alexa segura/Bedrock exploratorio y mapa piloto. Además fija número de tests y un color «del jurado» sin soporte. Debe corregirse **antes** de asociar issues nuevas; conservar target 25 sep y registrar qué queda diferido a HITO 2.
+- HITO 0 tiene casillas completas con progreso 0; HITO 2 exige ASK/latencia no probadas; HITO 4 incluye cotización/autoaprobación ficticias; HITO 5 auto-merge a `main`. El roadmap señala cambios, no los ejecuta.
+- [Reglas oficiales](https://amazonappdev2026.devpost.com/rules): cierre **23 oct 2026 12:00 PDT**, no 19 oct (freeze interno). Bedrock no es requisito Alexa+; Kiro Crew usado/documentado puede calificar para AWS Builder.
 
-## 1. Preservar la historia V1
+## Decisión de estructura
 
-- Mantener como historial las ocho issues de implementación V1 canceladas, sin borrarlas ni reciclar sus identificadores para alcance V2.
-- Revisar y reactivar **HAC-17 (créditos AWS)** y **HAC-18 (Drive/evidencias)**: son trabajo de soporte válido para el concurso actual, no funcionalidades V1 trasladadas a V2. Ajustar sus criterios de aceptación antes de cambiar estados.
-- Agregar posteriormente, si el equipo lo aprueba, la etiqueta `v1-legacy` o `superseded` y un comentario que enlace el nuevo proyecto.
-- Revisar cada PR anterior y decidir explícitamente: cerrar, reutilizar por cherry-pick o reformular en una issue V2.
+Una **principal sustancial** por integrante, sin dividir un resultado indivisible en tareas triviales: C1 Cristhian datos/flujo; C2 Axel Alexa MCP seguro y Bedrock condicionado; C3 Jean Paul QA transversal; C4 Luis diseño/estandarización/prototipo; C5 Juan mapa/investigación/validación FE. Soportes solo necesarios: E1 Gate de Cristhian, HAC-17 de Axel y HAC-18 de Jean Paul. Son **seis issues nuevas** más dos existentes; los IDs reales los asigna Linear. Las viejas canceladas son antecedentes, no avance.
 
-## 2. Rebaselinar el contenedor V2
+Cada issue exige dueño, ciclo/hito, prioridad, labels **existentes**, fecha, rama o `No aplica`, objetivo, alcance/fuera de alcance, dependencias, antecedente V1, DoD con evidencia y bloque de cierre. Una issue puede terminar `In Review` aun si el hito no está completo. Su dueño implementa, prueba y corrige; QA devuelve defectos al dueño y revisores entran al final. Solo Tech Lead mueve `Done` tras gate.
 
-- Renombrar el proyecto existente a `CargoMesh V2 — Amazon Developer Hackathon`; no crear un proyecto duplicado.
-- Actualizar su resumen y descripción para declarar que V2 es una nueva línea de producto.
-- Milestone 0: baseline de producto, dominio y arquitectura.
-- Conservar `Sprint 1` como ciclo de transición histórico: ocho issues de implementación canceladas y dos de soporte por revalidar. Preparar el nuevo backlog ahora y comprometerlo al siguiente ciclo después de confirmar fechas.
-- Primer ciclo V2: validación de la propuesta, contratos y riesgos.
-- Siguientes ciclos: cortes verticales demostrables, no capas aisladas sin integración.
+## Gobernanza por ciclo
 
-Antes de aplicarlo se deben confirmar las fechas oficiales, el track principal y los mini challenges elegidos. Los miembros y estados ya fueron validados mediante la conexión de Linear.
+1. Confirmar fechas/capacidad con los cinco y aprobar manifiesto de **cinco ramas principales + una rama de integración condicional** dentro de las issues antes de crear ramas. Todas parten de y hacen PR a `codex/v2-amazon-contracts`.
+2. Soportes HAC-17/18 no abren rama. La rama `feat/cycle-1-integration` se crea solo con PRs revisables. Una emergente con código requiere issue y rama aprobadas **antes** de empezar; no usar ramas de conveniencia.
+3. Integrador resuelve solapamientos en la rama del ciclo, ejecuta suites descubiertas y publica acta. No push, PR ni merge a `main`; no arreglo lateral de Vercel producción. Evitar `Closes HAC-X` si automatiza `Done` antes del gate.
+4. En `Backlog` no afirmar trabajo; `In Progress` con actividad; `In Review` solo con PR/evidencia y pruebas; `Done` solo tras aceptación por issue. No usar conteos de tests fijos ni datos V1 como DoD V2.
 
-Labels nuevas sugeridas: `v1-legacy`, `v2`, `domain`, `carrier-discovery`, `alexa-mcp`, `aws-builder`, `open-source` y `evidence`. Las labels actuales `frontend`, `backend`, `integration-gate` y `must-have` pueden conservarse.
+## Orden aplicado tras aprobación del equipo
 
-## 3. Backlog inicial sugerido
-
-1. Baseline V2 y ADRs de alcance.
-2. Esquema de sedes, áreas de recojo/entrega, lanes dirigidas, activos, agendas, oportunidades, ofertas y políticas de scoring.
-3. Escenarios V2 reproducibles separados de V1.
-4. Resolución de rutas, elegibilidad territorial y capacidad por fecha sin preselección heurística opaca.
-5. Adaptadores para disponibilidad y ofertas de carriers.
-6. Ranking versionado, determinístico y explicable.
-7. Superficie MCP y experiencia Alexa+.
-8. Intake empresarial: perfiles, preferencias, sedes y taxonomía de carga.
-9. Mapa de corredores, candidatos y alternativas multimodales.
-10. Benchmark de tokens/latencia y evidencia AWS Builder.
-11. Artefacto Open Source, solo si el equipo confirma ese mini challenge.
-12. Gate E2E web/voz, observabilidad y paquete de demo.
-
-Cada elemento debe convertirse en una issue con la plantilla V2; esta lista no fija aún prioridades ni fechas.
-
-## 4. Propiedad inicial sugerida
-
-- Tech Lead / BE-2: dominio, persistencia e integración.
-- Alexa & Cloud Lead / BE-1: Alexa+, AWS y benchmark de tokens/latencia.
-- CI & QA Lead / BE-3: escenarios, observabilidad y evidencias.
-- Shipper UI Lead / FE-1: intake, perfiles, sedes y experiencia shipper.
-- Carrier Surface Lead / FE-2: mapa, adaptadores y descubrimiento.
-
-La asignación final debe confirmarse con el equipo y equilibrarse por dependencias, no por copiar las issues V1.
-
-## 5. Reglas de estado
-
-- `Backlog`: alcance escrito, todavía no comprometido.
-- `Pendiente`: criterios y dependencias listos.
-- `In Progress`: rama vinculada y responsable activo.
-- `In Review`: PR y evidencia disponibles.
-- `Done`: merge autorizado, pruebas y documentación verificadas.
-- `Canceled`: alcance abandonado, con motivo y reemplazo enlazado cuando exista.
-
-## 6. Orden de aplicación
-
-1. Confirmar decisiones del hackathon y taxonomía.
-2. Renombrar/rebaselinar el proyecto y crear milestone, siguiente ciclo y labels V2.
-3. Crear las issues baseline con dependencias.
-4. Enlazar la historia V1 sin modificar sus resultados.
-5. Asociar ramas nuevas y PRs únicamente a issues V2.
-6. Ejecutar una revisión semanal de alcance, riesgos y evidencia.
+1. HITO 1 y descripción del proyecto corregidos: 19 oct es freeze interno, 23 oct cierre oficial. Sprint 2 no se tocó.
+2. C1…C5 y E1 se crearon como HAC-21…26 en `Pendiente`, con responsable, fecha, labels existentes, ramas declaradas, bloques A/B/C y relaciones. HAC-17/18 se corrigieron sin duplicarlas; las V1 canceladas permanecen históricas.
+3. La [documentación Alexa+](https://developer.amazon.com/docs/alexaplus/add-ons/home.html) indica acceso selecto; HAC-22 decide conexión real vs simulación rotulada según evidencia. HAC-17 no tiene acuse visible en comentarios. HAC-18 sí tiene comentario con enlace/estructura de Drive, todavía `In Review` hasta validación.
+4. Kiro Crew se documenta desde Sprint 1 con uso real por integrante y custodia de Jean Paul. Gate-1 integra solo PRs que cumplan DoD y cierra issues individualmente.
+5. La descripción antigua del objeto `Sprint 1` en Linear aún menciona DRAFT/PENDING; el conector disponible lista ciclos pero no permite editar esa descripción. HITO 1 e issues nuevas contienen el objetivo aprobado. No crear nuevas labels `v2`/`core`/`enabler` sin aprobación.
