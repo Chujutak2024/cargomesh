@@ -16,7 +16,8 @@ export async function readPersistedFreightOptions(runId: string) {
 export function registerGetFreightOptions(server: McpServer, read: ReadFreightOptions) {
   server.registerTool("get_freight_options", {
     title: "Read persisted freight options",
-    description: "Read persisted orchestration progress and BALANCED-ranked offers for a run. " +
+    description: "V1 regression only: read persisted WebMCP Result Bridge progress and BALANCED_V1-ranked offers. " +
+      "This is not a V2 ScoringPolicy result. " +
       "Does not contact carriers, start searches, recalculate scores or book freight. " +
       "Offers must be rechecked for eligibility and expiry before booking.",
     inputSchema: GetFreightOptionsInputSchema,

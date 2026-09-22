@@ -46,6 +46,24 @@ test("invalid bearer never falls back to cookie authentication", async () => {
   assert.equal(cookieCalls, 0);
 });
 
+test("validated Supabase bearer produces a user principal and never reads cookies", async () => {
+  let cookieCalls = 0;
+  const principal = await authenticateMcpRequest(new Request(TEST_SERVICE_AUTH.canonicalResource, {
+    headers: { Authorization: "Bearer supabase-user-token" },
+  }), {
+    resolveCookieMember: async () => { cookieCalls++; return member; },
+    configuration: () => TEST_SERVICE_AUTH,
+    verifyServiceToken: async () => { throw new Error("not a service token"); },
+    verifyUserToken: async (accessToken) => ({
+      principal: { ...member, kind: "user", authMethod: "supabase_oauth", scopes: ["mcp:tools"], oauthClientId: "alexa-client" },
+      supabaseAccessToken: accessToken,
+    }),
+  });
+  assert.equal(principal.kind, "user");
+  assert.equal(principal.authMethod, "supabase_oauth");
+  assert.equal(cookieCalls, 0);
+});
+
 test("cookie member authorization errors remain authoritative", async () => {
   for (const error of ["FORBIDDEN: wrong organization", "FORBIDDEN: inactive member"]) {
     await assert.rejects(authenticateMcpRequest(new Request("http://localhost:3000/mcp"), {

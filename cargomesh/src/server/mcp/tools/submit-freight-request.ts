@@ -24,7 +24,8 @@ function safeSubmitError(error: unknown) {
 export function registerSubmitFreightRequest(server: McpServer, submit: SubmitFreightRequest) {
   server.registerTool("submit_freight_request", {
     title: "Submit a freight draft",
-    description: "Validate and submit an existing DRAFT as PENDING before find_freight_options. " +
+    description: "V1 regression contract: validate and submit an existing V1 DRAFT as PENDING. " +
+      "This is not the canonical V2 FreightRequest submission contract, which is blocked on HAC-21. " +
       "Requires its current draftVersion and an active OWNER or SUPERVISOR. " +
       "A successful exact retry returns replayed:true. This does not contact providers or book freight.",
     inputSchema: SubmitFreightRequestInputSchema,
