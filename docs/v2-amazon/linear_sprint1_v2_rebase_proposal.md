@@ -25,6 +25,8 @@ Aplicar el modelo **1 core + 1 enabler + N emergentes** por integrante: cinco co
 
 **Propiedad individual:** cada issue tiene un solo responsable, que implementa, prueba y corrige sus propios defectos. La dependencia de un contrato ajeno no convierte al proveedor del contrato en co-desarrollador de la issue consumidora. Si falta un contrato, se marca bloqueada y se coordina su entrega; los compañeros solo revisan el PR al terminar. No crear una issue «colaborativa» sin dueño para repartir la reparación de problemas.
 
+**Paralelización:** al inicio Cristhian publica el esquema/tipos mínimos acordados, sin esperar toda la migración. Axel puede auditar el MCP de PR #80, Jean Paul diseñar fixtures/assercciones, Luis maquetar componentes y Juan catalogar fuentes en paralelo. Cada quien integra el contrato definitivo y corrige su propio PR después; una dependencia incumplida se registra como bloqueo, no se asigna al compañero para reparar la tarea ajena. Cristhian aprueba el manifiesto de ramas al inicio; el Gate-1 revisa entregas terminadas al cierre.
+
 ## 3. Manifiesto cerrado de ramas del ciclo
 
 Las ramas se **declaran en la issue antes de crearlas**. Para Sprint 1 se proponen solo estas seis; no abrir ramas de conveniencia para auditorías o documentación sin issue y sin actualizar este manifiesto.
@@ -93,7 +95,7 @@ Los códigos `S1-*` son referencias de planificación, **no IDs HAC**. Todas emp
 
 **Título:** `[GATE-1] Validar ramas e integrar entregas de Sprint 1 contra contratos V2`.
 **Hito:** HITO 1. **Rama declarada:** `feat/cycle-1-integration` → PR a la base V2; no crearla hasta tener PRs revisables.
-**Incluye:** manifiesto de ramas/PR/issue, revisión de #81/#82 y del preview Vercel por separado, matriz de dependencias, suite descubierta (DB, typecheck, pruebas pertinentes, build) y acta de decisiones. **No incluye** cambiar `main`, producción o marcar todo el hito completo por un build local.
+**Incluye:** aprobar al inicio el manifiesto de ramas/PR/issue y dependencias; al cierre revisar entregas terminadas, #81/#82 y el preview Vercel por separado, ejecutar la suite descubierta (DB, typecheck, pruebas pertinentes, build) y publicar acta de decisiones. **No incluye** corregir los PRs de otros, cambiar `main` o producción, ni marcar todo el hito completo por un build local.
 **DoD:** acta en `docs/04-execution/` con PRs integrados/no integrados y motivo, comandos/resultados, contratos/evidencias comprobados y friction logs materiales; solo el Tech Lead autorizado fusiona y mueve **cada issue aceptada** a `Done`. Lo bloqueado permanece `In Review` o se replanifica.
 
 ### S1-E2 — Axel, HAC-17 existente
@@ -107,12 +109,12 @@ Los códigos `S1-*` son referencias de planificación, **no IDs HAC**. Todas emp
 ### S1-E4 — Luis, enabler sin código
 
 **Título:** `[FE-1] Mapear campos V1 reutilizables y validar el alcance del prototipo V2 con el equipo`.
-**DoD:** matriz `reutilizar/reemplazar/retirar` para sede, carga, pesos, fechas y preferencias; comentarios/decisión del equipo vinculados a S1-C4. Sin rama ni PR; entrega en `In Review` con documento verificable.
+**DoD:** matriz `reutilizar/reemplazar/retirar` para sede, carga, pesos, fechas y preferencias; compartir el contrato de campos con BE-1/BE-2 y registrar comentarios/decisión del equipo vinculados a S1-C4. Sin rama ni PR; entrega en `In Review` con documento verificable.
 
 ### S1-E5 — Juan Antonio, enabler sin código
 
 **Título:** `[FE-2] Inventariar fuentes y vacíos de datos para cobertura y mapa ROAD V2`.
-**DoD:** tabla de origen, precisión, fecha y estado para área, lane, corredor, capacidad y costo; identifica dato sintético/estimado/confirmado y desbloquea S1-C5. Sin rama ni PR; entrega en `In Review` con enlace verificable.
+**DoD:** tabla de origen, precisión, fecha y estado para área, lane, corredor, capacidad y costo; identifica dato sintético/estimado/confirmado y comparte vacíos con BE-2/BE-3 además de S1-C5. Sin rama ni PR; entrega en `In Review` con enlace verificable.
 
 ## 5. Documentos mínimos del sprint y cierre
 
