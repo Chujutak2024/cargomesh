@@ -1,6 +1,6 @@
 # Gate 1 V2 — acta de avance (no cierre)
 
-**Corte:** 22 de septiembre de 2026 (Lima). **Base inspeccionada:** `codex/v2-amazon-contracts` @ `0d3a0d2`. **Responsable:** Cristhian, HAC-26. **Estado:** en progreso; HITO 1 no está aprobado.
+**Corte:** 22 de septiembre de 2026 (Lima). **Base inspeccionada:** `codex/v2-amazon-contracts` @ `0d3a0d2`. **Rama de gate:** `feat/cycle-1-integration`, [PR #86](https://github.com/Chujutak2024/cargomesh/pull/86) en borrador. **Responsable:** Cristhian, HAC-26. **Estado:** en progreso; HITO 1 no está aprobado.
 
 ## Regla de aceptación
 
@@ -36,5 +36,5 @@ Linear muestra HITO 1 al **25%** después de pasar HAC-22 y HAC-26 a `In Progres
 ## Decisiones abiertas antes del cierre
 
 1. Gate-1 prepara catálogo/test/docs que ya no imputan a HAC-21 el account linking y los servicios FreightRequest V2. Axel debe revisar el cambio en PR antes de aceptación de HAC-22; el bloqueo conserva comportamiento fail-closed. El alcance posterior necesita issue/dueño aprobado, sin reabrir HAC-21 por conveniencia.
-2. Recibir y evaluar HAC-23/24/25 y evidencias HAC-17/18 según su DoD. Cada defecto medio/alto vuelve a su dueño; no se reparte la implementación funcional en el gate.
+2. HAC-23 ya cubre QA transversal: Jean Paul valida los casos MCP y el escenario V2, sin abrir una issue de tester duplicada. Recibir y evaluar también HAC-24/25 y evidencias HAC-17/18 según su DoD. Cada defecto medio/alto vuelve a su dueño; no se reparte la implementación funcional en el gate.
 3. Ejecutar la suite integrada pertinente, verificar preview/alternativa aprobada y registrar resultado final por issue. No cerrar HITO 1 ni HAC-26 antes de ello.
