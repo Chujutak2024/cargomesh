@@ -1,6 +1,6 @@
 # Rebase de Linear para CargoMesh V2
 
-Este documento registra la auditoría y el orden de carga propuesto. **No ejecuta cambios en Linear.** Las [ocho fichas completas de Sprint 1](./linear_sprint1_v2_rebase_proposal.md) aplican la [plantilla A/B/C](./LINEAR_ISSUE_TEMPLATE.md); el [roadmap](./cargomesh_v2_milestones_architecture_roadmap.md) audita Hitos 0–5 ya cargados.
+Este documento registra la auditoría y el orden de carga. **La carga de Sprint 1 se aplicó en Linear el 22 de septiembre de 2026**: HITO 1 corregido, HAC-21…26 creadas y HAC-17/18 ajustadas sin cambio de estado. Las [ocho fichas](./linear_sprint1_v2_rebase_proposal.md) aplican la [plantilla A/B/C](./LINEAR_ISSUE_TEMPLATE.md); el [roadmap](./cargomesh_v2_milestones_architecture_roadmap.md) audita Hitos 0–5.
 
 ## Estado verificado el 21 de septiembre de 2026
 
@@ -26,10 +26,10 @@ Cada issue exige dueño, ciclo/hito, prioridad, labels **existentes**, fecha, ra
 3. Integrador resuelve solapamientos en la rama del ciclo, ejecuta suites descubiertas y publica acta. No push, PR ni merge a `main`; no arreglo lateral de Vercel producción. Evitar `Closes HAC-X` si automatiza `Done` antes del gate.
 4. En `Backlog` no afirmar trabajo; `In Progress` con actividad; `In Review` solo con PR/evidencia y pruebas; `Done` solo tras aceptación por issue. No usar conteos de tests fijos ni datos V1 como DoD V2.
 
-## Orden de carga, cuando el equipo apruebe
+## Orden aplicado tras aprobación del equipo
 
-1. Corregir texto de HITO 1 con los cinco frentes y límite real del sprint; anotar en proyecto que 19 oct es freeze y 23 oct cierre oficial. No tocar Sprint 2 ahora.
-2. Validar hoy HAC-18 vencida, HAC-17 y acceso Developer Console/Bedrock; decidir si la ruta Alexa será conexión real o simulación claramente rotulada si el acceso de socio no está disponible. La [documentación Alexa+](https://developer.amazon.com/docs/alexaplus/add-ons/home.html) indica acceso selecto.
-3. Crear C1…C5 y E1 en Sprint 1/HITO 1 usando íntegramente las fichas A/B/C. Aplicar labels existentes de equipo (`backend`, `frontend`, `audit`, `integration-gate`, `must-have`) y tipo global `Feature`/`Improvement`. `v2`/`core`/`enabler` son texto de la descripción hasta que se aprueben y creen como labels.
-4. Vincular HAC V1 canceladas como antecedentes; corregir HAC-17/18 sin duplicarlas. Kiro Crew comienza con evidencia real de cada integrante en Sprint 1, custodiada por Jean Paul.
-5. Gate-1 integra solo PRs que cumplan su DoD, registra bloqueos/replanificaciones y cierra issues individualmente. Las incompletas no se renombran ni se presentan como terminadas por el avance del hito.
+1. HITO 1 y descripción del proyecto corregidos: 19 oct es freeze interno, 23 oct cierre oficial. Sprint 2 no se tocó.
+2. C1…C5 y E1 se crearon como HAC-21…26 en `Pendiente`, con responsable, fecha, labels existentes, ramas declaradas, bloques A/B/C y relaciones. HAC-17/18 se corrigieron sin duplicarlas; las V1 canceladas permanecen históricas.
+3. La [documentación Alexa+](https://developer.amazon.com/docs/alexaplus/add-ons/home.html) indica acceso selecto; HAC-22 decide conexión real vs simulación rotulada según evidencia. HAC-17 no tiene acuse visible en comentarios. HAC-18 sí tiene comentario con enlace/estructura de Drive, todavía `In Review` hasta validación.
+4. Kiro Crew se documenta desde Sprint 1 con uso real por integrante y custodia de Jean Paul. Gate-1 integra solo PRs que cumplan DoD y cierra issues individualmente.
+5. La descripción antigua del objeto `Sprint 1` en Linear aún menciona DRAFT/PENDING; el conector disponible lista ciclos pero no permite editar esa descripción. HITO 1 e issues nuevas contienen el objetivo aprobado. No crear nuevas labels `v2`/`core`/`enabler` sin aprobación.

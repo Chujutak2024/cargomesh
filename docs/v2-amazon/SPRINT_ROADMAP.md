@@ -1,6 +1,6 @@
 # Ruta por sprint — CargoMesh V2
 
-El [roadmap de hitos](./cargomesh_v2_milestones_architecture_roadmap.md) separa resultados y fechas; la [propuesta de Sprint 1](./linear_sprint1_v2_rebase_proposal.md) es la ficha completa de cada issue. A 21 sep no se han creado esas seis issues nuevas en Linear.
+El [roadmap de hitos](./cargomesh_v2_milestones_architecture_roadmap.md) separa resultados y fechas; la [ficha de Sprint 1](./linear_sprint1_v2_rebase_proposal.md) documenta cada issue. Las seis issues nuevas HAC-21…26 se cargaron en Linear el 22 sep, junto con la corrección del HITO 1. HAC-17/18 permanecen como soportes existentes.
 
 ## Regla operativa y ramas
 
@@ -12,7 +12,7 @@ Antes de abrir una rama, registrar issue, dueño, fecha, labels, DoD y rama exac
 
 | Ciclo en Linear | Hito | Resultado/gate y documentación mínima |
 |---|---|---|
-| Sprint 1 · 19–25 sep (Lima) | HITO 1 **a corregir** | Mapping y esquema V2 ROAD con RLS; límite MCP seguro para Alexa+ y experimento Bedrock condicionado a acceso; sistema visual y prototipo V2; decisión Google Maps/alternativa con mapa piloto; escenario QA V2 y gate integrado. Docs de datos, Alexa/Bedrock, UI, mapa, QA, acta Gate-1. HAC-17/18 con comprobantes. No prometer Alexa live ni Bedrock sin invocación real. |
+| Sprint 1 · 19–25 sep (Lima) | HITO 1 corregido | HAC-21 mapping/esquema V2 ROAD con RLS; HAC-22 MCP seguro Alexa+ y Bedrock condicionado; HAC-23 escenario/matriz QA; HAC-24 sistema visual/prototipo; HAC-25 decisión Google Maps/alternativa y mapa piloto; HAC-26 gate. HAC-17/18 son soportes. No prometer Alexa live ni Bedrock sin invocación real. |
 | Sprint 2 · 26 sep–2 oct | HITO 2 | Sobre cimientos aceptados: elegibilidad física/capacidad por fecha, servicios compartidos Web/MCP, conexión Alexa+ si se obtiene acceso o demo simulada rotulada, continuación Bedrock solo si aporta valor. Issues **por rediseñar**; HAC-11…16 anteriores no se tratan como compromiso V2. |
 | Sprint 3 · 3–9 oct | HITO 3 | Stepper conectado, discovery ROAD, oportunidad y oferta atribuible, ranking versionado y mapa con procedencia. |
 | Sprint 4 · 10–16 oct | HITO 4 | E2E Web/Alexa real o simulación rotulada, autorización humana y auditoría; benchmark con baseline y p50/p95. |

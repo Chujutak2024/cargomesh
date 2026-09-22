@@ -1,6 +1,6 @@
 # Sprint 1 V2 — propuesta de issues para Linear
 
-**Estado:** propuesta de replanificación; ninguna issue nueva ni hito se modifica aquí. **Proyecto:** `P-HAC-1`. **Ciclo:** 19–25 septiembre 2026 (Lima). **Hito:** HITO 1, cuya descripción debe corregirse antes de cargar estas issues. **Base Git:** `codex/v2-amazon-contracts`; ningún push a `main`.
+**Estado:** aprobado y cargado en Linear el 22 de septiembre de 2026: HITO 1 corregido y nuevas HAC-21…26 en `Pendiente`. **Proyecto:** `P-HAC-1`. **Ciclo:** 19–25 septiembre 2026 (Lima). **Base Git:** `codex/v2-amazon-contracts`; ningún push a `main`.
 
 ## Objetivo real y corte del sprint
 
@@ -12,20 +12,20 @@ La [guía Alexa+ MCP](https://www.developer.amazon.com/docs/alexaplus/add-ons/mc
 
 ## Estado y distribución
 
-Linear muestra HAC-17 y HAC-18 en `In Review`; HAC-5…10, HAC-19 y HAC-20 siguen `Canceled` como V1/intermedio. No se reabren ni se duplican. HAC-11…16 de Sprint 2 no se modifican en este plan. Las referencias `S1-*` de abajo **no son IDs HAC**: Linear los asignará. Cada persona recibe **una issue principal con resultado sustancial**; solo Cristhian añade el gate y Axel/Jean Paul conservan sus soportes ya abiertos. No imponer una segunda issue a Luis o Juan por simetría. Si aparece trabajo nuevo, registrar una emergente con dueño, capacidad y DoD antes de crear otra rama.
+Linear muestra HAC-17 y HAC-18 en `In Review`; HAC-5…10, HAC-19 y HAC-20 siguen `Canceled` como V1/intermedio. No se reabren ni se duplican. HAC-11…16 de Sprint 2 no se modificaron. Las referencias `S1-*` de abajo son alias de planificación; Linear asignó HAC-21…26 como indica la tabla. Cada persona tiene **una issue principal con resultado sustancial**; solo Cristhian añade el gate y Axel/Jean Paul conservan sus soportes ya abiertos. No imponer una segunda issue a Luis o Juan por simetría. Si aparece trabajo nuevo, registrar una emergente con dueño, capacidad y DoD antes de crear otra rama.
 
 | Referencia | Dueño/rol | Principal o apoyo | Fecha límite propuesta | Resultado que desbloquea Sprint 2 |
 |---|---|---|---|---|
-| S1-C1 | Cristhian · dominio/BD y validación de flujo | Principal nueva | 24 sep | Mapping, esquema y contratos compartidos de datos V2 |
-| S1-C2 | Axel · Alexa MCP/AWS | Principal nueva | 24 sep | Límite seguro MCP, prueba de transporte/identidad y decisión Bedrock |
-| S1-C3 | Jean Paul · QA y gestor de evidencia | Principal nueva | 25 sep | Escenario V2, matriz de pruebas/CI y reporte de riesgos |
-| S1-C4 | Luis · frontend | Principal nueva | 24 sep | Sistema visual refactorizado y prototipo navegable |
-| S1-C5 | Juan Antonio · mapa, tester y apoyo FE | Principal nueva | 25 sep | Decisión cartográfica + mapa piloto + pruebas de uso |
-| S1-E1 | Cristhian · integrador autorizado | Apoyo nuevo/gate | 25 sep | Integración controlada y acta de aceptación |
+| S1-C1 · HAC-21 | Cristhian · dominio/BD y validación de flujo | Principal | 24 sep | Mapping, esquema y contratos compartidos de datos V2 |
+| S1-C2 · HAC-22 | Axel · Alexa MCP/AWS | Principal | 24 sep | Límite seguro MCP, prueba de transporte/identidad y decisión Bedrock |
+| S1-C3 · HAC-23 | Jean Paul · QA y gestor de evidencia | Principal | 25 sep | Escenario V2, matriz de pruebas/CI y reporte de riesgos |
+| S1-C4 · HAC-24 | Luis · frontend | Principal | 24 sep | Sistema visual refactorizado y prototipo navegable |
+| S1-C5 · HAC-25 | Juan Antonio · mapa, tester y apoyo FE | Principal | 25 sep | Decisión cartográfica + mapa piloto + pruebas de uso |
+| S1-E1 · HAC-26 | Cristhian · integrador autorizado | Apoyo/gate | 25 sep | Integración controlada y acta de aceptación |
 | HAC-17 | Axel | Apoyo existente | 25 sep en Linear; gestión inmediata | Solicitud AWS comprobable, cuota/acceso separados |
 | HAC-18 | Jean Paul | Apoyo existente | 21 sep en Linear | Drive con acceso/evidencia Kiro Crew y friction logs |
 
-Fechas son objetivos de **Linear a confirmar con cada responsable**; el freeze técnico interno propuesto es 25 sep, no el cierre oficial del concurso (23 oct, 12:00 PDT). HAC-18 venció el 21 sep: verificar hoy 22 sep si su evidencia está lista; si no, mantener visible el retraso y replanificar explícitamente, no cerrar por calendario.
+Fechas aprobadas y guardadas en Linear; el freeze técnico interno propuesto es 25 sep, no el cierre oficial del concurso (23 oct, 12:00 PDT). HAC-18 tenía vencimiento 21 sep y un comentario de Jean Paul con enlace/evidencia fechado el 20; permanece en `In Review` hasta verificación del Tech Lead. HAC-17 también permanece en `In Review` sin acuse visible en comentarios.
 
 ## Manifiesto de ramas — declarar en Linear antes de crearlas
 
@@ -175,4 +175,4 @@ Checklist: manifiesto → PRs listos → gate → acta → cierre individual aut
 
 Secuencia crítica: C1 publica tipos tempranos → C2/C3/C4/C5 los consumen; C4 y C5 acuerdan sólo el contrato visual del mapa; C3 prueba negativos a medida que llegan los PRs; E1 integra **después** de revisión. Cada dueño repara sus errores. El DoD de cada issue exige documento/evidencia exacta, comandos y PR cuando aplica. `Backlog` al crear, `In Progress` al comenzar, `In Review` con entregable listo, `Done` solo tras gate/merge o verificación de soporte.
 
-Antes de cargar: confirmar capacidad y fechas con los cinco; corregir HITO 1 para incluir **Alexa MCP segura + experimento Bedrock condicionado + mapa piloto** sin trasladar toda la elegibilidad de HITO 2; mantener su target 25 sep; aprobar seis ramas y labels existentes. Luego crear **seis** issues nuevas (C1…C5 y E1), asociar Sprint 1/HITO 1 y vincular canceladas como antecedentes; actualizar HAC-17/18 sin duplicarlas. No tocar Sprint 2 aún. `v2`/`core`/`enabler` pueden agregarse como labels **solo** si el equipo autoriza crearlas: no existían en la consulta de labels de equipo del 21 sep; el campo tipo en la descripción basta por ahora.
+**Carga aplicada el 22 sep:** HITO 1 ahora incluye **Alexa MCP segura + experimento Bedrock condicionado + mapa piloto** y conserva target 25 sep. Se crearon HAC-21…26 con ciclo, hito, dueño, due date, labels existentes, rama en descripción, bloques A/B/C y relaciones. Se corrigieron HAC-17/18 sin duplicarlas ni alterar sus estados; las canceladas siguen históricas. El proyecto distingue freeze del 19 oct y cierre oficial del 23 oct. Sprint 2 quedó intacto. `v2`/`core`/`enabler` no se crearon como labels; el tipo consta en cada descripción. **Pendiente de UI/operación separada:** la descripción antigua del objeto `Sprint 1` en Linear todavía menciona DRAFT/PENDING; el conector disponible permite listar ciclos pero no editar esa descripción. El HITO 1 y las issues contienen el objetivo aprobado.
