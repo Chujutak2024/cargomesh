@@ -16,6 +16,10 @@ Esta carpeta es la fuente de verdad documental de CargoMesh V2. V2 transforma el
 10. [LINEAR_ISSUE_TEMPLATE.md](./LINEAR_ISSUE_TEMPLATE.md): plantilla de issues nuevas.
 11. [LINEAR_REBASE_PLAN.md](./LINEAR_REBASE_PLAN.md): propuesta para reconstruir Linear sin perder historia.
 
+## Implementación incremental
+
+- [SPRINT1_DATA_MAPPING.md](./SPRINT1_DATA_MAPPING.md): mapeo aditivo HAC-21 para sedes, áreas y lanes ROAD; no supone cobertura ni disponibilidad live.
+
 ## Estado
 
 - **Approved baseline:** estos contratos reemplazan como gobernanza activa a `docs/v1-webmcp/`.
