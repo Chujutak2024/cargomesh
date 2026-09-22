@@ -56,3 +56,54 @@ Resultado global `success`:
 
 El check `Vercel` del mismo PR permanece en `FAILURE` y se gestiona como la observación de
 infraestructura anterior, fuera del gate QA.
+
+### Riesgo de integración antes de Gate-1
+
+`v2-qa-gate.yml` solo existe por ahora en `feat/be3-v2-qa-foundation`. Hasta que el
+[PR #87](https://github.com/Chujutak2024/cargomesh/pull/87) se fusione en Gate-1,
+los demás PRs contra `codex/v2-amazon-contracts` no ejecutan este CI; solo tienen
+el check de Vercel. Esto limita la evidencia de integración cruzada, aunque los dos
+runs del propio PR #87 estén verdes. **Mitigación y dueño:** QA (Jean Paul) debe
+re-ejecutar el gate completo sobre la base V2 integrada después de los merges de
+Gate-1. No se declara verde la base integrada antes de esa ejecución.
+
+## CP-2 — escenario ROAD y aislamiento (2026-09-22)
+
+Paquete: `supabase/scenarios/v2-road-baseline/` (`manifest.json`, `seed.sql`,
+`verify.sql`, `cleanup.sql`, `counts.sql`, `README.md`), procedencia
+`SYNTHETIC_DEMO_ONLY`, UUIDs propios `c230`–`c238`. Sus dos tenants, dos
+identidades Auth locales y membresías ACTIVE sostienen negativos de identidad
+MCP/RLS; cuatro facilities, un depot sin cobertura, cuatro service areas y una
+única lane ROAD Lima A→Arequipa B sostienen los negativos de sede sin cobertura
+y lane inversa. No se siembran vínculos OAuth, solicitudes, ofertas ni reservas.
+
+| Contrato y caso | Comando/evidencia | Resultado observado |
+|---|---|---|
+| [Mapping HAC-21](./SPRINT1_DATA_MAPPING.md): áreas y lane explícitas; Piura sin cobertura, B→A sin lane | `npx supabase db reset --local`; `seed.sql` y `verify.sql` vía `docker exec -i supabase_db_cargomesh psql -X -U postgres -d postgres` | PASS — reset aplicó la migración V2; verify encontró 4 áreas, 1 lane A→B, 0 lanes B→A y 0 áreas Piura. |
+| [HAC-22](./SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md): identidad de dos tenants, no account link inventado | `verify.sql` | PASS — 2 identidades Auth locales y 2 membresías ACTIVE exactas; no hay `mcp_account_links` sembrados. Esto prepara CP-3, no prueba aún autenticación MCP end-to-end. |
+| Convivencia con `d1` y cleanup limitado | `d1/seed.sql` → V2 `seed.sql`/`verify.sql` → V2 `cleanup.sql`/`counts.sql` → `d1/verify.sql` | PASS — conteos posteriores iguales a foto con `d1`; `d1_verification.verified=true`, Golden Flow 3 candidatos. |
+
+Fotos de **todas** las relaciones escritas por el escenario, tomadas con
+`v2-road-baseline/counts.sql` después del reset, después de cargar `d1`, con
+ambos escenarios y después de limpiar solo V2:
+
+| Relación | Previa (reset) | Con `d1` | `d1` + V2 | Tras cleanup V2 | Delta V2 |
+|---|---:|---:|---:|---:|---:|
+| `auth.identities` | 1 | 1 | 3 | 1 | 2 |
+| `auth.users` | 1 | 1 | 3 | 1 | 2 |
+| `public.carrier_depots` | 0 | 0 | 1 | 0 | 1 |
+| `public.carrier_services` | 3 | 5 | 6 | 5 | 1 |
+| `public.carriers` | 3 | 4 | 5 | 4 | 1 |
+| `public.facilities` | 0 | 0 | 4 | 0 | 4 |
+| `public.organization_members` | 1 | 1 | 3 | 1 | 2 |
+| `public.organizations` | 1 | 1 | 3 | 1 | 2 |
+| `public.service_areas` | 0 | 0 | 4 | 0 | 4 |
+| `public.service_lanes` | 0 | 0 | 1 | 0 | 1 |
+
+La comparación pertinente para aislamiento es **con `d1` vs tras cleanup V2**:
+las diez relaciones coinciden. Dos ciclos adicionales completos
+`seed → verify → cleanup` pasaron con los mismos conteos posteriores y
+`d1/verify.sql` volvió a pasar. Una prueba adicional `seed → seed → verify →
+cleanup` también pasó: el segundo seed reportó `INSERT 0 0` en sus diez
+instrucciones, sin duplicados ni errores. Los conteos finales siguieron iguales
+a la columna «Con `d1`». Ninguna migración se agregó o modificó en CP-2.
