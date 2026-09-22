@@ -34,3 +34,9 @@ Cada issue exige dueño, ciclo/hito, prioridad, labels **existentes**, fecha, ra
 3. La [documentación Alexa+](https://developer.amazon.com/docs/alexaplus/add-ons/home.html) indica acceso selecto; HAC-22 decide conexión real vs simulación rotulada según evidencia. HAC-17 no tiene acuse visible en comentarios. HAC-18 sí tiene comentario con enlace/estructura de Drive, todavía `In Review` hasta validación.
 4. Kiro Crew se documenta desde Sprint 1 con uso real por integrante y custodia de Jean Paul. Gate-1 integra solo PRs que cumplan DoD y cierra issues individualmente.
 5. La descripción antigua del objeto `Sprint 1` en Linear aún menciona DRAFT/PENDING; el conector disponible lista ciclos pero no permite editar esa descripción. HITO 1 e issues nuevas contienen el objetivo aprobado. No crear nuevas labels `v2`/`core`/`enabler` sin aprobación.
+
+## Actualización posterior — Sprint 2 V2
+
+Por decisión explícita del equipo, HAC-11…16 **no se cancelaron ni se duplicaron**: permanecían `Pendiente`, sin PR ni implementación, por lo que se reescribieron en sus mismos IDs con los contratos V2 y sus relaciones. Ya estaban asociadas al HITO 2 en Linear; el problema era el contenido WebMCP/BALANCED V1, no la asociación al hito. Se conservaron las fechas existentes (30 sep para HAC-11…15 y 2 oct para HAC-16) y los dueños salvo HAC-15, antes vacía y ahora asignada a Juan. HAC-13 es QA de Jean Paul, no puente al runner WebMCP. El HITO 2 se actualizó con la distribución y HAC-27 continúa como análisis bloqueado por HAC-23.
+
+Los bloqueos duros son HAC-11 ← HAC-22, HAC-13 ← HAC-23, HAC-14 ← HAC-24, HAC-15 ← HAC-25 y HAC-16 ← HAC-26 + HAC-11…15. HAC-12 aprovecha HAC-21 ya `Done` y publica su contrato temprano para no serializar innecesariamente backend, frontend y QA. HAC-16 conserva el manifiesto propuesto de ramas; ninguna se abre hasta su aprobación. Véase [la ruta Sprint 2](./SPRINT_ROADMAP.md#rebase-de-sprint-2-en-linear).

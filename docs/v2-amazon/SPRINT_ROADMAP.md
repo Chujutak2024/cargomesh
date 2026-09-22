@@ -15,9 +15,24 @@ Antes de abrir una rama, registrar issue, dueño, fecha, labels, DoD y rama exac
 | Ciclo en Linear | Hito | Resultado/gate y documentación mínima |
 |---|---|---|
 | Sprint 1 · 19–25 sep (Lima) | HITO 1 corregido | HAC-21 mapping/esquema V2 ROAD con RLS; HAC-22 MCP seguro Alexa+ y Bedrock condicionado; HAC-23 escenario/matriz QA; HAC-24 sistema visual/prototipo; HAC-25 decisión Google Maps/alternativa y mapa piloto; HAC-26 gate. HAC-17/18 son soportes. No prometer Alexa live ni Bedrock sin invocación real. |
-| Sprint 2 · 26 sep–2 oct | HITO 2 | Sobre cimientos aceptados: elegibilidad física/capacidad por fecha, servicios compartidos Web/MCP, conexión Alexa+ si se obtiene acceso o demo simulada rotulada, continuación Bedrock solo si aporta valor. Issues **por rediseñar**; HAC-11…16 anteriores no se tratan como compromiso V2. |
+| Sprint 2 · 26 sep–2 oct | HITO 2 | HAC-11…16 se reescribieron **en sus mismos IDs antes de iniciar trabajo**: elegibilidad ROAD y capacidad por fecha (Cristhian), account linking y consulta MCP V2 (Axel), QA (Jean Paul), preview Web (Luis), mapa con procedencia (Juan) y Gate-2 (Cristhian). HAC-27 analiza QA de Sprint 1. Alexa+ live solo con acceso/invocación verificables; Bedrock sigue opcional. |
 | Sprint 3 · 3–9 oct | HITO 3 | Stepper conectado, discovery ROAD, oportunidad y oferta atribuible, ranking versionado y mapa con procedencia. |
 | Sprint 4 · 10–16 oct | HITO 4 | E2E Web/Alexa real o simulación rotulada, autorización humana y auditoría; benchmark con baseline y p50/p95. |
 | Sprint 5 · 17–23 oct | HITO 5 | Freeze interno propuesto el 19, regresión, guía de jueces, video <3 min, feedback y envío antes del [cierre oficial del 23 oct 12:00 PDT](https://amazonappdev2026.devpost.com/rules). |
 
-**Kiro Crew:** comenzar a usar y documentar en Sprint 1, asociado a tareas reales; Jean Paul custodia evidencia y el Gate-1 comprueba qué puede declararse para AWS Builder. El reglamento permite Kiro Crew como herramienta de desarrollo por sí sola. Bedrock es una decisión técnica opcional, no dependencia del track ni condición artificial para cerrar todo Sprint 1. Hitos 2–5 orientan, pero no preasignan ramas ni issues. Sprints 6/7 quedan fuera del plazo oficial.
+**Kiro Crew:** comenzar a usar y documentar en Sprint 1, asociado a tareas reales; Jean Paul custodia evidencia y el Gate-1 comprueba qué puede declararse para AWS Builder. El reglamento permite Kiro Crew como herramienta de desarrollo por sí sola. Bedrock es una decisión técnica opcional, no dependencia del track ni condición artificial para cerrar todo Sprint 1. Los Hitos 3–5 orientan, pero no preasignan ramas ni issues. Sprints 6/7 quedan fuera del plazo oficial.
+
+## Rebase de Sprint 2 en Linear
+
+Las seis issues HAC-11…16 estaban `Pendiente`, sin PRs ni trabajo iniciado; por decisión del equipo se conservaron sus IDs, ciclo, HITO 2 y fechas, y se sustituyeron los contratos WebMCP/BALANCED/Andes-Inca-Pacific por DoD V2. HAC-15 pasó a Juan; HAC-13 pasó de puente WebMCP a QA. HAC-27, ya existente, permanece como enabler de análisis bloqueado por HAC-23. No se crearon issues adicionales por simetría ni por el plan Free.
+
+| Issue | Dueño y resultado V2 | Bloqueo duro en Linear |
+|---|---|---|
+| HAC-12 | Cristhian: servicio/API ROAD, capacidad por ventana, `eligible/ineligible/unknown` | Ninguno: HAC-21 ya está `Done`; publica contrato temprano. |
+| HAC-11 | Axel: `mcp_account_links` y consulta MCP V2 del servicio compartido | HAC-22, límite de seguridad/identidad. |
+| HAC-13 | Jean Paul: escenario, pruebas negativas y matriz Web/MCP | HAC-23, baseline QA. |
+| HAC-14 | Luis: preview de elegibilidad en el intake | HAC-24, prototipo y componentes. |
+| HAC-15 | Juan: mapa ROAD con fuente/estado | HAC-25, ADR/proveedor y piloto. |
+| HAC-16 | Cristhian: Gate-2 y acta por issue | HAC-26 y HAC-11…15 para **aceptación final**; preparación del manifiesto puede comenzar antes. |
+
+HAC-12 entrega su contrato a los demás desde el inicio sin forzar un bloqueo total; ninguna UI/tool queda `Done` si su integración final usa mocks. Las cinco core vencen el 30 de septiembre y Gate-2 el 2 de octubre; no se movieron fechas. HAC-16 registra seis nombres exactos de rama **propuestos**, aún sujetos a aprobación del manifiesto por el equipo; no abrir ramas ni tocar `main`/producción antes de esa decisión.
