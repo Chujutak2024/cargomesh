@@ -5,6 +5,11 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { OrchestrationError, type OrchestrationViewModel } from "@/features/orchestration/contracts";
 import { buildOrchestrationViewModel, type ViewModelSource } from "@/features/orchestration/view-model";
 import { createMcpHttpHandler } from "./http";
+import { testMcpUserPrincipal } from "./auth/test-principal";
+import type { McpPrincipal } from "./auth/principal";
+import { authenticateMcpRequest } from "./auth/context";
+import { issueMcpServiceToken, verifyMcpServiceToken } from "./auth/service-token";
+import { TEST_SERVICE_AUTH } from "./auth/test-configuration";
 
 const RUN = "90000000-0000-0000-0000-000000000001";
 const REQUEST = "f2000000-0000-0000-0000-000000000001";
@@ -12,6 +17,8 @@ const OFFER = "a0000000-0000-0000-0000-000000000001";
 const CARRIER = "b0000000-0000-0000-0000-000000000001";
 const SERVICE = "d0000000-0000-0000-0000-000000000001";
 const URL = "http://localhost:3000/mcp";
+const REMOTE_ORIGIN = "https://mcp.cargomesh.test";
+const REMOTE_URL = `${REMOTE_ORIGIN}/mcp`;
 const headers = { Accept: "application/json, text/event-stream", "Content-Type": "application/json" };
 
 function view(status = "RUNNING"): OrchestrationViewModel {
@@ -40,15 +47,24 @@ function view(status = "RUNNING"): OrchestrationViewModel {
 }
 
 type Options = {
-  enabled?: boolean; environment?: string; authError?: Error;
+  enabled?: boolean; environment?: string; mode?: "local" | "remote"; authError?: Error;
+  canonicalOrigin?: string; allowedOrigins?: string;
+  principal?: McpPrincipal;
   read?: (id: string) => Promise<OrchestrationViewModel>;
 };
 function harness(options: Options = {}) {
   const calls: string[] = [];
   let authCalls = 0;
   const handle = createMcpHttpHandler({
-    configuration: () => ({ enabled: options.enabled ?? true, environment: options.environment ?? "test" }),
-    authenticate: async () => { authCalls++; if (options.authError) throw options.authError; },
+    configuration: () => ({
+      mode: options.mode ?? "local",
+      environment: options.environment ?? "test",
+      localEnabled: options.mode === "remote" ? false : options.enabled ?? true,
+      remoteEnabled: options.mode === "remote" ? options.enabled ?? true : false,
+      canonicalOrigin: options.canonicalOrigin,
+      allowedOrigins: options.allowedOrigins,
+    }),
+    authenticate: async () => { authCalls++; if (options.authError) throw options.authError; return options.principal ?? testMcpUserPrincipal(); },
     read: async (id) => { calls.push(id); return options.read ? options.read(id) : view(); },
   });
   return { handle, calls, authCalls: () => authCalls };
@@ -141,7 +157,7 @@ test("unregistered mutation tools and unknown protocol methods do not reach doma
   assert.deepEqual(h.calls, []);
 });
 
-test("disabled and production endpoints fail closed before authentication", async () => {
+test("disabled and production local endpoints fail closed before authentication", async () => {
   for (const options of [{ enabled: false }, { environment: "production" }]) {
     const h = harness(options);
     assert.equal((await h.handle(call())).status, 404);
@@ -185,6 +201,181 @@ test("local browser Origin is accepted; protocol access still requires authentic
     headers: { ...headers, Origin: "http://localhost:3000", Host: "localhost:3000" },
   }))).status, 200);
   assert.equal(h.authCalls(), 1);
+});
+
+test("configured remote HTTPS canonical origin initializes and lists tools in production", async () => {
+  const h = harness({
+    mode: "remote",
+    environment: "production",
+    canonicalOrigin: REMOTE_ORIGIN,
+    allowedOrigins: REMOTE_ORIGIN,
+  });
+  const initialized = await h.handle(rpc("initialize", {
+    protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "remote-test", version: "1" },
+  }, {}, REMOTE_URL));
+  assert.equal(initialized.status, 200);
+  assert.equal((await initialized.json()).result.protocolVersion, "2025-11-25");
+
+  const listed = await h.handle(rpc("tools/list", {}, {
+    headers: { ...headers, Origin: REMOTE_ORIGIN },
+  }, REMOTE_URL));
+  assert.equal(listed.status, 200);
+  assert.deepEqual(
+    (await listed.json()).result.tools.map((tool: { name: string }) => tool.name),
+    ["get_freight_options", "create_freight_request", "submit_freight_request", "find_freight_options"],
+  );
+  assert.equal(h.authCalls(), 2);
+});
+
+test("remote production transport keeps initialize, list and call behind authentication", async () => {
+  const h = harness({
+    mode: "remote",
+    environment: "production",
+    canonicalOrigin: REMOTE_ORIGIN,
+    allowedOrigins: REMOTE_ORIGIN,
+    authError: new Error("UNAUTHENTICATED: no remote session"),
+  });
+  for (const [method, params] of [
+    ["initialize", {
+      protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "remote-test", version: "1" },
+    }],
+    ["tools/list", {}],
+    ["tools/call", { name: "get_freight_options", arguments: { runId: RUN } }],
+  ] as const) {
+    const response = await h.handle(rpc(method, params, {}, REMOTE_URL));
+    assert.equal(response.status, 401);
+    assert.doesNotMatch(await response.text(), /remote session/);
+  }
+  assert.equal(h.authCalls(), 3);
+  assert.deepEqual(h.calls, []);
+});
+
+test("service principal initializes and lists tools but cannot call business tools", async () => {
+  const h = harness({
+    mode: "remote",
+    environment: "production",
+    canonicalOrigin: REMOTE_ORIGIN,
+    allowedOrigins: REMOTE_ORIGIN,
+    principal: {
+      kind: "service", clientId: "alexa-service-test", scopes: ["mcp:service"],
+      tokenId: "token-id", issuedAt: 1, expiresAt: 901,
+    },
+  });
+  const initialized = await h.handle(rpc("initialize", {
+    protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "service-test", version: "1" },
+  }, {}, REMOTE_URL));
+  assert.equal(initialized.status, 200);
+  const listed = await h.handle(rpc("tools/list", {}, {}, REMOTE_URL));
+  assert.equal(listed.status, 200);
+  assert.equal((await listed.json()).result.tools.length, 4);
+  const notification = await h.handle(new Request(REMOTE_URL, {
+    method: "POST", headers,
+    body: JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }),
+  }));
+  assert.equal(notification.status, 202);
+
+  const called = await h.handle(rpc("tools/call", {
+    name: "get_freight_options", arguments: { runId: RUN },
+  }, {}, REMOTE_URL));
+  const result = (await called.json()).result;
+  assert.equal(result.isError, true);
+  assert.equal(result.structuredContent.error.code, "FORBIDDEN");
+  assert.deepEqual(h.calls, []);
+});
+
+test("signed service bearer authenticates initialize/list and is denied before business dispatch", async () => {
+  const { accessToken } = await issueMcpServiceToken(TEST_SERVICE_AUTH);
+  const calls: string[] = [];
+  const handle = createMcpHttpHandler({
+    configuration: () => ({
+      mode: "remote", environment: "production", localEnabled: false, remoteEnabled: true,
+      canonicalOrigin: REMOTE_ORIGIN, allowedOrigins: REMOTE_ORIGIN,
+    }),
+    authenticate: (request) => authenticateMcpRequest(request, {
+      resolveCookieMember: async () => { throw new Error("cookie fallback"); },
+      configuration: () => TEST_SERVICE_AUTH,
+      verifyServiceToken: verifyMcpServiceToken,
+    }),
+    read: async (id) => { calls.push(id); return view(); },
+  });
+  const bearer = { ...headers, Authorization: `Bearer ${accessToken}` };
+  const initialized = await handle(rpc("initialize", {
+    protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "bearer-test", version: "1" },
+  }, { headers: bearer }, REMOTE_URL));
+  assert.equal(initialized.status, 200);
+  const listed = await handle(rpc("tools/list", {}, { headers: bearer }, REMOTE_URL));
+  assert.equal(listed.status, 200);
+  const called = await handle(rpc("tools/call", {
+    name: "get_freight_options", arguments: { runId: RUN },
+  }, { headers: bearer }, REMOTE_URL));
+  assert.equal((await called.json()).result.structuredContent.error.code, "FORBIDDEN");
+  assert.deepEqual(calls, []);
+});
+
+test("invalid, expired and wrong-audience bearer tokens are rejected by /mcp", async () => {
+  const expired = await issueMcpServiceToken(
+    { ...TEST_SERVICE_AUTH, tokenTtlSeconds: 60 },
+    new Date(Date.now() - 120_000),
+  );
+  const wrongAudience = await issueMcpServiceToken({
+    ...TEST_SERVICE_AUTH, canonicalResource: "https://other.example/mcp",
+  });
+  const tokens = ["invalid", expired.accessToken, wrongAudience.accessToken];
+  let cookieCalls = 0;
+  const handle = createMcpHttpHandler({
+    configuration: () => ({
+      mode: "remote", environment: "production", localEnabled: false, remoteEnabled: true,
+      canonicalOrigin: REMOTE_ORIGIN, allowedOrigins: REMOTE_ORIGIN,
+    }),
+    authenticate: (request) => authenticateMcpRequest(request, {
+      resolveCookieMember: async () => { cookieCalls++; throw new Error("cookie fallback"); },
+      configuration: () => TEST_SERVICE_AUTH,
+      verifyServiceToken: verifyMcpServiceToken,
+    }),
+    read: async () => view(),
+  });
+  for (const token of tokens) {
+    const response = await handle(rpc("tools/list", {}, {
+      headers: { ...headers, Authorization: `Bearer ${token}` },
+    }, REMOTE_URL));
+    assert.equal(response.status, 401);
+    assert.equal(response.headers.get("www-authenticate"), null);
+  }
+  assert.equal(cookieCalls, 0);
+});
+
+test("remote mode rejects unrelated URL authorities, Hosts and Origins before authentication", async () => {
+  const h = harness({
+    mode: "remote",
+    environment: "production",
+    canonicalOrigin: REMOTE_ORIGIN,
+    allowedOrigins: `${REMOTE_ORIGIN},https://console.cargomesh.test`,
+  });
+  const requests = [
+    rpc("tools/list", {}, {}, "https://unrelated.example/mcp"),
+    rpc("tools/list", {}, { headers: { ...headers, Host: "unrelated.example" } }, REMOTE_URL),
+    rpc("tools/list", {}, { headers: { ...headers, Origin: "https://unrelated.example" } }, REMOTE_URL),
+    rpc("tools/list", {}, { headers: { ...headers, Origin: "null" } }, REMOTE_URL),
+    rpc("tools/list", {}, {
+      headers: { ...headers, Origin: "https://console.cargomesh.test", "Sec-Fetch-Site": "cross-site" },
+    }, REMOTE_URL),
+  ];
+  for (const request of requests) assert.equal((await h.handle(request)).status, 403);
+  assert.equal(h.authCalls(), 0);
+});
+
+test("remote mode fails closed without explicit enablement or valid HTTPS origin configuration", async () => {
+  const configurations: Options[] = [
+    { mode: "remote", enabled: false, canonicalOrigin: REMOTE_ORIGIN, allowedOrigins: REMOTE_ORIGIN },
+    { mode: "remote", canonicalOrigin: "http://mcp.cargomesh.test", allowedOrigins: "http://mcp.cargomesh.test" },
+    { mode: "remote", canonicalOrigin: REMOTE_ORIGIN, allowedOrigins: "https://other.example" },
+    { mode: "remote", canonicalOrigin: `${REMOTE_ORIGIN}/mcp`, allowedOrigins: REMOTE_ORIGIN },
+  ];
+  for (const [index, options] of configurations.entries()) {
+    const h = harness(options);
+    assert.equal((await h.handle(rpc("tools/list", {}, {}, REMOTE_URL))).status, index === 0 ? 404 : 503);
+    assert.equal(h.authCalls(), 0);
+  }
 });
 
 test("Next localhost URL normalization accepts a 127.0.0.1 Host on the same port", async () => {

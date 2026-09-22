@@ -23,6 +23,9 @@ importers:
       hono:
         specifier: 4.7.10
         version: 4.7.10
+      jose:
+        specifier: 6.2.12
+        version: 6.2.12
       leaflet:
         specifier: 1.9.4
         version: 1.9.4

@@ -6,6 +6,7 @@ import { creationInput } from "./creation-test-fixture";
 import { CreateFreightRequestInputSchema } from "@/shared/schemas/freight-creation";
 import { RecommendationDraftError } from "@/features/recommendations/recommendation-draft-contracts";
 import type { CreateFreightRequest } from "./tools/create-freight-request";
+import { testMcpUserPrincipal } from "./auth/test-principal";
 
 test("Alexa+ example is exactly valid create_freight_request tool arguments", () => {
   const file = new URL("../../../../docs/architecture-v2/alexa-sample-request-payload.json", import.meta.url);
@@ -15,8 +16,11 @@ test("Alexa+ example is exactly valid create_freight_request tool arguments", ()
 
 function harness(create: CreateFreightRequest, authError?: Error) {
   const handle = createMcpHttpHandler({
-    authenticate: async () => { if (authError) throw authError; },
-    configuration: () => ({ enabled: true, environment: "test" }),
+    authenticate: async () => { if (authError) throw authError; return testMcpUserPrincipal(); },
+    configuration: () => ({
+      mode: "local", environment: "test", localEnabled: true, remoteEnabled: false,
+      canonicalOrigin: undefined, allowedOrigins: undefined,
+    }),
     read: async () => { throw new Error("unexpected read"); }, create,
   });
   return (input: unknown) => handle(new Request("http://localhost:3000/mcp", {

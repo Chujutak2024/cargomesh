@@ -3,6 +3,7 @@ import test from "node:test";
 import { OrchestrationError, type StartOrchestrationRunResult } from "@/features/orchestration/contracts";
 import { createMcpHttpHandler } from "./http";
 import type { FindFreightOptions } from "./tools/find-freight-options";
+import { testMcpUserPrincipal } from "./auth/test-principal";
 
 const REQUEST = "f2000000-0000-0000-0000-000000000001";
 const RUN = "90000000-0000-0000-0000-000000000001";
@@ -16,11 +17,14 @@ const result: StartOrchestrationRunResult = {
 
 function harness(find: FindFreightOptions, authError?: Error) {
   const handler = createMcpHttpHandler({
-    authenticate: async () => { if (authError) throw authError; },
+    authenticate: async () => { if (authError) throw authError; return testMcpUserPrincipal(); },
     read: async () => { throw new Error("unexpected read"); },
     create: async () => { throw new Error("unexpected create"); },
     find,
-    configuration: () => ({ enabled: true, environment: "test" }),
+    configuration: () => ({
+      mode: "local", environment: "test", localEnabled: true, remoteEnabled: false,
+      canonicalOrigin: undefined, allowedOrigins: undefined,
+    }),
   });
   return async (arguments_: unknown) => {
     const response = await handler(new Request("http://localhost:3000/mcp", {

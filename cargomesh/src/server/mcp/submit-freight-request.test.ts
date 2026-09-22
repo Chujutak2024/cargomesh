@@ -2,15 +2,19 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createMcpHttpHandler } from "./http";
 import type { SubmitFreightRequest } from "./tools/submit-freight-request";
+import { testMcpUserPrincipal } from "./auth/test-principal";
 
 const REQUEST = "f2000000-0000-0000-0000-000000000001";
 const submitted = { freightRequestId: REQUEST, requestCode: "FR-2001", status: "PENDING" as const, draftVersion: 2, replayed: false };
 
 function call(submit: SubmitFreightRequest, args: unknown, authError?: Error) {
   const handler = createMcpHttpHandler({
-    authenticate: async () => { if (authError) throw authError; },
+    authenticate: async () => { if (authError) throw authError; return testMcpUserPrincipal(); },
     read: async () => { throw new Error("unexpected read"); },
-    submit, configuration: () => ({ enabled: true, environment: "test" }),
+    submit, configuration: () => ({
+      mode: "local", environment: "test", localEnabled: true, remoteEnabled: false,
+      canonicalOrigin: undefined, allowedOrigins: undefined,
+    }),
   });
   return handler(new Request("http://localhost:3000/mcp", {
     method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
