@@ -51,17 +51,19 @@ Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de Ca
 
 - `main` permanece congelada para este trabajo: no mergear, pushear ni abrir un PR de V2 hacia `main`. La aprobación de un PR o una suite verde no autoriza por sí sola a tocarla.
 - La rama base activa de contratos V2 es `codex/v2-amazon-contracts`.
-- Cada issue V2 usa una rama nueva basada en esa rama y un PR dirigido a ella. No reutilizar ramas cerradas o canceladas de V1.
+- Cada issue V2 con código declara su rama exacta y target PR en Linear **antes de crearla**; se basa en `codex/v2-amazon-contracts` y no reutiliza ramas cerradas o canceladas de V1. Un enabler sin código registra `No aplica` y no abre rama.
+- El manifiesto de ramas se aprueba por ciclo: una core por integrante, una rama de integración definida en la issue de gate y ramas emergentes solo después de aprobar su issue. No abrir ramas auxiliares por conveniencia; PR #81/#82 son excepciones de gobernanza previas a esta regla, no una plantilla.
 - Solo el integrador autorizado fusiona PRs a la base durante un gate. Antes debe ejecutar la suite descubierta desde el repositorio, sin asumir conteos estáticos.
 - Los solapamientos entre ramas se resuelven en una rama de integración del ciclo; nunca mediante merges individuales oportunistas.
 - Los previews automáticos de Vercel no cambian la rama de producción. No cambiar `productionBranch`, `rootDirectory`, alias ni desplegar a producción como efecto colateral de un PR V2; una migración de `frontend/` a otro directorio requiere plan y aprobación de despliegue separados.
 
 ## 7. Linear y trazabilidad
 
-- Las issues canceladas del ciclo anterior permanecen canceladas como historia. No se reabren cambiando radicalmente su Definition of Done.
-- Un alcance V2 nuevo recibe una issue nueva y enlaza la issue V1 que reemplaza cuando corresponda.
-- Estados: `Backlog` definido; `In Progress` con trabajo iniciado; `In Review` con PR y verificaciones; `Done` solo tras integración y evidencia.
-- Cada issue debe indicar versión (`V2`), objetivo, fuera de alcance, dependencias, contrato afectado, DoD verificable y evidencia.
+- Las issues de implementación canceladas permanecen canceladas como historia. Un alcance V2 nuevo recibe una issue nueva y enlaza su antecedente V1; HAC-17 (créditos AWS) y HAC-18 (Drive) son soporte vigente que se verifica por su propia evidencia.
+- El Sprint 1 actual puede contener nuevas issues V2 sin reciclar las canceladas. La planificación semanal sigue el modelo `1 core + 1 enabler + N emergentes` por integrante: el core técnico usa rama y PR; un enabler operativo puede cerrarse con evidencia sin rama.
+- Cada issue tiene un único dueño, que implementa, prueba y corrige sus defectos. Otros integrantes entregan contratos dependientes o revisan el PR al terminar; no se crea una issue «colaborativa» sin responsable ni se trasladan problemas de una tarea a otro desarrollador por defecto.
+- Estados: `Backlog` definido; `In Progress` con ejecución iniciada; `In Review` es la entrega del responsable (PR verificado para código o enlace/evidencia para soporte). Solo el Tech Lead valida el gate y mueve a `Done`; para código exige merge autorizado, pruebas y documentación.
+- Cada issue V2 usa la [plantilla vigente](docs/v2-amazon/LINEAR_ISSUE_TEMPLATE.md) y declara versión, tipo, objetivo, fuera de alcance, dependencias, contrato afectado, DoD verificable y evidencia. Las cantidades históricas de tests y la rama `codex/c-mcp-contracts` no son criterios V2.
 
 ## 8. Skills activas
 

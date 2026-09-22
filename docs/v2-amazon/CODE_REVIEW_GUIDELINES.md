@@ -15,5 +15,7 @@ Toda revisión debe comprobar:
 11. La elegibilidad no se infiere de una sede: verifica `ServiceArea`, `ServiceLane`, restricciones de carga y capacidad en toda la ventana; los datos desconocidos no se tratan como cobertura o disponibilidad confirmada.
 12. Los planes de una o varias unidades no duplican capacidad, no cuentan escoltas como portadores y no mezclan cotizaciones de carriers distintos sin responsabilidad comercial definida.
 13. El costo distingue componentes incluidos, estimados y desconocidos; repetir un envío recalcula precio, disponibilidad y permisos y no expone historial de otra organización.
+14. `AGENTS.md` no antepone reglas V1 que permitan `main`, fijen tres carriers o restauren WebMCP como dependencia V2.
+15. Un preview Vercel verde o rojo se interpreta según `productionBranch` y `rootDirectory`; mover la app no autoriza cambiar producción como arreglo incidental.
 
 Un PR que reutiliza código V1 debe declarar qué conserva, qué reemplaza y qué regresión ejecutó.

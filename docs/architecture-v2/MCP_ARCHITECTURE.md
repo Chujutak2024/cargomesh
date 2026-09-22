@@ -1,8 +1,10 @@
 # CargoMesh MCP Architecture
 
+> **Referencia de transición del PR #80, no arquitectura normativa V2.** La ruta WebMCP y los scores BALANCED siguientes pertenecen al prototipo/legado; [la arquitectura vigente](../v2-amazon/ARCHITECTURE.md) requiere servicios compartidos y discovery V2 sin executor browser obligatorio. El endpoint MCP local aún no prueba Alexa+ remota.
+
 Status: M1 bootstrap and M2 creation code implemented locally on top of application commit `d26c5e4`. M2 requires permanent migration application and an authenticated MCP smoke test; local SQL checks passed; later milestones are proposed.
 
-The authoritative service inventory, six contracts, authentication spike and milestones are in [MCP_TOOL_CONTRACTS.md](./MCP_TOOL_CONTRACTS.md). The [local preview guide](../../cargomesh/src/server/mcp/README.md) documents the implemented `/mcp` endpoint, `get_freight_options` and `create_freight_request`. OAuth, Alexa+, Bedrock, AgentCore and Strands remain unimplemented.
+The former service inventory, six proposed contracts, authentication spike and milestones are in [MCP_TOOL_CONTRACTS.md](./MCP_TOOL_CONTRACTS.md); they are not V2 authority. The [local preview guide](../../cargomesh/src/server/mcp/README.md) describes the four implemented local tools and their limitations. OAuth, Alexa+, Bedrock, AgentCore and Strands remain unimplemented in this branch.
 
 ## Milestone 1 implementation
 
