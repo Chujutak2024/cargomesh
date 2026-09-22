@@ -39,3 +39,21 @@ test("unknown coverage is representable without inventing an area or lane", () =
     evaluatedAt: now, pickupWindowStart: now, pickupWindowEnd: "2026-09-23T12:00:00Z",
   }).success, true);
 });
+
+test("eligible coverage cannot be claimed without an evidenced lane", () => {
+  const decision = {
+    status: "eligible", reasonCodes: ["COVERAGE_CONFIRMED"], carrierServiceId: serviceId,
+    pickupAreaId: null, deliveryAreaId: null, laneId: null, evidenceReference: null,
+    evaluatedAt: now, pickupWindowStart: now, pickupWindowEnd: "2026-09-23T12:00:00Z",
+  };
+  assert.equal(v2CoverageDecisionSchema.safeParse(decision).success, false);
+  assert.equal(v2CoverageDecisionSchema.safeParse({
+    ...decision, pickupAreaId: id, deliveryAreaId: otherId,
+    laneId: "e5000000-0000-4000-8000-000000000001", evidenceReference: "test:lane",
+  }).success, true);
+  assert.equal(v2CoverageDecisionSchema.safeParse({
+    ...decision, pickupAreaId: id, deliveryAreaId: otherId,
+    laneId: "e5000000-0000-4000-8000-000000000001", evidenceReference: "test:lane",
+    reasonCodes: ["COVERAGE_CONFIRMED", "AVAILABILITY_UNKNOWN"],
+  }).success, false);
+});

@@ -94,6 +94,18 @@ export const v2CoverageDecisionSchema = z.object({
   evaluatedAt: timestamp,
   pickupWindowStart: timestamp,
   pickupWindowEnd: timestamp,
+}).superRefine((value, ctx) => {
+  if (Date.parse(value.pickupWindowEnd) <= Date.parse(value.pickupWindowStart)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Pickup window must have a positive duration" });
+  }
+  if (value.status === "eligible" &&
+      (!value.pickupAreaId || !value.deliveryAreaId || !value.laneId ||
+       !value.evidenceReference || !value.reasonCodes.includes("COVERAGE_CONFIRMED"))) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Eligibility requires an evidenced directed lane" });
+  }
+  if (value.status === "eligible" && value.reasonCodes.some((reason) => reason.endsWith("_UNKNOWN"))) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unknown inputs cannot be reported eligible" });
+  }
 });
 
 export type V2Facility = z.infer<typeof v2FacilitySchema>;
