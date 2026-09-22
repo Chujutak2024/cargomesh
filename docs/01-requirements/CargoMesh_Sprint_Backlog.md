@@ -1,4 +1,4 @@
-﻿# CargoMesh — Backlog de Producto y Cronograma del Hackathon (MVP Scope)
+# CargoMesh — Backlog de Producto y Cronograma del Hackathon (MVP Scope)
 
 > **Project:** CargoMesh (WebMCP Challenge 2026)
 > **Version:** 1.5.0 (dynamic provider registry + verified Golden Flow)
@@ -72,7 +72,7 @@ Para no dispersar esfuerzos en pantallas innecesarias, el alcance se limita estr
 | `CM-00C` | Seguridad RLS en 17 tablas (anon bloqueado con `42501`) | *Security Lead* | `[✅ Completado]` |
 | `CM-00D` | Seed Auth exclusivamente local (`demo.operator@cargomesh.test` como `SUPERVISOR`) | *DB Lead* | `[✅ Completado]` |
 | `CM-00E` | Suite Oficial pgTAP (`npx supabase test db` 18/18 PASS) | *QA / DB Lead* | `[✅ Completado]` |
-| `CM-00F` | Esqueleto de carpetas: `frontend/` (Next.js) y `backend/` (FastAPI) | *Fullstack Lead* | `[✅ Completado]` |
+| `CM-00F` | Esqueleto de carpetas: `cargomesh/` (Next.js) y `` (FastAPI) | *Fullstack Lead* | `[✅ Completado]` |
 | `CM-00G` | Jerarquía Docs (`00-03`) y Catálogo Oficial de Requisitos | *Product Lead* | `[✅ Completado]` |
 
 ---

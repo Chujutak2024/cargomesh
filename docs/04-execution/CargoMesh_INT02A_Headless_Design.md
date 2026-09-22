@@ -324,11 +324,11 @@ La transición final debe ejecutarse una sola vez por run. Repetir la evaluació
 
 ### 9.1 C — server-side y persistencia
 
-- `frontend/src/features/orchestration/start-run.ts`
-- `frontend/src/features/orchestration/view-model.ts`
-- `frontend/src/features/orchestration/contracts.ts`
-- `frontend/src/app/api/orchestration/runs/route.ts`
-- `frontend/src/app/api/orchestration/runs/[runId]/route.ts`
+- `cargomesh/src/server/services/orchestration/start-run.ts`
+- `cargomesh/src/features/orchestration/view-model.ts`
+- `cargomesh/src/features/orchestration/contracts.ts`
+- `cargomesh/src/app/api/orchestration/runs/route.ts`
+- `cargomesh/src/app/api/orchestration/runs/[runId]/route.ts`
 - extensión aditiva de Result Bridge para `matchingServiceId` y eventos de coverage/capacity;
 - migración Supabase para `carrier_service_id` y, si se aprueba, idempotencia de creación del run;
 - tests unitarios, integración, pgTAP, RLS y búsqueda de secretos.

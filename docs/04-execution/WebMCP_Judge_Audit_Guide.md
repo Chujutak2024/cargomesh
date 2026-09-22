@@ -887,17 +887,17 @@ Recommended screenshots:
 
 ## 9. Source-of-truth files
 
-- `frontend/src/features/providers/check-service-coverage-tool.ts`
-- `frontend/src/features/providers/check-capacity-tool.ts`
-- `frontend/src/features/providers/quote-freight-tool.ts`
-- `frontend/src/features/providers/book-freight-tool.ts`
-- `frontend/src/features/providers/get-provider-booking-status-tool.ts`
-- `frontend/src/features/providers/provider-booking-contracts.ts`
-- `frontend/src/features/providers/provider-tool-registration.ts`
-- `frontend/src/app/providers/[carrierSlug]/page.tsx`
-- `frontend/src/app/providers/[carrierSlug]/provider-webmcp-host.tsx`
-- `frontend/src/features/webmcp-runner/external-provider-navigation-adapter.ts`
-- `frontend/src/features/webmcp-runner/provider-runner.ts`
-- `frontend/src/features/decision-engine/balanced.ts`
+- `cargomesh/src/features/providers/check-service-coverage-tool.ts`
+- `cargomesh/src/features/providers/check-capacity-tool.ts`
+- `cargomesh/src/features/providers/quote-freight-tool.ts`
+- `cargomesh/src/features/providers/book-freight-tool.ts`
+- `cargomesh/src/features/providers/get-provider-booking-status-tool.ts`
+- `cargomesh/src/features/providers/provider-booking-contracts.ts`
+- `cargomesh/src/features/providers/provider-tool-registration.ts`
+- `cargomesh/src/app/providers/[carrierSlug]/page.tsx`
+- `cargomesh/src/app/providers/[carrierSlug]/provider-webmcp-host.tsx`
+- `cargomesh/src/features/webmcp-runner/external-provider-navigation-adapter.ts`
+- `cargomesh/src/features/webmcp-runner/provider-runner.ts`
+- `cargomesh/src/features/decision-engine/balanced.ts`
 
 When documentation and executable contracts differ, the code and its tests are authoritative. Update this guide in the same review that changes a provider contract.

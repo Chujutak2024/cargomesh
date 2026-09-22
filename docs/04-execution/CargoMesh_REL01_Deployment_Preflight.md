@@ -17,11 +17,11 @@
 
 ## 2. Recommended deployment shape
 
-Use one production CargoMesh deployment with `frontend` configured as the hosting root. The seeded provider paths (`/providers/andes`, `/providers/inca`, `/providers/pacific`) can run on that same HTTPS origin; the external-navigation adapter remains available for separately hosted registered providers.
+Use one production CargoMesh deployment with `cargomesh` configured as the hosting root. The seeded provider paths (`/providers/andes`, `/providers/inca`, `/providers/pacific`) can run on that same HTTPS origin; the external-navigation adapter remains available for separately hosted registered providers.
 
 For Vercel:
 
-- Root Directory: `frontend`
+- Root Directory: `cargomesh`
 - Framework preset: Next.js
 - Install command: `pnpm install --frozen-lockfile`
 - Build command: `pnpm build`
@@ -58,7 +58,7 @@ The current Supabase CLI changelog also requires checking Data API exposure expl
 
 ## 5. Automated preflight
 
-From `frontend`, after setting production variables without printing their values:
+From `cargomesh`, after setting production variables without printing their values:
 
 ```powershell
 pnpm install --frozen-lockfile
