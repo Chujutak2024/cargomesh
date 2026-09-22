@@ -15,11 +15,13 @@ Esta carpeta es la fuente de verdad documental de CargoMesh V2. V2 transforma el
 9. [CODE_REVIEW_GUIDELINES.md](./CODE_REVIEW_GUIDELINES.md): calidad e integración.
 10. [LINEAR_ISSUE_TEMPLATE.md](./LINEAR_ISSUE_TEMPLATE.md): plantilla de issues nuevas.
 11. [LINEAR_REBASE_PLAN.md](./LINEAR_REBASE_PLAN.md): propuesta para reconstruir Linear sin perder historia.
+12. [SPRINT_ROADMAP.md](./SPRINT_ROADMAP.md): modelo 1+1+N, gates semanales y propuesta concreta para Sprint 1.
 
 ## Estado
 
 - **Approved baseline:** estos contratos reemplazan como gobernanza activa a `docs/v1-webmcp/`.
 - **Review input:** las propuestas del equipo se consolidaron en los contratos superiores. Los borradores de revisión no forman parte de esta rama base pública.
+- **Material transicional mergeado:** `docs/architecture-v2/` y el código de PR #80 son inventario de reutilización, no contrato vigente ni prueba de Alexa+ live. Resolver contradicciones a favor de esta carpeta y `AGENTS.md` corregido.
 - La implementación existente se migra incrementalmente. Una capacidad documentada no se considera live hasta tener código, datos, pruebas y evidencia.
 
 ## Principios

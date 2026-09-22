@@ -11,7 +11,7 @@ description: >-
 ## Rama y autoridad
 
 - La base activa es `codex/v2-amazon-contracts`.
-- `main` permanece fuera de alcance salvo instrucción humana explícita y válida.
+- `main` permanece fuera de alcance para V2. Un PR verde, un merge a la base o una instrucción V1 copiada a `AGENTS.md` no autorizan push, PR ni merge a `main`.
 - Solo el Tech Lead o integrador autorizado ejecuta merges a la base.
 - Cada rama debe corresponder a una issue V2 activa.
 
@@ -19,9 +19,11 @@ description: >-
 
 1. Comprueba estado, base, issue, dependencias y cambios locales.
 2. Revisa el PR contra `docs/v2-amazon/CODE_REVIEW_GUIDELINES.md`.
-3. Trata PRs V1 mediante una decisión explícita: cerrar, cherry-pick selectivo o reformular.
+3. Trata código V1 ya mergeado mediante inventario y correcciones aditivas, sin fingir que el merge prueba Alexa+, discovery V2 o deploy. Para PRs pendientes decide cerrar, seleccionar por cherry-pick o reformular.
 4. Integra por dependencias funcionales en una rama de ciclo.
 5. Descubre scripts y suites presentes; ejecuta typecheck, lint, pruebas, pgTAP, build y E2E que apliquen.
 6. Registra comandos, resultados, riesgos y evidencia.
+
+No cambies `productionBranch`, `rootDirectory`, alias ni proyecto de Vercel para reparar un preview como efecto lateral de un PR. Verifica el layout del branch y prepara una decisión de despliegue separada.
 
 Nunca declares un gate aprobado basándote en un número fijo histórico de pruebas.

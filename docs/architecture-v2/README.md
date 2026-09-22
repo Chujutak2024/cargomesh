@@ -1,16 +1,15 @@
 # CargoMesh Architecture V2 — Entry Point
 
-> **Status:** This directory mixes verified implementation documentation with
-> the corrected CargoMesh V2 target architecture. The four documents marked
-> **TARGET V2** describe planned evolution and must not be read as proof that
-> every entity or workflow already exists. The current verified MCP baseline
-> exposes `create_freight_request`, `submit_freight_request`,
-> `find_freight_options` and `get_freight_options`. See the
-> [local MCP guide](../../cargomesh/src/server/mcp/README.md).
+> **ARCHIVO DE TRANSICIÓN (PR #80): NO ES LA FUENTE DE VERDAD V2.** Esta carpeta mezcla inventario de código local reutilizable con un plan anterior dependiente de WebMCP, ROAD/FTL/PALLETS, seis tools y ranking BALANCED. Para decisiones y nuevas issues usar [los contratos vigentes V2](../v2-amazon/README.md) y [la ruta de sprints](../v2-amazon/SPRINT_ROADMAP.md). Una afirmación de implementación aquí exige verificación en código y pruebas; Alexa+ y discovery V2 no se consideran entregados por el merge.
+
+> **Status:** transitional inventory from PR #80. It includes local implementation
+> facts and obsolete V1-based target proposals; none of the latter is a V2
+> acceptance criterion. Four local MCP tools are registered; consult the
+> [local MCP guide](../../cargomesh/src/server/mcp/README.md) for their limits.
 
 ## What This Is
 
-This directory contains the authoritative architecture documentation for CargoMesh V2: the adaptation of the existing CargoMesh logistics platform for the **Amazon Developer Hackathon**, introducing a Hono API layer, a shared service layer, and a CargoMesh MCP server so that Alexa+ can orchestrate enterprise freight workflows through the same business logic that drives the web UI.
+This directory records a transitional architecture and local implementation inventory from PR #80. It is useful for selective reuse and regression, but its WebMCP-dependent flow and fixed V1 rules do not override `docs/v2-amazon/`.
 
 ## Project Scope
 

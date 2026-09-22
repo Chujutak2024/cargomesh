@@ -1,48 +1,64 @@
-# Plantilla de issue Linear V2
+# Plantilla de issue Linear V2 — modelo 1 + 1 + N
 
-## Objetivo
+Usar esta estructura para toda issue nueva. El título combina `[ROL]` o `[SPIKE/BUG/BLOCKER/CHORE]` + **verbo en infinitivo** + objeto/resultado comprobable; por ejemplo, `[BE-1] Validar contrato MCP de intake V2 sin executor WebMCP`. No asignar un ID HAC manualmente. Copiar solo los campos pertinentes; una tarea operativa no necesita rama ficticia.
 
-Resultado observable que debe quedar disponible.
+## Bloque A — Metadatos básicos
 
-## Alcance
+- **Versión / proyecto:** `V2` · `P-HAC-1`.
+- **Sprint / milestone:** ciclo semanal y gate esperado.
+- **Tipo:** `core` / `enabler` / `emergente`.
+- **Responsable / rol:** una persona; coordinadores y revisores aparte.
+- **Prioridad / labels:** según bloqueo e impacto, no por copiar V1.
+- **Fecha objetivo:** acordada con el responsable; distinguir freeze interno de plazo oficial.
 
-### Incluye
+## Bloque B — Contexto operativo
 
-- comportamiento y superficies modificadas;
-- datos, contratos y adaptadores involucrados.
+### Objetivo
 
-### Fuera de alcance
+Problema, usuario y comportamiento observable que habilita. Indicar si el resultado es contrato, código, evidencia o decisión; no confundir prototipo local con integración live.
 
-- comportamientos expresamente diferidos.
+### Alcance
 
-## Relación con V1
+**Incluye:** superficies, datos, contratos/API/MCP y adaptadores que sí se modificarán.
 
-- issue o PR anterior relacionado;
-- decisión: reutilizar, reemplazar, archivar o ejecutar como regresión.
+**Fuera de alcance:** capacidades diferidas y afirmaciones que no se podrán demostrar en este sprint. Para V2, los seeds, tres carriers y scores de V1 no cuentan como entrega nueva.
 
-## Implementación y datos
+### Herramientas y flujo sugerido
 
-- rama de trabajo;
-- contratos/API/MCP afectados;
-- migraciones estructurales;
-- escenario `v2-*` requerido;
-- integraciones o adaptadores externos.
+Herramientas, servicios o puertos necesarios **solo si son reales para esta tarea**. Pasos recomendados y validaciones; no fijar una versión de SDK, número de tests o puerto local sin necesidad comprobada.
 
-## Dependencias
+### Dependencias y coordinación
 
-- issues bloqueadoras;
-- decisiones pendientes;
-- credenciales o servicios requeridos.
+- **Bloqueada por / desbloquea:** IDs de issues cuando existan.
+- **Coordinar con:** persona y contrato compartido.
+- **Decisiones pendientes:** auth Alexa, credenciales, dataset, diseño, mini challenge, etc.
 
-## Definición de terminado
+### Relación con V1 / PR previo
 
-- [ ] criterios funcionales cumplidos;
-- [ ] errores y estados vacíos cubiertos;
-- [ ] pruebas relevantes descubiertas y ejecutadas;
-- [ ] evidencia adjunta;
-- [ ] documentación actualizada;
-- [ ] comparación final contra esta issue.
+Antecedente HAC/PR y decisión explícita: `reutilizar`, `reemplazar`, `archivar` o `regresión`. Si se reutiliza PR #80, identificar archivo/capacidad concreta; el merge histórico no satisface automáticamente el DoD V2.
 
-## Evidencia
+### Definición de terminado (DoD)
 
-Comandos, capturas, video, enlaces o resultados que permiten verificar el trabajo.
+- [ ] Resultado funcional o decisión verificable frente al objetivo y casos límite.
+- [ ] Autenticación, RLS, idempotencia y concurrencia cubiertas cuando corresponda.
+- [ ] Sin datos sintéticos en migraciones; escenario `v2-*` separado si aplica.
+- [ ] Pruebas pertinentes **descubiertas y ejecutadas**, con comando/resultado; no conteos heredados.
+- [ ] Evidencia de integración, preview o gestión; estado `live`, `local`, `simulado` o `pendiente` dicho con precisión.
+- [ ] Documentación y dependencias actualizadas; comparación final con esta issue.
+
+### Checklist de avance
+
+- [ ] Contrato y dependencias acordados.
+- [ ] Implementación o gestión realizada.
+- [ ] Pruebas/revisión interna y evidencia disponibles.
+- [ ] Entrega del responsable en `In Review`.
+
+## Bloque C — Gobernanza y cierre
+
+- **Rama / PR target para código:** rama nueva por issue desde `codex/v2-amazon-contracts`; PR a esa base, nunca a `main`. Para enabler sin código: `No aplica`, con enlace o captura como evidencia.
+- **Despliegue:** un preview no autoriza cambiar Vercel producción ni su directorio raíz. Cualquier cambio de infraestructura externa requiere plan y autorización separados.
+- **Resumen de lo elaborado:** commits/archivos afectados o acciones externas, pruebas y resultados observados, limitaciones honestas.
+- **Friction log:** registrar un incidente material en `docs/04-execution/friction-logs/` y en la carpeta Drive acordada cuando aplique; no crear logs por cada error trivial corregido.
+- **Estado final del responsable:** `In Review` con PR/evidencia. **Solo el Tech Lead** mueve a `Done` tras verificar DoD y merge autorizado para código, o enlace/acceso para soporte.
+
+El modelo semanal permite una core y una enabler por persona; una emergente requiere bloqueo real, relación con su issue madre y DoD propio. Véase [SPRINT_ROADMAP.md](./SPRINT_ROADMAP.md).

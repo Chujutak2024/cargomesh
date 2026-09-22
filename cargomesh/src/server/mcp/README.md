@@ -1,5 +1,7 @@
 # CargoMesh MCP local preview
 
+> **Estado V1/intermedio:** esta guía describe las cuatro tools MCP locales mergeadas en PR #80 y su continuación WebMCP. No es el contrato de Alexa+ ni del discovery V2; véase [la superficie MCP vigente](../../../../docs/v2-amazon/ALEXA_MCP_AWS.md).
+
 Implemented: `/mcp` on the Next.js Node runtime, official SDK `1.30.0`, tested protocol `2025-11-25`, stateless Streamable HTTP with JSON responses. Four registered tools call shared services directly: `create_freight_request` creates an idempotent DRAFT, `submit_freight_request` validates and advances it to PENDING, `find_freight_options` starts or resumes a persisted INITIAL run, and `get_freight_options` reads persisted progress and ranking. The MCP endpoint does not contact providers or book freight.
 
 The SDK retains its protocol negotiation behavior for older supported clients. Compatibility testing here targets 2025-11-25. No MCP sessions, standalone SSE subscriptions, OAuth, bearer authentication, Alexa, AWS or Bedrock integration are implemented.
@@ -32,7 +34,7 @@ Call `submit_freight_request` with `{ freightRequestId, draftVersion }` from the
 
 `find_freight_options` accepts `{ freightRequestId: UUID, idempotencyKey: string }` for an existing **PENDING** request. It returns a persisted run ID, status, deduplication flag and discovered candidate snapshot. A RUNNING reply means only that the run exists. Reuse the same key after an uncertain response; a different key does not start a second run while the request is ORCHESTRATING.
 
-For this local preview, open `/dispatch/<runId>` on the same signed-in CargoMesh origin and click **Continue provider search**. The browser uses the existing WebMCP navigation/Result Bridge/evaluation pipeline to collect registered provider results, persist offers and rank them. `get_freight_options` can be polled before and after that step. Closing the browser before completion leaves a RUNNING run for later browser continuation; there is no autonomous server-side executor or Alexa client. The local integration test injects one clearly synthetic quote through the Result Bridge to verify persistence and readback; it does not prove browser execution or an external carrier integration.
+For this local preview, open `/dispatch/<runId>` on the same signed-in CargoMesh origin and click **Continue provider search**. The browser uses the existing WebMCP navigation/Result Bridge/evaluation pipeline to collect registered provider results, persist offers and rank them. `get_freight_options` can be polled before and after that step. PR #80 also includes `scripts/autonomous-webmcp-worker.mjs`, a local headless-Chrome continuation of the **V1** browser flow; it is not the server-side discovery service for V2 and cannot be used by Alexa+ remotely. Closing the browser without completing a run leaves it RUNNING for later continuation. The local integration test uses demo providers; it does not prove an external carrier integration.
 
 From `cargomesh/` in PowerShell:
 

@@ -58,10 +58,10 @@ Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de Ca
 
 ## 7. Linear y trazabilidad
 
-- Las issues canceladas del ciclo anterior permanecen canceladas como historia. No se reabren cambiando radicalmente su Definition of Done.
-- Un alcance V2 nuevo recibe una issue nueva y enlaza la issue V1 que reemplaza cuando corresponda.
-- Estados: `Backlog` definido; `In Progress` con trabajo iniciado; `In Review` con PR y verificaciones; `Done` solo tras integración y evidencia.
-- Cada issue debe indicar versión (`V2`), objetivo, fuera de alcance, dependencias, contrato afectado, DoD verificable y evidencia.
+- Las issues de implementación canceladas permanecen canceladas como historia. Un alcance V2 nuevo recibe una issue nueva y enlaza su antecedente V1; HAC-17 (créditos AWS) y HAC-18 (Drive) son soporte vigente que se verifica por su propia evidencia.
+- El Sprint 1 actual puede contener nuevas issues V2 sin reciclar las canceladas. La planificación semanal sigue el modelo `1 core + 1 enabler + N emergentes` por integrante: el core técnico usa rama y PR; un enabler operativo puede cerrarse con evidencia sin rama.
+- Estados: `Backlog` definido; `In Progress` con ejecución iniciada; `In Review` es la entrega del responsable (PR verificado para código o enlace/evidencia para soporte). Solo el Tech Lead valida el gate y mueve a `Done`; para código exige merge autorizado, pruebas y documentación.
+- Cada issue V2 usa la [plantilla vigente](docs/v2-amazon/LINEAR_ISSUE_TEMPLATE.md) y declara versión, tipo, objetivo, fuera de alcance, dependencias, contrato afectado, DoD verificable y evidencia. Las cantidades históricas de tests y la rama `codex/c-mcp-contracts` no son criterios V2.
 
 ## 8. Skills activas
 
