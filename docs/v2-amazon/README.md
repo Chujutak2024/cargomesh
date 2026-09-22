@@ -19,6 +19,10 @@ Esta carpeta es la fuente de verdad documental de CargoMesh V2. V2 transforma el
 13. [linear_sprint1_v2_rebase_proposal.md](./linear_sprint1_v2_rebase_proposal.md): issues propuestas para Sprint 1 con único dueño, ramas declaradas, DoD y documentos; no cargadas aún en Linear.
 14. [cargomesh_v2_milestones_architecture_roadmap.md](./cargomesh_v2_milestones_architecture_roadmap.md): auditoría de los Hitos 0–5 ya cargados y correcciones pendientes de aprobación en Linear.
 
+## Implementación incremental
+
+- [SPRINT1_DATA_MAPPING.md](./SPRINT1_DATA_MAPPING.md): mapeo aditivo HAC-21 para sedes, áreas y lanes ROAD; no supone cobertura ni disponibilidad live.
+
 ## Estado
 
 - **Approved baseline:** estos contratos reemplazan como gobernanza activa a `docs/v1-webmcp/`.
