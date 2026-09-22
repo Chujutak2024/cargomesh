@@ -1,6 +1,6 @@
 # Sprint 1 V2 — propuesta de issues para Linear
 
-**Estado:** aprobado y cargado en Linear el 22 de septiembre de 2026: HITO 1 corregido y nuevas HAC-21…26 en `Pendiente`. **Proyecto:** `P-HAC-1`. **Ciclo:** 19–25 septiembre 2026 (Lima). **Base Git:** `codex/v2-amazon-contracts`; ningún push a `main`.
+**Estado:** aprobado y cargado en Linear el 22 de septiembre de 2026: HITO 1 corregido y HAC-21…26 creadas inicialmente en `Pendiente`; este texto conserva el plan inicial y las notas de avance indican el corte posterior. **Proyecto:** `P-HAC-1`. **Ciclo:** 19–25 septiembre 2026 (Lima). **Base Git:** `codex/v2-amazon-contracts`; ningún push a `main`.
 
 ## Objetivo real y corte del sprint
 
@@ -142,7 +142,7 @@ Checklist: investigación → contrato/adaptador → mapa piloto → test propio
 
 **Bloque A.** V2 · P-HAC-1 · Sprint 1 · HITO 1 · `enabler`. Cristhian (integrador autorizado/Tech Lead). High. Labels existentes: `integration-gate`, `must-have`; tipo `Improvement`. Límite: **2026-09-25**. Rama condicional: `feat/cycle-1-integration`.
 
-**Bloque B.** Objetivo: evitar cinco PRs aislados. Incluye aprobar manifiesto issue→rama al inicio, acordar superficies compartidas, revisar PRs **terminados**, integrar en rama de ciclo solo los aceptables, ejecutar reset/pgTAP/MCP/build/typecheck/preview según scripts descubiertos, registrar dependencia/bloqueo y decisión de demo Alexa/Bedrock/Kiro Crew. Documento: `docs/04-execution/SPRINT1_GATE_V2.md` con matriz issue→PR→test→evidencia→estado. Incluye revisar PR #81/#82 según dependencias, sin merge automático. Fuera: arreglar el código de los demás, push a `main`, producción y declarar HITO 1 completo con una sola prueba. Depende de C1…C5, HAC-17/18 para su evidencia particular. HAC-10 cancelada se reemplaza.
+**Bloque B.** Objetivo: evitar cinco PRs aislados. Incluye aprobar manifiesto issue→rama al inicio, acordar superficies compartidas, revisar PRs **terminados**, integrar en rama de ciclo solo los aceptables, ejecutar reset/pgTAP/MCP/build/typecheck/preview según scripts descubiertos, registrar dependencia/bloqueo y decisión de demo Alexa/Bedrock/Kiro Crew. Documento: `docs/04-execution/SPRINT1_GATE_V2.md` con matriz issue→PR→test→evidencia→estado. PR #81/#82 ya fueron mergeados y se auditan sin repetición; igual ocurre con PR #83/#85. Fuera: reparar defectos funcionales medios/altos de otras issues, push a `main`, producción y declarar HITO 1 completo con una sola prueba. El integrador puede resolver solo hallazgos bajos no semánticos con evidencia, según [la escala](./LINEAR_ISSUE_TEMPLATE.md#flujo-de-aceptación-y-escala-de-hallazgos). Depende de C1…C5, HAC-17/18 para su evidencia particular. HAC-10 cancelada se reemplaza.
 
 DoD:
 - [ ] Manifiesto aprobado antes de crear ramas; PRs y dependencias trazables.
@@ -173,6 +173,8 @@ Checklist: manifiesto → PRs listos → gate → acta → cierre individual aut
 
 ## Dependencias, cierre y carga
 
-Secuencia crítica: C1 publica tipos tempranos → C2/C3/C4/C5 los consumen; C4 y C5 acuerdan sólo el contrato visual del mapa; C3 prueba negativos a medida que llegan los PRs; E1 integra **después** de revisión. Cada dueño repara sus errores. El DoD de cada issue exige documento/evidencia exacta, comandos y PR cuando aplica. `Backlog` al crear, `In Progress` al comenzar, `In Review` con entregable listo, `Done` solo tras gate/merge o verificación de soporte.
+Secuencia crítica: C1 publica tipos tempranos → C2/C3/C4/C5 los consumen; C4 y C5 acuerdan sólo el contrato visual del mapa; C3 prueba negativos a medida que llegan los PRs; E1 integra **después** de validación y aprobación. Cada dueño repara sus errores funcionales medios/altos; el integrador puede corregir únicamente hallazgos bajos no semánticos con trazabilidad. El DoD de cada issue exige documento/evidencia exacta, comandos y PR cuando aplica. `Backlog` al crear, `In Progress` al comenzar, `In Review` con entregable listo, `Done` solo tras gate/merge autorizado o verificación de soporte.
+
+**Corte de avance 22 sep:** PR #83 de HAC-21 y PR #85 de HAC-22 ya están mergeados en la base V2. HAC-21 figura `Done`; HAC-22 todavía no debe tratarse como aceptada ni Alexa+ live solo por el merge. El esquema ROAD de HAC-21 no incluyó `mcp_account_links` ni tools comerciales V2: son pendientes reales del canal MCP y requieren definición/propietario antes de declararlos desbloqueados. PR #81/#82 también están mergeados. HAC-23…25 y el gate HAC-26 conservan entregables pendientes; HAC-17/18 permanecen `In Review` hasta verificación de sus evidencias.
 
 **Carga aplicada el 22 sep:** HITO 1 ahora incluye **Alexa MCP segura + experimento Bedrock condicionado + mapa piloto** y conserva target 25 sep. Se crearon HAC-21…26 con ciclo, hito, dueño, due date, labels existentes, rama en descripción, bloques A/B/C y relaciones. Se corrigieron HAC-17/18 sin duplicarlas ni alterar sus estados; las canceladas siguen históricas. El proyecto distingue freeze del 19 oct y cierre oficial del 23 oct. Sprint 2 quedó intacto. `v2`/`core`/`enabler` no se crearon como labels; el tipo consta en cada descripción. **Pendiente de UI/operación separada:** la descripción antigua del objeto `Sprint 1` en Linear todavía menciona DRAFT/PENDING; el conector disponible permite listar ciclos pero no editar esa descripción. El HITO 1 y las issues contienen el objetivo aprobado.

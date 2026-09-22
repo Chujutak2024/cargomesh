@@ -8,6 +8,8 @@
 
 **Estado de producto:** `ALEXA_LIVE_BLOCKED`
 
+**Actualización tras PR #83/#85:** esta auditoría fue escrita sobre una rama previa al merge. Ambos PR ya están en `codex/v2-amazon-contracts`. HAC-21 entregó sedes/áreas/lanes ROAD y cerró; **no** entregó `mcp_account_links` ni create/submit V2. Las menciones de «esperando HAC-21» de abajo se leen como pendientes sin issue/owner acordado, no como reapertura de HAC-21. La rama Gate-1 prepara la corrección de etiquetas del catálogo, sin habilitar esas capacidades.
+
 ## 1. Resumen ejecutivo
 
 CargoMesh ya tiene una base MCP remota compatible con el modelo de ejecución requerido por Alexa+: protocolo MCP `2025-11-25`, Streamable HTTP stateless, HTTPS configurable, autenticación Tier 1 de servicio, perfiles MCP V1/V2, identidad por solicitud y preservación de RLS.
@@ -16,7 +18,7 @@ La ruta más pequeña hacia Alexa+ live es mantener la aplicación Next.js y `/m
 
 La integración live todavía está bloqueada por:
 
-- persistencia `mcp_account_links` y contratos FreightRequest V2 de HAC-21;
+- persistencia `mcp_account_links` y servicios FreightRequest V2, aún sin issue/owner aprobado para este alcance;
 - verificación alojada de `resource`, scopes, issuer, JWKS y refresh tokens de Supabase;
 - registro real del cliente y redirect URIs de Alexa+;
 - disponibilidad de al menos una tool comercial V2;
@@ -53,7 +55,7 @@ Fuente: [Alexa+ MCP QuickStart](https://www.developer.amazon.com/docs/alexaplus/
 
 ### Procesos separados
 
-El perfil V2 publica únicamente `get_cargomesh_capabilities` mientras HAC-21 entrega los contratos de negocio. No registra `find_freight_options` ni `get_freight_options`; por ello no necesita Chrome, Fargate ni el worker WebMCP V1.
+El perfil V2 publica únicamente `get_cargomesh_capabilities` mientras se implementan los servicios comerciales V2 en una issue propia. HAC-21 ya entregó el esquema ROAD, no esas tools. No registra `find_freight_options` ni `get_freight_options`; por ello no necesita Chrome, Fargate ni el worker WebMCP V1.
 
 ## 3. Contrato público MCP
 
@@ -258,7 +260,7 @@ sequenceDiagram
 
 Supabase entrega `getAuthorizationDetails`, `approveAuthorization` y `denyAuthorization`. CargoMesh construye la UI y selección organizacional; Supabase genera los códigos y tokens.
 
-El paso bloqueado por HAC-21 es persistir y consultar:
+El paso todavía pendiente, pero no incluido en el DoD cerrado de HAC-21, es persistir y consultar:
 
 ```text
 auth_user_id + oauth_client_id -> organization_id
@@ -316,7 +318,7 @@ ECS/Fargate solo se justifica posteriormente si aparecen conexiones largas, work
 11. Confirmar `Cache-Control: no-store`.
 12. Registrar cold/warm, p50/p95 y verificar el objetivo menor de 500 ms.
 
-### 9.2 Usuario después de HAC-21
+### 9.2 Usuario tras implementar account linking persistente
 
 1. PRM anuncia el authorization server de usuario.
 2. Metadata anuncia `authorization_code`, `refresh_token` y S256.
@@ -434,9 +436,9 @@ CARGOMESH_BEDROCK_MODEL_ID
 
 Bedrock no es requisito para Alexa live y permanece deshabilitado mientras continúe `BEDROCK_BLOCKED`.
 
-## 12. Dependencia de HAC-21
+## 12. Pendientes de account linking y servicios V2
 
-HAC-21 bloquea directamente:
+HAC-21 ya cerró el esquema ROAD. Los siguientes entregables **no** estaban en su DoD y requieren propietario/issue antes de implementarse:
 
 - tabla y RLS de `mcp_account_links`;
 - escritura idempotente del vínculo;
@@ -446,7 +448,7 @@ HAC-21 bloquea directamente:
 - create/submit V2;
 - una invocación comercial V2 demostrable desde Alexa.
 
-HAC-21 no bloquea:
+Estos pendientes no bloquean por sí solos:
 
 - preview remoto;
 - smoke del transporte;
@@ -470,7 +472,7 @@ HAC-21 no bloquea:
 8. Verificar `client_secret_basic` con Alexa CLI.
 9. Decidir Supabase directo o adaptador mínimo usando evidencia.
 
-### Esperando HAC-21
+### Esperando asignación e implementación del alcance MCP V2
 
 1. Conectar el repositorio real `mcp_account_links`.
 2. Implementar selección y revocación de organización.
@@ -520,6 +522,6 @@ El único motivo válido para agregar un adaptador OAuth CargoMesh es demostrar 
 
 ## 15. Conclusión
 
-El plan de despliegue, los gates, los riesgos y las decisiones pendientes están definidos. La integración live continúa bloqueada por HAC-21 y por verificaciones alojadas deliberadamente no ejecutadas durante este análisis.
+El plan de despliegue, los gates, los riesgos y las decisiones pendientes están definidos. La integración live continúa bloqueada por account linking/servicios V2 aún no asignados y por verificaciones alojadas deliberadamente no ejecutadas durante este análisis; no por una supuesta falta de merge de HAC-21.
 
 **ALEXA_DEPLOYMENT_PLAN_READY**

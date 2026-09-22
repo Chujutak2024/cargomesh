@@ -12,7 +12,9 @@ Estado del corte:
 - Alexa+: `ALEXA_LIVE_BLOCKED`;
 - Bedrock: `BEDROCK_BLOCKED`;
 - fallback SSML: `LOCAL`, probado.
-- clasificación del checkpoint: `HAC22_PARTIAL_BLOCKED_BY_HAC21`.
+- clasificación del checkpoint al abrir PR #85: `HAC22_PARTIAL_BLOCKED_BY_HAC21` (etiqueta histórica de código, pendiente de alinear con el cierre posterior de HAC-21).
+
+**Nota posterior al merge:** PR #83 de HAC-21 y PR #85 de HAC-22 ya están en `codex/v2-amazon-contracts`. El alcance aprobado de HAC-21 fue el esquema ROAD; no incluyó `mcp_account_links` ni servicios de creación/envío V2. La corrección de trazabilidad preparada en la rama de Gate-1 sustituye `BLOCKED_BY_HAC21` por bloqueos de capacidad, manteniendo las tools cerradas. Falta revisión/merge de esa corrección y acordar el alcance siguiente antes de habilitar negocio; una tabla ROAD no desbloquea OAuth de usuario.
 
 ## 2. Límite de confianza
 
@@ -35,7 +37,7 @@ flowchart LR
 
 `V1_REGRESSION` conserva `create_freight_request`, `submit_freight_request`, `find_freight_options` y `get_freight_options`. Sus descripciones declaran las restricciones V1 y las dependencias WebMCP/BALANCED.
 
-`V2` expone solamente `get_cargomesh_capabilities`. Los contratos V2 de create/submit están registrados internamente como `BLOCKED_BY_HAC21`; find/get V1 no aparecen en el perfil V2.
+`V2` expone solamente `get_cargomesh_capabilities`. Los contratos V2 de create/submit permanecen `BLOCKED` por ausencia de `V2_FREIGHT_REQUEST_SERVICE`; el reporte también señala `MCP_ACCOUNT_LINK_PERSISTENCE`. En la base PR #85 aún se observa el identificador histórico `HAC-21` hasta mergear Gate-1. Find/get V1 no aparecen en el perfil V2.
 
 ## 4. Transporte Streamable HTTP
 
@@ -56,7 +58,7 @@ flowchart LR
 
 El seam de usuario valida el access token con Supabase, exige `client_id`/`azp` igual al cliente configurado, resuelve el vínculo exacto `(auth_user_id, oauth_client_id)`, exige scope autorizado `mcp:tools` y membresía ACTIVE en la organización vinculada. El access token se conserva solo dentro de `AsyncLocalStorage` durante el request y crea un cliente Supabase no global con `Authorization: Bearer`.
 
-La implementación persistente de `mcp_account_links` no existe en esta rama. El repositorio productivo falla cerrado con `BLOCKED_BY_HAC21_DB_CONTRACT`. No se elige la primera membresía.
+La implementación persistente de `mcp_account_links` no existe en la base V2. El repositorio productivo falla cerrado; Gate-1 prepara un mensaje genérico que no culpa a HAC-21. No se elige la primera membresía.
 
 El comportamiento de custom domain/issuer de Supabase permanece `NEEDS_HOSTED_VERIFICATION`.
 
@@ -92,7 +94,7 @@ El worker autónomo, provider pages, `document.modelContext`, Result Bridge y BA
 
 ## 11. Estado del contrato V2
 
-El perfil V2 es seguro y verificable, pero los business tools canónicos están bloqueados por los tipos/servicios compartidos de HAC-21. `get_cargomesh_capabilities` devuelve profile, source, status y dependencias legacy sin leer datos de tenant.
+El perfil V2 es seguro y verificable, pero los business tools canónicos siguen bloqueados porque faltan servicios FreightRequest V2 y account linking persistente fuera del alcance cerrado de HAC-21. `get_cargomesh_capabilities` devuelve profile, source, status y dependencias legacy sin leer datos de tenant; Gate-1 corrige la etiqueta de capacidad sin activarla.
 
 ## 12. Matriz Alexa+
 
@@ -152,14 +154,14 @@ Los resultados finales de release/build se registran al cerrar la rama.
 
 ## 19. Bloqueos conocidos
 
-- `BLOCKED_BY_HAC21_DB_CONTRACT`: `mcp_account_links` persistente y contratos FreightRequest V2.
+- Pendiente de alcance y dueño: `mcp_account_links` persistente y servicios FreightRequest V2. La etiqueta de código se corrigió en la rama Gate-1 para expresar capacidades pendientes; HAC-21 no abarcó esos entregables.
 - `NEEDS_HOSTED_VERIFICATION`: issuer/custom domain, OAuth client y user Bearer en Supabase hosted.
 - `ALEXA_LIVE_BLOCKED`: accesos y UAT externos ausentes.
 - `BEDROCK_BLOCKED`: IAM sin permiso Bedrock.
 
 ## 20. Recomendación Sprint 2
 
-Consumir el contrato HAC-21 sin crear una migración paralela, conectar el repositorio persistente de account links, verificar issuer/client en Supabase hosted y habilitar solo tools respaldados por servicios V2. Reconsiderar Bedrock únicamente si HAC-17 entrega permisos/cuota y su narración aporta valor medible.
+Consumir el contrato ROAD ya mergeado de HAC-21 sin atribuirle `mcp_account_links`; asignar explícitamente el contrato/repositorio de account links y los servicios FreightRequest V2 antes de habilitar tools. Verificar issuer/client en Supabase hosted. Reconsiderar Bedrock únicamente si HAC-17 entrega permisos/cuota y su narración aporta valor medible.
 
 ## 21. Referencias de evidencia
 

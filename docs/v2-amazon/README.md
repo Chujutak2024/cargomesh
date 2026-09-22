@@ -16,12 +16,14 @@ Esta carpeta es la fuente de verdad documental de CargoMesh V2. V2 transforma el
 10. [LINEAR_ISSUE_TEMPLATE.md](./LINEAR_ISSUE_TEMPLATE.md): plantilla de issues nuevas.
 11. [LINEAR_REBASE_PLAN.md](./LINEAR_REBASE_PLAN.md): propuesta para reconstruir Linear sin perder historia.
 12. [SPRINT_ROADMAP.md](./SPRINT_ROADMAP.md): modelo 1+1+N, gates semanales y propuesta concreta para Sprint 1.
-13. [linear_sprint1_v2_rebase_proposal.md](./linear_sprint1_v2_rebase_proposal.md): issues propuestas para Sprint 1 con único dueño, ramas declaradas, DoD y documentos; no cargadas aún en Linear.
-14. [cargomesh_v2_milestones_architecture_roadmap.md](./cargomesh_v2_milestones_architecture_roadmap.md): auditoría de los Hitos 0–5 ya cargados y correcciones pendientes de aprobación en Linear.
+13. [linear_sprint1_v2_rebase_proposal.md](./linear_sprint1_v2_rebase_proposal.md): fichas HAC-21…26 cargadas en Linear, con único dueño, ramas declaradas, DoD y evidencias.
+14. [cargomesh_v2_milestones_architecture_roadmap.md](./cargomesh_v2_milestones_architecture_roadmap.md): estado de Hitos 0–5 y límites de lo implementado.
 
 ## Implementación incremental
 
 - [SPRINT1_DATA_MAPPING.md](./SPRINT1_DATA_MAPPING.md): mapeo aditivo HAC-21 para sedes, áreas y lanes ROAD; no supone cobertura ni disponibilidad live.
+- [SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md](./SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md): corte HAC-22 de transporte MCP, seguridad, narración y bloqueos; no equivale a Alexa+ live.
+- [SPRINT1_GATE_V2.md](../04-execution/SPRINT1_GATE_V2.md): acta provisional del gate con matriz issue→PR→evidencia; no es aprobación del hito.
 
 ## Estado
 
@@ -29,6 +31,7 @@ Esta carpeta es la fuente de verdad documental de CargoMesh V2. V2 transforma el
 - **Review input:** las propuestas del equipo se consolidaron en los contratos superiores. Los borradores de revisión no forman parte de esta rama base pública.
 - **Material transicional mergeado:** `docs/architecture-v2/` y el código de PR #80 son inventario de reutilización, no contrato vigente ni prueba de Alexa+ live. Resolver contradicciones a favor de esta carpeta y `AGENTS.md` corregido.
 - La implementación existente se migra incrementalmente. Una capacidad documentada no se considera live hasta tener código, datos, pruebas y evidencia.
+- PR #83 (HAC-21) y PR #85 (HAC-22) ya están mergeados en `codex/v2-amazon-contracts`; la aceptación de cada issue sigue su DoD y el gate. `mcp_account_links` y tools comerciales V2 permanecen pendientes, aunque el esquema ROAD de HAC-21 ya está integrado.
 
 ## Principios
 

@@ -33,7 +33,7 @@ Herramientas, servicios o puertos necesarios **solo si son reales para esta tare
 - **Bloqueada por / desbloquea:** IDs de issues cuando existan.
 - **Coordinar con:** persona y contrato compartido.
 - **Decisiones pendientes:** auth Alexa, credenciales, dataset, diseño, mini challenge, etc.
-- **Propiedad:** el responsable implementa, prueba y corrige su issue. Una dependencia solo obliga al otro dueño a entregar su contrato; la revisión del PR comienza al finalizar, no reparte el trabajo entre todos.
+- **Propiedad:** el responsable implementa, prueba y corrige los defectos funcionales de su issue. Una dependencia solo obliga al otro dueño a entregar su contrato; la revisión del PR comienza al finalizar, no reparte el trabajo entre todos.
 
 ### Relación con V1 / PR previo
 
@@ -54,6 +54,18 @@ Antecedente HAC/PR y decisión explícita: `reutilizar`, `reemplazar`, `archivar
 - [ ] Implementación o gestión realizada.
 - [ ] Pruebas/revisión interna y evidencia disponibles.
 - [ ] Entrega del responsable en `In Review`.
+
+### Flujo de aceptación y escala de hallazgos
+
+**Culmina → validamos → aprobamos → mergeamos a `codex/v2-amazon-contracts`.** El dueño entrega PR/evidencia, comandos y límites; el revisor coteja DoD y pruebas; el Tech Lead decide aceptación; el integrador autorizado hace el merge. Si un PR ya entró antes de cerrar la trazabilidad, se audita el merge existente y se registra la aceptación o el follow-up, sin recrearlo.
+
+| Escala | Criterio y respuesta |
+|---|---|
+| Baja | Errata, enlace, metadato o aclaración documental sin cambiar dominio, API, seguridad, migración ni comportamiento. El integrador puede corregirla dentro del gate, mostrando diff, verificación y aviso al dueño; no se atribuye la implementación funcional a otra persona. |
+| Media | DoD incompleto, contrato o prueba faltante, regresión acotada, estado de capacidad incorrecto o comportamiento funcional por ajustar. Se devuelve al dueño con reproducción, alcance y criterio de nueva validación; conserva la misma issue/rama si sigue abierta. |
+| Alta | Riesgo de seguridad/RLS, pérdida o mezcla de datos, reserva/cotización falsa, incompatibilidad de contrato transversal o bloqueo de release. Se detiene la aprobación/merge, se asigna al dueño, se registra bloqueo/friction log si es material y se repite el gate tras la corrección. |
+
+La escala describe **impacto**, no esfuerzo. Una edición de una línea puede ser alta si altera autorización. No abrir issue/branch emergente salvo que el arreglo tenga alcance independiente y sea aprobado en el manifiesto. En `In Review`, un hallazgo medio/alto devuelve la issue a `In Progress`; una corrección baja no simula `Done`. Un merge previo no convierte automáticamente una entrega parcial en aceptada.
 
 ## Bloque C — Gobernanza y cierre
 

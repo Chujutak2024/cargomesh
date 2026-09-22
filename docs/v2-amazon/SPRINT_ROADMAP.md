@@ -4,9 +4,11 @@ El [roadmap de hitos](./cargomesh_v2_milestones_architecture_roadmap.md) separa 
 
 ## Regla operativa y ramas
 
-Cinco personas, **una issue principal sustancial por persona**. Los apoyos se agregan solo con resultado separable y capacidad: HAC-17 de Axel, HAC-18 de Jean Paul y Gate-1 de Cristhian ya cubren tres necesidades. No se fuerza una secundaria a Luis o Juan. Cada dueño implementa, prueba y corrige su PR; las revisiones empiezan cuando entrega `In Review`. Solo el Tech Lead autorizado acepta `Done`.
+Cinco personas, **una issue principal sustancial por persona**. Los apoyos se agregan solo con resultado separable y capacidad: HAC-17 de Axel, HAC-18 de Jean Paul y Gate-1 de Cristhian ya cubren tres necesidades. No se fuerza una secundaria a Luis o Juan. Cada dueño implementa y prueba; luego culmina → validamos → aprobamos → mergeamos a `codex/v2-amazon-contracts`. Hallazgos bajos no semánticos puede resolverlos el integrador con evidencia; medios/altos regresan al dueño. Solo el Tech Lead autorizado acepta `Done`; el detalle está en [la plantilla](./LINEAR_ISSUE_TEMPLATE.md#flujo-de-aceptación-y-escala-de-hallazgos).
 
 Antes de abrir una rama, registrar issue, dueño, fecha, labels, DoD y rama exacta en el manifiesto. Sprint 1 declara cinco ramas principales y `feat/cycle-1-integration`, que se abre solo al existir PRs revisables. Todas parten de y hacen PR a `codex/v2-amazon-contracts`. Soporte HAC-17/18 no necesita rama. No reutilizar V1, improvisar ramas, pushear a `main` ni alterar Vercel producción para arreglar el preview.
+
+**Corte 22 sep:** HAC-21 está `Done` con PR #83 mergeado; PR #85 de Axel también está mergeado, pero HAC-22 sigue `In Progress` hasta corregir/trazar su entrega y no equivale a Alexa+ live. HAC-23…25 siguen `Pendiente`; HAC-26 está `In Progress` como gate no aprobado. Linear muestra HITO 1 al 25% tras esos cambios de estado: su porcentaje automático no equivale a porcentaje de entregas aceptadas ni se ajusta manualmente por commits o capturas.
 
 ## Secuencia de resultados
 

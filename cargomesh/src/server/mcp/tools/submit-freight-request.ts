@@ -25,7 +25,7 @@ export function registerSubmitFreightRequest(server: McpServer, submit: SubmitFr
   server.registerTool("submit_freight_request", {
     title: "Submit a freight draft",
     description: "V1 regression contract: validate and submit an existing V1 DRAFT as PENDING. " +
-      "This is not the canonical V2 FreightRequest submission contract, which is blocked on HAC-21. " +
+      "This is not the canonical V2 FreightRequest submission contract; the V2 application service is not implemented. " +
       "Requires its current draftVersion and an active OWNER or SUPERVISOR. " +
       "A successful exact retry returns replayed:true. This does not contact providers or book freight.",
     inputSchema: SubmitFreightRequestInputSchema,

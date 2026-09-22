@@ -19,3 +19,5 @@ Toda revisión debe comprobar:
 15. Un preview Vercel verde o rojo se interpreta según `productionBranch` y `rootDirectory`; mover la app no autoriza cambiar producción como arreglo incidental.
 
 Un PR que reutiliza código V1 debe declarar qué conserva, qué reemplaza y qué regresión ejecutó.
+
+La secuencia de aceptación y la escala baja/media/alta están en [la plantilla Linear](./LINEAR_ISSUE_TEMPLATE.md). El revisor registra evidencia y devuelve hallazgos medios/altos al dueño; el integrador solo puede resolver ajustes bajos no semánticos. Validación y aprobación preceden al merge autorizado a `codex/v2-amazon-contracts`; un merge histórico se audita, no se repite.
