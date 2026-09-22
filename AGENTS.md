@@ -1,45 +1,3 @@
-# CargoMesh Agent Invariants & Governance Rules
-
-Este archivo establece las directivas prioritarias que deben respetar todos los agentes (Antigravity, Codex, etc.) que trabajen en este repositorio.
-
-## 1. 🗄️ Supabase Migrations vs. Scenario Seeds
-- **NUNCA agregar datos de prueba (INSERTs de camiones, carriers o shippers de demo) en `supabase/migrations/`**.
-  - `supabase/migrations/` es EXCLUSIVAMENTE para DDL estructural (`CREATE TABLE`, `ALTER TABLE`, `ADD COLUMN`, `INDEXES`, `RLS POLICIES`). Todo lo que esté aquí se ejecuta en producción remoto mediante `supabase db push`.
-- **Todos los datos sintéticos de prueba/demo DEBEN ir en `supabase/scenarios/<scenario-name>/seed.sql`** o en `supabase/seed.sql`.
-
-## 2. 🌐 Providers WebMCP & Honestidad Técnica
-- Para declarar un carrier como proveedor WebMCP operativo, debe contar con:
-  1. Su ruta `/providers/[carrierSlug]` en Next.js.
-  2. Sus 5 tools registradas en `document.modelContext`.
-  3. Sus fixtures de capacidad en `cargomesh/src/features/providers/provider-capability-fixtures.ts`.
-  4. Sus tarifas de cotización en `quote-freight-tool.ts`.
-- Cualquier carrier que solo exista en la base de datos se debe documentar como **"Dato de escenario / Roadmap"**, nunca como tool en vivo.
-- En la evidencia pública actual, solo Andes, Inca y Pacific pueden declararse providers WebMCP live del demo al cumplir ruta, cinco tools, capacidad y tarifa ejecutables. Sus `providerUrl` son rutas del mismo origin Vercel de CargoMesh y no prueban providers alojados independientemente.
-- Polaris, Apex y Velocity son datos de escenario / roadmap, no providers WebMCP live.
-- `get_freight_request_recommendations` es una tool read-only separada del intake y nunca debe contarse como sexta tool provider.
-- El Golden Flow, el booking Andes confirmado y el recovery Andes `REJECT` → Inca `CONFIRMED` tienen evidencia pública sanitizada en [`REL02_Public_WebMCP_UAT_Evidence.md`](docs/04-execution/REL02_Public_WebMCP_UAT_Evidence.md), incluidas las capturas 06 y 06b.
-
-## 3. 🌿 Flujo de Ramas & Deadline de Entrega
-- La entrega final es inminente (24-48 horas).
-- **`origin/main`** debe mantenerse verde en todo momento.
-- Roles de trabajo:
-  - **Role A**: WebMCP Tools & Runtime (`feat/a-*`)
-  - **Role B**: UI, Intake Form & Landing (`feat/b-*`)
-  - **Role C (Codex)**: Data Layer, RLS, Concurrency (`codex/c-*`)
-  - **Antigravity**: Integración, auditoría, pairing, resolución de bloqueos y alineación.
-- Antes de ejecutar comandos vinculados a Supabase (`--linked`), verificar en qué directorio y rama se encuentra la terminal local.
-- Antes de pushear a `main`, validar siempre `npm run typecheck` y `git pull --rebase origin main`.
-
-## 4. 📦 Contratos Comerciales
-- Concurrencia optimista mediante `draft_version` en `freight_requests`.
-- Motor determinístico BALANCED de seis dimensiones (25% costo, 25% SLA/confiabilidad, 20% tiempo de tránsito, 10% disponibilidad, 10% experiencia de ruta y 10% historial de la organización).
-- Golden Flow canónico (`FR-1042` Callao ➔ Santiago) mantiene invariables sus scores oficiales: Andes (89), Inca (84), Pacific (72).
-
-## 5. ⚡ Autonomía de Entrega
-- Los agentes avanzan sin solicitar confirmación del usuario para cambios locales de código o documentación, ramas, pruebas, PRs y lotes verdes de integración a `main`.
-- **Role C (Codex)** puede integrar a `main` los fixes P0 y la documentación aprobada cuando las verificaciones requeridas estén verdes.
-- Solo se requiere autorización explícita antes de: ejecutar operaciones contra Supabase remoto, mutar datos runtime, gestionar secretos o variables de Vercel, o invocar/modificar providers externos reales.
-- Un bloqueo debe comunicarse con evidencia y una alternativa segura; no se deben crear mocks que aparenten una integración real para evitarlo.
 # CargoMesh V2 Agent Invariants — Amazon Developer Hackathon
 
 Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de CargoMesh V1/WebMCP se conserva en `docs/v1-webmcp/` únicamente como historia, evidencia y regresión. Una regla V1 no limita V2 salvo que este archivo la reafirme.
@@ -50,6 +8,7 @@ Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de Ca
 - CargoMesh V2 es una nueva línea de producto para Amazon Developer Hackathon, no una variante del demo WebMCP.
 - Los seeds, carriers, scores, rutas y herramientas de V1 son fixtures de regresión. No describen por sí solos capacidades V2.
 - Los borradores de revisión del equipo no se publican en esta rama base; sus decisiones aceptadas están incorporadas en `docs/v2-amazon/` y solo esos contratos son normativos.
+- Las instrucciones V1 o de transición copiadas a un PR no recuperan autoridad por estar en `AGENTS.md`; cualquier cambio a este archivo debe eliminar contradicciones y pasar revisión explícita de gobernanza V2.
 
 ## 2. Base de datos y separación V1/V2
 
@@ -88,13 +47,14 @@ Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de Ca
 - Las afirmaciones de reducción de tokens o latencia requieren benchmark reproducible con baseline, dataset, versión de schemas y métricas p50/p95.
 - La evidencia para AWS Builder y Open Source debe separarse del producto principal y cumplir los requisitos propios de cada mini challenge.
 
-## 6. Git e integración
+## 6. Git, integración y despliegue
 
-- No mergear ni pushear a `main` sin autorización explícita del Tech Lead.
+- `main` permanece congelada para este trabajo: no mergear, pushear ni abrir un PR de V2 hacia `main`. La aprobación de un PR o una suite verde no autoriza por sí sola a tocarla.
 - La rama base activa de contratos V2 es `codex/v2-amazon-contracts`.
 - Cada issue V2 usa una rama nueva basada en esa rama y un PR dirigido a ella. No reutilizar ramas cerradas o canceladas de V1.
 - Solo el integrador autorizado fusiona PRs a la base durante un gate. Antes debe ejecutar la suite descubierta desde el repositorio, sin asumir conteos estáticos.
 - Los solapamientos entre ramas se resuelven en una rama de integración del ciclo; nunca mediante merges individuales oportunistas.
+- Los previews automáticos de Vercel no cambian la rama de producción. No cambiar `productionBranch`, `rootDirectory`, alias ni desplegar a producción como efecto colateral de un PR V2; una migración de `frontend/` a otro directorio requiere plan y aprobación de despliegue separados.
 
 ## 7. Linear y trazabilidad
 
