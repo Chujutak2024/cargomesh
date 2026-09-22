@@ -10,6 +10,7 @@ import type { McpPrincipal } from "./auth/principal";
 import { authenticateMcpRequest } from "./auth/context";
 import { issueMcpServiceToken, verifyMcpServiceToken } from "./auth/service-token";
 import { TEST_SERVICE_AUTH } from "./auth/test-configuration";
+import { currentMcpSupabaseAccessToken } from "./auth/request-context";
 
 const RUN = "90000000-0000-0000-0000-000000000001";
 const REQUEST = "f2000000-0000-0000-0000-000000000001";
@@ -51,9 +52,11 @@ type Options = {
   canonicalOrigin?: string; allowedOrigins?: string;
   principal?: McpPrincipal;
   read?: (id: string) => Promise<OrchestrationViewModel>;
+  profile?: "V1_REGRESSION" | "V2";
 };
 function harness(options: Options = {}) {
   const calls: string[] = [];
+  const domainCalls: string[] = [];
   let authCalls = 0;
   const handle = createMcpHttpHandler({
     configuration: () => ({
@@ -63,11 +66,15 @@ function harness(options: Options = {}) {
       remoteEnabled: options.mode === "remote" ? options.enabled ?? true : false,
       canonicalOrigin: options.canonicalOrigin,
       allowedOrigins: options.allowedOrigins,
+      profile: options.profile ?? "V1_REGRESSION",
     }),
     authenticate: async () => { authCalls++; if (options.authError) throw options.authError; return options.principal ?? testMcpUserPrincipal(); },
     read: async (id) => { calls.push(id); return options.read ? options.read(id) : view(); },
+    create: async () => { domainCalls.push("create"); throw new Error("unexpected create dispatch"); },
+    find: async () => { domainCalls.push("find"); throw new Error("unexpected find dispatch"); },
+    submit: async () => { domainCalls.push("submit"); throw new Error("unexpected submit dispatch"); },
   });
-  return { handle, calls, authCalls: () => authCalls };
+  return { handle, calls, domainCalls, authCalls: () => authCalls };
 }
 function rpc(method: string, params: unknown = {}, overrides: RequestInit = {}, url = URL) {
   return new Request(url, {
@@ -209,6 +216,7 @@ test("configured remote HTTPS canonical origin initializes and lists tools in pr
     environment: "production",
     canonicalOrigin: REMOTE_ORIGIN,
     allowedOrigins: REMOTE_ORIGIN,
+    profile: "V2",
   });
   const initialized = await h.handle(rpc("initialize", {
     protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "remote-test", version: "1" },
@@ -222,9 +230,43 @@ test("configured remote HTTPS canonical origin initializes and lists tools in pr
   assert.equal(listed.status, 200);
   assert.deepEqual(
     (await listed.json()).result.tools.map((tool: { name: string }) => tool.name),
-    ["get_freight_options", "create_freight_request", "submit_freight_request", "find_freight_options"],
+    ["get_cargomesh_capabilities"],
   );
   assert.equal(h.authCalls(), 2);
+
+  const hiddenLegacyTools = [
+    ["create_freight_request", {}],
+    ["submit_freight_request", {}],
+    ["find_freight_options", { freightRequestId: REQUEST, idempotencyKey: "key" }],
+    ["get_freight_options", { runId: RUN }],
+  ] as const;
+  for (const [name, arguments_] of hiddenLegacyTools) {
+    const hiddenLegacyCall = await h.handle(rpc("tools/call", {
+      name, arguments: arguments_,
+    }, {}, REMOTE_URL));
+    const body = await hiddenLegacyCall.json();
+    assert.ok(body.error || body.result?.isError, `${name} must remain hidden in V2`);
+  }
+  assert.deepEqual(h.calls, []);
+  assert.deepEqual(h.domainCalls, []);
+});
+
+test("Supabase user bearer is available only inside its request-scoped business execution", async () => {
+  const observed: Array<string | undefined> = [];
+  const h = createMcpHttpHandler({
+    configuration: () => ({
+      mode: "local", environment: "test", localEnabled: true, remoteEnabled: false,
+      canonicalOrigin: undefined, allowedOrigins: undefined, profile: "V1_REGRESSION",
+    }),
+    authenticate: async () => ({
+      principal: testMcpUserPrincipal(), supabaseAccessToken: "supabase-user-token",
+    }),
+    read: async () => { observed.push(currentMcpSupabaseAccessToken()); return view(); },
+  });
+  const response = await h(call());
+  assert.equal(response.status, 200);
+  assert.deepEqual(observed, ["supabase-user-token"]);
+  assert.equal(currentMcpSupabaseAccessToken(), undefined);
 });
 
 test("remote production transport keeps initialize, list and call behind authentication", async () => {
@@ -260,6 +302,7 @@ test("service principal initializes and lists tools but cannot call business too
       kind: "service", clientId: "alexa-service-test", scopes: ["mcp:service"],
       tokenId: "token-id", issuedAt: 1, expiresAt: 901,
     },
+    profile: "V1_REGRESSION",
   });
   const initialized = await h.handle(rpc("initialize", {
     protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "service-test", version: "1" },
@@ -290,6 +333,7 @@ test("signed service bearer authenticates initialize/list and is denied before b
     configuration: () => ({
       mode: "remote", environment: "production", localEnabled: false, remoteEnabled: true,
       canonicalOrigin: REMOTE_ORIGIN, allowedOrigins: REMOTE_ORIGIN,
+      profile: "V1_REGRESSION",
     }),
     authenticate: (request) => authenticateMcpRequest(request, {
       resolveCookieMember: async () => { throw new Error("cookie fallback"); },

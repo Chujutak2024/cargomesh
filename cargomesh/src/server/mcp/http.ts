@@ -1,6 +1,8 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { authenticateMcpRequest } from "./auth/context";
+import { authenticateMcpRequestContext, type McpAuthentication } from "./auth/context";
 import type { McpPrincipal } from "./auth/principal";
+import { runWithMcpRequestIdentity } from "./auth/request-context";
+import { parseMcpCapabilityProfile, type McpCapabilityProfile } from "./capabilities";
 import { publicMcpError } from "./errors";
 import { createCargoMeshMcpServer } from "./server";
 import { readPersistedFreightOptions, type ReadFreightOptions } from "./tools/get-freight-options";
@@ -9,7 +11,7 @@ import type { FindFreightOptions } from "./tools/find-freight-options";
 import type { SubmitFreightRequest } from "./tools/submit-freight-request";
 
 type Dependencies = {
-  authenticate: (request: Request) => Promise<McpPrincipal>;
+  authenticate: (request: Request) => Promise<McpPrincipal | McpAuthentication>;
   read: ReadFreightOptions;
   create?: CreateFreightRequest;
   find?: FindFreightOptions;
@@ -24,6 +26,7 @@ type McpHttpConfiguration = {
   remoteEnabled: boolean;
   canonicalOrigin: string | undefined;
   allowedOrigins: string | undefined;
+  profile?: string;
 };
 
 type McpRequestPolicy =
@@ -126,7 +129,7 @@ function isRemoteRequest(
 }
 
 export function createMcpHttpHandler(dependencies: Dependencies = {
-  authenticate: authenticateMcpRequest,
+  authenticate: authenticateMcpRequestContext,
   read: readPersistedFreightOptions,
   configuration: () => ({
     mode: process.env.CARGOMESH_MCP_MODE ?? "local",
@@ -135,6 +138,7 @@ export function createMcpHttpHandler(dependencies: Dependencies = {
     remoteEnabled: process.env.CARGOMESH_MCP_REMOTE_ENABLED === "true",
     canonicalOrigin: process.env.CARGOMESH_MCP_CANONICAL_ORIGIN,
     allowedOrigins: process.env.CARGOMESH_MCP_ALLOWED_ORIGINS,
+    profile: process.env.CARGOMESH_MCP_PROFILE,
   }),
 }) {
   return async function handleMcpRequest(request: Request): Promise<Response> {
@@ -147,63 +151,84 @@ export function createMcpHttpHandler(dependencies: Dependencies = {
       return responseError(403, "MCP request origin is not allowed.");
     }
 
-    let principal: McpPrincipal;
+    let authentication: McpAuthentication;
     try {
-      principal = await dependencies.authenticate(request);
+      const authenticated = await dependencies.authenticate(request);
+      authentication = "principal" in authenticated
+        ? authenticated
+        : { principal: authenticated };
     } catch (error) {
       const safe = publicMcpError(error);
       const status = safe.code === "UNAUTHENTICATED" ? 401 : safe.code === "FORBIDDEN" ? 403 : 500;
       return responseError(status, status === 500 ? "Unable to authenticate MCP request." : safe.message);
     }
-    if (request.method !== "POST") {
-      const response = responseError(405, "This stateless endpoint supports POST only; no SSE subscription or session deletion.");
-      response.headers.set("Allow", "POST");
-      return response;
-    }
+    const configuredProfile = dependencies.configuration().profile;
+    const profile: McpCapabilityProfile | null = configuredProfile
+      ? parseMcpCapabilityProfile(configuredProfile)
+      : "V2";
+    if (!profile) return responseError(503, "MCP capability profile is invalid.");
 
-    // Reject oversized payloads without buffering an unlimited stream.
-    const reader = request.body?.getReader();
-    const chunks: Uint8Array[] = [];
-    let length = 0;
-    if (reader) {
-      try {
-        while (true) {
-          const chunk = await reader.read();
-          if (chunk.done) break;
-          length += chunk.value.byteLength;
-          if (length > 64 * 1024) {
-            await reader.cancel();
-            return responseError(413, "MCP request body is too large.");
-          }
-          chunks.push(chunk.value);
+    return runWithMcpRequestIdentity(
+      { supabaseAccessToken: authentication.supabaseAccessToken },
+      async () => {
+        if (request.method !== "POST") {
+          const response = responseError(405, "This stateless endpoint supports POST only; no SSE subscription or session deletion.");
+          response.headers.set("Allow", "POST");
+          return response;
         }
-      } catch {
-        return responseError(400, "Unable to read MCP request.");
-      } finally {
-        reader.releaseLock();
-      }
-    }
-    // Let the SDK validate JSON and JSON-RPC rather than reimplementing them.
-    const body = new Uint8Array(length);
-    let offset = 0;
-    for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.byteLength; }
-    const boundedRequest = new Request(request.url, {
-      method: "POST", headers: request.headers, body, signal: request.signal,
-    });
-    const server = createCargoMeshMcpServer(principal, dependencies.read, dependencies.create, dependencies.find, dependencies.submit);
-    const transport = new WebStandardStreamableHTTPServerTransport({
-      sessionIdGenerator: undefined, enableJsonResponse: true,
-    });
-    try {
-      await server.connect(transport);
-      const response = await transport.handleRequest(boundedRequest);
-      response.headers.set("Cache-Control", "no-store");
-      return response;
-    } catch {
-      return responseError(500, "MCP request failed.");
-    } finally {
-      // JSON mode resolves after the tool response. No stream/session survives.
-      await server.close();
-    }
+
+        // Reject oversized payloads without buffering an unlimited stream.
+        const reader = request.body?.getReader();
+        const chunks: Uint8Array[] = [];
+        let length = 0;
+        if (reader) {
+          try {
+            while (true) {
+              const chunk = await reader.read();
+              if (chunk.done) break;
+              length += chunk.value.byteLength;
+              if (length > 64 * 1024) {
+                await reader.cancel();
+                return responseError(413, "MCP request body is too large.");
+              }
+              chunks.push(chunk.value);
+            }
+          } catch {
+            return responseError(400, "Unable to read MCP request.");
+          } finally {
+            reader.releaseLock();
+          }
+        }
+        // Let the SDK validate JSON and JSON-RPC rather than reimplementing them.
+        const body = new Uint8Array(length);
+        let offset = 0;
+        for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.byteLength; }
+        const boundedRequest = new Request(request.url, {
+          method: "POST", headers: request.headers, body, signal: request.signal,
+        });
+        const server = createCargoMeshMcpServer(
+          authentication.principal,
+          dependencies.read,
+          dependencies.create,
+          dependencies.find,
+          dependencies.submit,
+          profile,
+        );
+        const transport = new WebStandardStreamableHTTPServerTransport({
+          sessionIdGenerator: undefined, enableJsonResponse: true,
+        });
+        try {
+          await server.connect(transport);
+          const response = await transport.handleRequest(boundedRequest);
+          response.headers.set("Cache-Control", "no-store");
+          return response;
+        } catch {
+          return responseError(500, "MCP request failed.");
+        } finally {
+          // JSON mode resolves after the tool response. No stream/session survives.
+          await server.close();
+        }
+      },
+    );
   };
 }

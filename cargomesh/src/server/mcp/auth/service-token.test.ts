@@ -21,11 +21,15 @@ test("service JWT contains the required short-lived claims and verifies", async 
   assert.equal(principal.clientId, TEST_SERVICE_AUTH.clientId);
 });
 
-test("service JWT rejects a modified signature, expiration and wrong audience", async () => {
+test("service JWT rejects a byte-modified signature, malformed token, expiration, audience and issuer", async () => {
   const { accessToken } = await issueMcpServiceToken(TEST_SERVICE_AUTH, NOW);
-  const last = accessToken.at(-1)!;
-  const tampered = `${accessToken.slice(0, -1)}${last === "a" ? "b" : "a"}`;
+  await verifyMcpServiceToken(accessToken, TEST_SERVICE_AUTH, NOW);
+  const [header, payload, encodedSignature] = accessToken.split(".");
+  const signature = Buffer.from(encodedSignature, "base64url");
+  signature[0] ^= 0x01;
+  const tampered = `${header}.${payload}.${signature.toString("base64url")}`;
   await assert.rejects(verifyMcpServiceToken(tampered, TEST_SERVICE_AUTH, NOW));
+  await assert.rejects(verifyMcpServiceToken(`${header}.${payload}`, TEST_SERVICE_AUTH, NOW));
   await assert.rejects(verifyMcpServiceToken(accessToken, TEST_SERVICE_AUTH, new Date(NOW.getTime() + 901_000)));
 
   const wrongAudience = await new SignJWT({ scope: "mcp:service" })
@@ -38,4 +42,15 @@ test("service JWT rejects a modified signature, expiration and wrong audience", 
     .setJti(crypto.randomUUID())
     .sign(new TextEncoder().encode(TEST_SERVICE_AUTH.signingSecret));
   await assert.rejects(verifyMcpServiceToken(wrongAudience, TEST_SERVICE_AUTH, NOW));
+
+  const wrongIssuer = await new SignJWT({ scope: "mcp:service" })
+    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+    .setIssuer("https://other.example")
+    .setSubject(TEST_SERVICE_AUTH.clientId)
+    .setAudience(TEST_SERVICE_AUTH.canonicalResource)
+    .setIssuedAt(Math.floor(NOW.getTime() / 1000))
+    .setExpirationTime(Math.floor(NOW.getTime() / 1000) + 900)
+    .setJti(crypto.randomUUID())
+    .sign(new TextEncoder().encode(TEST_SERVICE_AUTH.signingSecret));
+  await assert.rejects(verifyMcpServiceToken(wrongIssuer, TEST_SERVICE_AUTH, NOW));
 });

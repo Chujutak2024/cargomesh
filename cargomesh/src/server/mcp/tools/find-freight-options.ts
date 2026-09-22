@@ -32,7 +32,8 @@ function safeStartError(error: unknown) {
 export function registerFindFreightOptions(server: McpServer, start: FindFreightOptions) {
   server.registerTool("find_freight_options", {
     title: "Start freight option discovery",
-    description: "Create or resume an INITIAL orchestration run for an existing PENDING FreightRequest. " +
+    description: "V1 regression only: create or resume a legacy WebMCP orchestration run for a PENDING FreightRequest. " +
+      "This is not V2 route resolution, serviceability, TransportPlan or Opportunity discovery. " +
       "The returned RUNNING state means a browser WebMCP executor must continue provider collection; " +
       "this call does not itself contact carriers or promise completed quotes. " +
       "Reuse the same idempotencyKey on retries, then poll get_freight_options with runId.",

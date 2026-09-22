@@ -19,7 +19,7 @@ function harness(create: CreateFreightRequest, authError?: Error) {
     authenticate: async () => { if (authError) throw authError; return testMcpUserPrincipal(); },
     configuration: () => ({
       mode: "local", environment: "test", localEnabled: true, remoteEnabled: false,
-      canonicalOrigin: undefined, allowedOrigins: undefined,
+      canonicalOrigin: undefined, allowedOrigins: undefined, profile: "V1_REGRESSION",
     }),
     read: async () => { throw new Error("unexpected read"); }, create,
   });

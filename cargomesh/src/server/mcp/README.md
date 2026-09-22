@@ -1,6 +1,6 @@
 # CargoMesh MCP local preview
 
-Implemented: `/mcp` on the Next.js Node runtime, official SDK `1.30.0`, tested protocol `2025-11-25`, stateless Streamable HTTP with JSON responses. Four registered tools call shared services directly: `create_freight_request` creates an idempotent DRAFT, `submit_freight_request` validates and advances it to PENDING, `find_freight_options` starts or resumes a persisted INITIAL run, and `get_freight_options` reads persisted progress and ranking. The MCP endpoint does not contact providers or book freight.
+Implemented: `/mcp` on the Next.js Node runtime, official SDK `1.30.0`, tested protocol `2025-11-25`, stateless Streamable HTTP with JSON responses. Capability registration is profile-based. `V1_REGRESSION` explicitly preserves the four historical tools. The fail-safe `V2` default exposes only `get_cargomesh_capabilities` until HAC-21 supplies canonical FreightRequest services; it does not present WebMCP/BALANCED orchestration as V2 discovery.
 
 The SDK retains its protocol negotiation behavior for older supported clients. Compatibility testing here targets 2025-11-25. No MCP sessions, standalone SSE subscriptions, Alexa, AWS or Bedrock integration are implemented. The transport can run in explicit local or remote mode; remote mode makes the HTTPS transport deployable but does not make business tools anonymous.
 
@@ -55,7 +55,7 @@ CARGOMESH_MCP_ALLOWED_ORIGINS=https://your-public-mcp-host.example
 
 The canonical origin and every allowlisted origin must be exact HTTPS origins without credentials, wildcard, path, query or fragment. The canonical origin must appear in the allowlist. A missing or invalid remote configuration returns 503; a disabled remote endpoint returns 404; unrelated authorities and origins return 403 before authentication. Cross-site browser requests remain blocked. Server-to-server MCP requests may omit `Origin`, but every request requires either the existing CargoMesh cookie session or a valid Tier 1 service bearer token.
 
-Every request, including initialize/list, requires a request-scoped principal. Existing cookie authentication produces a user principal; its business tool calls still independently check session, RLS visibility, role and organization membership. A valid service bearer token produces a service principal that can initialize and list tools but receives `FORBIDDEN` before any business service runs. An invalid Bearer header never falls back to cookies. No service-role bypass is used.
+Every request, including initialize/list, requires a request-scoped principal. Existing cookie authentication produces a user principal; its business tool calls still independently check session, RLS visibility, role and organization membership. A valid service bearer token produces a service principal that can initialize and list tools but receives `FORBIDDEN` before any business service runs. A Supabase user bearer seam validates exact user/client, ACTIVE account link and ACTIVE exact membership, then propagates the bearer through request-scoped storage so PostgREST keeps `auth.uid()` and RLS. Permanent account-link persistence is fail-closed and blocked on HAC-21. An invalid Bearer header never falls back to cookies. No service-role impersonation is used.
 
 ## Tier 1 service authentication
 

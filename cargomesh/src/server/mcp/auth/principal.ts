@@ -14,12 +14,20 @@ export type McpPrincipal =
     }
   | ({
       kind: "user";
-      authMethod: "cookie";
+      authMethod: "cookie" | "supabase_oauth";
       scopes: readonly [McpUserScope];
+      oauthClientId?: string;
     } & AuthenticatedMemberContext);
 
-export function userMcpPrincipal(member: AuthenticatedMemberContext): McpPrincipal {
-  return { kind: "user", authMethod: "cookie", scopes: ["mcp:tools"], ...member };
+export function userMcpPrincipal(
+  member: AuthenticatedMemberContext,
+  authMethod: "cookie" | "supabase_oauth" = "cookie",
+  oauthClientId?: string,
+): McpPrincipal {
+  return {
+    kind: "user", authMethod, scopes: ["mcp:tools"], ...member,
+    ...(oauthClientId ? { oauthClientId } : {}),
+  };
 }
 
 export function requireMcpUser(principal: McpPrincipal): void {

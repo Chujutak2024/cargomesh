@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import test from "node:test";
 import { createServerClient } from "@supabase/ssr";
 import { CreateFreightRequestInputSchema, CreatedFreightRequestSchema } from "@/shared/schemas/freight-creation";
+import { createUserAccessSupabaseClient } from "@/server/db/supabase/user-access";
 
 // This optional suite calls the running Next route and local Supabase, without
 // substituting the MCP handler, auth or persistence service.
@@ -321,7 +322,19 @@ test("real MCP flow reaches provider WebMCP through the autonomous browser worke
   assert.equal(anonymousFind.status, 401);
   assert.equal(anonymousGet.status, 401);
   const isolated = clientWithCookies();
-  assert.ifError((await isolated.client.auth.signInWithPassword({ email: isolatedEmail, password })).error);
+  const isolatedSignIn = await isolated.client.auth.signInWithPassword({ email: isolatedEmail, password });
+  assert.ifError(isolatedSignIn.error);
+  assert.ok(isolatedSignIn.data.session?.access_token);
+  const isolatedBearerClient = createUserAccessSupabaseClient(isolatedSignIn.data.session!.access_token);
+  const { data: bearerVisible, error: bearerReadError } = await isolatedBearerClient
+    .from("freight_requests").select("id").eq("id", receipt.freightRequestId);
+  assert.ifError(bearerReadError);
+  assert.deepEqual(bearerVisible, [], "Supabase Bearer + RLS must hide another organization's request");
+  const { data: bearerMutated, error: bearerMutationError } = await isolatedBearerClient
+    .from("freight_requests").update({ cargo_description: "cross-tenant mutation" })
+    .eq("id", receipt.freightRequestId).select("id");
+  assert.ifError(bearerMutationError);
+  assert.deepEqual(bearerMutated, [], "Supabase Bearer + RLS must prevent another organization's mutation");
   const crossOrgFind = toolResult((await rpc("tools/call", {
     name: "find_freight_options", arguments: findArgs,
   }, isolated.cookie())).body);

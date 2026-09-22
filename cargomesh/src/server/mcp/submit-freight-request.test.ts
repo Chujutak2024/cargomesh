@@ -13,7 +13,7 @@ function call(submit: SubmitFreightRequest, args: unknown, authError?: Error) {
     read: async () => { throw new Error("unexpected read"); },
     submit, configuration: () => ({
       mode: "local", environment: "test", localEnabled: true, remoteEnabled: false,
-      canonicalOrigin: undefined, allowedOrigins: undefined,
+      canonicalOrigin: undefined, allowedOrigins: undefined, profile: "V1_REGRESSION",
     }),
   });
   return handler(new Request("http://localhost:3000/mcp", {

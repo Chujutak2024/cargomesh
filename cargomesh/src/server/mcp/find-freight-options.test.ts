@@ -23,7 +23,7 @@ function harness(find: FindFreightOptions, authError?: Error) {
     find,
     configuration: () => ({
       mode: "local", environment: "test", localEnabled: true, remoteEnabled: false,
-      canonicalOrigin: undefined, allowedOrigins: undefined,
+      canonicalOrigin: undefined, allowedOrigins: undefined, profile: "V1_REGRESSION",
     }),
   });
   return async (arguments_: unknown) => {
