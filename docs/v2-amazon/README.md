@@ -16,6 +16,8 @@ Esta carpeta es la fuente de verdad documental de CargoMesh V2. V2 transforma el
 10. [LINEAR_ISSUE_TEMPLATE.md](./LINEAR_ISSUE_TEMPLATE.md): plantilla de issues nuevas.
 11. [LINEAR_REBASE_PLAN.md](./LINEAR_REBASE_PLAN.md): propuesta para reconstruir Linear sin perder historia.
 12. [SPRINT_ROADMAP.md](./SPRINT_ROADMAP.md): modelo 1+1+N, gates semanales y propuesta concreta para Sprint 1.
+13. [linear_sprint1_v2_rebase_proposal.md](./linear_sprint1_v2_rebase_proposal.md): issues propuestas para Sprint 1 con único dueño, ramas declaradas, DoD y documentos; no cargadas aún en Linear.
+14. [cargomesh_v2_milestones_architecture_roadmap.md](./cargomesh_v2_milestones_architecture_roadmap.md): auditoría de los Hitos 0–5 ya cargados y correcciones pendientes de aprobación en Linear.
 
 ## Estado
 

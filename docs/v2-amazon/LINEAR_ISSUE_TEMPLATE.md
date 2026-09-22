@@ -8,6 +8,7 @@ Usar esta estructura para toda issue nueva. El título combina `[ROL]` o `[SPIKE
 - **Sprint / milestone:** ciclo semanal y gate esperado.
 - **Tipo:** `core` / `enabler` / `emergente`.
 - **Responsable / rol:** una persona; coordinadores y revisores aparte.
+- **Rama del ciclo:** nombre exacto aprobado para esta issue con código; `No aplica` si es soporte sin código. No se crea antes de registrar este campo y el manifiesto semanal.
 - **Prioridad / labels:** según bloqueo e impacto, no por copiar V1.
 - **Fecha objetivo:** acordada con el responsable; distinguir freeze interno de plazo oficial.
 
@@ -32,6 +33,7 @@ Herramientas, servicios o puertos necesarios **solo si son reales para esta tare
 - **Bloqueada por / desbloquea:** IDs de issues cuando existan.
 - **Coordinar con:** persona y contrato compartido.
 - **Decisiones pendientes:** auth Alexa, credenciales, dataset, diseño, mini challenge, etc.
+- **Propiedad:** el responsable implementa, prueba y corrige su issue. Una dependencia solo obliga al otro dueño a entregar su contrato; la revisión del PR comienza al finalizar, no reparte el trabajo entre todos.
 
 ### Relación con V1 / PR previo
 
@@ -55,7 +57,7 @@ Antecedente HAC/PR y decisión explícita: `reutilizar`, `reemplazar`, `archivar
 
 ## Bloque C — Gobernanza y cierre
 
-- **Rama / PR target para código:** rama nueva por issue desde `codex/v2-amazon-contracts`; PR a esa base, nunca a `main`. Para enabler sin código: `No aplica`, con enlace o captura como evidencia.
+- **Rama / PR target para código:** usar **solo la rama predeclarada** por esta issue en el manifiesto del sprint, desde `codex/v2-amazon-contracts`; PR a esa base, nunca a `main`. Para enabler sin código: `No aplica`, con enlace o captura como evidencia. Una emergente con código requiere issue y rama aprobadas antes de abrirse.
 - **Despliegue:** un preview no autoriza cambiar Vercel producción ni su directorio raíz. Cualquier cambio de infraestructura externa requiere plan y autorización separados.
 - **Resumen de lo elaborado:** commits/archivos afectados o acciones externas, pruebas y resultados observados, limitaciones honestas.
 - **Friction log:** registrar un incidente material en `docs/04-execution/friction-logs/` y en la carpeta Drive acordada cuando aplique; no crear logs por cada error trivial corregido.
