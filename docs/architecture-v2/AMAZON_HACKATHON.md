@@ -1,5 +1,7 @@
 # CargoMesh — Amazon Developer Hackathon
 
+> **Plan intermedio archivado.** La frase "adaptación que no reemplaza" y el flujo WebMCP/Andes de este documento no definen CargoMesh V2. Véanse [alcance vigente](../v2-amazon/PRODUCT_SCOPE.md), [Alexa/MCP](../v2-amazon/ALEXA_MCP_AWS.md) y [ruta semanal](../v2-amazon/SPRINT_ROADMAP.md). No presentar el guion objetivo como demo ya ejecutada.
+
 > Status update: Hono bootstrap/draft creation and two MCP local tools (read/creation) exist. M2 requires permanent migration application and an authenticated MCP smoke test; local SQL checks passed. The other four MCP tools, remote auth, Alexa+ and Bedrock remain planned. The voice demo below is a target script, not execution evidence. See [MCP_TOOL_CONTRACTS.md](./MCP_TOOL_CONTRACTS.md) for missing submission, executor, auth and approval dependencies.
 
 ## What CargoMesh Was Before the Hackathon

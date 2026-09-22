@@ -1,5 +1,7 @@
 # CargoMesh MCP tool contracts
 
+> **Contrato intermedio, no normativo para V2.** Las seis tools propuestas, el executor WebMCP y BALANCED describen el plan anterior. Para crear issues o declarar capacidades live, usar [ALEXA_MCP_AWS.md](../v2-amazon/ALEXA_MCP_AWS.md), [ARCHITECTURE.md](../v2-amazon/ARCHITECTURE.md) y verificar el código. Las cuatro tools locales existentes son una base reutilizable, no integración Alexa+ final.
+
 Status: M1 local bootstrap, M2 draft creation and the M3 submit/find/get adapters are implemented on `feature/alexa/v1,0`. Local authenticated create, submit, find, persisted loading/completed get, replay and role/cross-organization denial were verified. Full M3 still requires an autonomous provider executor; the current browser continuation is manual. Initial source analysis: 2026-09-18 against application commit `d26c5e4`.
 
 The [local guide](../../cargomesh/src/server/mcp/README.md) covers the four registered tools: create_freight_request, submit_freight_request, find_freight_options and get_freight_options. Local Next → authenticated Supabase persistence and readback are verified; the completed-offer test uses a synthetic Result Bridge fixture, not an external provider. The booking/status/recovery tools below are not registered. No OAuth, Alexa+, Bedrock, AgentCore or Strands is implemented. [Sample Alexa+ tool arguments](alexa-sample-request-payload.json) and [example utterances](alexa-sample-utterances.md) illustrate a possible future client; they are not an integration.
