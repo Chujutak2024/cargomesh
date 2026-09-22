@@ -1,30 +1,9 @@
-import { FreightIntakeLoader } from "@/components/freight-intake-loader";
+import { V2IntakePrototype } from "@/features/v2-intake/v2-intake-prototype";
 import { requireOperationalRouteAccess } from "@/server/auth/route-guard";
-import {
-  DEFAULT_INTAKE_REQUEST_CODE,
-  isIntakeVisualScenario,
-  resolveIntakeRequestCode,
-} from "@/features/freight-requests/intake-ui-adapter";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewFreightRequestPage({
-  searchParams,
-}: {
-  searchParams: Promise<{
-    requestCode?: string | string[];
-    scenario?: string | string[];
-  }>;
-}) {
+export default async function NewFreightRequestPage() {
   await requireOperationalRouteAccess();
-  const query = await searchParams;
-  const requestedCode = resolveIntakeRequestCode(query.requestCode) ?? DEFAULT_INTAKE_REQUEST_CODE;
-
-  return (
-    <FreightIntakeLoader
-      requestCode={requestedCode}
-      defaultCleanMode={false}
-      visualScenario={isIntakeVisualScenario(query.scenario)}
-    />
-  );
+  return <V2IntakePrototype />;
 }

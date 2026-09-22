@@ -9,6 +9,29 @@
   --accent: #d2a95f;
   --success: #57c79a;
   --danger: #ff8a78;
+
+  /* CargoMesh V2 application tokens. Prefixed to avoid changing V1 surfaces. */
+  --cm-color-canvas: #f7f6f1;
+  --cm-color-surface: #ffffff;
+  --cm-color-surface-subtle: #f4f7f5;
+  --cm-color-ink: #1f2928;
+  --cm-color-heading: #123c3a;
+  --cm-color-muted: #687573;
+  --cm-color-line: #dde3e0;
+  --cm-color-primary: #185c55;
+  --cm-color-primary-hover: #123c3a;
+  --cm-color-focus: #2bae9a;
+  --cm-color-positive-surface: #ddf3ea;
+  --cm-color-accent: #d2a95f;
+  --cm-color-warning-surface: #fff4d9;
+  --cm-color-warning-ink: #755c26;
+  --cm-color-danger-surface: #fff4f1;
+  --cm-color-danger: #9b3325;
+  --cm-radius-sm: 0.5rem;
+  --cm-radius-md: 0.75rem;
+  --cm-radius-lg: 1rem;
+  --cm-shadow-card: 0 0.8rem 2.2rem rgb(18 60 58 / 6%);
+  --cm-control-height: 2.75rem;
 }
 
 * {
