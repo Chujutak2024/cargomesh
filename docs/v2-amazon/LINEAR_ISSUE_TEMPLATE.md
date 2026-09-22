@@ -1,4 +1,4 @@
-# Plantilla de issue Linear V2 — modelo 1 + 1 + N
+# Plantilla de issue Linear V2 — una principal por integrante; apoyos por necesidad
 
 Usar esta estructura para toda issue nueva. El título combina `[ROL]` o `[SPIKE/BUG/BLOCKER/CHORE]` + **verbo en infinitivo** + objeto/resultado comprobable; por ejemplo, `[BE-1] Validar contrato MCP de intake V2 sin executor WebMCP`. No asignar un ID HAC manualmente. Copiar solo los campos pertinentes; una tarea operativa no necesita rama ficticia.
 
@@ -9,7 +9,7 @@ Usar esta estructura para toda issue nueva. El título combina `[ROL]` o `[SPIKE
 - **Tipo:** `core` / `enabler` / `emergente`.
 - **Responsable / rol:** una persona; coordinadores y revisores aparte.
 - **Rama del ciclo:** nombre exacto aprobado para esta issue con código; `No aplica` si es soporte sin código. No se crea antes de registrar este campo y el manifiesto semanal.
-- **Prioridad / labels:** según bloqueo e impacto, no por copiar V1.
+- **Prioridad / labels:** usar labels existentes comprobadas en Linear; no escribir `v2`, `core` o `enabler` como labels aplicadas hasta crearlas con aprobación. El tipo puede constar en la descripción.
 - **Fecha objetivo:** acordada con el responsable; distinguir freeze interno de plazo oficial.
 
 ## Bloque B — Contexto operativo
@@ -63,4 +63,4 @@ Antecedente HAC/PR y decisión explícita: `reutilizar`, `reemplazar`, `archivar
 - **Friction log:** registrar un incidente material en `docs/04-execution/friction-logs/` y en la carpeta Drive acordada cuando aplique; no crear logs por cada error trivial corregido.
 - **Estado final del responsable:** `In Review` con PR/evidencia. **Solo el Tech Lead** mueve a `Done` tras verificar DoD y merge autorizado para código, o enlace/acceso para soporte.
 
-El modelo semanal permite una core y una enabler por persona; una emergente requiere bloqueo real, relación con su issue madre y DoD propio. Véase [SPRINT_ROADMAP.md](./SPRINT_ROADMAP.md).
+El sprint asigna una principal por persona y solo apoyos con entregable distinto y capacidad disponible; no se crean enablers por simetría. Una emergente requiere bloqueo real, relación con su issue madre y DoD propio. Véase [SPRINT_ROADMAP.md](./SPRINT_ROADMAP.md).

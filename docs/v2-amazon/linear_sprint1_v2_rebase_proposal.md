@@ -1,138 +1,178 @@
-# Propuesta corregida de rebase de Linear — Sprint 1 CargoMesh V2
+# Sprint 1 V2 — propuesta de issues para Linear
 
-**Estado:** propuesta para revisión; no crea ni modifica issues en Linear.
-**Proyecto:** `P-HAC-1 — CargoMesh V2 — Alexa Hackathon`.
-**Ciclo actual:** 19–25 de septiembre de 2026 en Lima (cierra el 26 a las 00:00).
-**Hito asociado:** HITO 1, ya cargado en Linear.
-**Base Git:** `codex/v2-amazon-contracts`; `main` fuera de alcance.
+**Estado:** propuesta de replanificación; ninguna issue nueva ni hito se modifica aquí. **Proyecto:** `P-HAC-1`. **Ciclo:** 19–25 septiembre 2026 (Lima). **Hito:** HITO 1, cuya descripción debe corregirse antes de cargar estas issues. **Base Git:** `codex/v2-amazon-contracts`; ningún push a `main`.
 
-## 1. Estado comprobado y correcciones
+## Objetivo real y corte del sprint
 
-En Linear, Sprint 1 contiene **HAC-17 y HAC-18 en `In Review`** y ocho issues de implementación **`Canceled`**: HAC-5 a HAC-10, HAC-19 y HAC-20. No hay todavía nuevas issues V2 del sprint. Conservar las canceladas como historia, sin reabrirlas ni contar sus seeds, tres carriers o resultados como avance V2. HAC-17/HAC-18 siguen como habilitadoras, sujetas a evidencia y cierre del Tech Lead.
+Al terminar Sprint 1 debe existir un **cimiento V2 integrado y comprobable**, no cinco auditorías sueltas: (1) modelo/mapping de datos multi-sede y servicios ROAD con migración/RLS; (2) MCP heredado de PR #80 adaptado a un límite seguro de identidad y transporte para Alexa+, más prueba Bedrock aislada si hay acceso; (3) sistema visual coherente y prototipo navegable del nuevo intake; (4) decisión de proveedor cartográfico con un mapa piloto que consuma un contrato de ruta y muestre fuente/estado; y (5) matriz QA transversal, escenario V2, suites y gate de integración. El corte habilita el Sprint 2; **no** promete aún marketplace, cotización de carriers, booking, optimización multimodal ni conexión Alexa+ en producción.
 
-Este texto sustituye las asignaciones anticipadas `HAC-21…HAC-28` del borrador: Linear asignará los identificadores al crear las issues. No se presupone que esos IDs sigan libres. La conexión MCP local y Hono del PR #80 ya están mergeadas en la base V2; no se vuelve a pedir «implementar el servidor desde cero» ni se declara Alexa+ remota por ese hecho. El HITO 1 habla de cimientos y prototipo: no obliga a entregar esta semana stepper completo, mapa multimodal, cotizaciones, booking o latencia p95 <700 ms. Los conteos 147/160/366 de pruebas son históricos; el gate descubre la suite vigente.
+«Alexa conectada con Bedrock» no es una conexión directa obligatoria: el trayecto correcto es Alexa+ → MCP de CargoMesh → servicios de dominio; Bedrock es un adaptador opcional para lenguaje natural, nunca autoridad para score, elegibilidad u oferta. El track Alexa+ exige MCP self-hosted compatible con MCP 2025-11-25/Streamable HTTP o la ruta alternativa de simulación claramente declarada; Bedrock no es requisito. El equipo sí puede proponerse una prueba Bedrock este sprint. Si faltan créditos/cuota/acceso, la issue de Axel no se da por «Bedrock integrado»: registra prueba bloqueada, fallback SSML determinista y decisión con fecha para Sprint 2. El [reglamento oficial](https://amazonappdev2026.devpost.com/rules) admite Kiro Crew por sí solo para AWS Builder si su uso está documentado. Empezar **ahora**, no en el sprint final: cada dueño conserva evidencia de un uso real; Jean Paul organiza la carpeta y el gate verifica qué se puede declarar.
 
-El [plazo oficial de Devpost](https://amazonappdev2026.devpost.com/rules) es el **23 de octubre de 2026 a las 12:00 PDT**. El 19 de octubre en Linear es una meta o freeze **interno propuesto**, no el cierre del concurso. Bedrock no es requisito del track Alexa+; los créditos AWS y su uso son decisiones separadas.
+La [guía Alexa+ MCP](https://www.developer.amazon.com/docs/alexaplus/add-ons/mcp-toolkit-quickstart.html) exige Streamable HTTP; la [página de acceso](https://developer.amazon.com/docs/alexaplus/add-ons/home.html) advierte disponibilidad para socios selectos. Por ello un servidor remoto probado y una conexión efectivamente invocada desde Alexa+ son evidencias distintas. El Tech Lead registra temprano acceso/no acceso y el camino de demo; no se finge que un test local sea Alexa live.
 
-## 2. Relación Hito ↔ Sprint ↔ issue
+## Estado y distribución
 
-- **HITO 0:** contratos base y delimitación V1/V2. No se marca terminado por checkboxes escritos si los PR de gobernanza o la revisión siguen abiertos.
-- **HITO 1 ↔ Sprint 1:** red de datos mínima ROAD, escenarios/pruebas, baseline MCP local inventariado, componentes y prototipo, catálogo de datos carrier y soporte AWS/Drive. Es el único hito al que se asignan las issues nuevas de este documento.
-- **Hitos 2–5:** definen resultados posteriores, no aceptan como entregada una capacidad solo porque exista en un milestone. Las seis issues antiguas de Sprint 2 no se reutilizan aquí; el equipo las replanteará después.
-- **Regla de cierre:** la issue se valida contra su propio DoD y evidencia. El hito resume el conjunto, no reemplaza el gate por issue.
+Linear muestra HAC-17 y HAC-18 en `In Review`; HAC-5…10, HAC-19 y HAC-20 siguen `Canceled` como V1/intermedio. No se reabren ni se duplican. HAC-11…16 de Sprint 2 no se modifican en este plan. Las referencias `S1-*` de abajo **no son IDs HAC**: Linear los asignará. Cada persona recibe **una issue principal con resultado sustancial**; solo Cristhian añade el gate y Axel/Jean Paul conservan sus soportes ya abiertos. No imponer una segunda issue a Luis o Juan por simetría. Si aparece trabajo nuevo, registrar una emergente con dueño, capacidad y DoD antes de crear otra rama.
 
-Aplicar el modelo **1 core + 1 enabler + N emergentes** por integrante: cinco core nuevas, tres enablers nuevas, más HAC-17/HAC-18 como enablers existentes. `N` no se precarga; una emergente requiere un bloqueo real, relación con su issue madre y DoD independiente. El gate de Cristhian es **su enabler**, no una undécima tarea adicional.
+| Referencia | Dueño/rol | Principal o apoyo | Fecha límite propuesta | Resultado que desbloquea Sprint 2 |
+|---|---|---|---|---|
+| S1-C1 | Cristhian · dominio/BD y validación de flujo | Principal nueva | 24 sep | Mapping, esquema y contratos compartidos de datos V2 |
+| S1-C2 | Axel · Alexa MCP/AWS | Principal nueva | 24 sep | Límite seguro MCP, prueba de transporte/identidad y decisión Bedrock |
+| S1-C3 | Jean Paul · QA y gestor de evidencia | Principal nueva | 25 sep | Escenario V2, matriz de pruebas/CI y reporte de riesgos |
+| S1-C4 | Luis · frontend | Principal nueva | 24 sep | Sistema visual refactorizado y prototipo navegable |
+| S1-C5 | Juan Antonio · mapa, tester y apoyo FE | Principal nueva | 25 sep | Decisión cartográfica + mapa piloto + pruebas de uso |
+| S1-E1 | Cristhian · integrador autorizado | Apoyo nuevo/gate | 25 sep | Integración controlada y acta de aceptación |
+| HAC-17 | Axel | Apoyo existente | 25 sep en Linear; gestión inmediata | Solicitud AWS comprobable, cuota/acceso separados |
+| HAC-18 | Jean Paul | Apoyo existente | 21 sep en Linear | Drive con acceso/evidencia Kiro Crew y friction logs |
 
-**Propiedad individual:** cada issue tiene un solo responsable, que implementa, prueba y corrige sus propios defectos. La dependencia de un contrato ajeno no convierte al proveedor del contrato en co-desarrollador de la issue consumidora. Si falta un contrato, se marca bloqueada y se coordina su entrega; los compañeros solo revisan el PR al terminar. No crear una issue «colaborativa» sin dueño para repartir la reparación de problemas.
+Fechas son objetivos de **Linear a confirmar con cada responsable**; el freeze técnico interno propuesto es 25 sep, no el cierre oficial del concurso (23 oct, 12:00 PDT). HAC-18 venció el 21 sep: verificar hoy 22 sep si su evidencia está lista; si no, mantener visible el retraso y replanificar explícitamente, no cerrar por calendario.
 
-**Paralelización:** al inicio Cristhian publica el esquema/tipos mínimos acordados, sin esperar toda la migración. Axel puede auditar el MCP de PR #80, Jean Paul diseñar fixtures/assercciones, Luis maquetar componentes y Juan catalogar fuentes en paralelo. Cada quien integra el contrato definitivo y corrige su propio PR después; una dependencia incumplida se registra como bloqueo, no se asigna al compañero para reparar la tarea ajena. Cristhian aprueba el manifiesto de ramas al inicio; el Gate-1 revisa entregas terminadas al cierre.
+## Manifiesto de ramas — declarar en Linear antes de crearlas
 
-## 3. Manifiesto cerrado de ramas del ciclo
+| Issue planificada | Rama exacta propuesta | Target |
+|---|---|---|
+| S1-C1 | `feat/be2-v2-domain-db-mapping` | `codex/v2-amazon-contracts` |
+| S1-C2 | `feat/be1-v2-alexa-mcp-security` | `codex/v2-amazon-contracts` |
+| S1-C3 | `feat/be3-v2-qa-foundation` | `codex/v2-amazon-contracts` |
+| S1-C4 | `feat/fe1-v2-design-system-prototype` | `codex/v2-amazon-contracts` |
+| S1-C5 | `feat/fe2-v2-map-provider-poc` | `codex/v2-amazon-contracts` |
+| S1-E1 | `feat/cycle-1-integration` | `codex/v2-amazon-contracts` |
+| HAC-17/18 | No aplica: gestiones/evidencia, sin código | No aplica |
 
-Las ramas se **declaran en la issue antes de crearlas**. Para Sprint 1 se proponen solo estas seis; no abrir ramas de conveniencia para auditorías o documentación sin issue y sin actualizar este manifiesto.
+Las cinco ramas técnicas parten de la base, cada una enlazada a su issue. La sexta se crea **solo** al recibir PRs revisables. Solapamientos se resuelven en esa rama del ciclo; el dueño de cada PR corrige sus propios defectos antes de `In Review`. Revisión final no significa codeveloping de una issue ajena. PR #81/#82 son correcciones de gobernanza preexistentes, no modelo para abrir ramas espontáneas. No cambiar `main`, Vercel producción ni su rootDirectory desde estas issues.
 
-| Referencia | Dueño | Rama declarada | Uso |
-|---|---|---|---|
-| S1-C1 | Cristhian | `feat/be2-v2-facilities-service-lanes` | Core datos. |
-| S1-C2 | Axel | `feat/be1-v2-mcp-baseline-audit` | Core MCP local/V2. |
-| S1-C3 | Jean Paul | `feat/be3-v2-pgtap-scenarios` | Core escenarios y pruebas. |
-| S1-C4 | Luis | `feat/fe1-v2-ui-components-and-prototype` | Core componentes + prototipo. |
-| S1-C5 | Juan Antonio | `feat/fe2-v2-carrier-contracts-audit` | Core catálogo/visualización preliminar. |
-| S1-E1 | Cristhian, integrador | `feat/cycle-1-integration` | Única rama de integración del gate, creada cuando existan PRs revisables. |
+## Fichas listas para Linear — usar los tres bloques de la plantilla
 
-Cada core nace de `codex/v2-amazon-contracts`, se vincula a **una issue nueva** y propone PR a esa base. Si hay solapamientos, el integrador usa `feat/cycle-1-integration`, ejecuta el gate y solo él fusiona a la base. Enablers de soporte no crean rama. Una tarea emergente con código necesita issue aprobada y rama añadida al manifiesto antes de empezar. Las ramas históricas V1 y las excepciones de gobernanza PR #81/#82 no son plantilla para abrir otras ramas; se resuelven en el gate sin borrarlas precipitadamente. No hay push, PR ni merge V2 a `main`.
+### S1-C1 — [BE-2] Modelar y aplicar la base de datos V2 para sedes y servicios ROAD
 
-## 4. Issues nuevas listas para redactar en Linear
+**Bloque A — metadatos.** V2 · P-HAC-1 · Sprint 1 · HITO 1 · `core`. Responsable: Cristhian Chujutalli (BD/flujo). Prioridad: High. Labels existentes: `backend`, `must-have`; tipo global `Feature`. Fecha límite propuesta: **2026-09-24** (Lima). Rama: `feat/be2-v2-domain-db-mapping`.
 
-Los códigos `S1-*` son referencias de planificación, **no IDs HAC**. Todas empiezan en `Backlog`/`Pendiente` hasta que su dueño acepte alcance y capacidad. Cada descripción definitiva debe usar los bloques A (metadatos), B (objetivo, alcance, dependencias, DoD) y C (rama, PR, evidencia y cierre) de `LINEAR_ISSUE_TEMPLATE.md`.
+**Bloque B — contexto operativo.** Objetivo: entregar un mapping entidad→tabla→relación→política de acceso que permita registrar organizaciones, sedes de shipper, depots, servicios, áreas de recojo/entrega y lanes dirigidas sin heredar cobertura de una sede. Incluye inventario del esquema existente y delta V1/V2, diagrama/matriz de cardinalidades, Zod/tipos compartidos, migración aditiva ROAD con constraints/índices/RLS y flujo mínimo DRAFT→PENDING con idempotencia/`draft_version` **solo donde el contrato existente requiera adaptación**, sin duplicar el escritor V1. Publicar un contrato tipado de ubicación/servicio y estados `eligible/ineligible/unknown` para consumidores. Pruebas propias de migración, aislamiento organizacional, lane A→B no B→A y sede sin cobertura. Documento: `docs/v2-amazon/SPRINT1_DATA_MAPPING.md` o ADR enlazado, con matriz y decisiones.
 
-### S1-C1 — Cristhian, core
+Fuera de alcance: flota/calendario exhaustivos, scoring, booking, seeds en migraciones y convertir tres carriers V1 en catálogo V2. Depende de contratos V2 existentes; entrega temprano esquema/tipos a Axel, Jean Paul, Luis y Juan. Coordinar nombres/API con ellos, pero Cristhian implementa y corrige su PR. Antecedente HAC-6 cancelada: reemplazar; reutilizar solo idempotencia probada. Herramientas: Supabase CLI, pgTAP, Zod; descubrir comandos vigentes del repo.
 
-**Título:** `[BE-2] Aplicar esquema V2 de sedes, áreas y lanes dirigidas con RLS comprobable`.
-**Hito/antecedente:** HITO 1; HAC-6 cancelada solo como referencia.
-**Rama:** `feat/be2-v2-facilities-service-lanes` → PR a `codex/v2-amazon-contracts`.
-**Incluye:** migración aditiva mínima para `Facility`, `CarrierDepot`, `ServiceArea` y `ServiceLane` ROAD; organización/rol, índices y constraints pertinentes; contrato de ubicación y lane dirigido compartido. **No incluye** calendario de flota, scoring, booking ni rehacer idempotencia ya existente.
-**DoD:** `supabase db reset` aplica sin datos sintéticos en migraciones; pruebas pgTAP de RLS y A→B ≠ B→A pasan; una sede sin área/lane no concede cobertura; migración y decisión de esquema quedan explicadas en `docs/v2-amazon/DOMAIN_CONTRACTS.md` o ADR enlazado. Entregar comando, resultado, PR y riesgos a `In Review`.
-**Dependencia:** publicar contrato/tipos temprano para S1-C3/C4/C5; coordinar frontera de archivos con Jean Paul.
+DoD:
+- [ ] Mapping cubre entidades, claves, cardinalidades, RLS, campos faltantes y decisiones para Sprint 2.
+- [ ] Migración aditiva aplica en reset limpio sin datos sintéticos; constraints/RLS y pruebas negativas pasan.
+- [ ] Contrato compartido de sedes/servicios/lanes es consumible sin hardcodear carrier y distingue desconocido de falso.
+- [ ] Camino DRAFT→PENDING existente se preserva o se adapta con prueba de idempotencia/concurrencia si se toca.
+- [ ] Documento, comandos/resultados, PR y riesgos se enlazan en la issue.
 
-### S1-C2 — Axel, core
+Checklist: contrato publicado → implementación propia → pruebas y correcciones propias → `In Review`.
 
-**Título:** `[BE-1] Aislar el MCP local mergeado de la continuación WebMCP V1 y documentar brechas Alexa+`.
-**Hito/antecedente:** HITO 1; PR #80 reutilizable, HAC-5 cancelada no completada.
-**Rama:** `feat/be1-v2-mcp-baseline-audit` → PR a la base V2.
-**Incluye:** inventario de las cuatro tools y transporte local existente; tests de protocolo/autorización y separación explícita entre `find/get` V1 y discovery V2; contrato de entrada/salida compatible con servicios compartidos; matriz de identidad remota y conexión Alexa+ pendiente. **No incluye** prometer Skill ASK, acceso Alexa live, tools futuras ni SSML p95 garantizado.
-**DoD:** `pnpm test:mcp` y typecheck pertinentes pasan; ninguna tool local-only se anuncia como Alexa+ live; `docs/v2-amazon/ALEXA_MCP_AWS.md` o ADR enlazado indica lo reutilizado, lo reemplazado y la prueba faltante para conectividad remota. PR y evidencia en `In Review`.
-**Dependencia:** ejemplos tipados de S1-C1; no bloquear el inventario inicial por la migración.
+**Bloque C — gobernanza y cierre.** PR desde rama declarada a base V2; nada a `main`. Sin despliegue de producción. En la issue: archivos/migración, reporte de reset/pgTAP/typecheck, limitaciones y friction log solo si material. Tech Lead mueve a `Done` únicamente después del gate y merge autorizado.
 
-### S1-C3 — Jean Paul, core
+### S1-C2 — [BE-1] Asegurar el MCP V2 para Alexa+ y probar el adaptador Bedrock opcional
 
-**Título:** `[BE-3] Crear escenario ROAD V2 y pruebas de cobertura dirigida, RLS y datos desconocidos`.
-**Hito/antecedente:** HITO 1; HAC-7 cancelada solo como referencia.
-**Rama:** `feat/be3-v2-pgtap-scenarios` → PR a la base V2.
-**Incluye:** `supabase/scenarios/v2-road-baseline/seed.sql` separado de migraciones y pruebas sobre esquema S1-C1. **No incluye** demostrar flota multimodal, tarifas o carrier live con seeds.
-**DoD:** escenario reproduce y limpia datos; pgTAP prueba sede sin cobertura, lane inversa, exclusión o dato faltante y aislamiento por organización según esquema entregado; suite descubierta y ejecutada sin exigir un número fijo; README del escenario registra origen sintético, carga, cleanup y comandos. Reportar fallos reales y PR en `In Review`.
-**Dependencia:** contrato/migración S1-C1; puede preparar fixtures y plan de pruebas antes del merge.
+**Bloque A.** V2 · P-HAC-1 · Sprint 1 · HITO 1 · `core`. Axel Arista (MCP/Alexa). High. Labels existentes: `backend`, `must-have`; tipo `Feature`. Límite: **2026-09-24**. Rama: `feat/be1-v2-alexa-mcp-security`.
 
-### S1-C4 — Luis, core
+**Bloque B.** Objetivo: pasar del `/mcp` local mergeado por PR #80 a un límite de servicio remoto **seguro y verificable** para la ruta Alexa+, sin confundirlo con una conexión live ya otorgada. Incluye inventario de cuatro tools y remoción/aislamiento de dependencias WebMCP V1 del contrato visible V2, configuración de Streamable HTTP, decisión de identidad/autoridad por organización, autenticación/autorización por tool, manejo de secretos, errores y límites de payload; prueba con cliente MCP externo en entorno controlado. Define qué acceso Developer Console/partner falta para una llamada desde Alexa real. Incluye un adaptador Bedrock detrás de feature flag para narrar un resultado ya calculado: ejecutar una invocación de sandbox si existen crédito/cuota/credenciales, registrar costo y latencia; si no, dejar integración no declarada y SSML determinista como fallback probado. Documento: `docs/v2-amazon/SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md` con diagrama de confianza, matriz live/local/bloqueado y decisión Sprint 2.
 
-**Título:** `[FE-1] Estandarizar componentes UI y presentar prototipo navegable del intake V2`.
-**Hito/antecedente:** HITO 1; HAC-8/HAC-19 canceladas solo como referencia.
-**Rama:** `feat/fe1-v2-ui-components-and-prototype` → PR a la base V2.
-**Incluye:** componentes reutilizables mínimos y prototipo de captura sede/ubicación, carga, ventana y restricciones con estados faltantes/`unknown`; accesibilidad básica y tokens existentes comprobados. **No incluye** submit real, subasta, todos los modos ni «botón canónico» como requisito del jurado.
-**DoD:** demo navegable con datos rotulados como escenario/prototipo, captura de estados vacíos y validación visual/accesibilidad, typecheck/build pertinentes; guía breve de componentes y decisiones de flujo en `docs/v2-amazon/` o enlace de diseño; aprobación/observaciones del equipo adjuntas a la issue.
-**Dependencia:** consume contrato de S1-C1; puede trabajar con interfaces tipadas provisionales sin fingir datos live.
+Fuera de alcance: que Bedrock calcule scores, prometer p95 <700 ms, ASK Skill obligatoria, booking por voz y publicar un endpoint abierto sin controles. Depende de contrato tipado S1-C1; se puede avanzar en auth/transporte con fixtures locales. HAC-5 cancelada se reemplaza; PR #80 aporta código, no DoD V2. HAC-17 gestiona crédito, no bloquea el control de seguridad. Herramientas: MCP SDK, Hono, tests de protocolo y, condicionalmente, AWS SDK/Bedrock; credenciales nunca en repo ni evidencia.
 
-### S1-C5 — Juan Antonio, core
+DoD:
+- [ ] Transporte/protocolo 2025-11-25 y auth/autorización se prueban con casos válidos y negativos; tool de otra organización no filtra datos.
+- [ ] Endpoint local/remoto de prueba está rotulado; llamada Alexa+ live solo si hay evidencia de invocación real.
+- [ ] Bedrock sandbox call real con salida y costo/latencia **o** bloqueo documentado y fallback SSML probado; no se marca “integrado” por un mock.
+- [ ] Tools V1 no se anuncian como discovery V2; los contratos de respuesta distinguen fuente y estado.
+- [ ] Documento, amenazas, pruebas/comandos y PR están enlazados.
 
-**Título:** `[FE-2] Catalogar servicios y representar cobertura ROAD preliminar con procedencia visible`.
-**Hito/antecedente:** HITO 1; HAC-9/HAC-20 canceladas solo como referencia.
-**Rama:** `feat/fe2-v2-carrier-contracts-audit` → PR a la base V2.
-**Incluye:** matriz `CarrierService`/área/lane/fuente y visualización o wireframe de un corredor ROAD con `eligible/ineligible/unknown`; distingue sede de cobertura y estimación de oferta. **No incluye** mapa multimodal live, scraping, cinco WebMCP tools por carrier ni cotizaciones confirmadas.
-**DoD:** casos sede sin cobertura y socio sin sede documentados; el prototipo no representa una zona como atendida por proximidad ni marca permisos como concedidos; evidencia visual y matriz de fuentes/precisión en `docs/v2-amazon/` o enlace verificable; typecheck/build si se entrega código.
-**Dependencia:** contrato S1-C1 y datos sintéticos S1-C3; coordinar UI con Luis.
+Checklist: matriz de acceso → hardening propio → prueba de cliente/Bedrock o bloqueo → revisión del propio PR → `In Review`.
 
-### S1-E1 — Cristhian, enabler/gate
+**Bloque C.** PR a base V2 desde la rama declarada. Preview/URL de prueba no cambia Vercel producción. Resumen identifica exactamente local, remoto, Alexa live, simulado y Bedrock real/no disponible; friction log si el acceso de partner o cuota bloquea materialmente. Tech Lead valida y cierra tras gate.
 
-**Título:** `[GATE-1] Validar ramas e integrar entregas de Sprint 1 contra contratos V2`.
-**Hito:** HITO 1. **Rama declarada:** `feat/cycle-1-integration` → PR a la base V2; no crearla hasta tener PRs revisables.
-**Incluye:** aprobar al inicio el manifiesto de ramas/PR/issue y dependencias; al cierre revisar entregas terminadas, #81/#82 y el preview Vercel por separado, ejecutar la suite descubierta (DB, typecheck, pruebas pertinentes, build) y publicar acta de decisiones. **No incluye** corregir los PRs de otros, cambiar `main` o producción, ni marcar todo el hito completo por un build local.
-**DoD:** acta en `docs/04-execution/` con PRs integrados/no integrados y motivo, comandos/resultados, contratos/evidencias comprobados y friction logs materiales; solo el Tech Lead autorizado fusiona y mueve **cada issue aceptada** a `Done`. Lo bloqueado permanece `In Review` o se replanifica.
+### S1-C3 — [BE-3] Construir la base QA V2 y certificar el corte transversal del sprint
 
-### S1-E2 — Axel, HAC-17 existente
+**Bloque A.** V2 · P-HAC-1 · Sprint 1 · HITO 1 · `core`. JEAN PAUL (QA/gestor). High. Labels existentes: `audit`, `must-have`; tipo `Feature`. Límite: **2026-09-25**. Rama: `feat/be3-v2-qa-foundation`.
 
-**Objetivo corregido:** solicitar los créditos AWS con el [formulario enlazado por las reglas oficiales](https://amazonappdev2026.devpost.com/rules) y guardar comprobante. El formulario actualmente escrito en HAC-17 no coincide con el oficial: verificarlo antes del cierre. **No exigir Bedrock habilitado** para considerar realizada la solicitud; acceso, cuota y uso real son estados separados. Sin rama. El Tech Lead valida evidencia y decide `Done`.
+**Bloque B.** Objetivo: hacer reproducible y medible el corte V2, no contar tests V1 como prueba del producto nuevo. Incluye escenario `supabase/scenarios/v2-road-baseline/` con seed/cleanup/verify y README de procedencia sintética; matriz trazable contrato→caso→comando→resultado para RLS, lanes, identidad MCP, idempotencia, estados desconocidos y UI/mapa; pgTAP/integración para la BD de S1-C1 y tests MCP negativos sobre interfaz de S1-C2; smoke de build/preview y lista de defectos por dueño. Reporte de QA en `docs/v2-amazon/SPRINT1_QA_MATRIX.md`. Preparar gates CI reproducibles sin cantidades fijas.
 
-### S1-E3 — Jean Paul, HAC-18 existente
+Fuera de alcance: implementar código de Axel/Luis/Juan o reparar sus PR; QA devuelve defectos al dueño. Depende de interfaces tempranas de C1/C2/C4/C5, pero puede preparar escenario y matriz en paralelo. HAC-7 cancelada: reemplazar MCDA 6D por cobertura V2. HAC-18 cubre Drive/evidencias, no pruebas. Herramientas: Supabase/pgTAP, runner MCP y scripts reales del repositorio.
 
-**Objetivo corregido:** estructura Drive de evidencias accesible al equipo, con carpeta de producto, AWS Builder/Kiro Crew, demo y friction logs; no presentar evidencias vacías como integración. Sin rama. El Tech Lead prueba enlace/permisos y decide `Done`.
+DoD:
+- [ ] Escenario V2 carga y limpia sin mezclarse con migraciones ni fixtures FR-1042.
+- [ ] Casos negativos RLS, sede sin cobertura, lane inversa y MCP no autorizado son reproducibles; casos FE/mapa tienen observación o prueba definida.
+- [ ] Matriz reporta pass/fail/bloqueado y propietario del defecto con comandos exactos; no exige 160/36 pruebas heredadas.
+- [ ] CI o comandos locales ejecutables se documentan; fallos no se maquillan como verde.
+- [ ] PR, README, matriz y resumen de riesgos enlazados.
 
-### S1-E4 — Luis, enabler sin código
+Checklist: matriz → fixtures/tests propios → ejecución → defectos a sus dueños → `In Review`.
 
-**Título:** `[FE-1] Mapear campos V1 reutilizables y validar el alcance del prototipo V2 con el equipo`.
-**DoD:** matriz `reutilizar/reemplazar/retirar` para sede, carga, pesos, fechas y preferencias; compartir el contrato de campos con BE-1/BE-2 y registrar comentarios/decisión del equipo vinculados a S1-C4. Sin rama ni PR; entrega en `In Review` con documento verificable.
+**Bloque C.** PR a base V2; no despliegue prod. QA no mueve a `Done` tareas ajenas; Tech Lead valida su issue con escenario, pruebas y evidencia en Gate-1.
 
-### S1-E5 — Juan Antonio, enabler sin código
+### S1-C4 — [FE-1] Estandarizar la interfaz V2 y entregar prototipo navegable del intake
 
-**Título:** `[FE-2] Inventariar fuentes y vacíos de datos para cobertura y mapa ROAD V2`.
-**DoD:** tabla de origen, precisión, fecha y estado para área, lane, corredor, capacidad y costo; identifica dato sintético/estimado/confirmado y comparte vacíos con BE-2/BE-3 además de S1-C5. Sin rama ni PR; entrega en `In Review` con enlace verificable.
+**Bloque A.** V2 · P-HAC-1 · Sprint 1 · HITO 1 · `core`. Luis (frontend). High. Labels existentes: `frontend`, `must-have`; tipo `Feature`. Límite: **2026-09-24**. Rama: `feat/fe1-v2-design-system-prototype`.
 
-## 5. Documentos mínimos del sprint y cierre
+**Bloque B.** Objetivo: reutilizar coherentemente identidad visual y patrones útiles de V1, corrigiendo duplicados e inconsistencias, y validar la nueva experiencia V2 antes del stepper conectado del Sprint 2/3. Incluye inventario de botones, inputs, selects, badges, modals, estados de error/carga, colores/tipografía/espaciado; tokens y componentes accesibles/responsivos; migración de las pantallas objetivo sin cambiar toda la aplicación; prototipo navegable Dashboard→solicitud (sede/ubicación, carga/peso/volumen/tipo, fecha, preferencia de equipo, resumen) con sugerencias provisionales y estados `unknown`. Entregar guía de diseño, flujo/capturas y decisión de qué se conserva/reemplaza en `docs/v2-amazon/SPRINT1_UI_PROTOTYPE.md` o link estable.
 
-| Responsable | Documento/evidencia exigible para Sprint 1 |
-|---|---|
-| BE-2 | Contrato o ADR de red de datos + migración/RLS y comandos de reset. |
-| BE-1 | Inventario MCP local/PR #80 + brechas de autenticación, Alexa remota y discovery V2. |
-| BE-3 | README del escenario V2 + reporte de pgTAP/CI sin conteos heredados. |
-| FE-1 | Guía de componentes/prototipo + matriz de campos y observaciones del equipo. |
-| FE-2 | Catálogo de fuentes/áreas/lanes + captura de visualización preliminar honesta. |
-| Tech Lead | Acta Gate-1 con manifiesto de ramas, PRs, suites, decisiones y friction logs. |
+Fuera de alcance: submit real, ofertas y ranking operativos, automatización WebMCP o refactor global cosmético. Consume tipos provisionales de C1 y consulta estados de mapa a C5; no espera a que la DB esté terminada para prototipar. HAC-8/HAC-19 canceladas: reutilizar estilo si sigue válido, no sus DoD. Herramientas: componentes/tokens del repo y herramienta de prototipado que use el equipo; no se presupone Figma.
 
-El responsable termina en `In Review` con PR y resumen si hay código, o enlace/acceso si es soporte. **Solo el Tech Lead** valida el DoD y pasa a `Done`. No usar `Closes HAC-X` o automatizaciones que cambien a `Done` antes del gate; vincular PR con la issue sin cierre automático si la configuración de Linear/GitHub lo permite.
+DoD:
+- [ ] Inventario y matriz reutilizar/reemplazar con ejemplos antes/después para botones, inputs, modals, colores y estados.
+- [ ] Componentes objetivos no duplican reglas visuales, cubren foco/teclado/errores y se verifican en anchos móvil/escritorio.
+- [ ] Prototipo navegable muestra pasos y datos V2, diferencia preliminar/desconocido/confirmado y obtiene feedback del equipo.
+- [ ] Build/typecheck y revisión visual pertinentes quedan evidenciados; no se presenta prototipo como flujo transaccional live.
+- [ ] Guía/flujo, PR, screenshots y decisiones pendientes enlazadas.
 
-## 6. Orden de carga posterior en Linear
+Checklist: auditoría visual → tokens/componentes → prototipo → validación y corrección propia → `In Review`.
 
-1. Confirmar con los cinco responsables alcance/capacidad restante, nombres de ramas, labels y objetivo del HITO 1. No modificar Sprint 2 en esta operación.
-2. Crear **ocho** issues nuevas: S1-C1…C5 y S1-E1/E4/E5; asociarlas a Sprint 1 e HITO 1. Linear asigna los HAC reales. Mantener HAC-17/HAC-18 sin duplicar.
-3. Escribir en cada issue su rama exacta o `No aplica`, dependencias, documento y DoD. Marcar `Backlog`/`Pendiente`; pasar a `In Progress` solo cuando comience el trabajo.
-4. Mantener las ocho V1 `Canceled` y vincular antecedentes desde las nuevas. Etiquetar `v1-legacy` solo si se crea/aprueba esa label, sin falsear progreso.
-5. En el gate, cerrar únicamente entregas verificadas; no inferir progreso de un PR mergeado previamente, un seed o un preview.
+**Bloque C.** PR a base V2 desde rama declarada. Preview no autoriza alterar rootDirectory de Vercel ni producción. Tech Lead valida DoD, revisión FE y gate antes de `Done`.
+
+### S1-C5 — [FE-2] Seleccionar proveedor cartográfico e integrar un mapa piloto de rutas V2
+
+**Bloque A.** V2 · P-HAC-1 · Sprint 1 · HITO 1 · `core`. Juan Antonio Coronado Palacios (mapa, tester y apoyo FE). High. Labels existentes: `frontend`, `audit`; tipo `Feature`. Límite: **2026-09-25**. Rama: `feat/fe2-v2-map-provider-poc`.
+
+**Bloque B.** Objetivo: decidir Google Maps frente a una alternativa viable y demostrar el contrato mínimo de mapa que consumirá el discovery V2. Incluye comparación documentada de licencia, costo/cuota, geocodificación/rutas ROAD, cobertura, latencia, gestión de API key y límites de uso; decisión con riesgo y fallback. Implementar un adaptador aislado con mapa piloto que pinte origen/destino, ruta/corredor y estado/fuente de distancia/ETA para escenario V2, sin inferir cobertura carrier por cercanía. Si hay API key autorizada, probar la consulta real con key restringida; si no, separar mapa renderizado con dato sintético de integración externa pendiente. Probar interacción/teclado/responsividad y entregar observaciones a Luis como revisión, no reparar su issue. Documento: `docs/v2-amazon/SPRINT1_MAP_PROVIDER_DECISION.md` con matriz y evidencia.
+
+Fuera de alcance: mapa multimodal live, peajes/permisos o aduanas confirmados, optimizador, tarifas de carrier y hardcodear una única API en dominio. Consume tipo de ruta/área de C1 y estilo de C4; puede investigar proveedor desde el día uno. HAC-9/HAC-20 canceladas: reemplazar, no reclamar su progreso. Herramientas: proveedor seleccionado/SDK oficial y pruebas FE; estimaciones llevan fuente/fecha.
+
+DoD:
+- [ ] Comparativa Google Maps vs al menos una opción alternativa y ADR con costos/cuotas/seguridad/fallback.
+- [ ] Mapa piloto renderiza escenario V2 y distingue ruta estimada, ausencia de dato y servicio carrier no confirmado.
+- [ ] Key no queda en código, screenshots o logs; si falta acceso, integración real queda `pendiente` y no se declara live.
+- [ ] Smoke de UI móvil/escritorio/teclado, build/typecheck y evidencia de proveedor o bloqueo.
+- [ ] PR, ADR, capturas y hallazgos para Luis/QA enlazados.
+
+Checklist: investigación → contrato/adaptador → mapa piloto → test propio → `In Review`.
+
+**Bloque C.** PR a base V2; ningún cambio de Vercel prod. Tech Lead verifica seguridad de key, evidencia y gate antes de `Done`.
+
+### S1-E1 — [GATE-1] Integrar y aceptar el cimiento V2 del Sprint 1
+
+**Bloque A.** V2 · P-HAC-1 · Sprint 1 · HITO 1 · `enabler`. Cristhian (integrador autorizado/Tech Lead). High. Labels existentes: `integration-gate`, `must-have`; tipo `Improvement`. Límite: **2026-09-25**. Rama condicional: `feat/cycle-1-integration`.
+
+**Bloque B.** Objetivo: evitar cinco PRs aislados. Incluye aprobar manifiesto issue→rama al inicio, acordar superficies compartidas, revisar PRs **terminados**, integrar en rama de ciclo solo los aceptables, ejecutar reset/pgTAP/MCP/build/typecheck/preview según scripts descubiertos, registrar dependencia/bloqueo y decisión de demo Alexa/Bedrock/Kiro Crew. Documento: `docs/04-execution/SPRINT1_GATE_V2.md` con matriz issue→PR→test→evidencia→estado. Incluye revisar PR #81/#82 según dependencias, sin merge automático. Fuera: arreglar el código de los demás, push a `main`, producción y declarar HITO 1 completo con una sola prueba. Depende de C1…C5, HAC-17/18 para su evidencia particular. HAC-10 cancelada se reemplaza.
+
+DoD:
+- [ ] Manifiesto aprobado antes de crear ramas; PRs y dependencias trazables.
+- [ ] Integración de entregas aceptadas con comandos/resultados reales, fallos y responsable visibles.
+- [ ] HITO 1 describe correctamente lo entregado y lo diferido; decisión Alexa real/simulado y Bedrock real/bloqueado documentada.
+- [ ] Cada issue se acepta/rechaza individualmente por DoD; no se marca `Done` por estar en el ciclo.
+- [ ] Acta y friction logs materiales enlazados.
+
+Checklist: manifiesto → PRs listos → gate → acta → cierre individual autorizado.
+
+**Bloque C.** Abrir rama de integración solo al existir PRs revisables, PR a base V2, sin auto-close de HAC. Un fallo de Vercel preview se trata como incidencia separada. Solo Tech Lead fusiona y mueve a `Done` cada issue aceptada.
+
+### HAC-17 existente — [BE-1] Solicitar créditos AWS
+
+**Bloque A.** V2 · P-HAC-1 · Sprint 1 · HITO 1 · `enabler existente`. Axel. Urgent. Label existente `Request`. Fecha ya cargada: **2026-09-25**. Rama: No aplica.
+
+**Bloque B.** Corregir la descripción sin reabrir ni duplicar: comprobar formulario/plazo oficiales, enviar solicitud, guardar acuse y estado de cuota Bedrock. La solicitud no equivale a créditos aprobados ni a Bedrock ejecutado; esa prueba pertenece a C2. Fuera: prometer disponibilidad inmediata. Dependencia: C2 consume el resultado, pero progresa en auth/SSML aunque los créditos no lleguen. DoD: comprobante con fecha y destinatario, responsable de seguimiento y acceso seguro; si se rechaza, evidencia y alternativa explícita.
+
+**Bloque C.** Sin PR, sin secretos en Drive. Está `In Review`; Tech Lead comprueba acuse y decide `Done`. La cuota pendiente queda como riesgo separado.
+
+### HAC-18 existente — [OPS] Organizar Drive y evidencia de construcción
+
+**Bloque A.** V2 · P-HAC-1 · Sprint 1 · HITO 1 · `enabler existente`. JEAN PAUL. High. Label existente `management`. Fecha ya cargada: **2026-09-21**. Rama: No aplica.
+
+**Bloque B.** Corregir la descripción: carpeta accesible al equipo con índice por issue/PR, Kiro Crew, AWS/Bedrock, demo, QA y friction logs; permisos verificados y sin datos sensibles. Cada responsable aporta evidencia de uso real de Kiro Crew desde Sprint 1; Jean Paul clasifica, no inventa logs. Fuera: que una carpeta vacía pruebe uso de AWS. DoD: URL/acceso probado, estructura e índice, muestra de evidencia auténtica con fecha/autor/resultado y regla de redacción de secretos.
+
+**Bloque C.** Sin PR. `In Review` solo con enlace funcional; Tech Lead verifica y mueve a `Done`. Si aún no se logra, registrar vencimiento/replanificación.
+
+## Dependencias, cierre y carga
+
+Secuencia crítica: C1 publica tipos tempranos → C2/C3/C4/C5 los consumen; C4 y C5 acuerdan sólo el contrato visual del mapa; C3 prueba negativos a medida que llegan los PRs; E1 integra **después** de revisión. Cada dueño repara sus errores. El DoD de cada issue exige documento/evidencia exacta, comandos y PR cuando aplica. `Backlog` al crear, `In Progress` al comenzar, `In Review` con entregable listo, `Done` solo tras gate/merge o verificación de soporte.
+
+Antes de cargar: confirmar capacidad y fechas con los cinco; corregir HITO 1 para incluir **Alexa MCP segura + experimento Bedrock condicionado + mapa piloto** sin trasladar toda la elegibilidad de HITO 2; mantener su target 25 sep; aprobar seis ramas y labels existentes. Luego crear **seis** issues nuevas (C1…C5 y E1), asociar Sprint 1/HITO 1 y vincular canceladas como antecedentes; actualizar HAC-17/18 sin duplicarlas. No tocar Sprint 2 aún. `v2`/`core`/`enabler` pueden agregarse como labels **solo** si el equipo autoriza crearlas: no existían en la consulta de labels de equipo del 21 sep; el campo tipo en la descripción basta por ahora.

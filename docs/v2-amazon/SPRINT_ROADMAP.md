@@ -1,21 +1,21 @@
 # Ruta por sprint — CargoMesh V2
 
-El [roadmap de hitos cargados](./cargomesh_v2_milestones_architecture_roadmap.md) distingue resultados, fechas y capacidades aún no implementadas. La [propuesta de issues de Sprint 1](./linear_sprint1_v2_rebase_proposal.md) es la especificación detallada de dueños, ramas, dependencias, DoD y documentos para **esta semana**. No se han creado esas issues en Linear.
+El [roadmap de hitos](./cargomesh_v2_milestones_architecture_roadmap.md) separa resultados y fechas; la [propuesta de Sprint 1](./linear_sprint1_v2_rebase_proposal.md) es la ficha completa de cada issue. A 21 sep no se han creado esas seis issues nuevas en Linear.
 
-## Regla operativa
+## Regla operativa y ramas
 
-Cinco personas, cada una con **una core y una enabler**. HAC-17/HAC-18 ya ocupan las enablers de Axel/Jean Paul; el Gate-1 es la enabler de Cristhian. Las emergentes se justifican al aparecer, no se precargan. Cada issue tiene un solo dueño que implementa, prueba y corrige; otros entregan contratos dependientes o revisan el PR cuando está listo. El responsable entrega en `In Review`; solo el Tech Lead valida y mueve a `Done`.
+Cinco personas, **una issue principal sustancial por persona**. Los apoyos se agregan solo con resultado separable y capacidad: HAC-17 de Axel, HAC-18 de Jean Paul y Gate-1 de Cristhian ya cubren tres necesidades. No se fuerza una secundaria a Luis o Juan. Cada dueño implementa, prueba y corrige su PR; las revisiones empiezan cuando entrega `In Review`. Solo el Tech Lead autorizado acepta `Done`.
 
-Las ramas se declaran **antes de crearlas** en la issue y el manifiesto de ciclo. Sprint 1 permite cinco ramas core + `feat/cycle-1-integration` para el gate; soporte sin código no abre rama. No abrir ramas improvisadas como las excepciones históricas PR #81/#82. La base es `codex/v2-amazon-contracts` y `main` queda fuera del flujo V2.
+Antes de abrir una rama, registrar issue, dueño, fecha, labels, DoD y rama exacta en el manifiesto. Sprint 1 declara cinco ramas principales y `feat/cycle-1-integration`, que se abre solo al existir PRs revisables. Todas parten de y hacen PR a `codex/v2-amazon-contracts`. Soporte HAC-17/18 no necesita rama. No reutilizar V1, improvisar ramas, pushear a `main` ni alterar Vercel producción para arreglar el preview.
 
 ## Secuencia de resultados
 
 | Ciclo en Linear | Hito | Resultado/gate y documentación mínima |
 |---|---|---|
-| Sprint 1 · 19–25 sep (Lima) | HITO 1 | Red ROAD mínima, RLS, escenario/pruebas, baseline MCP local, componentes/prototipo y catálogo de fuentes. Acta Gate-1 con manifiesto de ramas, PRs, comandos y decisiones. HAC-17/18 con comprobantes. |
-| Sprint 2 · 26 sep–2 oct | HITO 2 | Elegibilidad/capacidad y seguridad MCP remota, según issues **por definir**. HAC-11…16 viejas no son compromisos V2; no se modifican en esta replanificación. |
-| Sprint 3 · 3–9 oct | HITO 3 | Intake Web, discovery ROAD, oferta atribuible, ranking versionado y mapa con procedencia; cada integración requiere datos/pruebas propios. |
+| Sprint 1 · 19–25 sep (Lima) | HITO 1 **a corregir** | Mapping y esquema V2 ROAD con RLS; límite MCP seguro para Alexa+ y experimento Bedrock condicionado a acceso; sistema visual y prototipo V2; decisión Google Maps/alternativa con mapa piloto; escenario QA V2 y gate integrado. Docs de datos, Alexa/Bedrock, UI, mapa, QA, acta Gate-1. HAC-17/18 con comprobantes. No prometer Alexa live ni Bedrock sin invocación real. |
+| Sprint 2 · 26 sep–2 oct | HITO 2 | Sobre cimientos aceptados: elegibilidad física/capacidad por fecha, servicios compartidos Web/MCP, conexión Alexa+ si se obtiene acceso o demo simulada rotulada, continuación Bedrock solo si aporta valor. Issues **por rediseñar**; HAC-11…16 anteriores no se tratan como compromiso V2. |
+| Sprint 3 · 3–9 oct | HITO 3 | Stepper conectado, discovery ROAD, oportunidad y oferta atribuible, ranking versionado y mapa con procedencia. |
 | Sprint 4 · 10–16 oct | HITO 4 | E2E Web/Alexa real o simulación rotulada, autorización humana y auditoría; benchmark con baseline y p50/p95. |
-| Sprint 5 · 17–23 oct | HITO 5 | Freeze interno propuesto el 19, regresión, guía para jueces, video <3 min, feedback y envío antes del [cierre oficial del 23 de octubre, 12:00 PDT](https://amazonappdev2026.devpost.com/rules). |
+| Sprint 5 · 17–23 oct | HITO 5 | Freeze interno propuesto el 19, regresión, guía de jueces, video <3 min, feedback y envío antes del [cierre oficial del 23 oct 12:00 PDT](https://amazonappdev2026.devpost.com/rules). |
 
-Sprints 6/7 ocurren después del cierre oficial y no contienen entregables de la postulación. Los resultados de Sprints 2–5 son orientación de hitos ya cargados, no ramas ni issues aprobadas. La capacidad ROAD demostrada no permite anunciar flota multimodal, cotizaciones live, Alexa remota o Bedrock sin evidencia ejecutable.
+**Kiro Crew:** comenzar a usar y documentar en Sprint 1, asociado a tareas reales; Jean Paul custodia evidencia y el Gate-1 comprueba qué puede declararse para AWS Builder. El reglamento permite Kiro Crew como herramienta de desarrollo por sí sola. Bedrock es una decisión técnica opcional, no dependencia del track ni condición artificial para cerrar todo Sprint 1. Hitos 2–5 orientan, pero no preasignan ramas ni issues. Sprints 6/7 quedan fuera del plazo oficial.
