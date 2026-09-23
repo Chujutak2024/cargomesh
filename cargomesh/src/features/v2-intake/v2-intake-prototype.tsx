@@ -25,6 +25,7 @@ import {
   PROVISIONAL_PROTOTYPE_DRAFT,
   findPrototypeFacility,
   getPrototypeEvidence,
+  validatePrototypeReview,
   validatePrototypeStep,
   type PrototypeStep,
   type PrototypeValidationIssue,
@@ -65,18 +66,42 @@ export function V2IntakePrototype() {
     if (issue.code === "invalid-date") return t("Ingresa una fecha válida.", "Enter a valid date.");
     return t("Este campo es obligatorio.", "This field is required.");
   };
+  const focusValidationSummary = () => {
+    requestAnimationFrame(() => errorRef.current?.focus());
+  };
+  const enterReview = () => {
+    const validation = validatePrototypeReview(draft);
+    if (!validation.valid) {
+      setStep(validation.invalidStep);
+      setIssues(validation.issues);
+      focusValidationSummary();
+      return false;
+    }
+
+    setIssues([]);
+    setStep(4);
+    setMaxVisited((current) => Math.max(current, 4) as PrototypeStep);
+    return true;
+  };
   const goNext = () => {
     const nextIssues = validatePrototypeStep(step, draft);
     setIssues(nextIssues);
     if (nextIssues.length) {
-      requestAnimationFrame(() => errorRef.current?.focus());
+      focusValidationSummary();
       return;
     }
     if (step < 4) {
       const next = (step + 1) as PrototypeStep;
+      if (next === 4) {
+        enterReview();
+        return;
+      }
       setStep(next);
       setMaxVisited((current) => Math.max(current, next) as PrototypeStep);
     }
+  };
+  const confirmPrototype = () => {
+    if (enterReview()) setDialogOpen(true);
   };
   const loadExample = () => {
     setDraft(PROVISIONAL_PROTOTYPE_DRAFT);
@@ -125,7 +150,14 @@ export function V2IntakePrototype() {
                 key={label}
                 type="button"
                 aria-current={active ? "step" : undefined}
-                onClick={() => { setStep(number); setIssues([]); }}
+                onClick={() => {
+                  if (number === 4) {
+                    enterReview();
+                    return;
+                  }
+                  setStep(number);
+                  setIssues([]);
+                }}
               >
                 <span className={styles.stepNumber}>{complete ? <Check size={15} aria-hidden="true" /> : <Icon size={15} aria-hidden="true" />}</span>
                 <span className={styles.stepCopy}><small>{t(`Paso ${number}`, `Step ${number}`)}</small><strong>{label}</strong></span>
@@ -153,7 +185,7 @@ export function V2IntakePrototype() {
               <Button variant="ghost" type="button" onClick={reset}><RotateCcw size={16} aria-hidden="true" />{t("Reiniciar", "Reset")}</Button>
               <div className={styles.footerRight}>
                 {step > 1 ? <Button variant="secondary" type="button" onClick={() => { setStep((step - 1) as PrototypeStep); setIssues([]); }}><ArrowLeft size={16} aria-hidden="true" />{t("Anterior", "Back")}</Button> : null}
-                {step < 4 ? <Button type="button" onClick={goNext}>{t("Continuar", "Continue")}<ArrowRight size={16} aria-hidden="true" /></Button> : <Button variant="accent" type="button" onClick={() => setDialogOpen(true)}><ClipboardCheck size={16} aria-hidden="true" />{t("Validar prototipo", "Validate prototype")}</Button>}
+                {step < 4 ? <Button type="button" onClick={goNext}>{t("Continuar", "Continue")}<ArrowRight size={16} aria-hidden="true" /></Button> : <Button variant="accent" type="button" onClick={confirmPrototype}><ClipboardCheck size={16} aria-hidden="true" />{t("Validar prototipo", "Validate prototype")}</Button>}
               </div>
             </footer>
           </section>

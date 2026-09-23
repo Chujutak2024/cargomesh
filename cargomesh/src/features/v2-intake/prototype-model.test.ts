@@ -8,6 +8,7 @@ import {
   PROVISIONAL_PROTOTYPE_DRAFT,
   getPrototypeEvidence,
   validatePrototypeDraft,
+  validatePrototypeReview,
   validatePrototypeStep,
 } from "./prototype-model";
 
@@ -46,6 +47,21 @@ test("weight and volume must be positive numbers", () => {
 
 test("the complete provisional scenario can reach review", () => {
   assert.deepEqual(validatePrototypeDraft(PROVISIONAL_PROTOTYPE_DRAFT), []);
+});
+
+test("review is blocked when a previously valid field is cleared after reaching summary", () => {
+  assert.equal(validatePrototypeReview(PROVISIONAL_PROTOTYPE_DRAFT).valid, true);
+
+  const editedAfterReview = {
+    ...PROVISIONAL_PROTOTYPE_DRAFT,
+    cargoDescription: "",
+  };
+
+  assert.deepEqual(validatePrototypeReview(editedAfterReview), {
+    valid: false,
+    invalidStep: 2,
+    issues: [{ field: "cargoDescription", code: "required" }],
+  });
 });
 
 test("prototype evidence never promotes unknown map or carrier facts", () => {

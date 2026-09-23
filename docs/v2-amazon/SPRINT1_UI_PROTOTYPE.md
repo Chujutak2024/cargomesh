@@ -1,8 +1,8 @@
 # CargoMesh V2 · Sprint 1 UI prototype (HAC-24)
 
-Status: implementation complete on `feat/fe1-v2-design-system-prototype`; pull request intentionally pending at the owner's request.
+Status: implementation complete on `feat/fe1-v2-design-system-prototype`; [PR #88](https://github.com/Chujutak2024/cargomesh/pull/88) is open for review against `codex/v2-amazon-contracts`. Team feedback received on 2026-09-23 is addressed below; merge and issue closure remain Gate-1 decisions.
 
-Date: 2026-09-22
+Date: 2026-09-22 · review update: 2026-09-23
 
 Owner: Luis (FE-1)
 
@@ -29,7 +29,7 @@ The audit compared the operational shell, Dashboard, provider directory, the for
 | Primary buttons | Dashboard, provider cards, intake and error states each declared their own green action styles; the canceled HAC-19 branch also used a dark/gold definition | **Replace duplicated rules; reuse visual intent** | Shared `Button` with `primary`, `accent`, `secondary`, and `ghost` variants. Primary uses the existing operational green; gold is retained as a bounded accent for the final prototype validation action, not as a global primary. |
 | Inputs | Freight intake used page-specific dark controls while the rest of the app is a light operational surface | **Replace** | Shared labeled `Input` and `Select`: 44 px target height, light surface, visible hover/focus, hint/error association, and `aria-invalid`. |
 | Badges/status | Status pills were implemented independently and often used color without a shared semantic vocabulary | **Replace** | Shared `Badge` tones: `preliminary`, `unknown`, `confirmed`, and `neutral`; every pill contains an explicit text label. |
-| Modals | Existing flows use one-off overlays and action styles | **Replace for target flow** | Shared native `Dialog` using `<dialog>`, native focus containment, Escape handling, backdrop, close control, title and description. |
+| Modals | Existing flows use one-off overlays and action styles | **Replace for target flow** | Shared native `Dialog` using `<dialog>`, native focus containment, Escape handling, backdrop, close control, and explicit `aria-labelledby` / `aria-describedby` relationships. |
 | Colors | `globals.css` exposes a V1 dark root palette while target operational pages redefine a separate light palette locally | **Keep both boundaries; add isolated V2 tokens** | New `--cm-*` tokens centralize only the V2 target surface and do not silently recolor the whole application. |
 | Typography | Existing app uses compact sans-serif labels, uppercase eyebrows, and dark green headings | **Reuse** | Prototype preserves those patterns and standardizes hierarchy through the target page module. |
 | Spacing/radius | Cards and controls varied between modules | **Replace duplicate values** | `--cm-control-height`, `--cm-radius-*`, and `--cm-shadow-card` provide the target baseline. |
@@ -60,7 +60,7 @@ Target components live in `cargomesh/src/components/ui/` and extend native HTML 
 - `Input`: native input props, required label, optional hint/error, stable generated id, `aria-invalid`, and `aria-describedby`.
 - `Select`: the same accessible field contract while preserving native keyboard behavior.
 - `Badge`: semantic status tone plus visible text; status is never represented by color alone.
-- `Dialog`: native dialog semantics, Escape/close behavior, labelled header and reusable actions.
+- `Dialog`: native dialog semantics, Escape/close behavior, title and description linked through `aria-labelledby` and `aria-describedby`, and reusable actions.
 
 The prototype uses these components for all form controls and workflow actions. Specialized step navigation and route-placeholder visuals remain local because they are composed patterns, not atomic controls.
 
@@ -89,7 +89,7 @@ Dashboard
            └─ validation dialog (no submit)
 ```
 
-The stepper supports keyboard focus, previous/next navigation, validation before advancing, direct return to already visited steps, a reset action, and a one-click provisional example. The final action is intentionally named **Validate prototype**, not Submit.
+The stepper supports keyboard focus, previous/next navigation, validation before advancing, direct return to already visited steps, a reset action, and a one-click provisional example. Entering the summary and activating the final confirmation both revalidate the complete draft; if a previously valid field was cleared, the flow returns to the first invalid step and focuses its error summary. The final action is intentionally named **Validate prototype**, not Submit.
 
 ## 5. Evidence semantics
 
@@ -123,7 +123,7 @@ Accessibility behavior:
 - invalid steps announce a `role="alert"` and move focus to the summary;
 - focus is visible on controls, buttons, step navigation and dialog close;
 - disabled future steps cannot be activated;
-- the final modal uses the browser-native dialog focus model and Escape behavior;
+- the final modal uses the browser-native dialog focus model and Escape behavior, with its title and description explicitly referenced by the dialog;
 - status is communicated by text in addition to color;
 - animation is disabled under `prefers-reduced-motion: reduce`.
 
@@ -148,7 +148,7 @@ Executed from `cargomesh/` on 2026-09-22:
 | --- | --- |
 | `pnpm install --frozen-lockfile` | Pass; synchronized already-declared `jose` and AWS SDK packages locally, no manifest or lockfile change |
 | `pnpm typecheck` | Pass; 0 TypeScript errors |
-| `pnpm exec tsx --test src/features/v2-intake/prototype-model.test.ts` | Pass; 6/6 tests |
+| `pnpm exec tsx --test src/features/v2-intake/prototype-model.test.ts` | Pass; 7/7 tests, including revalidation after clearing a previously valid field |
 | `pnpm check:architecture` | Pass; 222 modules and 25 client entry points checked |
 | `pnpm test:release` | Pass; 367/367 regression tests across 17 existing suites |
 | `pnpm build` | Pass; production build completed and `/freight-request/new` compiled as a dynamic route |
@@ -158,9 +158,29 @@ Executed from `cargomesh/` on 2026-09-22:
 | Bilingual QA | Pass; the full target route changes between Spanish and English and was restored to Spanish after verification |
 | Browser console | Pass; 0 warnings and 0 errors during the complete flow |
 
-Automated prototype tests cover HAC-21 facility-schema compatibility, origin/destination uniqueness, required cargo fields, positive weight/volume, full-scenario navigation readiness, and protection of unknown facts.
+Automated prototype tests cover HAC-21 facility-schema compatibility, origin/destination uniqueness, required cargo fields, positive weight/volume, full-scenario navigation readiness, review revalidation after an earlier step is edited, and protection of unknown facts.
 
-Desktop and mobile screenshots were captured during the browser QA in the implementation task. Their PR attachment/link is intentionally deferred together with PR creation, per the owner's instruction not to open a pull request yet.
+### Screenshots linked to PR #88
+
+Desktop · 1440 px viewport:
+
+![HAC-24 desktop intake prototype](./evidence/hac-24/desktop-intake.png)
+
+Mobile · 390 × 844 viewport (full-page capture):
+
+![HAC-24 mobile intake prototype](./evidence/hac-24/mobile-intake.png)
+
+### Team feedback resolved on 2026-09-23
+
+| Review request | Resolution | Evidence |
+| --- | --- | --- |
+| Revalidate after returning from summary, clearing a field, and jumping back to review | Entering step 4 and confirming now execute a complete-draft validation. The user is redirected to the first invalid step and the error summary receives focus. | `validatePrototypeReview`, UI handlers, and the seventh model test reproduce the reported sequence. |
+| Connect the dialog's accessible name and description | `Dialog` now assigns stable React IDs and exposes `aria-labelledby` and `aria-describedby`. | `cargomesh/src/components/ui/dialog.tsx`; `pnpm typecheck` passes. |
+| Link desktop/mobile evidence, team feedback, and current PR state | The two reviewed captures are versioned above, this table records the feedback, and the document now links PR #88 instead of claiming that the PR is pending. | This guide and PR #88. |
+
+### Vercel preview boundary
+
+The failed Vercel deployment is not treated as a passing gate. The repository's existing [FL-01](../04-execution/friction-logs/FL-01.md) records the cause: production still builds `main` from `frontend/`, while the V2 base and this branch contain the Next.js application under `cargomesh/`. Local `pnpm build` passes from the correct directory. HAC-24 does not change Vercel `rootDirectory`, `productionBranch`, aliases, or production; the integrator owns the separate preview strategy.
 
 ## 9. Files and ownership
 
@@ -184,6 +204,6 @@ Integration points:
 - Review the eventual HAC-25 Stitch/map handoff and append the adopt/adjust/discard decision.
 - Confirm which provisional facility catalog will be replaced by persisted HAC-21 data in a later sprint.
 - Define the Sprint 2/3 API/persistence boundary before enabling submit.
-- Create the PR to the declared V2 base and move Linear from `In Progress` to `In Review` only when the owner authorizes it.
+- Tech Lead revalidates PR #88 and decides Gate-1 integration; only the Tech Lead may move HAC-24 to `Done`.
 
-No Vercel `rootDirectory`, production setting, deployment, merge, or pull request was changed by this delivery.
+No Vercel `rootDirectory`, production setting, deployment, or merge was changed by this delivery. PR #88 remains open and HAC-24 remains `In Review` pending Gate-1 acceptance.

@@ -172,6 +172,21 @@ export function validatePrototypeDraft(draft: V2IntakePrototypeDraft) {
   return ([1, 2, 3] as PrototypeStep[]).flatMap((step) => validatePrototypeStep(step, draft));
 }
 
+export function validatePrototypeReview(draft: V2IntakePrototypeDraft) {
+  for (const step of [1, 2, 3] as PrototypeStep[]) {
+    const issues = validatePrototypeStep(step, draft);
+    if (issues.length) {
+      return { valid: false as const, invalidStep: step, issues };
+    }
+  }
+
+  return {
+    valid: true as const,
+    invalidStep: null,
+    issues: [] as PrototypeValidationIssue[],
+  };
+}
+
 export function findPrototypeFacility(id: string) {
   return PROTOTYPE_FACILITIES.find((facility) => facility.id === id) ?? null;
 }
