@@ -2,6 +2,8 @@
 
 Esta carpeta es la fuente de verdad documental de CargoMesh V2. V2 transforma el demo anterior en una plataforma empresarial de discovery, oferta y selección de transporte multimodal, operable desde Web y Alexa+ mediante MCP.
 
+La [documentación de entrega en inglés](./en/README.md) traduce y consolida los contratos centrales para el concurso. No sustituye la gobernanza interna en español ni implica que todo el repositorio esté traducido.
+
 ## Documentos autoritativos
 
 1. [PRODUCT_SCOPE.md](./PRODUCT_SCOPE.md): problema, usuarios, propuesta de valor y alcance.
@@ -16,8 +18,13 @@ Esta carpeta es la fuente de verdad documental de CargoMesh V2. V2 transforma el
 10. [LINEAR_ISSUE_TEMPLATE.md](./LINEAR_ISSUE_TEMPLATE.md): plantilla de issues nuevas.
 11. [LINEAR_REBASE_PLAN.md](./LINEAR_REBASE_PLAN.md): propuesta para reconstruir Linear sin perder historia.
 12. [SPRINT_ROADMAP.md](./SPRINT_ROADMAP.md): modelo 1+1+N, gates semanales y propuesta concreta para Sprint 1.
-13. [linear_sprint1_v2_rebase_proposal.md](./linear_sprint1_v2_rebase_proposal.md): issues propuestas para Sprint 1 con único dueño, ramas declaradas, DoD y documentos; no cargadas aún en Linear.
-14. [cargomesh_v2_milestones_architecture_roadmap.md](./cargomesh_v2_milestones_architecture_roadmap.md): auditoría de los Hitos 0–5 ya cargados y correcciones pendientes de aprobación en Linear.
+13. [linear_sprint1_v2_rebase_proposal.md](./linear_sprint1_v2_rebase_proposal.md): fichas de Sprint 1 con dueño, rama, DoD y evidencia; confirmar el estado vigente en Linear.
+14. [cargomesh_v2_milestones_architecture_roadmap.md](./cargomesh_v2_milestones_architecture_roadmap.md): Hitos 0–5 y límites de lo implementado; confirmar las decisiones vigentes en Linear.
+15. [QUALITY_AND_VALIDATION_PLAN.md](./QUALITY_AND_VALIDATION_PLAN.md): verificación, validación humana selectiva, métricas y mejora continua proporcionadas al plazo.
+16. [SPRINT2_EXECUTION_PLAN.md](./SPRINT2_EXECUTION_PLAN.md): refinamiento propuesto de HAC-11…16, DoD, dependencias y Gate-2; pendiente de sincronizar con Linear.
+17. [MODEL_DIAGRAMS_REVIEW.md](./MODEL_DIAGRAMS_REVIEW.md): paquete para el jueves con dominio UML conceptual, clases técnicas, estados, secuencias y contenedores editables. El DER V2 sigue pendiente de aprobación conceptual.
+18. [DOMAIN_UML_MODEL.md](./DOMAIN_UML_MODEL.md): inventario de clases conceptuales, atributos y multiplicidades del modelo de dominio corregido; propuesta para aprobación, no DER.
+19. [DATA_MODEL_REVIEW.md](./DATA_MODEL_REVIEW.md): auditoría histórica del esquema Git/Supabase y decisiones de persistencia; sus diagramas exploratorios fueron sustituidos por el paquete nuevo.
 
 ## Implementación incremental
 
@@ -29,6 +36,8 @@ Esta carpeta es la fuente de verdad documental de CargoMesh V2. V2 transforma el
 - **Review input:** las propuestas del equipo se consolidaron en los contratos superiores. Los borradores de revisión no forman parte de esta rama base pública.
 - **Material transicional mergeado:** `docs/architecture-v2/` y el código de PR #80 son inventario de reutilización, no contrato vigente ni prueba de Alexa+ live. Resolver contradicciones a favor de esta carpeta y `AGENTS.md` corregido.
 - La implementación existente se migra incrementalmente. Una capacidad documentada no se considera live hasta tener código, datos, pruebas y evidencia.
+- PR #83 (HAC-21) y PR #85 (HAC-22) ya están mergeados en `codex/v2-amazon-contracts`; la aceptación de cada issue sigue su DoD y el gate. `mcp_account_links` y tools comerciales V2 permanecen pendientes, aunque el esquema ROAD de HAC-21 ya está integrado.
+- El 23 de septiembre de 2026 se aplicaron al proyecto Supabase enlazado las migraciones estructurales de idempotencia y ROAD; las cuatro tablas ROAD tienen RLS pero aún no contienen catálogo V2 remoto. Véase [FL-02](../04-execution/friction-logs/FL-02.md). Esto no convierte discovery ni Alexa+ en capacidades live.
 
 ## Principios
 
