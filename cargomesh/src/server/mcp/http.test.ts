@@ -388,6 +388,45 @@ test("invalid, expired and wrong-audience bearer tokens are rejected by /mcp", a
   assert.equal(cookieCalls, 0);
 });
 
+test("invalid Bearer with a valid cookie never falls back to that cookie", async () => {
+  let cookieCalls = 0;
+  const reads: string[] = [];
+  const handle = createMcpHttpHandler({
+    configuration: () => ({
+      mode: "local", environment: "test", localEnabled: true, remoteEnabled: false,
+      canonicalOrigin: undefined, allowedOrigins: undefined, profile: "V1_REGRESSION",
+    }),
+    authenticate: (request) => authenticateMcpRequest(request, {
+      resolveCookieMember: async () => {
+        cookieCalls++;
+        assert.equal(request.headers.get("cookie"), "valid-session=qa-a");
+        return {
+          userId: "user-a", userEmail: "a@example.invalid", memberId: "member-a",
+          organizationId: "org-a", role: "SUPERVISOR", status: "ACTIVE",
+        };
+      },
+      configuration: () => TEST_SERVICE_AUTH,
+      verifyServiceToken: verifyMcpServiceToken,
+      verifyUserToken: async () => { throw new Error("UNAUTHENTICATED: invalid user bearer"); },
+    }),
+    read: async (id) => { reads.push(id); return view(); },
+  });
+  const positive = await handle(rpc("tools/call", {
+    name: "get_freight_options", arguments: { runId: RUN },
+  }, { headers: { ...headers, Cookie: "valid-session=qa-a" } }));
+  assert.equal(positive.status, 200);
+  assert.equal((await positive.json()).result.structuredContent.ok, true);
+  assert.equal(cookieCalls, 1);
+  assert.deepEqual(reads, [RUN]);
+
+  const negative = await handle(rpc("tools/call", {
+    name: "get_freight_options", arguments: { runId: RUN },
+  }, { headers: { ...headers, Cookie: "valid-session=qa-a", Authorization: "Bearer invalid" } }));
+  assert.equal(negative.status, 401);
+  assert.equal(cookieCalls, 1, "the valid cookie must not be read after Bearer failure");
+  assert.deepEqual(reads, [RUN], "a rejected Bearer must not dispatch a business tool");
+});
+
 test("remote mode rejects unrelated URL authorities, Hosts and Origins before authentication", async () => {
   const h = harness({
     mode: "remote",
