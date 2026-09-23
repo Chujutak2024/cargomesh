@@ -26,6 +26,8 @@ offer, orchestration run, decision or booking is pre-created.
 
 First run `npx supabase db reset`. The following commands target only the local
 `supabase_db_cargomesh` container; never point them at a shared/hosted database.
+`seed.sql` refuses to run unless psql receives `-v local_only=1`; this is an
+explicit safety acknowledgement in addition to the local-container command.
 
 ```powershell
 Get-Content -Raw supabase/scenarios/v2-road-baseline/counts.sql |
@@ -33,7 +35,7 @@ Get-Content -Raw supabase/scenarios/v2-road-baseline/counts.sql |
 Get-Content -Raw supabase/scenarios/d1/seed.sql |
   docker exec -i supabase_db_cargomesh psql -U postgres -d postgres
 Get-Content -Raw supabase/scenarios/v2-road-baseline/seed.sql |
-  docker exec -i supabase_db_cargomesh psql -U postgres -d postgres
+  docker exec -i supabase_db_cargomesh psql -X -v local_only=1 -U postgres -d postgres
 Get-Content -Raw supabase/scenarios/v2-road-baseline/verify.sql |
   docker exec -i supabase_db_cargomesh psql -U postgres -d postgres
 Get-Content -Raw supabase/scenarios/v2-road-baseline/cleanup.sql |
@@ -45,5 +47,6 @@ Get-Content -Raw supabase/scenarios/d1/verify.sql |
 ```
 
 Compare every relation in `counts.sql` with its post-D1/pre-V2 count, then
-repeat V2 `seed.sql`, `verify.sql`, and `cleanup.sql` twice. A passing
+repeat V2 `seed.sql` with `-v local_only=1`, `verify.sql`, and `cleanup.sql`
+twice. A passing
 `verify.sql` alone does not prove that cleanup spared D1 or the baseline.

@@ -1,4 +1,14 @@
 \set ON_ERROR_STOP on
+\if :{?local_only}
+\else
+  \set local_only 0
+\endif
+\if :local_only
+\else
+  do $$ begin
+    raise exception 'V2_QA_LOCAL_ONLY: pass psql -v local_only=1; never run this seed on hosted Supabase';
+  end $$;
+\endif
 
 begin;
 
