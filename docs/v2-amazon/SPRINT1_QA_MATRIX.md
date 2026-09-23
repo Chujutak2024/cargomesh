@@ -5,6 +5,14 @@ en cada ejecución son resultados observados; no son mínimos ni criterios fijos
 Cada fila de cobertura debe identificar contrato y sección, caso, comando, resultado y dueño de
 cualquier defecto.
 
+## Riesgos para Gate-1 (lectura rápida)
+
+- **Alto — Alexa+:** falta `mcp_account_links`; es una dependencia huérfana y ningún usuario puede completar la autenticación vinculada hasta que Cristhian asigne su implementación.
+- **Alto — producto V2:** la elegibilidad completa sigue sin motor; UI y mapa V2 aún no están entregados en esta base. Los positivos SQL prueban cobertura declarada, no disponibilidad comercial.
+- **Medio — regresión MCP:** `pnpm test:mcp:local` falla 1/3 y no está en CI; un test fallido llegó a la base sin detección. Axel corrige el fixture/contrato; Cristhian decide si entra al gate.
+- **Medio — integración:** Vercel falla por configuración (Cristhian/HAC-26). El CI QA solo existe en este PR; Jean Paul debe re-ejecutarlo sobre la base tras los merges de Gate-1.
+- **Límite del corte:** build y CI QA pasan; el preview local cargó sin nuevos errores de consola al configurar Supabase local. No se declara verde el flujo Alexa+ ni la base integrada.
+
 ## CP-0 — línea base previa a cambios (2026-09-22)
 
 Rama: `feat/be3-v2-qa-foundation`, creada desde `origin/codex/v2-amazon-contracts` en
@@ -138,7 +146,7 @@ npx supabase test db
 | [HAC-22 § 8 y § 15](./SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md): Bearer inválido con cookie válida | `pnpm exec tsx --test --test-name-pattern "invalid Bearer with a valid cookie" src/server/mcp/http.test.ts` desde `cargomesh/` | `PASS` — la misma cookie primero ejecuta `get_freight_options`; al añadir `Authorization: Bearer invalid`, `/mcp` responde `401`, no lee la cookie y no despacha la tool. | — |
 | [HAC-22 § 7](./SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md): service token intenta negocio | `pnpm exec tsx --test --test-name-pattern "signed service bearer" src/server/mcp/http.test.ts` desde `cargomesh/` | `PASS` — token firmado inicializa y lista tools; la llamada business recibe `FORBIDDEN` y no llega al servicio. | — |
 | [HAC-22 § 8–9](./SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md): token/sesión de tenant B sobre solicitud A | `pnpm exec tsx --test --test-name-pattern "V2 QA tenants" src/server/mcp/local-integration.test.ts` desde `cargomesh/`, con entorno local indicado en `cargomesh/src/server/mcp/README.md` | `PASS` 1/1 — A inicia sesión, lista tools, crea, lee y envía su DRAFT; el Bearer Supabase válido de B no lee la solicitud mediante PostgREST/RLS y la sesión MCP válida de B recibe `NOT_FOUND` al intentar enviarla. La solicitud se limpia por ID exacto. No equivale a una prueba de Bearer OAuth de usuario dentro de MCP. | — |
-| [HAC-22 § 6 y § 9](./SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md): vínculo OAuth exacto `(auth_user_id, oauth_client_id)` | `rg -n "mcp_account_links" supabase/migrations cargomesh/src`; `rg -n "blockedAccountLinks" cargomesh/src/server/mcp/auth/user-token.ts`; `pnpm exec tsx --test --test-name-pattern "account linking fails closed" src/server/mcp/auth/user-token.test.ts` desde `cargomesh/` | `BLOQUEADO` — no existe tabla ni repositorio persistente. El repositorio por defecto `blockedAccountLinks` lanza `FORBIDDEN` (no es una tabla en memoria que conceda acceso); el test con dependencias inyectadas comprueba rechazo de vínculo ausente/revocado/cliente erróneo. Un token Supabase local válido de A recibió `401` en `/mcp` porque el bearer de usuario no está habilitado/configurado; no alcanzó la búsqueda del vínculo. No se reclama OAuth user end-to-end. | Axel (HAC-22) y Cristhian (integración/HAC-21). |
+| [HAC-22 § 6 y § 9](./SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md): vínculo OAuth exacto `(auth_user_id, oauth_client_id)` | `rg -n "mcp_account_links" supabase/migrations cargomesh/src`; `rg -n "blockedAccountLinks" cargomesh/src/server/mcp/auth/user-token.ts`; `pnpm exec tsx --test --test-name-pattern "account linking fails closed" src/server/mcp/auth/user-token.test.ts` desde `cargomesh/` | `BLOQUEADO — dependencia huérfana, severidad ALTA funcional`. No existe tabla ni repositorio persistente. El repositorio por defecto `blockedAccountLinks` lanza `FORBIDDEN` (falla cerrado); el test con dependencias inyectadas comprueba rechazo de vínculo ausente/revocado/cliente erróneo. Un token Supabase local válido de A recibió `401` en `/mcp` porque el bearer de usuario no está habilitado/configurado; no alcanzó la búsqueda del vínculo. `user-token.ts:75–76` atribuye la persistencia a HAC-21, pero el alcance aprobado de HAC-21 solo cubre sedes/servicios ROAD y no incluye esta tabla; ninguna issue del Sprint 1 la asigna. Ningún usuario puede completar la autenticación vinculada de Alexa+ hasta que exista. No es un acceso inseguro ni un defecto de seguridad; la severidad es por el requisito funcional del track. | **Decisión de asignación:** Cristhian (Tech Lead). Axel (HAC-22) es dueño de la integración MCP una vez exista la persistencia; no se le transfiere unilateralmente la tabla. |
 | [HAC-21 mapping § Acceso y persistencia](./SPRINT1_DATA_MAPPING.md): idempotencia DRAFT→PENDING | `npx supabase test db` | `PASS` — el archivo `08_draft_creation_idempotency.test.sql` pasó dentro de los 10 archivos; gate completo `Files=10, Tests=199`, sin cantidades fijas como umbral. | — |
 | [Cobertura § Resultado compartido](./CARRIER_COVERAGE_AND_SERVICEABILITY.md): `unknown` ante evidencia/capacidad faltante | `rg -n "v2CoverageDecisionSchema" cargomesh/src/types/v2-road-network.ts`; `rg --files cargomesh/src/server/services` | `BLOQUEADO` — existe el esquema de decisión, pero no un motor V2 de elegibilidad/capacidad que pueda producir un resultado real `unknown` frente a `eligible`. El control positivo operacional no está disponible; el test SQL solo comprueba área+lane declaradas. | Cristhian (integración/HAC-21 y planificación Sprint 2). |
 | [HAC-24 § S1-C4](./linear_sprint1_v2_rebase_proposal.md): prototipo UI navegable y estado `unknown` | `Test-Path docs/v2-amazon/SPRINT1_UI_PROTOTYPE.md` | `BLOQUEADO` — `False`; interfaz/artefacto V2 no entregado a la base al 2026-09-22. No se atribuyen las pantallas V1 como prueba V2. | Luis (HAC-24). |
@@ -161,6 +169,11 @@ sin arreglo en HAC-23:** Axel (HAC-22), con Cristhian en integración/HAC-26.
 Comando de reproducción: `pnpm test:mcp:local` desde `cargomesh/` con la
 preparación local del [README MCP](../../cargomesh/src/server/mcp/README.md).
 
+**Riesgo del gate:** `test:mcp:local` está fuera de `.github/workflows/v2-qa-gate.yml`;
+un test fallido llegó mergeado a la base sin que el CI lo detectara. No se añade
+al workflow en HAC-23, porque dejaría en rojo el gate antes de Gate-1. Cristhian,
+como Tech Lead, decide la inclusión futura y sus prerrequisitos de entorno.
+
 Una primera corrida de `npx supabase test db` con `d1` aún cargado desde CP-2
 falló 2 assertions históricas del archivo `01` porque agregó antecedentes y
 perfiles de ACME. QA (Jean Paul) repitió desde `npx supabase db reset --local`
@@ -168,3 +181,46 @@ sin `d1`, cargó solo V2 y obtuvo `Files=10, Tests=199`, `Result: PASS`. No se
 cambió ningún assertion para lograrlo. `pnpm test:mcp` pasó 75/75 y
 `pnpm typecheck` pasó sin errores. El gate CI no ejecuta el test local que
 necesita Next, Chrome y Supabase local; ese límite se mantiene visible.
+
+## CP-4 — build y preview local (2026-09-22, Lima)
+
+`pnpm build` desde `cargomesh/` terminó con exit code 0: Next.js 15.5.24
+compiló, comprobó tipos y generó las rutas. Primer preview:
+`pnpm start --hostname 127.0.0.1 --port 3100` sin variables de entorno;
+`/` y `/providers` cargaron, pero `/login`, `/dashboard` y
+`/freight-request/new` mostraron excepción de Server Components. El log del
+servidor indicó `Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+Este primer intento **no** se contabiliza como smoke verde.
+
+Se repitió `pnpm build` (exit code 0) y el mismo `pnpm start` inyectando solo
+`API_URL` y `ANON_KEY` de `npx supabase status -o env` en
+`NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` del proceso. No se
+guardaron ni imprimieron valores. En el navegador local, `/`, `/login` y
+`/providers` cargaron sin página de error ni errores nuevos de consola;
+`/dashboard`, `/freight-request/new` y `/requests` redirigieron a `/login`
+sin sesión, como exige el control de acceso. La consola conservaba errores del
+primer intento anteriores al reinicio; no hubo errores nuevos después de
+configurar el proceso. **PASS condicionado al entorno local configurado**;
+no prueba el flujo autenticado ni una UI específicamente V2.
+
+## Defectos y bloqueos para sus dueños
+
+| Severidad | Dueño / decisión | Defecto o bloqueo | Reproducción exacta / evidencia |
+|---|---|---|---|
+| **ALTA funcional** | Cristhian decide issue/propietario; Axel integra MCP después | `mcp_account_links` huérfana: impide autenticación vinculada de usuarios Alexa+. No hay escalamiento de privilegios: falla cerrado. | `rg -n "mcp_account_links" supabase/migrations cargomesh/src`; `rg -n "HAC-21 owns|blockedAccountLinks" cargomesh/src/server/mcp/auth/user-token.ts`; comparar con [HAC-21](https://linear.app/hackatonteamcargomesh/issue/HAC-21/be-2-modelar-y-aplicar-la-base-de-datos-v2-para-sedes-y-servicios-road) y [HAC-22](https://linear.app/hackatonteamcargomesh/issue/HAC-22/be-1-asegurar-el-mcp-v2-para-alexa-y-probar-el-adaptador-bedrock). |
+| **MEDIA — regresión no cubierta** | Axel (HAC-22); Cristhian decide cobertura CI | Subtest heredado de worker WebMCP falla 1/3; llegó mergeado sin detección porque `test:mcp:local` no está en CI. | Con entorno del [README MCP](../../cargomesh/src/server/mcp/README.md), `pnpm test:mcp:local` desde `cargomesh/`; `local-integration.test.ts:295`, `started.candidates.length === 0`. Repetido sin escenario V2. |
+| **MEDIA — infraestructura** | Cristhian (HAC-26) | Preview de Vercel del PR #87 en `FAILURE`; QA no cambia configuración de Vercel. | `gh pr view 87 --json statusCheckRollup`; [deployment fallido](https://vercel.com/anjuje/cargomesh/E4tZJjTyNncsPvHAiAVDkco9A4x8). |
+| **ALTA — entrega de producto** | Luis (HAC-24) | Prototipo navegable UI V2 y estado `unknown` no disponibles en la base del corte. | `Test-Path docs/v2-amazon/SPRINT1_UI_PROTOTYPE.md` → `False`; contrastar [HAC-24](https://linear.app/hackatonteamcargomesh/issue/HAC-24/fe-1-estandarizar-la-interfaz-v2-y-entregar-prototipo-navegable-del). |
+| **MEDIA — entrega de producto** | Juan Antonio (HAC-25) | Mapa piloto V2 y decisión de proveedor no disponibles en la base del corte. | `Test-Path docs/v2-amazon/SPRINT1_MAP_PROVIDER_DECISION.md` → `False`; contrastar [HAC-25](https://linear.app/hackatonteamcargomesh/issue/HAC-25/fe-2-seleccionar-proveedor-cartografico-e-integrar-un-mapa-piloto-de). |
+| **ALTA — funcional** | Cristhian (contrato HAC-21 / planificación Sprint 2) | No hay motor V2 de elegibilidad/capacidad; áreas+lane declaradas no prueban `eligible` ni `unknown`. | `rg -n "v2CoverageDecisionSchema" cargomesh/src/types/v2-road-network.ts`; `rg --files cargomesh/src/server/services`; ejecutar `npx supabase test db` para el límite de los positivos SQL. |
+| **MEDIA — integración** | Jean Paul (mitigación QA tras Gate-1) | Gate QA solo existe en PR #87, no en la base V2; otros PRs no lo ejecutan aún. | `git ls-tree -r --name-only origin/codex/v2-amazon-contracts .github/workflows`; comparar con `.github/workflows/v2-qa-gate.yml` en esta rama. Re-ejecutar gate completo en la base integrada. |
+
+## HAC-23 — cotejo del Definition of Done
+
+| Ítem literal de Linear | Estado del corte | Evidencia / límite |
+|---|---|---|
+| Escenario V2 carga y limpia sin mezclarse con migraciones ni fixtures FR-1042. | **HECHO** | CP-2: `v2-road-baseline/` con README, manifest, seed/verify/cleanup/counts; diez conteos retornaron a la foto con `d1`, `d1/verify.sql` siguió pasando, dos ciclos y doble seed sin error; ninguna migración modificada. |
+| Casos negativos RLS, sede sin cobertura, lane inversa y MCP no autorizado son reproducibles; FE/mapa tienen observación o prueba definida. | **HECHO, con BLOQUEOS explícitos** | CP-3: `10_v2_qa_negative_cases.test.sql` y tests MCP con controles positivos; UI/mapa definidos como `BLOQUEADO — interfaz no entregada`. OAuth de usuario completo también `BLOQUEADO` por `mcp_account_links`; no se infiere de los negativos. |
+| Matriz reporta pass/fail/bloqueado y propietario del defecto con comandos exactos; no exige cantidades heredadas. | **HECHO** | Tabla CP-3 y lista de defectos de este reporte; 199 y demás cifras son observaciones, no umbrales. |
+| CI o comandos locales ejecutables se documentan; fallos no se maquillan como verde. | **HECHO** | CP-1/3/4: workflow y comandos con resultados; `test:mcp:local` FAIL 1/3, Vercel FAILURE y primer preview sin entorno se conservan como fallos. |
+| PR, README, matriz y resumen de riesgos enlazados. | **HECHO tras actualizar cuerpo del PR** | [PR #87](https://github.com/Chujutak2024/cargomesh/pull/87), [README escenario](../../supabase/scenarios/v2-road-baseline/README.md), esta matriz y resumen inicial. Pendiente la revisión/merge del Gate-1; no implica `Done`. |
