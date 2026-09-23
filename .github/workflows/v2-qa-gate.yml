@@ -70,5 +70,10 @@ jobs:
       - name: Start local Supabase
         run: supabase db start
 
+      - name: Seed and verify local V2 QA scenario
+        run: |
+          docker exec -i supabase_db_cargomesh psql -X -v local_only=1 -U postgres -d postgres < supabase/scenarios/v2-road-baseline/seed.sql
+          docker exec -i supabase_db_cargomesh psql -X -U postgres -d postgres < supabase/scenarios/v2-road-baseline/verify.sql
+
       - name: Run pgTAP suite
         run: supabase test db

@@ -38,6 +38,7 @@ Get-Content -Raw supabase/scenarios/v2-road-baseline/seed.sql |
   docker exec -i supabase_db_cargomesh psql -X -v local_only=1 -U postgres -d postgres
 Get-Content -Raw supabase/scenarios/v2-road-baseline/verify.sql |
   docker exec -i supabase_db_cargomesh psql -U postgres -d postgres
+npx supabase test db
 Get-Content -Raw supabase/scenarios/v2-road-baseline/cleanup.sql |
   docker exec -i supabase_db_cargomesh psql -U postgres -d postgres
 Get-Content -Raw supabase/scenarios/v2-road-baseline/counts.sql |
