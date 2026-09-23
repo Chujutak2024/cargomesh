@@ -107,3 +107,64 @@ las diez relaciones coinciden. Dos ciclos adicionales completos
 cleanup` también pasó: el segundo seed reportó `INSERT 0 0` en sus diez
 instrucciones, sin duplicados ni errores. Los conteos finales siguieron iguales
 a la columna «Con `d1`». Ninguna migración se agregó o modificó en CP-2.
+
+## CP-3 — negativos con controles positivos (2026-09-22)
+
+Estados de esta tabla: `PASS` exige que el control positivo **y** su negativo
+pasen; `FAIL` conserva el fallo observado; `BLOQUEADO` significa que la
+interfaz/contrato necesario no existe o el control positivo no puede ejecutarse.
+Todos los comandos son desde la raíz del repo salvo donde se indica
+`cargomesh/`. Los tests SQL se ejecutaron con `SET LOCAL ROLE authenticated`
+y claims `request.jwt.claims` de cada usuario; consultar como `postgres`
+saltaría RLS y no sería evidencia de aislamiento.
+
+Preparación local para pgTAP (sin cargar `d1`):
+
+```powershell
+npx supabase db reset --local
+Get-Content -Raw supabase/scenarios/v2-road-baseline/seed.sql |
+  docker exec -i supabase_db_cargomesh psql -X -v local_only=1 -U postgres -d postgres
+Get-Content -Raw supabase/scenarios/v2-road-baseline/verify.sql |
+  docker exec -i supabase_db_cargomesh psql -X -U postgres -d postgres
+npx supabase test db
+```
+
+| Contrato y sección → caso | Comando exacto tras preparación | Resultado observado y control positivo | Dueño del defecto |
+|---|---|---|---|
+| [HAC-21 mapping § Acceso y persistencia](./SPRINT1_DATA_MAPPING.md): RLS de sede entre tenants | `npx supabase test db supabase/tests/10_v2_qa_negative_cases.test.sql` | `PASS` — con rol `authenticated` y claims A, A ve y actualiza su sede; con claims B, B ve su propia sede, pero no ve ni actualiza la de A aunque ambas estén en Lima. La escritura de A conserva su valor tras el intento de B. | — |
+| [Cobertura § Regla de elegibilidad](./CARRIER_COVERAGE_AND_SERVICEABILITY.md): sede con área/lane declarada vs Piura sin cobertura | `npx supabase test db supabase/tests/10_v2_qa_negative_cases.test.sql` | `PASS` para **cobertura declarada**: Lima A→Arequipa B devuelve 1; Piura→B devuelve 0 pese a la sede y depot de Piura. No se afirma elegibilidad comercial plena ni capacidad disponible. | — |
+| [HAC-21 mapping § Entidad → tabla → relación](./SPRINT1_DATA_MAPPING.md): lane dirigida | `npx supabase test db supabase/tests/10_v2_qa_negative_cases.test.sql` | `PASS` — A→B devuelve 1 antes de probar B→A, que devuelve 0 aun existiendo áreas de pickup/delivery para el sentido inverso. | — |
+| [HAC-22 § 7](./SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md): sin Bearer/sesión vs usuario válido | `pnpm exec tsx --test --test-name-pattern "real /mcp creates" src/server/mcp/local-integration.test.ts` desde `cargomesh/` | `PASS` — el subtest local observa `401` sin credencial y luego crea/lee un DRAFT con la cookie válida de ACME. Este subtest aislado pasó 1/1. | — |
+| [HAC-22 § 8 y § 15](./SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md): Bearer inválido con cookie válida | `pnpm exec tsx --test --test-name-pattern "invalid Bearer with a valid cookie" src/server/mcp/http.test.ts` desde `cargomesh/` | `PASS` — la misma cookie primero ejecuta `get_freight_options`; al añadir `Authorization: Bearer invalid`, `/mcp` responde `401`, no lee la cookie y no despacha la tool. | — |
+| [HAC-22 § 7](./SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md): service token intenta negocio | `pnpm exec tsx --test --test-name-pattern "signed service bearer" src/server/mcp/http.test.ts` desde `cargomesh/` | `PASS` — token firmado inicializa y lista tools; la llamada business recibe `FORBIDDEN` y no llega al servicio. | — |
+| [HAC-22 § 8–9](./SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md): token/sesión de tenant B sobre solicitud A | `pnpm exec tsx --test --test-name-pattern "V2 QA tenants" src/server/mcp/local-integration.test.ts` desde `cargomesh/`, con entorno local indicado en `cargomesh/src/server/mcp/README.md` | `PASS` 1/1 — A inicia sesión, lista tools, crea, lee y envía su DRAFT; el Bearer Supabase válido de B no lee la solicitud mediante PostgREST/RLS y la sesión MCP válida de B recibe `NOT_FOUND` al intentar enviarla. La solicitud se limpia por ID exacto. No equivale a una prueba de Bearer OAuth de usuario dentro de MCP. | — |
+| [HAC-22 § 6 y § 9](./SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md): vínculo OAuth exacto `(auth_user_id, oauth_client_id)` | `rg -n "mcp_account_links" supabase/migrations cargomesh/src`; `rg -n "blockedAccountLinks" cargomesh/src/server/mcp/auth/user-token.ts`; `pnpm exec tsx --test --test-name-pattern "account linking fails closed" src/server/mcp/auth/user-token.test.ts` desde `cargomesh/` | `BLOQUEADO` — no existe tabla ni repositorio persistente. El repositorio por defecto `blockedAccountLinks` lanza `FORBIDDEN` (no es una tabla en memoria que conceda acceso); el test con dependencias inyectadas comprueba rechazo de vínculo ausente/revocado/cliente erróneo. Un token Supabase local válido de A recibió `401` en `/mcp` porque el bearer de usuario no está habilitado/configurado; no alcanzó la búsqueda del vínculo. No se reclama OAuth user end-to-end. | Axel (HAC-22) y Cristhian (integración/HAC-21). |
+| [HAC-21 mapping § Acceso y persistencia](./SPRINT1_DATA_MAPPING.md): idempotencia DRAFT→PENDING | `npx supabase test db` | `PASS` — el archivo `08_draft_creation_idempotency.test.sql` pasó dentro de los 10 archivos; gate completo `Files=10, Tests=199`, sin cantidades fijas como umbral. | — |
+| [Cobertura § Resultado compartido](./CARRIER_COVERAGE_AND_SERVICEABILITY.md): `unknown` ante evidencia/capacidad faltante | `rg -n "v2CoverageDecisionSchema" cargomesh/src/types/v2-road-network.ts`; `rg --files cargomesh/src/server/services` | `BLOQUEADO` — existe el esquema de decisión, pero no un motor V2 de elegibilidad/capacidad que pueda producir un resultado real `unknown` frente a `eligible`. El control positivo operacional no está disponible; el test SQL solo comprueba área+lane declaradas. | Cristhian (integración/HAC-21 y planificación Sprint 2). |
+| [HAC-24 § S1-C4](./linear_sprint1_v2_rebase_proposal.md): prototipo UI navegable y estado `unknown` | `Test-Path docs/v2-amazon/SPRINT1_UI_PROTOTYPE.md` | `BLOQUEADO` — `False`; interfaz/artefacto V2 no entregado a la base al 2026-09-22. No se atribuyen las pantallas V1 como prueba V2. | Luis (HAC-24). |
+| [HAC-25 § S1-C5](./linear_sprint1_v2_rebase_proposal.md): mapa piloto y fuente/estado de ruta | `Test-Path docs/v2-amazon/SPRINT1_MAP_PROVIDER_DECISION.md` | `BLOQUEADO` — `False`; contrato/adaptador y artefacto del mapa piloto V2 no entregados a la base al 2026-09-22. El mapa V1 no sustituye esta evidencia. | Juan Antonio (HAC-25). |
+
+### Fallo reproducido fuera del gate CI y límites de la evidencia
+
+`pnpm test:mcp:local` se re-ejecutó contra Next en `localhost:3100` y Supabase
+local, con el seed `mcp-local` y el escenario V2. Resultado **FAIL: 2/3 subtests
+PASS, 1/3 FAIL**. El primer subtest de creación y el nuevo control cruzado A/B
+pasaron; el subtest heredado «real MCP flow reaches provider WebMCP through the
+autonomous browser worker» falla en `local-integration.test.ts:295` porque
+`started.candidates.length` es `0`. Se repitió el mismo fallo **después de
+quitar el escenario V2**, por lo que no depende de nuestro fixture. La entrada
+de ese test usa Lima→Valparaíso, mientras los tres servicios base anuncian
+Callao→Santiago; `candidate-matcher.ts` exige igualdad de esas regiones/ciudades.
+Esto impide dar por revalidada la afirmación completa de HAC-22 § 9 sobre
+`test:mcp:local`. **Defecto del test/fixture o del contrato de discovery V1,
+sin arreglo en HAC-23:** Axel (HAC-22), con Cristhian en integración/HAC-26.
+Comando de reproducción: `pnpm test:mcp:local` desde `cargomesh/` con la
+preparación local del [README MCP](../../cargomesh/src/server/mcp/README.md).
+
+Una primera corrida de `npx supabase test db` con `d1` aún cargado desde CP-2
+falló 2 assertions históricas del archivo `01` porque agregó antecedentes y
+perfiles de ACME. QA (Jean Paul) repitió desde `npx supabase db reset --local`
+sin `d1`, cargó solo V2 y obtuvo `Files=10, Tests=199`, `Result: PASS`. No se
+cambió ningún assertion para lograrlo. `pnpm test:mcp` pasó 75/75 y
+`pnpm typecheck` pasó sin errores. El gate CI no ejecuta el test local que
+necesita Next, Chrome y Supabase local; ese límite se mantiene visible.
