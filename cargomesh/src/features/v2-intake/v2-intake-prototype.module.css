@@ -51,12 +51,16 @@
 .cardHeader p { margin: 0; color: var(--cm-color-muted); font-size: 0.69rem; line-height: 1.5; }
 .cardBody { display: grid; gap: 1rem; padding: 1.2rem; }
 .sectionTitle { display: flex; align-items: center; gap: 0.45rem; margin: 0; color: var(--cm-color-heading); font-size: 0.76rem; }
+.scenarioMeta { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; color: var(--cm-color-muted); font-size: 0.62rem; }
 .formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
 .wide { grid-column: 1 / -1; }
 .siteCard { display: grid; gap: 0.35rem; border: 1px solid var(--cm-color-line); border-radius: var(--cm-radius-md); padding: 0.8rem; background: var(--cm-color-surface-subtle); }
 .siteCard span { color: var(--cm-color-muted); font-size: 0.62rem; line-height: 1.45; }
+.siteCard small { color: var(--cm-color-muted); font-size: 0.58rem; line-height: 1.45; }
 .siteCard strong { color: var(--cm-color-heading); font-size: 0.72rem; }
 .siteMeta { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.boundaryNotice { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 0.55rem; border-left: 3px solid var(--cm-color-primary); padding: 0.7rem 0.8rem; background: var(--cm-color-surface-subtle); color: var(--cm-color-muted); font-size: 0.64rem; line-height: 1.5; }
+.boundaryNotice svg { margin-top: 0.08rem; color: var(--cm-color-primary); }
 .routePreview { display: grid; gap: 0.75rem; border: 1px dashed #b9cbc6; border-radius: var(--cm-radius-md); padding: 1rem; background: #f8faf9; }
 .routeTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.7rem; }
 .routeTop div { display: grid; gap: 0.25rem; }

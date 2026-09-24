@@ -25,55 +25,70 @@ export type PrototypeValidationIssue = {
     | "invalid-date";
 };
 
-const organizationId = "10000000-0000-4000-8000-000000000001";
+export const PROTOTYPE_SCENARIO = {
+  packageName: "HAC-23-V2-ROAD-BASELINE",
+  provenance: "SYNTHETIC_DEMO_ONLY",
+  organizationId: "c2300000-0000-4000-8000-000000000001",
+  organizationName: "[SYNTHETIC] V2 ROAD tenant A",
+} as const;
+
+export type PrototypeFacilityScenarioRole =
+  | "DECLARED_LANE_ENDPOINT"
+  | "NO_DECLARED_COVERAGE";
 
 export const PROTOTYPE_FACILITIES: V2Facility[] = [
   {
-    id: "10000000-0000-4000-8000-000000000101",
-    organizationId,
-    code: "ACME-CALLAO-01",
-    name: "Complejo minero Callao",
+    id: "c2330000-0000-4000-8000-000000000001",
+    organizationId: PROTOTYPE_SCENARIO.organizationId,
+    code: "QA-A-LIMA",
+    name: "[SYNTHETIC] Lima pickup site",
     facilityType: "SHIPPER_SITE",
     countryCode: "PE",
-    regionCode: "CAL",
-    city: "Callao",
+    regionCode: null,
+    city: "Lima",
     postalCode: null,
-    addressLine: "Zona portuaria del Callao",
-    latitude: -12.0464,
-    longitude: -77.1428,
+    addressLine: "Synthetic Lima address",
+    latitude: null,
+    longitude: null,
     active: true,
   },
   {
-    id: "10000000-0000-4000-8000-000000000102",
-    organizationId,
-    code: "ACME-SANTIAGO-01",
-    name: "Centro de distribución Santiago",
-    facilityType: "DISTRIBUTION_CENTER",
-    countryCode: "CL",
-    regionCode: "RM",
-    city: "Santiago",
-    postalCode: null,
-    addressLine: "Parque industrial San Bernardo",
-    latitude: -33.5922,
-    longitude: -70.6996,
-    active: true,
-  },
-  {
-    id: "10000000-0000-4000-8000-000000000103",
-    organizationId,
-    code: "ACME-AREQUIPA-01",
-    name: "Sede operativa Arequipa",
+    id: "c2330000-0000-4000-8000-000000000002",
+    organizationId: PROTOTYPE_SCENARIO.organizationId,
+    code: "QA-A-AREQUIPA",
+    name: "[SYNTHETIC] Arequipa delivery site",
     facilityType: "WAREHOUSE",
     countryCode: "PE",
-    regionCode: "ARE",
+    regionCode: null,
     city: "Arequipa",
     postalCode: null,
-    addressLine: "Parque industrial Río Seco",
-    latitude: -16.3439,
-    longitude: -71.5676,
+    addressLine: "Synthetic Arequipa address",
+    latitude: null,
+    longitude: null,
+    active: true,
+  },
+  {
+    id: "c2330000-0000-4000-8000-000000000003",
+    organizationId: PROTOTYPE_SCENARIO.organizationId,
+    code: "QA-A-PIURA",
+    name: "[SYNTHETIC] Piura site without declared coverage",
+    facilityType: "SHIPPER_SITE",
+    countryCode: "PE",
+    regionCode: null,
+    city: "Piura",
+    postalCode: null,
+    addressLine: "Synthetic Piura address",
+    latitude: null,
+    longitude: null,
     active: true,
   },
 ].map((facility) => v2FacilitySchema.parse(facility));
+
+const PROTOTYPE_FACILITY_SCENARIO_ROLES = new Map<string, PrototypeFacilityScenarioRole>([
+  [PROTOTYPE_FACILITIES[0].id, "DECLARED_LANE_ENDPOINT"],
+  [PROTOTYPE_FACILITIES[1].id, "DECLARED_LANE_ENDPOINT"],
+  [PROTOTYPE_FACILITIES[2].id, "NO_DECLARED_COVERAGE"],
+]);
 
 export const CARGO_TYPES = [
   "MINING_PARTS",
@@ -107,14 +122,14 @@ export const EMPTY_PROTOTYPE_DRAFT: V2IntakePrototypeDraft = {
 export const PROVISIONAL_PROTOTYPE_DRAFT: V2IntakePrototypeDraft = {
   originFacilityId: PROTOTYPE_FACILITIES[0].id,
   destinationFacilityId: PROTOTYPE_FACILITIES[1].id,
-  cargoType: "MINING_PARTS",
-  packagingType: "PALLET",
-  cargoDescription: "Repuestos y componentes de maquinaria minera",
-  weightKg: "8000",
-  volumeM3: "18",
+  cargoType: "INDUSTRIAL_SUPPLIES",
+  packagingType: "CRATE",
+  cargoDescription: "Equipos de mantenimiento industrial para escenario sintético V2",
+  weightKg: "6000",
+  volumeM3: "14",
   pickupDate: "2026-10-05",
-  equipmentPreference: "DRY_VAN",
-  notes: "Prototipo de validación: confirmar ventana y equipo antes de conectar el submit.",
+  equipmentPreference: "NO_PREFERENCE",
+  notes: "Escenario sintético: confirmar ruta, cobertura, capacidad y condiciones antes de persistir.",
 };
 
 function isPositiveNumber(value: string) {
@@ -191,14 +206,27 @@ export function findPrototypeFacility(id: string) {
   return PROTOTYPE_FACILITIES.find((facility) => facility.id === id) ?? null;
 }
 
+export function getPrototypeFacilityScenarioRole(id: string) {
+  return PROTOTYPE_FACILITY_SCENARIO_ROLES.get(id) ?? null;
+}
+
 export function getPrototypeEvidence(draft: V2IntakePrototypeDraft) {
   return {
     formData: { status: "preliminary" as const, value: draft },
-    facilityContract: { status: "confirmed" as const, source: "HAC-21 / V2Facility" },
+    facilityContract: {
+      status: "confirmed" as const,
+      source: "HAC-21 / V2Facility",
+      scenario: PROTOTYPE_SCENARIO.packageName,
+      provenance: PROTOTYPE_SCENARIO.provenance,
+    },
     transportMode: { status: "confirmed" as const, value: "ROAD" as const },
-    route: { status: "unknown" as const, reason: "MAP_PROVIDER_PENDING_HAC_25" },
+    route: { status: "unknown" as const, reason: "FACILITY_SELECTION_ONLY" },
+    coverage: { status: "unknown" as const, value: null },
+    capacity: { status: "unknown" as const, value: null },
     distance: { status: "unknown" as const, value: null },
     estimatedTransit: { status: "unknown" as const, value: null },
     carrierAvailability: { status: "unknown" as const, value: null },
+    price: { status: "unknown" as const, value: null },
+    persistence: { status: "confirmed" as const, value: "NOT_CONNECTED" as const },
   };
 }
