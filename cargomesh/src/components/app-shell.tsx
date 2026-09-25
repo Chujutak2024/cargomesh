@@ -34,7 +34,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
   const navigation = [
     { label: t("Principal", "Main"), items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/freight-request/new?requestCode=FR-1042", label: t("Nueva carga", "New shipment"), icon: PackagePlus },
+      { href: "/freight-request/new", label: t("Nueva carga", "New shipment"), icon: PackagePlus },
       { href: "/requests", label: t("Mis cargas", "My shipments"), icon: ClipboardList },
       { href: "/dispatch", label: t("Despachos", "Dispatch"), icon: Route },
       { href: "/tracking", label: t("Seguimiento", "Tracking"), icon: MapPinned },
@@ -55,7 +55,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
     ] },
   ];
   const contexts = [
-    ["/freight-request/new", t("Nueva carga", "New shipment"), t("Intake guiado de FreightRequest", "Guided FreightRequest intake")],
+    ["/freight-request/new", t("Nueva carga V2", "New shipment V2"), t("Prototipo navegable · no transaccional", "Navigable prototype · non-transactional")],
     ["/booking", "Booking", t("Selección humana y confirmación", "Human selection and confirmation")],
     ["/dispatch", t("Despachos", "Dispatch"), t("Evaluación dinámica de opciones", "Dynamic option evaluation")],
     ["/providers", "Carriers WebMCP", t("Portal y herramientas WebMCP de transportistas", "Carrier portal and WebMCP tools")],
@@ -135,7 +135,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
           </div>
           <div className={styles.topbarActions}>
             <LanguageSwitcher compact />
-            <JudgeDrawer />
+            {pathname.startsWith("/freight-request/new") ? null : <JudgeDrawer />}
             <form className={styles.search} action="/requests">
               <Search size={17} aria-hidden="true" />
               <span className={styles.srOnly}>{t("Buscar en operaciones", "Search operations")}</span>
