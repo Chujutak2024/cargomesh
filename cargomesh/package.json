@@ -14,6 +14,7 @@
     "test:mcp": "tsx --test src/server/mcp/capabilities.test.ts src/server/mcp/http.test.ts src/server/mcp/auth/configuration.test.ts src/server/mcp/auth/context.test.ts src/server/mcp/auth/request-context.test.ts src/server/mcp/auth/service-token.test.ts src/server/mcp/auth/token-endpoint.test.ts src/server/mcp/auth/metadata.test.ts src/server/mcp/auth/user-token.test.ts src/server/mcp/create-freight-request.test.ts src/server/mcp/submit-freight-request.test.ts src/server/mcp/find-freight-options.test.ts src/server/services/freight-requests/idempotent-draft-creation.test.ts src/server/services/freight-requests/submit-request.test.ts",
     "test:mcp:local": "tsx --test src/server/mcp/local-integration.test.ts",
     "test:narration": "tsx --test src/server/narration/narration.test.ts",
+    "test:hono": "tsx --test src/server/hono/routes/freight/requests.test.ts src/server/hono/adapters/freight-request-adapter.test.ts",
     "worker:webmcp": "node scripts/autonomous-webmcp-worker.mjs",
     "probe:webmcp": "node scripts/automated-webmcp-spike.mjs",
     "evidence:mcp-client": "node scripts/mcp-external-client-evidence.mjs",
@@ -32,7 +33,7 @@
     "test:booking": "tsx --test src/features/booking/validation.test.ts src/server/services/booking/server-policy.test.ts src/features/booking/bridge-call-id.test.ts src/features/freight-ui/booking-ui-fixtures.test.ts src/features/freight-ui/booking-client.test.ts",
     "test:d1-recommendations": "tsx --test src/features/recommendations/recommendation-webmcp-runtime.test.ts src/features/recommendations/recommendation-draft-client.test.ts src/features/recommendations/recommendation-ui-policy.test.ts",
     "test:d1-writer": "tsx --test src/server/services/recommendations/recommendation-draft-server.test.ts src/server/services/recommendations/recommendation-draft-persistence.test.ts",
-    "test:release": "pnpm test:auth && pnpm test:i18n && pnpm test:landing && pnpm test:discovery && pnpm test:c02 && pnpm test:int02a && pnpm test:int02a-runner && pnpm test:external-navigation && pnpm test:freight-intent && pnpm test:freight-intake && pnpm test:dashboard && pnpm test:a04 && pnpm test:booking && pnpm test:d1-recommendations && pnpm test:d1-writer && pnpm test:mcp && pnpm test:narration",
+    "test:release": "pnpm test:auth && pnpm test:i18n && pnpm test:landing && pnpm test:discovery && pnpm test:c02 && pnpm test:int02a && pnpm test:int02a-runner && pnpm test:external-navigation && pnpm test:freight-intent && pnpm test:freight-intake && pnpm test:dashboard && pnpm test:a04 && pnpm test:booking && pnpm test:d1-recommendations && pnpm test:d1-writer && pnpm test:mcp && pnpm test:narration && pnpm test:hono",
     "release:preflight": "node scripts/release-preflight.mjs",
     "release:smoke": "node scripts/release-smoke.mjs",
     "release:verify": "pnpm typecheck && pnpm test:release && pnpm build && pnpm release:preflight"

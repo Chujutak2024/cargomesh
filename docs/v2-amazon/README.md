@@ -12,7 +12,7 @@ La [documentación de entrega en inglés](./en/README.md) traduce y consolida lo
 | [models/](./models/README.md) | Modelos conceptuales y de diseño **en revisión**, comparación con datos y guía de diagramas. Un dibujo no prueba implementación ni reemplaza los contratos. |
 | [delivery/](./delivery/README.md) | Roadmaps, Linear, sprints, calidad, revisión y preparación de gates. Una propuesta o acta no modifica por sí sola Linear ni aprueba un hito. |
 | [references/](./references/README.md) | Estudios externos y material comparativo; no son fuente de verdad del producto. |
-| [diagrams/](./diagrams/README.md) | Índice por tipo, editables, vistas previas y antecedentes. El `06` de clases sigue siendo la última revisión versionada; el XML manual más reciente aún no la reemplaza. |
+| `diagrams/` | Diagramas existentes del repositorio; los nuevos editables y vistas previas locales se excluyen de esta integración. |
 | [en/](./en/README.md) | Traducción y consolidación para materiales de entrega; requiere auditoría final contra el commit presentado. |
 
 El [índice general de `docs/`](../README.md) explica qué material fuera de V1/V2 es histórico, transicional o sigue siendo consumido por pruebas. `AGENTS.md` y los archivos de `contracts/` gobiernan V2; ante una contradicción con un borrador o documento V1, prevalecen estos contratos.
