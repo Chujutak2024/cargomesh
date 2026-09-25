@@ -471,3 +471,69 @@ test("real MCP flow reaches provider WebMCP through the autonomous browser worke
     getFreightOptionsStatus: complete.structuredContent.data.status,
   }));
 });
+
+test("V2 QA tenants: valid A session operates; valid B token and MCP session cannot use A request", { timeout: 120_000 }, async (t) => {
+  assert.ok(supabaseUrl && anonKey, "set local Supabase URL and anon key");
+  localOnly(base);
+  localOnly(supabaseUrl);
+  const qaPassword = process.env.CARGOMESH_MCP_QA_TEST_PASSWORD ?? "";
+  assert.ok(qaPassword, "set the local-only V2 QA scenario password");
+
+  const tenantA = clientWithCookies();
+  const tenantB = clientWithCookies();
+  const signedA = await tenantA.client.auth.signInWithPassword({ email: "qa-v2-a@cargomesh.test", password: qaPassword });
+  const signedB = await tenantB.client.auth.signInWithPassword({ email: "qa-v2-b@cargomesh.test", password: qaPassword });
+  assert.ifError(signedA.error);
+  assert.ifError(signedB.error);
+  assert.ok(signedA.data.session?.access_token, "tenant A has a valid Supabase access token");
+  assert.ok(signedB.data.session?.access_token, "tenant B has a valid Supabase access token");
+
+  const userBearerResponse = await fetch(`${base}/mcp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json", Accept: "application/json, text/event-stream",
+      "MCP-Protocol-Version": "2025-11-25",
+      Authorization: `Bearer ${signedA.data.session!.access_token}`,
+    },
+    body: JSON.stringify({ jsonrpc: "2.0", id: ++rpcId, method: "tools/list", params: {} }),
+  });
+  assert.equal(userBearerResponse.status, 401,
+    "valid local user Bearer must fail closed while user OAuth/linking is unavailable");
+
+  const listed = await rpc("tools/list", {}, tenantA.cookie());
+  assert.equal(listed.status, 200, "positive control: tenant A authenticates to MCP");
+  const args = input();
+  const created = toolResult((await rpc("tools/call", {
+    name: "create_freight_request", arguments: args,
+  }, tenantA.cookie())).body);
+  assert.equal(created.structuredContent.ok, true, "positive control: tenant A business tool operates");
+  const receipt = CreatedFreightRequestSchema.parse(created.structuredContent.data);
+  t.after(() => {
+    const result = localSql(`delete from public.freight_requests where id = '${receipt.freightRequestId}' and organization_id = 'c2300000-0000-4000-8000-000000000001' and requested_by_member_id = 'c2320000-0000-4000-8000-000000000001' and creation_idempotency_key = '${args.idempotencyKey}'`);
+    assert.match(result, /DELETE 1/);
+  });
+
+  const { data: ownRows, error: ownReadError } = await tenantA.client.from("freight_requests")
+    .select("id").eq("id", receipt.freightRequestId);
+  assert.ifError(ownReadError);
+  assert.deepEqual(ownRows?.map((row) => row.id), [receipt.freightRequestId],
+    "positive control: tenant A can read the request it created");
+
+  const tenantBBearerClient = createUserAccessSupabaseClient(signedB.data.session!.access_token);
+  const { data: foreignRows, error: foreignReadError } = await tenantBBearerClient
+    .from("freight_requests").select("id").eq("id", receipt.freightRequestId);
+  assert.ifError(foreignReadError);
+  assert.deepEqual(foreignRows, [], "valid tenant B Bearer cannot read tenant A request through RLS");
+
+  const submitArgs = { freightRequestId: receipt.freightRequestId, draftVersion: receipt.draftVersion };
+  const rejected = toolResult((await rpc("tools/call", {
+    name: "submit_freight_request", arguments: submitArgs,
+  }, tenantB.cookie())).body);
+  assert.equal(rejected.structuredContent.error.code, "NOT_FOUND",
+    "valid tenant B MCP session cannot operate on tenant A request");
+  const submitted = toolResult((await rpc("tools/call", {
+    name: "submit_freight_request", arguments: submitArgs,
+  }, tenantA.cookie())).body);
+  assert.equal(submitted.structuredContent.ok, true, "positive control: tenant A can submit its request");
+  assert.equal(submitted.structuredContent.data.status, "PENDING");
+});

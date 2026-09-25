@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1.0",
+  "package": "HAC-23-V2-ROAD-BASELINE",
+  "provenance": "SYNTHETIC_DEMO_ONLY",
+  "baseClock": "2026-09-22T12:00:00Z",
+  "uuidRange": "c2300000-0000-4000-8000-000000000000 through c238ffff-ffff-4fff-8fff-ffffffffffff; this package uses c230..c238 only",
+  "separation": {
+    "seeded": [
+      "two isolated organizations with one local Auth identity and ACTIVE member each",
+      "three organization-A facilities and one organization-B facility",
+      "one synthetic ROAD carrier, one uncovered physical depot, one service, four explicit service areas and one A-to-B lane"
+    ],
+    "neverSeeded": [
+      "mcp_account_links (not yet implemented in the V2 schema)",
+      "freight requests or orchestration runs",
+      "carrier offers, decisions or bookings",
+      "reverse B-to-A lane or Piura coverage"
+    ],
+    "identityScope": "Local-only Auth users and ACTIVE memberships permit CP-3 RLS/MCP negative tests; no Alexa+ or hosted OAuth claim"
+  },
+  "stableSeedKeys": {
+    "organizationA": "c2300000-0000-4000-8000-000000000001",
+    "organizationB": "c2300000-0000-4000-8000-000000000002",
+    "authUserA": "c2310000-0000-4000-8000-000000000001",
+    "authUserB": "c2310000-0000-4000-8000-000000000002",
+    "memberA": "c2320000-0000-4000-8000-000000000001",
+    "memberB": "c2320000-0000-4000-8000-000000000002",
+    "coveredPickupA": "c2330000-0000-4000-8000-000000000001",
+    "coveredDeliveryB": "c2330000-0000-4000-8000-000000000002",
+    "uncoveredPiura": "c2330000-0000-4000-8000-000000000003",
+    "otherTenantFacility": "c2330000-0000-4000-8000-000000000004",
+    "carrier": "c2340000-0000-4000-8000-000000000001",
+    "uncoveredDepot": "c2350000-0000-4000-8000-000000000001",
+    "roadService": "c2360000-0000-4000-8000-000000000001",
+    "pickupA": "c2370000-0000-4000-8000-000000000001",
+    "deliveryB": "c2370000-0000-4000-8000-000000000002",
+    "pickupB": "c2370000-0000-4000-8000-000000000003",
+    "deliveryA": "c2370000-0000-4000-8000-000000000004",
+    "laneAtoB": "c2380000-0000-4000-8000-000000000001"
+  }
+}
