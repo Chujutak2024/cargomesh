@@ -1,6 +1,6 @@
 # CargoMesh MCP Architecture
 
-> **Referencia de transición del PR #80, no arquitectura normativa V2.** La ruta WebMCP y los scores BALANCED siguientes pertenecen al prototipo/legado; [la arquitectura vigente](../v2-amazon/ARCHITECTURE.md) requiere servicios compartidos y discovery V2 sin executor browser obligatorio. El endpoint MCP local aún no prueba Alexa+ remota.
+> **Referencia de transición del PR #80, no arquitectura normativa V2.** La ruta WebMCP y los scores BALANCED siguientes pertenecen al prototipo/legado; [la arquitectura vigente](../v2-amazon/contracts/ARCHITECTURE.md) requiere servicios compartidos y discovery V2 sin executor browser obligatorio. El endpoint MCP local aún no prueba Alexa+ remota.
 
 Status: M1 bootstrap and M2 creation code implemented locally on top of application commit `d26c5e4`. M2 requires permanent migration application and an authenticated MCP smoke test; local SQL checks passed; later milestones are proposed.
 

@@ -10,7 +10,7 @@ description: >-
 
 ## Fuentes obligatorias
 
-Lee `../../../docs/v2-amazon/LINEAR_REBASE_PLAN.md`, `SPRINT_ROADMAP.md`, `linear_sprint1_v2_rebase_proposal.md`, `cargomesh_v2_milestones_architecture_roadmap.md`, `LINEAR_ISSUE_TEMPLATE.md` y `CODE_REVIEW_GUIDELINES.md`. Los dos archivos de propuesta revisan los hitos ya cargados; no son autorización para modificar Linear. Trata la guía intermedia 1+1+N como origen del **formato**, no como autoridad para ramas, conteos de pruebas o WebMCP.
+Lee `../../../docs/v2-amazon/delivery/LINEAR_REBASE_PLAN.md`, `../../../docs/v2-amazon/delivery/SPRINT_ROADMAP.md`, `../../../docs/v2-amazon/delivery/linear_sprint1_v2_rebase_proposal.md`, `../../../docs/v2-amazon/delivery/cargomesh_v2_milestones_architecture_roadmap.md`, `../../../docs/v2-amazon/delivery/LINEAR_ISSUE_TEMPLATE.md` y la sección de revisión técnica de `../../../docs/v2-amazon/delivery/QUALITY_AND_VALIDATION_PLAN.md`. Los dos archivos de propuesta revisan los hitos ya cargados; no son autorización para modificar Linear. Trata la guía intermedia 1+1+N como origen del **formato**, no como autoridad para ramas, conteos de pruebas o WebMCP.
 
 ## Reglas de Linear
 

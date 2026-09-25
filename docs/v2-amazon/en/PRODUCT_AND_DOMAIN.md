@@ -26,6 +26,8 @@ For a given request and date, serviceability requires a sufficiently precise ori
 
 A `TransportPlanCandidate` combines a request, one or more compatible services and route legs, a date/window, and the carrying and auxiliary resources required on each leg. Two trucks splitting a divisible load, tractor plus trailer, and an escort are different configurations. An escort adds no carrying capacity. An indivisible item is never split across vehicles. All legs and resources must pass weight, volume, dimensions, temperature, coverage, reservation, maintenance, and repositioning checks for the same window. Effective ROAD payload is bounded by the most restrictive verified manufacturer, configuration, route/jurisdiction, and service limit; no universal legal limit is hardcoded. Missing critical limits require review, not a confirmed eligible result.
 
+`TransportPlan` is the general term used in prose; `TransportPlanCandidate` is the single proposed concrete plan aggregate in the design. Selection retains that candidate's identity and snapshot rather than creating a second, potentially divergent, final-plan record.
+
 The initial executable slice may focus on ROAD and one-versus-two-vehicle alternatives. RAIL, SEA, AIR, and multimodal plans remain taxonomy or target capability until adapters, data, tests, and runnable evidence exist.
 
 ## Discovery, offers, ranking, and booking
@@ -36,7 +38,11 @@ The search considers every service in the supported V2 dataset. It does not sile
 
 `CarrierOpportunity` is an invitation, not a price. `CarrierOffer` belongs to an issuing carrier/service, a request, and an accepted plan or legs. It records source, validity, currency, transit, reservable capacity, conditions, and a cost breakdown. Fuel, tolls, handling, special equipment, border/agent fees, taxes, and discounts each state whether included, quoted, estimated, excluded, or unknown; avoid double-counting. A CargoMesh estimate is not a carrier offer. A multi-carrier plan does not become a unified contractual quote without an explicit agreement. Carrier discounts need the carrier's policy or consent; CargoMesh can discount only its own fee independently.
 
+The offer's request, candidate, issuing carrier, covered services, and leg assignments must agree with its opportunity and the plan; repeated identifiers are checked references, not independent sources of truth. Currency is held by the `Money` value, not a second mutable field. The first V2 demonstration accepts and compares **USD offers only**; it does not convert legacy PEN amounts.
+
 Hard filters (including cargo mass) run before ranking. The scoring policy defines objective, weights where relevant, normalization, tie breaks, and missing-data treatment. Show why each alternative scored as it did. Delivery success, punctuality, and verified reviews need an observation period and sample size; missing ratings are neither zero nor five stars. Historical recommendations remain organization-scoped and are revalidated. Plans with unresolved hard requirements appear separately as conditional, not mixed into confirmed options. The shipper's final choice and booking authorization are audited.
+
+`SelectionDecision` records the chosen candidate, attributable offer(s), authorizing organization member, policy version, and evidence. The executable ROAD slice selects exactly **one** offer. The class diagram allows `1..*` only as a future multi-responsibility design: each issuing carrier would need its own booking and capacity commitment, never an invented unified quote. A `Booking` separates shipper authorization from carrier confirmation; technical adapter attempts and correlation IDs remain in the application/integration layer. A confirmed carrying resource requires a linked, valid internal `CapacityReservation` or verifiable external carrier commitment. A booking record alone does not prove that capacity was held; holds, release, overlap prevention, and retries require dedicated tests.
 
 ## Borders, permits, and uncertainty
 

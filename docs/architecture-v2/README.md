@@ -1,6 +1,6 @@
 # CargoMesh Architecture V2 — Entry Point
 
-> **ARCHIVO DE TRANSICIÓN (PR #80): NO ES LA FUENTE DE VERDAD V2.** Esta carpeta mezcla inventario de código local reutilizable con un plan anterior dependiente de WebMCP, ROAD/FTL/PALLETS, seis tools y ranking BALANCED. Para decisiones y nuevas issues usar [los contratos vigentes V2](../v2-amazon/README.md) y [la ruta de sprints](../v2-amazon/SPRINT_ROADMAP.md). Una afirmación de implementación aquí exige verificación en código y pruebas; Alexa+ y discovery V2 no se consideran entregados por el merge.
+> **ARCHIVO DE TRANSICIÓN (PR #80): NO ES LA FUENTE DE VERDAD V2.** Esta carpeta mezcla inventario de código local reutilizable con un plan anterior dependiente de WebMCP, ROAD/FTL/PALLETS, seis tools y ranking BALANCED. Para decisiones y nuevas issues usar [los contratos vigentes V2](../v2-amazon/README.md) y [la ruta de sprints](../v2-amazon/delivery/SPRINT_ROADMAP.md). Una afirmación de implementación aquí exige verificación en código y pruebas; Alexa+ y discovery V2 no se consideran entregados por el merge.
 
 > **Status:** transitional inventory from PR #80. It includes local implementation
 > facts and obsolete V1-based target proposals; none of the latter is a V2

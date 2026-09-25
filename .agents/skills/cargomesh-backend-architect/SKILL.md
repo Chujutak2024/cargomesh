@@ -10,7 +10,7 @@ description: >-
 
 ## Fuentes obligatorias
 
-Lee `../../../docs/v2-amazon/ARCHITECTURE.md`, `DOMAIN_CONTRACTS.md` y `ALEXA_MCP_AWS.md`.
+Lee `../../../docs/v2-amazon/contracts/ARCHITECTURE.md`, `../../../docs/v2-amazon/contracts/DOMAIN_CONTRACTS.md` y `../../../docs/v2-amazon/contracts/ALEXA_MCP_AWS.md`.
 
 ## Reglas
 

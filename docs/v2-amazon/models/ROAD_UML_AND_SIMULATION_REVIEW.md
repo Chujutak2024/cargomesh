@@ -1,0 +1,42 @@
+# CargoMesh V2 — ROAD class-model decisions and simulated route data
+
+Status: **design proposal**, not deployed schema, live routing, verified carrier pricing, or evidence that Alexa+ account linking is operational. This review uses the team's manually rearranged `Diagrama_Clases.drawio.xml` as its read-only source. The editable output is [05-complete-classes-road-simulation.drawio](../diagrams/review-2026-09-24/05-complete-classes-road-simulation.drawio); [refine-road-class-diagram.ps1](../diagrams/review-2026-09-24/tools/refine-road-class-diagram.ps1) regenerates it. Pages 1–5 are preserved byte-for-byte; page 6 contains the complete target design. The output has 57 UML classes and 92 attached associations. The source XML in Downloads is not overwritten.
+
+**Later commercial-model review:** [06-complete-classes-commercial-reviewed.drawio](../diagrams/review-2026-09-24/06-complete-classes-commercial-reviewed.drawio) supersedes `05` as the editable class-diagram recommendation. It is regenerated from the checked-in `05` by [refine-commercial-class-diagram.ps1](../diagrams/review-2026-09-24/tools/refine-commercial-class-diagram.ps1), preserving the five detail pages. The earlier generator requires its original 50-class source and must not be rerun against a newly rearranged Downloads XML. See [CLASS_DIAGRAM_DESIGN.md](./CLASS_DIAGRAM_DESIGN.md) for the corrected offer, selection, booking/capacity and cardinality decisions.
+
+## Decisions for the first demonstrable slice
+
+- **USD-only demo:** A V2 demonstration request, budget, carrier offer and cost component are accepted/displayed in USD. `Money` remains the value type; the later `06` revision removes the redundant `CarrierOffer.currency` field and validates USD on `price` and components. No FX conversion, multi-currency ranking, or automatic reinterpretation of legacy PEN records is claimed. This is a **new V2 demo contract**, not a statement that the old SQL constraint has already changed.
+- **ROAD first:** `TransportMode` retains ROAD/RAIL/SEA/AIR for architectural extension, but only ROAD scenarios with data and tests can be shown as supported. `RoadVehicle` specializes `TransportAsset`; `EquipmentType`, body type and `VehicleCombination` distinguish rigid truck, tractor–trailer, refrigerated unit and escort without a subclass per truck. `AssetCargoCapability` must be checked in addition to a carrier service's admitted category. Absent evidence returns `unknown`, not compatible.
+- **Carrier pricing is attributable:** `CarrierOffer` now records identity, USD currency, issue/validity times, estimated pickup/delivery, transit, reservable capacity, terms, evidence, revision and a typed breakdown. `OfferCostComponent` records category, amount if known, treatment, source and observation time. Allowed `CostKind` values for the first slice are base fare, fuel, toll, handling, escort/equipment, border/agent, tax, discount and other. The component's treatment is `INCLUDED`, `QUOTED`, `ESTIMATED`, `EXCLUDED` or `UNKNOWN`; included fuel/tolls are not added twice. A route's distance and a vehicle's odometer are **not** a carrier tariff. An offer may be synthetic *test data* only when explicitly marked scenario data, never described as a live carrier response.
+- **Selection and contacts:** `SelectionDecision` audits the shipper's selected offer and rationale separately from `Booking`. `ShipmentContact` appears in pickup and recipient roles on a request; `OrganizationMember` and `CarrierOperator` model the people who may submit/authorize. Store only the contact data needed for the trip, restrict tenant access, and do not infer an operator's permission from a verified phone number. A `FreightRequest` can omit contacts as an incomplete draft; submission guards decide what is mandatory.
+- **Cargo scope:** One `CargoSpecification` has one principal `CargoCategory` and one or more `CargoUnit` after submission. A service may admit many categories, and an asset needs its own compatible capability. Mixed-category cargo lines inside one request are deferred; do not claim support merely because the organization has multiple `CargoProfile` records.
+- **Coverage and availability remain distinct:** `Facility` and `CarrierDepot` are locations; `ServiceArea` and directed `ServiceLane` prove coverage. `CapacityCalendar`, reservations, maintenance and repositioning determine time-bound availability. A simulated route event cannot independently change either fact, an issued quote or a confirmed booking.
+- **Alexa+ remains an adapter:** `McpAccountLink` and `ResponseIntegration` represent account identity and carrier response channel, respectively. Web and Alexa+ use the same application decisions; their presence in UML does not imply those integrations or SQL tables are already deployed.
+
+## Deterministic map/heuristic fixture required before demo claims
+
+The UML adds `RoutePlanner` (application service) and `RouteSimulationScenario` (violet **test fixture**, not a production table). `LogisticsNode` and `RouteCorridor` form a versioned directed network. `RouteGeometry` carries either provider coordinates with attribution or synthetic display coordinates with `coordinateSystem = SYNTHETIC_XY`. Never display synthetic points as surveyed roads or Google route data. `RouteCondition` has source, validity, impact and an optional simulation association; the same event can affect a corridor and trigger an explained replan.
+
+Minimal fixture to create in the V2 scenario/test layer, separate from historical V1 seeds:
+
+| Node | Synthetic display point | Directed corridor | Distance | Duration |
+|---|---:|---|---:|---:|
+| A | (0, 0) | A→B | 40 km | 45 min |
+| B | (2, 0) | B→D | 60 km | 75 min |
+| C | (2, 2) | A→C | 65 km | 75 min |
+| D | (4, 0) | C→D | 70 km | 75 min |
+
+With the unchanged graph and ROAD policy, A→B→D is 100 km / 120 min; A→C→D is 135 km / 150 min. The scenario clock injects a **synthetic closure of B→D** from 10:00 to 12:00. At 10:30, the planner can propose A→C→D only if the carrier's declared lane, cargo/equipment constraints and the resource window still permit it. The original quote for A→B→D must **not** be transferred to the detour; show it as a route estimate or request a new attributable offer. At 12:05 the closure has expired, but any old offer/availability is still revalidated before selection. A reverse D→A corridor is not inferred.
+
+Tests must fix scenario seed, graph version, policy version and clock; verify deterministic alternatives and explanations, event expiry, no-route/unknown outcome, no synthetic quote promoted to a live quote, no double-counting of cost components, and no booking change without shipper authorization. The UI must label the network and event **Simulated V2 ROAD scenario**. A real Google Maps or other route provider would be a separate integration with its own data rights, provenance and tests.
+
+## UML additions and repaired relations
+
+New classes: `CarrierOperator`, `ShipmentContact`, `OfferCostComponent`, `SelectionDecision`, `AssetCargoCapability`, `RouteSimulationScenario`, `RoutePlanner`. Existing classes enhanced: `Organization` (demo currency), `OrganizationMember`, `Carrier`, `CarrierOffer`, `RoutePlan`, `RouteLeg`, `RouteCorridor`, `RouteCondition`, `RoutePlanningPolicy`. `RoadVehicle`, `Driver`, `CapacityCalendar`, `ServiceArea`, `ServiceLane`, `McpAccountLink` and the five detail pages remain.
+
+New associations connect operator–carrier–offer, pickup/recipient–request, offer–cost components–selection–booking, asset–cargo capability–category, service–admitted categories, and simulation–corridor–condition–planner–policy–route. Five pre-existing connectors detached during manual layout (`opera`, `registra socio`, `usa tramo`, `desglosa por tramo`, `recursos del tramo`) are reattached without changing their intent or multiplicity. The diagram's page dimensions now fit the rearranged content. The 19 new relations display endpoint multiplicities; approval of those multiplicities remains a domain-review decision before a DER or migration.
+
+## Delivery boundary
+
+This edit only changes UML/documentation. It creates no SQL migration, production data, map provider integration, quoted carrier fare, rating, multimodal adapter or remote Supabase change. The V2 Supabase project was empty at review time. Implement the fixture and vertical ROAD path through scoped issues; do not copy V1 demo carriers, prices or lanes into V2.

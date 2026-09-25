@@ -6,7 +6,7 @@
 > *Technical Specification v5.6.0 — Google WebMCP Challenge 2026*
 
 [![WebMCP Challenge 2026 Submission](https://img.shields.io/badge/WebMCP_Challenge_2026-Submission-8C6316?style=for-the-badge&logo=google-chrome&logoColor=white)](https://webmcp.devpost.com/)
-[![Contract v5.6.0](https://img.shields.io/badge/Contract-v5.6.0_FINAL-3178C6?style=for-the-badge&logo=semantic-release&logoColor=white)](docs/00-master/CargoMesh_Planeacion_WebMCP_FINAL.md)
+[![Contract v5.6.0](https://img.shields.io/badge/Contract-v5.6.0_FINAL-3178C6?style=for-the-badge&logo=semantic-release&logoColor=white)](./docs/v1-webmcp/00-master/CargoMesh_Planeacion_WebMCP_FINAL.md)
 [![Protocol](https://img.shields.io/badge/Protocol-Browser_Native_WebMCP-38B2AC?style=for-the-badge&logo=w3c&logoColor=white)](https://github.com/Chujutak2024/cargomesh)
 [![Backend](https://img.shields.io/badge/Backend-Supabase_PostgreSQL_RLS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 
@@ -68,12 +68,12 @@ an LLM—produces the ranking.
 
 The evaluator procedure, exact JSON contracts, Golden Flow payloads, recovery
 causality, and cleanup check are documented in the
-[WebMCP Judge Audit Guide](docs/04-execution/WebMCP_Judge_Audit_Guide.md).
+[WebMCP Judge Audit Guide](./docs/v1-webmcp/04-execution/WebMCP_Judge_Audit_Guide.md).
 
 The approved public evidence is collected in the
-[REL-02 WebMCP UAT report](docs/04-execution/REL02_Public_WebMCP_UAT_Evidence.md),
+[REL-02 WebMCP UAT report](./docs/v1-webmcp/04-execution/REL02_Public_WebMCP_UAT_Evidence.md),
 with a reproducible read-only evaluator sequence in the
-[WebMCP Demo Console Runbook](docs/04-execution/WebMCP_Demo_Console_Runbook.md).
+[WebMCP Demo Console Runbook](./docs/v1-webmcp/04-execution/WebMCP_Demo_Console_Runbook.md).
 
 WebMCP reduces the fragility of screen-based automation: CargoMesh consumes
 typed, origin-gated tools through `document.modelContext` instead of depending
@@ -92,11 +92,8 @@ on button positions, DOM text extraction, or click synchronization.
 
 | Area | Source of truth |
 |---|---|
-| `docs/00-master` | [Dynamic Provider Registry ADR](docs/00-master/ADR-001_Dynamic_Provider_Registry.md) |
-| `docs/01-requirements` | [Requirements Catalogue](docs/01-requirements/CargoMesh_Catalogo_Requisitos.md) |
-| `docs/02-database` | [Supabase Data Contract](docs/02-database/CargoMesh_Supabase_Data_Contract.md) |
-| `docs/03-ux-ui` | [Approved Devpost Evidence Gallery](docs/03-ux-ui/screenshots/README.md) |
-| `docs/04-execution` | [WebMCP Judge Audit Guide](docs/04-execution/WebMCP_Judge_Audit_Guide.md), [Console Runbook](docs/04-execution/WebMCP_Demo_Console_Runbook.md), [Public UAT Evidence](docs/04-execution/REL02_Public_WebMCP_UAT_Evidence.md), and [Team Execution Checklist](docs/04-execution/CargoMesh_Team_Execution_Checklist.md) |
+| `docs/v1-webmcp/` | [V1 historical index](./docs/v1-webmcp/README.md): [Dynamic Provider Registry ADR](./docs/v1-webmcp/00-master/ADR-001_Dynamic_Provider_Registry.md), [requirements](./docs/v1-webmcp/01-requirements/CargoMesh_Catalogo_Requisitos.md), [data contract](./docs/v1-webmcp/02-database/CargoMesh_Supabase_Data_Contract.md), [evidence gallery](./docs/v1-webmcp/03-ux-ui/screenshots/README.md), and [judge guide](./docs/v1-webmcp/04-execution/WebMCP_Judge_Audit_Guide.md) |
+| `docs/v2-amazon/` | [Active V2 documentation index](./docs/v2-amazon/README.md); V1 fixtures and claims do not define its capabilities |
 
 ---
 
@@ -124,9 +121,9 @@ on button positions, DOM text extraction, or click synchronization.
 
 CargoMesh is designed as an open B2B trucking marketplace: any verified carrier can be added to the provider registry with its service coverage and WebMCP endpoint. The Golden Flow seeds three carriers to make the demo deterministic, but discovery, orchestration, ranking, selection, and booking always operate on a variable `0..N` candidate set.
 
-> **Architecture invariant:** Andes, Inca, and Pacific are demo fixtures—not a hardcoded provider list. See [ADR-001: Dynamic Provider Registry](docs/00-master/ADR-001_Dynamic_Provider_Registry.md).
+> **Architecture invariant:** Andes, Inca, and Pacific are demo fixtures—not a hardcoded provider list. See [ADR-001: Dynamic Provider Registry](./docs/v1-webmcp/00-master/ADR-001_Dynamic_Provider_Registry.md).
 
-> **Team coordination:** Ownership, build milestones, verification checkpoints, and the multi-AI handoff protocol live in [CargoMesh Team Execution Checklist](docs/04-execution/CargoMesh_Team_Execution_Checklist.md).
+> **Team coordination:** Ownership, build milestones, verification checkpoints, and the multi-AI handoff protocol live in [CargoMesh Team Execution Checklist](./docs/v1-webmcp/04-execution/CargoMesh_Team_Execution_Checklist.md).
 
 ### The Official North Star:
 > *"An authenticated enterprise creates a `FreightRequest`; the AI agent navigates participating carrier websites via WebMCP, retrieves real structured responses from deterministic provider fixtures, CargoMesh validates and persists those results into its database, the customer selects an eligible alternative, the carrier confirms or rejects the booking, and the system maintains operational continuity through live milestone tracking or guided recovery."*
@@ -326,7 +323,7 @@ All carrier WebMCP tools implement a strict common envelope:
 - **Commercial Rejection / Expiration**: Returns `{ "ok": true, "data": { "providerBookingStatus": "REJECTED" } }` *(Commercial rejections are valid business responses, not execution crashes)*.
 
 The registered tool inventory is summarized at the top of this README. See the
-[WebMCP Judge Audit Guide](docs/04-execution/WebMCP_Judge_Audit_Guide.md) for
+[WebMCP Judge Audit Guide](./docs/v1-webmcp/04-execution/WebMCP_Judge_Audit_Guide.md) for
 the exact input/output schemas and evaluator-ready `getTools()` / `executeTool()`
 commands.
 
@@ -349,22 +346,12 @@ The v5.6.0 Technical Contract includes an exhaustive **73-point WebMCP Acceptanc
 ```text
 cargomesh/
 ├── docs/                                      # Master documentation & technical contracts
-│   ├── 00-master/                             # Master product specification & WebMCP vision (v5.6.0)
-│   │   ├── CargoMesh_Planeacion_WebMCP_FINAL.md
-│   │   └── ADR-001_Dynamic_Provider_Registry.md # 0..N carriers; demo fixtures are not a closed list
-│   ├── 01-requirements/                       # Functional requirements & sprint backlog
-│   │   ├── CargoMesh_Catalogo_Requisitos.md
-│   │   └── CargoMesh_Sprint_Backlog.md
-│   ├── 02-database/                           # Schema contracts, RLS rules & data alignment
-│   │   ├── CargoMesh_Supabase_Schema_Contract.md
-│   │   └── CargoMesh_Supabase_Data_Contract.md
-│   ├── 03-ux-ui/                              # UX architecture, screen flows & WebMCP evidence
-│   │   ├── CargoMesh_Mockups_Requeridos.md
-│   │   ├── CargoMesh_Mockups_WebMCP_Ajustes.md
-│   │   └── screenshots/README.md              # Approved REL-02 evidence gallery and capture standards
-│   └── 04-execution/                          # Team ownership, checklist and multi-AI handoffs
-│       ├── CargoMesh_Team_Execution_Checklist.md
-│       └── WebMCP_Judge_Audit_Guide.md
+│   ├── README.md                              # Documentation map and authority
+│   ├── v1-webmcp/                             # Historical V1 contracts and evidence
+│   │   ├── 00-master/  01-requirements/  02-database/
+│   │   └── 03-ux-ui/   04-execution/
+│   ├── v2-amazon/                             # Active V2 contracts, models and delivery
+│   └── architecture-v2/                      # Transitional archive; not the active V2 contract
 ├── mockups/                                   # Standalone UX/UI HTML mockups & provider pages
 ├── supabase/                                  # Database migrations, seed, tests, and config
 │   ├── config.toml                            # Local Supabase stack configuration

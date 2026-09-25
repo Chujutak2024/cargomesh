@@ -1,6 +1,6 @@
 # CargoMesh V1 / WebMCP — Índice histórico
 
-Los contratos, planes y evidencias públicos de la versión WebMCP permanecen en las carpetas históricas del repositorio, en particular [planificación](../00-master/CargoMesh_Planeacion_WebMCP_FINAL.md), [requisitos](../01-requirements/CargoMesh_Catalogo_Requisitos.md), [backlog histórico](../01-requirements/CargoMesh_Sprint_Backlog.md) y [contratos de datos](../02-database/CargoMesh_Supabase_Data_Contract.md). El material V1 no es autoridad para V2.
+Los contratos, planes y evidencias públicos de la versión WebMCP están agrupados aquí: [planificación](./00-master/CargoMesh_Planeacion_WebMCP_FINAL.md), [requisitos y backlog](./01-requirements/CargoMesh_Catalogo_Requisitos.md), [contratos de datos](./02-database/CargoMesh_Supabase_Data_Contract.md), [capturas](./03-ux-ui/screenshots/README.md) y [ejecución/evidencia](./04-execution/WebMCP_Judge_Audit_Guide.md). El material V1 no es autoridad para V2.
 
 PR #80 también incorporó [documentación intermedia de Amazon](../architecture-v2/README.md) con supuestos V1. Sirve para inventariar código y decisiones de transición, pero **no** reemplaza los contratos de `docs/v2-amazon/`.
 

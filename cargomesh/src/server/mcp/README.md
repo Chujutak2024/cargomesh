@@ -1,6 +1,6 @@
 # CargoMesh MCP local preview
 
-> **Estado V1/intermedio:** esta guía describe las cuatro tools MCP locales mergeadas en PR #80 y su continuación WebMCP. No es el contrato de Alexa+ ni del discovery V2; véase [la superficie MCP vigente](../../../../docs/v2-amazon/ALEXA_MCP_AWS.md).
+> **Estado V1/intermedio:** esta guía describe las cuatro tools MCP locales mergeadas en PR #80 y su continuación WebMCP. No es el contrato de Alexa+ ni del discovery V2; véase [la superficie MCP vigente](../../../../docs/v2-amazon/contracts/ALEXA_MCP_AWS.md).
 
 Implemented: `/mcp` on the Next.js Node runtime, official SDK `1.30.0`, tested protocol `2025-11-25`, stateless Streamable HTTP with JSON responses. Four registered tools call shared services directly: `create_freight_request` creates an idempotent DRAFT, `submit_freight_request` validates and advances it to PENDING, `find_freight_options` starts or resumes a persisted INITIAL run, and `get_freight_options` reads persisted progress and ranking. The MCP endpoint does not contact providers or book freight.
 

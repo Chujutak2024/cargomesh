@@ -12,11 +12,11 @@ description: >-
 
 Lee antes de actuar:
 
-- `../../../docs/v2-amazon/DOMAIN_CONTRACTS.md`
-- `../../../docs/v2-amazon/CARRIER_COVERAGE_AND_SERVICEABILITY.md`
-- `../../../docs/v2-amazon/CARRIER_DISCOVERY_AND_RANKING.md`
-- `../../../docs/v2-amazon/TRANSPORT_PLANS_AND_FLEET.md`
-- `../../../docs/v2-amazon/V1_BOUNDARY_AND_MIGRATION.md`
+- `../../../docs/v2-amazon/contracts/DOMAIN_CONTRACTS.md`
+- `../../../docs/v2-amazon/contracts/CARRIER_COVERAGE_AND_SERVICEABILITY.md`
+- `../../../docs/v2-amazon/contracts/CARRIER_DISCOVERY_AND_RANKING.md`
+- `../../../docs/v2-amazon/contracts/TRANSPORT_PLANS_AND_FLEET.md`
+- `../../../docs/v2-amazon/contracts/V1_BOUNDARY_AND_MIGRATION.md`
 
 ## Invariantes
 
