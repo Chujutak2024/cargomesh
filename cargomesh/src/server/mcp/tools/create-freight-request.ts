@@ -32,7 +32,7 @@ export function registerCreateFreightRequest(server: McpServer, create: CreateFr
   server.registerTool("create_freight_request", {
     title: "Create a freight draft",
     description: "V1 regression contract: persist a DRAFT for ROAD/FTL/BALANCED scheduled-pallet freight. " +
-      "This is not the canonical V2 FreightRequest schema, which is blocked on HAC-21. " +
+      "This is not the canonical V2 FreightRequest schema; the V2 application service is not implemented. " +
       "Requires an active OWNER or SUPERVISOR. Does not search, submit or book. " +
       "Generate one UUID idempotencyKey per intended request; retain the same key and input on every retry. " +
       "Replays return the existing request's current status/version, which may no longer be DRAFT.",

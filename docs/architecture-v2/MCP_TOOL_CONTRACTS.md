@@ -1,6 +1,6 @@
 # CargoMesh MCP tool contracts
 
-> **Contrato intermedio, no normativo para V2.** Las seis tools propuestas, el executor WebMCP y BALANCED describen el plan anterior. Para crear issues o declarar capacidades live, usar [ALEXA_MCP_AWS.md](../v2-amazon/ALEXA_MCP_AWS.md), [ARCHITECTURE.md](../v2-amazon/ARCHITECTURE.md) y verificar el código. Las cuatro tools locales existentes son una base reutilizable, no integración Alexa+ final.
+> **Contrato intermedio, no normativo para V2.** Las seis tools propuestas, el executor WebMCP y BALANCED describen el plan anterior. Para crear issues o declarar capacidades live, usar [ALEXA_MCP_AWS.md](../v2-amazon/contracts/ALEXA_MCP_AWS.md), [ARCHITECTURE.md](../v2-amazon/contracts/ARCHITECTURE.md) y verificar el código. Las cuatro tools locales existentes son una base reutilizable, no integración Alexa+ final.
 
 Status: M1 local bootstrap, M2 draft creation and the M3 submit/find/get adapters are implemented on `feature/alexa/v1,0`. Local authenticated create, submit, find, persisted loading/completed get, replay and role/cross-organization denial were verified. Full M3 still requires an autonomous provider executor; the current browser continuation is manual. Initial source analysis: 2026-09-18 against application commit `d26c5e4`.
 

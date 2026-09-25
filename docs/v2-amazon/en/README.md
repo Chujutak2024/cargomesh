@@ -4,9 +4,9 @@ This English package describes the V2 product, its intended behavior, architectu
 
 | English document | Covers the active source contracts |
 |---|---|
-| [Product and domain](./PRODUCT_AND_DOMAIN.md) | `PRODUCT_SCOPE.md`, `DOMAIN_CONTRACTS.md`, `CARRIER_COVERAGE_AND_SERVICEABILITY.md`, `CARRIER_DISCOVERY_AND_RANKING.md`, `TRANSPORT_PLANS_AND_FLEET.md` |
-| [Architecture and integrations](./ARCHITECTURE_AND_INTEGRATIONS.md) | `ARCHITECTURE.md`, `ALEXA_MCP_AWS.md`, `V1_BOUNDARY_AND_MIGRATION.md` |
-| [Verification and submission claims](./VERIFICATION_AND_CLAIMS.md) | `QUALITY_AND_VALIDATION_PLAN.md`, Sprint 1 implementation notes and gate evidence |
+| [Product and domain](./PRODUCT_AND_DOMAIN.md) | [Scope](../contracts/PRODUCT_SCOPE.md), [domain](../contracts/DOMAIN_CONTRACTS.md), [coverage](../contracts/CARRIER_COVERAGE_AND_SERVICEABILITY.md), [discovery](../contracts/CARRIER_DISCOVERY_AND_RANKING.md), and [transport plans](../contracts/TRANSPORT_PLANS_AND_FLEET.md) |
+| [Architecture and integrations](./ARCHITECTURE_AND_INTEGRATIONS.md) | [Architecture](../contracts/ARCHITECTURE.md), [Alexa/MCP](../contracts/ALEXA_MCP_AWS.md), and [V1/V2 boundary](../contracts/V1_BOUNDARY_AND_MIGRATION.md) |
+| [Verification and submission claims](./VERIFICATION_AND_CLAIMS.md) | [Quality plan](../delivery/QUALITY_AND_VALIDATION_PLAN.md), Sprint 1 implementation notes and gate evidence |
 
 ## What the project is
 

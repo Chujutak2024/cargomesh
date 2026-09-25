@@ -18,10 +18,10 @@ description: >-
 ## Flujo
 
 1. Comprueba estado, base, issue, dependencias y cambios locales.
-   Verifica que la rama figure en el manifiesto del sprint; si no, detén su creación y actualiza la issue con aprobación del equipo. El dueño de la issue resuelve sus propios defectos antes de pedir revisión.
-2. Revisa el PR contra `docs/v2-amazon/CODE_REVIEW_GUIDELINES.md`.
+   Verifica que la rama figure en el manifiesto del sprint; si no, detén su creación y actualiza la issue con aprobación del equipo. El dueño culmina y entrega PR/evidencia antes de revisión; defectos funcionales medios/altos regresan a ese dueño con evidencia y criterio de nueva validación. Solo correcciones bajas, no semánticas y verificables pueden resolverse en el gate por el integrador.
+2. Revisa el PR contra la sección **Revisión técnica y aceptación de PR** de `docs/v2-amazon/delivery/QUALITY_AND_VALIDATION_PLAN.md`.
 3. Trata código V1 ya mergeado mediante inventario y correcciones aditivas, sin fingir que el merge prueba Alexa+, discovery V2 o deploy. Para PRs pendientes decide cerrar, seleccionar por cherry-pick o reformular.
-4. Integra por dependencias funcionales en una rama de ciclo.
+4. Tras validación y aprobación del Tech Lead, integra por dependencias funcionales en la rama de ciclo y mergea a `codex/v2-amazon-contracts` solo con autorización. Si un PR ya fue mergeado, no repitas el merge: audita el resultado y registra su trazabilidad.
 5. Descubre scripts y suites presentes; ejecuta typecheck, lint, pruebas, pgTAP, build y E2E que apliquen.
 6. Registra comandos, resultados, riesgos y evidencia.
 

@@ -7,7 +7,7 @@ export type McpCapabilityDescriptor = {
   toolName: "get_cargomesh_capabilities" | "create_freight_request" | "submit_freight_request" | "find_freight_options" | "get_freight_options";
   profile: McpCapabilityProfile;
   status: McpCapabilityStatus;
-  blockedBy: "NONE" | "HAC-21";
+  blockedBy: "NONE" | "V2_FREIGHT_REQUEST_SERVICE";
   source: "CARGOMESH_SHARED_SERVICE" | "V1_WEBMCP_RESULT_BRIDGE";
   legacyDependency: "NONE" | "V1_WEBMCP" | "BALANCED_V1" | "V1_WEBMCP_AND_BALANCED_V1";
   businessSemantics: string;
@@ -63,19 +63,19 @@ export const MCP_CAPABILITY_CATALOG: readonly McpCapabilityDescriptor[] = [
     toolName: "create_freight_request",
     profile: "V2",
     status: "BLOCKED",
-    blockedBy: "HAC-21",
+    blockedBy: "V2_FREIGHT_REQUEST_SERVICE",
     source: "CARGOMESH_SHARED_SERVICE",
     legacyDependency: "NONE",
-    businessSemantics: "Reserved for the canonical V2 FreightRequest contract supplied by HAC-21.",
+    businessSemantics: "Reserved until a canonical V2 FreightRequest application service is implemented and verified.",
   },
   {
     toolName: "submit_freight_request",
     profile: "V2",
     status: "BLOCKED",
-    blockedBy: "HAC-21",
+    blockedBy: "V2_FREIGHT_REQUEST_SERVICE",
     source: "CARGOMESH_SHARED_SERVICE",
     legacyDependency: "NONE",
-    businessSemantics: "Reserved for submission of the canonical V2 FreightRequest contract supplied by HAC-21.",
+    businessSemantics: "Reserved until canonical V2 FreightRequest submission is implemented and verified.",
   },
 ] as const;
 
@@ -89,7 +89,9 @@ export function capabilityReport(profile: McpCapabilityProfile) {
     profile,
     source: "CARGOMESH_CAPABILITY_CATALOG" as const,
     status: profile === "V2" ? "PARTIAL" as const : "V1_REGRESSION" as const,
-    blockedBy: profile === "V2" ? ["HAC-21"] as const : [] as const,
+    blockedBy: profile === "V2"
+      ? ["V2_FREIGHT_REQUEST_SERVICE", "MCP_ACCOUNT_LINK_PERSISTENCE"] as const
+      : [] as const,
     capabilities: MCP_CAPABILITY_CATALOG.filter((capability) => capability.profile === profile),
   };
 }

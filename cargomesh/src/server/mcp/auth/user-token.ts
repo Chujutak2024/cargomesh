@@ -72,8 +72,8 @@ async function verifySupabaseIdentity(accessToken: string): Promise<VerifiedSupa
 
 const blockedAccountLinks: McpAccountLinkRepository = {
   async findByUserAndClient() {
-    // HAC-21 owns the permanent V2 persistence contract. Fail closed until it exists.
-    throw new Error("FORBIDDEN: MCP account-link persistence is blocked by HAC-21.");
+    // Fail closed until persistent account links have an approved implementation.
+    throw new Error("FORBIDDEN: MCP account-link persistence is not configured.");
   },
 };
 

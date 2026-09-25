@@ -8,7 +8,7 @@
 > • **Esquema de Base de Datos:** [DATABASE_SCHEMA_V2_PROPOSAL.md](./DATABASE_SCHEMA_V2_PROPOSAL.md)  
 > • **Diagramas de Dominio y Persistencia:** [BACKEND_DOMAIN_AND_PERSISTENCE_DIAGRAMS.md](./BACKEND_DOMAIN_AND_PERSISTENCE_DIAGRAMS.md)  
 > • **Taxonomía de Carga y Precios USD:** [CARGO_DIMENSIONS_AND_TAXONOMY_V2.md](./CARGO_DIMENSIONS_AND_TAXONOMY_V2.md)  
-> • **Plan Operativo y Sprints:** [MASTER_BACKLOG.md](./MASTER_BACKLOG.md)
+> • **Plan Operativo y Sprints vigente (V2):** [SPRINT_ROADMAP.md](../v2-amazon/delivery/SPRINT_ROADMAP.md) *(el `MASTER_BACKLOG.md` previsto en este borrador no existe)*
 
 ---
 

@@ -23,7 +23,7 @@ Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de Ca
 - Un carrier V2 puede responder mediante portal manual, API o MCP cuando exista integración real. WebMCP permanece como legado V1 y no es dependencia del flujo principal V2.
 - La elegibilidad se calcula desde datos persistidos y versionados: áreas de recojo/entrega, lanes dirigidas, modos, capacidad por fecha, requisitos de carga, documentación y política comercial. La presencia de una sede no concede cobertura automática al país o provincia; un socio registrado puede servir una zona sin sede propia.
 - La flota propia o capacidad contratada debe descontar reservas, mantenimiento y reposicionamiento antes de indicar disponibilidad; datos desconocidos no se convierten en cobertura o capacidad confirmada.
-- La alternativa recomendada es un plan carrier + servicio + ruta + equipo/cupo + fecha. Peso/volumen y requisitos de equipo son filtros duros antes del ranking; una escolta no aporta capacidad y dos recursos deben estar disponibles en la misma ventana. Véase `docs/v2-amazon/TRANSPORT_PLANS_AND_FLEET.md`.
+- La alternativa recomendada es un plan carrier + servicio + ruta + equipo/cupo + fecha. Peso/volumen y requisitos de equipo son filtros duros antes del ranking; una escolta no aporta capacidad y dos recursos deben estar disponibles en la misma ventana. Véase `docs/v2-amazon/contracts/TRANSPORT_PLANS_AND_FLEET.md`.
 - Modos y equipos se separan: ROAD/RAIL/SEA/AIR no implican flota individual registrada ni integración live. Costo, permisos y frontera deben distinguir cotizado, estimado, pendiente y desconocido.
 - ROAD, SEA, RAIL, AIR y combinaciones multimodales son capacidades; ningún modo se considera implementado sin adaptador, datos, pruebas y evidencia ejecutable.
 - Andes, Inca y Pacific y el Golden Flow `FR-1042` quedan como regresión V1. No limitan el discovery V2 ni autorizan afirmar que otros carriers están operativos.
@@ -53,7 +53,8 @@ Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de Ca
 - La rama base activa de contratos V2 es `codex/v2-amazon-contracts`.
 - Cada issue V2 con código declara su rama exacta y target PR en Linear **antes de crearla**; se basa en `codex/v2-amazon-contracts` y no reutiliza ramas cerradas o canceladas de V1. Un enabler sin código registra `No aplica` y no abre rama.
 - El manifiesto de ramas se aprueba por ciclo: una core por integrante, una rama de integración definida en la issue de gate y ramas emergentes solo después de aprobar su issue. No abrir ramas auxiliares por conveniencia; PR #81/#82 son excepciones de gobernanza previas a esta regla, no una plantilla.
-- Solo el integrador autorizado fusiona PRs a la base durante un gate. Antes debe ejecutar la suite descubierta desde el repositorio, sin asumir conteos estáticos.
+- Flujo por issue: el responsable culmina y entrega PR/evidencia; el integrador valida contra el DoD; el Tech Lead aprueba; solo entonces el integrador autorizado mergea a la base durante el gate. Un PR ya mergeado se registra como hecho consumado y se audita, nunca se mergea de nuevo.
+- Antes de aprobar o mergear, ejecutar la suite pertinente descubierta desde el repositorio, sin asumir conteos estáticos. Si el gate detecta un defecto bajo puramente documental o de metadatos, el integrador puede corregirlo con diff y prueba visibles. Un defecto medio o alto vuelve al dueño de la issue para implementación, prueba y nueva revisión; no se traslada silenciosamente a otro integrante.
 - Los solapamientos entre ramas se resuelven en una rama de integración del ciclo; nunca mediante merges individuales oportunistas.
 - Los previews automáticos de Vercel no cambian la rama de producción. No cambiar `productionBranch`, `rootDirectory`, alias ni desplegar a producción como efecto colateral de un PR V2; una migración de `frontend/` a otro directorio requiere plan y aprobación de despliegue separados.
 
@@ -61,9 +62,9 @@ Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de Ca
 
 - Las issues de implementación canceladas permanecen canceladas como historia. Un alcance V2 nuevo recibe una issue nueva y enlaza su antecedente V1; HAC-17 (créditos AWS) y HAC-18 (Drive) son soporte vigente que se verifica por su propia evidencia.
 - El Sprint 1 actual puede contener nuevas issues V2 sin reciclar las canceladas. La planificación semanal sigue el modelo `1 core + 1 enabler + N emergentes` por integrante: el core técnico usa rama y PR; un enabler operativo puede cerrarse con evidencia sin rama.
-- Cada issue tiene un único dueño, que implementa, prueba y corrige sus defectos. Otros integrantes entregan contratos dependientes o revisan el PR al terminar; no se crea una issue «colaborativa» sin responsable ni se trasladan problemas de una tarea a otro desarrollador por defecto.
+- Cada issue tiene un único dueño, que implementa, prueba y corrige los defectos funcionales de su entrega. Otros integrantes entregan contratos dependientes o revisan al terminar; no se crea una issue «colaborativa» sin responsable. La única excepción de corrección por el integrador es la clase baja definida en la plantilla Linear; las clases media/alta regresan al dueño con evidencia y criterio de nueva validación.
 - Estados: `Backlog` definido; `In Progress` con ejecución iniciada; `In Review` es la entrega del responsable (PR verificado para código o enlace/evidencia para soporte). Solo el Tech Lead valida el gate y mueve a `Done`; para código exige merge autorizado, pruebas y documentación.
-- Cada issue V2 usa la [plantilla vigente](docs/v2-amazon/LINEAR_ISSUE_TEMPLATE.md) y declara versión, tipo, objetivo, fuera de alcance, dependencias, contrato afectado, DoD verificable y evidencia. Las cantidades históricas de tests y la rama `codex/c-mcp-contracts` no son criterios V2.
+- Cada issue V2 usa la [plantilla vigente](./docs/v2-amazon/delivery/LINEAR_ISSUE_TEMPLATE.md) y declara versión, tipo, objetivo, fuera de alcance, dependencias, contrato afectado, DoD verificable y evidencia. Las cantidades históricas de tests y la rama `codex/c-mcp-contracts` no son criterios V2.
 
 ## 8. Skills activas
 
