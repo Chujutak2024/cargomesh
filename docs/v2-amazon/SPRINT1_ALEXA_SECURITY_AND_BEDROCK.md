@@ -12,9 +12,9 @@ Estado del corte:
 - Alexa+: `ALEXA_LIVE_BLOCKED`;
 - Bedrock: `BEDROCK_BLOCKED`;
 - fallback SSML: `LOCAL`, probado.
-- clasificación del checkpoint al abrir PR #85: `HAC22_PARTIAL_BLOCKED_BY_HAC21` (etiqueta histórica de código, pendiente de alinear con el cierre posterior de HAC-21).
+- clasificación al abrir PR #85: `HAC22_PARTIAL_BLOCKED_BY_HAC21` (etiqueta histórica corregida en la rama de Gate-1; no describe la dependencia actual).
 
-**Nota posterior al merge:** PR #83 de HAC-21 y PR #85 de HAC-22 ya están en `codex/v2-amazon-contracts`. El alcance aprobado de HAC-21 fue el esquema ROAD; no incluyó `mcp_account_links` ni servicios de creación/envío V2. La corrección de trazabilidad preparada en la rama de Gate-1 sustituye `BLOCKED_BY_HAC21` por bloqueos de capacidad, manteniendo las tools cerradas. Falta revisión/merge de esa corrección y acordar el alcance siguiente antes de habilitar negocio; una tabla ROAD no desbloquea OAuth de usuario.
+**Nota de Gate-1 (25 sep):** PR #83 de HAC-21 y PR #85 de HAC-22 ya están en `codex/v2-amazon-contracts`. HAC-21 entregó esquema ROAD, no `mcp_account_links` ni servicios de creación/envío V2. La rama de Gate-1 sustituye `BLOCKED_BY_HAC21` por bloqueos de capacidad y conserva las tools cerradas; [PR #86](https://github.com/Chujutak2024/cargomesh/pull/86) continúa cerrado sin merge por un bloqueo de permisos para reabrirlo. Hasta integrarlo, el código de la base aún muestra la etiqueta histórica; una tabla ROAD no desbloquea OAuth de usuario.
 
 ## 2. Límite de confianza
 
@@ -58,7 +58,7 @@ flowchart LR
 
 El seam de usuario valida el access token con Supabase, exige `client_id`/`azp` igual al cliente configurado, resuelve el vínculo exacto `(auth_user_id, oauth_client_id)`, exige scope autorizado `mcp:tools` y membresía ACTIVE en la organización vinculada. El access token se conserva solo dentro de `AsyncLocalStorage` durante el request y crea un cliente Supabase no global con `Authorization: Bearer`.
 
-La implementación persistente de `mcp_account_links` no existe en la base V2. El repositorio productivo falla cerrado; Gate-1 prepara un mensaje genérico que no culpa a HAC-21. No se elige la primera membresía.
+La implementación persistente de `mcp_account_links` no existe en la base V2. El repositorio productivo falla cerrado; Gate-1 aporta un mensaje genérico que no culpa a HAC-21. No se elige la primera membresía.
 
 El comportamiento de custom domain/issuer de Supabase permanece `NEEDS_HOSTED_VERIFICATION`.
 
@@ -94,7 +94,7 @@ El worker autónomo, provider pages, `document.modelContext`, Result Bridge y BA
 
 ## 11. Estado del contrato V2
 
-El perfil V2 es seguro y verificable, pero los business tools canónicos siguen bloqueados porque faltan servicios FreightRequest V2 y account linking persistente fuera del alcance cerrado de HAC-21. `get_cargomesh_capabilities` devuelve profile, source, status y dependencias legacy sin leer datos de tenant; Gate-1 corrige la etiqueta de capacidad sin activarla.
+El perfil V2 es seguro y verificable, pero los business tools canónicos siguen bloqueados porque faltan servicios FreightRequest V2 y account linking persistente fuera del alcance cerrado de HAC-21. `get_cargomesh_capabilities` devuelve profile, source, status y dependencias legacy sin leer datos de tenant; Gate-1 corrige la etiqueta de capacidad sin activarla, pendiente de merge a la base.
 
 ## 12. Matriz Alexa+
 
@@ -148,20 +148,20 @@ Secretos de service auth, Supabase y AWS son server-only. `.env.example` contien
 - `pnpm test:mcp:local`: 2/2 PASS con Supabase local y Chrome WebMCP.
 - `pnpm typecheck`: PASS.
 - `pnpm build`: PASS.
-- `pnpm evidence:mcp-client`: `LOCAL_CONTROLLED_MCP_CLIENT`, protocolo `2025-11-25`, catálogo V2 `PARTIAL` con bloqueo `HAC-21`, Bearer inválido `401`, token `900s`; latencias observadas 1406.88 ms para token y 1800.51 ms para initialize/list/capability/negative check durante compilación dev bajo demanda.
+- `pnpm evidence:mcp-client` sobre el corte original de PR #85: `LOCAL_CONTROLLED_MCP_CLIENT`, protocolo `2025-11-25`, catálogo V2 `PARTIAL` con etiqueta histórica `HAC-21`, Bearer inválido `401`, token `900s`; latencias observadas 1406.88 ms para token y 1800.51 ms para initialize/list/capability/negative check durante compilación dev bajo demanda. No se presenta como una ejecución nueva tras Gate-1.
 
 Los resultados finales de release/build se registran al cerrar la rama.
 
 ## 19. Bloqueos conocidos
 
-- Pendiente de alcance y dueño: `mcp_account_links` persistente y servicios FreightRequest V2. La etiqueta de código se corrigió en la rama Gate-1 para expresar capacidades pendientes; HAC-21 no abarcó esos entregables.
+- `mcp_account_links` persistente y GET/POST V2 corresponden a HAC-11; el servicio ROAD compartido corresponde a HAC-12. La etiqueta de código se corrigió en la rama Gate-1 para expresar capacidades pendientes, sin habilitar herramientas; HAC-21 no abarcó esos entregables.
 - `NEEDS_HOSTED_VERIFICATION`: issuer/custom domain, OAuth client y user Bearer en Supabase hosted.
 - `ALEXA_LIVE_BLOCKED`: accesos y UAT externos ausentes.
 - `BEDROCK_BLOCKED`: IAM sin permiso Bedrock.
 
 ## 20. Recomendación Sprint 2
 
-Consumir el contrato ROAD ya mergeado de HAC-21 sin atribuirle `mcp_account_links`; asignar explícitamente el contrato/repositorio de account links y los servicios FreightRequest V2 antes de habilitar tools. Verificar issuer/client en Supabase hosted. Reconsiderar Bedrock únicamente si HAC-17 entrega permisos/cuota y su narración aporta valor medible.
+Consumir el contrato ROAD ya mergeado de HAC-21 sin atribuirle `mcp_account_links`; HAC-11 tiene el contrato/repositorio de account links y GET/POST V2, y HAC-12 el servicio ROAD compartido. Mantener las tools comerciales cerradas hasta implementación, pruebas y autorización por organización. Verificar issuer/client en Supabase hosted. Reconsiderar Bedrock únicamente si hay permisos/cuota y su narración aporta valor medible.
 
 ## 21. Referencias de evidencia
 
