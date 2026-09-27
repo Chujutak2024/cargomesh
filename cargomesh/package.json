@@ -15,6 +15,7 @@
     "test:mcp:local": "tsx --test src/server/mcp/local-integration.test.ts",
     "test:narration": "tsx --test src/server/narration/narration.test.ts",
     "test:hono": "tsx --test src/server/hono/routes/freight/requests.test.ts src/server/hono/adapters/freight-request-adapter.test.ts",
+    "test:hac12:http": "node scripts/hac12-http-smoke.mjs",
     "worker:webmcp": "node scripts/autonomous-webmcp-worker.mjs",
     "probe:webmcp": "node scripts/automated-webmcp-spike.mjs",
     "evidence:mcp-client": "node scripts/mcp-external-client-evidence.mjs",
