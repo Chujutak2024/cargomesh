@@ -1,0 +1,46 @@
+.eyebrow { color: var(--cm-color-primary); font-size: 0.56rem; font-weight: 850; letter-spacing: 0.11em; text-transform: uppercase; }
+.mapBoundary { display: grid; gap: 0.9rem; border: 1px solid var(--cm-color-line); border-radius: var(--cm-radius-md); padding: 1rem; background: var(--cm-color-surface-subtle); }
+.mapHeader, .resultsHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.8rem; }
+.mapHeader > div, .resultsHeader > div { display: grid; gap: 0.25rem; }
+.mapHeader h3, .resultsHeader h3, .emptyState h3 { margin: 0; color: var(--cm-color-heading); font-size: 0.86rem; }
+.mapHeader p, .emptyState p { margin: 0; color: var(--cm-color-muted); font-size: 0.64rem; line-height: 1.5; }
+.mapLocations { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.65rem; }
+.location { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.5rem; border-radius: var(--cm-radius-sm); padding: 0.65rem; background: white; color: var(--cm-color-primary); }
+.location span { display: grid; gap: 0.16rem; min-width: 0; }
+.location small, .fact small, .check small { color: var(--cm-color-muted); font-size: 0.55rem; }
+.location strong, .fact strong, .check strong { overflow-wrap: anywhere; color: var(--cm-color-heading); font-size: 0.67rem; }
+.mapConnector { color: var(--cm-color-muted); }
+.mapFacts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.55rem; }
+.fact { display: grid; gap: 0.2rem; border-radius: var(--cm-radius-sm); padding: 0.65rem; background: white; }
+.mapUnknown, .emptyState { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 0.65rem; border: 1px dashed #b9cbc6; border-radius: var(--cm-radius-md); padding: 0.85rem; color: var(--cm-color-primary); }
+.mapUnknown div { display: grid; gap: 0.2rem; }
+.mapUnknown strong { color: var(--cm-color-heading); font-size: 0.7rem; }
+.mapUnknown span { color: var(--cm-color-muted); font-size: 0.62rem; line-height: 1.45; }
+.resultsSection { display: grid; gap: 0.8rem; }
+.candidateGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+.candidateCard { display: grid; align-content: start; gap: 0.75rem; border: 1px solid var(--cm-color-line); border-radius: var(--cm-radius-md); padding: 0.85rem; background: white; }
+.candidateSelected { border-color: var(--cm-color-primary); box-shadow: 0 0 0 2px rgb(43 174 154 / 14%); }
+.candidateCard > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.55rem; }
+.carrierIdentity { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.5rem; min-width: 0; }
+.carrierIcon { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: 0.6rem; background: var(--cm-color-primary); color: white; }
+.carrierIdentity > span:last-child { display: grid; gap: 0.14rem; min-width: 0; }
+.carrierIdentity strong { overflow-wrap: anywhere; color: var(--cm-color-heading); font-size: 0.7rem; }
+.carrierIdentity small { color: var(--cm-color-muted); font-size: 0.56rem; }
+.checkGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; }
+.check { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.4rem; color: var(--cm-color-primary); }
+.check span { display: grid; gap: 0.08rem; }
+.check strong { font-size: 0.58rem; }
+.provenance { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 0.45rem; border-radius: var(--cm-radius-sm); padding: 0.62rem; background: var(--cm-color-surface-subtle); color: var(--cm-color-primary); }
+.provenance span { display: grid; gap: 0.2rem; }
+.provenance strong { overflow-wrap: anywhere; color: var(--cm-color-heading); font-size: 0.61rem; }
+.provenance small { color: var(--cm-color-muted); font-size: 0.55rem; line-height: 1.4; }
+.reasons { display: grid; gap: 0.3rem; margin: 0; padding-left: 1rem; color: var(--cm-color-muted); font-size: 0.59rem; line-height: 1.45; }
+.commercialBoundary { margin: 0; border-left: 3px solid var(--cm-color-accent); padding: 0.65rem 0.75rem; background: var(--cm-color-warning-surface); color: var(--cm-color-warning-ink); font-size: 0.6rem; line-height: 1.45; }
+.emptyState { background: var(--cm-color-surface-subtle); }
+.emptyState > div { display: grid; gap: 0.25rem; }
+
+@media (max-width: 760px) {
+  .candidateGrid, .mapFacts { grid-template-columns: 1fr; }
+  .mapLocations { grid-template-columns: 1fr; }
+  .mapConnector { display: none; }
+}

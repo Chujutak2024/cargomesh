@@ -6,36 +6,53 @@ import {
   CalendarDays,
   Check,
   ClipboardCheck,
+  ContactRound,
   Info,
   MapPinned,
   Package,
+  RefreshCw,
   RotateCcw,
   Sparkles,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Badge, Button, Dialog, Input, Select } from "@/components/ui";
+import { Badge, Button, Checkbox, Input, Select, Textarea } from "@/components/ui";
 import { useLocale } from "@/features/i18n/locale-provider";
+import { CandidateResults } from "./components/candidate-results";
+import { RoadCandidateMapBoundary } from "./components/road-candidate-map-boundary";
+import type {
+  FreightRequestV2Data,
+  IntakeOption,
+  IntakeOptionsData,
+  RoadServiceabilityEvaluationV2Data,
+} from "./contracts";
+import { auditIntakeOptions, getIntakeOptionsFixture } from "./intake-options";
+import { mapServiceabilityToMapViewProps } from "./mappers/road-map-props.mapper";
 import {
-  CARGO_TYPES,
   EMPTY_PROTOTYPE_DRAFT,
-  EQUIPMENT_PREFERENCES,
-  PACKAGING_TYPES,
-  PROTOTYPE_FACILITIES,
-  PROTOTYPE_SCENARIO,
   PROVISIONAL_PROTOTYPE_DRAFT,
-  findPrototypeFacility,
-  getPrototypeFacilityScenarioRole,
-  getPrototypeEvidence,
+  findIntakeFacility,
+  mapDraftToCreateFreightRequestV2Input,
+  toggleRequirement,
   validatePrototypeReview,
   validatePrototypeStep,
   type PrototypeStep,
   type PrototypeValidationIssue,
   type V2IntakePrototypeDraft,
 } from "./prototype-model";
+import {
+  V2IntakeApiError,
+  createFreightRequestV2,
+  getFreightRequestV2,
+  getRoadServiceabilityV2,
+  loadIntakeOptions,
+} from "./v2-intake-client";
 import styles from "./v2-intake-prototype.module.css";
 
 const STEP_ICONS = [MapPinned, Package, CalendarDays, ClipboardCheck] as const;
+
+type SubmitPhase = "idle" | "creating" | "reading" | "evaluating" | "success" | "error";
+type Translate = (spanish: string, english: string) => string;
 
 export function V2IntakePrototype() {
   const { locale, t } = useLocale();
@@ -43,34 +60,70 @@ export function V2IntakePrototype() {
   const [step, setStep] = useState<PrototypeStep>(1);
   const [maxVisited, setMaxVisited] = useState<PrototypeStep>(1);
   const [issues, setIssues] = useState<PrototypeValidationIssue[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [options, setOptions] = useState<IntakeOptionsData>(getIntakeOptionsFixture().data);
+  const [optionsSource, setOptionsSource] = useState<"loading" | "api" | "fixture">("loading");
+  const [optionsFallbackReason, setOptionsFallbackReason] = useState<string | null>(null);
+  const [submitPhase, setSubmitPhase] = useState<SubmitPhase>("idle");
+  const [submitError, setSubmitError] = useState<V2IntakeApiError | null>(null);
+  const [request, setRequest] = useState<FreightRequestV2Data | null>(null);
+  const [evaluation, setEvaluation] = useState<RoadServiceabilityEvaluationV2Data | null>(null);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const [dirtyAfterCreate, setDirtyAfterCreate] = useState(false);
   const errorRef = useRef<HTMLDivElement>(null);
+  const idempotencyRef = useRef<{ fingerprint: string; key: string } | null>(null);
 
-  const origin = findPrototypeFacility(draft.originFacilityId);
-  const destination = findPrototypeFacility(draft.destinationFacilityId);
-  const evidence = getPrototypeEvidence(draft);
+  useEffect(() => {
+    let active = true;
+    void loadIntakeOptions().then((result) => {
+      if (!active) return;
+      setOptions(result.options.data);
+      setOptionsSource(result.source);
+      setOptionsFallbackReason(result.fallbackReason);
+    });
+    return () => { active = false; };
+  }, []);
+
+  const origin = findIntakeFacility(options, draft.originFacilityId);
+  const destination = findIntakeFacility(options, draft.destinationFacilityId);
+  const optionCoverage = auditIntakeOptions(options);
   const stepLabels = [
-    t("Sedes y ubicación", "Facilities & location"),
-    t("Carga y volumen", "Cargo & volume"),
-    t("Fecha y equipo", "Date & equipment"),
-    t("Resumen", "Summary"),
+    t("Sedes", "Facilities"),
+    t("Carga y unidades", "Cargo & units"),
+    t("Ventanas y contactos", "Windows & contacts"),
+    t("Crear y evaluar", "Create & evaluate"),
   ];
+  const mapProps = useMemo(() => {
+    if (!request || !evaluation) return null;
+    return mapServiceabilityToMapViewProps(
+      request,
+      evaluation,
+      selectedCandidateId,
+      setSelectedCandidateId,
+    );
+  }, [evaluation, request, selectedCandidateId]);
 
-  const update = (field: keyof V2IntakePrototypeDraft, value: string) => {
+  const update = <K extends keyof V2IntakePrototypeDraft>(field: K, value: V2IntakePrototypeDraft[K]) => {
     setDraft((current) => ({ ...current, [field]: value }));
     setIssues((current) => current.filter((issue) => issue.field !== field));
+    if (request) setDirtyAfterCreate(true);
   };
   const errorFor = (field: keyof V2IntakePrototypeDraft) => {
     const issue = issues.find((candidate) => candidate.field === field);
     if (!issue) return undefined;
-    if (issue.code === "same-facility") return t("Origen y destino deben ser sedes distintas.", "Origin and destination must be different facilities.");
-    if (issue.code === "positive-number") return t("Ingresa un número mayor que cero.", "Enter a number greater than zero.");
-    if (issue.code === "invalid-date") return t("Ingresa una fecha válida.", "Enter a valid date.");
-    return t("Este campo es obligatorio.", "This field is required.");
+    const labels: Record<PrototypeValidationIssue["code"], string> = {
+      required: t("Este campo es obligatorio.", "This field is required."),
+      "same-facility": t("Origen y destino deben ser sedes distintas.", "Origin and destination must be different facilities."),
+      "positive-number": t("Ingresa un número mayor que cero.", "Enter a number greater than zero."),
+      "positive-integer": t("Ingresa un entero mayor que cero.", "Enter an integer greater than zero."),
+      "invalid-date": t("Ingresa una fecha y hora válidas.", "Enter a valid date and time."),
+      "invalid-range": t("La ventana debe terminar después de iniciar y respetar el orden retiro→entrega.", "The window must end after it starts and preserve pickup→delivery order."),
+      "invalid-email": t("Ingresa un correo válido.", "Enter a valid email."),
+      "invalid-phone": t("Usa formato E.164, por ejemplo +51987654321.", "Use E.164 format, for example +51987654321."),
+      "temperature-order": t("La temperatura máxima debe ser mayor o igual a la mínima.", "Maximum temperature must be greater than or equal to minimum."),
+    };
+    return labels[issue.code];
   };
-  const focusValidationSummary = () => {
-    requestAnimationFrame(() => errorRef.current?.focus());
-  };
+  const focusValidationSummary = () => requestAnimationFrame(() => errorRef.current?.focus());
   const enterReview = () => {
     const validation = validatePrototypeReview(draft);
     if (!validation.valid) {
@@ -79,10 +132,9 @@ export function V2IntakePrototype() {
       focusValidationSummary();
       return false;
     }
-
     setIssues([]);
     setStep(4);
-    setMaxVisited((current) => Math.max(current, 4) as PrototypeStep);
+    setMaxVisited(4);
     return true;
   };
   const goNext = () => {
@@ -92,28 +144,80 @@ export function V2IntakePrototype() {
       focusValidationSummary();
       return;
     }
-    if (step < 4) {
-      const next = (step + 1) as PrototypeStep;
-      if (next === 4) {
-        enterReview();
-        return;
-      }
-      setStep(next);
-      setMaxVisited((current) => Math.max(current, next) as PrototypeStep);
+    const next = (step + 1) as PrototypeStep;
+    if (next === 4) {
+      enterReview();
+      return;
     }
-  };
-  const confirmPrototype = () => {
-    if (enterReview()) setDialogOpen(true);
+    setStep(next);
+    setMaxVisited((current) => Math.max(current, next) as PrototypeStep);
   };
   const loadExample = () => {
     setDraft(PROVISIONAL_PROTOTYPE_DRAFT);
     setIssues([]);
+    setSubmitError(null);
+    if (request) setDirtyAfterCreate(true);
   };
   const reset = () => {
     setDraft(EMPTY_PROTOTYPE_DRAFT);
     setStep(1);
     setMaxVisited(1);
     setIssues([]);
+    setSubmitPhase("idle");
+    setSubmitError(null);
+    setRequest(null);
+    setEvaluation(null);
+    setSelectedCandidateId(null);
+    setDirtyAfterCreate(false);
+    idempotencyRef.current = null;
+  };
+
+  const readAndEvaluate = async (created: FreightRequestV2Data) => {
+    setSubmitPhase("reading");
+    const roundTrip = await getFreightRequestV2(created.id);
+    setRequest(roundTrip.data);
+    setSubmitPhase("evaluating");
+    const result = await getRoadServiceabilityV2(roundTrip.data.id, roundTrip.data.draftVersion);
+    setEvaluation(result.data);
+    setSelectedCandidateId(
+      result.data.candidates.find((candidate) => candidate.status === "eligible")?.candidateId
+      ?? result.data.candidates[0]?.candidateId
+      ?? null,
+    );
+    setSubmitPhase("success");
+    setDirtyAfterCreate(false);
+  };
+  const createDraftAndEvaluate = async () => {
+    if (!enterReview()) return;
+    setSubmitError(null);
+    setEvaluation(null);
+    try {
+      const payload = mapDraftToCreateFreightRequestV2Input(draft, options);
+      const fingerprint = JSON.stringify(payload);
+      if (!idempotencyRef.current || idempotencyRef.current.fingerprint !== fingerprint) {
+        idempotencyRef.current = { fingerprint, key: crypto.randomUUID() };
+      }
+      setSubmitPhase("creating");
+      const created = await createFreightRequestV2(payload, idempotencyRef.current.key);
+      setRequest(created.data);
+      await readAndEvaluate(created.data);
+    } catch (error) {
+      setSubmitError(normalizeApiError(error));
+      setSubmitPhase("error");
+    }
+  };
+  const retryAfterCreate = async () => {
+    if (!request) {
+      await createDraftAndEvaluate();
+      return;
+    }
+    setSubmitError(null);
+    try {
+      await readAndEvaluate(request);
+    } catch (error) {
+      setSubmitError(normalizeApiError(error));
+      setSubmitPhase("error");
+    }
   };
 
   return (
@@ -121,145 +225,216 @@ export function V2IntakePrototype() {
       <div className={styles.frame}>
         <header className={styles.hero}>
           <div className={styles.heroCopy}>
-            <span className={styles.eyebrow}>{t("CargoMesh V2 · Sprint 1", "CargoMesh V2 · Sprint 1")}</span>
-            <h1>{t("Prototipo de solicitud de transporte", "Freight request prototype")}</h1>
+            <span className={styles.eyebrow}>CargoMesh V2 · Sprint 2 · HAC-14</span>
+            <h1>{t("Crear solicitud ROAD", "Create ROAD request")}</h1>
             <p>{t(
-              "Valida la captura de sedes, carga y preferencias antes de conectar persistencia, subasta o selección de transportistas.",
-              "Validate facilities, cargo, and preferences before connecting persistence, bidding, or carrier selection.",
+              "Flujo para clientes/shipper: crea un borrador y consulta elegibilidad preliminar sin convertirla en oferta ni reserva.",
+              "Client/shipper flow: create a draft and read preliminary serviceability without turning it into an offer or booking.",
             )}</p>
           </div>
           <div className={styles.heroActions}>
-            <Badge tone="preliminary">{t("Escenario sintético V2", "Synthetic V2 scenario")}</Badge>
+            <Badge tone={optionsSource === "api" ? "confirmed" : "preliminary"}>
+              {optionsSource === "loading" ? t("Consultando opciones", "Loading options") : optionsSource === "api" ? t("Opciones API V2", "V2 API options") : t("Fixture contractual", "Contract fixture")}
+            </Badge>
             <Button variant="secondary" type="button" onClick={loadExample}><Sparkles size={16} aria-hidden="true" />{t("Cargar ejemplo V2", "Load V2 example")}</Button>
           </div>
         </header>
 
-        <div className={styles.notice} role="note">
+        <div className={`${styles.notice} ${optionsSource === "fixture" ? styles.fixtureNotice : ""}`} role="note">
           <Info size={18} aria-hidden="true" />
-          <div><strong>{t("Vista de validación sin guardado", "Validation view without saving")}</strong><span>{t("Los cambios permanecen sólo en este navegador. Elegir sedes no confirma ruta, cobertura, capacidad ni precio; tampoco crea o persiste una solicitud.", "Changes remain only in this browser. Selecting facilities does not confirm a route, coverage, capacity, or price; it also does not create or persist a request.")}</span></div>
+          <div>
+            <strong>{optionsSource === "fixture" ? t("Opciones temporales y explícitas", "Explicit temporary options") : t("Estado local hasta crear", "Local state until creation")}</strong>
+            <span>{optionsSource === "fixture"
+              ? t(`GET /api/v2/intake/options no está disponible (${optionsFallbackReason ?? "unavailable"}). Los selectores usan JSON HAC-27 rotulado SIMULATED; crear sí requiere el POST real.`, `GET /api/v2/intake/options is unavailable (${optionsFallbackReason ?? "unavailable"}). Selectors use the SIMULATED-labelled HAC-27 JSON; creation still requires the real POST.`)
+              : t("No hay autosave: avanzar entre pasos no envía datos. Sólo «Crear DRAFT y evaluar» ejecuta POST→GET→serviceability.", "There is no autosave: moving between steps sends no data. Only “Create DRAFT & evaluate” runs POST→GET→serviceability.")}</span>
+          </div>
         </div>
 
-        <nav className={styles.stepper} aria-label={t("Pasos del prototipo", "Prototype steps")}>
-          {stepLabels.map((label, index) => {
-            const number = (index + 1) as PrototypeStep;
-            const Icon = STEP_ICONS[index];
-            const active = step === number;
-            const complete = step > number;
-            return (
-              <button
-                className={`${styles.stepButton} ${active ? styles.stepButtonActive : ""} ${complete ? styles.stepButtonComplete : ""}`}
-                disabled={number > maxVisited}
-                key={label}
-                type="button"
-                aria-current={active ? "step" : undefined}
-                onClick={() => {
-                  if (number === 4) {
-                    enterReview();
-                    return;
-                  }
-                  setStep(number);
-                  setIssues([]);
-                }}
-              >
-                <span className={styles.stepNumber}>{complete ? <Check size={15} aria-hidden="true" /> : <Icon size={15} aria-hidden="true" />}</span>
-                <span className={styles.stepCopy}><small>{t(`Paso ${number}`, `Step ${number}`)}</small><strong>{label}</strong></span>
-              </button>
-            );
-          })}
-        </nav>
+        {!optionCoverage.complete ? (
+          <div className={styles.errorSummary} role="alert">
+            <strong>{t("El catálogo no cubre todos los selectores", "The catalog does not cover every selector")}</strong>
+            <span>{optionCoverage.missing.join(", ")}</span>
+          </div>
+        ) : null}
+
+        <nav className={styles.stepper} aria-label={t("Pasos del intake V2", "V2 intake steps")}>{stepLabels.map((label, index) => {
+          const number = (index + 1) as PrototypeStep;
+          const Icon = STEP_ICONS[index];
+          const active = step === number;
+          const complete = step > number;
+          return (
+            <button
+              className={`${styles.stepButton} ${active ? styles.stepButtonActive : ""} ${complete ? styles.stepButtonComplete : ""}`}
+              disabled={number > maxVisited}
+              key={label}
+              type="button"
+              aria-current={active ? "step" : undefined}
+              onClick={() => {
+                if (number === 4) { enterReview(); return; }
+                setStep(number);
+                setIssues([]);
+              }}
+            >
+              <span className={styles.stepNumber}>{complete ? <Check size={15} aria-hidden="true" /> : <Icon size={15} aria-hidden="true" />}</span>
+              <span className={styles.stepCopy}><small>{t(`Paso ${number}`, `Step ${number}`)}</small><strong>{label}</strong></span>
+            </button>
+          );
+        })}</nav>
 
         <div className={styles.workspace}>
           <section className={styles.card} aria-labelledby={`prototype-step-${step}`}>
             <header className={styles.cardHeader}>
               <div><span className={styles.eyebrow}>{t(`Paso ${step} de 4`, `Step ${step} of 4`)}</span><h2 id={`prototype-step-${step}`}>{stepLabels[step - 1]}</h2><p>{stepDescription(step, t)}</p></div>
-              <Badge tone={step === 4 ? "confirmed" : "preliminary"}>{step === 4 ? t("Listo para validar", "Ready to validate") : t("Entrada preliminar", "Preliminary input")}</Badge>
+              <Badge tone={step === 4 ? "confirmed" : "preliminary"}>{step === 4 ? t("Listo para crear", "Ready to create") : t("Edición local", "Local editing")}</Badge>
             </header>
-
             <div className={styles.cardBody}>
               {issues.length ? <div className={styles.errorSummary} role="alert" tabIndex={-1} ref={errorRef}><strong>{t("Revisa los campos marcados", "Review the marked fields")}</strong><span>{t(`Hay ${issues.length} dato(s) pendiente(s) en este paso.`, `There are ${issues.length} pending field(s) in this step.`)}</span></div> : null}
-              {step === 1 ? <FacilityStep draft={draft} update={update} errorFor={errorFor} t={t} origin={origin} destination={destination} /> : null}
-              {step === 2 ? <CargoStep draft={draft} update={update} errorFor={errorFor} t={t} /> : null}
-              {step === 3 ? <ScheduleStep draft={draft} update={update} errorFor={errorFor} t={t} /> : null}
-              {step === 4 ? <ReviewStep draft={draft} t={t} origin={origin} destination={destination} locale={locale} /> : null}
+              {step === 1 ? <FacilityStep draft={draft} options={options} update={update} errorFor={errorFor} t={t} /> : null}
+              {step === 2 ? <CargoStep draft={draft} options={options} update={update} errorFor={errorFor} t={t} /> : null}
+              {step === 3 ? <ScheduleAndContactsStep draft={draft} options={options} update={update} errorFor={errorFor} t={t} /> : null}
+              {step === 4 ? <ReviewStep draft={draft} options={options} request={request} dirtyAfterCreate={dirtyAfterCreate} t={t} locale={locale} /> : null}
+              {submitError ? <ApiErrorState error={submitError} requestExists={Boolean(request)} retry={retryAfterCreate} t={t} /> : null}
             </div>
-
             <footer className={styles.footer}>
               <Button variant="ghost" type="button" onClick={reset}><RotateCcw size={16} aria-hidden="true" />{t("Reiniciar", "Reset")}</Button>
               <div className={styles.footerRight}>
                 {step > 1 ? <Button variant="secondary" type="button" onClick={() => { setStep((step - 1) as PrototypeStep); setIssues([]); }}><ArrowLeft size={16} aria-hidden="true" />{t("Anterior", "Back")}</Button> : null}
-                {step < 4 ? <Button type="button" onClick={goNext}>{t("Continuar", "Continue")}<ArrowRight size={16} aria-hidden="true" /></Button> : <Button variant="accent" type="button" onClick={confirmPrototype}><ClipboardCheck size={16} aria-hidden="true" />{t("Validar prototipo", "Validate prototype")}</Button>}
+                {step < 4 ? <Button type="button" onClick={goNext}>{t("Continuar", "Continue")}<ArrowRight size={16} aria-hidden="true" /></Button> : (
+                  <Button variant="accent" type="button" isLoading={["creating", "reading", "evaluating"].includes(submitPhase)} loadingLabel={phaseLabel(submitPhase, t)} onClick={createDraftAndEvaluate}>
+                    <ClipboardCheck size={16} aria-hidden="true" />{t("Crear DRAFT y evaluar", "Create DRAFT & evaluate")}
+                  </Button>
+                )}
               </div>
             </footer>
           </section>
 
-          <aside className={`${styles.card} ${styles.summary}`} aria-label={t("Resumen en vivo", "Live summary")}>
-            <header className={styles.cardHeader}><div><span className={styles.eyebrow}>{t("Resumen en vivo", "Live summary")}</span><h2>{t("Solicitud preliminar", "Preliminary request")}</h2><p>{t("Los estados indican el nivel de evidencia disponible.", "Statuses show the available evidence level.")}</p></div></header>
-            <div className={styles.summaryBody}>
-              <SummaryRow label={t("Origen", "Origin")} value={origin ? `${origin.name} · ${origin.city}, ${origin.countryCode}` : t("Sin seleccionar", "Not selected")} tone={origin ? "preliminary" : "neutral"} status={origin ? t("Preliminar", "Preliminary") : t("Pendiente", "Pending")} />
-              <SummaryRow label={t("Destino", "Destination")} value={destination ? `${destination.name} · ${destination.city}, ${destination.countryCode}` : t("Sin seleccionar", "Not selected")} tone={destination ? "preliminary" : "neutral"} status={destination ? t("Preliminar", "Preliminary") : t("Pendiente", "Pending")} />
-              <SummaryRow label={t("Carga", "Cargo")} value={draft.cargoDescription || t("Sin describir", "Not described")} tone={draft.cargoDescription ? "preliminary" : "neutral"} status={draft.cargoDescription ? t("Preliminar", "Preliminary") : t("Pendiente", "Pending")} />
-              <SummaryRow label={t("Ruta y cobertura", "Route & coverage")} value={t("No evaluadas en HAC-24", "Not evaluated in HAC-24")} tone={evidence.route.status} status={t("Desconocido", "Unknown")} hint={t("Las sedes seleccionadas no confirman ruta, cobertura, capacidad, precio ni persistencia.", "Selected facilities do not confirm route, coverage, capacity, price, or persistence.")} />
-              <SummaryRow label={t("Modo", "Mode")} value="ROAD" tone={evidence.transportMode.status} status={t("Confirmado", "Confirmed")} />
-            </div>
-            <div className={styles.statusLegend}>
-              <Legend tone="preliminary" label={t("Preliminar", "Preliminary")} text={t("Dato editable del prototipo.", "Editable prototype data.")} />
-              <Legend tone="unknown" label={t("Desconocido", "Unknown")} text={t("Sin evidencia suficiente; no equivale a no.", "Insufficient evidence; it does not mean no.")} />
-              <Legend tone="confirmed" label={t("Confirmado", "Confirmed")} text={t("Definido por el contrato V2 aprobado.", "Defined by the approved V2 contract.")} />
-            </div>
-          </aside>
+          <LiveSummary draft={draft} options={options} request={request} evaluation={evaluation} dirtyAfterCreate={dirtyAfterCreate} t={t} />
         </div>
-      </div>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} title={t("Prototipo validado", "Prototype validated")} description={t("HAC-24 · Hito de diseño y navegación", "HAC-24 · Design and navigation milestone")} closeLabel={t("Cerrar", "Close")}>
-        <div className={styles.dialogMessage}><Badge tone="confirmed">{t("Flujo navegable completado", "Navigable flow completed")}</Badge><p><strong>{t("No se envió ninguna solicitud.", "No request was submitted.")}</strong> {t("Esta confirmación sólo demuestra la navegación, validación y semántica V2. La persistencia, subasta y consulta de carriers se conectarán en un sprint posterior.", "This confirmation only demonstrates V2 navigation, validation, and semantics. Persistence, bidding, and carrier queries will be connected in a later sprint.")}</p></div>
-      </Dialog>
+        {request ? (
+          <section className={styles.integrationArea} aria-live="polite">
+            <header className={styles.integrationHeader}>
+              <div><span className={styles.eyebrow}>{request.referenceCode}</span><h2>{t("Borrador persistido y lectura operativa", "Persisted draft and operational read")}</h2><p>{t(`Estado ${request.status} · draftVersion ${request.draftVersion}`, `Status ${request.status} · draftVersion ${request.draftVersion}`)}</p></div>
+              <Badge tone={request.status === "DRAFT" ? "preliminary" : "neutral"}>{request.status}</Badge>
+            </header>
+            {evaluation ? <CandidateResults evaluation={evaluation} selectedCandidateId={selectedCandidateId} onSelectCandidate={setSelectedCandidateId} t={t} /> : <LoadingOrPending phase={submitPhase} retry={retryAfterCreate} t={t} />}
+            {mapProps ? <RoadCandidateMapBoundary props={mapProps} t={t} /> : null}
+          </section>
+        ) : null}
+      </div>
     </div>
   );
 }
 
-type Translate = (spanish: string, english: string) => string;
+type UpdateDraft = <K extends keyof V2IntakePrototypeDraft>(field: K, value: V2IntakePrototypeDraft[K]) => void;
 type FieldHelpers = {
   draft: V2IntakePrototypeDraft;
-  update: (field: keyof V2IntakePrototypeDraft, value: string) => void;
+  options: IntakeOptionsData;
+  update: UpdateDraft;
   errorFor: (field: keyof V2IntakePrototypeDraft) => string | undefined;
   t: Translate;
 };
 
-function FacilityStep({ draft, update, errorFor, t, origin, destination }: FieldHelpers & { origin: ReturnType<typeof findPrototypeFacility>; destination: ReturnType<typeof findPrototypeFacility> }) {
-  return <><h3 className={styles.sectionTitle}><MapPinned size={16} aria-hidden="true" />{t("Selecciona sedes del escenario sintético V2", "Select facilities from the synthetic V2 scenario")}</h3><div className={styles.scenarioMeta}><Badge tone="preliminary">{PROTOTYPE_SCENARIO.provenance}</Badge><span>{PROTOTYPE_SCENARIO.packageName}</span></div><div className={styles.formGrid}><Select label={t("Sede de origen", "Origin facility")} value={draft.originFacilityId} error={errorFor("originFacilityId")} hint={t("Catálogo sintético alineado con v2-road-baseline.", "Synthetic catalog aligned with v2-road-baseline.")} onChange={(event) => update("originFacilityId", event.target.value)}><option value="">{t("Seleccionar origen", "Select origin")}</option>{PROTOTYPE_FACILITIES.map((facility) => <option value={facility.id} key={facility.id}>{facility.name} · {facility.city}, {facility.countryCode}</option>)}</Select><Select label={t("Sede de destino", "Destination facility")} value={draft.destinationFacilityId} error={errorFor("destinationFacilityId")} hint={t("Debe ser distinta a la sede de origen.", "Must differ from the origin facility.")} onChange={(event) => update("destinationFacilityId", event.target.value)}><option value="">{t("Seleccionar destino", "Select destination")}</option>{PROTOTYPE_FACILITIES.map((facility) => <option value={facility.id} key={facility.id}>{facility.name} · {facility.city}, {facility.countryCode}</option>)}</Select>{origin ? <FacilityCard facility={origin} t={t} /> : null}{destination ? <FacilityCard facility={destination} t={t} /> : null}</div><div className={styles.boundaryNotice} role="note"><Info size={16} aria-hidden="true" /><span>{t("La selección sólo identifica puntos del intake. No confirma ruta, cobertura carrier, capacidad, precio ni persistencia.", "Selection only identifies intake points. It does not confirm a route, carrier coverage, capacity, price, or persistence.")}</span></div><RoutePreview t={t} /></>;
+function FacilityStep({ draft, options, update, errorFor, t }: FieldHelpers) {
+  const origin = findIntakeFacility(options, draft.originFacilityId);
+  const destination = findIntakeFacility(options, draft.destinationFacilityId);
+  return <><h3 className={styles.sectionTitle}><MapPinned size={16} aria-hidden="true" />{t("Selecciona sedes de tu organización", "Select facilities in your organization")}</h3><div className={styles.formGrid}>
+    <Select label={t("Sede de origen", "Origin facility")} value={draft.originFacilityId} error={errorFor("originFacilityId")} hint={t("El servidor vuelve a validar tenant y ubicación canónica.", "The server revalidates tenant and canonical location.")} onChange={(event) => update("originFacilityId", event.target.value)}><option value="">{t("Seleccionar origen", "Select origin")}</option>{options.facilities.map((facility) => <option value={facility.facilityId} key={facility.facilityId}>{facility.code} · {facility.label}</option>)}</Select>
+    <Select label={t("Sede de destino", "Destination facility")} value={draft.destinationFacilityId} error={errorFor("destinationFacilityId")} onChange={(event) => update("destinationFacilityId", event.target.value)}><option value="">{t("Seleccionar destino", "Select destination")}</option>{options.facilities.map((facility) => <option value={facility.facilityId} key={facility.facilityId}>{facility.code} · {facility.label}</option>)}</Select>
+    {origin ? <FacilityCard facility={origin} t={t} /> : null}{destination ? <FacilityCard facility={destination} t={t} /> : null}
+  </div><div className={styles.boundaryNotice} role="note"><Info size={16} aria-hidden="true" /><span>{t("Seleccionar sedes no confirma ruta, cobertura, capacidad, precio ni persistencia. Esas conclusiones sólo proceden de las respuestas del servidor.", "Selecting facilities does not confirm route, coverage, capacity, price, or persistence. Those conclusions come only from server responses.")}</span></div></>;
 }
 
-function FacilityCard({ facility, t }: { facility: NonNullable<ReturnType<typeof findPrototypeFacility>>; t: Translate }) {
-  const scenarioRole = getPrototypeFacilityScenarioRole(facility.id);
-  const scenarioNote = scenarioRole === "NO_DECLARED_COVERAGE"
-    ? t("El baseline no declara área de servicio ni lane para Piura.", "The baseline declares no service area or lane for Piura.")
-    : t("Punto del ejemplo Lima → Arequipa; aún requiere evaluación operativa.", "Endpoint in the Lima → Arequipa example; operational evaluation is still required.");
-  return <article className={styles.siteCard}><div className={styles.siteMeta}><Badge tone="preliminary">{t("Sintético", "Synthetic")}</Badge><Badge tone="confirmed">V2Facility</Badge></div><strong>{facility.code} · {facility.name}</strong><span>{facility.addressLine} · {facility.city}, {facility.countryCode}</span><small>{scenarioNote}</small></article>;
+function FacilityCard({ facility, t }: { facility: IntakeOptionsData["facilities"][number]; t: Translate }) {
+  return <article className={styles.siteCard}><div className={styles.siteMeta}><Badge tone="preliminary">{t("Selector", "Selector")}</Badge><Badge tone={facility.lat == null ? "unknown" : "confirmed"}>{facility.lat == null ? "UNKNOWN GEO" : "CANONICAL GEO"}</Badge></div><strong>{facility.code} · {facility.label}</strong><span>{facility.city}, {facility.region ?? "—"}, {facility.countryCode}</span><small>{t("La pertenencia al tenant se confirma server-side al crear.", "Tenant ownership is confirmed server-side on creation.")}</small></article>;
 }
 
-function RoutePreview({ t }: { t: Translate }) {
-  return <section className={styles.routePreview} aria-label={t("Interfaz provisional del mapa", "Provisional map interface")}><div className={styles.routeTop}><div><h3>{t("Interfaz de ruta", "Route interface")}</h3><p>{t("Espacio acordado para integrar el resultado cartográfico de HAC-25 sin asumir datos.", "Reserved space to integrate the HAC-25 map result without assuming data.")}</p></div><Badge tone="unknown">{t("Mapa desconocido", "Map unknown")}</Badge></div><div className={styles.routeLine} aria-hidden="true"><span /></div><div className={styles.unknownGrid}><UnknownItem label={t("Distancia", "Distance")} t={t} /><UnknownItem label="ETA" t={t} /><UnknownItem label={t("Cobertura", "Coverage")} t={t} /></div></section>;
+function CargoStep({ draft, options, update, errorFor, t }: FieldHelpers) {
+  return <><h3 className={styles.sectionTitle}><Package size={16} aria-hidden="true" />{t("Especificación y unidad de carga", "Cargo specification and unit")}</h3><div className={styles.formGrid}>
+    <OptionSelect label={t("Categoría", "Category")} placeholder={t("Seleccionar categoría", "Select category")} options={options.cargoCategories} value={draft.categoryCode} error={errorFor("categoryCode")} onChange={(value) => update("categoryCode", value)} t={t} />
+    <OptionSelect label={t("Embalaje", "Packaging")} placeholder={t("Seleccionar embalaje", "Select packaging")} options={options.packagingTypes} value={draft.packaging} error={errorFor("packaging")} onChange={(value) => { update("packaging", value); if (!draft.unitPackageType) update("unitPackageType", value); }} t={t} />
+    <Textarea fieldClassName={styles.wide} label={t("Descripción", "Description")} rows={3} value={draft.cargoDescription} error={errorFor("cargoDescription")} onChange={(event) => update("cargoDescription", event.target.value)} />
+    <Input label={t("Peso total (kg)", "Total weight (kg)")} type="number" min="0" step="0.1" value={draft.totalWeightKg} error={errorFor("totalWeightKg")} onChange={(event) => update("totalWeightKg", event.target.value)} />
+    <Input label={t("Volumen total (m³)", "Total volume (m³)")} type="number" min="0" step="0.1" value={draft.totalVolumeM3} error={errorFor("totalVolumeM3")} onChange={(event) => update("totalVolumeM3", event.target.value)} />
+    <Checkbox label={t("Carga divisible", "Divisible cargo")} hint={t("Dato declarado; no implica que un carrier pueda fraccionarla.", "Declared fact; it does not imply a carrier can split it.")} checked={draft.divisible} onChange={(event) => update("divisible", event.target.checked)} />
+  </div>
+  <fieldset className={styles.optionFieldset}><legend>{t("Requisitos especiales", "Special requirements")}</legend><div className={styles.checkboxGrid}>{options.requirementTypes.map((option) => <Checkbox key={option.value} label={optionLabel(option, t)} checked={draft.requirements.includes(option.value)} onChange={(event) => update("requirements", toggleRequirement(draft.requirements, option.value, event.target.checked))} />)}</div></fieldset>
+  {draft.requirements.includes("TEMP_CONTROLLED") ? <div className={styles.formGrid}><Input label={t("Temperatura mínima (°C)", "Minimum temperature (°C)")} type="number" step="0.1" value={draft.temperatureMinCelsius} error={errorFor("temperatureMinCelsius")} onChange={(event) => update("temperatureMinCelsius", event.target.value)} /><Input label={t("Temperatura máxima (°C)", "Maximum temperature (°C)")} type="number" step="0.1" value={draft.temperatureMaxCelsius} error={errorFor("temperatureMaxCelsius")} onChange={(event) => update("temperatureMaxCelsius", event.target.value)} /></div> : null}
+  <fieldset className={styles.optionFieldset}><legend>{t("Unidad de carga · units[0]", "Cargo unit · units[0]")}</legend><div className={styles.formGrid}>
+    <OptionSelect label={t("Tipo de paquete", "Package type")} placeholder={t("Seleccionar tipo", "Select type")} options={options.packagingTypes} value={draft.unitPackageType} error={errorFor("unitPackageType")} onChange={(value) => update("unitPackageType", value)} t={t} />
+    <Input label={t("Cantidad", "Quantity")} type="number" min="1" step="1" value={draft.unitQuantity} error={errorFor("unitQuantity")} onChange={(event) => update("unitQuantity", event.target.value)} />
+    <Input label={t("Peso por unidad (kg)", "Weight per unit (kg)")} type="number" min="0" step="0.1" value={draft.unitWeightPerUnitKg} error={errorFor("unitWeightPerUnitKg")} onChange={(event) => update("unitWeightPerUnitKg", event.target.value)} />
+    <Input label={t("Volumen por unidad (m³)", "Volume per unit (m³)")} type="number" min="0" step="0.1" value={draft.unitVolumePerUnitM3} error={errorFor("unitVolumePerUnitM3")} onChange={(event) => update("unitVolumePerUnitM3", event.target.value)} />
+    <Input label={t("Largo (cm)", "Length (cm)")} type="number" min="0" step="0.1" value={draft.unitLengthCm} error={errorFor("unitLengthCm")} onChange={(event) => update("unitLengthCm", event.target.value)} />
+    <Input label={t("Ancho (cm)", "Width (cm)")} type="number" min="0" step="0.1" value={draft.unitWidthCm} error={errorFor("unitWidthCm")} onChange={(event) => update("unitWidthCm", event.target.value)} />
+    <Input label={t("Alto (cm)", "Height (cm)")} type="number" min="0" step="0.1" value={draft.unitHeightCm} error={errorFor("unitHeightCm")} onChange={(event) => update("unitHeightCm", event.target.value)} />
+    <Checkbox label={t("Unidad indivisible", "Indivisible unit")} checked={draft.unitIndivisible} onChange={(event) => update("unitIndivisible", event.target.checked)} />
+    <Checkbox label={t("Apilable", "Stackable")} checked={draft.unitStackable} onChange={(event) => update("unitStackable", event.target.checked)} />
+  </div></fieldset></>;
 }
 
-function UnknownItem({ label, t }: { label: string; t: Translate }) {
-  return <div className={styles.unknownItem}><small>{label}</small><strong>{t("Desconocido", "Unknown")}</strong></div>;
+function ScheduleAndContactsStep({ draft, options, update, errorFor, t }: FieldHelpers) {
+  return <><h3 className={styles.sectionTitle}><CalendarDays size={16} aria-hidden="true" />{t("Ventanas y equipo requerido", "Windows and required equipment")}</h3><div className={styles.formGrid}>
+    <Input label={t("Retiro desde", "Pickup starts")} type="datetime-local" value={draft.pickupWindowStartsAt} error={errorFor("pickupWindowStartsAt")} onChange={(event) => update("pickupWindowStartsAt", event.target.value)} />
+    <Input label={t("Retiro hasta", "Pickup ends")} type="datetime-local" value={draft.pickupWindowEndsAt} error={errorFor("pickupWindowEndsAt")} onChange={(event) => update("pickupWindowEndsAt", event.target.value)} />
+    <Input label={t("Entrega desde", "Delivery starts")} type="datetime-local" value={draft.deliveryWindowStartsAt} error={errorFor("deliveryWindowStartsAt")} onChange={(event) => update("deliveryWindowStartsAt", event.target.value)} />
+    <Input label={t("Entrega hasta", "Delivery ends")} type="datetime-local" value={draft.deliveryWindowEndsAt} error={errorFor("deliveryWindowEndsAt")} onChange={(event) => update("deliveryWindowEndsAt", event.target.value)} />
+    <OptionSelect fieldClassName={styles.wide} label={t("Equipo ROAD requerido", "Required ROAD equipment")} placeholder={t("Seleccionar equipo", "Select equipment")} options={options.equipmentTypes} value={draft.requiredEquipment} error={errorFor("requiredEquipment")} onChange={(value) => update("requiredEquipment", value)} t={t} />
+  </div>
+  <h3 className={styles.sectionTitle}><ContactRound size={16} aria-hidden="true" />{t("Contactos operativos", "Operational contacts")}</h3><div className={styles.contactGrid}><ContactFields kind="pickup" draft={draft} update={update} errorFor={errorFor} t={t} /><ContactFields kind="recipient" draft={draft} update={update} errorFor={errorFor} t={t} /></div></>;
 }
 
-function CargoStep({ draft, update, errorFor, t }: FieldHelpers) {
-  return <><h3 className={styles.sectionTitle}><Package size={16} aria-hidden="true" />{t("Describe la unidad de transporte", "Describe the transport unit")}</h3><div className={styles.formGrid}><Select label={t("Tipo de carga", "Cargo type")} value={draft.cargoType} error={errorFor("cargoType")} onChange={(event) => update("cargoType", event.target.value)}><option value="">{t("Seleccionar taxonomía", "Select taxonomy")}</option>{CARGO_TYPES.map((value) => <option value={value} key={value}>{cargoLabel(value, t)}</option>)}</Select><Select label={t("Embalaje", "Packaging")} value={draft.packagingType} error={errorFor("packagingType")} onChange={(event) => update("packagingType", event.target.value)}><option value="">{t("Seleccionar embalaje", "Select packaging")}</option>{PACKAGING_TYPES.map((value) => <option value={value} key={value}>{packagingLabel(value, t)}</option>)}</Select><Input fieldClassName={styles.wide} label={t("Descripción de la carga", "Cargo description")} value={draft.cargoDescription} error={errorFor("cargoDescription")} placeholder={t("Ej. equipos de mantenimiento industrial", "E.g. industrial maintenance equipment")} onChange={(event) => update("cargoDescription", event.target.value)} /><Input label={t("Peso total (kg)", "Total weight (kg)")} type="number" min="0" step="1" inputMode="decimal" value={draft.weightKg} error={errorFor("weightKg")} onChange={(event) => update("weightKg", event.target.value)} /><Input label={t("Volumen total (m³)", "Total volume (m³)")} type="number" min="0" step="0.1" inputMode="decimal" value={draft.volumeM3} error={errorFor("volumeM3")} hint={t("CBM preliminar; no calcula capacidad de carrier.", "Preliminary CBM; it does not calculate carrier capacity.")} onChange={(event) => update("volumeM3", event.target.value)} /></div></>;
+function ContactFields({ kind, draft, update, errorFor, t }: Pick<FieldHelpers, "draft" | "update" | "errorFor" | "t"> & { kind: "pickup" | "recipient" }) {
+  const pickup = kind === "pickup";
+  const name = pickup ? "pickupContactName" : "recipientContactName";
+  const phone = pickup ? "pickupContactPhoneE164" : "recipientContactPhoneE164";
+  const email = pickup ? "pickupContactEmail" : "recipientContactEmail";
+  return <fieldset className={styles.optionFieldset}><legend>{pickup ? t("Contacto de retiro", "Pickup contact") : t("Destinatario", "Recipient")}</legend><div className={styles.contactFields}><Input label={t("Nombre", "Name")} value={draft[name]} error={errorFor(name)} onChange={(event) => update(name, event.target.value)} /><Input label={t("Teléfono E.164", "E.164 phone")} type="tel" placeholder="+51987654321" value={draft[phone]} error={errorFor(phone)} onChange={(event) => update(phone, event.target.value)} /><Input label={t("Correo", "Email")} type="email" value={draft[email]} error={errorFor(email)} onChange={(event) => update(email, event.target.value)} /></div></fieldset>;
 }
 
-function ScheduleStep({ draft, update, errorFor, t }: FieldHelpers) {
-  return <><h3 className={styles.sectionTitle}><CalendarDays size={16} aria-hidden="true" />{t("Indica la necesidad operativa", "Describe the operational need")}</h3><div className={styles.formGrid}><Input label={t("Fecha de retiro", "Pickup date")} type="date" value={draft.pickupDate} error={errorFor("pickupDate")} onChange={(event) => update("pickupDate", event.target.value)} /><Select label={t("Preferencia de equipo", "Equipment preference")} value={draft.equipmentPreference} error={errorFor("equipmentPreference")} hint={t("Preferencia, no confirmación de disponibilidad.", "Preference, not an availability confirmation.")} onChange={(event) => update("equipmentPreference", event.target.value)}>{EQUIPMENT_PREFERENCES.map((value) => <option value={value} key={value}>{equipmentLabel(value, t)}</option>)}</Select><Input fieldClassName={styles.wide} label={t("Notas operativas (opcional)", "Operational notes (optional)")} value={draft.notes} placeholder={t("Restricciones o contexto para revisión posterior", "Constraints or context for later review")} onChange={(event) => update("notes", event.target.value)} /></div><section className={styles.routePreview}><div className={styles.routeTop}><div><h3>{t("Disponibilidad de equipo", "Equipment availability")}</h3><p>{t("La preferencia será evaluada cuando existan servicios y evidencia de capacidad.", "The preference will be evaluated when services and capacity evidence exist.")}</p></div><Badge tone="unknown">{t("Desconocido", "Unknown")}</Badge></div></section></>;
+function ReviewStep({ draft, options, request, dirtyAfterCreate, t, locale }: { draft: V2IntakePrototypeDraft; options: IntakeOptionsData; request: FreightRequestV2Data | null; dirtyAfterCreate: boolean; t: Translate; locale: "es" | "en" }) {
+  const origin = findIntakeFacility(options, draft.originFacilityId);
+  const destination = findIntakeFacility(options, draft.destinationFacilityId);
+  return <div className={styles.reviewGrid}>
+    <ReviewSection title={t("Sedes", "Facilities")} items={[[t("Origen", "Origin"), origin?.label ?? "—"], [t("Destino", "Destination"), destination?.label ?? "—"]]} />
+    <ReviewSection title={t("Carga y unidad", "Cargo and unit")} items={[[t("Categoría", "Category"), draft.categoryCode], [t("Peso / volumen", "Weight / volume"), `${draft.totalWeightKg} kg · ${draft.totalVolumeM3} m³`], [t("Unidad", "Unit"), `${draft.unitQuantity} × ${draft.unitPackageType}`], [t("Equipo", "Equipment"), draft.requiredEquipment]]} />
+    <ReviewSection title={t("Ventanas", "Windows")} items={[[t("Retiro", "Pickup"), formatLocalRange(draft.pickupWindowStartsAt, draft.pickupWindowEndsAt, locale)], [t("Entrega", "Delivery"), formatLocalRange(draft.deliveryWindowStartsAt, draft.deliveryWindowEndsAt, locale)]]} />
+    <ReviewSection title={t("Límites comerciales", "Commercial boundaries")} tone="unknown" items={[[t("Elegibilidad", "Serviceability"), t("Se lee después de persistir DRAFT", "Read after DRAFT persistence")], [t("Precio / oferta / booking", "Price / offer / booking"), t("No confirmados ni creados", "Not confirmed or created")]]} />
+    {request ? <div className={styles.persistedNotice} role="status"><strong>{request.referenceCode} · {request.status} · v{request.draftVersion}</strong><span>{dirtyAfterCreate ? t("Hay cambios locales posteriores; no se guardaron automáticamente.", "There are later local changes; they were not autosaved.") : t("El GET devolvió el borrador persistido.", "GET returned the persisted draft.")}</span></div> : null}
+  </div>;
 }
 
-function ReviewStep({ draft, t, origin, destination, locale }: { draft: V2IntakePrototypeDraft; t: Translate; origin: ReturnType<typeof findPrototypeFacility>; destination: ReturnType<typeof findPrototypeFacility>; locale: "es" | "en" }) {
-  const date = draft.pickupDate ? new Intl.DateTimeFormat(locale === "es" ? "es-PE" : "en-US", { dateStyle: "long", timeZone: "UTC" }).format(new Date(`${draft.pickupDate}T00:00:00Z`)) : t("Pendiente", "Pending");
-  return <div className={styles.reviewGrid}><ReviewSection title={t("Sedes", "Facilities")} tone="preliminary" status={t("Preliminar", "Preliminary")} items={[[t("Origen", "Origin"), origin ? `${origin.name} · ${origin.city}` : t("Pendiente", "Pending")], [t("Destino", "Destination"), destination ? `${destination.name} · ${destination.city}` : t("Pendiente", "Pending")]]} /><ReviewSection title={t("Carga", "Cargo")} tone="preliminary" status={t("Preliminar", "Preliminary")} items={[[t("Tipo", "Type"), cargoLabel(draft.cargoType, t)], [t("Embalaje", "Packaging"), packagingLabel(draft.packagingType, t)], [t("Peso / volumen", "Weight / volume"), `${draft.weightKg} kg · ${draft.volumeM3} m³`], [t("Descripción", "Description"), draft.cargoDescription]]} /><ReviewSection title={t("Planificación", "Planning")} tone="preliminary" status={t("Preliminar", "Preliminary")} items={[[t("Retiro", "Pickup"), date], [t("Equipo preferido", "Preferred equipment"), equipmentLabel(draft.equipmentPreference, t)]]} /><ReviewSection title={t("Evidencia operativa", "Operational evidence")} tone="unknown" status={t("Desconocido", "Unknown")} items={[[t("Ruta / cobertura / capacidad", "Route / coverage / capacity"), t("No confirmadas por seleccionar sedes", "Not confirmed by facility selection")], [t("Disponibilidad / precio / ofertas", "Availability / price / offers"), t("No consultados en este prototipo", "Not queried in this prototype")], [t("Persistencia", "Persistence"), t("No conectada; no se crea solicitud", "Not connected; no request is created")]]} /></div>;
+function ReviewSection({ title, items, tone = "preliminary" }: { title: string; items: string[][]; tone?: "preliminary" | "unknown" }) {
+  return <section className={styles.reviewSection}><header><h3>{title}</h3><Badge tone={tone}>{tone === "unknown" ? "UNKNOWN" : "LOCAL"}</Badge></header><div className={styles.reviewList}>{items.map(([label, value]) => <div className={styles.reviewItem} key={label}><span>{label}</span><strong>{value}</strong></div>)}</div></section>;
 }
 
-function ReviewSection({ title, tone, status, items }: { title: string; tone: "preliminary" | "unknown"; status: string; items: string[][] }) {
-  return <section className={styles.reviewSection}><header><h3>{title}</h3><Badge tone={tone}>{status}</Badge></header><div className={styles.reviewList}>{items.map(([label, value]) => <div className={styles.reviewItem} key={label}><span>{label}</span><strong>{value}</strong></div>)}</div></section>;
+function LiveSummary({ draft, options, request, evaluation, dirtyAfterCreate, t }: { draft: V2IntakePrototypeDraft; options: IntakeOptionsData; request: FreightRequestV2Data | null; evaluation: RoadServiceabilityEvaluationV2Data | null; dirtyAfterCreate: boolean; t: Translate }) {
+  const origin = findIntakeFacility(options, draft.originFacilityId);
+  const destination = findIntakeFacility(options, draft.destinationFacilityId);
+  return <aside className={`${styles.card} ${styles.summary}`} aria-label={t("Resumen en vivo", "Live summary")}><header className={styles.cardHeader}><div><span className={styles.eyebrow}>{t("Resumen local", "Local summary")}</span><h2>{t("Solicitud de cliente", "Client request")}</h2><p>{t("Los pasos no se guardan automáticamente.", "Steps are not autosaved.")}</p></div></header><div className={styles.summaryBody}>
+    <SummaryRow label={t("Origen", "Origin")} value={origin?.label ?? t("Sin seleccionar", "Not selected")} tone={origin ? "preliminary" : "neutral"} status={origin ? t("Local", "Local") : t("Pendiente", "Pending")} />
+    <SummaryRow label={t("Destino", "Destination")} value={destination?.label ?? t("Sin seleccionar", "Not selected")} tone={destination ? "preliminary" : "neutral"} status={destination ? t("Local", "Local") : t("Pendiente", "Pending")} />
+    <SummaryRow label={t("Carga", "Cargo")} value={draft.cargoDescription || t("Sin describir", "Not described")} tone={draft.cargoDescription ? "preliminary" : "neutral"} status={draft.cargoDescription ? t("Local", "Local") : t("Pendiente", "Pending")} />
+    <SummaryRow label={t("Persistencia", "Persistence")} value={request ? `${request.referenceCode} · v${request.draftVersion}` : t("Aún no creada", "Not created yet")} tone={request ? "confirmed" : "unknown"} status={request ? request.status : "UNKNOWN"} hint={dirtyAfterCreate ? t("Cambios locales sin autosave", "Local changes without autosave") : undefined} />
+    <SummaryRow label={t("Elegibilidad", "Serviceability")} value={evaluation ? `${evaluation.summaryCounts.totalEvaluated} ${t("evaluados", "evaluated")}` : t("Aún no consultada", "Not queried yet")} tone={evaluation?.overallStatus === "eligible" ? "confirmed" : "unknown"} status={evaluation?.overallStatus.toUpperCase() ?? "UNKNOWN"} />
+  </div><div className={styles.statusLegend}><Legend tone="preliminary" label={t("Local", "Local")} text={t("Editable; no persistido.", "Editable; not persisted.")} /><Legend tone="unknown" label="UNKNOWN" text={t("Sin evidencia suficiente.", "Insufficient evidence.")} /><Legend tone="confirmed" label="DRAFT" text={t("Devuelto por POST y GET V2.", "Returned by V2 POST and GET.")} /></div></aside>;
+}
+
+function ApiErrorState({ error, requestExists, retry, t }: { error: V2IntakeApiError; requestExists: boolean; retry: () => Promise<void>; t: Translate }) {
+  return <div className={styles.apiError} role="alert"><div><strong>{error.code}</strong><span>{error.message}</span><small>{requestExists ? t("El DRAFT ya fue creado; el reintento sólo vuelve a leer y evaluar.", "The DRAFT was already created; retry only reads and evaluates again.") : t("No se declara persistencia hasta recibir el envelope v2.0.", "Persistence is not claimed until the v2.0 envelope is received.")}</small></div><Button variant="secondary" type="button" onClick={() => void retry()}><RefreshCw size={15} aria-hidden="true" />{t("Reintentar", "Retry")}</Button></div>;
+}
+
+function LoadingOrPending({ phase, retry, t }: { phase: SubmitPhase; retry: () => Promise<void>; t: Translate }) {
+  const loading = ["reading", "evaluating"].includes(phase);
+  return <div className={styles.pendingState} role="status"><span>{loading ? phaseLabel(phase, t) : t("La evaluación todavía no está disponible.", "The evaluation is not available yet.")}</span>{!loading ? <Button variant="secondary" type="button" onClick={() => void retry()}><RefreshCw size={15} aria-hidden="true" />{t("Consultar de nuevo", "Query again")}</Button> : null}</div>;
+}
+
+function OptionSelect({ label, placeholder, options, value, error, onChange, fieldClassName, t }: { label: string; placeholder: string; options: IntakeOption[]; value: string; error?: string; onChange: (value: string) => void; fieldClassName?: string; t: Translate }) {
+  return <Select fieldClassName={fieldClassName} label={label} value={value} error={error} onChange={(event) => onChange(event.target.value)}><option value="">{placeholder}</option>{options.map((option) => <option value={option.value} key={option.value}>{optionLabel(option, t)}</option>)}</Select>;
+}
+
+function optionLabel(option: IntakeOption, t: Translate) {
+  return `${t(option.labelEs, option.labelEn)} · ${option.value}`;
 }
 
 function SummaryRow({ label, value, tone, status, hint }: { label: string; value: string; tone: "preliminary" | "unknown" | "confirmed" | "neutral"; status: string; hint?: string }) {
@@ -270,19 +445,34 @@ function Legend({ tone, label, text }: { tone: "preliminary" | "unknown" | "conf
   return <div className={styles.legendItem}><Badge tone={tone}>{label}</Badge><span>{text}</span></div>;
 }
 
+function normalizeApiError(error: unknown) {
+  if (error instanceof V2IntakeApiError) return error;
+  return new V2IntakeApiError({
+    code: "NETWORK_ERROR",
+    message: error instanceof Error ? error.message : "The V2 API could not be reached.",
+    status: 0,
+    retryable: true,
+  });
+}
+
+function phaseLabel(phase: SubmitPhase, t: Translate) {
+  if (phase === "creating") return t("Creando DRAFT…", "Creating DRAFT…");
+  if (phase === "reading") return t("Leyendo DRAFT…", "Reading DRAFT…");
+  if (phase === "evaluating") return t("Evaluando servicio…", "Evaluating serviceability…");
+  return t("Procesando…", "Processing…");
+}
+
 function stepDescription(step: PrototypeStep, t: Translate) {
-  const descriptions = [t("Elige puntos operativos del catálogo V2 provisional.", "Choose operational points from the provisional V2 catalog."), t("Captura taxonomía, peso y CBM sin inferir capacidad.", "Capture taxonomy, weight, and CBM without inferring capacity."), t("Registra fecha y preferencia sin prometer disponibilidad.", "Record date and preference without promising availability."), t("Distingue datos preliminares, desconocidos y confirmados.", "Distinguish preliminary, unknown, and confirmed data.")];
-  return descriptions[step - 1];
+  return [
+    t("Elige facilityId; el servidor conserva la autoridad sobre tenant y coordenadas.", "Choose facilityId; the server remains authoritative for tenant and coordinates."),
+    t("Captura CargoSpecification y units[] sin calcular capacidad en el navegador.", "Capture CargoSpecification and units[] without computing capacity in the browser."),
+    t("Define ventanas, equipo y ambos ShipmentContact.", "Define windows, equipment, and both ShipmentContact values."),
+    t("Revalida y ejecuta POST → GET → GET serviceability con una clave idempotente.", "Revalidate and run POST → GET → GET serviceability with an idempotency key."),
+  ][step - 1];
 }
 
-function cargoLabel(value: string, t: Translate) {
-  return ({ MINING_PARTS: t("Repuestos mineros", "Mining parts"), INDUSTRIAL_SUPPLIES: t("Suministros industriales", "Industrial supplies"), GENERAL_CARGO: t("Carga general", "General cargo"), OTHER: t("Otro", "Other") } as Record<string, string>)[value] ?? t("Pendiente", "Pending");
-}
-
-function packagingLabel(value: string, t: Translate) {
-  return ({ PALLET: t("Pallet", "Pallet"), CRATE: t("Cajón", "Crate"), BULK: t("Granel", "Bulk"), OTHER: t("Otro", "Other") } as Record<string, string>)[value] ?? t("Pendiente", "Pending");
-}
-
-function equipmentLabel(value: string, t: Translate) {
-  return ({ NO_PREFERENCE: t("Sin preferencia", "No preference"), DRY_VAN: t("Furgón seco", "Dry van"), FLATBED: t("Plataforma", "Flatbed"), LOWBOY: t("Cama baja", "Lowboy") } as Record<string, string>)[value] ?? t("Pendiente", "Pending");
+function formatLocalRange(start: string, end: string, locale: "es" | "en") {
+  if (!start || !end) return "—";
+  const formatter = new Intl.DateTimeFormat(locale === "es" ? "es-PE" : "en-US", { dateStyle: "medium", timeStyle: "short" });
+  return `${formatter.format(new Date(start))} → ${formatter.format(new Date(end))}`;
 }
