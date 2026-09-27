@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
-select plan(15);
+select plan(17);
 
 create function pg_temp.hac12_payload() returns jsonb language sql as $$
   select '{
@@ -119,6 +119,30 @@ select is((select count(*)::integer from public.freight_requests
     'a1200000-0000-4000-8000-000000000003',
     'a1200000-0000-4000-8000-000000000004')), 0,
   'all failed mutations rolled back');
+
+-- Fail after PostgreSQL has inserted the draft. The trigger and its function exist
+-- only inside this test transaction; the failure must undo the row and receipt.
+reset role;
+create function pg_temp.hac12_abort_after_insert() returns trigger
+language plpgsql as $$
+begin
+  raise exception 'HAC12_FORCED_AFTER_INSERT' using errcode = 'P0001';
+end;
+$$;
+create trigger hac12_abort_after_insert after insert on public.freight_requests
+for each row when (new.creation_idempotency_key = 'a1200000-0000-4000-8000-000000000007')
+execute function pg_temp.hac12_abort_after_insert();
+set local role authenticated;
+select throws_ok($$
+  select public.create_v2_freight_request(
+    'c2300000-0000-4000-8000-000000000001',
+    'c2320000-0000-4000-8000-000000000001',
+    'a1200000-0000-4000-8000-000000000007',
+    repeat('a',64), pg_temp.hac12_payload())
+$$, 'P0001', 'HAC12_FORCED_AFTER_INSERT', 'post-insert failure propagates');
+select is((select count(*)::integer from public.freight_requests
+  where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000007'), 0,
+  'post-insert failure rolls back the draft and embedded receipt');
 
 select * from finish();
 rollback;

@@ -14,13 +14,15 @@ Estado: **implementación local en revisión**, no desplegada ni aceptada. Rama 
 - TypeScript, chequeo de arquitectura y build Next.js de producción: PASS.
 - Pruebas unitarias de DTO, intake, solicitud y elegibilidad: 32/32 PASS.
 - Regresiones existentes: Hono 42/42 y MCP 75/75 PASS. Estas suites heredadas no sustituyen el smoke HTTP V2.
-- pgTAP local: 15/15, incluyendo creación/replay/conflicto, RLS/tenant, sedes ajenas, USD y rollback.
-- Smoke HTTP local contra Next/Hono + Auth/REST Supabase: PASS para autenticación, ocho categorías, POST→GET, replay `200`, conflicto `409`, sede ajena `403`, inexistente `400`, lectura cruzada `404`, `expectedDraftVersion` obsoleta `409`, 1 candidato elegible, 1 `unknown` y Piura con cero. El script falla si la URL no es loopback y borra por ID los borradores que crea.
+- Reset local limpio de HAC-29 PR #90 (`25b2b46`) más delta HAC-12 (`7de491c`): las tres migraciones aplicaron en orden; ocho categorías y cero organizaciones/solicitudes/Auth antes de sembrar el escenario. Los escenarios HAC-29 y HAC-12 se sembraron y verificaron en ese orden.
+- pgTAP local combinado: 90/90 en cinco archivos; HAC-12 aporta 17/17, incluyendo creación/replay/conflicto, RLS/tenant, sedes ajenas, USD y un fallo temporal **después del INSERT** que deja cero borradores/recibos. El trigger de fallo existe solo dentro de la transacción de prueba.
+- `supabase db advisors --local` sobre la cadena combinada: seguridad y rendimiento sin hallazgos `warn`/`error`.
+- Smoke HTTP local contra Next/Hono + Auth/REST Supabase sobre ese reset: PASS para autenticación, ocho categorías, POST→GET, replay `200`, conflicto `409`, sede ajena `403`, inexistente `400`, lectura cruzada `404`, `expectedDraftVersion` obsoleta `409`, 1 candidato elegible, 1 `unknown` y Piura con cero. El script falla si la URL no es loopback y borra por ID los borradores que crea.
 
 ## Pendientes antes de In Review/Done
 
-1. Revisar/aceptar PR #90; reproducir desde **reset limpio** la cadena HAC-29 → HAC-12 y pgTAP/escenarios. La prueba local actual se hizo sobre una base HAC-29 preexistente con el delta HAC-12 aplicado durante el desarrollo.
-2. Ejecutar la suite de release completa, chequeo de seguridad/advisors y revisión independiente. Publicar PR HAC-12; no mezclar directo a la rama base ni a `main`.
+1. Revisar/aceptar PR #90 y, una vez integrado al ciclo, añadir la migración HAC-12 al `supabase-v2/migration-manifest.json` y su prueba al perfil V2. La combinación actual se probó en un checkout desacoplado; `gate.py manifest` aún rechaza el delta HAC-12 no registrado. El gate completo local de #90 se bloqueó por el puerto Windows `59322` reservado; sus tres jobs CI sí pasaron. Véase [FL-03](./friction-logs/FL-03.md).
+2. Ejecutar la suite de release completa sobre la combinación publicada, repetir advisors en el gate y obtener revisión independiente de HAC-12. Publicar PR HAC-12; no mezclar directo a la rama base ni a `main`.
 3. Conectar el mismo servicio de aplicación a HAC-11 (MCP) y las vistas HAC-14/15, y pasar QA HAC-13 sobre el corte integrado.
 4. Resolver con HAC-27/HAC-29 la proyección de fixture que espera `serviceClass: FTL_DEDICATED` y canales `API/MANUAL`: el catálogo físico actual acredita `FTL` y **ningún canal V2 publicado**. La API devuelve `FTL` y `responseChannels: []`; no inventa capacidades comerciales.
 
