@@ -1,0 +1,97 @@
+{
+  "case": "foreign-tenant",
+  "status": "BLOCKED",
+  "owner": "HAC-12",
+  "controlCase": "positive",
+  "requestBody": {
+    "schemaVersion": "2.0",
+    "organizationId": "c2300000-0000-4000-8000-000000000001",
+    "origin": {
+      "facilityId": "c2330000-0000-4000-8000-000000000004",
+      "label": "[SYNTHETIC] Other tenant site",
+      "countryCode": "PE",
+      "city": "Lima",
+      "lat": null,
+      "lng": null
+    },
+    "destination": {
+      "facilityId": "c2330000-0000-4000-8000-000000000002",
+      "label": "[SYNTHETIC] B delivery on covered lane",
+      "countryCode": "PE",
+      "city": "Arequipa",
+      "lat": null,
+      "lng": null
+    },
+    "pickupWindow": {
+      "startsAt": "2026-10-05T08:00:00Z",
+      "endsAt": "2026-10-05T18:00:00Z"
+    },
+    "deliveryWindow": {
+      "startsAt": "2026-10-07T08:00:00Z",
+      "endsAt": "2026-10-07T20:00:00Z"
+    },
+    "acceptedModes": [
+      "ROAD"
+    ],
+    "requiredEquipment": "REEFER_TRUCK",
+    "cargoSpecification": {
+      "categoryCode": "PHARMA",
+      "description": "Vacunas termolábiles en pallets controlados",
+      "packaging": "PALLET",
+      "totalWeightKg": 4800,
+      "totalVolumeM3": 19.2,
+      "divisible": false,
+      "requirements": [
+        "TEMP_CONTROLLED",
+        "SECURITY_SEAL"
+      ],
+      "temperatureRange": {
+        "minCelsius": 2,
+        "maxCelsius": 8
+      },
+      "units": [
+        {
+          "packageType": "PALLET",
+          "quantity": 8,
+          "weightPerUnitKg": 600,
+          "volumePerUnitM3": 2.4,
+          "dimensionsCm": {
+            "length": 120,
+            "width": 100,
+            "height": 200
+          },
+          "indivisible": true,
+          "stackable": false
+        }
+      ]
+    },
+    "contacts": {
+      "pickup": {
+        "name": "Elena Vargas",
+        "phoneE164": "+51987654321",
+        "email": "despachos.callao@shipper-v2.example"
+      },
+      "recipient": {
+        "name": "Carlos Medina",
+        "phoneE164": "+51912345678",
+        "email": "recepcion.aqp@shipper-v2.example"
+      }
+    },
+    "budget": {
+      "amount": 3200.0,
+      "currency": "USD"
+    }
+  },
+  "expectedHttpStatus": 403,
+  "responseMatch": "recursive subset",
+  "expectedResponse": {
+    "schemaVersion": "2.0",
+    "error": {
+      "code": "FORBIDDEN_TENANT"
+    }
+  },
+  "notes": [
+    "Tenant A session and organizationId are unchanged; only origin is tenant B.",
+    "Do not invent an error message/details that HAC-27 has not specified. SQL FK evidence is separate from this HTTP assertion."
+  ]
+}
