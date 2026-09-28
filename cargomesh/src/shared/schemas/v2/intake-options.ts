@@ -10,6 +10,20 @@ export const RoadEquipmentCodeV2Schema = z.enum([
   "BOX_TRUCK", "REEFER_TRUCK", "FLATBED", "TANKER_TRUCK", "TRACTOR_TRAILER",
 ]);
 
+/** Capture vocabularies; listing a code does not verify a carrier capability. */
+export const PackagingCodeV2Schema = z.enum(["PALLET", "BOX", "CRATE", "DRUM", "BULK"]);
+export const RequirementCodeV2Schema = z.enum([
+  "TEMP_CONTROLLED", "SECURITY_SEAL", "FRAGILE", "HAZARDOUS",
+]);
+/** These codes have a resource-level evidence check in the Sprint 2 ROAD evaluator. */
+export const ResourceEvidenceRequirementCodesV2 = ["TEMP_CONTROLLED", "SECURITY_SEAL"] as const;
+
+const CaptureOptionV2Schema = z.object({
+  code: z.string().min(1),
+  labelEs: z.string().min(1),
+  labelEn: z.string().min(1),
+});
+
 export const IntakeOptionsV2ResponseSchema = z.object({
   schemaVersion: z.literal("2.0"),
   data: z.object({
@@ -38,6 +52,14 @@ export const IntakeOptionsV2ResponseSchema = z.object({
       code: RoadEquipmentCodeV2Schema,
       label: z.string().min(1),
       mode: z.literal("ROAD"),
+    })),
+    packagingOptions: z.array(CaptureOptionV2Schema.extend({
+      code: PackagingCodeV2Schema,
+      verification: z.literal("CAPTURE_ONLY"),
+    })),
+    requirementOptions: z.array(CaptureOptionV2Schema.extend({
+      code: RequirementCodeV2Schema,
+      verification: z.enum(["RESOURCE_EVIDENCE", "REQUIRES_REVIEW"]),
     })),
   }),
 });

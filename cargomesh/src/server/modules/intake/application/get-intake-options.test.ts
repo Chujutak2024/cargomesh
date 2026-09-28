@@ -46,6 +46,15 @@ describe("V2 intake options application service", () => {
     assert.equal(result.data.cargoCategories.length, 8);
     assert.deepEqual(result.data.cargoCategories.map((item) => item.code), codes);
     assert.equal(result.data.equipmentOptions[0]?.code, "REEFER_TRUCK");
+    assert.deepEqual(result.data.packagingOptions.map((item) => item.code),
+      ["PALLET", "BOX", "CRATE", "DRUM", "BULK"]);
+    assert.ok(result.data.packagingOptions.every((item) => item.verification === "CAPTURE_ONLY"));
+    assert.deepEqual(result.data.requirementOptions.map((item) => [item.code, item.verification]), [
+      ["TEMP_CONTROLLED", "RESOURCE_EVIDENCE"],
+      ["SECURITY_SEAL", "RESOURCE_EVIDENCE"],
+      ["FRAGILE", "REQUIRES_REVIEW"],
+      ["HAZARDOUS", "REQUIRES_REVIEW"],
+    ]);
   });
 
   it("fails closed if the repository returns another tenant's facility", async () => {

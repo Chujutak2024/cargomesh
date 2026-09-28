@@ -1,12 +1,19 @@
 import { z } from "zod";
 import { RoadServiceabilityEvaluationV2ResponseSchema, type RoadCandidateV2 } from
   "@/shared/schemas/v2/serviceability";
+import { ResourceEvidenceRequirementCodesV2 } from "@/shared/schemas/v2/intake-options";
 import { V2DraftError, getV2Draft, type V2Actor, type V2DraftRepository } from
   "@/server/modules/freight-requests/application/draft-service";
 import { evaluateRoad, type RoadService, type Status } from "../domain/evaluate-road";
 
 export interface RoadCatalogRepository {
   listRoadServices(): Promise<RoadService[]>;
+}
+
+const RESOURCE_EVIDENCE_CODES = new Set<string>(ResourceEvidenceRequirementCodesV2);
+
+function canCheckResourceRequirement(code: string, hasTemperatureRange: boolean): boolean {
+  return RESOURCE_EVIDENCE_CODES.has(code) && (code !== "TEMP_CONTROLLED" || hasTemperatureRange);
 }
 
 function combine(a: Status, b: Status): Status {
@@ -44,11 +51,13 @@ export async function evaluateV2RoadByRequestId(
     indivisibleUnits: request.cargoSpecification.units.filter((unit) => unit.indivisible)
       .map((unit) => ({ weightKg: unit.weightPerUnitKg, volumeM3: unit.volumePerUnitM3 })),
     requiredEquipmentCode: request.requiredEquipment,
-    requiredCertifications: request.cargoSpecification.requirements,
+    requiredCertifications: request.cargoSpecification.requirements.filter((code) =>
+      canCheckResourceRequirement(code, request.cargoSpecification.temperatureRange != null)),
     temperatureRange: request.cargoSpecification.temperatureRange ?? null,
     // The domain checks each carrying resource's persisted capability evidence;
     // a pool without such evidence remains UNKNOWN.
-    unverifiedRequirements: [],
+    unverifiedRequirements: request.cargoSpecification.requirements.filter((code) =>
+      !canCheckResourceRequirement(code, request.cargoSpecification.temperatureRange != null)),
   }, services);
   const serviceById = new Map(services.map((service) => [service.id, service]));
   const evaluatedAt = new Date().toISOString();

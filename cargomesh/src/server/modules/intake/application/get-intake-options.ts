@@ -1,6 +1,7 @@
 import {
   CargoCategoryCodeV2Schema,
   IntakeOptionsV2ResponseSchema,
+  ResourceEvidenceRequirementCodesV2,
   type IntakeOptionsV2Response,
 } from "@/shared/schemas/v2/intake-options";
 
@@ -42,6 +43,23 @@ export interface IntakeOptionsRepository {
 }
 
 const CATEGORY_CODES = CargoCategoryCodeV2Schema.options;
+const RESOURCE_EVIDENCE_CODES = new Set<string>(ResourceEvidenceRequirementCodesV2);
+
+/** Versioned capture choices. They do not assert carrier support or availability. */
+const PACKAGING_OPTIONS = [
+  { code: "PALLET", labelEs: "Pallet", labelEn: "Pallet" },
+  { code: "BOX", labelEs: "Caja", labelEn: "Box" },
+  { code: "CRATE", labelEs: "Cajón", labelEn: "Crate" },
+  { code: "DRUM", labelEs: "Tambor", labelEn: "Drum" },
+  { code: "BULK", labelEs: "Granel", labelEn: "Bulk" },
+] as const;
+
+const REQUIREMENT_OPTIONS = [
+  { code: "TEMP_CONTROLLED", labelEs: "Temperatura controlada", labelEn: "Temperature controlled" },
+  { code: "SECURITY_SEAL", labelEs: "Sello de seguridad", labelEn: "Security seal" },
+  { code: "FRAGILE", labelEs: "Carga frágil", labelEn: "Fragile cargo" },
+  { code: "HAZARDOUS", labelEs: "Material peligroso", labelEn: "Hazardous material" },
+] as const;
 
 export async function getIntakeOptions(
   actor: IntakeActor,
@@ -88,6 +106,14 @@ export async function getIntakeOptions(
         },
       })).sort((a, b) => CATEGORY_CODES.indexOf(a.code) - CATEGORY_CODES.indexOf(b.code)),
       equipmentOptions: equipmentOptions.sort((a, b) => a.code.localeCompare(b.code)),
+      packagingOptions: PACKAGING_OPTIONS.map((option) => ({
+        ...option, verification: "CAPTURE_ONLY" as const,
+      })),
+      requirementOptions: REQUIREMENT_OPTIONS.map((option) => ({
+        ...option,
+        verification: RESOURCE_EVIDENCE_CODES.has(option.code)
+          ? "RESOURCE_EVIDENCE" as const : "REQUIRES_REVIEW" as const,
+      })),
     },
   };
   const parsed = IntakeOptionsV2ResponseSchema.safeParse(response);

@@ -16,7 +16,8 @@ const assetId = "f0000000-0000-4000-8000-000000000001";
 const laneId = "a1000000-0000-4000-8000-000000000001";
 const calendarId = "a2000000-0000-4000-8000-000000000001";
 
-function draft(originCity = "Lima"): V2DraftRepository {
+function draft(originCity = "Lima", requirements: string[] = [],
+  temperatureRange?: { minCelsius: number; maxCelsius: number }): V2DraftRepository {
   const data: FreightRequestV2Response["data"] = {
     id: requestId, referenceCode: "V2-TEST", organizationId: actor.organizationId,
     status: "DRAFT", draftVersion: 1,
@@ -29,7 +30,8 @@ function draft(originCity = "Lima"): V2DraftRepository {
     acceptedModes: ["ROAD"], requiredEquipment: "BOX_TRUCK",
     cargoSpecification: {
       categoryCode: "GENERAL", description: "Prueba sintética", packaging: "PALLET",
-      totalWeightKg: 1000, totalVolumeM3: 2, divisible: true, requirements: [],
+      totalWeightKg: 1000, totalVolumeM3: 2, divisible: true, requirements,
+      temperatureRange: temperatureRange ?? null,
       units: [{ packageType: "PALLET", quantity: 1, weightPerUnitKg: 1000,
         volumePerUnitM3: 2, dimensionsCm: { length: 100, width: 100, height: 200 },
         indivisible: false, stackable: true }],
@@ -93,6 +95,34 @@ describe("HAC-12 ROAD application response", () => {
     unverified.capacities[0]!.calendar!.provenanceStatus = "UNKNOWN";
     assert.equal((await evaluateV2RoadByRequestId(requestId, undefined, actor, draft(),
       { listRoadServices: async () => [unverified] })).data.overallStatus, "unknown");
+  });
+
+  it("keeps review-only requirements unknown even if a resource advertises their code", async () => {
+    const advertised = service();
+    advertised.capacities[0]!.cargoCapabilities = [{
+      categoryCode: "GENERAL", certifications: ["FRAGILE", "HAZARDOUS", "TEMP_CONTROLLED"],
+      temperatureMinC: 2, temperatureMaxC: 8,
+    }];
+    for (const requirement of ["FRAGILE", "HAZARDOUS", "TEMP_CONTROLLED"]) {
+      const result = await evaluateV2RoadByRequestId(requestId, 1, actor,
+        draft("Lima", [requirement]), { listRoadServices: async () => [advertised] });
+      assert.equal(result.data.overallStatus, "unknown", requirement);
+      assert.equal(result.data.candidates[0]?.checks.cargoAndEquipment.reasonCode,
+        "REQUIREMENTS_UNVERIFIED");
+    }
+  });
+
+  it("checks temperature and seal against the same carrying resource", async () => {
+    const evidenced = service();
+    evidenced.capacities[0]!.cargoCapabilities = [{
+      categoryCode: "GENERAL", certifications: ["TEMP_CONTROLLED", "SECURITY_SEAL"],
+      temperatureMinC: 2, temperatureMaxC: 8,
+    }];
+    const result = await evaluateV2RoadByRequestId(requestId, 1, actor,
+      draft("Lima", ["TEMP_CONTROLLED", "SECURITY_SEAL"],
+        { minCelsius: 2, maxCelsius: 8 }),
+      { listRoadServices: async () => [evidenced] });
+    assert.equal(result.data.overallStatus, "eligible");
   });
 
   it("returns zero candidates for uncovered Piura and rejects stale drafts", async () => {
