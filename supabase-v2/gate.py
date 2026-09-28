@@ -1,6 +1,7 @@
 """Local-only HAC-29 gates. Python 3.11+, Docker, Node/npx; no hosted operations."""
 from pathlib import Path
 import argparse
+import errno
 import hashlib
 import json
 import os
@@ -130,6 +131,38 @@ def port_option(kind, setting):
     return f'{flag} (or {env})'
 
 
+def docker_tcp_bindings():
+    """Read only running containers' identity/bindings; never inspect credentials."""
+    ids = run('replay-port-docker-ps', ['docker', 'ps', '--quiet', '--no-trunc']).split()
+    if not ids:
+        return []
+    template = ('{"id":{{json .Id}},"labels":{{json .Config.Labels}},'
+                '"ports":{{json .NetworkSettings.Ports}}}')
+    rows = run('replay-port-docker-inspect', ['docker', 'inspect', '--format', template] + ids)
+    bindings = []
+    for line in rows.splitlines():
+        container = json.loads(line)
+        labels = container['labels'] or {}
+        for target, published in (container['ports'] or {}).items():
+            if not target.endswith('/tcp'):
+                continue
+            for binding in published or []:
+                bindings.append({'container_id': container['id'],
+                                 'project': labels.get('com.supabase.cli.project'),
+                                 'compose_project': labels.get('com.docker.compose.project'),
+                                 'host': binding['HostIp'], 'port': int(binding['HostPort'])})
+    return bindings
+
+
+def replay_owns_port(bindings, project, port, host):
+    publishers = [binding for binding in bindings if binding['port'] == port]
+    # Require an explicit Supabase project label, consistent Compose identity and
+    # a wildcard binding for the failed address family. Names are never evidence.
+    return (any(binding['host'] == host for binding in publishers)
+            and all(binding['project'] == project
+                    and binding['compose_project'] in (None, project) for binding in publishers))
+
+
 def replay_port_preflight():
     # Validate both layouts before any Docker start/reset, including for a V1-only run.
     protected = set(range(56320, 56330)) | set(range(58320, 58330))
@@ -150,6 +183,8 @@ def replay_port_preflight():
             require(port not in protected, f'Port {port} for {project} ({setting}) conflicts with V1/V2; use {remedy}')
             require(port not in claimed, f'Port {port} for {project} ({setting}) conflicts with {claimed.get(port)}; use {remedy}')
             claimed[port] = f'{project} ({setting})'
+    bindings = None
+    reused = []
     for kind, project in [('v1', 'hac29-v1-reference'), ('baseline', 'hac29-baseline-reference')]:
         for setting, port in layouts[project].items():
             families = [(socket.AF_INET, '0.0.0.0')]
@@ -165,12 +200,24 @@ def replay_port_preflight():
                         probe.bind((host, port))
                         probe.listen(1)
                 except OSError as error:
+                    if error.errno == errno.EADDRINUSE or getattr(error, 'winerror', None) == 10048:
+                        if bindings is None:
+                            try:
+                                bindings = docker_tcp_bindings()
+                            except RuntimeError:
+                                # Fail closed with the original port/project/remedy message.
+                                bindings = []
+                        if replay_owns_port(bindings, project, port, host):
+                            reused.append({'project': project, 'setting': setting, 'port': port, 'host': host})
+                            print(f'PASS: port {port} on {host} belongs to running replay {project} (Docker labels/bindings)', flush=True)
+                            continue
                     raise RuntimeError(f'Port {port} for {project} ({setting}) cannot be opened on {host}: {error}. '
                                        f'Stop an existing replay before changing ports, or choose another port with '
                                        f'{port_option(kind, setting)}. On Windows check: '
                                        'netsh interface ipv4 show excludedportrange protocol=tcp') from error
     write(EVIDENCE/'replay-ports.json', json.dumps(layouts, indent=2) + '\n')
-    print('PASS: replay port ranges, isolation and host TCP binds (IPv4/IPv6 where available)', flush=True)
+    write(EVIDENCE/'replay-port-reuse.json', json.dumps({'bindings': bindings or [], 'reused': reused}, indent=2) + '\n')
+    print('PASS: replay port ranges, isolation and host TCP binds or verified same-project Docker bindings (IPv4/IPv6 where available)', flush=True)
 
 
 def prepare_reference(kind):

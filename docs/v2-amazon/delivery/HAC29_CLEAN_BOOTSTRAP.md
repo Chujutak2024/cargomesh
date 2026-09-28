@@ -109,6 +109,13 @@ or other explicit V1/V2 config ports (including inspector/analytics) fail valida
 
 Before any Docker start/reset, `gate.py v1` and `gate.py v2` validate **both** replay
 layouts and attempt exclusive TCP binds on the host (IPv4 and IPv6 when available).
+A port already in use is accepted only when running-container Docker TCP bindings
+prove it belongs to the expected `com.supabase.cli.project`; any Compose project label
+must agree, and no other project may publish that port. The failed address family must
+have a matching wildcard binding. Container names alone never establish ownership.
+Other processes/projects and Windows reserved-port errors still fail the preflight.
+Docker inspection is read-only and happens before any start/reset. Reuse evidence is
+saved in `replay-port-reuse.json`, alongside the narrow Docker metadata logs.
 A failure identifies the port, project, config setting and CLI/environment override.
 The successful layout is saved as `replay-ports.json` outside the repository. This is
 a point-in-time check; another process can claim a port after the probe closes.
@@ -121,10 +128,12 @@ netsh interface ipv4 show excludedportrange protocol=tcp
 netsh interface ipv6 show excludedportrange protocol=tcp
 ```
 
-Stop the two existing **replay** projects using their previous evidence workdirs before
-rerunning or changing ports. An already running replay occupies its DB port and fails
-the preflight; an existing container does not acquire a new binding from a rewritten
-config. Do not stop other projects or use `--all`. For a prior V2 run:
+Repeated runs with the same ports reuse the verified replay projects, including V2
+immediately after V1. The gate leaves replays running for inspection; it does not stop
+them automatically. Stop the two existing **replay** projects using their previous
+evidence workdirs only when changing ports: an existing container does not acquire a
+new binding from a rewritten config. Do not stop other projects or use `--all`.
+For a prior V2 run:
 
 ```powershell
 npx --yes supabase@2.117.0 stop --workdir "$evidence/v2/workdir-v1"
@@ -156,8 +165,8 @@ $env:HAC29_BASELINE_REPLAY_ANALYTICS_PORT = '62327'
 python supabase-v2/gate.py v1 --evidence-dir "$evidence/alternate-v1"
 ```
 
-Unset these six variables to restore defaults. A fresh run requires the previous
-replay containers to be stopped; the gate leaves them available for inspection.
+Unset these six variables to restore defaults. When switching back from alternate
+ports, stop the previous replays first; repeated runs with unchanged ports need no stop.
 
 ### Main V2 profile ports
 
