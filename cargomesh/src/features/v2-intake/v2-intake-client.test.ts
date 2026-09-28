@@ -6,6 +6,7 @@ import {
   ELIGIBLE_UNKNOWN_EVALUATION_FIXTURE,
   ROAD_REQUEST_FIXTURE,
 } from "./fixtures/contract-flow.fixture";
+import { parseIntakeOptionsResponse } from "./intake-options";
 import {
   V2IntakeApiError,
   createFreightRequestV2,
@@ -37,6 +38,37 @@ test("GET maps the real five-group contract into selector codes", async () => {
   assert.equal(result.options.data.equipmentOptions[0].code, "REEFER_TRUCK");
   assert.equal(result.options.data.packagingOptions[0].verification, "CAPTURE_ONLY");
   assert.equal(result.options.data.requirementOptions[2].verification, "REQUIRES_REVIEW");
+});
+
+test("parser preserves HAC-12 guidance objects for all eight cargo categories", () => {
+  const parsed = parseIntakeOptionsResponse(structuredClone(INTAKE_OPTIONS_FIXTURE));
+  assert.ok(parsed);
+  assert.deepEqual(
+    parsed.data.cargoCategories.map((category) => category.code),
+    ["GENERAL", "FOOD", "PHARMA", "CHEMICAL", "MACHINERY", "CONSTRUCTION", "AGRICULTURAL", "LIQUID"],
+  );
+  assert.deepEqual(
+    parsed.data.cargoCategories[2].guidance,
+    INTAKE_OPTIONS_FIXTURE.data.cargoCategories[2].guidance,
+  );
+  assert.deepEqual(parsed.data.cargoCategories[2].guidance, {
+    recommendedEntryMethods: ["PACKAGES", "PALLETS", "LOTS"],
+    intakeSpecificationSchema: {
+      fields: ["temperature_min_c", "temperature_max_c", "lot_number", "expiration_date", "handling_protocol"],
+    },
+    suggestedRequirements: {
+      requires_temperature_validation: true,
+      suggest_fragile: true,
+      suggest_high_value: true,
+    },
+    recommendedVehicleClasses: ["REFRIGERATED_TRUCK", "SECURE_BOX_TRUCK"],
+  });
+
+  const obsolete = structuredClone(INTAKE_OPTIONS_FIXTURE) as unknown as {
+    data: { cargoCategories: Array<{ guidance: unknown }> };
+  };
+  obsolete.data.cargoCategories[0].guidance = "legacy string guidance";
+  assert.equal(parseIntakeOptionsResponse(obsolete), null);
 });
 
 test("facilities: [] is a valid authenticated empty state", async () => {

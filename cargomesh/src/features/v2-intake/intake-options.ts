@@ -1,4 +1,5 @@
 import type {
+  IntakeCargoCategoryGuidance,
   IntakeOption,
   IntakeOptionsData,
   IntakeOptionsResponse,
@@ -45,7 +46,7 @@ export function auditIntakeOptions(options: IntakeOptionsData): IntakeOptionCove
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function hasExactGroups(value: Record<string, unknown>) {
@@ -69,7 +70,19 @@ function isCargoCategory(value: unknown) {
     && typeof value.id === "string"
     && typeof value.code === "string"
     && typeof value.name === "string"
-    && typeof value.guidance === "string";
+    && isCargoCategoryGuidance(value.guidance);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === "string");
+}
+
+function isCargoCategoryGuidance(value: unknown): value is IntakeCargoCategoryGuidance {
+  return isRecord(value)
+    && isStringArray(value.recommendedEntryMethods)
+    && isRecord(value.intakeSpecificationSchema)
+    && isRecord(value.suggestedRequirements)
+    && isStringArray(value.recommendedVehicleClasses);
 }
 
 function isEquipmentOption(value: unknown) {
@@ -126,12 +139,12 @@ export function parseIntakeOptionsResponse(value: unknown): NormalizedIntakeOpti
         lat: facility.lat,
         lng: facility.lng,
       })),
-      cargoCategories: response.data.cargoCategories.map((category) => normalizeOption(
-        category.code,
-        category.name,
-        category.name,
-        { guidance: category.guidance },
-      )),
+      cargoCategories: response.data.cargoCategories.map((category) => ({
+        code: category.code,
+        labelEs: category.name,
+        labelEn: category.name,
+        guidance: structuredClone(category.guidance),
+      })),
       equipmentOptions: response.data.equipmentOptions.map((option) => normalizeOption(
         option.code,
         option.label,

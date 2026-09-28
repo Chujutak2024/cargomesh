@@ -24,6 +24,7 @@ import { CandidateResults } from "./components/candidate-results";
 import { RoadCandidateMapBoundary } from "./components/road-candidate-map-boundary";
 import type {
   FreightRequestV2Data,
+  IntakeCargoCategoryGuidance,
   IntakeOption,
   IntakeOptionsData,
   RoadServiceabilityEvaluationV2Data,
@@ -393,7 +394,7 @@ function CargoStep({ draft, options, update, errorFor, t }: FieldHelpers) {
   return <><h3 className={styles.sectionTitle}><Package size={16} aria-hidden="true" />{t("Especificación y unidad de carga", "Cargo specification and unit")}</h3><div className={styles.formGrid}>
     <OptionSelect label={t("Categoría", "Category")} placeholder={t("Seleccionar categoría", "Select category")} options={options.cargoCategories} value={draft.categoryCode} error={errorFor("categoryCode")} onChange={(value) => update("categoryCode", value)} t={t} />
     <OptionSelect label={t("Embalaje", "Packaging")} placeholder={t("Seleccionar embalaje", "Select packaging")} options={options.packagingOptions} value={draft.packaging} error={errorFor("packaging")} onChange={(value) => { update("packaging", value); if (!draft.unitPackageType) update("unitPackageType", value); }} t={t} />
-    {category?.guidance ? <OptionEvidence label={t("Guía de categoría", "Category guidance")} value={category.guidance} /> : null}
+    {category ? <CategoryGuidanceEvidence guidance={category.guidance} t={t} /> : null}
     {packaging?.verification ? <OptionEvidence label="verification" value={`${packaging.verification} · ${t("El embalaje se captura, pero no confirma compatibilidad de manipulación.", "Packaging is captured, but handling compatibility is not confirmed.")}`} /> : null}
     <Textarea fieldClassName={styles.wide} label={t("Descripción", "Description")} rows={3} value={draft.cargoDescription} error={errorFor("cargoDescription")} onChange={(event) => update("cargoDescription", event.target.value)} />
     <Input label={t("Peso total (kg)", "Total weight (kg)")} type="number" min="0" step="0.1" value={draft.totalWeightKg} error={errorFor("totalWeightKg")} onChange={(event) => update("totalWeightKg", event.target.value)} />
@@ -492,6 +493,25 @@ function verificationCopy(verification: IntakeOption["verification"], t: Transla
     return t("verification: CAPTURE_ONLY · sólo captura; no confirma compatibilidad.", "verification: CAPTURE_ONLY · capture only; compatibility is not confirmed.");
   }
   return undefined;
+}
+
+function CategoryGuidanceEvidence({ guidance, t }: { guidance: IntakeCargoCategoryGuidance; t: Translate }) {
+  const fields = Array.isArray(guidance.intakeSpecificationSchema.fields)
+    ? guidance.intakeSpecificationSchema.fields.filter((field): field is string => typeof field === "string")
+    : [];
+  const requirements = Object.entries(guidance.suggestedRequirements)
+    .filter(([, enabled]) => enabled === true)
+    .map(([code]) => code);
+  const rows = [
+    { label: t("Métodos", "Entry methods"), value: guidance.recommendedEntryMethods.join(", ") || "UNKNOWN" },
+    { label: t("Campos", "Fields"), value: fields.join(", ") || "UNKNOWN" },
+    { label: t("Requisitos sugeridos", "Suggested requirements"), value: requirements.join(", ") || t("ninguno declarado", "none declared") },
+    { label: t("Vehículos recomendados", "Recommended vehicles"), value: guidance.recommendedVehicleClasses.join(", ") || "UNKNOWN" },
+  ];
+  return <div className={styles.optionEvidence}>
+    <small>{t("Guía de categoría", "Category guidance")}</small>
+    <dl className={styles.guidanceList}>{rows.map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl>
+  </div>;
 }
 
 function OptionEvidence({ label, value }: { label: string; value: string }) {

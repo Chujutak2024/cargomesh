@@ -125,7 +125,7 @@ export const PROVISIONAL_PROTOTYPE_DRAFT: V2IntakePrototypeDraft = {
 };
 
 function preferredOptionCode(
-  options: IntakeOptionsData["cargoCategories"],
+  options: ReadonlyArray<{ code: string }>,
   preferredCodes: string[],
 ) {
   return preferredCodes
@@ -339,7 +339,7 @@ export function mapDraftToCreateFreightRequestV2Input(
   const origin = findIntakeFacility(options, draft.originFacilityId);
   const destination = findIntakeFacility(options, draft.destinationFacilityId);
   if (!origin || !destination) throw new Error("FACILITY_OPTION_NOT_FOUND");
-  const hasCode = (group: IntakeOptionsData["cargoCategories"], code: string) => (
+  const hasCode = (group: ReadonlyArray<{ code: string }>, code: string) => (
     group.some((option) => option.code === code)
   );
   if (!hasCode(options.cargoCategories, draft.categoryCode)) throw new Error("CATEGORY_OPTION_NOT_FOUND");

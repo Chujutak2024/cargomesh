@@ -205,8 +205,18 @@ export type IntakeOption = {
   code: string;
   labelEs: string;
   labelEn: string;
-  guidance?: string;
   verification?: IntakeOptionVerification;
+};
+
+export type IntakeCargoCategoryGuidance = {
+  recommendedEntryMethods: string[];
+  intakeSpecificationSchema: Record<string, unknown>;
+  suggestedRequirements: Record<string, unknown>;
+  recommendedVehicleClasses: string[];
+};
+
+export type IntakeCargoCategoryOption = IntakeOption & {
+  guidance: IntakeCargoCategoryGuidance;
 };
 
 export type IntakeFacilityOption = FreightLocationV2 & {
@@ -216,7 +226,7 @@ export type IntakeFacilityOption = FreightLocationV2 & {
 
 export type IntakeOptionsData = {
   facilities: IntakeFacilityOption[];
-  cargoCategories: IntakeOption[];
+  cargoCategories: IntakeCargoCategoryOption[];
   equipmentOptions: IntakeOption[];
   packagingOptions: IntakeOption[];
   requirementOptions: IntakeOption[];
@@ -239,7 +249,7 @@ export type IntakeOptionsResponse = {
       id: string;
       code: string;
       name: string;
-      guidance: string;
+      guidance: IntakeCargoCategoryGuidance;
     }>;
     equipmentOptions: Array<{
       code: string;

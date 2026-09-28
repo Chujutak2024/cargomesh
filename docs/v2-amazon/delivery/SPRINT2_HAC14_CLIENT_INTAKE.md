@@ -44,7 +44,7 @@ The catalog covers every selector currently displayed by HAC-14:
 | Selector group | Client field | HAC-27 payload field | Fixture coverage |
 | --- | --- | --- | --- |
 | `facilities` | origin and destination facility | `facilities[].id → facilityId` and `origin` / `destination` | Tenant-scoped IDs and canonical location fields |
-| `cargoCategories` | cargo taxonomy | `cargoCategories[].code → cargoSpecification.categoryCode` | Canonical `code`, `name`, and visible `guidance` |
+| `cargoCategories` | cargo taxonomy | `cargoCategories[].code → cargoSpecification.categoryCode` | Eight canonical categories; the structured `guidance` object is preserved and only converted to copy at render time |
 | `equipmentOptions` | required equipment | `equipmentOptions[].code → requiredEquipment` | Backend-provided ROAD codes only; `DRY_VAN` and `LOWBOY` were removed |
 | `packagingOptions` | cargo package type | `packagingOptions[].code → cargoSpecification.packaging` and `units[0].packageType` | `verification: CAPTURE_ONLY` is visible; compatibility is not claimed |
 | `requirementOptions` | special handling options | `requirementOptions[].code → cargoSpecification.requirements[]` | `RESOURCE_EVIDENCE` and `REQUIRES_REVIEW` are visible per option |
@@ -61,7 +61,7 @@ The option parser rejects an API response unless all five groups exist and have 
 | Delivery window | `deliveryWindow.startsAt/endsAt` | Must be increasing and start no earlier than pickup-window end. |
 | Transport mode | `acceptedModes` | Fixed to `['ROAD']` for the Sprint 2 contract. |
 | Equipment | `requiredEquipment` | Exact `equipmentOptions[].code` from the backend; no “no preference” or unpublished code is invented. |
-| Cargo category | `cargoSpecification.categoryCode` | Exact `cargoCategories[].code`; `name` and `guidance` are presentation data only. |
+| Cargo category | `cargoSpecification.categoryCode` | Exact `cargoCategories[].code`; `name` is presentation data. `guidance` remains an object containing `recommendedEntryMethods`, `intakeSpecificationSchema`, `suggestedRequirements`, and `recommendedVehicleClasses`; the UI derives display text without flattening the normalized contract. |
 | Cargo description | `cargoSpecification.description` | Required free text. |
 | Packaging | `cargoSpecification.packaging` | Exact `packagingOptions[].code`; `CAPTURE_ONLY` remains visible and does not assert handling compatibility. |
 | Total weight and volume | `cargoSpecification.totalWeightKg/totalVolumeM3` | Required positive numbers; no capacity inference. |
@@ -113,16 +113,16 @@ Executed from `cargomesh/` on 2026-09-28:
 
 | Check | Result |
 | --- | --- |
-| `pnpm test:v2-intake` | Pass; 33/33 model, five-group parser, auth/network/contract error, fixture-mode, dynamic one-click example, provenance, POST mapping, and map-mapper tests |
+| `pnpm test:v2-intake` | Pass; 34/34 model, five-group parser, eight-category structured guidance, auth/network/contract error, fixture-mode, dynamic one-click example, provenance, POST mapping, and map-mapper tests |
 | `pnpm typecheck` | Pass; 0 TypeScript errors |
 | `pnpm check:architecture` | Pass; 233 modules and 27 client entry points checked |
 | `pnpm test:release` | Pass; 410/410 existing release tests completed with 0 failures |
-| `pnpm build` | Pass; `/freight-request/new` compiles as a dynamic route (20.4 kB route bundle) |
+| `pnpm build` | Pass; `/freight-request/new` compiles as a dynamic route (21.2 kB route bundle) |
 | Desktop visual QA | Pass at 1440 px; no horizontal overflow |
 | Mobile visual QA | Pass at 390 px; single-column form and summary, no horizontal overflow |
 | Keyboard regression | Pass; after clearing a previously valid field and jumping to review, the UI returns to the invalid step and focuses the alert |
 
-The visual QA was repeated after the five-group contract alignment. Explicit fixture mode displayed backend-shaped IDs/codes and the `CAPTURE_ONLY`, `RESOURCE_EVIDENCE`, and `REQUIRES_REVIEW` notices. API mode received the currently expected `HTTP_404`, kept the form and one-click example disabled, displayed the real error with retry, and did not activate simulated data.
+The visual QA was repeated after the five-group contract alignment. Explicit fixture mode displayed backend-shaped IDs/codes, the four structured cargo-guidance sections as separate readable rows, and the `CAPTURE_ONLY`, `RESOURCE_EVIDENCE`, and `REQUIRES_REVIEW` notices. API mode received the currently expected `HTTP_404`, kept the form and one-click example disabled, displayed the real error with retry, and did not activate simulated data.
 
 Desktop evidence:
 
