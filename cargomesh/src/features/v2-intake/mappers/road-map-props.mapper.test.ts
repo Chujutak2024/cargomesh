@@ -33,6 +33,7 @@ test("mapper preserves UNKNOWN route preview with empty legs", () => {
   );
   assert.equal(props.candidates[1].routePreview?.provenanceStatus, "UNKNOWN");
   assert.deepEqual(props.candidates[1].routePreview?.legs, []);
+  assert.equal(ELIGIBLE_UNKNOWN_EVALUATION_FIXTURE.candidates[1].checks.capacityWindow.provenance.observedAt, null);
 });
 
 test("mapper preserves zero candidates instead of inventing a route", () => {

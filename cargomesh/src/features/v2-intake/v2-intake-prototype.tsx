@@ -8,10 +8,12 @@ import {
   ClipboardCheck,
   ContactRound,
   Info,
+  Loader2,
   MapPinned,
   Package,
   RefreshCw,
   RotateCcw,
+  ShieldAlert,
   Sparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -26,11 +28,11 @@ import type {
   IntakeOptionsData,
   RoadServiceabilityEvaluationV2Data,
 } from "./contracts";
-import { auditIntakeOptions, getIntakeOptionsFixture } from "./intake-options";
+import { auditIntakeOptions, EMPTY_INTAKE_OPTIONS } from "./intake-options";
 import { mapServiceabilityToMapViewProps } from "./mappers/road-map-props.mapper";
 import {
   EMPTY_PROTOTYPE_DRAFT,
-  PROVISIONAL_PROTOTYPE_DRAFT,
+  buildPrototypeExample,
   findIntakeFacility,
   mapDraftToCreateFreightRequestV2Input,
   toggleRequirement,
@@ -60,9 +62,10 @@ export function V2IntakePrototype() {
   const [step, setStep] = useState<PrototypeStep>(1);
   const [maxVisited, setMaxVisited] = useState<PrototypeStep>(1);
   const [issues, setIssues] = useState<PrototypeValidationIssue[]>([]);
-  const [options, setOptions] = useState<IntakeOptionsData>(getIntakeOptionsFixture().data);
-  const [optionsSource, setOptionsSource] = useState<"loading" | "api" | "fixture">("loading");
-  const [optionsFallbackReason, setOptionsFallbackReason] = useState<string | null>(null);
+  const [options, setOptions] = useState<IntakeOptionsData | null>(null);
+  const [optionsSource, setOptionsSource] = useState<"loading" | "api" | "fixture" | "error">("loading");
+  const [optionsError, setOptionsError] = useState<V2IntakeApiError | null>(null);
+  const [optionsAttempt, setOptionsAttempt] = useState(0);
   const [submitPhase, setSubmitPhase] = useState<SubmitPhase>("idle");
   const [submitError, setSubmitError] = useState<V2IntakeApiError | null>(null);
   const [request, setRequest] = useState<FreightRequestV2Data | null>(null);
@@ -74,18 +77,27 @@ export function V2IntakePrototype() {
 
   useEffect(() => {
     let active = true;
-    void loadIntakeOptions().then((result) => {
-      if (!active) return;
-      setOptions(result.options.data);
-      setOptionsSource(result.source);
-      setOptionsFallbackReason(result.fallbackReason);
-    });
+    setOptionsSource("loading");
+    setOptionsError(null);
+    void loadIntakeOptions()
+      .then((result) => {
+        if (!active) return;
+        setOptions(result.options.data);
+        setOptionsSource(result.source);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setOptions(null);
+        setOptionsSource("error");
+        setOptionsError(normalizeApiError(error));
+      });
     return () => { active = false; };
-  }, []);
+  }, [optionsAttempt]);
 
-  const origin = findIntakeFacility(options, draft.originFacilityId);
-  const destination = findIntakeFacility(options, draft.destinationFacilityId);
-  const optionCoverage = auditIntakeOptions(options);
+  const activeOptions = options ?? EMPTY_INTAKE_OPTIONS;
+  const origin = findIntakeFacility(activeOptions, draft.originFacilityId);
+  const destination = findIntakeFacility(activeOptions, draft.destinationFacilityId);
+  const optionCoverage = auditIntakeOptions(activeOptions);
   const stepLabels = [
     t("Sedes", "Facilities"),
     t("Carga y unidades", "Cargo & units"),
@@ -153,7 +165,7 @@ export function V2IntakePrototype() {
     setMaxVisited((current) => Math.max(current, next) as PrototypeStep);
   };
   const loadExample = () => {
-    setDraft(PROVISIONAL_PROTOTYPE_DRAFT);
+    setDraft(buildPrototypeExample(activeOptions));
     setIssues([]);
     setSubmitError(null);
     if (request) setDirtyAfterCreate(true);
@@ -192,7 +204,7 @@ export function V2IntakePrototype() {
     setSubmitError(null);
     setEvaluation(null);
     try {
-      const payload = mapDraftToCreateFreightRequestV2Input(draft, options);
+      const payload = mapDraftToCreateFreightRequestV2Input(draft, activeOptions);
       const fingerprint = JSON.stringify(payload);
       if (!idempotencyRef.current || idempotencyRef.current.fingerprint !== fingerprint) {
         idempotencyRef.current = { fingerprint, key: crypto.randomUUID() };
@@ -233,30 +245,42 @@ export function V2IntakePrototype() {
             )}</p>
           </div>
           <div className={styles.heroActions}>
-            <Badge tone={optionsSource === "api" ? "confirmed" : "preliminary"}>
-              {optionsSource === "loading" ? t("Consultando opciones", "Loading options") : optionsSource === "api" ? t("Opciones API V2", "V2 API options") : t("Fixture contractual", "Contract fixture")}
+            <Badge tone={optionsSource === "api" ? "confirmed" : optionsSource === "error" ? "unknown" : "preliminary"}>
+              {optionsSource === "loading"
+                ? t("Consultando opciones", "Loading options")
+                : optionsSource === "api"
+                  ? t("Opciones API V2", "V2 API options")
+                  : optionsSource === "fixture"
+                    ? t("Fixture dev explícito", "Explicit dev fixture")
+                    : t("Error de opciones", "Options error")}
             </Badge>
-            <Button variant="secondary" type="button" onClick={loadExample}><Sparkles size={16} aria-hidden="true" />{t("Cargar ejemplo V2", "Load V2 example")}</Button>
+            <Button variant="secondary" type="button" disabled={!options || options.facilities.length < 2 || !optionCoverage.complete} onClick={loadExample}><Sparkles size={16} aria-hidden="true" />{t("Cargar ejemplo V2", "Load V2 example")}</Button>
           </div>
         </header>
 
         <div className={`${styles.notice} ${optionsSource === "fixture" ? styles.fixtureNotice : ""}`} role="note">
           <Info size={18} aria-hidden="true" />
           <div>
-            <strong>{optionsSource === "fixture" ? t("Opciones temporales y explícitas", "Explicit temporary options") : t("Estado local hasta crear", "Local state until creation")}</strong>
+            <strong>{optionsSource === "fixture" ? t("Fixture de desarrollo activado explícitamente", "Explicit development fixture enabled") : t("Estado local hasta crear", "Local state until creation")}</strong>
             <span>{optionsSource === "fixture"
-              ? t(`GET /api/v2/intake/options no está disponible (${optionsFallbackReason ?? "unavailable"}). Los selectores usan JSON HAC-27 rotulado SIMULATED; crear sí requiere el POST real.`, `GET /api/v2/intake/options is unavailable (${optionsFallbackReason ?? "unavailable"}). Selectors use the SIMULATED-labelled HAC-27 JSON; creation still requires the real POST.`)
+              ? t("NEXT_PUBLIC_V2_INTAKE_OPTIONS_SOURCE=fixture omite el GET sólo en desarrollo. El JSON está rotulado SIMULATED y crear todavía requiere el POST real.", "NEXT_PUBLIC_V2_INTAKE_OPTIONS_SOURCE=fixture skips GET only in development. The JSON is labelled SIMULATED and creation still requires the real POST.")
               : t("No hay autosave: avanzar entre pasos no envía datos. Sólo «Crear DRAFT y evaluar» ejecuta POST→GET→serviceability.", "There is no autosave: moving between steps sends no data. Only “Create DRAFT & evaluate” runs POST→GET→serviceability.")}</span>
           </div>
         </div>
 
-        {!optionCoverage.complete ? (
+        {optionsSource === "loading" ? <OptionsLoadingState t={t} /> : null}
+        {optionsSource === "error" && optionsError ? (
+          <OptionsErrorState error={optionsError} retry={() => setOptionsAttempt((attempt) => attempt + 1)} t={t} />
+        ) : null}
+        {options && optionCoverage.emptyFacilities ? <EmptyFacilitiesState t={t} /> : null}
+        {options && !optionCoverage.complete ? (
           <div className={styles.errorSummary} role="alert">
             <strong>{t("El catálogo no cubre todos los selectores", "The catalog does not cover every selector")}</strong>
-            <span>{optionCoverage.missing.join(", ")}</span>
+            <span>{optionCoverage.missingCatalogGroups.join(", ")}</span>
           </div>
         ) : null}
 
+        {options && !optionCoverage.emptyFacilities && optionCoverage.complete ? <>
         <nav className={styles.stepper} aria-label={t("Pasos del intake V2", "V2 intake steps")}>{stepLabels.map((label, index) => {
           const number = (index + 1) as PrototypeStep;
           const Icon = STEP_ICONS[index];
@@ -289,10 +313,10 @@ export function V2IntakePrototype() {
             </header>
             <div className={styles.cardBody}>
               {issues.length ? <div className={styles.errorSummary} role="alert" tabIndex={-1} ref={errorRef}><strong>{t("Revisa los campos marcados", "Review the marked fields")}</strong><span>{t(`Hay ${issues.length} dato(s) pendiente(s) en este paso.`, `There are ${issues.length} pending field(s) in this step.`)}</span></div> : null}
-              {step === 1 ? <FacilityStep draft={draft} options={options} update={update} errorFor={errorFor} t={t} /> : null}
-              {step === 2 ? <CargoStep draft={draft} options={options} update={update} errorFor={errorFor} t={t} /> : null}
-              {step === 3 ? <ScheduleAndContactsStep draft={draft} options={options} update={update} errorFor={errorFor} t={t} /> : null}
-              {step === 4 ? <ReviewStep draft={draft} options={options} request={request} dirtyAfterCreate={dirtyAfterCreate} t={t} locale={locale} /> : null}
+              {step === 1 ? <FacilityStep draft={draft} options={activeOptions} update={update} errorFor={errorFor} t={t} /> : null}
+              {step === 2 ? <CargoStep draft={draft} options={activeOptions} update={update} errorFor={errorFor} t={t} /> : null}
+              {step === 3 ? <ScheduleAndContactsStep draft={draft} options={activeOptions} update={update} errorFor={errorFor} t={t} /> : null}
+              {step === 4 ? <ReviewStep draft={draft} options={activeOptions} request={request} dirtyAfterCreate={dirtyAfterCreate} t={t} locale={locale} /> : null}
               {submitError ? <ApiErrorState error={submitError} requestExists={Boolean(request)} retry={retryAfterCreate} t={t} /> : null}
             </div>
             <footer className={styles.footer}>
@@ -308,7 +332,7 @@ export function V2IntakePrototype() {
             </footer>
           </section>
 
-          <LiveSummary draft={draft} options={options} request={request} evaluation={evaluation} dirtyAfterCreate={dirtyAfterCreate} t={t} />
+          <LiveSummary draft={draft} options={activeOptions} request={request} evaluation={evaluation} dirtyAfterCreate={dirtyAfterCreate} t={t} />
         </div>
 
         {request ? (
@@ -321,6 +345,7 @@ export function V2IntakePrototype() {
             {mapProps ? <RoadCandidateMapBoundary props={mapProps} t={t} /> : null}
           </section>
         ) : null}
+        </> : null}
       </div>
     </div>
   );
@@ -334,6 +359,18 @@ type FieldHelpers = {
   errorFor: (field: keyof V2IntakePrototypeDraft) => string | undefined;
   t: Translate;
 };
+
+function OptionsLoadingState({ t }: { t: Translate }) {
+  return <div className={styles.optionsState} role="status"><Loader2 className={styles.spinner} size={20} aria-hidden="true" /><div><strong>{t("Cargando selectores autenticados", "Loading authenticated selectors")}</strong><span>{t("Esperando los cinco grupos de GET /api/v2/intake/options.", "Waiting for the five groups from GET /api/v2/intake/options.")}</span></div></div>;
+}
+
+function OptionsErrorState({ error, retry, t }: { error: V2IntakeApiError; retry: () => void; t: Translate }) {
+  return <div className={styles.optionsError} role="alert"><ShieldAlert size={20} aria-hidden="true" /><div><strong>{error.code}</strong><span>{error.message}</span><small>{t("El formulario permanece bloqueado: errores 401/403, red o contrato nunca activan el fixture automáticamente.", "The form remains blocked: 401/403, network, or contract errors never activate the fixture automatically.")}</small></div><Button variant="secondary" type="button" onClick={retry}><RefreshCw size={15} aria-hidden="true" />{t("Reintentar GET", "Retry GET")}</Button></div>;
+}
+
+function EmptyFacilitiesState({ t }: { t: Translate }) {
+  return <div className={styles.optionsState} role="status"><MapPinned size={20} aria-hidden="true" /><div><strong>{t("No hay sedes disponibles", "No facilities available")}</strong><span>{t("El catálogo autenticado devolvió facilities: []. No se inventan sedes ni se habilita el POST.", "The authenticated catalog returned facilities: []. No facilities are invented and POST remains disabled.")}</span></div></div>;
+}
 
 function FacilityStep({ draft, options, update, errorFor, t }: FieldHelpers) {
   const origin = findIntakeFacility(options, draft.originFacilityId);
@@ -350,18 +387,24 @@ function FacilityCard({ facility, t }: { facility: IntakeOptionsData["facilities
 }
 
 function CargoStep({ draft, options, update, errorFor, t }: FieldHelpers) {
+  const category = options.cargoCategories.find((option) => option.code === draft.categoryCode);
+  const packaging = options.packagingOptions.find((option) => option.code === draft.packaging);
+  const unitPackaging = options.packagingOptions.find((option) => option.code === draft.unitPackageType);
   return <><h3 className={styles.sectionTitle}><Package size={16} aria-hidden="true" />{t("Especificación y unidad de carga", "Cargo specification and unit")}</h3><div className={styles.formGrid}>
     <OptionSelect label={t("Categoría", "Category")} placeholder={t("Seleccionar categoría", "Select category")} options={options.cargoCategories} value={draft.categoryCode} error={errorFor("categoryCode")} onChange={(value) => update("categoryCode", value)} t={t} />
-    <OptionSelect label={t("Embalaje", "Packaging")} placeholder={t("Seleccionar embalaje", "Select packaging")} options={options.packagingTypes} value={draft.packaging} error={errorFor("packaging")} onChange={(value) => { update("packaging", value); if (!draft.unitPackageType) update("unitPackageType", value); }} t={t} />
+    <OptionSelect label={t("Embalaje", "Packaging")} placeholder={t("Seleccionar embalaje", "Select packaging")} options={options.packagingOptions} value={draft.packaging} error={errorFor("packaging")} onChange={(value) => { update("packaging", value); if (!draft.unitPackageType) update("unitPackageType", value); }} t={t} />
+    {category?.guidance ? <OptionEvidence label={t("Guía de categoría", "Category guidance")} value={category.guidance} /> : null}
+    {packaging?.verification ? <OptionEvidence label="verification" value={`${packaging.verification} · ${t("El embalaje se captura, pero no confirma compatibilidad de manipulación.", "Packaging is captured, but handling compatibility is not confirmed.")}`} /> : null}
     <Textarea fieldClassName={styles.wide} label={t("Descripción", "Description")} rows={3} value={draft.cargoDescription} error={errorFor("cargoDescription")} onChange={(event) => update("cargoDescription", event.target.value)} />
     <Input label={t("Peso total (kg)", "Total weight (kg)")} type="number" min="0" step="0.1" value={draft.totalWeightKg} error={errorFor("totalWeightKg")} onChange={(event) => update("totalWeightKg", event.target.value)} />
     <Input label={t("Volumen total (m³)", "Total volume (m³)")} type="number" min="0" step="0.1" value={draft.totalVolumeM3} error={errorFor("totalVolumeM3")} onChange={(event) => update("totalVolumeM3", event.target.value)} />
     <Checkbox label={t("Carga divisible", "Divisible cargo")} hint={t("Dato declarado; no implica que un carrier pueda fraccionarla.", "Declared fact; it does not imply a carrier can split it.")} checked={draft.divisible} onChange={(event) => update("divisible", event.target.checked)} />
   </div>
-  <fieldset className={styles.optionFieldset}><legend>{t("Requisitos especiales", "Special requirements")}</legend><div className={styles.checkboxGrid}>{options.requirementTypes.map((option) => <Checkbox key={option.value} label={optionLabel(option, t)} checked={draft.requirements.includes(option.value)} onChange={(event) => update("requirements", toggleRequirement(draft.requirements, option.value, event.target.checked))} />)}</div></fieldset>
+  <fieldset className={styles.optionFieldset}><legend>{t("Requisitos especiales", "Special requirements")}</legend><div className={styles.checkboxGrid}>{options.requirementOptions.map((option) => <Checkbox key={option.code} label={optionLabel(option, t)} hint={verificationCopy(option.verification, t)} checked={draft.requirements.includes(option.code)} onChange={(event) => update("requirements", toggleRequirement(draft.requirements, option.code, event.target.checked))} />)}</div></fieldset>
   {draft.requirements.includes("TEMP_CONTROLLED") ? <div className={styles.formGrid}><Input label={t("Temperatura mínima (°C)", "Minimum temperature (°C)")} type="number" step="0.1" value={draft.temperatureMinCelsius} error={errorFor("temperatureMinCelsius")} onChange={(event) => update("temperatureMinCelsius", event.target.value)} /><Input label={t("Temperatura máxima (°C)", "Maximum temperature (°C)")} type="number" step="0.1" value={draft.temperatureMaxCelsius} error={errorFor("temperatureMaxCelsius")} onChange={(event) => update("temperatureMaxCelsius", event.target.value)} /></div> : null}
   <fieldset className={styles.optionFieldset}><legend>{t("Unidad de carga · units[0]", "Cargo unit · units[0]")}</legend><div className={styles.formGrid}>
-    <OptionSelect label={t("Tipo de paquete", "Package type")} placeholder={t("Seleccionar tipo", "Select type")} options={options.packagingTypes} value={draft.unitPackageType} error={errorFor("unitPackageType")} onChange={(value) => update("unitPackageType", value)} t={t} />
+    <OptionSelect label={t("Tipo de paquete", "Package type")} placeholder={t("Seleccionar tipo", "Select type")} options={options.packagingOptions} value={draft.unitPackageType} error={errorFor("unitPackageType")} onChange={(value) => update("unitPackageType", value)} t={t} />
+    {unitPackaging?.verification ? <OptionEvidence label="verification" value={`${unitPackaging.verification} · ${t("Dato de captura; no prueba compatibilidad del carrier.", "Capture data; it does not prove carrier compatibility.")}`} /> : null}
     <Input label={t("Cantidad", "Quantity")} type="number" min="1" step="1" value={draft.unitQuantity} error={errorFor("unitQuantity")} onChange={(event) => update("unitQuantity", event.target.value)} />
     <Input label={t("Peso por unidad (kg)", "Weight per unit (kg)")} type="number" min="0" step="0.1" value={draft.unitWeightPerUnitKg} error={errorFor("unitWeightPerUnitKg")} onChange={(event) => update("unitWeightPerUnitKg", event.target.value)} />
     <Input label={t("Volumen por unidad (m³)", "Volume per unit (m³)")} type="number" min="0" step="0.1" value={draft.unitVolumePerUnitM3} error={errorFor("unitVolumePerUnitM3")} onChange={(event) => update("unitVolumePerUnitM3", event.target.value)} />
@@ -379,7 +422,8 @@ function ScheduleAndContactsStep({ draft, options, update, errorFor, t }: FieldH
     <Input label={t("Retiro hasta", "Pickup ends")} type="datetime-local" value={draft.pickupWindowEndsAt} error={errorFor("pickupWindowEndsAt")} onChange={(event) => update("pickupWindowEndsAt", event.target.value)} />
     <Input label={t("Entrega desde", "Delivery starts")} type="datetime-local" value={draft.deliveryWindowStartsAt} error={errorFor("deliveryWindowStartsAt")} onChange={(event) => update("deliveryWindowStartsAt", event.target.value)} />
     <Input label={t("Entrega hasta", "Delivery ends")} type="datetime-local" value={draft.deliveryWindowEndsAt} error={errorFor("deliveryWindowEndsAt")} onChange={(event) => update("deliveryWindowEndsAt", event.target.value)} />
-    <OptionSelect fieldClassName={styles.wide} label={t("Equipo ROAD requerido", "Required ROAD equipment")} placeholder={t("Seleccionar equipo", "Select equipment")} options={options.equipmentTypes} value={draft.requiredEquipment} error={errorFor("requiredEquipment")} onChange={(value) => update("requiredEquipment", value)} t={t} />
+    <OptionSelect fieldClassName={styles.wide} label={t("Equipo ROAD requerido", "Required ROAD equipment")} placeholder={t("Seleccionar equipo", "Select equipment")} options={options.equipmentOptions} value={draft.requiredEquipment} error={errorFor("requiredEquipment")} onChange={(value) => update("requiredEquipment", value)} t={t} />
+    <OptionEvidence label={t("Contrato de equipo", "Equipment contract")} value={t("Se envía exactamente el code ROAD del backend; seleccionarlo no confirma disponibilidad de un activo.", "The exact backend ROAD code is sent; selecting it does not confirm asset availability.")} />
   </div>
   <h3 className={styles.sectionTitle}><ContactRound size={16} aria-hidden="true" />{t("Contactos operativos", "Operational contacts")}</h3><div className={styles.contactGrid}><ContactFields kind="pickup" draft={draft} update={update} errorFor={errorFor} t={t} /><ContactFields kind="recipient" draft={draft} update={update} errorFor={errorFor} t={t} /></div></>;
 }
@@ -430,11 +474,28 @@ function LoadingOrPending({ phase, retry, t }: { phase: SubmitPhase; retry: () =
 }
 
 function OptionSelect({ label, placeholder, options, value, error, onChange, fieldClassName, t }: { label: string; placeholder: string; options: IntakeOption[]; value: string; error?: string; onChange: (value: string) => void; fieldClassName?: string; t: Translate }) {
-  return <Select fieldClassName={fieldClassName} label={label} value={value} error={error} onChange={(event) => onChange(event.target.value)}><option value="">{placeholder}</option>{options.map((option) => <option value={option.value} key={option.value}>{optionLabel(option, t)}</option>)}</Select>;
+  return <Select fieldClassName={fieldClassName} label={label} value={value} error={error} onChange={(event) => onChange(event.target.value)}><option value="">{placeholder}</option>{options.map((option) => <option value={option.code} key={option.code}>{optionLabel(option, t)}</option>)}</Select>;
 }
 
 function optionLabel(option: IntakeOption, t: Translate) {
-  return `${t(option.labelEs, option.labelEn)} · ${option.value}`;
+  return `${t(option.labelEs, option.labelEn)} · ${option.code}`;
+}
+
+function verificationCopy(verification: IntakeOption["verification"], t: Translate) {
+  if (verification === "RESOURCE_EVIDENCE") {
+    return t("verification: RESOURCE_EVIDENCE · requiere evidencia del mismo recurso portador.", "verification: RESOURCE_EVIDENCE · evidence from the same carrying resource is required.");
+  }
+  if (verification === "REQUIRES_REVIEW") {
+    return t("verification: REQUIRES_REVIEW · permanece desconocido hasta revisión documental y operativa.", "verification: REQUIRES_REVIEW · remains unknown until document and operational review.");
+  }
+  if (verification === "CAPTURE_ONLY") {
+    return t("verification: CAPTURE_ONLY · sólo captura; no confirma compatibilidad.", "verification: CAPTURE_ONLY · capture only; compatibility is not confirmed.");
+  }
+  return undefined;
+}
+
+function OptionEvidence({ label, value }: { label: string; value: string }) {
+  return <div className={styles.optionEvidence}><small>{label}</small><strong>{value}</strong></div>;
 }
 
 function SummaryRow({ label, value, tone, status, hint }: { label: string; value: string; tone: "preliminary" | "unknown" | "confirmed" | "neutral"; status: string; hint?: string }) {

@@ -5,6 +5,7 @@ import type {
   EligibilityStatusV2,
   RoadServiceabilityEvaluationV2Data,
 } from "../contracts";
+import { formatProvenanceTimestamp } from "../provenance";
 import styles from "./v2-intake-components.module.css";
 
 type Translate = (spanish: string, english: string) => string;
@@ -67,7 +68,7 @@ export function CandidateResults({
                 <CalendarClock size={15} aria-hidden="true" />
                 <span>
                   <strong>{provenance.provenanceStatus} · {provenance.dataSource}</strong>
-                  <small>{t("Observado", "Observed")}: {formatTimestamp(provenance.observedAt)} · {t("Vigente hasta", "Valid until")}: {provenance.validUntil ? formatTimestamp(provenance.validUntil) : "UNKNOWN"}</small>
+                  <small>{t("Observado", "Observed")}: {formatProvenanceTimestamp(provenance.observedAt)} · {t("Vigente hasta", "Valid until")}: {formatProvenanceTimestamp(provenance.validUntil)}</small>
                 </span>
               </div>
               <ul className={styles.reasons}>{candidate.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
@@ -100,9 +101,4 @@ function StatusBadge({ status, t }: { status: EligibilityStatusV2; t: Translate 
   const tone = status === "eligible" ? "confirmed" : status === "unknown" ? "unknown" : "neutral";
   const label = status === "eligible" ? t("Elegible", "Eligible") : status === "unknown" ? t("Desconocido", "Unknown") : t("No elegible", "Ineligible");
   return <Badge tone={tone}>{label}</Badge>;
-}
-
-function formatTimestamp(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 }

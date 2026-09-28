@@ -3,11 +3,12 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 
-import { auditIntakeOptions } from "./intake-options";
+import { auditIntakeOptions, getIntakeOptionsFixture } from "./intake-options";
 import { INTAKE_OPTIONS_FIXTURE } from "./fixtures/intake-options.fixture";
 import {
   EMPTY_PROTOTYPE_DRAFT,
   PROVISIONAL_PROTOTYPE_DRAFT,
+  buildPrototypeExample,
   mapDraftToCreateFreightRequestV2Input,
   toggleRequirement,
   validatePrototypeDraft,
@@ -16,9 +17,18 @@ import {
 } from "./prototype-model";
 
 test("the local HAC-27 options fixture covers every visible selector", () => {
-  assert.deepEqual(auditIntakeOptions(INTAKE_OPTIONS_FIXTURE.data), { complete: true, missing: [] });
+  const options = getIntakeOptionsFixture();
+  assert.deepEqual(auditIntakeOptions(options.data), {
+    complete: true,
+    emptyFacilities: false,
+    missingCatalogGroups: [],
+  });
   assert.equal(INTAKE_OPTIONS_FIXTURE.meta?.provenanceStatus, "SIMULATED");
-  assert.equal(INTAKE_OPTIONS_FIXTURE.data.cargoCategories.length, 8);
+  assert.equal(options.data.cargoCategories.length, 8);
+  assert.equal(options.data.facilities[0].facilityId, INTAKE_OPTIONS_FIXTURE.data.facilities[0].id);
+  assert.equal(options.data.packagingOptions[0].verification, "CAPTURE_ONLY");
+  assert.equal(options.data.requirementOptions[0].verification, "RESOURCE_EVIDENCE");
+  assert.equal(options.data.equipmentOptions.some((option) => option.code === "DRY_VAN" || option.code === "LOWBOY"), false);
 });
 
 test("the client fixture contains no V1 Callao to Santiago markers", () => {
@@ -97,7 +107,7 @@ test("review revalidates an earlier step after it was edited", () => {
 });
 
 test("draft mapper produces the HAC-27 POST shape without organizationId", () => {
-  const payload = mapDraftToCreateFreightRequestV2Input(PROVISIONAL_PROTOTYPE_DRAFT, INTAKE_OPTIONS_FIXTURE.data);
+  const payload = mapDraftToCreateFreightRequestV2Input(PROVISIONAL_PROTOTYPE_DRAFT, getIntakeOptionsFixture().data);
   assert.equal(payload.schemaVersion, "2.0");
   assert.deepEqual(payload.acceptedModes, ["ROAD"]);
   assert.equal(payload.origin.facilityId, PROVISIONAL_PROTOTYPE_DRAFT.originFacilityId);
@@ -108,6 +118,45 @@ test("draft mapper produces the HAC-27 POST shape without organizationId", () =>
   assert.equal(payload.contacts.pickup.phoneE164, "+51987654321");
   assert.equal("organizationId" in payload, false);
   assert.match(payload.pickupWindow.startsAt, /^2026-10-05T/);
+});
+
+test("draft mapper only sends codes supplied by the options contract", () => {
+  const options = getIntakeOptionsFixture().data;
+  assert.throws(
+    () => mapDraftToCreateFreightRequestV2Input({ ...PROVISIONAL_PROTOTYPE_DRAFT, requiredEquipment: "DRY_VAN" }, options),
+    /EQUIPMENT_OPTION_NOT_FOUND/,
+  );
+  assert.throws(
+    () => mapDraftToCreateFreightRequestV2Input({ ...PROVISIONAL_PROTOTYPE_DRAFT, requirements: ["UNPUBLISHED"] }, options),
+    /REQUIREMENT_OPTION_NOT_FOUND/,
+  );
+});
+
+test("the one-click example uses facility ids and selector codes from the current backend response", () => {
+  const fixture = getIntakeOptionsFixture().data;
+  const options = {
+    ...fixture,
+    facilities: fixture.facilities.slice(0, 2).map((facility, index) => ({
+      ...facility,
+      facilityId: `backend-facility-${index + 1}`,
+    })),
+    cargoCategories: [{ ...fixture.cargoCategories[0], code: "BACKEND_CATEGORY" }],
+    equipmentOptions: [{ ...fixture.equipmentOptions[0], code: "BACKEND_EQUIPMENT" }],
+    packagingOptions: [{ ...fixture.packagingOptions[0], code: "BACKEND_PACKAGING" }],
+    requirementOptions: [{ ...fixture.requirementOptions[2], code: "BACKEND_REQUIREMENT" }],
+  };
+
+  const example = buildPrototypeExample(options);
+  assert.equal(example.originFacilityId, "backend-facility-1");
+  assert.equal(example.destinationFacilityId, "backend-facility-2");
+  assert.equal(example.categoryCode, "BACKEND_CATEGORY");
+  assert.equal(example.requiredEquipment, "BACKEND_EQUIPMENT");
+  assert.equal(example.packaging, "BACKEND_PACKAGING");
+  assert.equal(example.unitPackageType, "BACKEND_PACKAGING");
+  assert.deepEqual(example.requirements, []);
+  assert.equal(example.temperatureMinCelsius, "");
+  assert.equal(example.temperatureMaxCelsius, "");
+  assert.doesNotThrow(() => mapDraftToCreateFreightRequestV2Input(example, options));
 });
 
 test("requirement toggling is deterministic and duplicate-free", () => {

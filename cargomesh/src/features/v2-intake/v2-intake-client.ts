@@ -2,7 +2,6 @@ import type {
   CreateFreightRequestV2Input,
   ErrorEnvelopeV2,
   FreightRequestV2Response,
-  IntakeOptionsResponse,
   RoadServiceabilityEvaluationV2Response,
 } from "./contracts";
 import { getIntakeOptionsFixture, parseIntakeOptionsResponse } from "./intake-options";
@@ -26,10 +25,12 @@ export class V2IntakeApiError extends Error {
 }
 
 export type IntakeOptionsLoadResult = {
-  options: IntakeOptionsResponse;
+  options: ReturnType<typeof getIntakeOptionsFixture>;
   source: "api" | "fixture";
-  fallbackReason: string | null;
+  fixtureReason: "EXPLICIT_DEVELOPMENT_FIXTURE" | null;
 };
+
+export type IntakeOptionsSourceMode = "api" | "development-fixture";
 
 async function readJson(response: Response): Promise<unknown> {
   const text = await response.text();
@@ -107,7 +108,25 @@ function assertEnvelope<T extends { schemaVersion: "2.0"; data: unknown }>(
   return value as T;
 }
 
-export async function loadIntakeOptions(fetcher: FetchLike = fetch): Promise<IntakeOptionsLoadResult> {
+export function resolveIntakeOptionsSourceMode(): IntakeOptionsSourceMode {
+  return process.env.NODE_ENV !== "production"
+    && process.env.NEXT_PUBLIC_V2_INTAKE_OPTIONS_SOURCE === "fixture"
+    ? "development-fixture"
+    : "api";
+}
+
+export async function loadIntakeOptions(
+  fetcher: FetchLike = fetch,
+  sourceMode: IntakeOptionsSourceMode = resolveIntakeOptionsSourceMode(),
+): Promise<IntakeOptionsLoadResult> {
+  if (sourceMode === "development-fixture") {
+    return {
+      options: getIntakeOptionsFixture(),
+      source: "fixture",
+      fixtureReason: "EXPLICIT_DEVELOPMENT_FIXTURE",
+    };
+  }
+
   try {
     const response = await fetcher("/api/v2/intake/options", {
       method: "GET",
@@ -125,12 +144,15 @@ export async function loadIntakeOptions(fetcher: FetchLike = fetch): Promise<Int
         retryable: false,
       });
     }
-    return { options: parsed, source: "api", fallbackReason: null };
+    return { options: parsed, source: "api", fixtureReason: null };
   } catch (error) {
-    const fallbackReason = error instanceof V2IntakeApiError
-      ? error.code
-      : "INTAKE_OPTIONS_UNAVAILABLE";
-    return { options: getIntakeOptionsFixture(), source: "fixture", fallbackReason };
+    if (error instanceof V2IntakeApiError) throw error;
+    throw new V2IntakeApiError({
+      code: "NETWORK_ERROR",
+      message: error instanceof Error ? error.message : "GET /api/v2/intake/options could not be reached.",
+      status: 0,
+      retryable: true,
+    });
   }
 }
 

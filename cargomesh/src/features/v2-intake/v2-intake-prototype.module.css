@@ -29,6 +29,24 @@
 .notice strong { font-size: 0.72rem; }
 .notice span { margin-top: 0.18rem; color: var(--cm-color-muted); font-size: 0.66rem; line-height: 1.45; }
 .fixtureNotice { border-color: #ead6a8; background: var(--cm-color-warning-surface); color: var(--cm-color-warning-ink); }
+.optionsState, .optionsError {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--cm-color-line);
+  border-radius: var(--cm-radius-md);
+  padding: 0.9rem;
+  background: var(--cm-color-surface);
+  color: var(--cm-color-primary);
+}
+.optionsState > div, .optionsError > div { display: grid; gap: 0.2rem; }
+.optionsState strong, .optionsError strong { color: var(--cm-color-heading); font-size: 0.72rem; }
+.optionsState span, .optionsError span, .optionsError small { color: var(--cm-color-muted); font-size: 0.63rem; line-height: 1.45; }
+.optionsError { border-color: #e5b5ad; background: var(--cm-color-danger-surface); color: var(--cm-color-danger); }
+.spinner { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .stepper { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 1rem; overflow: hidden; border: 1px solid var(--cm-color-line); border-radius: var(--cm-radius-lg); background: var(--cm-color-surface); box-shadow: var(--cm-shadow-card); }
 .stepButton { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.62rem; min-width: 0; border: 0; border-right: 1px solid var(--cm-color-line); padding: 0.85rem; background: transparent; color: var(--cm-color-muted); text-align: left; cursor: pointer; }
@@ -55,6 +73,9 @@
 .scenarioMeta { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; color: var(--cm-color-muted); font-size: 0.62rem; }
 .formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
 .wide { grid-column: 1 / -1; }
+.optionEvidence { display: grid; align-content: start; gap: 0.2rem; border-left: 3px solid var(--cm-color-accent); padding: 0.62rem 0.7rem; background: var(--cm-color-warning-surface); }
+.optionEvidence small { color: var(--cm-color-warning-ink); font-size: 0.55rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.optionEvidence strong { color: var(--cm-color-warning-ink); font-size: 0.62rem; font-weight: 600; line-height: 1.45; }
 .optionFieldset { display: grid; gap: 0.75rem; margin: 0; border: 1px solid var(--cm-color-line); border-radius: var(--cm-radius-md); padding: 0.9rem; }
 .optionFieldset legend { padding: 0 0.35rem; color: var(--cm-color-heading); font-size: 0.7rem; font-weight: 800; }
 .checkboxGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; }
@@ -145,4 +166,10 @@
   .footerRight { justify-content: stretch; }
   .footer button, .footerRight button { width: 100%; }
   .apiError, .integrationHeader, .pendingState { align-items: stretch; flex-direction: column; }
+  .optionsState, .optionsError { grid-template-columns: auto 1fr; align-items: start; }
+  .optionsError button { grid-column: 1 / -1; width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; }
 }

@@ -1,18 +1,18 @@
 import type { IntakeOptionsResponse } from "../contracts";
 
 /**
- * Temporary HAC-27 contract fixture.
+ * Explicit development-only fixture for the HAC-27 intake-options contract.
  *
- * It is deliberately labelled SIMULATED and is only used while the team-owned
- * GET /api/v2/intake/options route is not present in the shared branch. It does
- * not grant serviceability, availability, price, persistence, or tenant access.
+ * Production/API mode never falls back to this object. It can only be selected
+ * with NEXT_PUBLIC_V2_INTAKE_OPTIONS_SOURCE=fixture while NODE_ENV is not
+ * production. Persistence and serviceability still require the real API.
  */
 export const INTAKE_OPTIONS_FIXTURE: IntakeOptionsResponse = {
   schemaVersion: "2.0",
   data: {
     facilities: [
       {
-        facilityId: "c2330000-0000-4000-8000-000000000001",
+        id: "c2330000-0000-4000-8000-000000000001",
         code: "QA-A-LIMA",
         label: "[SYNTHETIC] Lima pickup site",
         countryCode: "PE",
@@ -22,7 +22,7 @@ export const INTAKE_OPTIONS_FIXTURE: IntakeOptionsResponse = {
         lng: -77.0428,
       },
       {
-        facilityId: "c2330000-0000-4000-8000-000000000002",
+        id: "c2330000-0000-4000-8000-000000000002",
         code: "QA-A-AREQUIPA",
         label: "[SYNTHETIC] Arequipa distribution site",
         countryCode: "PE",
@@ -32,7 +32,7 @@ export const INTAKE_OPTIONS_FIXTURE: IntakeOptionsResponse = {
         lng: -71.5375,
       },
       {
-        facilityId: "c2330000-0000-4000-8000-000000000003",
+        id: "c2330000-0000-4000-8000-000000000003",
         code: "QA-A-PIURA",
         label: "[SYNTHETIC] Piura site without declared coverage",
         countryCode: "PE",
@@ -43,37 +43,34 @@ export const INTAKE_OPTIONS_FIXTURE: IntakeOptionsResponse = {
       },
     ],
     cargoCategories: [
-      { value: "GENERAL", labelEs: "Carga general", labelEn: "General cargo" },
-      { value: "FOOD", labelEs: "Alimentos y perecibles", labelEn: "Food & perishables" },
-      { value: "PHARMA", labelEs: "Farmacéutica", labelEn: "Pharmaceuticals" },
-      { value: "CHEMICAL", labelEs: "Químicos y peligrosos", labelEn: "Chemicals & hazmat" },
-      { value: "MACHINERY", labelEs: "Maquinaria e industria", labelEn: "Machinery & industrial" },
-      { value: "CONSTRUCTION", labelEs: "Materiales de construcción", labelEn: "Construction materials" },
-      { value: "AGRICULTURAL", labelEs: "Productos agrícolas", labelEn: "Agricultural products" },
-      { value: "LIQUID", labelEs: "Líquidos y granel", labelEn: "Liquids & bulk" },
+      { id: "cargo-general", code: "GENERAL", name: "Carga general", guidance: "Carga no especializada; las reglas del recurso siguen siendo autoritativas." },
+      { id: "cargo-food", code: "FOOD", name: "Alimentos y perecibles", guidance: "Confirmar temperatura y ventana cuando corresponda." },
+      { id: "cargo-pharma", code: "PHARMA", name: "Farmacéutica", guidance: "La cadena de frío requiere evidencia del mismo recurso portador." },
+      { id: "cargo-chemical", code: "CHEMICAL", name: "Químicos y peligrosos", guidance: "Requiere revisión documental y operativa." },
+      { id: "cargo-machinery", code: "MACHINERY", name: "Maquinaria e industria", guidance: "Validar dimensiones, indivisibilidad y equipo requerido." },
+      { id: "cargo-construction", code: "CONSTRUCTION", name: "Materiales de construcción", guidance: "Validar peso, volumen y método de manipulación." },
+      { id: "cargo-agricultural", code: "AGRICULTURAL", name: "Productos agrícolas", guidance: "Confirmar condiciones y ventanas de conservación." },
+      { id: "cargo-liquid", code: "LIQUID", name: "Líquidos y granel", guidance: "Validar contención y requisitos aplicables." },
     ],
-    packagingTypes: [
-      { value: "PALLET", labelEs: "Pallet", labelEn: "Pallet" },
-      { value: "BOX", labelEs: "Caja", labelEn: "Box" },
-      { value: "CRATE", labelEs: "Cajón", labelEn: "Crate" },
-      { value: "DRUM", labelEs: "Tambor", labelEn: "Drum" },
-      { value: "BULK", labelEs: "Granel", labelEn: "Bulk" },
+    equipmentOptions: [
+      { code: "REEFER_TRUCK", label: "Camión refrigerado", mode: "ROAD" },
     ],
-    equipmentTypes: [
-      { value: "DRY_VAN", labelEs: "Furgón seco", labelEn: "Dry van" },
-      { value: "REEFER_TRUCK", labelEs: "Camión refrigerado", labelEn: "Reefer truck" },
-      { value: "FLATBED", labelEs: "Plataforma", labelEn: "Flatbed" },
-      { value: "LOWBOY", labelEs: "Cama baja", labelEn: "Lowboy" },
+    packagingOptions: [
+      { code: "PALLET", labelEs: "Pallet", labelEn: "Pallet", verification: "CAPTURE_ONLY" },
+      { code: "BOX", labelEs: "Caja", labelEn: "Box", verification: "CAPTURE_ONLY" },
+      { code: "CRATE", labelEs: "Cajón", labelEn: "Crate", verification: "CAPTURE_ONLY" },
+      { code: "DRUM", labelEs: "Tambor", labelEn: "Drum", verification: "CAPTURE_ONLY" },
+      { code: "BULK", labelEs: "Granel", labelEn: "Bulk", verification: "CAPTURE_ONLY" },
     ],
-    requirementTypes: [
-      { value: "TEMP_CONTROLLED", labelEs: "Temperatura controlada", labelEn: "Temperature controlled" },
-      { value: "SECURITY_SEAL", labelEs: "Sello de seguridad", labelEn: "Security seal" },
-      { value: "FRAGILE", labelEs: "Carga frágil", labelEn: "Fragile cargo" },
-      { value: "HAZARDOUS", labelEs: "Material peligroso", labelEn: "Hazardous material" },
+    requirementOptions: [
+      { code: "TEMP_CONTROLLED", labelEs: "Temperatura controlada", labelEn: "Temperature controlled", verification: "RESOURCE_EVIDENCE" },
+      { code: "SECURITY_SEAL", labelEs: "Sello de seguridad", labelEn: "Security seal", verification: "RESOURCE_EVIDENCE" },
+      { code: "FRAGILE", labelEs: "Carga frágil", labelEn: "Fragile cargo", verification: "REQUIRES_REVIEW" },
+      { code: "HAZARDOUS", labelEs: "Material peligroso", labelEn: "Hazardous material", verification: "REQUIRES_REVIEW" },
     ],
   },
   meta: {
-    source: "HAC-27_LOCAL_CONTRACT_FIXTURE",
+    source: "HAC-27_EXPLICIT_DEVELOPMENT_FIXTURE",
     provenanceStatus: "SIMULATED",
   },
 };

@@ -21,40 +21,96 @@ const json = (value: unknown, init: ResponseInit = {}) => new Response(JSON.stri
   ...init,
 });
 
-test("GET intake options uses the API response when every selector is covered", async () => {
+test("GET maps the real five-group contract into selector codes", async () => {
   let requested = "";
   const result = await loadIntakeOptions(async (input, init) => {
     requested = String(input);
     assert.equal(init?.method, "GET");
     assert.equal(init?.credentials, "same-origin");
     return json(INTAKE_OPTIONS_FIXTURE);
-  });
+  }, "api");
   assert.equal(requested, "/api/v2/intake/options");
   assert.equal(result.source, "api");
-  assert.equal(result.fallbackReason, null);
+  assert.equal(result.fixtureReason, null);
+  assert.equal(result.options.data.facilities[0].facilityId, INTAKE_OPTIONS_FIXTURE.data.facilities[0].id);
+  assert.equal(result.options.data.cargoCategories[2].code, "PHARMA");
+  assert.equal(result.options.data.equipmentOptions[0].code, "REEFER_TRUCK");
+  assert.equal(result.options.data.packagingOptions[0].verification, "CAPTURE_ONLY");
+  assert.equal(result.options.data.requirementOptions[2].verification, "REQUIRES_REVIEW");
 });
 
-test("GET intake options falls back explicitly when the route is absent", async () => {
-  const result = await loadIntakeOptions(async () => json({ error: { code: "NOT_FOUND", message: "missing" } }, { status: 404 }));
+test("facilities: [] is a valid authenticated empty state", async () => {
+  const response = structuredClone(INTAKE_OPTIONS_FIXTURE);
+  response.data.facilities = [];
+  const result = await loadIntakeOptions(async () => json(response), "api");
+  assert.equal(result.source, "api");
+  assert.deepEqual(result.options.data.facilities, []);
+});
+
+for (const [status, code] of [[401, "UNAUTHORIZED"], [403, "FORBIDDEN_TENANT"]] as const) {
+  test(`${status} ${code} is exposed and never replaced by the fixture`, async () => {
+    await assert.rejects(
+      loadIntakeOptions(async () => json({
+        schemaVersion: "2.0",
+        error: { code, message: code, retryable: false },
+      }, { status }), "api"),
+      (error: unknown) => error instanceof V2IntakeApiError
+        && error.code === code
+        && error.status === status,
+    );
+  });
+}
+
+test("an incomplete options contract is exposed instead of activating the fixture", async () => {
+  const incomplete = structuredClone(INTAKE_OPTIONS_FIXTURE) as unknown as { data: Record<string, unknown> };
+  delete incomplete.data.requirementOptions;
+  await assert.rejects(
+    loadIntakeOptions(async () => json(incomplete), "api"),
+    (error: unknown) => error instanceof V2IntakeApiError && error.code === "OPTIONS_CONTRACT_MISMATCH",
+  );
+});
+
+test("a network failure is exposed instead of activating the fixture", async () => {
+  await assert.rejects(
+    loadIntakeOptions(async () => { throw new TypeError("fetch failed"); }, "api"),
+    (error: unknown) => error instanceof V2IntakeApiError
+      && error.code === "NETWORK_ERROR"
+      && error.retryable,
+  );
+});
+
+test("the simulated fixture requires an explicit development source mode", async () => {
+  let called = false;
+  const result = await loadIntakeOptions(async () => {
+    called = true;
+    throw new Error("should not fetch");
+  }, "development-fixture");
+  assert.equal(called, false);
   assert.equal(result.source, "fixture");
-  assert.equal(result.fallbackReason, "NOT_FOUND");
+  assert.equal(result.fixtureReason, "EXPLICIT_DEVELOPMENT_FIXTURE");
   assert.equal(result.options.meta?.provenanceStatus, "SIMULATED");
 });
 
-test("a non-JSON 404 is reported as HTTP_404 instead of a JSON contract failure", async () => {
-  const result = await loadIntakeOptions(async () => new Response("Not Found", { status: 404 }));
-  assert.equal(result.source, "fixture");
-  assert.equal(result.fallbackReason, "HTTP_404");
+test("a non-JSON 404 is reported as HTTP_404", async () => {
+  await assert.rejects(
+    loadIntakeOptions(async () => new Response("Not Found", { status: 404 }), "api"),
+    (error: unknown) => error instanceof V2IntakeApiError && error.code === "HTTP_404",
+  );
 });
 
-test("POST sends one idempotency key and no client authorization tenant", async () => {
-  const payload = mapDraftToCreateFreightRequestV2Input(PROVISIONAL_PROTOTYPE_DRAFT, INTAKE_OPTIONS_FIXTURE.data);
+test("GET selection maps backend codes into the POST without client tenant authorization", async () => {
+  const loaded = await loadIntakeOptions(async () => json(INTAKE_OPTIONS_FIXTURE), "api");
+  const payload = mapDraftToCreateFreightRequestV2Input(PROVISIONAL_PROTOTYPE_DRAFT, loaded.options.data);
   const response = await createFreightRequestV2(payload, "4bb8037c-4bc4-4e74-bf92-f9a2b1491e9c", async (input, init) => {
     assert.equal(String(input), "/api/v2/freight/requests");
     assert.equal(init?.method, "POST");
     assert.equal(new Headers(init?.headers).get("Idempotency-Key"), "4bb8037c-4bc4-4e74-bf92-f9a2b1491e9c");
     const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
     assert.equal("organizationId" in body, false);
+    assert.equal((body.origin as { facilityId: string }).facilityId, INTAKE_OPTIONS_FIXTURE.data.facilities[0].id);
+    assert.equal((body.cargoSpecification as { categoryCode: string; packaging: string }).categoryCode, "PHARMA");
+    assert.equal((body.cargoSpecification as { categoryCode: string; packaging: string }).packaging, "PALLET");
+    assert.equal(body.requiredEquipment, "REEFER_TRUCK");
     return json({ schemaVersion: "2.0", data: ROAD_REQUEST_FIXTURE }, { status: 201 });
   });
   assert.equal(response.data.status, "DRAFT");
@@ -81,7 +137,8 @@ test("serviceability GET includes expectedDraftVersion and remains read-only", a
 });
 
 test("a legacy or malformed success envelope is rejected instead of treated as V2", async () => {
-  const payload = mapDraftToCreateFreightRequestV2Input(PROVISIONAL_PROTOTYPE_DRAFT, INTAKE_OPTIONS_FIXTURE.data);
+  const loaded = await loadIntakeOptions(async () => json(INTAKE_OPTIONS_FIXTURE), "api");
+  const payload = mapDraftToCreateFreightRequestV2Input(PROVISIONAL_PROTOTYPE_DRAFT, loaded.options.data);
   await assert.rejects(
     createFreightRequestV2(payload, "key", async () => json({ data: { requestCode: "FR-1042" } }, { status: 201 })),
     (error: unknown) => error instanceof V2IntakeApiError && error.code === "CONTRACT_MISMATCH",

@@ -152,7 +152,7 @@ export type RoadServiceabilityCandidateV2 = {
       provenance: {
         dataSource: string;
         provenanceStatus: ProvenanceStatusV2;
-        observedAt: string;
+        observedAt: string | null;
         validUntil: string | null;
       };
       reasonCode: string;
@@ -199,10 +199,14 @@ export type RoadCandidateMapViewProps = {
   onSelectCandidate: (candidateId: string) => void;
 };
 
+export type IntakeOptionVerification = "CAPTURE_ONLY" | "RESOURCE_EVIDENCE" | "REQUIRES_REVIEW";
+
 export type IntakeOption = {
-  value: string;
+  code: string;
   labelEs: string;
   labelEn: string;
+  guidance?: string;
+  verification?: IntakeOptionVerification;
 };
 
 export type IntakeFacilityOption = FreightLocationV2 & {
@@ -213,18 +217,56 @@ export type IntakeFacilityOption = FreightLocationV2 & {
 export type IntakeOptionsData = {
   facilities: IntakeFacilityOption[];
   cargoCategories: IntakeOption[];
-  packagingTypes: IntakeOption[];
-  equipmentTypes: IntakeOption[];
-  requirementTypes: IntakeOption[];
+  equipmentOptions: IntakeOption[];
+  packagingOptions: IntakeOption[];
+  requirementOptions: IntakeOption[];
 };
 
 export type IntakeOptionsResponse = {
   schemaVersion: "2.0";
-  data: IntakeOptionsData;
+  data: {
+    facilities: Array<{
+      id: string;
+      code: string;
+      label: string;
+      countryCode: string;
+      region?: string | null;
+      city: string;
+      lat: number | null;
+      lng: number | null;
+    }>;
+    cargoCategories: Array<{
+      id: string;
+      code: string;
+      name: string;
+      guidance: string;
+    }>;
+    equipmentOptions: Array<{
+      code: string;
+      label: string;
+      mode: "ROAD";
+    }>;
+    packagingOptions: Array<{
+      code: string;
+      labelEs: string;
+      labelEn: string;
+      verification: "CAPTURE_ONLY";
+    }>;
+    requirementOptions: Array<{
+      code: string;
+      labelEs: string;
+      labelEn: string;
+      verification: "RESOURCE_EVIDENCE" | "REQUIRES_REVIEW";
+    }>;
+  };
   meta?: {
     source?: string;
     provenanceStatus?: ProvenanceStatusV2;
   };
+};
+
+export type NormalizedIntakeOptionsResponse = Omit<IntakeOptionsResponse, "data"> & {
+  data: IntakeOptionsData;
 };
 
 export type ErrorEnvelopeV2 = {

@@ -121,7 +121,7 @@ export const ELIGIBLE_UNKNOWN_EVALUATION_FIXTURE: RoadServiceabilityEvaluationV2
           availableWeightKg: null,
           availableVolumeM3: null,
           windowChecked: { startsAt: "2026-10-05T08:00:00Z", endsAt: "2026-10-07T20:00:00Z" },
-          provenance: { dataSource: "MISSING_CALENDAR_WINDOW", provenanceStatus: "UNKNOWN", observedAt: "2026-09-27T12:01:00Z", validUntil: null },
+          provenance: { dataSource: "MISSING_CALENDAR_WINDOW", provenanceStatus: "UNKNOWN", observedAt: null, validUntil: null },
           reasonCode: "CALENDAR_DATA_MISSING_OR_EXPIRED",
         },
       },

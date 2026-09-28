@@ -2,7 +2,7 @@
 
 Status: frontend implementation completed on `feat/fe1-v2-intake-eligibility`; integration remains **in progress** until the shared HAC-12 endpoints and the HAC-15 map component are available on the declared integration base.
 
-Date: 2026-09-27
+Date: 2026-09-28
 
 Owner: Luis (FE-1, client/shipper application)
 
@@ -28,25 +28,26 @@ No frontend code computes carrier eligibility, coverage, lane validity, capacity
 
 ## 2. HAC-27 selector coverage audit
 
-The team message named `GET /api/v2/intake/options` as the source for the selectors. As of this implementation, that route is not present in `codex/v2-amazon-contracts`, `feat/cycle-2-integration`, or any fetched remote branch. The HAC-27 Linear contract also does not define the response shape for that endpoint. Therefore the client first calls the stated route and falls back only when it is unavailable or malformed.
+The five-group response was closed in the HAC-27 Linear document on 2026-09-28. The client now consumes the exact names and shapes: `facilities`, `cargoCategories`, `equipmentOptions`, `packagingOptions`, and `requirementOptions`.
 
-The fallback is explicit, visible, and contract-scoped:
+API mode is fail-closed:
 
-- `meta.source = HAC-27_LOCAL_CONTRACT_FIXTURE`;
-- `meta.provenanceStatus = SIMULATED`;
-- the UI shows the failure code (currently expected to be `HTTP_404` on the shared branch);
-- creating a DRAFT still requires the real POST; fixture mode never simulates successful persistence or serviceability;
-- facility selection never claims route, coverage, capacity, availability, price, or persistence.
+- `401`, `403`, network failures, non-JSON responses, and incompatible contracts are displayed as blocking errors with retry;
+- none of those failures activate a fixture;
+- `facilities: []` is a valid authenticated empty state, displayed without inventing facilities or enabling POST;
+- a missing or empty non-facility catalog group blocks the form as an incomplete catalog;
+- the development fixture can only be selected explicitly with `NEXT_PUBLIC_V2_INTAKE_OPTIONS_SOURCE=fixture` while `NODE_ENV !== production`;
+- the explicit fixture remains labelled `SIMULATED` and never simulates successful persistence or serviceability.
 
 The catalog covers every selector currently displayed by HAC-14:
 
 | Selector group | Client field | HAC-27 payload field | Fixture coverage |
 | --- | --- | --- | --- |
-| Facilities | origin and destination facility | `origin` / `destination` | Lima, Arequipa, and Piura synthetic HAC-23-aligned facilities |
-| Cargo categories | cargo taxonomy | `cargoSpecification.categoryCode` | 8 provisional codes |
-| Packaging | cargo package type | `cargoSpecification.packaging` and `units[0].packageType` | pallet, box, crate, drum, bulk |
-| ROAD equipment | required equipment | `requiredEquipment` | dry van, reefer, flatbed, lowboy |
-| Requirements | special handling options | `cargoSpecification.requirements[]` | temperature, seal, fragile, hazardous |
+| `facilities` | origin and destination facility | `facilities[].id → facilityId` and `origin` / `destination` | Tenant-scoped IDs and canonical location fields |
+| `cargoCategories` | cargo taxonomy | `cargoCategories[].code → cargoSpecification.categoryCode` | Canonical `code`, `name`, and visible `guidance` |
+| `equipmentOptions` | required equipment | `equipmentOptions[].code → requiredEquipment` | Backend-provided ROAD codes only; `DRY_VAN` and `LOWBOY` were removed |
+| `packagingOptions` | cargo package type | `packagingOptions[].code → cargoSpecification.packaging` and `units[0].packageType` | `verification: CAPTURE_ONLY` is visible; compatibility is not claimed |
+| `requirementOptions` | special handling options | `requirementOptions[].code → cargoSpecification.requirements[]` | `RESOURCE_EVIDENCE` and `REQUIRES_REVIEW` are visible per option |
 
 The option parser rejects an API response unless all five groups exist and have the expected minimal shape. This prevents a partially published catalog from silently leaving selectors unusable.
 
@@ -59,13 +60,13 @@ The option parser rejects an API response unless all five groups exist and have 
 | Pickup window | `pickupWindow.startsAt/endsAt` | Local date-time values are validated as an increasing range and serialized to ISO timestamps. |
 | Delivery window | `deliveryWindow.startsAt/endsAt` | Must be increasing and start no earlier than pickup-window end. |
 | Transport mode | `acceptedModes` | Fixed to `['ROAD']` for the Sprint 2 contract. |
-| Equipment | `requiredEquipment` | Required option value; no “no preference” value is invented. |
-| Cargo category | `cargoSpecification.categoryCode` | Required option value. |
+| Equipment | `requiredEquipment` | Exact `equipmentOptions[].code` from the backend; no “no preference” or unpublished code is invented. |
+| Cargo category | `cargoSpecification.categoryCode` | Exact `cargoCategories[].code`; `name` and `guidance` are presentation data only. |
 | Cargo description | `cargoSpecification.description` | Required free text. |
-| Packaging | `cargoSpecification.packaging` | Required option value. |
+| Packaging | `cargoSpecification.packaging` | Exact `packagingOptions[].code`; `CAPTURE_ONLY` remains visible and does not assert handling compatibility. |
 | Total weight and volume | `cargoSpecification.totalWeightKg/totalVolumeM3` | Required positive numbers; no capacity inference. |
 | Divisibility | `cargoSpecification.divisible` | Explicit client choice. |
-| Requirements | `cargoSpecification.requirements[]` | Checked option values; temperature fields become mandatory only when `TEMP_CONTROLLED` is selected. |
+| Requirements | `cargoSpecification.requirements[]` | Exact checked `requirementOptions[].code` values. Temperature fields become mandatory for `TEMP_CONTROLLED`; resource evidence/review remains a server/operational conclusion. |
 | Temperature | `cargoSpecification.temperatureRange` | `{ minCelsius, maxCelsius }` or `null`; minimum cannot exceed maximum. |
 | Cargo unit | `cargoSpecification.units[0]` | Quantity, per-unit weight/volume, dimensions, indivisible, and stackable are sent as one typed unit. |
 | Pickup contact | `contacts.pickup` | Name, E.164 phone, and email are validated locally, then revalidated by the API. |
@@ -76,14 +77,14 @@ Fields intentionally not mapped:
 - The old prototype `notes` field was removed because the HAC-27 create contract has no equivalent. Mapping it would require guessing.
 - The old `NO_PREFERENCE` equipment value was removed because `requiredEquipment` is required and no canonical “no preference” code is published.
 - Budget is not requested by the current HAC-14 UI. It is not needed to evaluate the ROAD integration boundary and the UI must not suggest a price or offer flow.
-- The option vocabularies are provisional fixture values until the team publishes the canonical `/api/v2/intake/options` response. They are not presented as database truth.
+- The explicit development fixture contains only `REEFER_TRUCK`, the ROAD equipment code demonstrated by the normative POST. Other equipment options come exclusively from the authenticated backend response.
 
 ## 4. Screen states and interaction
 
 The route covers:
 
 - empty/local editing;
-- selector loading and explicit fixture fallback;
+- selector loading, authenticated empty facilities, blocking auth/network/contract errors, and explicit development fixture mode;
 - field and step validation errors;
 - create/evaluate loading;
 - recoverable API failure with retry;
@@ -108,18 +109,20 @@ Until FE-2 publishes the actual `<RoadCandidateMapView />`, HAC-14 renders a typ
 
 ## 6. Automated and visual evidence
 
-Executed from `cargomesh/` on 2026-09-27:
+Executed from `cargomesh/` on 2026-09-28:
 
 | Check | Result |
 | --- | --- |
-| `pnpm test:v2-intake` | Pass; 24/24 model, options/API client, fixture, state, and map-mapper tests |
+| `pnpm test:v2-intake` | Pass; 33/33 model, five-group parser, auth/network/contract error, fixture-mode, dynamic one-click example, provenance, POST mapping, and map-mapper tests |
 | `pnpm typecheck` | Pass; 0 TypeScript errors |
-| `pnpm check:architecture` | Pass |
-| `pnpm test:release` | Pass; all existing release suites completed with 0 failures |
-| `pnpm build` | Pass; `/freight-request/new` compiles as a dynamic route (18.5 kB route bundle) |
+| `pnpm check:architecture` | Pass; 233 modules and 27 client entry points checked |
+| `pnpm test:release` | Pass; 410/410 existing release tests completed with 0 failures |
+| `pnpm build` | Pass; `/freight-request/new` compiles as a dynamic route (20.4 kB route bundle) |
 | Desktop visual QA | Pass at 1440 px; no horizontal overflow |
 | Mobile visual QA | Pass at 390 px; single-column form and summary, no horizontal overflow |
 | Keyboard regression | Pass; after clearing a previously valid field and jumping to review, the UI returns to the invalid step and focuses the alert |
+
+The visual QA was repeated after the five-group contract alignment. Explicit fixture mode displayed backend-shaped IDs/codes and the `CAPTURE_ONLY`, `RESOURCE_EVIDENCE`, and `REQUIRES_REVIEW` notices. API mode received the currently expected `HTTP_404`, kept the form and one-click example disabled, displayed the real error with retry, and did not activate simulated data.
 
 Desktop evidence:
 
@@ -135,7 +138,7 @@ Visual-capture note: Supabase Auth was unreachable from the local QA machine. Th
 
 - **HAC-12:** the real HAC-27 `POST`, request `GET`, serviceability `GET`, shared executable Zod schemas, and server-side tenant enforcement are not yet published on the integration branch. The existing V1 compatibility adapter is rejected by the client if it does not return the V2 envelope.
 - **HAC-15:** the provider-backed `<RoadCandidateMapView />` is not yet published. HAC-14 supplies and tests the integration props/mapper only.
-- **Options contract:** the stated `GET /api/v2/intake/options` endpoint is absent. The client is ready to consume it, and the visible fixture fallback makes that absence auditable.
+- **Options implementation:** the HAC-27 response is now closed and implemented by the client, but the endpoint is not yet published on a fetched Git branch. Until HAC-12 lands, API mode visibly reports the real error; only the explicit development flag enables the fixture.
 
 Because these are integration dependencies, HAC-14 must not be described as end-to-end live and must not move to `Done`. The frontend implementation can be reviewed, but final Gate-2 acceptance requires rebasing/integrating the published HAC-12 and HAC-15 work and rerunning the same commands plus a real authenticated flow.
 

@@ -124,6 +124,42 @@ export const PROVISIONAL_PROTOTYPE_DRAFT: V2IntakePrototypeDraft = {
   recipientContactEmail: "recepcion.aqp@shipper-v2.example",
 };
 
+function preferredOptionCode(
+  options: IntakeOptionsData["cargoCategories"],
+  preferredCodes: string[],
+) {
+  return preferredCodes
+    .map((code) => options.find((option) => option.code === code)?.code)
+    .find((code): code is string => Boolean(code))
+    ?? options[0]?.code
+    ?? "";
+}
+
+/**
+ * Builds the one-click example from the authenticated selector contract.
+ * Static values remain presentation-only; every submitted selector value is
+ * sourced from the current GET /api/v2/intake/options response.
+ */
+export function buildPrototypeExample(options: IntakeOptionsData): V2IntakePrototypeDraft {
+  const requirements = ["TEMP_CONTROLLED", "SECURITY_SEAL"]
+    .filter((code) => options.requirementOptions.some((option) => option.code === code));
+  const temperatureControlled = requirements.includes("TEMP_CONTROLLED");
+  const packaging = preferredOptionCode(options.packagingOptions, ["PALLET"]);
+
+  return {
+    ...PROVISIONAL_PROTOTYPE_DRAFT,
+    originFacilityId: options.facilities[0]?.facilityId ?? "",
+    destinationFacilityId: options.facilities[1]?.facilityId ?? "",
+    categoryCode: preferredOptionCode(options.cargoCategories, ["PHARMA"]),
+    packaging,
+    unitPackageType: packaging,
+    requiredEquipment: preferredOptionCode(options.equipmentOptions, ["REEFER_TRUCK"]),
+    requirements,
+    temperatureMinCelsius: temperatureControlled ? PROVISIONAL_PROTOTYPE_DRAFT.temperatureMinCelsius : "",
+    temperatureMaxCelsius: temperatureControlled ? PROVISIONAL_PROTOTYPE_DRAFT.temperatureMaxCelsius : "",
+  };
+}
+
 function hasText(value: V2IntakePrototypeDraft[keyof V2IntakePrototypeDraft]) {
   return typeof value === "string" ? value.trim().length > 0 : true;
 }
@@ -303,6 +339,16 @@ export function mapDraftToCreateFreightRequestV2Input(
   const origin = findIntakeFacility(options, draft.originFacilityId);
   const destination = findIntakeFacility(options, draft.destinationFacilityId);
   if (!origin || !destination) throw new Error("FACILITY_OPTION_NOT_FOUND");
+  const hasCode = (group: IntakeOptionsData["cargoCategories"], code: string) => (
+    group.some((option) => option.code === code)
+  );
+  if (!hasCode(options.cargoCategories, draft.categoryCode)) throw new Error("CATEGORY_OPTION_NOT_FOUND");
+  if (!hasCode(options.packagingOptions, draft.packaging)) throw new Error("PACKAGING_OPTION_NOT_FOUND");
+  if (!hasCode(options.packagingOptions, draft.unitPackageType)) throw new Error("UNIT_PACKAGING_OPTION_NOT_FOUND");
+  if (!hasCode(options.equipmentOptions, draft.requiredEquipment)) throw new Error("EQUIPMENT_OPTION_NOT_FOUND");
+  if (draft.requirements.some((code) => !hasCode(options.requirementOptions, code))) {
+    throw new Error("REQUIREMENT_OPTION_NOT_FOUND");
+  }
 
   return {
     schemaVersion: "2.0",
