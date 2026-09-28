@@ -82,18 +82,40 @@ begin
   where pickup_area_id = 'c2370000-0000-4000-8000-000000000003'
     and delivery_area_id = 'c2370000-0000-4000-8000-000000000004';
   if n <> 0 then raise exception 'V2_QA_VERIFY: reverse B-to-A lane must be absent'; end if;
+
+  select count(*) into n from public.service_lanes l
+  join public.carrier_services s on s.id=l.carrier_service_id and s.active and s.transport_mode='ROAD'
+  join public.carriers c on c.id=s.carrier_id and c.status='ACTIVE'
+  join public.service_areas p on p.id=l.pickup_area_id and p.carrier_service_id=s.id
+  join public.service_areas d on d.id=l.delivery_area_id and d.carrier_service_id=s.id
+  where l.id='c23c0000-0000-4000-8000-000000000001' and s.id='c23a0000-0000-4000-8000-000000000001' and c.id='c2390000-0000-4000-8000-000000000001'
+    and p.id='c23b0000-0000-4000-8000-000000000001' and d.id='c23b0000-0000-4000-8000-000000000002'
+    and p.city='Lima' and d.city='Arequipa' and p.country_code='PE' and d.country_code='PE'
+    and p.area_role='PICKUP' and d.area_role='DELIVERY' and p.coverage='INCLUDE' and d.coverage='INCLUDE'
+    and p.active and d.active and l.active
+    and p.valid_from <= '2026-10-05T08:00:00Z' and d.valid_from <= '2026-10-05T08:00:00Z'
+    and l.valid_from <= '2026-10-05T08:00:00Z'
+    and p.valid_until is null and d.valid_until is null and l.valid_until is null;
+  if n <> 1 then raise exception 'V2_QA_VERIFY: second covered service/lane missing'; end if;
+  select count(*) into n from public.service_areas
+  where carrier_service_id in ('c23a0000-0000-4000-8000-000000000001', 'c2360000-0000-4000-8000-000000000001') and city='Piura';
+  if n <> 0 then raise exception 'V2_QA_VERIFY: Piura must be uncovered by both services'; end if;
+  select count(*) into n from public.carrier_services where id='c23a0000-0000-4000-8000-000000000001'
+    and max_capacity_kg = 10000 and max_volume_m3 = 30;
+  if n <> 1 then raise exception 'V2_QA_VERIFY: copied nominal metadata mismatch'; end if;
+  raise notice 'BLOCKED HAC-12: capacity positive control and API outcomes; DB checks establish declared coverage only';
 end
 $$;
 
 select jsonb_build_object(
-  'package', 'HAC-23-V2-ROAD-BASELINE',
+  'package', 'HAC-29-V2-ROAD-BASELINE',
   'verified', true,
   'organizations', 2,
   'localAuthIdentities', 2,
   'facilities', 4,
   'uncoveredDepot', 1,
-  'serviceAreas', 4,
-  'directedLanesAtoB', 1,
+  'serviceAreas', 6,
+  'directedLanesAtoB', 2,
   'reverseLanesBtoA', 0,
   'piuraServiceAreas', 0
 ) as v2_road_baseline_verification;

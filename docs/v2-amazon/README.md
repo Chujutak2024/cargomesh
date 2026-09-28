@@ -37,3 +37,7 @@ El [índice general de `docs/`](../README.md) explica qué material fuera de V1/
 - Políticas versionadas y explicables.
 - Alexa+ como canal MCP sobre servicios compartidos.
 - V1 preservada como regresión, no como catálogo V2.
+
+## Local V2 database bootstrap
+
+See [Clean V2 bootstrap and QA profiles](./delivery/HAC29_CLEAN_BOOTSTRAP.md) for the isolated migration chain, provenance, scenario commands and read-only hosted preflight.

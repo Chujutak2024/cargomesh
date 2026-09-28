@@ -49,10 +49,10 @@ jobs:
       - name: Build production bundle
         run: pnpm build
 
-  pgtap-gate:
-    name: Local Supabase pgTAP
+  pgtap-v1:
+    name: V1 historical replay and pgTAP
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Check out repository
         uses: actions/checkout@v7.0.1
@@ -63,18 +63,22 @@ jobs:
           node-version: 24.20.0
           package-manager-cache: false
 
-      - name: Set up Supabase CLI
-        uses: supabase/setup-cli@v3.0.0
+      - name: Run V1 local profile (Supabase CLI 2.117.0 via npx)
+        run: python3 supabase-v2/gate.py v1 --evidence-dir "$RUNNER_TEMP/hac29-v1"
+
+  pgtap-v2:
+    name: V2 clean bootstrap, drift and pgTAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
         with:
-          version: 2.117.0
+          node-version: 24.20.0
+          package-manager-cache: false
 
-      - name: Start local Supabase
-        run: supabase db start
-
-      - name: Seed and verify local V2 QA scenario
-        run: |
-          docker exec -i supabase_db_cargomesh psql -X -v local_only=1 -U postgres -d postgres < supabase/scenarios/v2-road-baseline/seed.sql
-          docker exec -i supabase_db_cargomesh psql -X -U postgres -d postgres < supabase/scenarios/v2-road-baseline/verify.sql
-
-      - name: Run pgTAP suite
-        run: supabase test db
+      - name: Run V2 local profile (Supabase CLI 2.117.0 via npx)
+        run: python3 supabase-v2/gate.py v2 --evidence-dir "$RUNNER_TEMP/hac29-v2"
