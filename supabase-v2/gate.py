@@ -5,8 +5,10 @@ import hashlib
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
+import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE = ROOT / 'supabase-v2'
@@ -92,14 +94,88 @@ def manifest():
     print('PASS: source/migration provenance, dependencies and inventory', flush=True)
 
 
+def reference_config(kind):
+    project = 'hac29-v1-reference' if kind == 'v1' else 'hac29-baseline-reference'
+    base = getattr(ARGS, kind + '_replay_port_base')
+    inspector = getattr(ARGS, kind + '_replay_inspector_port')
+    analytics = getattr(ARGS, kind + '_replay_analytics_port')
+    if analytics is None:
+        analytics = base + 27
+    config = (ROOT / 'supabase/config.toml').read_text(encoding='utf-8-sig')
+    config = config.replace('project_id = "cargomesh"', f'project_id = "{project}"')
+    config = re.sub(r'\b563(\d\d)\b', lambda m: str(base + int(m[1])), config)
+    config = config.replace('inspector_port = 8083', f'inspector_port = {inspector}')
+    config = config.replace('port = 54327', f'port = {analytics}')
+    return config
+
+
+def configured_ports(config, prefix=''):
+    """Include configured ports even for disabled services; ignore TOML comments."""
+    ports = {}
+    for key, value in config.items():
+        path = prefix + key
+        if isinstance(value, dict):
+            ports.update(configured_ports(value, path + '.'))
+        elif key == 'port' or key.endswith('_port'):
+            require(type(value) is int, f'{path} must be an integer TCP port')
+            ports[path] = value
+    return ports
+
+
+def port_option(kind, setting):
+    suffix = 'inspector-port' if setting == 'edge_runtime.inspector_port' else (
+        'analytics-port' if setting == 'analytics.port' else 'port-base')
+    flag = f'--{kind}-replay-{suffix}'
+    env = f'HAC29_{kind.upper()}_REPLAY_{suffix.upper().replace("-", "_")}'
+    return f'{flag} (or {env})'
+
+
+def replay_port_preflight():
+    # Validate both layouts before any Docker start/reset, including for a V1-only run.
+    protected = set(range(56320, 56330)) | set(range(58320, 58330))
+    for profile in (ROOT/'supabase/config.toml', PROFILE/'supabase/config.toml'):
+        protected.update(configured_ports(tomllib.loads(profile.read_text(encoding='utf-8-sig'))).values())
+    layouts = {}
+    claimed = {}
+    for kind in ('v1', 'baseline'):
+        base = getattr(ARGS, kind + '_replay_port_base')
+        require(1 <= base <= 65506, f'{kind} replay port base must be 1..65506; use {port_option(kind, "db.port")}')
+        config = tomllib.loads(reference_config(kind))
+        project = config['project_id']
+        ports = configured_ports(config)
+        layouts[project] = ports
+        for setting, port in ports.items():
+            remedy = port_option(kind, setting)
+            require(1 <= port <= 65535, f'Port {port} for {project} ({setting}) is outside 1..65535; use {remedy}')
+            require(port not in protected, f'Port {port} for {project} ({setting}) conflicts with V1/V2; use {remedy}')
+            require(port not in claimed, f'Port {port} for {project} ({setting}) conflicts with {claimed.get(port)}; use {remedy}')
+            claimed[port] = f'{project} ({setting})'
+    for kind, project in [('v1', 'hac29-v1-reference'), ('baseline', 'hac29-baseline-reference')]:
+        for setting, port in layouts[project].items():
+            families = [(socket.AF_INET, '0.0.0.0')]
+            if socket.has_ipv6:
+                families.append((socket.AF_INET6, '::'))
+            for family, host in families:
+                try:
+                    with socket.socket(family, socket.SOCK_STREAM) as probe:
+                        if os.name == 'nt':
+                            probe.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+                        if family == socket.AF_INET6:
+                            probe.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+                        probe.bind((host, port))
+                        probe.listen(1)
+                except OSError as error:
+                    raise RuntimeError(f'Port {port} for {project} ({setting}) cannot be opened on {host}: {error}. '
+                                       f'Stop an existing replay before changing ports, or choose another port with '
+                                       f'{port_option(kind, setting)}. On Windows check: '
+                                       'netsh interface ipv4 show excludedportrange protocol=tcp') from error
+    write(EVIDENCE/'replay-ports.json', json.dumps(layouts, indent=2) + '\n')
+    print('PASS: replay port ranges, isolation and host TCP binds (IPv4/IPv6 where available)', flush=True)
+
+
 def prepare_reference(kind):
     folder = EVIDENCE / ('workdir-' + kind)
-    project, ports = ('hac29-v1-reference', '593') if kind == 'v1' else ('hac29-baseline-reference', '603')
-    config = (ROOT / 'supabase/config.toml').read_text()
-    config = config.replace('project_id = "cargomesh"', f'project_id = "{project}"')
-    config = re.sub(r'\b563(\d\d)\b', lambda m: ports + m[1], config)
-    config = config.replace('inspector_port = 8083', 'inspector_port = ' + ('8283' if kind == 'v1' else '8383'))
-    config = config.replace('port = 54327', 'port = ' + ports + '27')
+    config = reference_config(kind)
     if kind == 'v1':
         # Use the historical seed in place, without copying credentials to evidence.
         config = config.replace('sql_paths = ["./seed.sql"]', 'sql_paths = [' + json.dumps((ROOT/'supabase/seed.sql').as_posix()) + ']')
@@ -191,6 +267,8 @@ def blocked():
 
 def main():
     manifest()
+    if ARGS.action in ('v1', 'v2'):
+        replay_port_preflight()
     run('cli-version',CLI+['--version'])
     if ARGS.action == 'manifest':
         return
@@ -218,6 +296,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action',choices=['manifest','v1','v2','cleanup'])
     parser.add_argument('--evidence-dir',required=True,type=Path)
+    for kind, base, inspector in [('v1', 59300, 8283), ('baseline', 60300, 8383)]:
+        for option, default in [('port-base', base), ('inspector-port', inspector), ('analytics-port', None)]:
+            env = f'HAC29_{kind.upper()}_REPLAY_{option.upper().replace("-", "_")}'
+            parser.add_argument(f'--{kind}-replay-{option}', type=int, default=os.environ.get(env, default),
+                                help=f'{env}; CLI overrides environment; default {default if default is not None else "port base + 27"}')
     ARGS = parser.parse_args()
     EVIDENCE = ARGS.evidence_dir.resolve()
     require(not EVIDENCE.is_relative_to(ROOT), 'Evidence/backups must be outside the repository')

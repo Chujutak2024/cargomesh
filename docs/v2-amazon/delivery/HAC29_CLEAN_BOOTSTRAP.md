@@ -84,6 +84,92 @@ The runner owns only its three named containers. It leaves them available for in
 stop them later with the matching workdir. Never use `stop --all`. The original V1 stack,
 its project/ports and its checkout are not modified.
 
+## Replay ports and Windows excluded ranges
+
+Both replay projects support CLI options and equivalent environment variables. CLI
+values override environment values. Unset values preserve the original CI configuration
+exactly. The port base replaces the old `593`/`603` prefix and retains each two-digit
+offset; inspector and analytics can also be set independently.
+
+| Project | CLI option | Environment variable | Default |
+|---|---|---|---|
+| `hac29-v1-reference` | `--v1-replay-port-base` | `HAC29_V1_REPLAY_PORT_BASE` | `59300` |
+| `hac29-v1-reference` | `--v1-replay-inspector-port` | `HAC29_V1_REPLAY_INSPECTOR_PORT` | `8283` |
+| `hac29-v1-reference` | `--v1-replay-analytics-port` | `HAC29_V1_REPLAY_ANALYTICS_PORT` | base + 27 (`59327`) |
+| `hac29-baseline-reference` | `--baseline-replay-port-base` | `HAC29_BASELINE_REPLAY_PORT_BASE` | `60300` |
+| `hac29-baseline-reference` | `--baseline-replay-inspector-port` | `HAC29_BASELINE_REPLAY_INSPECTOR_PORT` | `8383` |
+| `hac29-baseline-reference` | `--baseline-replay-analytics-port` | `HAC29_BASELINE_REPLAY_ANALYTICS_PORT` | base + 27 (`60327`) |
+
+The generated configs use base + 20 for the shadow DB, +21 API, +22 DB, +23 Studio,
++24 Inbucket and +29 pooler. Analytics uses base +27 unless explicitly overridden.
+Configured ports are checked even when their service is disabled; `db start` publishes
+only the DB port. The base must be 1..65506 and every TCP port 1..65535. Duplicate ports
+within/between replay projects and collisions with V1's 56320..56329, V2's 58320..58329
+or other explicit V1/V2 config ports (including inspector/analytics) fail validation.
+
+Before any Docker start/reset, `gate.py v1` and `gate.py v2` validate **both** replay
+layouts and attempt exclusive TCP binds on the host (IPv4 and IPv6 when available).
+A failure identifies the port, project, config setting and CLI/environment override.
+The successful layout is saved as `replay-ports.json` outside the repository. This is
+a point-in-time check; another process can claim a port after the probe closes.
+
+The Tech Lead's FL-03 reports Windows reserved-port conflicts. Exclusions can change
+between machines and reboots; inspect them before selecting an alternative range:
+
+```powershell
+netsh interface ipv4 show excludedportrange protocol=tcp
+netsh interface ipv6 show excludedportrange protocol=tcp
+```
+
+Stop the two existing **replay** projects using their previous evidence workdirs before
+rerunning or changing ports. An already running replay occupies its DB port and fails
+the preflight; an existing container does not acquire a new binding from a rewritten
+config. Do not stop other projects or use `--all`. For a prior V2 run:
+
+```powershell
+npx --yes supabase@2.117.0 stop --workdir "$evidence/v2/workdir-v1"
+npx --yes supabase@2.117.0 stop --workdir "$evidence/v2/workdir-baseline"
+```
+
+Example alternatives for Windows (verify these ports on your host first):
+
+```powershell
+python supabase-v2/gate.py v2 --evidence-dir "$evidence/alternate" `
+  --v1-replay-port-base 61300 --baseline-replay-port-base 62300 `
+  --v1-replay-inspector-port 8483 --baseline-replay-inspector-port 8583 `
+  --v1-replay-analytics-port 61327 --baseline-replay-analytics-port 62327
+docker port supabase_db_hac29-v1-reference 5432/tcp
+docker port supabase_db_hac29-baseline-reference 5432/tcp
+npx --yes supabase@2.117.0 stop --workdir "$evidence/alternate/workdir-v1"
+npx --yes supabase@2.117.0 stop --workdir "$evidence/alternate/workdir-baseline"
+```
+
+The same configuration can be supplied through environment variables, for example:
+
+```powershell
+$env:HAC29_V1_REPLAY_PORT_BASE = '61300'
+$env:HAC29_BASELINE_REPLAY_PORT_BASE = '62300'
+$env:HAC29_V1_REPLAY_INSPECTOR_PORT = '8483'
+$env:HAC29_BASELINE_REPLAY_INSPECTOR_PORT = '8583'
+$env:HAC29_V1_REPLAY_ANALYTICS_PORT = '61327'
+$env:HAC29_BASELINE_REPLAY_ANALYTICS_PORT = '62327'
+python supabase-v2/gate.py v1 --evidence-dir "$evidence/alternate-v1"
+```
+
+Unset these six variables to restore defaults. A fresh run requires the previous
+replay containers to be stopped; the gate leaves them available for inspection.
+
+### Main V2 profile ports
+
+These options affect only the two replays. The runner still resets the versioned
+`supabase-v2/supabase/config.toml` directly at 5832x. CLI 2.117.0 `db start --help`
+has no port override flag. Providing an unversioned V2 config would require a separate
+workdir and plumbing that path through reset/test commands; it is outside this review
+change. No V2 port override was added and the versioned config remains unchanged.
+The [Supabase configuration reference](https://supabase.com/docs/guides/local-development/cli/config)
+documents config changes and restarting the affected project. Do not change or stop
+the existing V2 stack as a side effect of changing replay ports.
+
 ## Migration source inventory
 
 | Historical migration | Extraction type |
