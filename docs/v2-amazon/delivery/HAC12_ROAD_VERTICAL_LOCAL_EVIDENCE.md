@@ -1,6 +1,6 @@
 # HAC-12 — evidencia local del vertical ROAD V2
 
-Estado: **implementación local en revisión**, no desplegada ni aceptada. Rama de trabajo `feat/be2-v2-road-serviceability`; PR objetivo `feat/cycle-2-integration` después del bootstrap HAC-29 (#90). El proyecto Supabase V2 alojado no fue modificado.
+Estado: **implementación local en revisión**, no desplegada ni aceptada. Rama de trabajo `feat/be2-v2-road-serviceability`; PR objetivo `feat/cycle-2-integration`, que ya recibió HAC-29 (#90). El proyecto Supabase V2 alojado no fue modificado.
 
 ## Corte implementado
 
@@ -9,6 +9,8 @@ Estado: **implementación local en revisión**, no desplegada ni aceptada. Rama 
 - DTO anidado `schemaVersion: "2.0"`; persistencia atómica mediante una RPC `SECURITY INVOKER`, recibo/hash de idempotencia y snapshots canónicos de sedes. El servidor resuelve el tenant desde la sesión. Sede ajena → `403`; ID inexistente → `400`; lectura de otra organización → `404`.
 - Elegibilidad ROAD de solo lectura: áreas, lane dirigida, categoría, equipo, peso/volumen, certificaciones y temperatura **del mismo recurso**, calendario, reservas, mantenimiento y reposicionamiento. `TEMP_CONTROLLED` sin rango térmico y los requisitos `FRAGILE`/`HAZARDOUS` quedan `unknown`, incluso si el recurso publica una etiqueta con ese código. Sin ruta inferida, precio ni booking. Se recorren todos los servicios ROAD activos; falta evidencia → `unknown`.
 - Migración estructural aditiva en `supabase-v2/supabase/migrations/`; datos de demo exclusivamente en `supabase/scenarios/v2-hac12-road-capacity/`, encima del baseline sintético HAC-29. Una disponibilidad `SIMULATED` se presenta como tal, nunca como live.
+- Corrección de elegibilidad temporal: `eligible` exige duración de lane `VERIFIED`/`SIMULATED`, calendario vigente y evidencia de que **ese mismo recurso** está listo en el área de recojo. La llegada se comprueba desde el fin de la ventana de recojo hasta el fin de entrega. La falta de duración o ubicación queda `TEMPORAL_FEASIBILITY_UNKNOWN`; una llegada posterior queda `DELIVERY_WINDOW_UNREACHABLE`. El escenario local aporta una duración y punto de partida simulados mediante una migración aditiva; ninguna fila heredada recibe esos datos por defecto.
+- Cruce de país o lane marcada para revisión queda `BORDER_DOCS_UNKNOWN`, aunque la bandera histórica de revisión sea `false`. Una prohibición documentada en la lane queda `BORDER_CROSSING_PROHIBITED` e `ineligible`. La respuesta no afirma autorización fronteriza. Una clase de servicio ausente produce error de contrato; no se reemplaza por `FTL`.
 
 ## Verificación realizada
 
@@ -20,10 +22,11 @@ Estado: **implementación local en revisión**, no desplegada ni aceptada. Rama 
 - Gate local completo sobre el checkout combinado HAC-29/HAC-12 con los fixes de puertos `96a8d1d` y `11d6fb0`: `manifest` PASS, `v2` PASS (90/90 pgTAP, ausencia V1 con 9/9 controles positivos, drift del baseline y cleanup) y `v1` PASS (183/183 pgTAP). Bases de puertos `61300`/`62300`; evidencia en `%TEMP%\hac29-hac12-ports-20260928`. El checkout de gate `8ca052d` incluye manifiesto/perfil HAC-12, pero todavía no la última ampliación de cinco grupos; esa ampliación pasó sus pruebas TypeScript/unitarias por separado.
 - `supabase db advisors --local` sobre la cadena combinada: seguridad y rendimiento sin hallazgos `warn`/`error`.
 - Smoke HTTP local contra Next/Hono + Auth/REST Supabase sobre ese reset: PASS para autenticación, ocho categorías, POST→GET, replay `200`, conflicto `409`, sede ajena `403`, inexistente `400`, lectura cruzada `404`, `expectedDraftVersion` obsoleta `409`, 1 candidato elegible, 1 `unknown` y Piura con cero. El script falla si la URL no es loopback y borra por ID los borradores que crea.
+- **Delta posterior al gate anterior (28 sep):** 34/34 pruebas de DTO/solicitud/eligibilidad, `tsc --noEmit --incremental false`, arquitectura y build Next.js PASS; incluye tiempo desconocido/imposible, selección del recurso listo y frontera con bandera falsa. Se añadió la segunda migración HAC-12, su entrada en el manifiesto, el perfil pgTAP y las aserciones del escenario. Estos cambios SQL **aún no tienen reset/pgTAP ni smoke HTTP repetidos**: Docker Desktop no entregó un daemon accesible en este checkout al intentar el gate. Los PASS de gate y smoke anteriores no prueban este delta.
 
 ## Pendientes antes de In Review/Done
 
-1. Revisar/aceptar PR #90 y, una vez integrado al ciclo, añadir la migración HAC-12 al `supabase-v2/migration-manifest.json` y su prueba al perfil V2 en la rama publicable. El checkout desacoplado ya pasó el gate combinado completo; la rama HAC-12 por sí sola aún no contiene esas entradas y `gate.py manifest` la rechaza. El bloqueo de puerto Windows quedó resuelto localmente con las opciones de PR #90. Véase [FL-03](./friction-logs/FL-03.md).
+1. Repetir reset, escenarios, pgTAP y smoke HTTP con las **dos migraciones HAC-12** sobre el target HAC-29; revisar el manifiesto y el perfil de pruebas añadidos en esta rama. El gate anterior cubrió el primer corte, no la evidencia temporal. Docker Desktop debe estar disponible para esta ejecución. Véase [FL-03](./friction-logs/FL-03.md).
 2. Ejecutar la suite de release completa sobre la combinación publicada, repetir advisors en el gate y obtener revisión independiente de HAC-12. Publicar PR HAC-12; no mezclar directo a la rama base ni a `main`.
 3. Conectar el mismo servicio de aplicación a HAC-11 (MCP) y las vistas HAC-14/15, y pasar QA HAC-13 sobre el corte integrado.
 4. Resolver con HAC-27/HAC-29 la proyección de fixture que espera `serviceClass: FTL_DEDICATED` y canales `API/MANUAL`: el catálogo físico actual acredita `FTL` y **ningún canal V2 publicado**. La API devuelve `FTL` y `responseChannels: []`; no inventa capacidades comerciales.

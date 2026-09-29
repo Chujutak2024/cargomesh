@@ -6,6 +6,8 @@ const request: RoadRequest = {
   origin: { countryCode: "PE", regionCode: "LIM", city: "Lima" },
   destination: { countryCode: "PE", regionCode: "ARE", city: "Arequipa" },
   operationWindow: { startsAt: "2026-09-28T10:00:00Z", endsAt: "2026-09-29T10:00:00Z" },
+  pickupWindow: { startsAt: "2026-09-28T10:00:00Z", endsAt: "2026-09-28T12:00:00Z" },
+  deliveryWindow: { startsAt: "2026-09-29T08:00:00Z", endsAt: "2026-09-29T10:00:00Z" },
   cargoCategoryCode: "PHARMA",
   totalWeightKg: 4800,
   totalVolumeM3: 19.2,
@@ -34,6 +36,7 @@ function service(): RoadService {
     ],
     lanes: [{
       id: "lima-arequipa", pickupAreaId: "lima-pickup", deliveryAreaId: "arequipa-delivery",
+      plannedTransitMinutes: 900, transitProvenanceStatus: "SIMULATED",
       active: true, validFrom: "2026-01-01T00:00:00Z", validUntil: "2027-01-01T00:00:00Z",
     }],
     capacities: [{
@@ -41,6 +44,7 @@ function service(): RoadService {
       cargoCategoryCodes: ["PHARMA"], maxWeightKg: 8000, maxVolumeM3: 30,
       calendar: {
         validUntil: "2026-12-31T00:00:00Z", complete: true,
+        readyPickupAreaId: "lima-pickup", provenanceStatus: "SIMULATED",
         availableWindows: [{ startsAt: "2026-09-28T00:00:00Z", endsAt: "2026-09-30T00:00:00Z" }],
         reservations: [], maintenance: [], repositioning: [],
       },
@@ -55,6 +59,46 @@ describe("pure ROAD eligibility", () => {
     assert.equal(result.totalEvaluated, 1);
     assert.deepEqual(result.candidates[0]?.reasons, []);
     assert.equal(result.candidates[0]?.routePreview, null);
+  });
+
+  it("keeps missing time or pickup position unknown and rejects an impossible delivery window", () => {
+    const noTransit = service();
+    noTransit.lanes[0]!.plannedTransitMinutes = null;
+    const transitResult = evaluateRoad(request, [noTransit]).candidates[0];
+    assert.equal(transitResult?.status, "unknown");
+    assert.ok(transitResult?.reasons.includes("TEMPORAL_FEASIBILITY_UNKNOWN"));
+    const noPosition = service();
+    noPosition.capacities[0]!.calendar!.readyPickupAreaId = null;
+    assert.equal(evaluateRoad(request, [noPosition]).candidates[0]?.status, "unknown");
+    const tooSlow = service();
+    tooSlow.lanes[0]!.plannedTransitMinutes = 1800;
+    const lateResult = evaluateRoad(request, [tooSlow]).candidates[0];
+    assert.equal(lateResult?.status, "ineligible");
+    assert.ok(lateResult?.reasons.includes("DELIVERY_WINDOW_UNREACHABLE"));
+  });
+
+  it("chooses a resource with both capacity and pickup readiness", () => {
+    const item = service();
+    item.capacities[0]!.calendar!.readyPickupAreaId = null;
+    item.capacities.push({ ...service().capacities[0]!, id: "ready-asset" });
+    const candidate = evaluateRoad(request, [item]).candidates[0];
+    assert.equal(candidate?.status, "eligible");
+    assert.equal(candidate?.evidence.capacity.sourceId, "ready-asset");
+  });
+
+  it("requires border evidence for international lanes despite a false review flag", () => {
+    const item = service();
+    item.areas[1]!.location.countryCode = "CL";
+    item.lanes[0]!.borderReviewRequired = false;
+    const crossBorderRequest = { ...request,
+      destination: { ...request.destination, countryCode: "CL" } };
+    const candidate = evaluateRoad(crossBorderRequest, [item]).candidates[0];
+    assert.equal(candidate?.status, "unknown");
+    assert.ok(candidate?.reasons.includes("BORDER_DOCS_UNKNOWN"));
+    item.lanes[0]!.crossBorderProhibited = true;
+    const prohibited = evaluateRoad(crossBorderRequest, [item]).candidates[0];
+    assert.equal(prohibited?.status, "ineligible");
+    assert.ok(prohibited?.reasons.includes("BORDER_CROSSING_PROHIBITED"));
   });
 
   it("gives an explicit exclusion precedence over an inclusion", () => {

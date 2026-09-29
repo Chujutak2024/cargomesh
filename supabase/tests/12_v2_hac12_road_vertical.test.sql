@@ -3,7 +3,22 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
-select plan(17);
+select plan(24);
+
+select has_column('public', 'service_lanes', 'planned_transit_minutes',
+  'lane transit duration is persisted');
+select has_column('public', 'service_lanes', 'transit_provenance_status',
+  'lane transit provenance is persisted');
+select has_column('public', 'service_lanes', 'cross_border_prohibited',
+  'documented border prohibition is persisted');
+select has_column('public', 'service_lanes', 'cross_border_prohibition_reference',
+  'border prohibition requires a source reference');
+select has_column('public', 'capacity_calendars', 'ready_pickup_area_id',
+  'resource pickup readiness is persisted');
+select ok(has_column_privilege('authenticated', 'public.capacity_calendars',
+  'ready_pickup_area_id', 'SELECT'), 'authenticated evaluator can read pickup readiness');
+select ok(not has_column_privilege('anon', 'public.capacity_calendars',
+  'ready_pickup_area_id', 'SELECT'), 'anonymous caller cannot read pickup readiness');
 
 create function pg_temp.hac12_payload() returns jsonb language sql as $$
   select '{

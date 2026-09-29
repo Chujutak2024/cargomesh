@@ -66,4 +66,13 @@ insert into public.capacity_calendars (
   'CARRIER_CALENDAR_V2_SCENARIO', 'SIMULATED',
   '2026-09-26T12:00:00Z', '2026-10-10T00:00:00Z'
 ) on conflict (id) do nothing;
+
+-- Synthetic lane timing and pickup readiness are explicit scenario evidence.
+-- No other lane or resource inherits them from proximity or an open calendar.
+update public.service_lanes
+set planned_transit_minutes = 900, transit_provenance_status = 'SIMULATED'
+where id = 'c2380000-0000-4000-8000-000000000001';
+update public.capacity_calendars
+set ready_pickup_area_id = 'c2370000-0000-4000-8000-000000000001'
+where id = 'c23f0000-0000-4000-8000-000000000001';
 commit;

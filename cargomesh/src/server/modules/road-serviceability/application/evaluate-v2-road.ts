@@ -45,6 +45,8 @@ export async function evaluateV2RoadByRequestId(
     destination: { countryCode: request.destination.countryCode, regionCode: request.destination.region,
       city: request.destination.city },
     operationWindow: window,
+    pickupWindow: request.pickupWindow,
+    deliveryWindow: request.deliveryWindow,
     cargoCategoryCode: request.cargoSpecification.categoryCode,
     totalWeightKg: request.cargoSpecification.totalWeightKg,
     totalVolumeM3: request.cargoSpecification.totalVolumeM3,
@@ -64,6 +66,7 @@ export async function evaluateV2RoadByRequestId(
   const candidates: RoadCandidateV2[] = result.candidates.map((candidate) => {
     const service = serviceById.get(candidate.serviceId);
     if (!service) throw new Error("V2_ROAD_SERVICE_MISSING");
+    if (!service.serviceClass) throw new Error("V2_ROAD_SERVICE_CLASS_MISSING");
     const { pickup, delivery, lane, cargo, capacity, requirements } = candidate.evidence;
     const source = service.capacities.find((item) => item.id === capacity.sourceId);
     const matchedLane = service.lanes.find((item) => item.id === lane.laneId);
@@ -89,7 +92,7 @@ export async function evaluateV2RoadByRequestId(
       carrier: { id: service.carrierId, code: service.carrierCode ?? service.carrierId,
         commercialName: service.carrierName ?? service.carrierId },
       service: { id: service.id, code: service.serviceCode ?? service.id, mode: "ROAD",
-        serviceClass: service.serviceClass ?? "FTL", responseChannels: service.responseChannels ?? [] },
+        serviceClass: service.serviceClass, responseChannels: service.responseChannels ?? [] },
       checks: {
         coverage: {
           status: combine(pickup.status, delivery.status),
@@ -99,10 +102,11 @@ export async function evaluateV2RoadByRequestId(
           reasonCode: pickup.reason ?? delivery.reason ?? "PICKUP_AND_DELIVERY_INCLUDED",
         },
         lane: {
-          status: lane.status, laneId: matchedLane?.id ?? null,
+          status: combine(lane.status, candidate.evidence.border.status), laneId: matchedLane?.id ?? null,
           kind: matchedLane?.kind ?? null,
-          borderReviewRequired: matchedLane?.borderReviewRequired ?? false,
-          reasonCode: lane.reason ?? "DIRECTED_LANE_ACTIVE",
+          borderReviewRequired: request.origin.countryCode !== request.destination.countryCode
+            || (matchedLane?.borderReviewRequired ?? false),
+          reasonCode: lane.reason ?? candidate.evidence.border.reason ?? "DIRECTED_LANE_ACTIVE",
         },
         cargoAndEquipment: {
           status: cargoStatus,

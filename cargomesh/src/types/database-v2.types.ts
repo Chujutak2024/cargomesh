@@ -394,6 +394,7 @@ export type Database = {
           id: string
           observed_at: string | null
           provenance_status: string
+          ready_pickup_area_id: string | null
           source_reference: string
           transport_asset_id: string | null
           updated_at: string
@@ -408,6 +409,7 @@ export type Database = {
           id?: string
           observed_at?: string | null
           provenance_status?: string
+          ready_pickup_area_id?: string | null
           source_reference: string
           transport_asset_id?: string | null
           updated_at?: string
@@ -422,6 +424,7 @@ export type Database = {
           id?: string
           observed_at?: string | null
           provenance_status?: string
+          ready_pickup_area_id?: string | null
           source_reference?: string
           transport_asset_id?: string | null
           updated_at?: string
@@ -429,6 +432,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "capacity_calendars_ready_pickup_same_service"
+            columns: ["ready_pickup_area_id", "carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "service_areas"
+            referencedColumns: ["id", "carrier_service_id"]
+          },
           {
             foreignKeyName: "capacity_calendars_capacity_pool_id_carrier_service_id_fkey"
             columns: ["capacity_pool_id", "carrier_service_id"]
@@ -2051,12 +2061,16 @@ export type Database = {
           carrier_service_id: string
           created_at: string
           cross_border_review_required: boolean
+          cross_border_prohibited: boolean
+          cross_border_prohibition_reference: string | null
           delivery_area_id: string
           evidence_reference: string
           id: string
           lane_kind: string
           pickup_area_id: string
+          planned_transit_minutes: number | null
           transport_mode: string
+          transit_provenance_status: string
           updated_at: string
           valid_from: string
           valid_until: string | null
@@ -2067,12 +2081,16 @@ export type Database = {
           carrier_service_id: string
           created_at?: string
           cross_border_review_required?: boolean
+          cross_border_prohibited?: boolean
+          cross_border_prohibition_reference?: string | null
           delivery_area_id: string
           evidence_reference: string
           id?: string
           lane_kind?: string
           pickup_area_id: string
+          planned_transit_minutes?: number | null
           transport_mode?: string
+          transit_provenance_status?: string
           updated_at?: string
           valid_from: string
           valid_until?: string | null
@@ -2083,12 +2101,16 @@ export type Database = {
           carrier_service_id?: string
           created_at?: string
           cross_border_review_required?: boolean
+          cross_border_prohibited?: boolean
+          cross_border_prohibition_reference?: string | null
           delivery_area_id?: string
           evidence_reference?: string
           id?: string
           lane_kind?: string
           pickup_area_id?: string
+          planned_transit_minutes?: number | null
           transport_mode?: string
+          transit_provenance_status?: string
           updated_at?: string
           valid_from?: string
           valid_until?: string | null

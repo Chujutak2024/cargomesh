@@ -17,13 +17,14 @@ const laneId = "a1000000-0000-4000-8000-000000000001";
 const calendarId = "a2000000-0000-4000-8000-000000000001";
 
 function draft(originCity = "Lima", requirements: string[] = [],
-  temperatureRange?: { minCelsius: number; maxCelsius: number }): V2DraftRepository {
+  temperatureRange?: { minCelsius: number; maxCelsius: number },
+  destinationCountry = "PE"): V2DraftRepository {
   const data: FreightRequestV2Response["data"] = {
     id: requestId, referenceCode: "V2-TEST", organizationId: actor.organizationId,
     status: "DRAFT", draftVersion: 1,
     origin: { facilityId: null, label: originCity, countryCode: "PE", region: null,
       city: originCity, lat: null, lng: null },
-    destination: { facilityId: null, label: "Arequipa", countryCode: "PE", region: null,
+    destination: { facilityId: null, label: "Arequipa", countryCode: destinationCountry, region: null,
       city: "Arequipa", lat: null, lng: null },
     pickupWindow: { startsAt: "2026-10-01T10:00:00Z", endsAt: "2026-10-01T12:00:00Z" },
     deliveryWindow: { startsAt: "2026-10-02T10:00:00Z", endsAt: "2026-10-02T12:00:00Z" },
@@ -63,12 +64,14 @@ function service(): RoadService {
     ],
     lanes: [{ id: laneId, kind: "DIRECT", pickupAreaId: "pickup-a",
       deliveryAreaId: "delivery-b", active: true,
+      plannedTransitMinutes: 900, transitProvenanceStatus: "SIMULATED",
       validFrom: "2026-01-01T00:00:00Z", validUntil: "2027-01-01T00:00:00Z" }],
     capacities: [{
       id: assetId, sourceType: "TRANSPORT_ASSET", calendarId,
       role: "CARRIER", equipmentCode: "BOX_TRUCK", cargoCategoryCodes: ["GENERAL"],
       maxWeightKg: 5000, maxVolumeM3: 10, dataSource: "QA_SCENARIO", observedAt: "2026-09-27T00:00:00Z",
       calendar: { validUntil: "2026-12-01T00:00:00Z", provenanceStatus: "SIMULATED",
+        readyPickupAreaId: "pickup-a",
         complete: true, availableWindows: [{ startsAt: "2026-10-01T00:00:00Z",
           endsAt: "2026-10-03T00:00:00Z" }], reservations: [], maintenance: [], repositioning: [] },
     }],
@@ -95,6 +98,37 @@ describe("HAC-12 ROAD application response", () => {
     unverified.capacities[0]!.calendar!.provenanceStatus = "UNKNOWN";
     assert.equal((await evaluateV2RoadByRequestId(requestId, undefined, actor, draft(),
       { listRoadServices: async () => [unverified] })).data.overallStatus, "unknown");
+  });
+
+  it("does not infer time or a missing service class", async () => {
+    const noTime = service();
+    noTime.lanes[0]!.plannedTransitMinutes = null;
+    const unknown = await evaluateV2RoadByRequestId(requestId, 1, actor, draft(),
+      { listRoadServices: async () => [noTime] });
+    assert.equal(unknown.data.candidates[0]?.status, "unknown");
+    assert.ok(unknown.data.candidates[0]?.reasons.includes("TEMPORAL_FEASIBILITY_UNKNOWN"));
+    noTime.serviceClass = undefined;
+    await assert.rejects(() => evaluateV2RoadByRequestId(requestId, 1, actor, draft(),
+      { listRoadServices: async () => [noTime] }), { message: "V2_ROAD_SERVICE_CLASS_MISSING" });
+  });
+
+  it("marks a cross-border lane for review even when its stored flag is false", async () => {
+    const international = service();
+    international.areas[1]!.location.countryCode = "CL";
+    international.lanes[0]!.borderReviewRequired = false;
+    const result = await evaluateV2RoadByRequestId(requestId, 1, actor,
+      draft("Lima", [], undefined, "CL"), { listRoadServices: async () => [international] });
+    const candidate = result.data.candidates[0]!;
+    assert.equal(candidate.status, "unknown");
+    assert.equal(candidate.checks.lane.status, "unknown");
+    assert.equal(candidate.checks.lane.borderReviewRequired, true);
+    assert.equal(candidate.checks.lane.reasonCode, "BORDER_DOCS_UNKNOWN");
+    international.lanes[0]!.crossBorderProhibited = true;
+    const prohibited = await evaluateV2RoadByRequestId(requestId, 1, actor,
+      draft("Lima", [], undefined, "CL"), { listRoadServices: async () => [international] });
+    assert.equal(prohibited.data.candidates[0]?.status, "ineligible");
+    assert.equal(prohibited.data.candidates[0]?.checks.lane.reasonCode,
+      "BORDER_CROSSING_PROHIBITED");
   });
 
   it("keeps review-only requirements unknown even if a resource advertises their code", async () => {

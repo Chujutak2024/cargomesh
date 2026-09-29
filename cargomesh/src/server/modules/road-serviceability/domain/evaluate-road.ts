@@ -9,6 +9,8 @@ export type RoadRequest = {
   destination: Location;
   /** Full period for which a carrying resource must be available. */
   operationWindow: Window;
+  pickupWindow: Window;
+  deliveryWindow: Window;
   cargoCategoryCode: string;
   totalWeightKg: number;
   totalVolumeM3: number;
@@ -36,6 +38,9 @@ export type Lane = {
   id: string;
   kind?: "DIRECT" | "WITHIN_AREA";
   borderReviewRequired?: boolean;
+  crossBorderProhibited?: boolean;
+  plannedTransitMinutes?: number | null;
+  transitProvenanceStatus?: "VERIFIED" | "ESTIMATED" | "SIMULATED" | "UNKNOWN";
   pickupAreaId: string;
   deliveryAreaId: string;
   active: boolean;
@@ -62,6 +67,7 @@ export type Capacity = {
   maxVolumeM3: number | null;
   calendar: {
     validUntil: string | null;
+    readyPickupAreaId?: string | null;
     provenanceStatus?: "VERIFIED" | "ESTIMATED" | "SIMULATED" | "UNKNOWN";
     /** A missing slot proves no availability only when the calendar is complete. */
     complete: boolean;
@@ -100,6 +106,8 @@ export type Candidate = {
     cargo: Check;
     capacity: Check & { sourceId?: string };
     requirements: Check;
+    temporal: Check;
+    border: Check;
   };
   /** Never infer a road line from origin/destination coordinates. */
   routePreview: null;
@@ -246,22 +254,26 @@ function requirementsCheck(capacity: Capacity, request: RoadRequest): Check {
   return { status: "eligible" };
 }
 
-function capacitiesCheck(capacities: Capacity[], request: RoadRequest): {
-  capacity: Check & { sourceId?: string }; requirements: Check;
+function capacitiesCheck(capacities: Capacity[], request: RoadRequest,
+  lane: Check & { laneId?: string }, service: RoadService): {
+  capacity: Check & { sourceId?: string }; requirements: Check; temporal: Check;
 } {
   const carrying = capacities.filter((capacity) => capacity.role === "CARRIER");
   if (carrying.length === 0) return {
     capacity: { status: "unknown", reason: "CARRYING_CAPACITY_UNKNOWN" },
     requirements: { status: "unknown", reason: "REQUIREMENTS_UNVERIFIED" },
+    temporal: { status: "unknown", reason: "TEMPORAL_FEASIBILITY_UNKNOWN" },
   };
+  const matchedLane = service.lanes.find((item) => item.id === lane.laneId);
   const checks = carrying.map((source) => {
     const capacity = { ...capacityCheck(source, request), sourceId: source.id };
     const requirements = requirementsCheck(source, request);
-    return { capacity, requirements, status: combine([capacity, requirements]).status };
+    const temporal = temporalCheck(request, matchedLane, source);
+    return { capacity, requirements, temporal, status: combine([capacity, requirements, temporal]).status };
   });
   const selected = checks.find((check) => check.status === "eligible")
     ?? checks.find((check) => check.status === "unknown") ?? checks[0]!;
-  return { capacity: selected.capacity, requirements: selected.requirements };
+  return { capacity: selected.capacity, requirements: selected.requirements, temporal: selected.temporal };
 }
 
 function combine(checks: Check[]): Pick<Candidate, "status" | "reasons"> {
@@ -272,8 +284,37 @@ function combine(checks: Check[]): Pick<Candidate, "status" | "reasons"> {
   return { status: "eligible", reasons };
 }
 
+function temporalCheck(request: RoadRequest, lane: Lane | undefined, source: Capacity): Check {
+  if (!lane || !Number.isFinite(lane.plannedTransitMinutes)
+    || lane.plannedTransitMinutes == null || lane.plannedTransitMinutes <= 0
+    || !["VERIFIED", "SIMULATED"].includes(lane.transitProvenanceStatus ?? "UNKNOWN")
+    || source.calendar?.readyPickupAreaId !== lane.pickupAreaId
+    || !["VERIFIED", "SIMULATED"].includes(source.calendar.provenanceStatus ?? "UNKNOWN")) {
+    return { status: "unknown", reason: "TEMPORAL_FEASIBILITY_UNKNOWN" };
+  }
+  const latestArrival = instant(request.pickupWindow.endsAt) + lane.plannedTransitMinutes * 60_000;
+  return latestArrival <= instant(request.deliveryWindow.endsAt)
+    ? { status: "eligible" }
+    : { status: "ineligible", reason: "DELIVERY_WINDOW_UNREACHABLE" };
+}
+
+function borderCheck(request: RoadRequest, lane: Lane | undefined): Check {
+  if (lane?.crossBorderProhibited) {
+    return { status: "ineligible", reason: "BORDER_CROSSING_PROHIBITED" };
+  }
+  return request.origin.countryCode === request.destination.countryCode && !lane?.borderReviewRequired
+    ? { status: "eligible" }
+    : { status: "unknown", reason: "BORDER_DOCS_UNKNOWN" };
+}
+
 export function evaluateRoad(request: RoadRequest, services: RoadService[]) {
   validateWindow(request.operationWindow);
+  validateWindow(request.pickupWindow);
+  validateWindow(request.deliveryWindow);
+  if (instant(request.operationWindow.startsAt) !== instant(request.pickupWindow.startsAt)
+    || instant(request.operationWindow.endsAt) !== instant(request.deliveryWindow.endsAt)) {
+    throw new Error("INCONSISTENT_OPERATION_WINDOW");
+  }
   if (!Number.isFinite(request.totalWeightKg) || request.totalWeightKg <= 0
     || !Number.isFinite(request.totalVolumeM3) || request.totalVolumeM3 <= 0) {
     throw new Error("INVALID_CARGO_DIMENSIONS");
@@ -291,15 +332,16 @@ export function evaluateRoad(request: RoadRequest, services: RoadService[]) {
           ? { status: "eligible" }
           : { status: "ineligible", reason: "SERVICE_CARGO_UNSUPPORTED" };
       const lane = laneCheck(service.lanes, pickup.includedIds, delivery.includedIds, request.operationWindow);
-      const { capacity, requirements } = capacitiesCheck(service.capacities, request);
+      const { capacity, requirements, temporal } = capacitiesCheck(service.capacities, request, lane, service);
+      const border = borderCheck(request, service.lanes.find((item) => item.id === lane.laneId));
       return [{
         serviceId: service.id,
         carrierId: service.carrierId,
         ...combine([
           pickup, delivery,
-          lane, cargo, capacity, requirements,
+          lane, cargo, capacity, requirements, temporal, border,
         ]),
-        evidence: { pickup, delivery, lane, cargo, capacity, requirements },
+        evidence: { pickup, delivery, lane, cargo, capacity, requirements, temporal, border },
         routePreview: null,
       }];
     });

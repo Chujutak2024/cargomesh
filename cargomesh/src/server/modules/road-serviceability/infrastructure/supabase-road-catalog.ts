@@ -59,7 +59,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
       : Promise.resolve({ data: [], error: null }),
     sourceIds.length
       ? db.from("capacity_calendars")
-        .select("id,carrier_service_id,transport_asset_id,capacity_pool_id,complete,available_windows,source_reference,provenance_status,observed_at,valid_until,version,updated_at")
+        .select("id,carrier_service_id,transport_asset_id,capacity_pool_id,complete,available_windows,source_reference,provenance_status,observed_at,valid_until,ready_pickup_area_id,version,updated_at")
         .in("carrier_service_id", serviceIds)
       : Promise.resolve({ data: [], error: null }),
     assetIds.length
@@ -92,6 +92,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
     if (!availableWindows) return null; // Malformed evidence must not yield eligible.
     return {
       validUntil: calendar.valid_until,
+      readyPickupAreaId: calendar.ready_pickup_area_id,
       provenanceStatus: z.enum(["VERIFIED", "ESTIMATED", "SIMULATED", "UNKNOWN"])
         .parse(calendar.provenance_status),
       complete: calendar.complete,
@@ -180,6 +181,10 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
         lanes: laneRows.filter((lane) => lane.carrier_service_id === service.id).map((lane) => ({
           id: lane.id, kind: z.enum(["DIRECT", "WITHIN_AREA"]).parse(lane.lane_kind),
           borderReviewRequired: lane.cross_border_review_required,
+          crossBorderProhibited: lane.cross_border_prohibited,
+          plannedTransitMinutes: lane.planned_transit_minutes,
+          transitProvenanceStatus: z.enum(["VERIFIED", "ESTIMATED", "SIMULATED", "UNKNOWN"])
+            .parse(lane.transit_provenance_status),
           pickupAreaId: lane.pickup_area_id, deliveryAreaId: lane.delivery_area_id,
           active: lane.active, validFrom: lane.valid_from, validUntil: lane.valid_until,
         })),

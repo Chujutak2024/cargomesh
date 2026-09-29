@@ -16,8 +16,15 @@ do $$ begin
   end if;
   if (select count(*) from public.capacity_calendars
       where id = 'c23f0000-0000-4000-8000-000000000001'
-        and complete and provenance_status = 'SIMULATED') <> 1 then
+        and complete and provenance_status = 'SIMULATED'
+        and ready_pickup_area_id = 'c2370000-0000-4000-8000-000000000001') <> 1 then
     raise exception 'HAC12_VERIFY_CALENDAR';
+  end if;
+  if (select count(*) from public.service_lanes
+      where id = 'c2380000-0000-4000-8000-000000000001'
+        and planned_transit_minutes = 900
+        and transit_provenance_status = 'SIMULATED') <> 1 then
+    raise exception 'HAC12_VERIFY_TRANSIT';
   end if;
   if (select count(*) from public.capacity_pools
       where id = 'c23e0000-0000-4000-8000-000000000001') <> 1 then
