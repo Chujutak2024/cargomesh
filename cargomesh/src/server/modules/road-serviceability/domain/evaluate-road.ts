@@ -138,6 +138,11 @@ function overlaps(a: Window, b: Window): boolean {
   return instant(a.startsAt) < instant(b.endsAt) && instant(b.startsAt) < instant(a.endsAt);
 }
 
+function overlapsValidity(from: string, until: string | null, window: Window): boolean {
+  return instant(from) < instant(window.endsAt)
+    && (until === null || instant(until) > instant(window.startsAt));
+}
+
 function contains(a: Window, b: Window): boolean {
   return instant(a.startsAt) <= instant(b.startsAt) && instant(a.endsAt) >= instant(b.endsAt);
 }
@@ -155,7 +160,10 @@ function matches(area: Area, location: Location): boolean {
 function areaCheck(areas: Area[], role: Area["role"], location: Location, window: Window) {
   const activeAtStart = areas.filter((area) => area.active && area.role === role
     && current(area.validFrom, area.validUntil, window.startsAt));
-  if (activeAtStart.some((area) => area.coverage === "EXCLUDE" && matches(area, location))) {
+  // A published exclusion can begin after this pickup/delivery window starts.
+  // Any overlap prevents confirmed coverage for the whole relevant window.
+  if (areas.some((area) => area.active && area.role === role && area.coverage === "EXCLUDE"
+    && matches(area, location) && overlapsValidity(area.validFrom, area.validUntil, window))) {
     return { status: "ineligible" as const, reason: `${role}_EXCLUDED`, includedIds: [] as string[] };
   }
   const valid = activeAtStart.filter((area) => validThrough(area.validFrom, area.validUntil, window));
@@ -321,8 +329,8 @@ export function evaluateRoad(request: RoadRequest, services: RoadService[]) {
   }
   const candidates: Candidate[] = services.filter((service) => service.active && service.mode === "ROAD")
     .flatMap((service): Candidate[] => {
-      const pickup = areaCheck(service.areas, "PICKUP", request.origin, request.operationWindow);
-      const delivery = areaCheck(service.areas, "DELIVERY", request.destination, request.operationWindow);
+      const pickup = areaCheck(service.areas, "PICKUP", request.origin, request.pickupWindow);
+      const delivery = areaCheck(service.areas, "DELIVERY", request.destination, request.deliveryWindow);
       // A known absence of declared coverage is not a route candidate. Missing
       // coverage evidence remains UNKNOWN and explicit exclusions stay visible.
       if (pickup.reason === "NO_PICKUP_COVERAGE" || delivery.reason === "NO_DELIVERY_COVERAGE") return [];

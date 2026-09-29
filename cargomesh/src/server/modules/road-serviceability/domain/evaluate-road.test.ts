@@ -111,6 +111,33 @@ describe("pure ROAD eligibility", () => {
     assert.ok(result.candidates[0]?.reasons.includes("PICKUP_EXCLUDED"));
   });
 
+  it("honors an exclusion during pickup but ignores one after pickup", () => {
+    const item = service();
+    item.areas.push({
+      ...item.areas[0]!, id: "lima-later-exclusion", coverage: "EXCLUDE",
+      validFrom: "2026-09-28T11:00:00Z", validUntil: "2026-09-28T13:00:00Z",
+    });
+    const candidate = evaluateRoad(request, [item]).candidates[0];
+    assert.equal(candidate?.status, "ineligible");
+    assert.ok(candidate?.reasons.includes("PICKUP_EXCLUDED"));
+
+    item.areas[2]!.validFrom = "2026-09-28T13:00:00Z";
+    item.areas[2]!.validUntil = "2026-09-28T15:00:00Z";
+    assert.equal(evaluateRoad(request, [item]).candidates[0]?.status, "eligible");
+  });
+
+  it("checks each coverage area at its pickup or delivery window", () => {
+    const item = service();
+    item.areas[0]!.validUntil = "2026-09-28T13:00:00Z";
+    item.areas[1]!.validFrom = "2026-09-29T07:00:00Z";
+    assert.equal(evaluateRoad(request, [item]).candidates[0]?.status, "eligible");
+
+    item.areas[1]!.validFrom = "2026-09-29T09:00:00Z";
+    const candidate = evaluateRoad(request, [item]).candidates[0];
+    assert.equal(candidate?.status, "unknown");
+    assert.ok(candidate?.reasons.includes("DELIVERY_COVERAGE_UNKNOWN"));
+  });
+
   it("does not reverse a directed lane", () => {
     const item = service();
     item.lanes[0] = { ...item.lanes[0]!, pickupAreaId: "arequipa-delivery", deliveryAreaId: "lima-pickup" };
@@ -197,12 +224,12 @@ describe("pure ROAD eligibility", () => {
     assert.equal(candidate?.evidence.capacity.sourceId, "asset-1");
   });
 
-  it("does not confirm missing equipment evidence or coverage expiring mid-trip", () => {
+  it("does not confirm missing equipment evidence or coverage expiring mid-pickup", () => {
     const equipmentUnknown = service();
     equipmentUnknown.capacities[0]!.equipmentCode = null;
     assert.equal(evaluateRoad(request, [equipmentUnknown]).candidates[0]?.status, "unknown");
     const expiringArea = service();
-    expiringArea.areas[0]!.validUntil = "2026-09-28T12:00:00Z";
+    expiringArea.areas[0]!.validUntil = "2026-09-28T11:00:00Z";
     assert.ok(evaluateRoad(request, [expiringArea]).candidates[0]?.reasons.includes("PICKUP_COVERAGE_EXPIRES"));
     const expiringLane = service();
     expiringLane.lanes[0]!.validUntil = "2026-09-28T12:00:00Z";

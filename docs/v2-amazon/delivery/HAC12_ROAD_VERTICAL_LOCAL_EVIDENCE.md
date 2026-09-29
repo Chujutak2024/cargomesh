@@ -2,6 +2,8 @@
 
 Estado: **implementación local en revisión**, no desplegada ni aceptada. Rama de trabajo `feat/be2-v2-road-serviceability`; PR objetivo `feat/cycle-2-integration`, que ya recibió HAC-29 (#90). El proyecto Supabase V2 alojado no fue modificado.
 
+**Revisión adicional de cobertura (28 sep):** el dominio ahora verifica el área de recojo solo en `pickupWindow` y la de entrega solo en `deliveryWindow`; conserva lane/capacidad sobre la operación completa. Una exclusión que empieza durante la ventana pertinente impide `eligible`, mientras que una exclusión posterior a la ventana de recojo no bloquea ese recojo. Pruebas focalizadas de dominio/aplicación: 26/26 PASS; TypeScript y chequeo de arquitectura: PASS. Este cambio no reemplaza el reset/pgTAP/smoke pendiente de las dos migraciones HAC-12.
+
 ## Corte implementado
 
 - Hono/Next: `GET /api/v2/intake/options`, `POST /api/v2/freight/requests`, `GET /api/v2/freight/requests/:id` y `GET /api/v2/freight/requests/:id/serviceability`.
