@@ -26,7 +26,7 @@ Estado: **implementación local en revisión**, no desplegada ni aceptada. Rama 
 
 ## Pendientes antes de In Review/Done
 
-1. Repetir reset, escenarios, pgTAP y smoke HTTP con las **dos migraciones HAC-12** sobre el target HAC-29; revisar el manifiesto y el perfil de pruebas añadidos en esta rama. El gate anterior cubrió el primer corte, no la evidencia temporal. Docker Desktop debe estar disponible para esta ejecución. Véase [FL-03](./friction-logs/FL-03.md).
+1. Repetir reset, escenarios, pgTAP y smoke HTTP con las **dos migraciones HAC-12** sobre el target HAC-29; revisar el manifiesto y el perfil de pruebas añadidos en esta rama. El gate anterior cubrió el primer corte, no la evidencia temporal. Docker Desktop debe estar disponible para esta ejecución. Resolver los dos conflictos `add/add` de manifiesto/perfil en la integración HAC-16. Véanse [FL-03](./friction-logs/FL-03.md) y [FL-05](./friction-logs/FL-05.md).
 2. Ejecutar la suite de release completa sobre la combinación publicada, repetir advisors en el gate y obtener revisión independiente de HAC-12. Publicar PR HAC-12; no mezclar directo a la rama base ni a `main`.
 3. Conectar el mismo servicio de aplicación a HAC-11 (MCP) y las vistas HAC-14/15, y pasar QA HAC-13 sobre el corte integrado.
 4. Resolver con HAC-27/HAC-29 la proyección de fixture que espera `serviceClass: FTL_DEDICATED` y canales `API/MANUAL`: el catálogo físico actual acredita `FTL` y **ningún canal V2 publicado**. La API devuelve `FTL` y `responseChannels: []`; no inventa capacidades comerciales.
