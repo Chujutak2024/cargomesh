@@ -1,4 +1,7 @@
 :root {
+  --page-max-wide: 100rem;
+  --page-max-standard: 80rem;
+  --page-max-form: 68rem;
   color-scheme: dark;
   --background: #07110f;
   --surface: #0e1d19;

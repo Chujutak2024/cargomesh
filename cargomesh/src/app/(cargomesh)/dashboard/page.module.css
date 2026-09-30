@@ -1,4 +1,4 @@
-.page { display: grid; gap: 1rem; width: 100%; max-width: 100rem; margin: 0 auto; }
+.page { display: grid; gap: 1rem; width: 100%; max-width: var(--page-max-wide); margin: 0 auto; }
 .hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding: 0.25rem 0 0.15rem; }
 .hero h1 { margin: 0.25rem 0 0.32rem; color: #123c3a; font-size: clamp(1.65rem, 3vw, 2.2rem); font-weight: 760; letter-spacing: -0.04em; line-height: 1.1; }
 .hero p { max-width: 38rem; margin: 0; color: #687573; font-size: 0.78rem; line-height: 1.55; }

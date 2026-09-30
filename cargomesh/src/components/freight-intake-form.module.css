@@ -1,4 +1,4 @@
-.page { display: grid; width: 100%; max-width: 92rem; margin: 0 auto; gap: 1rem; }
+.page { display: grid; width: 100%; max-width: var(--page-max-wide); margin: 0 auto; gap: 1rem; }
 .hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
 .hero h1 { margin: 0.25rem 0 0.35rem; color: #123c3a; font-size: clamp(1.7rem, 3vw, 2.35rem); letter-spacing: -0.045em; }
 .hero p { max-width: 44rem; margin: 0; color: #687573; font-size: 0.82rem; line-height: 1.6; }
@@ -16,7 +16,7 @@
 .stepActive > span { background: #185c55; color: #fff; }
 .stepDone { color: #2b7d72; }
 .stepDone > span { background: #ddf3ea; color: #185c55; }
-.formLayout { display: grid; min-width: 0; gap: 1rem; align-items: start; }
+.formLayout { display: grid; width: 100%; max-width: var(--page-max-standard); min-width: 0; gap: 1rem; align-items: start; }
 .formCard, .summaryCard { min-width: 0; border: 1px solid #dde3e0; border-radius: 1rem; background: #fff; box-shadow: 0 0.6rem 2rem rgb(18 60 58 / 4%); }
 .formCard { padding: clamp(1rem, 2.5vw, 1.6rem); }
 .formHeading { margin-bottom: 1.25rem; }
