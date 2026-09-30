@@ -1,6 +1,6 @@
 # HAC-15 — React workspace and local QA
 
-Date: 30 September 2026 (America/Lima). Branch: `feat/fe2-v2-route-map`. Integration base: `codex/v2-amazon-contracts` at `66a195207379f6f6be3eafd7ace02d254e7cf1c8`. Intended PR target: `feat/cycle-2-integration`. No push or merge is part of this local handoff.
+Date: 30 September 2026 (America/Lima). Branch: `feat/fe2-v2-route-map`. Integration base: `codex/v2-amazon-contracts` at `66a195207379f6f6be3eafd7ace02d254e7cf1c8`. PR target: `feat/cycle-2-integration`. The PR is handed to the Tech Lead for review; this handoff does not merge it.
 
 ## Scope and source
 
@@ -57,4 +57,4 @@ The Google map was visually inspected in the integrated browser. This document d
 - The local Google key is restricted to its authorized origin. A different local port or preview origin requires its own authorized referrer before Google Maps will render there.
 - The existing `google.maps.Marker` API still works but emits a deprecation warning; migration to `AdvancedMarkerElement` can be planned separately.
 
-No PR was merged, no remote service was changed, and no key is stored in tracked files.
+No PR was merged, no deployment or remote runtime service was changed, and no key is stored in tracked files. GitHub and Linear review metadata are recorded in their respective systems after publication.
