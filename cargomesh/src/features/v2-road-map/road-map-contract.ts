@@ -32,7 +32,7 @@ export interface RoadCandidateMapViewProps {
     facilityId?: string | null;
     label: string;
     city: string;
-    region?: string;
+    region?: string | null;
     countryCode: string;
     lat: number | null;
     lng: number | null;
@@ -41,7 +41,7 @@ export interface RoadCandidateMapViewProps {
     facilityId?: string | null;
     label: string;
     city: string;
-    region?: string;
+    region?: string | null;
     countryCode: string;
     lat: number | null;
     lng: number | null;
