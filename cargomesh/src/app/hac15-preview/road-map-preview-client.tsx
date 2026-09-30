@@ -47,7 +47,7 @@ export function RoadMapPreviewClient() {
 
   return <main className={styles.page}>
     <header className={styles.header}>
-      <div><span>HAC-15 · Local QA</span><h1>{t("Mapa ROAD V2", "V2 ROAD map")}</h1><p>{t("Superficie de prueba con datos sintéticos del contrato HAC-27. No representa una solicitud persistida.", "Test surface with synthetic HAC-27 contract data. It is not a persisted request.")}</p></div>
+      <div><span>HAC-15 · Contract QA</span><h1>{t("Mapa ROAD V2", "V2 ROAD map")}</h1><p>{t("Superficie de prueba con datos sintéticos del contrato HAC-27. No representa una solicitud persistida.", "Test surface with synthetic HAC-27 contract data. It is not a persisted request.")}</p></div>
       <div className={styles.switcher} aria-label={t("Escenario de prueba", "Test scenario")}>
         <LanguageSwitcher compact />
         {(["eligible", "unknown", "zero", "missing"] as Scenario[]).map((item) => <button key={item} type="button" aria-pressed={scenario === item} onClick={() => { setScenario(item); setSelectedCandidateId(item === "unknown" ? "road-b" : item === "zero" ? null : "road-a"); }}>
