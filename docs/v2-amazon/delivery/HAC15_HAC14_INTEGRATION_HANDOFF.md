@@ -90,12 +90,12 @@ Puntos actuales en `cargomesh/src/features/v2-workspace/workspace.tsx`:
 
 | Punto | Acción en la versión conectada, dueño Luis |
 | --- | --- |
-| `:29` — `useState<WorkspaceDraft>(initialDraft)` | Sustituir por el draft de HAC-14 y sus acciones. No conservar ambos. |
-| `:33` — selección `road-scenario` | Consumir `selectedCandidateId/onSelectCandidate` del mismo controller de HAC-14. |
-| `:42` / `:54` — lectura/escritura del draft local | Dejar de leer/escribir esa key en la versión conectada. La persistencia V2 procede de POST/GET y su versión. |
-| `:84` — `mapPropsForDraft` | Sustituir por `mapServiceabilityToMapViewProps(request, evaluation, selection, callback)`. |
-| `:182` — paso de ruta | Recibir esas `mapProps`; antes de persistir/evaluar mostrar pendiente, sin candidatos inventados. |
-| `:191` — tracking | Reutilizar las mismas `mapProps` y versión; no crear otro draft o selección al navegar. |
+| `:44` — `useState<WorkspaceDraft>(initialDraft)` | Sustituir por el draft de HAC-14 y sus acciones. No conservar ambos. |
+| `:48` — selección `road-scenario` | Consumir `selectedCandidateId/onSelectCandidate` del mismo controller de HAC-14. |
+| `:57` / `:69` — lectura/escritura del draft local | Dejar de leer/escribir esa key en la versión conectada. La persistencia V2 procede de POST/GET y su versión. |
+| `:101` — `mapPropsForDraft` | Sustituir por `mapServiceabilityToMapViewProps(request, evaluation, selection, callback)`. |
+| `:227` — paso de ruta | Recibir esas `mapProps`; antes de persistir/evaluar mostrar pendiente, sin candidatos inventados. |
+| `:236` — tracking | Reutilizar las mismas `mapProps` y versión; no crear otro draft o selección al navegar. |
 
 Extraer el controller actualmente alojado en `V2IntakePrototype` a un único hook/context de HAC-14 o pasarlo por props a la presentación del workspace. **Ese hook/context todavía no existe en #92**; su creación corresponde a Luis. El shell, dashboard, formulario y tracking deben consumir una única instancia, montada por encima de las vistas que la comparten.
 
@@ -113,9 +113,11 @@ No importar silenciosamente el almacenamiento `cargomesh-v2-react-workspace-draf
 
 **Actualización local posterior, 1 octubre 2026:** a petición de Juan el workspace retiró la línea de tres puntos y dispone de un adaptador local opcional Google Routes, separado de serviceability/HAC-14. [Implementación, evidencia y límites actuales](./HAC15_GOOGLE_ROAD_PREVIEW_LOCAL.md). No cambia las seis props ni autoriza a Luis a sustituir su mapper por el endpoint de escenario.
 
+**Ampliación posterior del catálogo:** Juan pidió otros continentes y transporte sólo por tierra. [34 ciudades / 18 países y evidencia multirregional](./HAC15_MULTICONTINENT_ROAD_CATALOG.md). Los selectores de `road-locations.ts` y su prefiltro de redes terrestres pertenecen únicamente al escenario local. No son sedes comerciales ni nuevas reglas de elegibilidad de HAC-12; Luis debe sustituirlos por su catálogo/mapper en modo conectado. Se rechazan ferris y trayectos no DRIVE sin fabricar líneas.
+
 | Superficie | Datos / estado real |
 | --- | --- |
-| `/v2-workspace` actual | Un draft del navegador. Callao→Arequipa tiene un candidato de presentación `unknown`, sin transportista real ni oferta. Si el adaptador local autorizado obtiene respuesta: `GOOGLE_ROUTES_API / ESTIMATED`, geometría y métricas del proveedor. Si no: preview null y ninguna línea. Los extremos siguen siendo coordenadas de escenario. |
+| `/v2-workspace` actual | Un draft del navegador, catálogo de referencia multirregional. Un par de red terrestre compatible puede tener un candidato de presentación `unknown`, sin transportista real ni oferta. Si el adaptador local autorizado obtiene respuesta ROAD sin ferris: `GOOGLE_ROUTES_API / ESTIMATED`, geometría y métricas del proveedor. Si no: preview null y ninguna línea. Redes desconectadas: bloqueo y cero candidatos, sólo pines. Los extremos siguen siendo coordenadas de referencia. |
 | `/hac15-preview` | Fixtures locales de contrato y control padre de prueba. No usa las tarjetas de Luis ni llama a freight API/DB. Sus 1 015 km / 18,5 h son valores del fixture, **no** mediciones Google Routes. |
 | Integración futura | Request/evaluación de HAC-12 mediante HAC-14; procedencia que realmente devuelva el contrato. El basemap no transforma esa procedencia en `VERIFIED`. |
 

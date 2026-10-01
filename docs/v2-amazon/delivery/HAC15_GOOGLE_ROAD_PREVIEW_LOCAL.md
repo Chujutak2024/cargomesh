@@ -4,7 +4,7 @@ Fecha: 1 octubre 2026. Rama: `feat/fe2-v2-route-map`, PR #92. Solicitud de Juan:
 
 ## Resultado y alcance
 
-La web React `/v2-workspace#/tracking` obtiene una geometría real de **Google Routes API** para las coordenadas locales Callao → Arequipa y la dibuja sobre **Google Maps**. La línea anterior de tres puntos sintéticos se retiró del workspace. No hay una línea de sustitución cuando faltan datos o falla la consulta.
+La web React `/v2-workspace#/tracking` obtiene una geometría real de **Google Routes API** para pares del catálogo local con conexión terrestre potencial y la dibuja sobre **Google Maps**. La línea anterior de tres puntos sintéticos se retiró del workspace. No hay una línea de sustitución cuando faltan datos o falla la consulta. La ampliación posterior de Juan añade 34 ciudades de 18 países, seis regiones y rechazo de ferris; [catálogo, política y smoke multirregional](./HAC15_MULTICONTINENT_ROAD_CATALOG.md).
 
 El resultado se etiqueta **ESTIMATED**, no VERIFIED. Los extremos siguen siendo coordenadas del escenario, no instalaciones comerciales confirmadas. El icono de camión indica origen, no vehículo asignado, GPS, capacidad ni cumplimiento de restricciones de camión. No se creó candidato comercial, oferta, booking ni evaluación de serviceability.
 
@@ -21,15 +21,15 @@ El resultado se etiqueta **ESTIMATED**, no VERIFIED. Los extremos siguen siendo 
 | `cargomesh/src/features/v2-road-map/map-marker-icon.ts` | SVG estático de camión y empresa; sin texto ni HTML externo. |
 | `RoadMapCanvas` / `RoadCandidateMapView` | Marcadores, contorno blanco de la ruta, leyenda textual bilingüe y nota del proveedor real. No realizan consultas de routing. |
 
-La entrada local está **deshabilitada por defecto**. Requiere `CARGOMESH_LOCAL_ROUTES_ENABLED=true` y una clave de servidor Routes en `.env.local` ignorado. Acepta únicamente `Host: 127.0.0.1:8080`, `Origin: http://127.0.0.1:8080`, POST JSON y el par `callao/arequipa` del escenario existente. No acepta coordenadas arbitrarias ni crea opciones para otros pares. Comparte llamadas simultáneas y limita repeticiones rápidas; no guarda una caché persistente de contenido Google.
+La entrada local está **deshabilitada por defecto**. Requiere `CARGOMESH_LOCAL_ROUTES_ENABLED=true` y una clave de servidor Routes en `.env.local` ignorado. Acepta únicamente `Host: 127.0.0.1:8080`, `Origin: http://127.0.0.1:8080`, POST JSON e IDs del catálogo local `road-locations.ts`. No acepta coordenadas arbitrarias ni crea candidatos comerciales. Bloquea redes terrestres desconectadas antes de llamar al proveedor. Comparte llamadas simultáneas sólo para el mismo par y permite hasta 20 consultas por minuto en este proceso; no guarda una caché persistente de contenido Google. El hook reutiliza resultados exitosos únicamente durante su montaje.
 
 La validación usa Host/Origin reales porque Next puede reconstruir `request.url` con un host interno. El test cubre esa reconstrucción conservando la restricción al origen autorizado. No se relajaron las restricciones de la key ni se cambió Google Cloud.
 
-Solicitud al proveedor: `DRIVE`, `TRAFFIC_UNAWARE`, `HIGH_QUALITY`, sin alternativas ni puntos intermedios impuestos. Field mask limitado a distancia, duración y polyline. Se enviaron sólo las coordenadas de escenario, sin carga, usuario ni datos comerciales. Fuente técnica: [Compute Routes](https://developers.google.com/maps/documentation/routes/compute_route_directions), [polylines](https://developers.google.com/maps/documentation/routes/traffic_on_polylines).
+Solicitud al proveedor: `DRIVE`, `TRAFFIC_UNAWARE`, `HIGH_QUALITY`, `avoidFerries:true`, sin alternativas ni puntos intermedios impuestos. Field mask limitado a distancia, duración, polyline y modo/maniobra de los pasos. Se rechazan `FERRY`, `FERRY_TRAIN`, pasos no DRIVE y metadatos incompletos; evitar ferris es una preferencia de Google, no una garantía. Se envían sólo coordenadas de referencia, sin carga, usuario ni datos comerciales. Fuente técnica: [Compute Routes](https://developers.google.com/maps/documentation/routes/compute_route_directions), [polylines](https://developers.google.com/maps/documentation/routes/traffic_on_polylines), [modificadores](https://developers.google.com/maps/documentation/routes/route-modifiers).
 
 ## Evidencia real
 
-Coordenadas consultadas:
+Snapshot inicial `0ee1754`, anterior a la ampliación multirregional. Coordenadas consultadas:
 
 - Origen Callao: `-12.0464, -77.1181`.
 - Destino Arequipa: `-16.409, -71.5375`.
@@ -44,13 +44,13 @@ Coordenadas consultadas:
 | Consola | Ningún error observado en el smoke exitoso; aviso de deprecación de `google.maps.Marker`. |
 | Clave de servidor | Configurada localmente; no se muestra en UI, respuesta ni captura. `.env.local` ignorado. Búsqueda por igualdad de su valor en los 80 archivos JS/map del build cliente: ninguna coincidencia; el valor no se imprimió. |
 
-Pruebas frescas: mapa 10/10, workspace 5/5, adaptador local 8/8, total **23/23**. Cubren decoder, errores/incompletos → null, no key → ninguna llamada, restricciones de origen/par, reconstrucción de URL de Next, llamadas simultáneas y repetición rápida. TypeScript, arquitectura (236 módulos / 30 client entry points), build y `git diff --check` pasan. La suite release completa no se presenta como reejecutada por este cambio.
+Pruebas del snapshot inicial: mapa 10/10, workspace 5/5, adaptador local 8/8, total **23/23**. TypeScript, arquitectura (236 módulos / 30 client entry points), build y `git diff --check` pasaron. La ejecución posterior de la ampliación es **33/33**, con arquitectura 237 módulos; está separada en el documento de catálogo. La suite release completa no se presenta como reejecutada por estos cambios.
 
 ## Handoff y límites pendientes
 
 El montaje de Luis continúa consumiendo **el mapper y controller HAC-14**, con las mismas seis props HAC-27. No debe llamar automáticamente a este endpoint de escenario ni usar sus coordenadas como instalaciones persistidas. `RoadCandidateMapView` mantiene su frontera de presentación: null/UNKNOWN/legs vacíos no crean líneas, y contenido Google Routes no se dibuja sobre OSM.
 
-Esta mejora local no sustituye la integración HAC-12/14 ni el piloto de ruteo para camión/TomTom del ADR. Otros pares, búsqueda y confirmación de instalaciones, reevaluación de coordenadas operativas, restricciones de camión y smoke conjunto QA siguen pendientes de su alcance/owner. No se modificaron la rama de Luis, Vercel, producción, Supabase remoto ni infraestructura. Sin merge ni despliegue.
+Esta mejora local no sustituye la integración HAC-12/14 ni el piloto de ruteo para camión/TomTom del ADR. El catálogo ampliado contiene referencias de ciudad para la vista local; búsqueda y confirmación de instalaciones, coordenadas operativas, restricciones de camión y smoke conjunto QA siguen pendientes de su alcance/owner. No se modificaron la rama de Luis, Vercel, producción, Supabase remoto ni infraestructura. Sin merge ni despliegue.
 
 Reproducir: configuración local autorizada en `.env.local`, `pnpm build`, `pnpm start --hostname 127.0.0.1 --port 8080`, abrir `/v2-workspace#/tracking`. La configuración opcional permanece apagada en otros entornos.
 

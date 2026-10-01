@@ -7,6 +7,7 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { useLocale } from "@/features/i18n/locale-provider";
 import { RoadCandidateMapView } from "@/features/v2-road-map/road-candidate-map-view";
 import { useLocalRoadPreview } from "./use-local-road-preview";
+import { cityLabel, countryLabel, landRoutePolicy, locationRegions } from "./road-locations";
 import {
   applyDraftChange, draftStorageKey, facilities, facilityFor, facilityLabel, initialDraft, mapPropsForDraft, readDraft,
   requestSteps, validateStep, type RequestStep, type WorkspaceDraft, type WorkspaceRole, type WorkspaceView,
@@ -21,6 +22,19 @@ const viewFromHash = (): WorkspaceView => {
 
 function SectionHeading({ kicker, title, subtitle, action }: { kicker?: string; title: string; subtitle: string; action?: ReactNode }) {
   return <div className={styles.sectionHeading}><div>{kicker ? <span className={styles.kicker}>{kicker}</span> : null}<h1>{title}</h1><p>{subtitle}</p></div>{action}</div>;
+}
+
+function LocationSelect({ label, value, otherId, locale, onChange }: {
+  label: string; value: string; otherId: string; locale: "es" | "en"; onChange: (id: string) => void;
+}) {
+  return <label>{label}<select value={value} onChange={event => onChange(event.target.value)}>
+    {locationRegions.map(region => <optgroup key={region.id} label={region[locale]}>
+      {facilities.filter(location => location.region === region.id).map(location =>
+        <option key={location.id} value={location.id} disabled={location.id === otherId}>
+          {facilityLabel(location.id, locale)}
+        </option>)}
+    </optgroup>)}
+  </select></label>;
 }
 
 export function V2Workspace() {
@@ -88,7 +102,11 @@ export function V2Workspace() {
     [draft, selectedCandidateId, onSelectCandidate, locale, roadPreview?.preview]);
   const origin = facilityFor(draft.originId);
   const destination = facilityFor(draft.destinationId);
-  const country = t("Perú", "Peru");
+  const routePolicy = landRoutePolicy(draft.originId, draft.destinationId);
+  const landConnectionNotice = t(
+    "Este par no tiene conexión vial continua para camiones: requiere cruzar el mar o una zona sin carretera. Elige otro origen o destino dentro de una red terrestre conectada.",
+    "This pair has no continuous road connection for trucks: it requires crossing the sea or an area without a through road. Choose another origin or destination within a connected land network.",
+  );
   const cargoWeight = draft.quantity * draft.unitWeightKg;
   const status = draft.savedForReview ? t("Guardado para revisar", "Saved for review") : t("Borrador", "Draft");
   const visibleDraft = `${origin.city} → ${destination.city} ${draft.cargoDescription}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
@@ -134,12 +152,16 @@ export function V2Workspace() {
     "Solo se muestran origen y destino. No hay candidato ni geometría de ruta para este par; la cobertura sigue sin verificar.",
     "Only origin and destination are shown. This pair has no candidate or route geometry; coverage remains unverified.",
   )}</p>;
-  const routeStatus = mapProps.candidates.length ? <p className={styles.routeStatus} role="status">{
+  const routeStatus = <p className={styles.routeStatus} role="status">{
+    routePolicy === "disconnected_networks" ? landConnectionNotice
+      : routePolicy === "same_location" ? t("Selecciona un origen y un destino distintos.", "Choose different origin and destination locations.")
+      :
     roadPreview?.status === "estimated" ? <><span className={styles.onlineDot} aria-hidden="true" />{t("Ruta vial calculada", "Driving route calculated")}
       {roadPreview.calculatedAt ? <small>{t("Consultada", "Fetched")} {new Date(roadPreview.calculatedAt).toLocaleString(locale === "es" ? "es-PE" : "en-US")}</small> : null}</>
+      : roadPreview?.reason === "non_road_route" ? t("El proveedor devolvió un tramo en ferry o transporte distinto de carretera. No se muestra como ruta de camión.", "The provider returned a ferry or a non-road segment. It is not displayed as a truck route.")
       : roadPreview?.status === "unavailable" ? t("No se pudo obtener la ruta vial. Se conservan los puntos de origen y destino, sin línea de reemplazo.", "The driving route could not be retrieved. Origin and destination remain visible without a replacement line.")
         : t("Obteniendo ruta vial…", "Fetching driving route…")
-  }</p> : null;
+  }</p>;
 
   return <div className={styles.app}>
     <a className={styles.skip} href="#workspace-main" onClick={(event) => { event.preventDefault(); document.getElementById("workspace-main")?.focus(); }}>{t("Saltar al contenido", "Skip to content")}</a>
@@ -177,12 +199,12 @@ export function V2Workspace() {
           </div>
           <div className={styles.sectionTitle}><h2>{t("Requiere atención", "Needs attention")}</h2><p>{t("Continúa donde te quedaste.", "Pick up where you left off.")}</p></div>
           <article className={styles.attention}>
-            <div><span className={styles.kicker}>V2-LOCAL-01 · {status}</span><div className={styles.routePair}><span><small>{t("ORIGEN", "ORIGIN")}</small><strong>{origin.city}, {country}</strong><small>{facilityLabel(origin.id, locale)}</small></span><Route size={19} aria-hidden="true" /><span><small>{t("DESTINO", "DESTINATION")}</small><strong>{destination.city}, {country}</strong><small>{facilityLabel(destination.id, locale)}</small></span></div></div>
+            <div><span className={styles.kicker}>V2-LOCAL-01 · {status}</span><div className={styles.routePair}><span><small>{t("ORIGEN", "ORIGIN")}</small><strong>{facilityLabel(origin.id, locale)}</strong><small>{t("Referencia de ciudad", "City reference")}</small></span><Route size={19} aria-hidden="true" /><span><small>{t("DESTINO", "DESTINATION")}</small><strong>{facilityLabel(destination.id, locale)}</strong><small>{t("Referencia de ciudad", "City reference")}</small></span></div></div>
             <div className={styles.attentionAction}><span>{t("Progreso", "Progress")} · {draft.completedStep} / 5</span><div className={styles.progressTrack}><i style={{ width: `${draft.completedStep * 20}%` }} /></div><button className={styles.primaryButton} type="button" onClick={() => navigate("request", requestSteps[Math.min(draft.completedStep, 4)])}>{t("Revisar solicitud", "Review request")} →</button><button className={styles.textButton} type="button" onClick={() => navigate("tracking")}>{t("Ver mapa", "View map")}</button></div>
           </article>
           <div className={styles.visualGrid}>
             <section className={styles.visualCard} aria-label={t("Estado de la solicitud", "Request status")}><div className={styles.cardHead}><h2>{t("Solicitudes por estado", "Requests by status")}</h2><small>{t("Solo esta solicitud del navegador", "This browser request only")}</small></div><div className={styles.donutLayout}><div className={styles.donut}><span><strong>1</strong>{t("solicitud", "request")}</span></div><div className={styles.legend}><div><i className={styles.tealDot} />{status}<strong>1</strong></div><div className={styles.legendTrack}><i /></div><p>{t("La solicitud permanece en el navegador; no se envió a un transportista.", "This request stays in the browser; no carrier submission occurred.")}</p></div></div></section>
-            <section className={styles.visualCard}><div className={styles.cardHead}><h2>{t("Rutas de un vistazo", "Routes at a glance")}</h2><small>{t("Par de ciudades seleccionado", "Selected city pair")}</small></div><div className={styles.routeOverview}><strong>V2-LOCAL-01</strong><span>{status}</span><div className={styles.routeLine}><b>{origin.city}, {country}</b><span aria-hidden="true"><i /></span><b>{destination.city}, {country}</b></div></div>{mapNotice}</section>
+            <section className={styles.visualCard}><div className={styles.cardHead}><h2>{t("Rutas de un vistazo", "Routes at a glance")}</h2><small>{t("Par de ciudades seleccionado", "Selected city pair")}</small></div><div className={styles.routeOverview}><strong>V2-LOCAL-01</strong><span>{status}</span><div className={styles.routeLine}><b>{facilityLabel(origin.id, locale)}</b><span aria-hidden="true"><i /></span><b>{facilityLabel(destination.id, locale)}</b></div></div>{mapNotice}</section>
           </div>
           <div className={styles.tableHeading}><div><h2>{t("Solicitudes recientes", "Recent requests")}</h2><p>{t("1 solicitud editable en este espacio del navegador", "1 editable request in this browser workspace")}</p></div><button className={styles.secondaryButton} type="button" onClick={() => navigate("request", "context")}>{t("Editar solicitud", "Edit request")} +</button></div>
           <RequestTable draft={draft} locale={locale} onEdit={() => navigate("request", requestSteps[Math.min(draft.completedStep, 4)])} onTrack={() => navigate("tracking")} />
@@ -191,7 +213,17 @@ export function V2Workspace() {
         {view === "request" ? <>
           <SectionHeading kicker="V2-LOCAL-01 · DEMO" title={t("Solicitud ROAD", "ROAD request")} subtitle={t("Completa el escenario; los cambios se guardan en este dispositivo.", "Complete the scenario; changes are saved on this device.")} />
           <nav className={styles.stepper} aria-label={t("Pasos de la solicitud", "Request steps")}>{requestSteps.map((item, index) => <button key={item} type="button" className={step === item ? styles.stepActive : index < draft.completedStep ? styles.stepDone : ""} disabled={index > draft.completedStep} aria-current={step === item ? "step" : undefined} onClick={() => { setStep(item); setFormError(""); }}><span>{index < draft.completedStep ? "✓" : index + 1}</span>{stepNames[index]}</button>)}</nav>
-          {step === "context" ? <section className={styles.formCard}><div className={styles.cardHead}><div><h2>{t("Origen y destino", "Origin and destination")}</h2><p>{t("Selecciona dos sedes de escenario distintas.", "Choose two different scenario locations.")}</p></div></div><div className={styles.formGrid}><label>{t("Origen", "Origin")}<select value={draft.originId} onChange={(event) => updateDraft({ originId: event.target.value })}>{facilities.map((facility) => <option key={facility.id} value={facility.id}>{facilityLabel(facility.id, locale)}</option>)}</select></label><label>{t("Destino", "Destination")}<select value={draft.destinationId} onChange={(event) => updateDraft({ destinationId: event.target.value })}>{facilities.map((facility) => <option key={facility.id} value={facility.id}>{facilityLabel(facility.id, locale)}</option>)}</select></label></div><p className={styles.formNote}>{t("Estas coordenadas son del escenario. No se han confirmado instalaciones comerciales.", "These are scenario coordinates. Commercial facilities have not been verified.")}</p></section> : null}
+          {step === "context" ? <section className={styles.formCard}>
+            <div className={styles.cardHead}><div><h2>{t("Origen y destino", "Origin and destination")}</h2><p>{t("Explora ciudades de distintas regiones. El transporte es exclusivamente por carretera.", "Explore cities across regions. Transport is road only.")}</p></div><small>{facilities.length} {t("ciudades", "cities")} · {new Set(facilities.map(location => location.countryCode)).size} {t("países", "countries")}</small></div>
+            <div className={styles.regionList} aria-label={t("Regiones disponibles", "Available regions")}>{locationRegions.map(region => <span key={region.id}>{region[locale]}</span>)}</div>
+            <div className={styles.formGrid}>
+              <LocationSelect label={t("Origen", "Origin")} value={draft.originId} otherId={draft.destinationId} locale={locale} onChange={originId => updateDraft({ originId })} />
+              <LocationSelect label={t("Destino", "Destination")} value={draft.destinationId} otherId={draft.originId} locale={locale} onChange={destinationId => updateDraft({ destinationId })} />
+            </div>
+            {routePolicy === "disconnected_networks" ? <p className={styles.connectionNotice} role="status">{landConnectionNotice}</p>
+              : routePolicy === "same_location" ? <p className={styles.connectionNotice} role="status">{t("El origen y el destino deben ser distintos.", "Origin and destination must be different.")}</p> : null}
+            <p className={styles.formNote}>{t("Solo carretera · sin ferris ni transporte marítimo. Las ciudades son referencias locales, no instalaciones verificadas. La ruta se consulta automáticamente en el siguiente paso; fronteras, peso, altura y permisos del camión requieren validación.", "Road only · no ferries or sea transport. Cities are local references, not verified facilities. The route is requested automatically in the next step; borders, truck weight, height, and permits require validation.")}</p>
+          </section> : null}
           {step === "route" ? <>{routeStatus}<RoadCandidateMapView {...mapProps} />{mapNotice}</> : null}
           {step === "cargo" ? <section className={styles.formCard}><div className={styles.cardHead}><div><h2>{t("Carga", "Cargo")}</h2><p>{t("Describe la carga sin asumir capacidad disponible.", "Describe the cargo without assuming available capacity.")}</p></div></div><div className={styles.formGrid}><label>{t("Descripción", "Description")}<input value={draft.cargoDescription} maxLength={120} onChange={(event) => updateDraft({ cargoDescription: event.target.value })} /></label><label>{t("Número de unidades", "Number of units")}<input type="number" min="1" step="1" value={draft.quantity} onChange={(event) => updateDraft({ quantity: Number(event.target.value) })} /></label><label>{t("Peso por unidad (kg)", "Weight per unit (kg)")}<input type="number" min="0.01" step="0.01" value={draft.unitWeightKg} onChange={(event) => updateDraft({ unitWeightKg: Number(event.target.value) })} /></label></div><p className={styles.formNote}>{t("Peso total capturado", "Captured total weight")}: {cargoWeight.toLocaleString(locale === "es" ? "es-PE" : "en-US")} kg. {t("No verifica equipo ni cupo.", "It does not verify equipment or capacity.")}</p></section> : null}
           {step === "schedule" ? <section className={styles.formCard}><div className={styles.cardHead}><div><h2>{t("Ventana de fechas", "Date window")}</h2><p>{t("La entrega no puede ser anterior a la recogida.", "Delivery cannot precede pickup.")}</p></div></div><div className={styles.formGrid}><label>{t("Recogida", "Pickup")}<input type="date" value={draft.pickupDate} onChange={(event) => updateDraft({ pickupDate: event.target.value })} /></label><label>{t("Entrega", "Delivery")}<input type="date" value={draft.deliveryDate} onChange={(event) => updateDraft({ deliveryDate: event.target.value })} /></label></div><p className={styles.formNote}>{t("Estas fechas no reservan capacidad ni prometen una hora de llegada.", "These dates do not reserve capacity or promise an arrival time.")}</p></section> : null}
@@ -205,7 +237,7 @@ export function V2Workspace() {
 
         {view === "desk" ? <><SectionHeading title={t("Mesa de carga", "Freight desk")} subtitle={t("Vista de coordinación del mismo borrador de escenario.", "Coordinator view of the same scenario draft.")} /><div className={styles.notice}><strong>{t("Sin evaluación de transportistas", "No carrier evaluation")}</strong><p>{t("No hay respuesta de serviceability, precio ni reserva para este borrador.", "This draft has no serviceability result, price, or booking.")}</p></div><RequestTable draft={draft} locale={locale} onEdit={() => navigate("request", requestSteps[Math.min(draft.completedStep, 4)])} onTrack={() => navigate("tracking")} /></> : null}
 
-        {view === "help" ? <><SectionHeading title={t("Ayuda", "Help")} subtitle={t("Cómo interpretar este espacio de escenario V2.", "How to interpret this V2 scenario workspace.")} /><div className={styles.notice}><h2>{t("Qué significa el mapa", "What the map means")}</h2><p>{t("El camión marca el origen y la empresa el destino; son coordenadas de escenario, no instalaciones verificadas ni un vehículo asignado. Para Callao → Arequipa se consulta Google Routes desde el servidor local. La ruta sigue las carreteras que devuelve el proveedor y se etiqueta ESTIMATED: no valida un camión ni sus restricciones. Si faltan datos, UNKNOWN muestra sólo los puntos, sin inventar una línea.", "The truck marks the origin and the company the destination; these are scenario coordinates, not verified facilities or an assigned vehicle. For Callao → Arequipa, the local server queries Google Routes. The route follows the provider's road geometry and is labeled ESTIMATED: it does not validate a truck or its restrictions. When data is missing, UNKNOWN shows only the points without inventing a line.")}</p><p>{t("Los borradores se guardan únicamente en este navegador. No hay envío a un carrier ni sincronización cloud en esta vista.", "Drafts are saved only in this browser. This view does not submit to a carrier or sync to cloud storage.")}</p></div></> : null}
+        {view === "help" ? <><SectionHeading title={t("Ayuda", "Help")} subtitle={t("Cómo interpretar este espacio de escenario V2.", "How to interpret this V2 scenario workspace.")} /><div className={styles.notice}><h2>{t("Qué significa el mapa", "What the map means")}</h2><p>{t("El camión marca el origen y la empresa el destino; son referencias de ciudad, no instalaciones verificadas ni un vehículo asignado. El servidor local consulta Google Routes para los pares dentro de una red terrestre conectada. Europa, Asia y África pueden compartir la red; cruzar una frontera no confirma permisos ni cobertura. Se bloquean cruces de océano y el paso vial entre Norteamérica y Sudamérica. Se pide evitar ferris y se rechaza cualquier resultado con ferry o transporte distinto de carretera. La geometría real se etiqueta ESTIMATED: no valida las restricciones de un camión. Si faltan datos, UNKNOWN muestra sólo los puntos, sin inventar una línea.", "The truck marks the origin and the company the destination; these are city references, not verified facilities or an assigned vehicle. The local server queries Google Routes for pairs within a connected land network. Europe, Asia, and Africa can share the network; crossing a border does not confirm permits or coverage. Ocean crossings and the through-road journey between North and South America are blocked. Ferries are avoided and any result containing a ferry or non-road transport is rejected. Real geometry is labeled ESTIMATED: it does not validate truck restrictions. When data is missing, UNKNOWN shows only the points without inventing a line.")}</p><p>{t("Los borradores se guardan únicamente en este navegador. No hay envío a un carrier ni sincronización cloud en esta vista.", "Drafts are saved only in this browser. This view does not submit to a carrier or sync to cloud storage.")}</p></div></> : null}
       </main>
     </div>
   </div>;
@@ -213,5 +245,7 @@ export function V2Workspace() {
 
 function RequestTable({ draft, locale, onEdit, onTrack }: { draft: WorkspaceDraft; locale: "es" | "en"; onEdit: () => void; onTrack: () => void }) {
   const { t } = useLocale();
-  return <div className={styles.tableWrap}><table><thead><tr><th>{t("SOLICITUD", "REQUEST")}</th><th>{t("RUTA", "ROUTE")}</th><th>{t("CARGA", "CARGO")}</th><th>{t("ESTADO", "STATUS")}</th><th>{t("RECOGIDA", "PICKUP")}</th><th>{t("ACCIÓN", "ACTION")}</th></tr></thead><tbody><tr><th scope="row">V2-LOCAL-01<small>{t("En este dispositivo", "On this device")}</small></th><td><strong>{facilityFor(draft.originId).city} → {facilityFor(draft.destinationId).city}</strong><small>{t("Escenario Perú", "Peru scenario")}</small></td><td>{draft.cargoDescription} · {draft.quantity} × {draft.unitWeightKg.toLocaleString(locale === "es" ? "es-PE" : "en-US")} kg</td><td><span className={styles.statusPill}>{draft.savedForReview ? t("Guardado para revisar", "Saved for review") : t("Borrador", "Draft")}</span></td><td>{draft.pickupDate || t("Sin registrar", "Not recorded")}</td><td><div className={styles.tableActions}><button type="button" onClick={onEdit}>{t("Revisar", "Review")}</button><button type="button" onClick={onTrack}>{t("Ver mapa", "View map")} →</button></div></td></tr></tbody></table></div>;
+  const origin = facilityFor(draft.originId);
+  const destination = facilityFor(draft.destinationId);
+  return <div className={styles.tableWrap}><table><thead><tr><th>{t("SOLICITUD", "REQUEST")}</th><th>{t("RUTA", "ROUTE")}</th><th>{t("CARGA", "CARGO")}</th><th>{t("ESTADO", "STATUS")}</th><th>{t("RECOGIDA", "PICKUP")}</th><th>{t("ACCIÓN", "ACTION")}</th></tr></thead><tbody><tr><th scope="row">V2-LOCAL-01<small>{t("En este dispositivo", "On this device")}</small></th><td><strong>{cityLabel(origin, locale)} → {cityLabel(destination, locale)}</strong><small>{countryLabel(origin.countryCode, locale)} → {countryLabel(destination.countryCode, locale)}</small></td><td>{draft.cargoDescription} · {draft.quantity} × {draft.unitWeightKg.toLocaleString(locale === "es" ? "es-PE" : "en-US")} kg</td><td><span className={styles.statusPill}>{draft.savedForReview ? t("Guardado para revisar", "Saved for review") : t("Borrador", "Draft")}</span></td><td>{draft.pickupDate || t("Sin registrar", "Not recorded")}</td><td><div className={styles.tableActions}><button type="button" onClick={onEdit}>{t("Revisar", "Review")}</button><button type="button" onClick={onTrack}>{t("Ver mapa", "View map")} →</button></div></td></tr></tbody></table></div>;
 }

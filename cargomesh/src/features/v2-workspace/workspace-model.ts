@@ -1,16 +1,12 @@
 import type { RoadCandidateMapViewProps, RoadRoutePreviewDto } from "@/features/v2-road-map/road-map-contract";
+import { facilities, cityLabel, countryLabel, landRoutePolicy } from "./road-locations";
+export { facilities } from "./road-locations";
 
 export type WorkspaceView = "dashboard" | "request" | "shipments" | "tracking" | "desk" | "help";
 export type RequestStep = "context" | "route" | "cargo" | "schedule" | "review";
 export type WorkspaceRole = "client" | "coordinator";
 
 export const requestSteps: RequestStep[] = ["context", "route", "cargo", "schedule", "review"];
-
-export const facilities = [
-  { id: "callao", label: "Callao · sede de escenario", city: "Callao", countryCode: "PE", lat: -12.0464, lng: -77.1181 },
-  { id: "arequipa", label: "Arequipa · sede de escenario", city: "Arequipa", countryCode: "PE", lat: -16.409, lng: -71.5375 },
-  { id: "piura", label: "Piura · sede de escenario", city: "Piura", countryCode: "PE", lat: -5.1945, lng: -80.6328 },
-] as const;
 
 export type WorkspaceDraft = {
   originId: string;
@@ -87,12 +83,12 @@ export function facilityFor(id: string) {
 
 export function facilityLabel(id: string, locale: "es" | "en") {
   const facility = facilityFor(id);
-  return locale === "en" ? `${facility.city} · scenario location` : facility.label;
+  return `${cityLabel(facility, locale)}, ${countryLabel(facility.countryCode, locale)}`;
 }
 
 export function validateStep(draft: WorkspaceDraft, step: RequestStep): boolean {
   if (step === "context" || step === "route") {
-    return draft.originId !== draft.destinationId;
+    return landRoutePolicy(draft.originId, draft.destinationId) === "previewable";
   }
   if (step === "cargo") {
     return draft.cargoDescription.trim().length > 0 && Number.isInteger(draft.quantity)
@@ -117,12 +113,12 @@ export function mapPropsForDraft(
 ): RoadCandidateMapViewProps {
   const origin = facilityFor(draft.originId);
   const destination = facilityFor(draft.destinationId);
-  const canonicalPair = origin.id === "callao" && destination.id === "arequipa";
+  const previewablePair = landRoutePolicy(draft.originId, draft.destinationId) === "previewable";
   return {
     origin: { ...origin, facilityId: null, label: facilityLabel(origin.id, locale) },
     destination: { ...destination, facilityId: null, label: facilityLabel(destination.id, locale) },
     overallStatus: "unknown",
-    candidates: canonicalPair ? [{
+    candidates: previewablePair ? [{
       candidateId: "road-scenario",
       status: "unknown",
       carrier: { id: "scenario-only", code: "SCENARIO", commercialName: locale === "en" ? "Road preview · no carrier" : "Vista vial · sin transportista" },
@@ -131,7 +127,7 @@ export function mapPropsForDraft(
       serviceCode: "ROAD-DEMO",
       routePreview,
     }] : [],
-    selectedCandidateId: canonicalPair ? selectedCandidateId : null,
+    selectedCandidateId: previewablePair ? selectedCandidateId : null,
     onSelectCandidate,
   };
 }

@@ -79,3 +79,21 @@ El build se repitió tras la última corrección de la etiqueta `UNKNOWN`. La su
 - Aceptación humana QA con fecha, entorno y SHAs. El piloto de proveedor/ruta para camión del ADR continúa pendiente.
 
 Skills utilizadas en esta revisión: `professional-project-orchestrator` (alcance y fronteras de owner) y `a11y-audit` (teclado, controles y reflujo). No se declara una auditoría WCAG completa ni una prueba con lector de pantalla/dispositivo físico.
+
+## Ampliación multirregional posterior — 1 octubre 2026
+
+Las capturas 01–10 y su matriz anterior son históricas. Las 11–13 documentan la primera ruta Google Callao/Arequipa; 14–22 documentan la ampliación solicitada después por Juan. No son evidencia de integración HAC-14/DB ni aptitud de camión.
+
+| Captura | Evidencia directa local |
+| --- | --- |
+| [14-multicontinent-catalog-es.png](./14-multicontinent-catalog-es.png) | Catálogo ES: 34 ciudades, 18 países, seis regiones; Madrid/Barcelona. |
+| [15-google-madrid-barcelona-es.png](./15-google-madrid-barcelona-es.png) | Google Maps + Google Routes: 627 km / 6,33 h, ESTIMATED. |
+| [16-google-los-angeles-las-vegas-es.png](./16-google-los-angeles-las-vegas-es.png) | Norteamérica: 435 km / 4,11 h, ESTIMATED. |
+| [17-google-bangkok-chiang-mai-es.png](./17-google-bangkok-chiang-mai-es.png) | Asia: 686,8 km / 9,31 h, ESTIMATED. |
+| [18-google-johannesburg-durban-es.png](./18-google-johannesburg-durban-es.png) | África: 567,3 km / 6,2 h, ESTIMATED. |
+| [19-google-sydney-melbourne-en.png](./19-google-sydney-melbourne-en.png) | Oceanía: 877,7 km / 8,97 h; idioma EN conserva resultado/hora. |
+| [20-cross-ocean-blocked-en.png](./20-cross-ocean-blocked-en.png) | Callao/Madrid bloqueado en formulario, Continue no avanza. |
+| [21-no-cross-ocean-geometry-en.png](./21-no-cross-ocean-geometry-en.png) | Mapa Google sólo con pines: sin ruta, fuente/métricas no disponibles, UNKNOWN. |
+| [22-multicontinent-catalog-mobile-es.png](./22-multicontinent-catalog-mobile-es.png) | Catálogo ES, 390×844, sin overflow; extremos iniciales restaurados. |
+
+Ver [catálogo/política ROAD y matriz de pruebas](../../HAC15_MULTICONTINENT_ROAD_CATALOG.md): 33/33 pruebas dirigidas, typecheck, arquitectura (237 módulos / 30 client entry points) y build. Ferris y metadatos incompletos se probaron con respuestas controladas, sin presentarlos como consultas reales. Las restricciones de altura/peso/aduanas y el smoke conjunto QA siguen pendientes.

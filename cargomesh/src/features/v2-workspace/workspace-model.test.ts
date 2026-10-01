@@ -21,11 +21,11 @@ test("the workspace never substitutes synthetic geometry for a missing road prev
   assert.equal(getMapPresentation(scenario).distanceKm, null);
 
   const english = mapPropsForDraft(initialDraft, "road-scenario", () => {}, "en");
-  assert.equal(english.origin.label, "Callao · scenario location");
+  assert.equal(english.origin.label, "Callao, Peru");
   assert.equal(english.candidates[0].carrierName, "Road preview · no carrier");
 
   const reversed = mapPropsForDraft({ ...initialDraft, originId: "arequipa", destinationId: "callao" }, null, () => {});
-  assert.equal(reversed.candidates.length, 0);
+  assert.equal(reversed.candidates.length, 1);
   assert.equal(getMapPresentation(reversed).paths.length, 0);
 });
 
@@ -61,9 +61,36 @@ test("editing a saved route invalidates completion and a malformed saved review 
   const changed = applyDraftChange(reviewed, { destinationId: "piura" });
   assert.equal(changed.completedStep, 0);
   assert.equal(changed.savedForReview, false);
-  assert.equal(mapPropsForDraft(changed, "road-scenario", () => {}).candidates.length, 0);
+  assert.equal(mapPropsForDraft(changed, "road-scenario", () => {}).candidates.length, 1);
+  assert.equal(getMapPresentation(mapPropsForDraft(changed, "road-scenario", () => {})).paths.length, 0);
 
   const invalid = readDraft(JSON.stringify({ ...reviewed, deliveryDate: "2026-09-30" }));
   assert.equal(invalid.completedStep, 3);
   assert.equal(invalid.savedForReview, false);
+});
+
+test("new city pairs survive draft restoration and cannot manufacture eligibility or geometry", () => {
+  for (const [originId, destinationId] of [["madrid", "barcelona"], ["los-angeles", "las-vegas"],
+    ["bangkok", "chiang-mai"], ["johannesburg", "durban"], ["sydney", "melbourne"]]) {
+    const draft = readDraft(JSON.stringify({ ...initialDraft, originId, destinationId }));
+    assert.equal(draft.originId, originId);
+    assert.equal(draft.destinationId, destinationId);
+    assert.equal(validateStep(draft, "context"), true);
+    const props = mapPropsForDraft(draft, "road-scenario", () => {});
+    assert.equal(props.candidates[0].status, "unknown");
+    assert.equal(props.candidates[0].routePreview, null);
+    assert.equal(getMapPresentation(props).paths.length, 0);
+  }
+});
+
+test("a cross-ocean draft cannot advance or restore a completed review", () => {
+  const draft = { ...initialDraft, destinationId: "madrid", pickupDate: "2026-10-01", deliveryDate: "2026-10-03", completedStep: 5, savedForReview: true };
+  assert.equal(validateStep(draft, "context"), false);
+  assert.equal(validateStep(draft, "review"), false);
+  assert.equal(readDraft(JSON.stringify(draft)).completedStep, 0);
+  assert.equal(readDraft(JSON.stringify(draft)).savedForReview, false);
+  const props = mapPropsForDraft(draft, "road-scenario", () => {});
+  assert.equal(props.candidates.length, 0);
+  assert.equal(props.selectedCandidateId, null);
+  assert.equal(getMapPresentation(props).paths.length, 0);
 });

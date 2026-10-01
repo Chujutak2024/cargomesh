@@ -114,6 +114,9 @@
 .formGrid label,.searchLabel{display:grid;gap:.42rem;color:#345369;font-weight:700;font-size:.76rem}
 .formGrid input,.formGrid select,.searchLabel input{width:100%;min-height:42px;padding:.58rem .7rem;background:#fff;color:#123147;border:1px solid #c9d9e3;border-radius:.35rem}
 .formNote{margin:1rem 0 0;padding:.8rem;background:#f0f8fa;border-left:3px solid #3ca8b9;color:#526d80;font-size:.75rem;line-height:1.5}
+.regionList{display:flex;flex-wrap:wrap;gap:.4rem;margin:0 0 1.1rem}
+.regionList span{padding:.3rem .6rem;border:1px solid #d7e8ed;border-radius:2rem;background:#f4f9fb;color:#34687d;font-size:.7rem}
+.connectionNotice{margin:1rem 0 0;padding:.8rem .9rem;border-left:3px solid #c28731;border-radius:.25rem;background:#fffaef;color:#765525;font-size:.78rem;line-height:1.6}
 .formActions{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:1rem}
 .formError{color:#ad3d35;font-size:.76rem}
 .reviewGrid,.infoGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem}

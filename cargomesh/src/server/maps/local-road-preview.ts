@@ -1,4 +1,4 @@
-import { facilities } from "@/features/v2-workspace/workspace-model";
+import { findRoadLocation, landRoutePolicy } from "@/features/v2-workspace/road-locations";
 import type { RoadRoutePreviewDto } from "@/features/v2-road-map/road-map-contract";
 
 type Point = { lat: number; lng: number };
@@ -7,7 +7,8 @@ type RouteResult = {
   status: "estimated";
   routePreview: RoadRoutePreviewDto;
   calculatedAt: string;
-} | { status: "unavailable"; routePreview: null };
+} | { status: "unavailable"; routePreview: null; reason?: "non_road_route" }
+  | { status: "blocked"; routePreview: null; reason: "no_land_connection" };
 
 /** Decode Google's declared geometry; never interpolate a missing segment. */
 export function decodeRoutePolyline(encoded: string): Point[] {
@@ -54,11 +55,12 @@ export async function computeRoadPreview({ origin, destination, apiKey, fetcher 
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline",
+        "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline,routes.legs.steps.travelMode,routes.legs.steps.navigationInstruction.maneuver",
       },
       body: JSON.stringify({
         origin: waypoint(origin), destination: waypoint(destination),
         travelMode: "DRIVE", routingPreference: "TRAFFIC_UNAWARE",
+        routeModifiers: { avoidFerries: true },
         computeAlternativeRoutes: false, polylineQuality: "HIGH_QUALITY", units: "METRIC",
       }),
       signal: AbortSignal.timeout(10_000),
@@ -71,6 +73,21 @@ export async function computeRoadPreview({ origin, destination, apiKey, fetcher 
       ? Number(route.duration.slice(0, -1)) : NaN;
     if (!Number.isFinite(route?.distanceMeters) || route.distanceMeters <= 0 || !Number.isFinite(seconds) || seconds <= 0
       || typeof route?.polyline?.encodedPolyline !== "string") return { status: "unavailable", routePreview: null };
+    // avoidFerries is only a preference. Inspect every returned step and fail
+    // closed if the provider omits step modes or includes ferries/rail/transit.
+    if (!Array.isArray(route.legs) || !route.legs.length
+      || route.legs.some((leg: { steps?: unknown[] }) => !Array.isArray(leg?.steps) || !leg.steps.length)) {
+      return { status: "unavailable", routePreview: null };
+    }
+    const steps = route.legs.flatMap((leg: { steps: { travelMode?: string; navigationInstruction?: { maneuver?: string } }[] }) => leg.steps);
+    if (steps.some((step: { navigationInstruction?: { maneuver?: string } }) =>
+      !step || typeof step.navigationInstruction?.maneuver !== "string" || !step.navigationInstruction.maneuver.length)) {
+      return { status: "unavailable", routePreview: null };
+    }
+    if (steps.some((step: { travelMode?: string; navigationInstruction?: { maneuver?: string } }) =>
+      !step || step.travelMode !== "DRIVE" || ["FERRY", "FERRY_TRAIN"].includes(step.navigationInstruction?.maneuver ?? ""))) {
+      return { status: "unavailable", routePreview: null, reason: "non_road_route" };
+    }
     const waypoints = decodeRoutePolyline(route.polyline.encodedPolyline);
     return {
       status: "estimated", calculatedAt: new Date().toISOString(),
@@ -96,8 +113,8 @@ export function createLocalRoadPreviewHandler({ enabled, apiKey, fetcher = fetch
   apiKey?: string;
   fetcher?: typeof fetch;
 }) {
-  let lastRequestAt = 0;
-  let pending: Promise<RouteResult> | null = null;
+  const pending = new Map<string, Promise<RouteResult>>();
+  let requestTimes: number[] = [];
   const json = (value: unknown, status = 200) => Response.json(value, { status, headers: { "Cache-Control": "no-store" } });
   return async (request: Request) => {
     const url = new URL(request.url);
@@ -113,14 +130,24 @@ export function createLocalRoadPreviewHandler({ enabled, apiKey, fetcher = fetch
     try { body = JSON.parse(text); } catch { return json({ error: "INVALID_REQUEST" }, 400); }
     if (!body || typeof body !== "object") return json({ error: "INVALID_REQUEST" }, 400);
     const { originId, destinationId } = body as Record<string, unknown>;
-    // This adapter can only preview the existing local scenario. It does not
-    // create carrier candidates or turn other pairs into eligible services.
-    if (originId !== "callao" || destinationId !== "arequipa") return json({ error: "INVALID_ROUTE" }, 400);
-    if (!pending && Date.now() - lastRequestAt < 5000) return json({ status: "unavailable", routePreview: null }, 429);
-    if (!pending) {
-      lastRequestAt = Date.now();
-      pending = computeRoadPreview({ origin: facilities[0], destination: facilities[1], apiKey, fetcher });
+    const policy = landRoutePolicy(originId, destinationId);
+    if (policy === "invalid_location" || policy === "same_location") return json({ error: "INVALID_ROUTE" }, 400);
+    if (policy === "disconnected_networks") return json({ status: "blocked", routePreview: null, reason: "no_land_connection" });
+    const origin = findRoadLocation(originId)!;
+    const destination = findRoadLocation(destinationId)!;
+    const pair = `${origin.id}:${destination.id}`;
+    // Deduplicate only the same pair. A response for Madrid must never be
+    // returned to a simultaneous request for Callao. Bound paid calls locally.
+    let calculation = pending.get(pair);
+    if (!calculation) {
+      const now = Date.now();
+      requestTimes = requestTimes.filter(time => now - time < 60_000);
+      if (requestTimes.length >= 20) return json({ status: "unavailable", routePreview: null }, 429);
+      requestTimes.push(now);
+      calculation = computeRoadPreview({ origin, destination, apiKey, fetcher });
+      pending.set(pair, calculation);
+      void calculation.finally(() => { if (pending.get(pair) === calculation) pending.delete(pair); });
     }
-    try { return json(await pending); } finally { pending = null; }
+    return json(await calculation);
   };
 }
