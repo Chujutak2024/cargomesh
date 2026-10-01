@@ -1,4 +1,4 @@
-import type { RoadCandidateMapViewProps } from "@/features/v2-road-map/road-map-contract";
+import type { RoadCandidateMapViewProps, RoadRoutePreviewDto } from "@/features/v2-road-map/road-map-contract";
 
 export type WorkspaceView = "dashboard" | "request" | "shipments" | "tracking" | "desk" | "help";
 export type RequestStep = "context" | "route" | "cargo" | "schedule" | "review";
@@ -113,6 +113,7 @@ export function mapPropsForDraft(
   selectedCandidateId: string | null,
   onSelectCandidate: (candidateId: string) => void,
   locale: "es" | "en" = "es",
+  routePreview: RoadRoutePreviewDto | null = null,
 ): RoadCandidateMapViewProps {
   const origin = facilityFor(draft.originId);
   const destination = facilityFor(draft.destinationId);
@@ -124,29 +125,11 @@ export function mapPropsForDraft(
     candidates: canonicalPair ? [{
       candidateId: "road-scenario",
       status: "unknown",
-      carrier: { id: "scenario-only", code: "SCENARIO", commercialName: locale === "en" ? "Map scenario · no carrier" : "Escenario cartográfico · sin transportista" },
+      carrier: { id: "scenario-only", code: "SCENARIO", commercialName: locale === "en" ? "Road preview · no carrier" : "Vista vial · sin transportista" },
       service: { id: "scenario-road", code: "ROAD-DEMO", mode: "ROAD" },
-      carrierName: locale === "en" ? "Map scenario · no carrier" : "Escenario cartográfico · sin transportista",
+      carrierName: locale === "en" ? "Road preview · no carrier" : "Vista vial · sin transportista",
       serviceCode: "ROAD-DEMO",
-      routePreview: {
-        corridorCode: "PE-PANAM-SUR-SCENARIO",
-        distanceKm: null,
-        estimatedTransitHours: null,
-        geometrySource: "SCENARIO_SYNTHETIC_GEOMETRY",
-        provenanceStatus: "SIMULATED",
-        legs: [{
-          sequence: 1,
-          mode: "ROAD",
-          originLabel: "Callao",
-          destinationLabel: "Arequipa",
-          waypoints: [
-            { lat: origin.lat, lng: origin.lng },
-            { lat: -14.0678, lng: -75.7286 },
-            { lat: destination.lat, lng: destination.lng },
-          ],
-          conditions: [],
-        }],
-      },
+      routePreview,
     }] : [],
     selectedCandidateId: canonicalPair ? selectedCandidateId : null,
     onSelectCandidate,

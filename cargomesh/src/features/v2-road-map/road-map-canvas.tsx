@@ -4,6 +4,7 @@ import { MapPin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "@/features/i18n/locale-provider";
 import { googleMapsAuthFailed, loadGoogleMaps, onGoogleMapsAuthFailure } from "./google-maps-loader";
+import { mapMarkerSvg } from "./map-marker-icon";
 import { canRenderGeometry, isGoogleRoutesSource, type MapPresentation, type MapProvider } from "./road-map-model";
 import styles from "./road-candidate-map-view.module.css";
 
@@ -32,14 +33,21 @@ function mountGoogle(host: HTMLDivElement, center: { lat: number; lng: number })
       update(data) {
         clear();
         const bounds = new google.maps.LatLngBounds();
-        data.markers.forEach(({ point, label }) => {
-          markers.push(new google.maps.Marker({ map, position: point, title: label, clickable: false }));
+        data.markers.forEach(({ point, label, kind }) => {
+          markers.push(new google.maps.Marker({ map, position: point, title: label, clickable: false,
+            icon: { url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(mapMarkerSvg(kind))}`,
+              scaledSize: new google.maps.Size(44, 53), anchor: new google.maps.Point(22, 51) },
+            zIndex: kind === "origin" ? 3 : 2,
+          }));
           bounds.extend(point);
         });
         data.paths.forEach((path) => {
+          if (data.provenanceStatus !== "SIMULATED") lines.push(new google.maps.Polyline({
+            map, path, clickable: false, strokeColor: "#ffffff", strokeWeight: 8, strokeOpacity: 0.9, zIndex: 1,
+          }));
           lines.push(new google.maps.Polyline({
             map, path, clickable: false, strokeColor: data.provenanceStatus === "SIMULATED" ? "#b57425" : "#007d87",
-            strokeWeight: 5, strokeOpacity: data.provenanceStatus === "SIMULATED" ? 0.7 : 0.95,
+            strokeWeight: 5, strokeOpacity: data.provenanceStatus === "SIMULATED" ? 0.7 : 0.95, zIndex: 2,
           }));
           path.forEach((point) => bounds.extend(point));
         });
@@ -67,9 +75,10 @@ async function mountOpenStreetMap(host: HTMLDivElement): Promise<{ adapter: Adap
         overlays.clearLayers();
         if (!canRenderGeometry("openstreetmap", data.geometrySource)) return;
         const bounds = data.markers.map(({ point }) => L.latLng(point.lat, point.lng));
-        data.markers.forEach(({ point, label }) => {
-          L.circleMarker([point.lat, point.lng], {
-            radius: 8, weight: 3, color: "#ffffff", fillColor: "#087f8a", fillOpacity: 1, interactive: false,
+        data.markers.forEach(({ point, label, kind }) => {
+          L.marker([point.lat, point.lng], {
+            icon: L.divIcon({ html: mapMarkerSvg(kind), className: styles.endpointMarker, iconSize: [44, 53], iconAnchor: [22, 51] }),
+            interactive: false, keyboard: false, title: label,
           }).bindTooltip(label, { permanent: true }).addTo(overlays);
         });
         data.paths.forEach((path) => {

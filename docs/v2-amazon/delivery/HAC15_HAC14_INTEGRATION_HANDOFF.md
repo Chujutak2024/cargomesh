@@ -111,9 +111,11 @@ No importar silenciosamente el almacenamiento `cargomesh-v2-react-workspace-draf
 
 ## 5. Datos, geometría y proveedor
 
+**Actualización local posterior, 1 octubre 2026:** a petición de Juan el workspace retiró la línea de tres puntos y dispone de un adaptador local opcional Google Routes, separado de serviceability/HAC-14. [Implementación, evidencia y límites actuales](./HAC15_GOOGLE_ROAD_PREVIEW_LOCAL.md). No cambia las seis props ni autoriza a Luis a sustituir su mapper por el endpoint de escenario.
+
 | Superficie | Datos / estado real |
 | --- | --- |
-| `/v2-workspace` actual | Un draft del navegador. Callao→Arequipa tiene un candidato de presentación `unknown`, sin transportista real ni oferta. Geometría `SIMULATED / SCENARIO_SYNTHETIC_GEOMETRY`; distancia y tiempo `null`. |
+| `/v2-workspace` actual | Un draft del navegador. Callao→Arequipa tiene un candidato de presentación `unknown`, sin transportista real ni oferta. Si el adaptador local autorizado obtiene respuesta: `GOOGLE_ROUTES_API / ESTIMATED`, geometría y métricas del proveedor. Si no: preview null y ninguna línea. Los extremos siguen siendo coordenadas de escenario. |
 | `/hac15-preview` | Fixtures locales de contrato y control padre de prueba. No usa las tarjetas de Luis ni llama a freight API/DB. Sus 1 015 km / 18,5 h son valores del fixture, **no** mediciones Google Routes. |
 | Integración futura | Request/evaluación de HAC-12 mediante HAC-14; procedencia que realmente devuelva el contrato. El basemap no transforma esa procedencia en `VERIFIED`. |
 

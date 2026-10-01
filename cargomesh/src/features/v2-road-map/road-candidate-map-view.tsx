@@ -1,6 +1,6 @@
 "use client";
 
-import { Info, Route } from "lucide-react";
+import { Building2, Info, Route, Truck } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useLocale } from "@/features/i18n/locale-provider";
 import { getMapPresentation, providerNote, routeSourceLabel, type MapPresentation, type MapProvider } from "./road-map-model";
@@ -72,6 +72,10 @@ export function RoadCandidateMapView(props: RoadCandidateMapViewProps) {
       <div className={styles.mapColumn}>
         <div className={styles.mapHead}><div><strong>{t("Vista de ruta", "Route view")}</strong><span>{selected ? selected.carrierName : t("Selecciona un candidato para ver su ruta", "Select a candidate to view its route")}</span></div><span className={styles.provenance}>{mapStatusLabel(presentation.provenanceStatus, locale)}</span></div>
         <RoadMapCanvas presentation={presentation} onProviderChange={handleProviderChange} />
+        <div className={styles.endpointLegend}>
+          <span><Truck size={15} aria-hidden="true" /><b>{t("Origen", "Origin")}</b> · {props.origin.city}</span>
+          <span><Building2 size={15} aria-hidden="true" /><b>{t("Destino", "Destination")}</b> · {props.destination.city}</span>
+        </div>
         <p className={styles.providerNote} aria-live="polite"><Info size={14} aria-hidden="true" /><span>{note}</span></p>
         <div className={styles.routeFacts} aria-live="polite">
           <div><small>{t("Estado de geometría", "Geometry status")}</small><strong>{presentation.paths.length ? mapStatusLabel(presentation.provenanceStatus, locale) : t("Sin geometría verificable", "No verifiable geometry")}</strong></div>

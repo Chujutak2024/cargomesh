@@ -49,6 +49,12 @@
 .mapFailure { position: absolute; inset: 0; display: grid; place-content: center; padding: 1rem; background: #eef3f2; color: #48645f; font-size: 0.78rem; text-align: center; }
 .providerNote { display: flex; align-items: center; gap: 0.36rem; margin: 0; padding: 0.55rem 1rem 0.3rem; color: #607470; font-size: 0.66rem; line-height: 1.4; }
 .providerNote svg { flex: 0 0 auto; }
+.endpointMarker { background: none; border: 0; }
+.endpointMarker svg { width: 44px; height: 53px; }
+.endpointLegend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; padding: 0.65rem 1rem 0; color: var(--road-muted); font-size: 0.7rem; }
+.endpointLegend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.endpointLegend svg { color: #087f8a; flex: 0 0 auto; }
+.endpointLegend span:last-child svg { color: #12364b; }
 .routeFacts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 0.25rem; border-top: 1px solid #edf1ef; }
 .routeFacts > div { display: grid; align-content: start; gap: 0.3rem; min-width: 0; padding: 0.8rem 0.9rem; border-right: 1px solid #edf1ef; }
 .routeFacts > div:last-child { border-right: 0; }

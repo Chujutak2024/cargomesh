@@ -88,6 +88,8 @@
 .routeLine>span:before{left:0}
 .routeLine>span:after{right:0;background:#198ca0}
 .disclosure{margin:.8rem 0 0}
+.routeStatus{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;margin:0 0 1rem;color:#356c66;font-size:.78rem;line-height:1.5}
+.routeStatus small{margin-left:auto;color:#617b8d;font-size:.7rem}
 .tableHeading{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;margin-bottom:.8rem}
 .tableWrap{overflow-x:auto;border:1px solid #d2e0e9;border-radius:.5rem;background:#fff}
 .tableWrap table{width:100%;min-width:800px;border-collapse:collapse;text-align:left}

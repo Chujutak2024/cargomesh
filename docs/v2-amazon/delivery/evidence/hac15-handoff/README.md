@@ -18,6 +18,11 @@ Código: `2c5cc8de7005b1cc5531296f64e56ba4920ebb49`, rama `feat/fe2-v2-route-map
 | [08 — Móvil 320 px ES](./08-mobile-320-es.jpg) | Reflujo sin overflow horizontal y cambio de idioma | No prueba lector de pantalla. |
 | [09 — Workspace local](./09-workspace-local-tracking-es.jpg) | Draft de navegador, candidato sin transportista, SIMULATED y cobertura UNKNOWN | Sin GPS, dispatch, oferta, persistencia V2 ni ETA medida. |
 | [10 — Google Maps / workspace](./10-google-workspace-8080-es.jpg) | Google Maps JavaScript con teselas, dos pines, logo, términos, atribución y nota Google Maps Platform | Origen local autorizado `127.0.0.1:8080`; geometría SIMULATED, sin consulta Google Routes. |
+| [11 — Ruta vial Google ES](./11-google-road-route-truck-company-es.jpg) | Geometría real Google Routes, camión / empresa y métricas ESTIMATED | Coordenadas de escenario; no valida un camión ni una instalación comercial. |
+| [12 — Ruta vial Google EN](./12-google-road-route-en-desktop.jpg) | Fuente, leyenda y estado en inglés; ruta conservada al cambiar idioma | Misma consulta local, sin evaluación API de carrier. |
+| [13 — Ruta vial Google móvil](./13-google-road-route-mobile-390-es.jpg) | Viewport 390 px, ruta, iconos y atribución visibles, sin overflow horizontal de página | Viewport responsive; no GPS ni dispositivo físico. |
+
+Las capturas 11–13 corresponden a la [mejora local posterior de Google Routes](../../HAC15_GOOGLE_ROAD_PREVIEW_LOCAL.md). Las capturas 01–10 conservan su contexto histórico: no se reclasifican como evidencia de routing real. Los fixtures de `/hac15-preview` y las 19 comprobaciones anteriores permanecen separados de esta nueva consulta del workspace.
 
 [interaction-results.json](./interaction-results.json) registra **19/19 comprobaciones PASS** mediante interacciones y lecturas DOM en CUA. Es un registro de esta ejecución; no un script de CI. [console-summary.json](./console-summary.json) conserva la evidencia sanitizada del error de autorización del proveedor y del aviso de deprecación de `google.maps.Marker`.
 

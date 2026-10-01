@@ -12,21 +12,36 @@ test("the V2 workspace never restores the legacy Callao to Santiago draft", () =
   assert.equal(restored.originId, "callao");
 });
 
-test("only the declared Callao to Arequipa scenario has simulated geometry", () => {
+test("the workspace never substitutes synthetic geometry for a missing road preview", () => {
   const scenario = mapPropsForDraft(initialDraft, "road-scenario", () => {});
   assert.equal(scenario.overallStatus, "unknown");
   assert.equal(scenario.candidates[0].status, "unknown");
-  assert.equal(scenario.candidates[0].routePreview?.provenanceStatus, "SIMULATED");
-  assert.equal(getMapPresentation(scenario).paths.length, 1);
+  assert.equal(scenario.candidates[0].routePreview, null);
+  assert.equal(getMapPresentation(scenario).paths.length, 0);
   assert.equal(getMapPresentation(scenario).distanceKm, null);
 
   const english = mapPropsForDraft(initialDraft, "road-scenario", () => {}, "en");
   assert.equal(english.origin.label, "Callao · scenario location");
-  assert.equal(english.candidates[0].carrierName, "Map scenario · no carrier");
+  assert.equal(english.candidates[0].carrierName, "Road preview · no carrier");
 
   const reversed = mapPropsForDraft({ ...initialDraft, originId: "arequipa", destinationId: "callao" }, null, () => {});
   assert.equal(reversed.candidates.length, 0);
   assert.equal(getMapPresentation(reversed).paths.length, 0);
+});
+
+test("a provider preview keeps eligibility unknown and requires controlled selection", () => {
+  const preview = {
+    corridorCode: null, distanceKm: 10, estimatedTransitHours: 1,
+    geometrySource: "GOOGLE_ROUTES_API", provenanceStatus: "ESTIMATED" as const,
+    legs: [{ sequence: 1, mode: "ROAD" as const, originLabel: "Callao", destinationLabel: "Arequipa",
+      waypoints: [{ lat: -12.0464, lng: -77.1181 }, { lat: -16.409, lng: -71.5375 }], conditions: [] }],
+  };
+  const props = mapPropsForDraft(initialDraft, "road-scenario", () => {}, "es", preview);
+  assert.equal(props.candidates[0].status, "unknown");
+  assert.equal(props.overallStatus, "unknown");
+  assert.equal(getMapPresentation(props).geometrySource, "GOOGLE_ROUTES_API");
+  assert.equal(getMapPresentation(props).provenanceStatus, "ESTIMATED");
+  assert.equal(getMapPresentation({ ...props, selectedCandidateId: null }).paths.length, 0);
 });
 
 test("review requires distinct locations, valid cargo and ordered dates", () => {
