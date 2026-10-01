@@ -34,6 +34,38 @@ describe("HAC-12 V2 DTOs", () => {
     assert.deepEqual(result.origin, { facilityId });
   });
 
+  it("rejects quantity, weight and volume totals that contradict the units", () => {
+    for (const patch of [
+      { units: [{ ...request.cargoSpecification.units[0]!, quantity: 100 }] },
+      { totalWeightKg: 4799 }, { totalVolumeM3: 19.1 },
+    ]) {
+      assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request,
+        cargoSpecification: { ...request.cargoSpecification, ...patch } }).success, false);
+    }
+  });
+
+  it("sums multiple unit groups and accepts only numeric rounding tolerance", () => {
+    const cargo = { ...request.cargoSpecification,
+      units: [{ ...request.cargoSpecification.units[0]!, quantity: 3 },
+        { ...request.cargoSpecification.units[0]!, quantity: 5 }] };
+    assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request,
+      cargoSpecification: cargo }).success, true);
+    cargo.totalWeightKg -= 5e-7;
+    assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request,
+      cargoSpecification: cargo }).success, true);
+    cargo.totalWeightKg -= 1e-4;
+    assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request,
+      cargoSpecification: cargo }).success, false);
+  });
+
+  it("preserves complete manual coordinate pairs and rejects partial pairs", () => {
+    const manual = { label: "Manual Lima", countryCode: "PE", city: "Lima", lat: -12.0464, lng: -77.1181 };
+    const parsed = CreateFreightRequestV2InputSchema.parse({ ...request, origin: manual });
+    assert.equal(parsed.origin.lat, manual.lat);
+    assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request,
+      origin: { ...manual, lng: undefined } }).success, false);
+  });
+
   it("does not accept PEN, another mode or contradictory coordinate shape", () => {
     assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request, budget: { amount: 100, currency: "PEN" } }).success, false);
     assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request, acceptedModes: ["AIR"] }).success, false);

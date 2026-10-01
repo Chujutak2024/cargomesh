@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cargoUnitTotalsV2 } from "@/shared/schemas/v2/freight-request";
 import { RoadServiceabilityEvaluationV2ResponseSchema, type RoadCandidateV2 } from
   "@/shared/schemas/v2/serviceability";
 import { ResourceEvidenceRequirementCodesV2 } from "@/shared/schemas/v2/intake-options";
@@ -39,6 +40,7 @@ export async function evaluateV2RoadByRequestId(
     endsAt: request.deliveryWindow.endsAt,
   };
   const services = await catalog.listRoadServices();
+  const unitTotals = cargoUnitTotalsV2(request.cargoSpecification.units);
   const result = evaluateRoad({
     origin: { countryCode: request.origin.countryCode, regionCode: request.origin.region,
       city: request.origin.city },
@@ -48,8 +50,9 @@ export async function evaluateV2RoadByRequestId(
     pickupWindow: request.pickupWindow,
     deliveryWindow: request.deliveryWindow,
     cargoCategoryCode: request.cargoSpecification.categoryCode,
-    totalWeightKg: request.cargoSpecification.totalWeightKg,
-    totalVolumeM3: request.cargoSpecification.totalVolumeM3,
+    // The tolerance handles rounding; never discount actual units at a capacity limit.
+    totalWeightKg: Math.max(request.cargoSpecification.totalWeightKg, unitTotals.weightKg),
+    totalVolumeM3: Math.max(request.cargoSpecification.totalVolumeM3, unitTotals.volumeM3),
     indivisibleUnits: request.cargoSpecification.units.filter((unit) => unit.indivisible)
       .map((unit) => ({ weightKg: unit.weightPerUnitKg, volumeM3: unit.volumePerUnitM3 })),
     requiredEquipmentCode: request.requiredEquipment,

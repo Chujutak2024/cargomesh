@@ -274,7 +274,12 @@ function capacitiesCheck(capacities: Capacity[], request: RoadRequest,
   };
   const matchedLane = service.lanes.find((item) => item.id === lane.laneId);
   const checks = carrying.map((source) => {
-    const capacity = { ...capacityCheck(source, request), sourceId: source.id };
+    const physicalCapacity = capacityCheck(source, request);
+    // Sprint 2 has no persisted LTL residual allocation/consolidation schedule.
+    // Neither a free truck nor a generic pool proves those commercial constraints.
+    const capacity = { ...(service.serviceClass === "LTL" && physicalCapacity.status === "eligible"
+      ? { status: "unknown" as const, reason: "LTL_CAPACITY_AND_CONSOLIDATION_UNVERIFIED" }
+      : physicalCapacity), sourceId: source.id };
     const requirements = requirementsCheck(source, request);
     const temporal = temporalCheck(request, matchedLane, source);
     return { capacity, requirements, temporal, status: combine([capacity, requirements, temporal]).status };

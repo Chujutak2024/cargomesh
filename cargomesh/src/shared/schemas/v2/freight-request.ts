@@ -54,6 +54,16 @@ const CargoUnitV2Schema = z.object({
   stackable: z.boolean(),
 }).strict();
 
+/** Absolute rounding tolerance only: 0.000001 kg / cubic metres. */
+export const CARGO_TOTAL_TOLERANCE_V2 = 1e-6;
+
+export function cargoUnitTotalsV2(units: Array<z.infer<typeof CargoUnitV2Schema>>) {
+  return units.reduce((totals, unit) => ({
+    weightKg: totals.weightKg + unit.quantity * unit.weightPerUnitKg,
+    volumeM3: totals.volumeM3 + unit.quantity * unit.volumePerUnitM3,
+  }), { weightKg: 0, volumeM3: 0 });
+}
+
 export const CargoSpecificationV2Schema = z.object({
   categoryCode: CargoCategoryCodeV2Schema,
   description: z.string().trim().min(1).max(1000),
@@ -67,7 +77,18 @@ export const CargoSpecificationV2Schema = z.object({
     maxCelsius: z.number(),
   }).strict().refine((range) => range.maxCelsius >= range.minCelsius).nullable().optional(),
   units: z.array(CargoUnitV2Schema).min(1),
-}).strict();
+}).strict().superRefine((cargo, context) => {
+  const totals = cargoUnitTotalsV2(cargo.units);
+  for (const [field, computed] of [
+    ["totalWeightKg", totals.weightKg], ["totalVolumeM3", totals.volumeM3],
+  ] as const) {
+    if (!Number.isFinite(computed)
+      || Math.abs(cargo[field] - computed) > CARGO_TOTAL_TOLERANCE_V2) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: [field],
+        message: "Declared total must match quantity times each unit measurement." });
+    }
+  }
+});
 
 const ShipmentContactV2Schema = z.object({
   name: z.string().trim().min(1).max(150),

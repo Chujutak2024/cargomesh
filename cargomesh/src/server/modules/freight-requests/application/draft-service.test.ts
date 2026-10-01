@@ -59,7 +59,7 @@ function fakeRepository(): V2DraftRepository & { writes: DraftInsert[] } {
           } : {
             facilityId: null, label: draft.input.origin.label!,
             countryCode: draft.input.origin.countryCode!, region: draft.input.origin.region ?? null,
-            city: draft.input.origin.city!, lat: null, lng: null,
+            city: draft.input.origin.city!, lat: draft.input.origin.lat ?? null, lng: draft.input.origin.lng ?? null,
           },
           destination: {
             facilityId: destinationId, label: "Centro Arequipa",
@@ -113,13 +113,14 @@ describe("HAC-12 V2 draft application service", () => {
     assert.equal(repo.writes.length, 0);
   });
 
-  it("drops unverified manual coordinates rather than claiming geometry", async () => {
+  it("round-trips manual pins as user assertions without creating a facility", async () => {
     const repo = fakeRepository();
     const created = await createV2Draft({
       ...input, origin: { label: "Punto manual", countryCode: "PE", city: "Piura", lat: -5.2, lng: -80.6 },
     }, key, actor, repo);
-    assert.equal(created.data.origin.lat, null);
-    assert.equal(created.data.origin.lng, null);
+    assert.equal(created.data.origin.facilityId, null);
+    assert.equal(created.data.origin.lat, -5.2);
+    assert.equal(created.data.origin.lng, -80.6);
   });
 
   it("hashes parsed DTOs independently of JSON object key order", () => {

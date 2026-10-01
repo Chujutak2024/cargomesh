@@ -179,7 +179,9 @@
       "sha256": "151687abdc233eb66aa5718873b750851154649d1c212cfa1cb1aebdd445089f",
       "type": "schema",
       "profile": "v2-clean",
-      "dependencies": ["20260927042811"]
+      "dependencies": [
+        "20260927042811"
+      ]
     },
     {
       "issue": "HAC-12",
@@ -188,7 +190,20 @@
       "sha256": "5deebf452f37ec07107919954548150ac5806ad13fdb6cf88e63b7f7cb300b07",
       "type": "schema",
       "profile": "v2-clean",
-      "dependencies": ["20260927064713"]
+      "dependencies": [
+        "20260927064713"
+      ]
+    },
+    {
+      "issue": "HAC-12",
+      "path": "supabase-v2/supabase/migrations/20261001201251_hac12_review_guards.sql",
+      "version": "20261001201251",
+      "sha256": "9251975cb6afc47bdf46e4aaf305321e47e30737ff4aa4128d4a47bb3862c81a",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20260928190000"
+      ]
     }
   ]
 }

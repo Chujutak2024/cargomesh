@@ -28,12 +28,12 @@ Estado: **implementación local verificada, pendiente de revisión independiente
 - Tras el cleanup del gate, los escenarios sintéticos HAC-29 y HAC-12 se sembraron y verificaron de nuevo. Smoke HTTP autenticado contra Next/Hono + Supabase local: PASS para cinco grupos, POST→GET, replay/conflicto, tenant/sedes, `eligible`, `unknown`, cero candidatos y `expectedDraftVersion` obsoleta. El primer intento no encontró el fixture HAC-29 en la rama HAC-12 aislada; `HAC12_FIXTURE_ROOT` apuntó al checkout combinado y el segundo intento pasó. El script limpió los borradores creados.
 - `supabase db advisors --local --type all --level warn --fail-on warn`: sin hallazgos. `pnpm test:release`: 410/410 PASS en 18 comandos de prueba; `pnpm typecheck`, `pnpm check:architecture` y `pnpm build`: PASS sobre la rama HAC-12.
 - Tras el smoke, otro `supabase db reset --local` aplicó de nuevo las cuatro migraciones V2; los conteos locales finales son 0 organizaciones, 0 usuarios Auth y 0 solicitudes.
-- Preflight remoto de solo lectura: la conexión Supabase disponible muestra `cargomesh` (`tokvzfrefwqobzqgbfoj`) y un proyecto inactivo sin identidad V2, pero no un proyecto `cargomesh-v2` verificable. No se aplicó ninguna migración hospedada; antes se necesita identificar el proyecto V2 separado, revisar el diff/respaldo/plan de reversión y obtener la aprobación de ejecución exigida por HAC-12.
+- Preflight remoto de solo lectura del 29 sep: el listado disponible no expuso el proyecto V2. **Corrección 1 oct:** la consulta directa por ref `yhimeajpzicjbxpbzsyh` confirma `cargomesh-v2`, separado de V1 y `ACTIVE_HEALTHY`. Migraciones y tablas (`public`/`private`) devolvieron listas vacías. El esquema remoto sigue pendiente; la ausencia en un listado no acredita ausencia del proyecto. No se aplicaron migraciones hospedadas.
 
 ## Pendientes antes de In Review/Done
 
 1. Integrar en HAC-16 los dos conflictos `add/add` de manifiesto/perfil, cuya resolución local ya pasó el gate, y conservar la evidencia del checkout combinado. Véanse [FL-03](./friction-logs/FL-03.md) y [FL-05](./friction-logs/FL-05.md).
-2. Obtener revisión independiente de HAC-12 y reejecutar los checks pertinentes tras cualquier corrección. No mezclar directo a la rama base ni a `main`.
+2. Obtener reprueba independiente de las correcciones R-01 a R-05 de HAC-12 y reejecutar los checks pertinentes tras cualquier corrección. No mezclar directo a la rama base ni a `main`.
 3. Conectar el mismo servicio de aplicación a HAC-11 (MCP) y las vistas HAC-14/15, y pasar QA HAC-13 sobre el corte integrado.
 4. Resolver con HAC-27/HAC-29 la proyección de fixture que espera `serviceClass: FTL_DEDICATED` y canales `API/MANUAL`: el catálogo físico actual acredita `FTL` y **ningún canal V2 publicado**. La API devuelve `FTL` y `responseChannels: []`; no inventa capacidades comerciales.
 5. Verificar sobre el corte integrado el consumo de los cinco grupos de HAC-14 (`facilityId`, códigos de categoría/equipo/embalaje/requisitos), los errores visibles y el fixture solo explícito. Luis reportó esa implementación en su rama, pero aún falta el recorrido conjunto con HAC-12; seguimiento en [FL-04](./friction-logs/FL-04.md).
@@ -42,3 +42,27 @@ Estado: **implementación local verificada, pendiente de revisión independiente
 Límite funcional: `packaging` se valida como dato de captura y se persiste, pero el evaluador ROAD aún no verifica si el recurso puede manipular ese embalaje. Por ello, un `eligible` en este corte describe los filtros ROAD implementados; no es una confirmación de compatibilidad de embalaje, oferta, reserva ni autorización de booking. Registrar la regla/evidencia de embalaje antes de afirmar esa capacidad como verificada.
 
 Este corte no persiste las 57 clases UML ni implementa ofertas, reservas de booking, otros modos o Alexa+ live. Reutiliza tablas V1 seleccionadas como estructura, no sus carriers ni su flujo WebMCP.
+
+## Correcciones de revision independiente - 1 oct 2026
+
+Jean Paul reviso PR #91 en `0a6406f` y registro **Requiere cambios**:
+[revision con reproducciones R-01 a R-05](https://linear.app/hackatonteamcargomesh/document/hac-12-revision-tecnica-independiente-del-pr-91-0a6406f-1-oct-83ee0f4cf226).
+Los cambios siguientes pertenecen al responsable HAC-12 y necesitan reprueba independiente.
+
+| Hallazgo | Correccion implementada | Verificacion |
+| --- | --- | --- |
+| R-01: UPDATE directo modifica snapshot sin version | Migracion aditiva bloquea todo UPDATE de una solicitud V2, incluida la eliminacion del marcador o un aumento manual de version, con `409 V2_DRAFT_MUTATION_UNSUPPORTED`. Sprint 2 expone creacion/lectura; no hay edicion V2 legitimada por una RPC versionada. La futura edicion debe reemplazar esta guarda mediante un contrato canonico con version esperada. | pgTAP bajo `authenticated` y smoke Data API PASS; snapshot/version permanecen intactos. |
+| R-02: LTL elegible sin cupo/consolidacion | Capacidad fisica compatible conserva `unknown` con `LTL_CAPACITY_AND_CONSOLIDATION_UNVERIFIED`. Ni un camion ni un pool generico prueban consolidacion. Una imposibilidad fisica sigue `ineligible`. No se anuncia LTL operativo. | Dominio, DTO y smoke HTTP PASS; volver a FTL restaura el control positivo. |
+| R-03: cantidad/totales inconsistentes | Zod y RPC suman `quantity * weightPerUnitKg/volumePerUnitM3`. Tolerancia absoluta `0.000001 kg/m3` solo para redondeo. El evaluador toma el mayor entre el total declarado y el calculado; la tolerancia no rebaja el filtro de capacidad. | Zod, multiples grupos, limite fisico, RPC y HTTP PASS; error no crea recibo. |
+| R-04: Bearer no se propaga | Authorization Bearer tiene prioridad sobre cookies; usuario validado por Auth y membresia activa. El contexto asincrono propaga el token del usuario a las consultas/RPC. Un header invalido no cae a cookies. | HTTP PASS para POST/GET/options/serviceability con Bearer sin cookie, prioridad frente a cookie de otro tenant, token/header invalido y membresia INACTIVE (403 en los cuatro endpoints). |
+| R-05: lat/lng manuales descartados | La RPC conserva ambos valores; par incompleto o fuera de rango se rechaza. `facilityId` mantiene la prioridad de la sede de BD. `facilityId: null` identifica una ubicacion manual no verificada; un pin no aporta geometria de ruta ni cobertura confirmada. | DTO/aplicacion, round-trip RPC/HTTP, par invalido, precedencia de sede canonica y routePreview null PASS. |
+
+Nueva migracion: `supabase-v2/supabase/migrations/20261001201251_hac12_review_guards.sql`.
+Las dos migraciones HAC-12 anteriores permanecen intactas; la cadena combinada contiene cinco migraciones.
+La suite `pnpm test:hac12` ejecuta los cinco archivos de pruebas V2 y se incluye ahora en `pnpm test:release`.
+
+Verificacion del corte corregido: 47/47 pruebas HAC-12 y 457/457 pruebas release PASS (19 comandos; incluye ahora los cinco archivos V2). TypeScript, arquitectura y build PASS.
+El manifiesto combinado verifica inventario, dependencias y hashes PASS. Sus mensajes generales de tareas bloqueadas no acreditan ni sustituyen el gate del producto.
+**Gate del delta nuevo (1 oct):** `gate.py v2` PASS sobre el checkout combinado basado en `f2a8e3e` mas HAC-12 y estas correcciones. Las cinco migraciones aplicaron desde cero; pgTAP 116/116 en cinco archivos, de las cuales HAC-12 aporta 43/43. Ausencia V1 con controles positivos 9/9, drift del baseline y cleanup PASS. Puertos de replay `61300`/`62300`. Smoke HTTP Cookie/Bearer/Data API PASS sobre los escenarios sinteticos resembrados; advisors locales sin hallazgos warn/error. Evidencia sin credenciales: `%TEMP%\hac12-review-fixes-20261001` (`v2/v2-pgtap.log`, `http-smoke.log`, `release.log`, `advisors.log`, `final-reset.log` y `final-counts.log`). Un reset final vuelve a dejar 0 organizaciones, 0 usuarios Auth y 0 solicitudes. Docker se recupero creando una carpeta IPC limpia y preservando la anterior; vease [FL-06](./friction-logs/FL-06.md).
+
+El PR permanece borrador pendiente de reprueba independiente y gate de integracion; la validacion local del delta SQL/HTTP ya paso. HAC-16 conserva la resolucion de los dos conflictos de manifiesto/perfil. No se hizo merge, deploy ni cambios en Supabase hospedado.

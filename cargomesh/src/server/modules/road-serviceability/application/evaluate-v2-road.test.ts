@@ -89,6 +89,33 @@ describe("HAC-12 ROAD application response", () => {
     assert.equal("price" in result.data.candidates[0]!, false);
   });
 
+  it("exposes the LTL review reason and withholds available capacity in the DTO", async () => {
+    const item = service();
+    item.serviceClass = "LTL";
+    const result = await evaluateV2RoadByRequestId(requestId, 1, actor, draft(),
+      { listRoadServices: async () => [item] });
+    const candidate = result.data.candidates[0]!;
+    assert.equal(candidate.status, "unknown");
+    assert.equal(candidate.checks.capacityWindow.status, "unknown");
+    assert.equal(candidate.checks.capacityWindow.availableWeightKg, null);
+    assert.equal(candidate.checks.capacityWindow.reasonCode, "LTL_CAPACITY_AND_CONSOLIDATION_UNVERIFIED");
+  });
+
+  it("does not discount unit weight at a physical limit within rounding tolerance", async () => {
+    const repo = draft();
+    const saved = (await repo.findById(actor, requestId))!;
+    const cargo = saved.data.cargoSpecification;
+    cargo.totalWeightKg = 1000;
+    cargo.units[0]!.weightPerUnitKg = (1000 + 5e-7) / cargo.units[0]!.quantity;
+    const item = service();
+    item.capacities[0]!.maxWeightKg = 1000;
+    const result = await evaluateV2RoadByRequestId(requestId, 1, actor, {
+      ...repo, findById: async () => saved,
+    }, { listRoadServices: async () => [item] });
+    assert.equal(result.data.candidates[0]?.status, "ineligible");
+    assert.ok(result.data.candidates[0]?.reasons.includes("OVER_CAPACITY"));
+  });
+
   it("degrades missing calendar and unknown provenance instead of claiming availability", async () => {
     const missing = service();
     missing.capacities[0]!.calendar = null;

@@ -21,6 +21,8 @@ const fixtureRoot = process.env.HAC12_FIXTURE_ROOT
   ?? resolve(import.meta.dirname, "../../supabase/scenarios/v2-road-baseline/fixtures");
 const positive = JSON.parse(await readFile(resolve(fixtureRoot, "positive.json"), "utf8"));
 const createdIds = [];
+const changedServices = new Map();
+const changedMemberships = new Map();
 const admin = createClient(apiUrl, serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
@@ -33,9 +35,11 @@ async function sessionFor(email) {
       setAll: (entries) => entries.forEach(({ name, value }) => jar.set(name, value)),
     },
   });
-  const { error } = await client.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-  return () => [...jar].map(([name, value]) => `${name}=${value}`).join("; ");
+  const { data, error } = await client.auth.signInWithPassword({ email, password });
+  if (error || !data.session) throw new Error("Local QA sign-in failed.");
+  const cookie = () => [...jar].map(([name, value]) => `${name}=${value}`).join("; ");
+  cookie.accessToken = data.session.access_token;
+  return cookie;
 }
 
 async function call(path, cookie, options = {}) {
@@ -67,6 +71,15 @@ try {
   assert.equal(options.body.data.cargoCategories.length, 8);
   assert.equal(options.body.data.facilities.length, 3);
 
+  const bearerHeaders = { Authorization: `Bearer ${tenantA.accessToken}` };
+  const bearerOptions = await call("/api/v2/intake/options", undefined, { headers: bearerHeaders });
+  assert.equal(bearerOptions.status, 200);
+  assert.deepEqual(bearerOptions.body, options.body);
+  for (const authorization of ["Bearer invalid-token", "Basic invalid", "Bearer "]) {
+    assert.equal((await call("/api/v2/intake/options", tenantA,
+      { headers: { Authorization: authorization } })).status, 401);
+  }
+
   const key = crypto.randomUUID();
   const created = await post(positive.requestBody, tenantA, key);
   assert.equal(created.status, 201, JSON.stringify(created.body));
@@ -95,6 +108,120 @@ try {
   const stale = await call(`/api/v2/freight/requests/${requestId}/serviceability?expectedDraftVersion=2`, tenantA);
   assert.equal(stale.status, 409, JSON.stringify(stale.body));
 
+  // R-04: all canonical operations work with Bearer without cookies.
+  const bearerCreated = await call("/api/v2/freight/requests", undefined, {
+    method: "POST", headers: { ...bearerHeaders, "Idempotency-Key": crypto.randomUUID() },
+    body: JSON.stringify(positive.requestBody),
+  });
+  assert.equal(bearerCreated.status, 201, JSON.stringify(bearerCreated.body));
+  createdIds.push(bearerCreated.body.data.id);
+  assert.equal((await call(`/api/v2/freight/requests/${bearerCreated.body.data.id}`, undefined,
+    { headers: bearerHeaders })).status, 200);
+  const bearerEvaluation = await call(`/api/v2/freight/requests/${bearerCreated.body.data.id}/serviceability`,
+    undefined, { headers: bearerHeaders });
+  assert.equal(bearerEvaluation.status, 200);
+  assert.equal(bearerEvaluation.body.data.summaryCounts.eligibleCount, 1);
+  assert.equal((await call(`/api/v2/freight/requests/${requestId}`, tenantA,
+    { headers: { Authorization: `Bearer ${tenantB.accessToken}` } })).status, 404,
+    "Bearer must take priority over another tenant's cookie");
+
+  const memberRead = await admin.from("organization_members").select("id,status")
+    .eq("auth_user_id", "c2310000-0000-4000-8000-000000000001").single();
+  assert.equal(memberRead.error, null);
+  changedMemberships.set(memberRead.data.id, memberRead.data.status);
+  const disabledMember = await admin.from("organization_members").update({ status: "INACTIVE" })
+    .eq("id", memberRead.data.id);
+  assert.equal(disabledMember.error, null);
+  for (const path of ["/api/v2/intake/options", `/api/v2/freight/requests/${requestId}`,
+    `/api/v2/freight/requests/${requestId}/serviceability`]) {
+    assert.equal((await call(path, undefined, { headers: bearerHeaders })).status, 403);
+  }
+  assert.equal((await call("/api/v2/freight/requests", undefined, {
+    method: "POST", headers: { ...bearerHeaders, "Idempotency-Key": crypto.randomUUID() },
+    body: JSON.stringify(positive.requestBody),
+  })).status, 403);
+  const activeMember = await admin.from("organization_members").update({ status: memberRead.data.status })
+    .eq("id", memberRead.data.id);
+  assert.equal(activeMember.error, null);
+  changedMemberships.delete(memberRead.data.id);
+  assert.equal((await call("/api/v2/intake/options", undefined, { headers: bearerHeaders })).status, 200);
+
+  // R-01: the real authenticated Data API role cannot forge the snapshot.
+  const userClient = createClient(apiUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false }, global: { headers: bearerHeaders },
+  });
+  const forgedSnapshot = structuredClone(positive.requestBody);
+  forgedSnapshot.origin = { ...created.body.data.origin, city: "Piura" };
+  const tampered = await userClient.from("freight_requests")
+    .update({ v2_snapshot: forgedSnapshot }).eq("id", requestId);
+  assert.equal(tampered.error?.code, "PT409");
+  const unchanged = await call(`/api/v2/freight/requests/${requestId}`, tenantA);
+  assert.deepEqual(unchanged.body.data, created.body.data);
+  const afterTamper = await call(`/api/v2/freight/requests/${requestId}/serviceability?expectedDraftVersion=1`, tenantA);
+  assert.equal(afterTamper.status, 200);
+  assert.equal(afterTamper.body.data.summaryCounts.eligibleCount, 1);
+
+  // R-03: every unit quantity contributes to weight and volume totals.
+  for (const measurement of ["quantity", "weightPerUnitKg", "volumePerUnitM3"]) {
+    const contradictory = structuredClone(positive.requestBody);
+    contradictory.cargoSpecification.units[0][measurement] *= 10;
+    const rejected = await post(contradictory, tenantA);
+    assert.equal(rejected.status, 400);
+    assert.equal(rejected.body.error.code, "VALIDATION_ERROR");
+  }
+
+  // R-05: manual pins survive both endpoints without fabricated geometry.
+  const manual = { ...positive.requestBody,
+    origin: { label: "Manual Lima", countryCode: "PE", region: "LIM", city: "Lima", lat: -12.0464, lng: -77.1181 },
+    destination: { label: "Manual Arequipa", countryCode: "PE", region: "ARE", city: "Arequipa", lat: -16.4, lng: -71.53 },
+  };
+  for (const withCoordinates of [true, false]) {
+    const payload = structuredClone(manual);
+    if (!withCoordinates) {
+      delete payload.origin.lat; delete payload.origin.lng;
+      delete payload.destination.lat; delete payload.destination.lng;
+    }
+    const saved = await post(payload, tenantA);
+    assert.equal(saved.status, 201, JSON.stringify(saved.body));
+    createdIds.push(saved.body.data.id);
+    const retrieved = await call(`/api/v2/freight/requests/${saved.body.data.id}`, tenantA);
+    assert.equal(retrieved.status, 200);
+    for (const side of ["origin", "destination"]) {
+      assert.equal(retrieved.body.data[side].facilityId, null);
+      assert.equal(retrieved.body.data[side].lat, withCoordinates ? manual[side].lat : null);
+      assert.equal(retrieved.body.data[side].lng, withCoordinates ? manual[side].lng : null);
+    }
+    const manualEvaluation = await call(`/api/v2/freight/requests/${saved.body.data.id}/serviceability`, tenantA);
+    assert.equal(manualEvaluation.status, 200);
+    assert.ok(manualEvaluation.body.data.candidates.every((item) => item.routePreview === null));
+  }
+  assert.equal((await post({ ...manual, origin: { ...manual.origin, lng: undefined } }, tenantA)).status, 400);
+  const canonical = await post({ ...positive.requestBody,
+    origin: { ...positive.requestBody.origin, lat: 0, lng: 0 } }, tenantA);
+  assert.equal(canonical.status, 201);
+  createdIds.push(canonical.body.data.id);
+  assert.equal(canonical.body.data.origin.lat, created.body.data.origin.lat);
+  assert.equal(canonical.body.data.origin.lng, created.body.data.origin.lng);
+
+  // R-02: only the local synthetic service changes; finally always restores it.
+  const eligibleServiceId = evaluation.body.data.candidates.find((item) => item.status === "eligible").service.id;
+  const serviceRead = await admin.from("carrier_services").select("service_type").eq("id", eligibleServiceId).single();
+  assert.equal(serviceRead.error, null);
+  changedServices.set(eligibleServiceId, serviceRead.data.service_type);
+  const ltlUpdate = await admin.from("carrier_services").update({ service_type: "LTL" }).eq("id", eligibleServiceId);
+  assert.equal(ltlUpdate.error, null);
+  const ltl = await call(`/api/v2/freight/requests/${requestId}/serviceability`, tenantA);
+  assert.equal(ltl.status, 200);
+  const ltlCandidate = ltl.body.data.candidates.find((item) => item.service.id === eligibleServiceId);
+  assert.equal(ltlCandidate.service.serviceClass, "LTL");
+  assert.equal(ltlCandidate.status, "unknown");
+  assert.ok(ltlCandidate.reasons.includes("LTL_CAPACITY_AND_CONSOLIDATION_UNVERIFIED"));
+  const restored = await admin.from("carrier_services").update({ service_type: serviceRead.data.service_type }).eq("id", eligibleServiceId);
+  assert.equal(restored.error, null);
+  changedServices.delete(eligibleServiceId);
+  assert.equal((await call(`/api/v2/freight/requests/${requestId}/serviceability`, tenantA))
+    .body.data.summaryCounts.eligibleCount, 1);
+
   const foreign = await post({ ...positive.requestBody,
     origin: { facilityId: "c2330000-0000-4000-8000-000000000004" } }, tenantA);
   assert.equal(foreign.status, 403, JSON.stringify(foreign.body));
@@ -108,8 +235,16 @@ try {
   const zero = await call(`/api/v2/freight/requests/${piura.body.data.id}/serviceability`, tenantA);
   assert.equal(zero.status, 200, JSON.stringify(zero.body));
   assert.equal(zero.body.data.candidates.length, 0);
-  console.log("HAC-12 HTTP smoke PASS: auth, options, POST→GET, replay/conflict, tenant, ROAD, stale, zero.");
+  console.log("HAC-12 HTTP smoke PASS: cookie/Bearer, tenant, immutable snapshot, totals, manual pins, LTL guard, creation/read, replay/conflict, ROAD, stale, zero.");
 } finally {
+  for (const [id, status] of changedMemberships) {
+    const { error } = await admin.from("organization_members").update({ status }).eq("id", id);
+    if (error) throw new Error("Local smoke membership restoration failed.");
+  }
+  for (const [id, serviceType] of changedServices) {
+    const { error } = await admin.from("carrier_services").update({ service_type: serviceType }).eq("id", id);
+    if (error) throw new Error("Local smoke service restoration failed.");
+  }
   if (createdIds.length) {
     const { error } = await admin.from("freight_requests").delete().in("id", createdIds);
     if (error) throw new Error(`Local smoke cleanup failed: ${error.message}`);

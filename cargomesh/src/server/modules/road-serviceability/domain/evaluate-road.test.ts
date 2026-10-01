@@ -20,6 +20,7 @@ function service(): RoadService {
     id: "road-service-1",
     carrierId: "carrier-1",
     mode: "ROAD",
+    serviceClass: "FTL",
     active: true,
     supportedCargoCategoryCodes: ["PHARMA"],
     areas: [
@@ -59,6 +60,22 @@ describe("pure ROAD eligibility", () => {
     assert.equal(result.totalEvaluated, 1);
     assert.deepEqual(result.candidates[0]?.reasons, []);
     assert.equal(result.candidates[0]?.routePreview, null);
+  });
+
+  it("keeps LTL unknown for an asset or generic pool without residual/consolidation evidence", () => {
+    for (const sourceType of ["TRANSPORT_ASSET", "CAPACITY_POOL"] as const) {
+      const item = service();
+      item.serviceClass = "LTL";
+      item.capacities[0]!.sourceType = sourceType;
+      const candidate = evaluateRoad(request, [item]).candidates[0];
+      assert.equal(candidate?.status, "unknown");
+      assert.ok(candidate?.reasons.includes("LTL_CAPACITY_AND_CONSOLIDATION_UNVERIFIED"));
+      item.capacities[0]!.maxWeightKg = 1000;
+      assert.equal(evaluateRoad(request, [item]).candidates[0]?.status, "ineligible");
+      item.capacities[0]!.maxWeightKg = 8000;
+      item.serviceClass = "FTL";
+      assert.equal(evaluateRoad(request, [item]).candidates[0]?.status, "eligible");
+    }
   });
 
   it("keeps missing time or pickup position unknown and rejects an impossible delivery window", () => {

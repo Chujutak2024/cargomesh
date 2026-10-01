@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
-select plan(25);
+select plan(43);
 
 select has_column('public', 'service_lanes', 'planned_transit_minutes',
   'lane transit duration is persisted');
@@ -139,6 +139,88 @@ select is((select count(*)::integer from public.freight_requests
     'a1200000-0000-4000-8000-000000000004')), 0,
   'all failed mutations rolled back');
 
+
+-- Independent review R-01: no direct client can rewrite a canonical V2 draft.
+select throws_ok($$
+  update public.freight_requests
+  set v2_snapshot = jsonb_set(v2_snapshot, '{origin,city}', '"Piura"'::jsonb)
+  where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000001'
+$$, 'PT409', 'V2_DRAFT_MUTATION_UNSUPPORTED', 'authenticated snapshot overwrite is blocked');
+select throws_ok($$
+  update public.freight_requests set draft_version = draft_version + 1
+  where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000001'
+$$, 'PT409', 'V2_DRAFT_MUTATION_UNSUPPORTED', 'incrementing a version does not bypass canonical writes');
+select throws_ok($$
+  update public.freight_requests set v2_contract_version = null
+  where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000001'
+$$, 'PT409', 'V2_DRAFT_MUTATION_UNSUPPORTED', 'removing the V2 marker is blocked');
+select is((select draft_version from public.freight_requests
+  where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000001'), 1,
+  'blocked writes leave the version unchanged');
+select is((select v2_snapshot #>> '{origin,city}' from public.freight_requests
+  where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000001'), 'Lima',
+  'blocked writes preserve the canonical city');
+
+-- R-03: direct RPC cannot bypass the relationship between units and totals.
+select throws_ok($$
+  select public.create_v2_freight_request(
+    'c2300000-0000-4000-8000-000000000001', 'c2320000-0000-4000-8000-000000000001',
+    'a1200000-0000-4000-8000-000000000008', repeat('a',64),
+    jsonb_set(pg_temp.hac12_payload(), '{cargoSpecification,units,0,quantity}', '100'::jsonb))
+$$, 'PT400', 'VALIDATION_ERROR', 'quantity mismatch fails before persistence');
+select throws_ok($$
+  select public.create_v2_freight_request(
+    'c2300000-0000-4000-8000-000000000001', 'c2320000-0000-4000-8000-000000000001',
+    'a1200000-0000-4000-8000-000000000009', repeat('a',64),
+    jsonb_set(pg_temp.hac12_payload(), '{cargoSpecification,totalVolumeM3}', '1'::jsonb))
+$$, 'PT400', 'VALIDATION_ERROR', 'volume mismatch fails before persistence');
+select is((select count(*)::integer from public.freight_requests
+  where creation_idempotency_key in ('a1200000-0000-4000-8000-000000000008',
+    'a1200000-0000-4000-8000-000000000009')), 0, 'invalid totals leave no receipts');
+
+-- R-05: manual coordinates survive; they are not verified facilities or routes.
+select lives_ok($$
+  select public.create_v2_freight_request(
+    'c2300000-0000-4000-8000-000000000001', 'c2320000-0000-4000-8000-000000000001',
+    'a1200000-0000-4000-8000-000000000010', repeat('a',64),
+    jsonb_set(jsonb_set(pg_temp.hac12_payload(), '{origin}',
+      '{"label":"Manual Lima","countryCode":"PE","city":"Lima","lat":-12.0464,"lng":-77.1181}'::jsonb),
+      '{destination}', '{"label":"Manual Arequipa","countryCode":"PE","city":"Arequipa","lat":-16.4,"lng":-71.53}'::jsonb))
+$$, 'manual origin and destination coordinates are accepted together');
+select is((select v2_snapshot #>> '{origin,lat}' from public.freight_requests
+  where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000010'), '-12.0464',
+  'manual origin latitude survives');
+select is((select v2_snapshot #>> '{destination,lng}' from public.freight_requests
+  where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000010'), '-71.53',
+  'manual destination longitude survives');
+select ok((select origin_facility_id is null and destination_facility_id is null
+  from public.freight_requests where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000010'),
+  'manual pins do not invent facility identities');
+select throws_ok($$
+  select public.create_v2_freight_request(
+    'c2300000-0000-4000-8000-000000000001', 'c2320000-0000-4000-8000-000000000001',
+    'a1200000-0000-4000-8000-000000000011', repeat('a',64),
+    jsonb_set(pg_temp.hac12_payload(), '{origin}',
+      '{"label":"Manual Lima","countryCode":"PE","city":"Lima","lat":-12.0464}'::jsonb))
+$$, 'PT400', 'VALIDATION_ERROR', 'incomplete manual coordinate pair is rejected by RPC');
+select throws_ok($$
+  select public.create_v2_freight_request(
+    'c2300000-0000-4000-8000-000000000001', 'c2320000-0000-4000-8000-000000000001',
+    'a1200000-0000-4000-8000-000000000012', repeat('a',64),
+    jsonb_set(pg_temp.hac12_payload(), '{destination}',
+      '{"label":"Manual Arequipa","countryCode":"PE","city":"Arequipa","lat":-96,"lng":-71}'::jsonb))
+$$, 'PT400', 'VALIDATION_ERROR', 'out-of-range manual coordinate is rejected by RPC');
+select lives_ok($$
+  select public.create_v2_freight_request(
+    'c2300000-0000-4000-8000-000000000001', 'c2320000-0000-4000-8000-000000000001',
+    'a1200000-0000-4000-8000-000000000013', repeat('a',64),
+    jsonb_set(pg_temp.hac12_payload(), '{origin}',
+      '{"label":"Manual Lima","countryCode":"PE","city":"Lima"}'::jsonb))
+$$, 'manual location without coordinates remains supported');
+select ok((select v2_snapshot #>> '{origin,lat}' is null and v2_snapshot #>> '{origin,lng}' is null
+  from public.freight_requests where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000013'),
+  'missing manual coordinates stay unknown');
+
 -- Fail after PostgreSQL has inserted the draft. The trigger and its function exist
 -- only inside this test transaction; the failure must undo the row and receipt.
 reset role;
@@ -162,6 +244,19 @@ $$, 'P0001', 'HAC12_FORCED_AFTER_INSERT', 'post-insert failure propagates');
 select is((select count(*)::integer from public.freight_requests
   where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000007'), 0,
   'post-insert failure rolls back the draft and embedded receipt');
+
+
+reset role;
+drop trigger hac12_abort_after_insert on public.freight_requests;
+set local role authenticated;
+select lives_ok($$
+  select public.create_v2_freight_request(
+    'c2300000-0000-4000-8000-000000000001', 'c2320000-0000-4000-8000-000000000001',
+    'a1200000-0000-4000-8000-000000000007', repeat('a',64), pg_temp.hac12_payload())
+$$, 'same creation key succeeds after the forced failure is removed');
+select is((select count(*)::integer from public.freight_requests
+  where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000007'), 1,
+  'retry after rollback creates exactly one complete receipt');
 
 select * from finish();
 rollback;
