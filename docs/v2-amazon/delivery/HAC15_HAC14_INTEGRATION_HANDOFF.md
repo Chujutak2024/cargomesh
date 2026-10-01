@@ -128,6 +128,8 @@ Reglas verificadas:
 
 En esta sesión Google rechazó `127.0.0.1:3093` con `RefererNotAllowedMapError`; el contenido simulado se mostró sobre **OpenStreetMap**. No se cambió la key, el proyecto ni sus restricciones. Al seleccionar el fixture `Fuente Google / sin traza` (`UNKNOWN`, `legs:[]`) se retira el fallback y aparece proveedor no disponible. No hubo consulta Google Routes ni geometría creada para hacer pasar ese caso.
 
+**Revalidación del 1 octubre 2026:** la misma app React/Next en el origen ya autorizado `127.0.0.1:8080` cargó **Google Maps**, que sigue siendo el proveedor principal. [Captura directa del workspace con Google](./evidence/hac15-handoff/10-google-workspace-8080-es.jpg): teselas, pines, logo, términos, atribución y nota «Mapa: Google Maps Platform · Geometría simulada». Sin errores de consola en esta comprobación; sólo aviso de deprecación de Marker. El rechazo de 3093 es específico de ese origen y no prueba ausencia del renderer Google. La línea continúa siendo **SIMULATED**, sin consulta Google Routes. No se cambió código, key ni Google Cloud.
+
 Ver [ADR existente](../HAC15_MAP_PROVIDER_ADR.md). El piloto de ruteo para camión/TomTom, restricciones Perú/MTC, geocodificación y validación de una ruta real siguen pendientes; estas capturas no los certifican. Tampoco prueban aptitud de camión, cobertura, capacidad, precio, booking, despacho ni GPS.
 
 El DTO de props §6.1 no incluye `evaluatedAt` ni `serviceClass`. En la integración Luis/QA deben conservar esos datos de la evaluación/servicio en la presentación externa: fecha y versión reales; FTL/LTL/UNKNOWN desde el servicio, sin inferir vehículo. No añadirlos al mapa desde fixtures ni completar un dato faltante con el reloj del navegador.
@@ -141,7 +143,7 @@ El DTO de props §6.1 no incluye `evaluatedAt` ni `serviceClass`. En la integrac
 | `role=img` aplanaba los controles de un mapa interactivo; overlays recibían foco sin acción | Región accesible, controles/atribución navegables, overlays informativos sin foco y etiquetas de pines visibles. |
 | Foco de poco contraste / fuente no anunciada | Outline de 3 px oscuro y nota del proveedor con `aria-live=polite`; renderer fallido oculto al teclado. |
 
-[Índice de evidencia y reproducción](./evidence/hac15-handoff/README.md): nueve capturas, [19 comprobaciones de interacción](./evidence/hac15-handoff/interaction-results.json), consola sanitizada y resultados de tests. No es un acta del smoke conjunto ni una certificación WCAG completa.
+[Índice de evidencia y reproducción](./evidence/hac15-handoff/README.md): nueve capturas del smoke local en 3093 y una captura adicional de Google Maps en 8080, [19 comprobaciones de interacción](./evidence/hac15-handoff/interaction-results.json), consola sanitizada y resultados de tests. No es un acta del smoke conjunto ni una certificación WCAG completa.
 
 ## 7. Smoke conjunto con Luis y QA — pendiente
 

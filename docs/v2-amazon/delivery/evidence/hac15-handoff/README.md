@@ -17,8 +17,17 @@ Código: `2c5cc8de7005b1cc5531296f64e56ba4920ebb49`, rama `feat/fe2-v2-route-map
 | [07 — Móvil 390 px EN](./07-mobile-390-en.jpg) | Layout apilado, interacción A/B, datos debajo del mapa | Viewport responsive; no dispositivo físico. |
 | [08 — Móvil 320 px ES](./08-mobile-320-es.jpg) | Reflujo sin overflow horizontal y cambio de idioma | No prueba lector de pantalla. |
 | [09 — Workspace local](./09-workspace-local-tracking-es.jpg) | Draft de navegador, candidato sin transportista, SIMULATED y cobertura UNKNOWN | Sin GPS, dispatch, oferta, persistencia V2 ni ETA medida. |
+| [10 — Google Maps / workspace](./10-google-workspace-8080-es.jpg) | Google Maps JavaScript con teselas, dos pines, logo, términos, atribución y nota Google Maps Platform | Origen local autorizado `127.0.0.1:8080`; geometría SIMULATED, sin consulta Google Routes. |
 
 [interaction-results.json](./interaction-results.json) registra **19/19 comprobaciones PASS** mediante interacciones y lecturas DOM en CUA. Es un registro de esta ejecución; no un script de CI. [console-summary.json](./console-summary.json) conserva la evidencia sanitizada del error de autorización del proveedor y del aviso de deprecación de `google.maps.Marker`.
+
+## Revalidación del proveedor principal — 1 octubre 2026
+
+Sobre el HEAD `4cc7db3629187c9bae2d1a4abc7c3dbf194505cd`, se inició el build existente de la app React/Next en el origen ya autorizado `http://127.0.0.1:8080/v2-workspace#/tracking`. Google Maps cargó correctamente: teselas, marcadores, logo, términos y atribución nativos visibles, además de la nota «Mapa: Google Maps Platform · Geometría simulada». La captura 10 es evidencia directa de este renderer Google, adicional a las nueve capturas de fallback en 3093.
+
+La consola de esta comprobación no registró errores; sólo el aviso de deprecación de `google.maps.Marker`. No se cambió código, key, autorización de referrers ni Google Cloud. Se detuvo el servidor HTML anterior que ocupaba 8080 y se inició allí la app React actual. No se reejecutaron las 19 comprobaciones ni las suites por este cambio de puerto. La geometría sigue procediendo del escenario local; Google Maps como renderer no acredita Google Routes, evaluación API ni ruta vial real.
+
+Para reproducir con la configuración local ignorada y el puerto libre, desde `cargomesh/`: `pnpm start --hostname 127.0.0.1 --port 8080` después de `pnpm build`. Abrir `/v2-workspace`, sección Seguimiento. En otro entorno, usar una clave de navegador y un origen autorizados por su responsable; no copiar credenciales al repositorio.
 
 ## Reproducir la presentación
 
@@ -61,7 +70,7 @@ El build se repitió tras la última corrección de la etiqueta `UNKNOWN`. La su
 - POST/GET/evaluación local autenticados: ID, versión, procedencia y fecha de la respuesta reales; errores/negativos con fixtures publicados HAC-12/29.
 - Verificar fecha y clase FTL/LTL/UNKNOWN como datos de evaluación/servicio, no inferencias del mapa.
 - Repetir teclado/móvil/selección con las tarjetas reales y confirmar navegación/edición/restauración sin respuestas obsoletas.
-- Renderer Google en un origen ya autorizado, y fallo de proveedor en el entorno conjunto. El PASS del fallback local no certifica ese renderer allí.
+- Repetir renderer Google y fallo de proveedor en el entorno conjunto. La captura 10 certifica la presentación Google local en 8080; no su autorización ni integración en otro entorno.
 - Aceptación humana QA con fecha, entorno y SHAs. El piloto de proveedor/ruta para camión del ADR continúa pendiente.
 
 Skills utilizadas en esta revisión: `professional-project-orchestrator` (alcance y fronteras de owner) y `a11y-audit` (teclado, controles y reflujo). No se declara una auditoría WCAG completa ni una prueba con lector de pantalla/dispositivo físico.
