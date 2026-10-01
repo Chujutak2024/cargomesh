@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { RoadCandidateMapViewProps } from "./road-map-contract";
-import { getMapPresentation, isGoogleRoutesSource, providerNote } from "./road-map-model";
+import { canRenderGeometry, getMapPresentation, isGoogleRoutesSource, providerNote } from "./road-map-model";
 
 const sample: RoadCandidateMapViewProps = {
   origin: { label: "Planta Callao Norte", city: "Callao", countryCode: "PE", lat: -12.0464, lng: -77.1181 },
@@ -47,6 +47,9 @@ test("routePreview null, empty legs and UNKNOWN never draw a route", () => {
   assert.equal(providerNote("google", nullPreview, "es"), "Mapa: Google Maps Platform · Geometría de ruta no disponible");
   const emptyLegs = getMapPresentation({ ...sample, candidates: [{ ...sample.candidates[0], routePreview: { ...sample.candidates[0].routePreview!, legs: [] } }] });
   assert.deepEqual(emptyLegs.paths, []);
+  assert.equal(emptyLegs.provenanceStatus, "UNKNOWN");
+  assert.equal(emptyLegs.distanceKm, null);
+  assert.equal(emptyLegs.estimatedTransitHours, null);
   const unknown = getMapPresentation({ ...sample, candidates: [{ ...sample.candidates[0], routePreview: { ...sample.candidates[0].routePreview!, provenanceStatus: "UNKNOWN" } }] });
   assert.deepEqual(unknown.paths, []);
   assert.equal(unknown.distanceKm, null);
@@ -55,6 +58,7 @@ test("routePreview null, empty legs and UNKNOWN never draw a route", () => {
 test("missing canonical coordinates prevent geometry without inventing markers", () => {
   const missingOrigin = getMapPresentation({ ...sample, origin: { ...sample.origin, lat: null } });
   assert.deepEqual(missingOrigin.paths, []);
+  assert.equal(missingOrigin.provenanceStatus, "UNKNOWN");
   assert.deepEqual(missingOrigin.markers.map(({ kind }) => kind), ["destination"]);
   const missingBoth = getMapPresentation({ ...sample, origin: { ...sample.origin, lat: null }, destination: { ...sample.destination, lng: null } });
   assert.deepEqual(missingBoth.markers, []);
@@ -84,8 +88,46 @@ test("provider note uses actual renderer and Google Routes only for an explicit 
   assert.equal(providerNote("google", estimated, "es"), "Mapa: Google Maps Platform · Ruta: Google Routes · Datos estimados");
   assert.equal(isGoogleRoutesSource(" google_routes_api "), true);
   assert.equal(isGoogleRoutesSource("SCENARIO_SYNTHETIC_GEOMETRY"), false);
-  assert.equal(providerNote("openstreetmap", estimated, "en"), "Map: OpenStreetMap · Route: Google Routes · Estimated data");
+  assert.equal(providerNote("openstreetmap", estimated, "en"), "Map: OpenStreetMap · Route geometry unavailable");
   assert.equal(providerNote("none", estimated, "es"), "Proveedor cartográfico: no disponible");
   const otherSource = getMapPresentation({ ...sample, candidates: [{ ...sample.candidates[0], routePreview: { ...sample.candidates[0].routePreview!, provenanceStatus: "VERIFIED", geometrySource: "OTHER_SOURCE" } }] });
   assert.doesNotMatch(providerNote("google", otherSource, "es"), /Google Routes/);
+});
+
+test("absent source, empty waypoints or invalid coordinates cannot assert usable geometry", () => {
+  const preview = sample.candidates[0].routePreview!;
+  for (const geometrySource of ["", "   ", " none_available "]) {
+    const result = getMapPresentation({ ...sample, candidates: [{ ...sample.candidates[0], routePreview: { ...preview, geometrySource } }] });
+    assert.deepEqual(result.paths, []);
+    assert.equal(result.provenanceStatus, "UNKNOWN");
+    assert.equal(result.distanceKm, null);
+  }
+  for (const waypoints of [[], [{ lat: 95, lng: -77 }, { lat: -16, lng: -71 }], [{ lat: NaN, lng: -77 }, { lat: -16, lng: -71 }]]) {
+    const result = getMapPresentation({ ...sample, candidates: [{ ...sample.candidates[0], routePreview: { ...preview, legs: [{ ...preview.legs[0], waypoints }] } }] });
+    assert.deepEqual(result.paths, []);
+    assert.equal(result.provenanceStatus, "UNKNOWN");
+  }
+});
+
+test("separate declared legs are never joined with an invented bridge", () => {
+  const preview = sample.candidates[0].routePreview!;
+  const secondLeg = { ...preview.legs[0], sequence: 2, waypoints: [{ lat: -16.5, lng: -71.6 }, { lat: -16.7, lng: -71.8 }] };
+  const result = getMapPresentation({ ...sample, candidates: [{ ...sample.candidates[0], routePreview: { ...preview, legs: [preview.legs[0], secondLeg] } }] });
+  assert.equal(result.paths.length, 2);
+  assert.notDeepEqual(result.paths[0].at(-1), result.paths[1][0]);
+  assert.equal(result.paths.flat().length, 5);
+});
+
+test("an outdated parent selection never silently selects the first candidate", () => {
+  const result = getMapPresentation({ ...sample, selectedCandidateId: "removed-candidate" });
+  assert.equal(result.selectedCandidate, null);
+  assert.deepEqual(result.paths, []);
+  assert.equal(result.provenanceStatus, "UNKNOWN");
+});
+
+test("provider restriction applies to selection updates as well as initial fallback", () => {
+  assert.equal(canRenderGeometry("openstreetmap", "SCENARIO_SYNTHETIC_GEOMETRY"), true);
+  assert.equal(canRenderGeometry("openstreetmap", " google_routes_api "), false);
+  assert.equal(canRenderGeometry("google", "GOOGLE_ROUTES"), true);
+  assert.equal(canRenderGeometry("none", "SCENARIO_SYNTHETIC_GEOMETRY"), false);
 });

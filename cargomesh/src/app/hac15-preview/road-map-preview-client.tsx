@@ -30,31 +30,58 @@ const base: Omit<RoadCandidateMapViewProps, "selectedCandidateId" | "onSelectCan
   }],
 };
 
-type Scenario = "eligible" | "unknown" | "zero" | "missing";
+type Scenario = "eligible" | "unknown" | "empty-legs" | "unknown-points" | "zero" | "missing" | "missing-both" | "google-source";
+
+const scenarios: Scenario[] = ["eligible", "unknown", "empty-legs", "unknown-points", "zero", "missing", "missing-both", "google-source"];
+
+function scenarioData(scenario: Scenario): Omit<RoadCandidateMapViewProps, "selectedCandidateId" | "onSelectCandidate"> {
+  if (scenario === "zero") return { ...base, candidates: [], overallStatus: "unknown" };
+  if (scenario === "unknown") return { ...base, candidates: base.candidates.slice(1), overallStatus: "unknown" };
+  if (scenario === "missing" || scenario === "missing-both") return {
+    ...base, origin: { ...base.origin, lat: null },
+    destination: scenario === "missing-both" ? { ...base.destination, lng: null } : base.destination,
+  };
+  if (scenario === "empty-legs" || scenario === "unknown-points" || scenario === "google-source") {
+    const candidate = base.candidates[0];
+    const preview = candidate.routePreview!;
+    return { ...base, candidates: [{ ...candidate, routePreview: {
+      ...preview,
+      legs: scenario === "unknown-points" ? preview.legs : [],
+      provenanceStatus: scenario === "empty-legs" ? "SIMULATED" : "UNKNOWN",
+      geometrySource: scenario === "google-source" ? "GOOGLE_ROUTES" : preview.geometrySource,
+      distanceKm: null, estimatedTransitHours: null,
+    } }] };
+  }
+  return base;
+}
 
 export function RoadMapPreviewClient() {
   const [scenario, setScenario] = useState<Scenario>("eligible");
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>("road-a");
   const { t } = useLocale();
-  const scenarioProps: Omit<RoadCandidateMapViewProps, "selectedCandidateId" | "onSelectCandidate"> = scenario === "zero"
-    ? { ...base, candidates: [], overallStatus: "unknown" }
-    : scenario === "missing"
-      ? { ...base, origin: { ...base.origin, lat: null }, candidates: base.candidates.slice(0, 1) }
-      : scenario === "unknown"
-        ? { ...base, candidates: base.candidates.slice(1), overallStatus: "unknown" }
-        : base;
-  const selected = scenario === "zero" ? null : scenario === "unknown" ? "road-b" : selectedCandidateId;
+  const scenarioProps = scenarioData(scenario);
+  const labels: Record<Scenario, string> = {
+    eligible: t("Elegible", "Eligible"), unknown: "routePreview: null", "empty-legs": "legs: []",
+    "unknown-points": t("UNKNOWN con puntos", "UNKNOWN with points"), zero: t("Sin candidatos", "No candidates"),
+    missing: t("Sin coordenada", "Missing coordinate"), "missing-both": t("Sin coordenadas", "No coordinates"),
+    "google-source": t("Fuente Google / sin traza", "Google source / no trace"),
+  };
 
   return <main className={styles.page}>
     <header className={styles.header}>
       <div><span>HAC-15 · Contract QA</span><h1>{t("Mapa ROAD V2", "V2 ROAD map")}</h1><p>{t("Superficie de prueba con datos sintéticos del contrato HAC-27. No representa una solicitud persistida.", "Test surface with synthetic HAC-27 contract data. It is not a persisted request.")}</p></div>
       <div className={styles.switcher} aria-label={t("Escenario de prueba", "Test scenario")}>
         <LanguageSwitcher compact />
-        {(["eligible", "unknown", "zero", "missing"] as Scenario[]).map((item) => <button key={item} type="button" aria-pressed={scenario === item} onClick={() => { setScenario(item); setSelectedCandidateId(item === "unknown" ? "road-b" : item === "zero" ? null : "road-a"); }}>
-          {item === "eligible" ? t("Elegible", "Eligible") : item === "unknown" ? "UNKNOWN" : item === "zero" ? t("Sin candidatos", "No candidates") : t("Sin coordenada", "Missing coordinate")}
+        {scenarios.map((item) => <button key={item} type="button" aria-pressed={scenario === item} onClick={() => { setScenario(item); setSelectedCandidateId(item === "unknown" ? "road-b" : item === "zero" ? null : "road-a"); }}>
+          {labels[item]}
         </button>)}
       </div>
     </header>
-    <RoadCandidateMapView {...scenarioProps} selectedCandidateId={selected} onSelectCandidate={setSelectedCandidateId} />
+    <div className={styles.sharedSelection} aria-label={t("Selección compartida de prueba", "Shared test selection")}>
+      <p>{t("Control padre de prueba; no usa la API ni las tarjetas de Luis. Todas las fuentes y medidas de esta página son fixtures locales.", "Test parent control; it does not use the API or Luis's cards. All sources and measurements on this page are local fixtures.")}</p>
+      <div className={styles.switcher}>{scenarioProps.candidates.map((candidate) => <button key={candidate.candidateId} type="button" aria-pressed={selectedCandidateId === candidate.candidateId} onClick={() => setSelectedCandidateId(candidate.candidateId)}>{t("Tarjeta", "Card")} {candidate.candidateId === "road-a" ? "A" : "B"}</button>)}<button type="button" onClick={() => setSelectedCandidateId(null)}>{t("Quitar selección", "Clear selection")}</button></div>
+      <output aria-live="polite">selectedCandidateId: {selectedCandidateId ?? "null"}</output>
+    </div>
+    <RoadCandidateMapView {...scenarioProps} selectedCandidateId={selectedCandidateId} onSelectCandidate={setSelectedCandidateId} />
   </main>;
 }

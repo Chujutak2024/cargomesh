@@ -15,7 +15,7 @@ function mapStatusLabel(status: MapPresentation["provenanceStatus"], locale: "es
     VERIFIED: locale === "es" ? "Verificada" : "Verified",
     ESTIMATED: locale === "es" ? "Estimada" : "Estimated",
     SIMULATED: locale === "es" ? "Simulada" : "Simulated",
-    UNKNOWN: locale === "es" ? "Sin verificar" : "Unverified",
+    UNKNOWN: "UNKNOWN",
   };
   return labels[status];
 }
@@ -72,7 +72,7 @@ export function RoadCandidateMapView(props: RoadCandidateMapViewProps) {
       <div className={styles.mapColumn}>
         <div className={styles.mapHead}><div><strong>{t("Vista de ruta", "Route view")}</strong><span>{selected ? selected.carrierName : t("Selecciona un candidato para ver su ruta", "Select a candidate to view its route")}</span></div><span className={styles.provenance}>{mapStatusLabel(presentation.provenanceStatus, locale)}</span></div>
         <RoadMapCanvas presentation={presentation} onProviderChange={handleProviderChange} />
-        <p className={styles.providerNote}><Info size={14} aria-hidden="true" /><span>{note}</span></p>
+        <p className={styles.providerNote} aria-live="polite"><Info size={14} aria-hidden="true" /><span>{note}</span></p>
         <div className={styles.routeFacts} aria-live="polite">
           <div><small>{t("Estado de geometría", "Geometry status")}</small><strong>{presentation.paths.length ? mapStatusLabel(presentation.provenanceStatus, locale) : t("Sin geometría verificable", "No verifiable geometry")}</strong></div>
           <div><small>{t("Fuente declarada", "Declared source")}</small><strong>{source ?? t("No disponible", "Unavailable")}</strong></div>

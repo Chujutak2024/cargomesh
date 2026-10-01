@@ -25,7 +25,7 @@
 .candidate { display: grid; width: 100%; gap: 0.55rem; border: 1px solid var(--road-line); border-radius: 0.8rem; padding: 0.9rem; background: #fff; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: border-color 160ms ease, box-shadow 160ms ease; }
 .candidate:hover { border-color: #8fbeb8; }
 .candidateActive { border-color: var(--road-sea); box-shadow: inset 3px 0 0 var(--road-sea), 0 0.25rem 1rem rgb(18 60 58 / 5%); }
-.candidate:focus-visible { outline: 3px solid #62c8be; outline-offset: 2px; }
+.candidate:focus-visible { outline: 3px solid #087f8a; outline-offset: 2px; }
 .candidateTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
 .candidateTop strong { font-size: 0.78rem; line-height: 1.35; }
 .candidateStatus { flex: 0 0 auto; border-radius: 999px; padding: 0.2rem 0.42rem; background: #edf4f2; color: #355c54; font-size: 0.58rem; font-weight: 700; }
@@ -43,6 +43,7 @@
 .provenance { flex: 0 0 auto; border-radius: 999px; padding: 0.3rem 0.5rem; background: #eaf4f1; color: #256d62 !important; font-weight: 730; }
 .canvasWrap { position: relative; height: clamp(20rem, 34vw, 32rem); margin: 0 1rem; overflow: hidden; border: 1px solid #cddedc; border-radius: 0.65rem; background: #e7f0f0; }
 .mapCanvas { width: 100%; height: 100%; }
+.mapCanvas:focus-visible, .mapCanvas :focus-visible { outline: 3px solid #087f8a; outline-offset: -3px; }
 .mapEmpty { display: grid; place-content: center; justify-items: center; gap: 0.55rem; min-height: clamp(20rem, 34vw, 32rem); margin: 0 1rem; border: 1px solid #cddedc; border-radius: 0.65rem; background: #eef3f2; color: #48645f; text-align: center; }
 .mapEmpty span { max-width: 25rem; padding: 0 1rem; font-size: 0.75rem; line-height: 1.5; }
 .mapFailure { position: absolute; inset: 0; display: grid; place-content: center; padding: 1rem; background: #eef3f2; color: #48645f; font-size: 0.78rem; text-align: center; }

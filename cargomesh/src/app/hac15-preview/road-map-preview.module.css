@@ -7,4 +7,7 @@
 .switcher { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .switcher button { min-height: 2.55rem; border: 1px solid #d2dfda; border-radius: 0.55rem; padding: 0.45rem 0.7rem; background: #fff; color: #34544e; font: inherit; font-size: 0.7rem; font-weight: 700; cursor: pointer; }
 .switcher button[aria-pressed="true"] { border-color: #087f8a; background: #e5f3f1; color: #075d66; }
-.switcher button:focus-visible { outline: 3px solid #62c8be; outline-offset: 2px; }
+.switcher button:focus-visible { outline: 3px solid #087f8a; outline-offset: 2px; }
+.sharedSelection { display: grid; gap: 0.5rem; padding: 0.8rem; border: 1px dashed #c1d5cd; border-radius: 0.65rem; }
+.sharedSelection p { margin: 0; color: #526a62; font-size: 0.75rem; line-height: 1.5; }
+.sharedSelection output { font-size: 0.75rem; }

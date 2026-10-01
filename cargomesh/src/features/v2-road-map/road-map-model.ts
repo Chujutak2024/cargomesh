@@ -5,6 +5,9 @@ export type Coordinate = { lat: number; lng: number };
 export function isGoogleRoutesSource(source: string | null): boolean {
   return source?.trim().toUpperCase().startsWith("GOOGLE_ROUTES") ?? false;
 }
+export function canRenderGeometry(provider: MapProvider, source: string | null): boolean {
+  return provider === "google" || (provider === "openstreetmap" && !isGoogleRoutesSource(source));
+}
 export type MapPresentation = {
   selectedCandidate: RoadCandidateMapViewProps["candidates"][number] | null;
   markers: Array<{ kind: "origin" | "destination"; point: Coordinate; label: string }>;
@@ -31,9 +34,10 @@ export function getMapPresentation(props: RoadCandidateMapViewProps): MapPresent
   }
 
   const preview = selectedCandidate?.routePreview ?? null;
+  const declaredSource = preview?.geometrySource.trim() || null;
   const hasEndpointCoordinates = markers.length === 2;
   const hasDeclaredGeometry = preview !== null && preview.provenanceStatus !== "UNKNOWN"
-    && !preview.geometrySource.toUpperCase().startsWith("NONE") && preview.legs.length > 0;
+    && declaredSource !== null && !declaredSource.toUpperCase().startsWith("NONE") && preview.legs.length > 0;
   const completeLegs = hasDeclaredGeometry && preview.legs.every((leg) =>
     leg.waypoints.length >= 2 && leg.waypoints.every((point) => validCoordinate(point.lat, point.lng)));
   // Each declared leg is drawn independently: no invented segment bridges gaps.
@@ -46,8 +50,8 @@ export function getMapPresentation(props: RoadCandidateMapViewProps): MapPresent
     selectedCandidate,
     markers,
     paths,
-    provenanceStatus: preview?.provenanceStatus ?? "UNKNOWN",
-    geometrySource: preview?.geometrySource ?? null,
+    provenanceStatus: hasUsableRoute ? preview!.provenanceStatus : "UNKNOWN",
+    geometrySource: declaredSource,
     distanceKm: hasUsableRoute && preview?.distanceKm !== null && Number.isFinite(preview?.distanceKm) && preview!.distanceKm! >= 0
       ? preview!.distanceKm : null,
     estimatedTransitHours: hasUsableRoute && preview?.estimatedTransitHours !== null && Number.isFinite(preview?.estimatedTransitHours) && preview!.estimatedTransitHours! >= 0
@@ -69,7 +73,7 @@ export function providerNote(provider: MapProvider, presentation: MapPresentatio
   if (provider === "none") return es ? "Proveedor cartográfico: no disponible" : "Map provider: unavailable";
   const mapName = provider === "google" ? "Google Maps Platform" : "OpenStreetMap";
   const prefix = es ? `Mapa: ${mapName}` : `Map: ${mapName}`;
-  if (presentation.paths.length === 0) {
+  if (presentation.paths.length === 0 || !canRenderGeometry(provider, presentation.geometrySource)) {
     return `${prefix} · ${es ? "Geometría de ruta no disponible" : "Route geometry unavailable"}`;
   }
   if (presentation.provenanceStatus === "SIMULATED") {

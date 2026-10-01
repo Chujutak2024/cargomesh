@@ -4,12 +4,12 @@ import { MapPin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "@/features/i18n/locale-provider";
 import { googleMapsAuthFailed, loadGoogleMaps, onGoogleMapsAuthFailure } from "./google-maps-loader";
-import { isGoogleRoutesSource, type MapPresentation, type MapProvider } from "./road-map-model";
+import { canRenderGeometry, isGoogleRoutesSource, type MapPresentation, type MapProvider } from "./road-map-model";
 import styles from "./road-candidate-map-view.module.css";
 
 const browserKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_JS_API_KEY?.trim() ?? "";
 
-type Adapter = { update: (data: MapPresentation) => void; dispose: () => void };
+type Adapter = { provider: "google" | "openstreetmap"; update: (data: MapPresentation) => void; dispose: () => void };
 
 function mountGoogle(host: HTMLDivElement, center: { lat: number; lng: number }): { adapter: Adapter; map: google.maps.Map } {
   const map = new google.maps.Map(host, {
@@ -28,16 +28,17 @@ function mountGoogle(host: HTMLDivElement, center: { lat: number; lng: number })
   return {
     map,
     adapter: {
+      provider: "google",
       update(data) {
         clear();
         const bounds = new google.maps.LatLngBounds();
         data.markers.forEach(({ point, label }) => {
-          markers.push(new google.maps.Marker({ map, position: point, title: label }));
+          markers.push(new google.maps.Marker({ map, position: point, title: label, clickable: false }));
           bounds.extend(point);
         });
         data.paths.forEach((path) => {
           lines.push(new google.maps.Polyline({
-            map, path, strokeColor: data.provenanceStatus === "SIMULATED" ? "#b57425" : "#007d87",
+            map, path, clickable: false, strokeColor: data.provenanceStatus === "SIMULATED" ? "#b57425" : "#007d87",
             strokeWeight: 5, strokeOpacity: data.provenanceStatus === "SIMULATED" ? 0.7 : 0.95,
           }));
           path.forEach((point) => bounds.extend(point));
@@ -61,20 +62,22 @@ async function mountOpenStreetMap(host: HTMLDivElement): Promise<{ adapter: Adap
   return {
     tiles,
     adapter: {
+      provider: "openstreetmap",
       update(data) {
         overlays.clearLayers();
+        if (!canRenderGeometry("openstreetmap", data.geometrySource)) return;
         const bounds = data.markers.map(({ point }) => L.latLng(point.lat, point.lng));
         data.markers.forEach(({ point, label }) => {
           L.circleMarker([point.lat, point.lng], {
-            radius: 8, weight: 3, color: "#ffffff", fillColor: "#087f8a", fillOpacity: 1,
-          }).bindTooltip(label).addTo(overlays);
+            radius: 8, weight: 3, color: "#ffffff", fillColor: "#087f8a", fillOpacity: 1, interactive: false,
+          }).bindTooltip(label, { permanent: true }).addTo(overlays);
         });
         data.paths.forEach((path) => {
           const points = path.map(({ lat, lng }) => L.latLng(lat, lng));
           L.polyline(points, {
             color: data.provenanceStatus === "SIMULATED" ? "#b57425" : "#007d87",
             dashArray: data.provenanceStatus === "SIMULATED" ? "9 8" : undefined,
-            weight: 4, opacity: 0.92,
+            weight: 4, opacity: 0.92, interactive: false,
           }).addTo(overlays);
           bounds.push(...points);
         });
@@ -94,17 +97,35 @@ export function RoadMapCanvas({ presentation, onProviderChange }: {
   const osmHost = useRef<HTMLDivElement>(null);
   const adapter = useRef<Adapter | null>(null);
   const current = useRef(presentation);
+  const restrictedFallback = useRef(false);
+  const [providerAttempt, setProviderAttempt] = useState(0);
   const [renderer, setRenderer] = useState<"google" | "openstreetmap" | "none">("none");
   const [failed, setFailed] = useState(false);
   const { t } = useLocale();
   current.current = presentation;
   const hasMarkers = presentation.markers.length > 0;
 
-  // Overlay changes never recreate the basemap. This avoids extra map loads
-  // (and potential Dynamic Maps charges) while the parent changes selection.
-  useEffect(() => { adapter.current?.update(presentation); }, [presentation]);
+  // Selection updates overlays without reloading Google. A source change must
+  // also enforce the fallback boundary, including after OSM has already loaded.
+  useEffect(() => {
+    if (adapter.current?.provider === "openstreetmap" && isGoogleRoutesSource(presentation.geometrySource)) {
+      adapter.current.dispose();
+      adapter.current = null;
+      restrictedFallback.current = true;
+      setRenderer("none");
+      setFailed(true);
+      onProviderChange("none");
+    } else if (restrictedFallback.current && !isGoogleRoutesSource(presentation.geometrySource) && hasMarkers) {
+      restrictedFallback.current = false;
+      setProviderAttempt((attempt) => attempt + 1);
+    } else {
+      adapter.current?.update(presentation);
+    }
+  }, [presentation, hasMarkers, onProviderChange]);
 
   useEffect(() => {
+    setRenderer("none");
+    setFailed(false);
     if (!hasMarkers) {
       onProviderChange("none");
       return;
@@ -114,7 +135,6 @@ export function RoadMapCanvas({ presentation, onProviderChange }: {
     let timeout = 0;
     let googleListener: google.maps.MapsEventListener | null = null;
     let unsubscribe = () => {};
-    setFailed(false);
     onProviderChange("loading");
 
     const fallback = async () => {
@@ -127,6 +147,7 @@ export function RoadMapCanvas({ presentation, onProviderChange }: {
       // Routes API content may not be combined with a non-Google basemap.
       const source = current.current.geometrySource;
       if (isGoogleRoutesSource(source)) {
+        restrictedFallback.current = true;
         setRenderer("none"); setFailed(true); onProviderChange("none");
         return;
       }
@@ -136,6 +157,12 @@ export function RoadMapCanvas({ presentation, onProviderChange }: {
         setRenderer("openstreetmap");
         const { adapter: osmAdapter, tiles } = await mountOpenStreetMap(host);
         if (disposed) { osmAdapter.dispose(); return; }
+        if (isGoogleRoutesSource(current.current.geometrySource)) {
+          osmAdapter.dispose();
+          restrictedFallback.current = true;
+          setRenderer("none"); setFailed(true); onProviderChange("none");
+          return;
+        }
         adapter.current = osmAdapter;
         osmAdapter.update(current.current);
         let settled = false;
@@ -174,13 +201,13 @@ export function RoadMapCanvas({ presentation, onProviderChange }: {
       adapter.current?.dispose();
       adapter.current = null;
     };
-  }, [hasMarkers, onProviderChange]);
+  }, [hasMarkers, onProviderChange, providerAttempt]);
 
   if (!hasMarkers) return <div className={styles.mapEmpty}><MapPin size={21} aria-hidden="true" /><span>{t("No hay coordenadas confirmadas para mostrar en el mapa.", "No confirmed coordinates are available for the map.")}</span></div>;
 
   return <div className={styles.canvasWrap}>
-    <div ref={googleHost} className={styles.mapCanvas} style={{ display: renderer === "openstreetmap" ? "none" : "block" }} role="img" aria-label={t("Mapa de origen, destino y geometría declarada de la ruta", "Map of origin, destination, and declared route geometry")} />
-    <div ref={osmHost} className={styles.mapCanvas} style={{ display: renderer === "openstreetmap" ? "block" : "none" }} role="img" aria-label={t("Mapa de origen, destino y geometría declarada de la ruta", "Map of origin, destination, and declared route geometry")} />
+    <div ref={googleHost} className={styles.mapCanvas} style={{ display: renderer === "google" && !failed ? "block" : "none" }} role="region" aria-label={t("Mapa de origen, destino y geometría declarada de la ruta", "Map of origin, destination, and declared route geometry")} />
+    <div ref={osmHost} className={styles.mapCanvas} style={{ display: renderer === "openstreetmap" && !failed ? "block" : "none" }} role="region" aria-label={t("Mapa de origen, destino y geometría declarada de la ruta", "Map of origin, destination, and declared route geometry")} />
     {failed ? <div className={styles.mapFailure} role="status">{t("Mapa no disponible. Los datos de la ruta siguen visibles debajo.", "Map unavailable. Route details remain visible below.")}</div> : null}
   </div>;
 }
