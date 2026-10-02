@@ -53,7 +53,7 @@ export type CreateFreightRequestV2Input = {
     totalVolumeM3: number;
     divisible: boolean;
     requirements: string[];
-    temperatureRange: {
+    temperatureRange?: {
       minCelsius: number;
       maxCelsius: number;
     } | null;
