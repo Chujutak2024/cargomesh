@@ -1,7 +1,8 @@
 # FL-03 · Kiro Crew HAC-11 pgTAP execution blocked
 
-**Date:** 2026-10-02 (America/Lima)  
-**Work:** Kiro Crew extended CargoMesh V2 HAC-11 account-link pgTAP negatives in commit `c212c62`.  
+**Date:** 2026-10-02 (America/Lima)
+
+**Work:** Kiro Crew extended CargoMesh V2 HAC-11 account-link pgTAP negatives in commit `c212c62`.
 **Severity:** Medium for delivery verification; no production incident.
 
 ## Expected and actual
