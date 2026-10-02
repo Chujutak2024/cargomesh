@@ -1,4 +1,4 @@
-.page { display: grid; width: 100%; max-width: 100rem; margin: 0 auto; gap: 1rem; }
+.page { display: grid; width: 100%; max-width: var(--page-max-wide); margin: 0 auto; gap: 1rem; }
 .hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
 .hero > div { min-width: 0; }
 .hero h1 { margin: 0.28rem 0 0.35rem; color: #123c3a; font-size: clamp(1.6rem, 3vw, 2.3rem); letter-spacing: -0.045em; }
