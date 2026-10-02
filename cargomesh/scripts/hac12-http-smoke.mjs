@@ -161,6 +161,51 @@ try {
   assert.equal(afterTamper.status, 200);
   assert.equal(afterTamper.body.data.summaryCounts.eligibleCount, 1);
 
+  // R-06: copying a readable row cannot introduce a forged V2 location.
+  const source = await userClient.from("freight_requests").select("*").eq("id", requestId).single();
+  assert.equal(source.error, null);
+  const copyId = crypto.randomUUID();
+  const copyKey = crypto.randomUUID();
+  const forgedCopy = { ...source.data, id: copyId, code: `V2-${copyId.replaceAll("-", "")}`,
+    creation_idempotency_key: copyKey,
+    v2_snapshot: { ...source.data.v2_snapshot,
+      origin: { ...source.data.v2_snapshot.origin, city: "Piura" } },
+  };
+  const forgedInsert = await userClient.from("freight_requests").insert(forgedCopy);
+  assert.equal(forgedInsert.error?.code, "PT400", JSON.stringify(forgedInsert.error));
+  const absentCopy = await admin.from("freight_requests").select("id").eq("id", copyId);
+  assert.equal(absentCopy.error, null);
+  assert.equal(absentCopy.data.length, 0);
+  assert.equal((await call(`/api/v2/freight/requests/${requestId}/serviceability`, tenantA))
+    .body.data.summaryCounts.totalEvaluated, 2);
+  const canonicalCopy = await userClient.from("freight_requests").insert({ ...forgedCopy,
+    v2_snapshot: source.data.v2_snapshot });
+  assert.equal(canonicalCopy.error, null, JSON.stringify(canonicalCopy.error));
+  createdIds.push(copyId);
+  const copiedRead = await call(`/api/v2/freight/requests/${copyId}`, tenantA);
+  assert.equal(copiedRead.status, 200);
+  assert.deepEqual(copiedRead.body.data.origin, created.body.data.origin);
+
+  // R-07: direct authenticated RPC enforces embedded types before persistence.
+  const malformed = structuredClone(source.data.v2_creation_payload);
+  delete malformed.cargoSpecification.units[0].dimensionsCm;
+  delete malformed.cargoSpecification.units[0].indivisible;
+  const rpcKey = crypto.randomUUID();
+  const rpcArgs = { p_organization_id: source.data.organization_id,
+    p_member_id: source.data.requested_by_member_id, p_idempotency_key: rpcKey,
+    p_payload_hash: source.data.creation_payload_hash };
+  const invalidRpc = await userClient.rpc("create_v2_freight_request", { ...rpcArgs, p_payload: malformed });
+  assert.equal(invalidRpc.error?.code, "PT400", JSON.stringify(invalidRpc.error));
+  const absentReceipt = await admin.from("freight_requests").select("id")
+    .eq("creation_idempotency_key", rpcKey);
+  assert.equal(absentReceipt.error, null);
+  assert.equal(absentReceipt.data.length, 0);
+  const validRpc = await userClient.rpc("create_v2_freight_request", { ...rpcArgs,
+    p_payload: source.data.v2_creation_payload });
+  assert.equal(validRpc.error, null, JSON.stringify(validRpc.error));
+  createdIds.push(validRpc.data.id);
+  assert.equal((await call(`/api/v2/freight/requests/${validRpc.data.id}`, tenantA)).status, 200);
+
   // R-03: every unit quantity contributes to weight and volume totals.
   for (const measurement of ["quantity", "weightPerUnitKg", "volumePerUnitM3"]) {
     const contradictory = structuredClone(positive.requestBody);
@@ -235,7 +280,7 @@ try {
   const zero = await call(`/api/v2/freight/requests/${piura.body.data.id}/serviceability`, tenantA);
   assert.equal(zero.status, 200, JSON.stringify(zero.body));
   assert.equal(zero.body.data.candidates.length, 0);
-  console.log("HAC-12 HTTP smoke PASS: cookie/Bearer, tenant, immutable snapshot, totals, manual pins, LTL guard, creation/read, replay/conflict, ROAD, stale, zero.");
+  console.log("HAC-12 HTTP smoke PASS: cookie/Bearer, tenant, immutable snapshot, forged INSERT, full RPC DTO, totals, manual pins, LTL guard, creation/read, replay/conflict, ROAD, stale, zero.");
 } finally {
   for (const [id, status] of changedMemberships) {
     const { error } = await admin.from("organization_members").update({ status }).eq("id", id);

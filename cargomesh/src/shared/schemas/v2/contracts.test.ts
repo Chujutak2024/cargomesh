@@ -44,6 +44,22 @@ describe("HAC-12 V2 DTOs", () => {
     }
   });
 
+  it("rejects malformed embedded units, contacts and windows before transport", () => {
+    for (const mutate of [
+      (value: Record<string, any>) => delete value.cargoSpecification.units[0].dimensionsCm,
+      (value: Record<string, any>) => delete value.cargoSpecification.units[0].indivisible,
+      (value: Record<string, any>) => { value.cargoSpecification.units[0].stackable = "true"; },
+      (value: Record<string, any>) => { value.contacts.pickup.phoneE164 = "123"; },
+      (value: Record<string, any>) => { value.contacts.recipient.email = "invalid"; },
+      (value: Record<string, any>) => delete value.pickupWindow.startsAt,
+    ]) {
+      const malformed = structuredClone(request);
+      mutate(malformed);
+      assert.equal(CreateFreightRequestV2InputSchema.safeParse(malformed).success, false);
+    }
+    assert.equal(CreateFreightRequestV2InputSchema.safeParse(request).success, true);
+  });
+
   it("sums multiple unit groups and accepts only numeric rounding tolerance", () => {
     const cargo = { ...request.cargoSpecification,
       units: [{ ...request.cargoSpecification.units[0]!, quantity: 3 },

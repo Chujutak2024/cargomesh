@@ -33,9 +33,9 @@ Estado: **implementación local verificada, pendiente de revisión independiente
 ## Pendientes antes de In Review/Done
 
 1. Integrar en HAC-16 los dos conflictos `add/add` de manifiesto/perfil, cuya resolución local ya pasó el gate, y conservar la evidencia del checkout combinado. Véanse [FL-03](./friction-logs/FL-03.md) y [FL-05](./friction-logs/FL-05.md).
-2. Obtener reprueba independiente de las correcciones R-01 a R-05 de HAC-12 y reejecutar los checks pertinentes tras cualquier corrección. No mezclar directo a la rama base ni a `main`.
+2. R-01 a R-05 recibieron reprueba independiente PASS en 605435b. Obtener reprueba de R-06/R-07/R-08/R-09 de HAC-12 y reejecutar los checks pertinentes tras cualquier corrección. No mezclar directo a la rama base ni a `main`.
 3. Conectar el mismo servicio de aplicación a HAC-11 (MCP) y las vistas HAC-14/15, y pasar QA HAC-13 sobre el corte integrado.
-4. Resolver con HAC-27/HAC-29 la proyección de fixture que espera `serviceClass: FTL_DEDICATED` y canales `API/MANUAL`: el catálogo físico actual acredita `FTL` y **ningún canal V2 publicado**. La API devuelve `FTL` y `responseChannels: []`; no inventa capacidades comerciales.
+4. HAC-27 publica los fixtures corregidos y debe obtener confirmación de consumo de HAC-14/15: el catálogo físico actual acredita `FTL` y **ningún canal V2 publicado**. La API devuelve `FTL` y `responseChannels: []`; no inventa capacidades comerciales.
 5. Verificar sobre el corte integrado el consumo de los cinco grupos de HAC-14 (`facilityId`, códigos de categoría/equipo/embalaje/requisitos), los errores visibles y el fixture solo explícito. Luis reportó esa implementación en su rama, pero aún falta el recorrido conjunto con HAC-12; seguimiento en [FL-04](./friction-logs/FL-04.md).
 6. Hacer el preflight y la aplicación controlada de las migraciones solo al proyecto hospedado `cargomesh-v2` separado cuando su identidad y acceso estén confirmados y exista aprobación de ejecución. Registrar tablas/RLS/conteos antes y después; no usar el proyecto V1 `cargomesh`.
 
@@ -66,3 +66,30 @@ El manifiesto combinado verifica inventario, dependencias y hashes PASS. Sus men
 **Gate del delta nuevo (1 oct):** `gate.py v2` PASS sobre el checkout combinado basado en `f2a8e3e` mas HAC-12 y estas correcciones. Las cinco migraciones aplicaron desde cero; pgTAP 116/116 en cinco archivos, de las cuales HAC-12 aporta 43/43. Ausencia V1 con controles positivos 9/9, drift del baseline y cleanup PASS. Puertos de replay `61300`/`62300`. Smoke HTTP Cookie/Bearer/Data API PASS sobre los escenarios sinteticos resembrados; advisors locales sin hallazgos warn/error. Evidencia sin credenciales: `%TEMP%\hac12-review-fixes-20261001` (`v2/v2-pgtap.log`, `http-smoke.log`, `release.log`, `advisors.log`, `final-reset.log` y `final-counts.log`). Un reset final vuelve a dejar 0 organizaciones, 0 usuarios Auth y 0 solicitudes. Docker se recupero creando una carpeta IPC limpia y preservando la anterior; vease [FL-06](./friction-logs/FL-06.md).
 
 El PR permanece borrador pendiente de reprueba independiente y gate de integracion; la validacion local del delta SQL/HTTP ya paso. HAC-16 conserva la resolucion de los dos conflictos de manifiesto/perfil. No se hizo merge, deploy ni cambios en Supabase hospedado.
+
+
+## Re-revisión del 2 oct: R-06 / R-07 / R-08 / R-09
+
+Jean Paul confirmó R-01 a R-05 **5/5 PASS** en `605435b`; esta entrega conserva esas correcciones. Los hallazgos nuevos se corrigieron por el dueño HAC-12; la aceptación independiente sigue pendiente.
+
+| Hallazgo | Corrección | Evidencia del nuevo corte |
+|---|---|---|
+| R-06 alta: INSERT directo con snapshot Piura/sede Lima | Trigger BEFORE INSERT valida DTO, miembro/tenant, marcador/versión, snapshot contra ubicación canónica de sede propia activa y columnas planas. No altera la guarda UPDATE anterior. Legacy sin marcadores mantiene su contrato. | Ocho INSERT alterados rechazados con PT400; copia canónica válida positiva. HTTP Data API authenticated rechaza el ataque, GET y conteos siguen intactos (2 candidatos); cero borrador/recibo del intento inválido. |
+| R-07 media: RPC guarda units sin dimensiones/indivisible | pg_jsonschema valida contrato completo anidado; SQL añade ventanas/totales/coordenadas/rango térmico. No admite formas incompletas que GET no pueda leer. | 25 variaciones inválidas RPC → PT400 sin recibo; mismo Idempotency-Key corregido crea una fila. RPC válido y posterior GET → 200; totales con precisión tolerada conservan control positivo. |
+| R-08 baja: [{}] en available_windows | CHECK de cada ventana: startsAt/endsAt ISO con offset, objetos estrictos y fin posterior al inicio. [] permitido para agenda incompleta. | Cuatro controles malformados fallan 23514; [] y ventana válida pasan. |
+| R-09 media: reservas activas solapadas | EXCLUDE GiST por capacity_calendar_id + tstzrange [inicio,fin), parcial HELD/CONFIRMED. RELEASED no bloquea; cada fuente tiene agenda única. | HELD/CONFIRMED solapados y reactivación fallan 23P01; adyacentes/liberados pasan. Dos transacciones simultáneas: una COMMIT, otra 23P01; una sola fila. |
+
+Migración nueva aditiva `20261002073853_hac12_insert_contract_and_reservation_guards.sql`; **seis migraciones** en el checkout combinado (dos HAC-29 y cuatro HAC-12). Hash/dependencia registrados en migration-manifest. Sin seeds en producción; test 13 crea su fixture únicamente dentro de BEGIN/ROLLBACK, independiente del rollback del archivo 12.
+
+Verificación descubierta/ejecutada:
+
+- `pnpm test:release`: **458/458**, 19 comandos; `test:hac12`: **48/48** (cinco archivos).
+- `pnpm typecheck`, `pnpm check:architecture` (237 módulos / 25 entradas cliente) y `pnpm build`: PASS.
+- `python supabase-v2/gate.py v2 --evidence-dir <evidencia>/v2-final --v1-replay-port-base 61300 --baseline-replay-port-base 62300`: manifest PASS, **170/170 pgTAP en seis archivos**; test 13 aporta 54/54, ausencia V1 9/9 con controles positivos, baseline sin drift, cleanup PASS. Checkout combinado basado en `f2a8e3e`; los dos conflictos del PR no se han resuelto en la rama de integración.
+- HTTP real Next/Hono + Auth/Data API local: Cookie/Bearer, aislamiento, UPDATE, INSERT forjado/positivo, RPC incompleta/válida, totales, pines, LTL, POST/GET/replay/conflicto, stale y cero candidatos PASS. Se ejecuta el build de la rama HAC-12; fixtures de HAC-29 se toman del checkout combinado.
+- Dos sesiones PostgreSQL concurrentes: no-solape PASS. Advisors locales: sin hallazgos warn/error.
+- Ocho JSON de HAC-27 parseados contra los schemas Zod actuales: PASS. Incluyen `FTL`, `responseChannels: []` y literal canónico `v2-clean`; siguen rotulados como fixtures estáticos. Diccionario 57 clases / 397 atributos / 93 relaciones; UML original sin modificar hash.
+
+Logs locales: `%TEMP%/hac12-rereview-20261002` (`v2-final/v2-pgtap.log`, `http-smoke.log`, `reservation-concurrency.log`, `release.log`, `build.log`, `final-reset.log`, `final-counts.log`). Primer gate fallido conservado en `v2/`: el test nuevo dependía indebidamente del fixture de otro archivo revertido; corregido con fixture propio y repetido desde reset limpio. El checkout de validación se respaldó antes de refrescar únicamente los archivos HAC-12; copia de sus cambios previos en `pre-refresh/`.
+
+Pendientes externos/aceptación: reprueba independiente R-06–R-09 y C-01/C-02; fixture RouteCondition por Jean/HAC-13; mcp_account_links por Axel/HAC-11; consumo conjunto HAC-14/15; conflictos/integración HAC-16 y autorización de aplicación al Supabase V2 alojado. La presencia de 19/20 tablas del conjunto UML local y los controles anteriores no certifican todos los atributos ni Alexa+ live. Sin merge ni despliegue por esta entrega.
