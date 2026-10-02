@@ -93,6 +93,14 @@ export type ApiLocationAccepted = Assert<CanonicalLocationV2 extends MapProps["o
   assert.equal(api.RoadRoutePreviewV2Schema.safeParse(malformed).success, false);
   assert.equal(getMapPresentation({ ...scenarioData("unknown-points"), selectedCandidateId: "road-a", onSelectCandidate() {} }).paths.length, 0);
   checks.push("Deliberately invalid UNKNOWN-with-points fixture rejected by API and suppressed by map");
+  for (const scenario of ["label-markup", "label-characters", "eligible"] as const) {
+    const fixture = scenarioData(scenario);
+    for (const endpoint of [fixture.origin, fixture.destination]) {
+      const parsed = locations.CanonicalLocationV2Schema.parse({ facilityId: null, region: null, ...endpoint });
+      assert.equal(parsed.label, endpoint.label);
+    }
+  }
+  checks.push("Actual canonical schema accepts markup, special characters and normal names unchanged; renderer must use text");
   // No external API/DB requests: these are schemas at the fetched commit, not runtime service proof.
   console.log(JSON.stringify({ status: "PASS", backendSha: git("rev-parse", backend),
     intakeSha: git("rev-parse", intake), checks, apiRuntimeVerified: false }, null, 2));

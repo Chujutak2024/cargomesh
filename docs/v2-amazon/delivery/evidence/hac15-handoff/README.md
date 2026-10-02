@@ -1,6 +1,12 @@
 # HAC-15 — Evidencia local para el smoke conjunto
 
-## Revisión vigente — 2 octubre 2026
+## Respuesta posterior a revisión independiente — 2 octubre 2026
+
+[R-MAP-01/02/03, comandos frescos, límites y handoff](../../HAC15_REVIEW_RESPONSE_2026_10_02.md). Seguridad Leaflet: [JSON DOM](./review-2026-10-02-leaflet-dom.json), 18/18 PASS y capturas 31–36. Contrato real: [7 checks](./review-2026-10-02-contract-labels.json) con HAC-12 `3cf966f` / mapper Luis `226624e`. Suite 33/33, typecheck, arquitectura 238/30 y build PASS. R-MAP-02 sigue abierto: [plan truck/MTC](../../HAC15_TRUCK_PILOT_PLAN.md), sin consulta truck ni comparación de geometría ejecutadas. [Metadatos MTC](./review-2026-10-02-mtc-metadata.json) son preparación, no evidencia de ruta coincidente. Google live y sus fallos anteriores no se reejecutaron para esta corrección.
+
+Las secciones siguientes conservan resultados históricos con sus snapshots; no acreditan nuevas ejecuciones ni sustituyen QA-13-20 integrado.
+
+## Primera revisión contractual — 2 octubre 2026 (snapshot histórico)
 
 [Contrato y correcciones actuales](../../HAC15_CONTRACT_REVIEW_2026_10_02.md). [Schemas/mapper reales: PASS 6 comprobaciones](./review-2026-10-02-contract.json) · [Interacción nueva: PASS 12/12 y consola sanitizada](./review-2026-10-02-interaction.json). Las evidencias anteriores siguen siendo históricas; en particular, **04 usa el fixture anterior unknown y no representa el negativo API corregido**.
 

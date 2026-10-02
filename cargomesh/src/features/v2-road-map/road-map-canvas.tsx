@@ -76,10 +76,13 @@ async function mountOpenStreetMap(host: HTMLDivElement): Promise<{ adapter: Adap
         if (!canRenderGeometry("openstreetmap", data.geometrySource)) return;
         const bounds = data.markers.map(({ point }) => L.latLng(point.lat, point.lng));
         data.markers.forEach(({ point, label, kind }) => {
+          // Leaflet parses string content as HTML. Canonical names must remain literal text.
+          const tooltip = host.ownerDocument.createElement("span");
+          tooltip.textContent = label;
           L.marker([point.lat, point.lng], {
             icon: L.divIcon({ html: mapMarkerSvg(kind), className: styles.endpointMarker, iconSize: [44, 53], iconAnchor: [22, 51] }),
             interactive: false, keyboard: false, title: label,
-          }).bindTooltip(label, { permanent: true }).addTo(overlays);
+          }).bindTooltip(tooltip, { permanent: true }).addTo(overlays);
         });
         data.paths.forEach((path) => {
           const points = path.map(({ lat, lng }) => L.latLng(lat, lng));

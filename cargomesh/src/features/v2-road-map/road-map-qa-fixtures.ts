@@ -24,11 +24,20 @@ const base: Omit<RoadCandidateMapViewProps, "selectedCandidateId" | "onSelectCan
   }],
 };
 
-export type Scenario = "eligible" | "unknown" | "empty-legs" | "unknown-points" | "zero" | "missing" | "missing-both" | "google-source";
+export type Scenario = "eligible" | "unknown" | "empty-legs" | "unknown-points" | "zero" | "missing" | "missing-both" | "google-source" | "label-markup" | "label-characters";
 
-export const scenarios: Scenario[] = ["eligible", "unknown", "empty-legs", "unknown-points", "zero", "missing", "missing-both", "google-source"];
+export const scenarios: Scenario[] = ["eligible", "unknown", "empty-legs", "unknown-points", "zero", "missing", "missing-both", "google-source", "label-markup", "label-characters"];
+
+/** Harmless regression payload: only a DOM attribute changes if HTML is interpreted. */
+export const markupLabel = `<img src="/hac15-missing-image" onerror="document.documentElement.setAttribute('data-hac15xss','executed')">`;
+export const characterLabels = { origin: `Sede <Norte> & "Callao"`, destination: `Empresa <Sur> & 'Arequipa'` };
 
 export function scenarioData(scenario: Scenario): Omit<RoadCandidateMapViewProps, "selectedCandidateId" | "onSelectCandidate"> {
+  if (scenario === "label-markup" || scenario === "label-characters") return {
+    ...base,
+    origin: { ...base.origin, label: scenario === "label-markup" ? markupLabel : characterLabels.origin },
+    destination: { ...base.destination, label: scenario === "label-markup" ? markupLabel : characterLabels.destination },
+  };
   if (scenario === "zero") return {
     ...base,
     origin: { label: "Sede de escenario Piura", city: "Piura", countryCode: "PE", lat: -5.1945, lng: -80.6328 },

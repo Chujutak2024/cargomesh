@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { RoadCandidateMapView } from "@/features/v2-road-map/road-candidate-map-view";
 import { scenarioData, scenarios, type Scenario } from "@/features/v2-road-map/road-map-qa-fixtures";
@@ -8,8 +9,9 @@ import { useLocale } from "@/features/i18n/locale-provider";
 import styles from "./road-map-preview.module.css";
 
 export function RoadMapPreviewClient() {
-  const [scenario, setScenario] = useState<Scenario>("eligible");
-  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>("road-a");
+  const initialScenario = useSearchParams().get("scenario");
+  const [scenario, setScenario] = useState<Scenario>(() => scenarios.find((item) => item === initialScenario) ?? "eligible");
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(() => scenario === "zero" ? null : scenario === "unknown" ? "road-b" : "road-a");
   const { t } = useLocale();
   const scenarioProps = scenarioData(scenario);
   const labels: Record<Scenario, string> = {
@@ -17,6 +19,8 @@ export function RoadMapPreviewClient() {
     "unknown-points": t("UNKNOWN con puntos", "UNKNOWN with points"), zero: t("Sin candidatos", "No candidates"),
     missing: t("Sin coordenada", "Missing coordinate"), "missing-both": t("Sin coordenadas", "No coordinates"),
     "google-source": t("Fuente Google / sin traza", "Google source / no trace"),
+    "label-markup": t("Etiquetas: markup", "Labels: markup"),
+    "label-characters": t("Etiquetas: caracteres", "Labels: characters"),
   };
 
   return <main className={styles.page}>
