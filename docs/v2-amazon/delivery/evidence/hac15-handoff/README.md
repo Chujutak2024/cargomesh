@@ -1,5 +1,24 @@
 # HAC-15 — Evidencia local para el smoke conjunto
 
+## Revisión vigente — 2 octubre 2026
+
+[Contrato y correcciones actuales](../../HAC15_CONTRACT_REVIEW_2026_10_02.md). [Schemas/mapper reales: PASS 6 comprobaciones](./review-2026-10-02-contract.json) · [Interacción nueva: PASS 12/12 y consola sanitizada](./review-2026-10-02-interaction.json). Las evidencias anteriores siguen siendo históricas; en particular, **04 usa el fixture anterior unknown y no representa el negativo API corregido**.
+
+| Captura nueva | Qué muestra |
+| --- | --- |
+| [23 — Google / SIMULATED](./23-contract-simulated-google-es.png) | Basemap Google y tres puntos de escenario expresamente simulados; sin consultas Routes. |
+| [24 — Cero candidatos ineligible](./24-zero-candidates-ineligible-es.png) | Piura → Arequipa, selección null, sin opción elegible; dos pines, ninguna línea/métrica. |
+| [25 — Enter / null preview](./25-keyboard-null-preview-es.png) | Selección B compartida, foco de 3 px, UNKNOWN sin traza. |
+| [26 — Origen nulo](./26-null-origin-coordinates-es.png) | Sólo pin conocido del destino; sin geometría. |
+| [27 — Ambos extremos nulos](./27-null-both-coordinates-es.png) | Estado vacío sin pins ni renderer. |
+| [28 — Cero candidatos EN móvil](./28-zero-candidates-mobile-390-en.png) | Ineligible a 390×844, sin overflow horizontal. |
+| [29 — Null EN móvil](./29-null-preview-mobile-390-en.png) | Selección por teclado, atribución y nota Google sin línea. |
+| [30 — Null ES móvil](./30-null-preview-mobile-320-es.png) | Reflujo a 320×740, sin overflow horizontal. |
+
+Datos: fixtures locales en `/hac15-preview`, habilitado sólo en `next dev`; no controller HAC-14, request persistido, API/DB ni smoke conjunto. Conditions del fixture: `[]`, sin clima/tráfico simulado. UNKNOWN con puntos es una entrada deliberadamente inválida, rechazada por Zod. No se reejecutaron las 19 comprobaciones históricas; se registraron 12 nuevas. No se indujo un nuevo fallo de proveedor.
+
+## Evidencia histórica
+
 Fecha: 1 octubre 2026. [Handoff a Luis](../../HAC15_HAC14_INTEGRATION_HANDOFF.md) · [PR #92](https://github.com/Chujutak2024/cargomesh/pull/92).
 
 Código: `2c5cc8de7005b1cc5531296f64e56ba4920ebb49`, rama `feat/fe2-v2-route-map`. Navegador integrado de Codex; Next local en `127.0.0.1:3093`. Datos de contrato **fixtures**, sin integración del controller de HAC-14, API freight ni DB. No es una certificación QA-13-20 ni una prueba de routing para camión.

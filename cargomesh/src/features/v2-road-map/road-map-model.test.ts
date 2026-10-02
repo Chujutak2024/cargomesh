@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { RoadCandidateMapViewProps } from "./road-map-contract";
 import { canRenderGeometry, getMapPresentation, isGoogleRoutesSource, providerNote } from "./road-map-model";
+import { scenarioData } from "./road-map-qa-fixtures";
 
 const sample: RoadCandidateMapViewProps = {
   origin: { label: "Planta Callao Norte", city: "Callao", countryCode: "PE", lat: -12.0464, lng: -77.1181 },
@@ -77,7 +78,9 @@ test("selection is entirely controlled by parent props", () => {
 });
 
 test("zero candidates is a domain empty state, with canonical markers only", () => {
-  const result = getMapPresentation({ ...sample, candidates: [], selectedCandidateId: null });
+  const fixture = scenarioData("zero");
+  assert.equal(fixture.overallStatus, "ineligible");
+  const result = getMapPresentation({ ...fixture, selectedCandidateId: null, onSelectCandidate() {} });
   assert.equal(result.selectedCandidate, null);
   assert.equal(result.markers.length, 2);
   assert.deepEqual(result.paths, []);

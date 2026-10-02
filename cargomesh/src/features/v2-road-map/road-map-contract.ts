@@ -1,5 +1,6 @@
 /**
- * Type-only mirror of HAC-27 §6.1 (document d2a9ef6d0876, 26 Sep 2026).
+ * Presentation types for HAC-27 §6.1 (document d2a9ef6d0876), accepting
+ * HAC-12's executable nullable regions and open condition severity strings.
  * HAC-12 owns the executable Zod schema under shared/schemas/v2. Replace this
  * import with that canonical type when its branch reaches the integration base.
  * No runtime validation or business rule is defined here.
@@ -20,7 +21,8 @@ export interface RoadRoutePreviewDto {
     waypoints: Array<{ lat: number; lng: number; label?: string }>;
     conditions: Array<{
       code: string;
-      severity: "INFO" | "WARNING" | "CRITICAL";
+      // HAC-12's executable schema accepts non-empty provider severity strings.
+      severity: string;
       description: string;
       provenanceStatus: ProvenanceStatusV2;
     }>;

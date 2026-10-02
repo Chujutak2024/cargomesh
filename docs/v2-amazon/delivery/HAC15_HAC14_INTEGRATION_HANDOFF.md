@@ -1,5 +1,7 @@
 # HAC-15 → HAC-14 — Handoff de integración ROAD
 
+**Revisión vigente: 2 octubre 2026.** [Contrato real, corrección de cero candidatos, datos/condiciones y evidencia nueva](./HAC15_CONTRACT_REVIEW_2026_10_02.md). HAC-12 `605435b` entrega `routePreview:null`; no reemplazarlo por una ruta del escenario local. Cero candidatos evaluados = `ineligible`. El montaje de Luis sigue en `:346`, SHA `226624e`. Las secciones siguientes conservan los snapshots y evidencias históricos del primer handoff; usar la revisión vigente para los resultados actuales.
+
 Fecha: 1 octubre 2026 (America/Lima). Juan entrega el mapa; Luis posee el intake, su estado y mapper; QA valida el smoke integrado. [PR #92](https://github.com/Chujutak2024/cargomesh/pull/92) permanece en revisión. **Sin merge ni despliegue.**
 
 ## 1. Snapshot y autoridad

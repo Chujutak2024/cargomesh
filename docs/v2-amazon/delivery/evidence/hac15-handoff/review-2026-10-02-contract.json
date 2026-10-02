@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "backendSha": "605435b3e6299b86486c21de610806830f381bb8",
+  "intakeSha": "226624e3bcf4c7856c7aa21fcbeed9eaaf93ab18",
+  "checks": [
+    "Luis mapper props and HAC-12 route/location types accepted without casts",
+    "Piura/Arequipa zero-candidate fixture passes real Zod; former unknown fails",
+    "Actual Luis mapper preserves zero-candidate evaluation, canonical endpoints and parent callback",
+    "SIMULATED, empty legs, UNKNOWN/no trace and null preview respect API/map boundary",
+    "Nullable canonical coordinates pass real schema; no invented pins or trace",
+    "Deliberately invalid UNKNOWN-with-points fixture rejected by API and suppressed by map"
+  ],
+  "apiRuntimeVerified": false
+}
