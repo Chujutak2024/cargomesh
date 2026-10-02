@@ -1,5 +1,11 @@
 # Synthetic V2 ROAD baseline — HAC-29
 
+HAC-13 adds a file-only [RouteCondition fixture and HAC-15 map projection](./ROUTE_CONDITIONS_HAC15.md).
+It is an explicit SUPUESTO pending Tech Lead confirmation in HAC-27: SIMULATED,
+fixed validity controls, no current map drawing or ETA/eligibility/capacity effect.
+Run `python supabase/scenarios/v2-road-baseline/verify_route_conditions.py` from
+the repository root; the V2 gate also runs it after seed/verify with local DB references.
+
 Local-only scenario, separate from migrations and V1 fixtures. Follow the
 [bootstrap runbook](../../../docs/v2-amazon/delivery/HAC29_CLEAN_BOOTSTRAP.md) for exact
 reset/seed/verify/cleanup/count commands and external backup requirements.
