@@ -53,3 +53,12 @@ test("mapper normalizes an absent route preview to null", () => {
   const props = mapServiceabilityToMapViewProps(ROAD_REQUEST_FIXTURE, evaluation, null, () => undefined);
   assert.equal(props.candidates[0].routePreview, null);
 });
+
+test("mapper preserves provider condition severity strings from HAC-12", () => {
+  const evaluation = structuredClone(ELIGIBLE_UNKNOWN_EVALUATION_FIXTURE);
+  const preview = evaluation.candidates[0].routePreview;
+  assert.ok(preview);
+  preview.legs[0].conditions[0].severity = "PROVIDER_ADVISORY";
+  const props = mapServiceabilityToMapViewProps(ROAD_REQUEST_FIXTURE, evaluation, "cand-road-01", () => undefined);
+  assert.equal(props.candidates[0].routePreview?.legs[0].conditions[0].severity, "PROVIDER_ADVISORY");
+});

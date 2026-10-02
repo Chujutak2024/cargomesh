@@ -49,6 +49,7 @@ export type PrototypeValidationCode =
   | "invalid-range"
   | "invalid-email"
   | "invalid-phone"
+  | "total-mismatch"
   | "temperature-order";
 
 export type PrototypeValidationIssue = {
@@ -174,6 +175,18 @@ function positiveInteger(value: string) {
   return Number.isInteger(parsed) && parsed > 0;
 }
 
+const CARGO_TOTAL_TOLERANCE_V2 = 1e-6;
+
+function totalsMatch(declared: string, quantity: string, perUnit: string) {
+  const declaredValue = Number(declared);
+  const quantityValue = Number(quantity);
+  const perUnitValue = Number(perUnit);
+  return Number.isFinite(declaredValue)
+    && Number.isFinite(quantityValue)
+    && Number.isFinite(perUnitValue)
+    && Math.abs(declaredValue - quantityValue * perUnitValue) <= CARGO_TOTAL_TOLERANCE_V2;
+}
+
 function validLocalDateTime(value: string) {
   return value.length > 0 && !Number.isNaN(Date.parse(value));
 }
@@ -226,6 +239,22 @@ export function validatePrototypeStep(
     ].forEach((field) => positive(field as keyof V2IntakePrototypeDraft));
     if (draft.unitQuantity && !positiveInteger(draft.unitQuantity)) {
       issues.push({ field: "unitQuantity", code: "positive-integer" });
+    }
+    if (
+      positiveInteger(draft.unitQuantity)
+      && positiveNumber(draft.totalWeightKg)
+      && positiveNumber(draft.unitWeightPerUnitKg)
+      && !totalsMatch(draft.totalWeightKg, draft.unitQuantity, draft.unitWeightPerUnitKg)
+    ) {
+      issues.push({ field: "totalWeightKg", code: "total-mismatch" });
+    }
+    if (
+      positiveInteger(draft.unitQuantity)
+      && positiveNumber(draft.totalVolumeM3)
+      && positiveNumber(draft.unitVolumePerUnitM3)
+      && !totalsMatch(draft.totalVolumeM3, draft.unitQuantity, draft.unitVolumePerUnitM3)
+    ) {
+      issues.push({ field: "totalVolumeM3", code: "total-mismatch" });
     }
     if (draft.requirements.includes("TEMP_CONTROLLED")) {
       required("temperatureMinCelsius");

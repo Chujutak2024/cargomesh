@@ -6,6 +6,7 @@ import type {
   NormalizedIntakeOptionsResponse,
 } from "./contracts";
 import { INTAKE_OPTIONS_FIXTURE } from "./fixtures/intake-options.fixture";
+import { IntakeOptionsV2ResponseSchema } from "@/shared/schemas/v2/intake-options";
 
 export const REQUIRED_INTAKE_OPTION_GROUPS = [
   "facilities",
@@ -113,7 +114,8 @@ function normalizeOption(code: string, labelEs: string, labelEn: string, extra: 
 }
 
 export function parseIntakeOptionsResponse(value: unknown): NormalizedIntakeOptionsResponse | null {
-  if (!isRecord(value) || value.schemaVersion !== "2.0" || !isRecord(value.data) || !hasExactGroups(value.data)) {
+  const parsedContract = IntakeOptionsV2ResponseSchema.safeParse(value);
+  if (!parsedContract.success || !isRecord(value) || !isRecord(value.data) || !hasExactGroups(value.data)) {
     return null;
   }
   const data = value.data;

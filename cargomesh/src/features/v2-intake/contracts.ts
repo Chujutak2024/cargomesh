@@ -33,17 +33,18 @@ export type CargoUnitV2 = {
 export type ShipmentContactV2 = {
   name: string;
   phoneE164: string;
-  email: string;
+  email?: string | null;
 };
 
 export type CreateFreightRequestV2Input = {
   schemaVersion: "2.0";
+  organizationId?: string;
   origin: FreightLocationV2;
   destination: FreightLocationV2;
   pickupWindow: FreightWindowV2;
   deliveryWindow: FreightWindowV2;
   acceptedModes: ["ROAD"];
-  requiredEquipment: string;
+  requiredEquipment?: string | null;
   cargoSpecification: {
     categoryCode: string;
     description: string;
@@ -62,14 +63,26 @@ export type CreateFreightRequestV2Input = {
     pickup: ShipmentContactV2;
     recipient: ShipmentContactV2;
   };
+  budget?: {
+    amount: number;
+    currency: "USD";
+  } | null;
 };
 
-export type FreightRequestV2Data = Omit<CreateFreightRequestV2Input, "schemaVersion"> & {
+export type FreightRequestV2Data = Omit<
+  CreateFreightRequestV2Input,
+  "schemaVersion" | "requiredEquipment" | "budget"
+> & {
   id: string;
   referenceCode: string;
   organizationId: string;
-  status: "DRAFT" | "PENDING" | string;
+  status: "DRAFT";
   draftVersion: number;
+  requiredEquipment: string | null;
+  budget: {
+    amount: number;
+    currency: "USD";
+  } | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -77,9 +90,9 @@ export type FreightRequestV2Data = Omit<CreateFreightRequestV2Input, "schemaVers
 export type FreightRequestV2Response = {
   schemaVersion: "2.0";
   data: FreightRequestV2Data;
-  meta?: {
-    idempotentReplay?: boolean;
-    environmentProfile?: string;
+  meta: {
+    idempotentReplay: boolean;
+    environmentProfile: "v2-clean";
   };
 };
 
@@ -97,7 +110,7 @@ export type RoadRoutePreviewDto = {
     waypoints: Array<{ lat: number; lng: number; label?: string }>;
     conditions: Array<{
       code: string;
-      severity: "INFO" | "WARNING" | "CRITICAL";
+      severity: string;
       description: string;
       provenanceStatus: ProvenanceStatusV2;
     }>;
@@ -116,8 +129,8 @@ export type RoadServiceabilityCandidateV2 = {
     id: string;
     code: string;
     mode: "ROAD";
-    serviceClass?: string;
-    responseChannels?: string[];
+    serviceClass: string;
+    responseChannels: Array<"MANUAL" | "API" | "MCP">;
   };
   checks: {
     coverage: {

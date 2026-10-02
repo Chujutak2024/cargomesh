@@ -3,6 +3,7 @@
 .mapHeader, .resultsHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.8rem; }
 .mapHeader > div, .resultsHeader > div { display: grid; gap: 0.25rem; }
 .mapHeader h3, .resultsHeader h3, .emptyState h3 { margin: 0; color: var(--cm-color-heading); font-size: 0.86rem; }
+.resultsHeader small { color: var(--cm-color-muted); font-size: 0.58rem; }
 .mapHeader p, .emptyState p { margin: 0; color: var(--cm-color-muted); font-size: 0.64rem; line-height: 1.5; }
 .mapLocations { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.65rem; }
 .location { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.5rem; border-radius: var(--cm-radius-sm); padding: 0.65rem; background: white; color: var(--cm-color-primary); }

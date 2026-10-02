@@ -9,10 +9,13 @@ import {
 import { parseIntakeOptionsResponse } from "./intake-options";
 import {
   V2IntakeApiError,
+  assertFreightRequestRoundTrip,
+  assertServiceabilityCorrelation,
   createFreightRequestV2,
   getFreightRequestV2,
   getRoadServiceabilityV2,
   loadIntakeOptions,
+  reconcileCandidateSelection,
 } from "./v2-intake-client";
 import { mapDraftToCreateFreightRequestV2Input, PROVISIONAL_PROTOTYPE_DRAFT } from "./prototype-model";
 
@@ -20,6 +23,12 @@ const json = (value: unknown, init: ResponseInit = {}) => new Response(JSON.stri
   status: 200,
   headers: { "Content-Type": "application/json" },
   ...init,
+});
+
+const requestEnvelope = (data = ROAD_REQUEST_FIXTURE) => ({
+  schemaVersion: "2.0" as const,
+  data,
+  meta: { idempotentReplay: false, environmentProfile: "v2-clean" as const },
 });
 
 test("GET maps the real five-group contract into selector codes", async () => {
@@ -143,7 +152,7 @@ test("GET selection maps backend codes into the POST without client tenant autho
     assert.equal((body.cargoSpecification as { categoryCode: string; packaging: string }).categoryCode, "PHARMA");
     assert.equal((body.cargoSpecification as { categoryCode: string; packaging: string }).packaging, "PALLET");
     assert.equal(body.requiredEquipment, "REEFER_TRUCK");
-    return json({ schemaVersion: "2.0", data: ROAD_REQUEST_FIXTURE }, { status: 201 });
+    return json(requestEnvelope(), { status: 201 });
   });
   assert.equal(response.data.status, "DRAFT");
   assert.equal(response.data.draftVersion, 1);
@@ -153,7 +162,7 @@ test("GET performs a request round-trip with same-origin authentication", async 
   const response = await getFreightRequestV2(ROAD_REQUEST_FIXTURE.id, async (input, init) => {
     assert.equal(String(input), `/api/v2/freight/requests/${ROAD_REQUEST_FIXTURE.id}`);
     assert.equal(init?.credentials, "same-origin");
-    return json({ schemaVersion: "2.0", data: ROAD_REQUEST_FIXTURE });
+    return json(requestEnvelope());
   });
   assert.equal(response.data.referenceCode, ROAD_REQUEST_FIXTURE.referenceCode);
 });
@@ -166,6 +175,34 @@ test("serviceability GET includes expectedDraftVersion and remains read-only", a
     return json({ schemaVersion: "2.0", data: ELIGIBLE_UNKNOWN_EVALUATION_FIXTURE });
   });
   assert.equal(response.data.commercialNotice, "EVALUATION_ONLY_NO_OFFER_OR_BOOKING");
+});
+
+test("POST, GET, and serviceability remain correlated to one request version", () => {
+  assert.doesNotThrow(() => assertFreightRequestRoundTrip(ROAD_REQUEST_FIXTURE, structuredClone(ROAD_REQUEST_FIXTURE)));
+  assert.doesNotThrow(() => assertServiceabilityCorrelation(ROAD_REQUEST_FIXTURE, ELIGIBLE_UNKNOWN_EVALUATION_FIXTURE));
+
+  assert.throws(
+    () => assertFreightRequestRoundTrip(ROAD_REQUEST_FIXTURE, { ...ROAD_REQUEST_FIXTURE, draftVersion: 2 }),
+    (error: unknown) => error instanceof V2IntakeApiError && error.code === "REQUEST_CORRELATION_MISMATCH",
+  );
+  assert.throws(
+    () => assertServiceabilityCorrelation(ROAD_REQUEST_FIXTURE, {
+      ...ELIGIBLE_UNKNOWN_EVALUATION_FIXTURE,
+      evaluatedDraftVersion: 2,
+    }),
+    (error: unknown) => error instanceof V2IntakeApiError && error.code === "SERVICEABILITY_CORRELATION_MISMATCH",
+  );
+});
+
+test("card and map selection share one candidate id across refreshed evaluations", () => {
+  assert.equal(reconcileCandidateSelection("cand-road-02", ELIGIBLE_UNKNOWN_EVALUATION_FIXTURE), "cand-road-02");
+  assert.equal(reconcileCandidateSelection("removed", ELIGIBLE_UNKNOWN_EVALUATION_FIXTURE), "cand-road-01");
+  assert.equal(reconcileCandidateSelection("removed", {
+    ...ELIGIBLE_UNKNOWN_EVALUATION_FIXTURE,
+    overallStatus: "ineligible",
+    candidates: [],
+    summaryCounts: { totalEvaluated: 0, eligibleCount: 0, unknownCount: 0, ineligibleCount: 0 },
+  }), null);
 });
 
 test("a legacy or malformed success envelope is rejected instead of treated as V2", async () => {

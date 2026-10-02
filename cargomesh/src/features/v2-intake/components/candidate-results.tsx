@@ -42,6 +42,7 @@ export function CandidateResults({
         <div>
           <span className={styles.eyebrow}>{t("Evaluación de servicio", "Serviceability evaluation")}</span>
           <h3 id="candidate-results-title">{t("Candidatos ROAD preliminares", "Preliminary ROAD candidates")}</h3>
+          <small>{t("Versión evaluada", "Evaluated version")} {evaluation.evaluatedDraftVersion} · {formatProvenanceTimestamp(evaluation.evaluatedAt)}</small>
         </div>
         <StatusBadge status={evaluation.overallStatus} t={t} />
       </header>
@@ -54,7 +55,7 @@ export function CandidateResults({
               <header>
                 <div className={styles.carrierIdentity}>
                   <span className={styles.carrierIcon}><Truck size={17} aria-hidden="true" /></span>
-                  <span><strong>{candidate.carrier.commercialName}</strong><small>{candidate.service.code}</small></span>
+                  <span><strong>{candidate.carrier.commercialName}</strong><small>{candidate.service.code} · {candidate.service.serviceClass}</small></span>
                 </div>
                 <StatusBadge status={candidate.status} t={t} />
               </header>

@@ -45,10 +45,13 @@ import {
 } from "./prototype-model";
 import {
   V2IntakeApiError,
+  assertFreightRequestRoundTrip,
+  assertServiceabilityCorrelation,
   createFreightRequestV2,
   getFreightRequestV2,
   getRoadServiceabilityV2,
   loadIntakeOptions,
+  reconcileCandidateSelection,
 } from "./v2-intake-client";
 import styles from "./v2-intake-prototype.module.css";
 
@@ -75,6 +78,8 @@ export function V2IntakePrototype() {
   const [dirtyAfterCreate, setDirtyAfterCreate] = useState(false);
   const errorRef = useRef<HTMLDivElement>(null);
   const idempotencyRef = useRef<{ fingerprint: string; key: string } | null>(null);
+  const flowSequenceRef = useRef(0);
+  const draftRevisionRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -116,6 +121,7 @@ export function V2IntakePrototype() {
   }, [evaluation, request, selectedCandidateId]);
 
   const update = <K extends keyof V2IntakePrototypeDraft>(field: K, value: V2IntakePrototypeDraft[K]) => {
+    draftRevisionRef.current += 1;
     setDraft((current) => ({ ...current, [field]: value }));
     setIssues((current) => current.filter((issue) => issue.field !== field));
     if (request) setDirtyAfterCreate(true);
@@ -132,6 +138,7 @@ export function V2IntakePrototype() {
       "invalid-range": t("La ventana debe terminar después de iniciar y respetar el orden retiro→entrega.", "The window must end after it starts and preserve pickup→delivery order."),
       "invalid-email": t("Ingresa un correo válido.", "Enter a valid email."),
       "invalid-phone": t("Usa formato E.164, por ejemplo +51987654321.", "Use E.164 format, for example +51987654321."),
+      "total-mismatch": t("El total debe coincidir con cantidad × medida por unidad.", "The total must match quantity × per-unit measurement."),
       "temperature-order": t("La temperatura máxima debe ser mayor o igual a la mínima.", "Maximum temperature must be greater than or equal to minimum."),
     };
     return labels[issue.code];
@@ -166,12 +173,15 @@ export function V2IntakePrototype() {
     setMaxVisited((current) => Math.max(current, next) as PrototypeStep);
   };
   const loadExample = () => {
+    draftRevisionRef.current += 1;
     setDraft(buildPrototypeExample(activeOptions));
     setIssues([]);
     setSubmitError(null);
     if (request) setDirtyAfterCreate(true);
   };
   const reset = () => {
+    flowSequenceRef.current += 1;
+    draftRevisionRef.current += 1;
     setDraft(EMPTY_PROTOTYPE_DRAFT);
     setStep(1);
     setMaxVisited(1);
@@ -185,25 +195,34 @@ export function V2IntakePrototype() {
     idempotencyRef.current = null;
   };
 
-  const readAndEvaluate = async (created: FreightRequestV2Data) => {
+  const readAndEvaluate = async (
+    created: FreightRequestV2Data,
+    flowSequence: number,
+    submittedDraftRevision?: number,
+  ) => {
     setSubmitPhase("reading");
     const roundTrip = await getFreightRequestV2(created.id);
+    if (flowSequence !== flowSequenceRef.current) return;
+    assertFreightRequestRoundTrip(created, roundTrip.data);
     setRequest(roundTrip.data);
     setSubmitPhase("evaluating");
     const result = await getRoadServiceabilityV2(roundTrip.data.id, roundTrip.data.draftVersion);
+    if (flowSequence !== flowSequenceRef.current) return;
+    assertServiceabilityCorrelation(roundTrip.data, result.data);
     setEvaluation(result.data);
-    setSelectedCandidateId(
-      result.data.candidates.find((candidate) => candidate.status === "eligible")?.candidateId
-      ?? result.data.candidates[0]?.candidateId
-      ?? null,
-    );
+    setSelectedCandidateId((current) => reconcileCandidateSelection(current, result.data));
     setSubmitPhase("success");
-    setDirtyAfterCreate(false);
+    if (submittedDraftRevision !== undefined) {
+      setDirtyAfterCreate(draftRevisionRef.current !== submittedDraftRevision);
+    }
   };
   const createDraftAndEvaluate = async () => {
     if (!enterReview()) return;
     setSubmitError(null);
     setEvaluation(null);
+    const flowSequence = flowSequenceRef.current + 1;
+    flowSequenceRef.current = flowSequence;
+    const submittedDraftRevision = draftRevisionRef.current;
     try {
       const payload = mapDraftToCreateFreightRequestV2Input(draft, activeOptions);
       const fingerprint = JSON.stringify(payload);
@@ -212,9 +231,11 @@ export function V2IntakePrototype() {
       }
       setSubmitPhase("creating");
       const created = await createFreightRequestV2(payload, idempotencyRef.current.key);
+      if (flowSequence !== flowSequenceRef.current) return;
       setRequest(created.data);
-      await readAndEvaluate(created.data);
+      await readAndEvaluate(created.data, flowSequence, submittedDraftRevision);
     } catch (error) {
+      if (flowSequence !== flowSequenceRef.current) return;
       setSubmitError(normalizeApiError(error));
       setSubmitPhase("error");
     }
@@ -225,9 +246,12 @@ export function V2IntakePrototype() {
       return;
     }
     setSubmitError(null);
+    const flowSequence = flowSequenceRef.current + 1;
+    flowSequenceRef.current = flowSequence;
     try {
-      await readAndEvaluate(request);
+      await readAndEvaluate(request, flowSequence);
     } catch (error) {
+      if (flowSequence !== flowSequenceRef.current) return;
       setSubmitError(normalizeApiError(error));
       setSubmitPhase("error");
     }
@@ -342,6 +366,10 @@ export function V2IntakePrototype() {
               <div><span className={styles.eyebrow}>{request.referenceCode}</span><h2>{t("Borrador persistido y lectura operativa", "Persisted draft and operational read")}</h2><p>{t(`Estado ${request.status} · draftVersion ${request.draftVersion}`, `Status ${request.status} · draftVersion ${request.draftVersion}`)}</p></div>
               <Badge tone={request.status === "DRAFT" ? "preliminary" : "neutral"}>{request.status}</Badge>
             </header>
+            {dirtyAfterCreate ? <div className={styles.pendingState} role="status">{t(
+              "Los cambios del formulario son locales. Tarjetas y mapa todavía muestran el DRAFT persistido y la versión evaluada indicada arriba.",
+              "Form changes are local. Cards and map still show the persisted DRAFT and the evaluated version shown above.",
+            )}</div> : null}
             {evaluation ? <CandidateResults evaluation={evaluation} selectedCandidateId={selectedCandidateId} onSelectCandidate={setSelectedCandidateId} t={t} /> : <LoadingOrPending phase={submitPhase} retry={retryAfterCreate} t={t} />}
             {mapProps ? <RoadCandidateMapBoundary props={mapProps} t={t} /> : null}
           </section>

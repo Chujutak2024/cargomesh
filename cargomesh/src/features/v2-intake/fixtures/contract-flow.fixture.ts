@@ -54,6 +54,7 @@ export const ROAD_REQUEST_FIXTURE: FreightRequestV2Data = {
     pickup: { name: "Elena Vargas", phoneE164: "+51987654321", email: "despachos.lima@shipper-v2.example" },
     recipient: { name: "Carlos Medina", phoneE164: "+51912345678", email: "recepcion.aqp@shipper-v2.example" },
   },
+  budget: null,
   createdAt: "2026-09-27T12:00:00Z",
   updatedAt: "2026-09-27T12:00:00Z",
 };

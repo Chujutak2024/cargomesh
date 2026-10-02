@@ -73,6 +73,17 @@ test("temperature range is required only for TEMP_CONTROLLED cargo", () => {
   assert.equal(ambient.some((issue) => issue.field.startsWith("temperature")), false);
 });
 
+test("cargo totals must match quantity times each unit measurement", () => {
+  const issues = validatePrototypeStep(2, {
+    ...PROVISIONAL_PROTOTYPE_DRAFT,
+    totalWeightKg: "4801",
+    totalVolumeM3: "19.3",
+  });
+  assert.equal(issues.some((issue) => issue.field === "totalWeightKg" && issue.code === "total-mismatch"), true);
+  assert.equal(issues.some((issue) => issue.field === "totalVolumeM3" && issue.code === "total-mismatch"), true);
+  assert.deepEqual(validatePrototypeStep(2, PROVISIONAL_PROTOTYPE_DRAFT), []);
+});
+
 test("windows preserve pickup and delivery order", () => {
   const issues = validatePrototypeStep(3, {
     ...PROVISIONAL_PROTOTYPE_DRAFT,

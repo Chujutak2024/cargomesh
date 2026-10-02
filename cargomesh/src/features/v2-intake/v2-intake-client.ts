@@ -1,10 +1,15 @@
 import type {
   CreateFreightRequestV2Input,
   ErrorEnvelopeV2,
+  FreightRequestV2Data,
   FreightRequestV2Response,
+  RoadServiceabilityEvaluationV2Data,
   RoadServiceabilityEvaluationV2Response,
 } from "./contracts";
 import { getIntakeOptionsFixture, parseIntakeOptionsResponse } from "./intake-options";
+import { FreightRequestV2ResponseSchema } from "@/shared/schemas/v2/freight-request";
+import { RoadServiceabilityEvaluationV2ResponseSchema } from "@/shared/schemas/v2/serviceability";
+import type { ZodType } from "zod";
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
@@ -31,6 +36,53 @@ export type IntakeOptionsLoadResult = {
 };
 
 export type IntakeOptionsSourceMode = "api" | "development-fixture";
+
+export function assertFreightRequestRoundTrip(
+  created: FreightRequestV2Data,
+  loaded: FreightRequestV2Data,
+) {
+  if (
+    loaded.id !== created.id
+    || loaded.organizationId !== created.organizationId
+    || loaded.draftVersion !== created.draftVersion
+  ) {
+    throw new V2IntakeApiError({
+      code: "REQUEST_CORRELATION_MISMATCH",
+      message: "GET returned a different request, organization, or draft version than POST.",
+      status: 502,
+      retryable: false,
+    });
+  }
+}
+
+export function assertServiceabilityCorrelation(
+  request: FreightRequestV2Data,
+  evaluation: RoadServiceabilityEvaluationV2Data,
+) {
+  if (
+    evaluation.freightRequestId !== request.id
+    || evaluation.evaluatedDraftVersion !== request.draftVersion
+  ) {
+    throw new V2IntakeApiError({
+      code: "SERVICEABILITY_CORRELATION_MISMATCH",
+      message: "Serviceability does not belong to the current request and draft version.",
+      status: 502,
+      retryable: false,
+    });
+  }
+}
+
+export function reconcileCandidateSelection(
+  currentCandidateId: string | null,
+  evaluation: RoadServiceabilityEvaluationV2Data,
+) {
+  if (currentCandidateId && evaluation.candidates.some((candidate) => candidate.candidateId === currentCandidateId)) {
+    return currentCandidateId;
+  }
+  return evaluation.candidates.find((candidate) => candidate.status === "eligible")?.candidateId
+    ?? evaluation.candidates[0]?.candidateId
+    ?? null;
+}
 
 async function readJson(response: Response): Promise<unknown> {
   const text = await response.text();
@@ -87,25 +139,22 @@ async function requireOk(response: Response) {
   });
 }
 
-function assertEnvelope<T extends { schemaVersion: "2.0"; data: unknown }>(
+function parseContract<T extends { schemaVersion: "2.0"; data: unknown }>(
   value: unknown,
   endpoint: string,
+  schema: ZodType<T>,
 ): T {
-  if (
-    typeof value !== "object"
-    || value === null
-    || (value as { schemaVersion?: unknown }).schemaVersion !== "2.0"
-    || typeof (value as { data?: unknown }).data !== "object"
-    || (value as { data?: unknown }).data === null
-  ) {
+  const parsed = schema.safeParse(value);
+  if (!parsed.success) {
     throw new V2IntakeApiError({
       code: "CONTRACT_MISMATCH",
-      message: `${endpoint} did not return the HAC-27 v2.0 envelope.`,
+      message: `${endpoint} did not return the published HAC-12 v2.0 contract.`,
       status: 502,
       retryable: false,
+      details: parsed.error.flatten(),
     });
   }
-  return value as T;
+  return parsed.data;
 }
 
 export function resolveIntakeOptionsSourceMode(): IntakeOptionsSourceMode {
@@ -171,9 +220,10 @@ export async function createFreightRequestV2(
     },
     body: JSON.stringify(input),
   });
-  return assertEnvelope<FreightRequestV2Response>(
+  return parseContract<FreightRequestV2Response>(
     await requireOk(response),
     "POST /api/v2/freight/requests",
+    FreightRequestV2ResponseSchema,
   );
 }
 
@@ -184,9 +234,10 @@ export async function getFreightRequestV2(id: string, fetcher: FetchLike = fetch
     headers: { Accept: "application/json" },
     cache: "no-store",
   });
-  return assertEnvelope<FreightRequestV2Response>(
+  return parseContract<FreightRequestV2Response>(
     await requireOk(response),
     "GET /api/v2/freight/requests/:id",
+    FreightRequestV2ResponseSchema,
   );
 }
 
@@ -205,8 +256,9 @@ export async function getRoadServiceabilityV2(
       cache: "no-store",
     },
   );
-  return assertEnvelope<RoadServiceabilityEvaluationV2Response>(
+  return parseContract<RoadServiceabilityEvaluationV2Response>(
     await requireOk(response),
     "GET /api/v2/freight/requests/:id/serviceability",
+    RoadServiceabilityEvaluationV2ResponseSchema,
   );
 }
