@@ -146,6 +146,12 @@ function preferredFacilityId(
     ?? "";
 }
 
+function utcInstantToLocalDateTimeInput(utcInstant: string) {
+  const date = new Date(utcInstant);
+  const localClock = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localClock.toISOString().slice(0, 16);
+}
+
 /**
  * Builds the one-click example from the authenticated selector contract.
  * Static values remain presentation-only; every submitted selector value is
@@ -167,6 +173,10 @@ export function buildPrototypeExample(options: IntakeOptionsData): V2IntakeProto
     packaging,
     unitPackageType: packaging,
     requiredEquipment: preferredOptionCode(options.equipmentOptions, ["REEFER_TRUCK"]),
+    pickupWindowStartsAt: utcInstantToLocalDateTimeInput("2026-10-05T08:00:00Z"),
+    pickupWindowEndsAt: utcInstantToLocalDateTimeInput("2026-10-05T18:00:00Z"),
+    deliveryWindowStartsAt: utcInstantToLocalDateTimeInput("2026-10-07T08:00:00Z"),
+    deliveryWindowEndsAt: utcInstantToLocalDateTimeInput("2026-10-07T20:00:00Z"),
     requirements,
     temperatureMinCelsius: temperatureControlled ? PROVISIONAL_PROTOTYPE_DRAFT.temperatureMinCelsius : "",
     temperatureMaxCelsius: temperatureControlled ? PROVISIONAL_PROTOTYPE_DRAFT.temperatureMaxCelsius : "",

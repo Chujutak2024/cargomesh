@@ -180,6 +180,10 @@ test("the one-click example keeps the HAC-12 positive lane when facilities arriv
   const example = buildPrototypeExample(options);
   assert.equal(example.originFacilityId, fixture.facilities[0].facilityId);
   assert.equal(example.destinationFacilityId, fixture.facilities[1].facilityId);
+  assert.equal(new Date(example.pickupWindowStartsAt).toISOString(), "2026-10-05T08:00:00.000Z");
+  assert.equal(new Date(example.pickupWindowEndsAt).toISOString(), "2026-10-05T18:00:00.000Z");
+  assert.equal(new Date(example.deliveryWindowStartsAt).toISOString(), "2026-10-07T08:00:00.000Z");
+  assert.equal(new Date(example.deliveryWindowEndsAt).toISOString(), "2026-10-07T20:00:00.000Z");
 });
 
 test("requirement toggling is deterministic and duplicate-free", () => {
