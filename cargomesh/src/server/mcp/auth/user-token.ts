@@ -6,12 +6,15 @@ export type McpAccountLink = {
   authUserId: string;
   oauthClientId: string;
   organizationId: string;
+  organizationMemberId: string;
   status: "ACTIVE" | "REVOKED";
   scopes: readonly string[];
+  expiresAt: string | null;
+  revokedAt: string | null;
 };
 
 export type McpAccountLinkRepository = {
-  findByUserAndClient(authUserId: string, oauthClientId: string): Promise<McpAccountLink | null>;
+  findByUserAndClient(authUserId: string, oauthClientId: string, accessToken: string): Promise<McpAccountLink | null>;
 };
 
 export type McpMembership = {
@@ -70,10 +73,26 @@ async function verifySupabaseIdentity(accessToken: string): Promise<VerifiedSupa
   return { userId: user.id, userEmail: user.email ?? "", oauthClientId };
 }
 
-const blockedAccountLinks: McpAccountLinkRepository = {
-  async findByUserAndClient() {
-    // Fail closed until persistent account links have an approved implementation.
-    throw new Error("FORBIDDEN: MCP account-link persistence is not configured.");
+const supabaseAccountLinks: McpAccountLinkRepository = {
+  async findByUserAndClient(authUserId, oauthClientId, accessToken) {
+    const client = createUserAccessSupabaseClient(accessToken);
+    const { data, error } = await client.from("mcp_account_links")
+      .select("auth_user_id,oauth_client_id,organization_id,organization_member_id,status,scopes,expires_at,revoked_at")
+      .eq("auth_user_id", authUserId)
+      .eq("oauth_client_id", oauthClientId)
+      .maybeSingle();
+    if (error) throw new Error("FORBIDDEN: MCP account-link lookup failed.");
+    if (!data) return null;
+    return {
+      authUserId: data.auth_user_id,
+      oauthClientId: data.oauth_client_id,
+      organizationId: data.organization_id,
+      organizationMemberId: data.organization_member_id,
+      status: data.status as McpAccountLink["status"],
+      scopes: data.scopes,
+      expiresAt: data.expires_at,
+      revokedAt: data.revoked_at,
+    };
   },
 };
 
@@ -98,7 +117,7 @@ const supabaseMemberships: McpMembershipRepository = {
 
 const defaults: Dependencies = {
   verifyIdentity: verifySupabaseIdentity,
-  accountLinks: blockedAccountLinks,
+  accountLinks: supabaseAccountLinks,
   memberships: supabaseMemberships,
 };
 
@@ -107,10 +126,12 @@ export async function authenticateMcpUserBearer(
   dependencies: Dependencies = defaults,
 ): Promise<AuthenticatedMcpUserBearer> {
   const identity = await dependencies.verifyIdentity(accessToken);
-  const link = await dependencies.accountLinks.findByUserAndClient(identity.userId, identity.oauthClientId);
+  const link = await dependencies.accountLinks.findByUserAndClient(identity.userId, identity.oauthClientId, accessToken);
   if (
     !link || link.status !== "ACTIVE" || link.authUserId !== identity.userId ||
-    link.oauthClientId !== identity.oauthClientId || !link.scopes.includes("mcp:tools")
+    link.oauthClientId !== identity.oauthClientId || !link.scopes.includes("mcp:tools") ||
+    link.revokedAt !== null || !link.expiresAt ||
+    !Number.isFinite(Date.parse(link.expiresAt)) || Date.parse(link.expiresAt) <= Date.now()
   ) throw new Error("FORBIDDEN: No active MCP account link for this user and client.");
 
   const membership = await dependencies.memberships.findActive(
@@ -120,7 +141,7 @@ export async function authenticateMcpUserBearer(
   );
   if (
     !membership || membership.status !== "ACTIVE" ||
-    membership.organizationId !== link.organizationId
+    membership.organizationId !== link.organizationId || membership.memberId !== link.organizationMemberId
   ) throw new Error("FORBIDDEN: Linked organization membership is not active.");
 
   return {

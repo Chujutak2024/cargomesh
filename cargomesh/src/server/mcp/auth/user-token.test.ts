@@ -4,8 +4,9 @@ import { authenticateMcpUserBearer, type McpAccountLink } from "./user-token";
 
 const identity = { userId: "user-a", userEmail: "a@example.invalid", oauthClientId: "alexa-client" };
 const link: McpAccountLink = {
-  authUserId: "user-a", oauthClientId: "alexa-client", organizationId: "org-a",
+  authUserId: "user-a", oauthClientId: "alexa-client", organizationId: "org-a", organizationMemberId: "member-a",
   status: "ACTIVE", scopes: ["mcp:tools"],
+  expiresAt: "2999-01-01T00:00:00.000Z", revokedAt: null,
 };
 const membership = {
   memberId: "member-a", organizationId: "org-a", role: "SUPERVISOR" as const, status: "ACTIVE",
@@ -30,10 +31,13 @@ test("active user/client link and exact membership produce a request-scoped user
   });
 });
 
-test("account linking fails closed for missing, revoked, wrong-client and unauthorized-scope links", async () => {
+test("account linking fails closed for missing, revoked, expired, wrong-client and unauthorized-scope links", async () => {
   const rejected = [
     null,
     { ...link, status: "REVOKED" },
+    { ...link, revokedAt: "2026-01-01T00:00:00.000Z" },
+    { ...link, expiresAt: "2020-01-01T00:00:00.000Z" },
+    { ...link, expiresAt: "invalid" },
     { ...link, oauthClientId: "other-client" },
     { ...link, scopes: [] },
   ];
@@ -56,7 +60,7 @@ test("the link fixes organization A and cannot be replaced by organization B mem
 });
 
 test("inactive or absent exact membership is rejected", async () => {
-  for (const candidate of [null, { ...membership, status: "INACTIVE" }]) {
+  for (const candidate of [null, { ...membership, status: "INACTIVE" }, { ...membership, memberId: "other-member" }]) {
     await assert.rejects(authenticateMcpUserBearer("user-token", dependencies({
       memberships: { findActive: async () => candidate },
     })), /FORBIDDEN/);
