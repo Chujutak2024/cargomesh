@@ -1,10 +1,10 @@
 # HAC-30 · AWS Builder evidence (pending verification)
 
-Cut: 2026-10-02. This file is an evidence checklist, **not** a claim that Kiro Crew or Bedrock has run. HAC-11 is `In Progress`; HAC-30 is `In Progress`. The current Codex session must not be represented as Kiro work.
+Cut: 2026-10-02. An authentic local Kiro Crew session subsequently produced HAC-11 commit `c212c62`; see the [sanitized evidence record](./evidence/hac-30/KIRO_CREW_HAC11_2026-10-02_REDACTED.md). Its five new pgTAP assertions have **not** been executed because Docker Desktop was unavailable. HAC-11 and HAC-30 remain `In Progress`. Codex work is not represented as Kiro work, and no CargoMesh Bedrock invocation is claimed.
 
 ## Kiro Crew session to execute
 
-The local `kiro-cli` binary is present, but `kiro-cli whoami` did not report a usable login in this Codex environment. No Crew session was launched here. Axel should authenticate in his own Kiro environment, then run a real task on `feat/be1-v2-mcp-account-linking` after reviewing the branch and the HAC-12 interface. Suggested task: review the `mcp_account_links` migration and user-token repository against HAC-11, add the missing pgTAP negatives on the V2 bootstrap, and run the relevant tests. Do not let Crew change production or infer consent from a token alone.
+The local `kiro-cli` binary was present but `kiro-cli whoami` did not report a usable login in this Codex environment. Axel then used Kiro Crew in a separate authenticated session and committed the extended pgTAP file as `c212c62`. The prompt below is retained as the planned task record; the verified outcome and limits are in the linked evidence file. Do not let Crew change production or infer consent from a token alone.
 
 Prompt for Kiro Crew:
 
@@ -14,12 +14,12 @@ Evidence to export after the authentic session: session identifier and date/time
 
 | Evidence field | Current value |
 | --- | --- |
-| Authentic Crew session/date | Pending |
-| Crew task and changed files | Pending |
+| Authentic Crew session/date | Local session verified, 2026-10-02 16:16–16:27 Lima |
+| Crew task and changed files | Extend `supabase/tests/12_hac11_mcp_account_links.test.sql` from 9 to 14 assertions |
 | Human review | Pending |
-| Commit/PR | Pending |
-| Test results | Pending |
-| Redacted Drive artifacts / HAC-18 index | Pending |
+| Commit/PR | `c212c62` local commit; PR #94 requires update |
+| Test results | pgTAP blocked by Docker; no PASS claim |
+| Redacted Drive artifacts / HAC-18 index | Pending upload/index |
 
 ## Bedrock sandbox
 
@@ -36,6 +36,6 @@ With an authorized sandbox, the AWS owner should verify `bedrock:ListFoundationM
 
 ## Devpost Product Feedback draft (English, factual as of this cut)
 
-> We used CargoMesh's MCP development workflow and evaluated Kiro Crew as a potential tool for the HAC-11 identity and authorization work. A Kiro Crew session has not yet been verified, so we cannot claim it accelerated this implementation. The Kiro CLI was discoverable locally, but this Codex environment did not have a usable Kiro login; obtaining and documenting an authenticated Crew session is the next onboarding step. CargoMesh also has an optional Bedrock narration adapter with a deterministic fallback. We have not verified current Bedrock IAM/quota access or a real sandbox invocation, so we cannot report model quality, latency, cost, or production use. We would reassess both tools after an authentic Crew session and a bounded sandbox call, with human review and reproducible test evidence.
+> We used Kiro Crew on a real CargoMesh HAC-11 security test task. It inspected the account-link migration and extended one pgTAP file with five negative assertions, traceable to commit c212c62. The database suite could not run because Docker Desktop was unavailable; we therefore do not claim passing pgTAP or production integration. We found the focused review useful, while a tool-approval timeout and local environment dependency added friction. We would use Kiro Crew again for bounded code and test changes with human review. CargoMesh also has an optional Bedrock narration adapter, but no real CargoMesh Bedrock invocation is verified.
 
 Update this draft **only after** the corresponding primary evidence exists. Alexa+ linking and the AWS Builder mini challenge are separate claims.
