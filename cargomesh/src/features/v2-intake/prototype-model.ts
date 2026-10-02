@@ -1,140 +1,224 @@
-import { v2FacilitySchema, type V2Facility } from "@/types/v2-road-network";
+import type {
+  CreateFreightRequestV2Input,
+  IntakeFacilityOption,
+  IntakeOptionsData,
+} from "./contracts";
 
-export type PrototypeStatus = "preliminary" | "unknown" | "confirmed";
 export type PrototypeStep = 1 | 2 | 3 | 4;
 
 export type V2IntakePrototypeDraft = {
   originFacilityId: string;
   destinationFacilityId: string;
-  cargoType: string;
-  packagingType: string;
+  categoryCode: string;
+  packaging: string;
   cargoDescription: string;
-  weightKg: string;
-  volumeM3: string;
-  pickupDate: string;
-  equipmentPreference: string;
-  notes: string;
+  totalWeightKg: string;
+  totalVolumeM3: string;
+  divisible: boolean;
+  requirements: string[];
+  temperatureMinCelsius: string;
+  temperatureMaxCelsius: string;
+  unitPackageType: string;
+  unitQuantity: string;
+  unitWeightPerUnitKg: string;
+  unitVolumePerUnitM3: string;
+  unitLengthCm: string;
+  unitWidthCm: string;
+  unitHeightCm: string;
+  unitIndivisible: boolean;
+  unitStackable: boolean;
+  pickupWindowStartsAt: string;
+  pickupWindowEndsAt: string;
+  deliveryWindowStartsAt: string;
+  deliveryWindowEndsAt: string;
+  requiredEquipment: string;
+  pickupContactName: string;
+  pickupContactPhoneE164: string;
+  pickupContactEmail: string;
+  recipientContactName: string;
+  recipientContactPhoneE164: string;
+  recipientContactEmail: string;
 };
+
+export type PrototypeValidationCode =
+  | "required"
+  | "same-facility"
+  | "positive-number"
+  | "positive-integer"
+  | "invalid-date"
+  | "invalid-range"
+  | "invalid-email"
+  | "invalid-phone"
+  | "total-mismatch"
+  | "temperature-order";
 
 export type PrototypeValidationIssue = {
   field: keyof V2IntakePrototypeDraft;
-  code:
-    | "required"
-    | "same-facility"
-    | "positive-number"
-    | "invalid-date";
+  code: PrototypeValidationCode;
 };
-
-export const PROTOTYPE_SCENARIO = {
-  packageName: "HAC-23-V2-ROAD-BASELINE",
-  provenance: "SYNTHETIC_DEMO_ONLY",
-  organizationId: "c2300000-0000-4000-8000-000000000001",
-  organizationName: "[SYNTHETIC] V2 ROAD tenant A",
-} as const;
-
-export type PrototypeFacilityScenarioRole =
-  | "DECLARED_LANE_ENDPOINT"
-  | "NO_DECLARED_COVERAGE";
-
-export const PROTOTYPE_FACILITIES: V2Facility[] = [
-  {
-    id: "c2330000-0000-4000-8000-000000000001",
-    organizationId: PROTOTYPE_SCENARIO.organizationId,
-    code: "QA-A-LIMA",
-    name: "[SYNTHETIC] Lima pickup site",
-    facilityType: "SHIPPER_SITE",
-    countryCode: "PE",
-    regionCode: null,
-    city: "Lima",
-    postalCode: null,
-    addressLine: "Synthetic Lima address",
-    latitude: null,
-    longitude: null,
-    active: true,
-  },
-  {
-    id: "c2330000-0000-4000-8000-000000000002",
-    organizationId: PROTOTYPE_SCENARIO.organizationId,
-    code: "QA-A-AREQUIPA",
-    name: "[SYNTHETIC] Arequipa delivery site",
-    facilityType: "WAREHOUSE",
-    countryCode: "PE",
-    regionCode: null,
-    city: "Arequipa",
-    postalCode: null,
-    addressLine: "Synthetic Arequipa address",
-    latitude: null,
-    longitude: null,
-    active: true,
-  },
-  {
-    id: "c2330000-0000-4000-8000-000000000003",
-    organizationId: PROTOTYPE_SCENARIO.organizationId,
-    code: "QA-A-PIURA",
-    name: "[SYNTHETIC] Piura site without declared coverage",
-    facilityType: "SHIPPER_SITE",
-    countryCode: "PE",
-    regionCode: null,
-    city: "Piura",
-    postalCode: null,
-    addressLine: "Synthetic Piura address",
-    latitude: null,
-    longitude: null,
-    active: true,
-  },
-].map((facility) => v2FacilitySchema.parse(facility));
-
-const PROTOTYPE_FACILITY_SCENARIO_ROLES = new Map<string, PrototypeFacilityScenarioRole>([
-  [PROTOTYPE_FACILITIES[0].id, "DECLARED_LANE_ENDPOINT"],
-  [PROTOTYPE_FACILITIES[1].id, "DECLARED_LANE_ENDPOINT"],
-  [PROTOTYPE_FACILITIES[2].id, "NO_DECLARED_COVERAGE"],
-]);
-
-export const CARGO_TYPES = [
-  "MINING_PARTS",
-  "INDUSTRIAL_SUPPLIES",
-  "GENERAL_CARGO",
-  "OTHER",
-] as const;
-
-export const PACKAGING_TYPES = ["PALLET", "CRATE", "BULK", "OTHER"] as const;
-
-export const EQUIPMENT_PREFERENCES = [
-  "NO_PREFERENCE",
-  "DRY_VAN",
-  "FLATBED",
-  "LOWBOY",
-] as const;
 
 export const EMPTY_PROTOTYPE_DRAFT: V2IntakePrototypeDraft = {
   originFacilityId: "",
   destinationFacilityId: "",
-  cargoType: "",
-  packagingType: "",
+  categoryCode: "",
+  packaging: "",
   cargoDescription: "",
-  weightKg: "",
-  volumeM3: "",
-  pickupDate: "",
-  equipmentPreference: "NO_PREFERENCE",
-  notes: "",
+  totalWeightKg: "",
+  totalVolumeM3: "",
+  divisible: false,
+  requirements: [],
+  temperatureMinCelsius: "",
+  temperatureMaxCelsius: "",
+  unitPackageType: "",
+  unitQuantity: "",
+  unitWeightPerUnitKg: "",
+  unitVolumePerUnitM3: "",
+  unitLengthCm: "",
+  unitWidthCm: "",
+  unitHeightCm: "",
+  unitIndivisible: true,
+  unitStackable: false,
+  pickupWindowStartsAt: "",
+  pickupWindowEndsAt: "",
+  deliveryWindowStartsAt: "",
+  deliveryWindowEndsAt: "",
+  requiredEquipment: "",
+  pickupContactName: "",
+  pickupContactPhoneE164: "",
+  pickupContactEmail: "",
+  recipientContactName: "",
+  recipientContactPhoneE164: "",
+  recipientContactEmail: "",
 };
 
 export const PROVISIONAL_PROTOTYPE_DRAFT: V2IntakePrototypeDraft = {
-  originFacilityId: PROTOTYPE_FACILITIES[0].id,
-  destinationFacilityId: PROTOTYPE_FACILITIES[1].id,
-  cargoType: "INDUSTRIAL_SUPPLIES",
-  packagingType: "CRATE",
-  cargoDescription: "Equipos de mantenimiento industrial para escenario sintético V2",
-  weightKg: "6000",
-  volumeM3: "14",
-  pickupDate: "2026-10-05",
-  equipmentPreference: "NO_PREFERENCE",
-  notes: "Escenario sintético: confirmar ruta, cobertura, capacidad y condiciones antes de persistir.",
+  originFacilityId: "c2330000-0000-4000-8000-000000000001",
+  destinationFacilityId: "c2330000-0000-4000-8000-000000000002",
+  categoryCode: "PHARMA",
+  packaging: "PALLET",
+  cargoDescription: "Vacunas termolábiles del escenario contractual V2",
+  totalWeightKg: "4800",
+  totalVolumeM3: "19.2",
+  divisible: false,
+  requirements: ["TEMP_CONTROLLED", "SECURITY_SEAL"],
+  temperatureMinCelsius: "2",
+  temperatureMaxCelsius: "8",
+  unitPackageType: "PALLET",
+  unitQuantity: "8",
+  unitWeightPerUnitKg: "600",
+  unitVolumePerUnitM3: "2.4",
+  unitLengthCm: "120",
+  unitWidthCm: "100",
+  unitHeightCm: "200",
+  unitIndivisible: true,
+  unitStackable: false,
+  pickupWindowStartsAt: "2026-10-05T08:00",
+  pickupWindowEndsAt: "2026-10-05T18:00",
+  deliveryWindowStartsAt: "2026-10-07T08:00",
+  deliveryWindowEndsAt: "2026-10-07T20:00",
+  requiredEquipment: "REEFER_TRUCK",
+  pickupContactName: "Elena Vargas",
+  pickupContactPhoneE164: "+51987654321",
+  pickupContactEmail: "despachos.lima@shipper-v2.example",
+  recipientContactName: "Carlos Medina",
+  recipientContactPhoneE164: "+51912345678",
+  recipientContactEmail: "recepcion.aqp@shipper-v2.example",
 };
 
-function isPositiveNumber(value: string) {
+function preferredOptionCode(
+  options: ReadonlyArray<{ code: string }>,
+  preferredCodes: string[],
+) {
+  return preferredCodes
+    .map((code) => options.find((option) => option.code === code)?.code)
+    .find((code): code is string => Boolean(code))
+    ?? options[0]?.code
+    ?? "";
+}
+
+function preferredFacilityId(
+  options: IntakeOptionsData["facilities"],
+  preferredCode: string,
+  excludedId?: string,
+) {
+  return options.find((facility) => facility.code === preferredCode && facility.facilityId !== excludedId)?.facilityId
+    ?? options.find((facility) => facility.facilityId !== excludedId)?.facilityId
+    ?? "";
+}
+
+function utcInstantToLocalDateTimeInput(utcInstant: string) {
+  const date = new Date(utcInstant);
+  const localClock = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localClock.toISOString().slice(0, 16);
+}
+
+/**
+ * Builds the one-click example from the authenticated selector contract.
+ * Static values remain presentation-only; every submitted selector value is
+ * sourced from the current GET /api/v2/intake/options response.
+ */
+export function buildPrototypeExample(options: IntakeOptionsData): V2IntakePrototypeDraft {
+  const requirements = ["TEMP_CONTROLLED", "SECURITY_SEAL"]
+    .filter((code) => options.requirementOptions.some((option) => option.code === code));
+  const temperatureControlled = requirements.includes("TEMP_CONTROLLED");
+  const packaging = preferredOptionCode(options.packagingOptions, ["PALLET"]);
+  const originFacilityId = preferredFacilityId(options.facilities, "QA-A-LIMA");
+  const destinationFacilityId = preferredFacilityId(options.facilities, "QA-A-AREQUIPA", originFacilityId);
+
+  return {
+    ...PROVISIONAL_PROTOTYPE_DRAFT,
+    originFacilityId,
+    destinationFacilityId,
+    categoryCode: preferredOptionCode(options.cargoCategories, ["PHARMA"]),
+    packaging,
+    unitPackageType: packaging,
+    requiredEquipment: preferredOptionCode(options.equipmentOptions, ["REEFER_TRUCK"]),
+    pickupWindowStartsAt: utcInstantToLocalDateTimeInput("2026-10-05T08:00:00Z"),
+    pickupWindowEndsAt: utcInstantToLocalDateTimeInput("2026-10-05T18:00:00Z"),
+    deliveryWindowStartsAt: utcInstantToLocalDateTimeInput("2026-10-07T08:00:00Z"),
+    deliveryWindowEndsAt: utcInstantToLocalDateTimeInput("2026-10-07T20:00:00Z"),
+    requirements,
+    temperatureMinCelsius: temperatureControlled ? PROVISIONAL_PROTOTYPE_DRAFT.temperatureMinCelsius : "",
+    temperatureMaxCelsius: temperatureControlled ? PROVISIONAL_PROTOTYPE_DRAFT.temperatureMaxCelsius : "",
+  };
+}
+
+function hasText(value: V2IntakePrototypeDraft[keyof V2IntakePrototypeDraft]) {
+  return typeof value === "string" ? value.trim().length > 0 : true;
+}
+
+function positiveNumber(value: string) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0;
+}
+
+function positiveInteger(value: string) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0;
+}
+
+const CARGO_TOTAL_TOLERANCE_V2 = 1e-6;
+
+function totalsMatch(declared: string, quantity: string, perUnit: string) {
+  const declaredValue = Number(declared);
+  const quantityValue = Number(quantity);
+  const perUnitValue = Number(perUnit);
+  return Number.isFinite(declaredValue)
+    && Number.isFinite(quantityValue)
+    && Number.isFinite(perUnitValue)
+    && Math.abs(declaredValue - quantityValue * perUnitValue) <= CARGO_TOTAL_TOLERANCE_V2;
+}
+
+function validLocalDateTime(value: string) {
+  return value.length > 0 && !Number.isNaN(Date.parse(value));
+}
+
+function validEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function validE164(value: string) {
+  return /^\+[1-9]\d{7,14}$/.test(value);
 }
 
 export function validatePrototypeStep(
@@ -143,40 +227,122 @@ export function validatePrototypeStep(
 ): PrototypeValidationIssue[] {
   const issues: PrototypeValidationIssue[] = [];
   const required = (field: keyof V2IntakePrototypeDraft) => {
-    if (!draft[field].trim()) issues.push({ field, code: "required" });
+    if (!hasText(draft[field])) issues.push({ field, code: "required" });
+  };
+  const positive = (field: keyof V2IntakePrototypeDraft) => {
+    const value = draft[field];
+    if (typeof value === "string" && value && !positiveNumber(value)) {
+      issues.push({ field, code: "positive-number" });
+    }
   };
 
   if (step === 1) {
     required("originFacilityId");
     required("destinationFacilityId");
     if (
-      draft.originFacilityId &&
-      draft.destinationFacilityId &&
-      draft.originFacilityId === draft.destinationFacilityId
+      draft.originFacilityId
+      && draft.destinationFacilityId
+      && draft.originFacilityId === draft.destinationFacilityId
     ) {
       issues.push({ field: "destinationFacilityId", code: "same-facility" });
     }
   }
 
   if (step === 2) {
-    required("cargoType");
-    required("packagingType");
-    required("cargoDescription");
-    required("weightKg");
-    required("volumeM3");
-    if (draft.weightKg && !isPositiveNumber(draft.weightKg)) {
-      issues.push({ field: "weightKg", code: "positive-number" });
+    const requiredFields: Array<keyof V2IntakePrototypeDraft> = [
+      "categoryCode", "packaging", "cargoDescription", "totalWeightKg", "totalVolumeM3",
+      "unitPackageType", "unitQuantity", "unitWeightPerUnitKg", "unitVolumePerUnitM3",
+      "unitLengthCm", "unitWidthCm", "unitHeightCm",
+    ];
+    requiredFields.forEach(required);
+    [
+      "totalWeightKg", "totalVolumeM3", "unitWeightPerUnitKg", "unitVolumePerUnitM3",
+      "unitLengthCm", "unitWidthCm", "unitHeightCm",
+    ].forEach((field) => positive(field as keyof V2IntakePrototypeDraft));
+    if (draft.unitQuantity && !positiveInteger(draft.unitQuantity)) {
+      issues.push({ field: "unitQuantity", code: "positive-integer" });
     }
-    if (draft.volumeM3 && !isPositiveNumber(draft.volumeM3)) {
-      issues.push({ field: "volumeM3", code: "positive-number" });
+    if (
+      positiveInteger(draft.unitQuantity)
+      && positiveNumber(draft.totalWeightKg)
+      && positiveNumber(draft.unitWeightPerUnitKg)
+      && !totalsMatch(draft.totalWeightKg, draft.unitQuantity, draft.unitWeightPerUnitKg)
+    ) {
+      issues.push({ field: "totalWeightKg", code: "total-mismatch" });
+    }
+    if (
+      positiveInteger(draft.unitQuantity)
+      && positiveNumber(draft.totalVolumeM3)
+      && positiveNumber(draft.unitVolumePerUnitM3)
+      && !totalsMatch(draft.totalVolumeM3, draft.unitQuantity, draft.unitVolumePerUnitM3)
+    ) {
+      issues.push({ field: "totalVolumeM3", code: "total-mismatch" });
+    }
+    if (draft.requirements.includes("TEMP_CONTROLLED")) {
+      required("temperatureMinCelsius");
+      required("temperatureMaxCelsius");
+      const min = Number(draft.temperatureMinCelsius);
+      const max = Number(draft.temperatureMaxCelsius);
+      if (
+        draft.temperatureMinCelsius
+        && draft.temperatureMaxCelsius
+        && Number.isFinite(min)
+        && Number.isFinite(max)
+        && min > max
+      ) {
+        issues.push({ field: "temperatureMaxCelsius", code: "temperature-order" });
+      }
     }
   }
 
   if (step === 3) {
-    required("pickupDate");
-    required("equipmentPreference");
-    if (draft.pickupDate && Number.isNaN(Date.parse(`${draft.pickupDate}T00:00:00Z`))) {
-      issues.push({ field: "pickupDate", code: "invalid-date" });
+    const requiredFields: Array<keyof V2IntakePrototypeDraft> = [
+      "pickupWindowStartsAt", "pickupWindowEndsAt", "deliveryWindowStartsAt", "deliveryWindowEndsAt",
+      "requiredEquipment", "pickupContactName", "pickupContactPhoneE164", "pickupContactEmail",
+      "recipientContactName", "recipientContactPhoneE164", "recipientContactEmail",
+    ];
+    requiredFields.forEach(required);
+    const dateFields: Array<keyof V2IntakePrototypeDraft> = [
+      "pickupWindowStartsAt", "pickupWindowEndsAt", "deliveryWindowStartsAt", "deliveryWindowEndsAt",
+    ];
+    dateFields.forEach((field) => {
+      const value = draft[field];
+      if (typeof value === "string" && value && !validLocalDateTime(value)) {
+        issues.push({ field, code: "invalid-date" });
+      }
+    });
+    if (
+      validLocalDateTime(draft.pickupWindowStartsAt)
+      && validLocalDateTime(draft.pickupWindowEndsAt)
+      && Date.parse(draft.pickupWindowEndsAt) <= Date.parse(draft.pickupWindowStartsAt)
+    ) {
+      issues.push({ field: "pickupWindowEndsAt", code: "invalid-range" });
+    }
+    if (
+      validLocalDateTime(draft.deliveryWindowStartsAt)
+      && validLocalDateTime(draft.deliveryWindowEndsAt)
+      && Date.parse(draft.deliveryWindowEndsAt) <= Date.parse(draft.deliveryWindowStartsAt)
+    ) {
+      issues.push({ field: "deliveryWindowEndsAt", code: "invalid-range" });
+    }
+    if (
+      validLocalDateTime(draft.pickupWindowEndsAt)
+      && validLocalDateTime(draft.deliveryWindowStartsAt)
+      && Date.parse(draft.deliveryWindowStartsAt) < Date.parse(draft.pickupWindowEndsAt)
+    ) {
+      issues.push({ field: "deliveryWindowStartsAt", code: "invalid-range" });
+    }
+    if (draft.pickupContactEmail && !validEmail(draft.pickupContactEmail)) {
+      issues.push({ field: "pickupContactEmail", code: "invalid-email" });
+    }
+    if (draft.recipientContactEmail && !validEmail(draft.recipientContactEmail)) {
+      issues.push({ field: "recipientContactEmail", code: "invalid-email" });
+    }
+    if (draft.pickupContactPhoneE164 && !validE164(draft.pickupContactPhoneE164)) {
+      issues.push({ field: "pickupContactPhoneE164", code: "invalid-phone" });
+    }
+    if (draft.recipientContactPhoneE164 && !validE164(draft.recipientContactPhoneE164)) {
+      issues.push({ field: "recipientContactPhoneE164", code: "invalid-phone" });
     }
   }
 
@@ -190,43 +356,113 @@ export function validatePrototypeDraft(draft: V2IntakePrototypeDraft) {
 export function validatePrototypeReview(draft: V2IntakePrototypeDraft) {
   for (const step of [1, 2, 3] as PrototypeStep[]) {
     const issues = validatePrototypeStep(step, draft);
-    if (issues.length) {
-      return { valid: false as const, invalidStep: step, issues };
-    }
+    if (issues.length) return { valid: false as const, invalidStep: step, issues };
+  }
+  return { valid: true as const, invalidStep: null, issues: [] as PrototypeValidationIssue[] };
+}
+
+export function findIntakeFacility(options: IntakeOptionsData, id: string) {
+  return options.facilities.find((facility) => facility.facilityId === id) ?? null;
+}
+
+function toIso(localDateTime: string) {
+  return new Date(localDateTime).toISOString();
+}
+
+function locationFromFacility(facility: IntakeFacilityOption) {
+  return {
+    facilityId: facility.facilityId,
+    label: facility.label,
+    countryCode: facility.countryCode,
+    region: facility.region ?? null,
+    city: facility.city,
+    lat: facility.lat,
+    lng: facility.lng,
+  };
+}
+
+export function mapDraftToCreateFreightRequestV2Input(
+  draft: V2IntakePrototypeDraft,
+  options: IntakeOptionsData,
+): CreateFreightRequestV2Input {
+  const validation = validatePrototypeReview(draft);
+  if (!validation.valid) throw new Error(`INVALID_DRAFT_STEP_${validation.invalidStep}`);
+  const origin = findIntakeFacility(options, draft.originFacilityId);
+  const destination = findIntakeFacility(options, draft.destinationFacilityId);
+  if (!origin || !destination) throw new Error("FACILITY_OPTION_NOT_FOUND");
+  const hasCode = (group: ReadonlyArray<{ code: string }>, code: string) => (
+    group.some((option) => option.code === code)
+  );
+  if (!hasCode(options.cargoCategories, draft.categoryCode)) throw new Error("CATEGORY_OPTION_NOT_FOUND");
+  if (!hasCode(options.packagingOptions, draft.packaging)) throw new Error("PACKAGING_OPTION_NOT_FOUND");
+  if (!hasCode(options.packagingOptions, draft.unitPackageType)) throw new Error("UNIT_PACKAGING_OPTION_NOT_FOUND");
+  if (!hasCode(options.equipmentOptions, draft.requiredEquipment)) throw new Error("EQUIPMENT_OPTION_NOT_FOUND");
+  if (draft.requirements.some((code) => !hasCode(options.requirementOptions, code))) {
+    throw new Error("REQUIREMENT_OPTION_NOT_FOUND");
   }
 
   return {
-    valid: true as const,
-    invalidStep: null,
-    issues: [] as PrototypeValidationIssue[],
-  };
-}
-
-export function findPrototypeFacility(id: string) {
-  return PROTOTYPE_FACILITIES.find((facility) => facility.id === id) ?? null;
-}
-
-export function getPrototypeFacilityScenarioRole(id: string) {
-  return PROTOTYPE_FACILITY_SCENARIO_ROLES.get(id) ?? null;
-}
-
-export function getPrototypeEvidence(draft: V2IntakePrototypeDraft) {
-  return {
-    formData: { status: "preliminary" as const, value: draft },
-    facilityContract: {
-      status: "confirmed" as const,
-      source: "HAC-21 / V2Facility",
-      scenario: PROTOTYPE_SCENARIO.packageName,
-      provenance: PROTOTYPE_SCENARIO.provenance,
+    schemaVersion: "2.0",
+    origin: locationFromFacility(origin),
+    destination: locationFromFacility(destination),
+    pickupWindow: {
+      startsAt: toIso(draft.pickupWindowStartsAt),
+      endsAt: toIso(draft.pickupWindowEndsAt),
     },
-    transportMode: { status: "confirmed" as const, value: "ROAD" as const },
-    route: { status: "unknown" as const, reason: "FACILITY_SELECTION_ONLY" },
-    coverage: { status: "unknown" as const, value: null },
-    capacity: { status: "unknown" as const, value: null },
-    distance: { status: "unknown" as const, value: null },
-    estimatedTransit: { status: "unknown" as const, value: null },
-    carrierAvailability: { status: "unknown" as const, value: null },
-    price: { status: "unknown" as const, value: null },
-    persistence: { status: "confirmed" as const, value: "NOT_CONNECTED" as const },
+    deliveryWindow: {
+      startsAt: toIso(draft.deliveryWindowStartsAt),
+      endsAt: toIso(draft.deliveryWindowEndsAt),
+    },
+    acceptedModes: ["ROAD"],
+    requiredEquipment: draft.requiredEquipment,
+    cargoSpecification: {
+      categoryCode: draft.categoryCode,
+      description: draft.cargoDescription.trim(),
+      packaging: draft.packaging,
+      totalWeightKg: Number(draft.totalWeightKg),
+      totalVolumeM3: Number(draft.totalVolumeM3),
+      divisible: draft.divisible,
+      requirements: [...draft.requirements],
+      temperatureRange: draft.requirements.includes("TEMP_CONTROLLED")
+        ? {
+            minCelsius: Number(draft.temperatureMinCelsius),
+            maxCelsius: Number(draft.temperatureMaxCelsius),
+          }
+        : null,
+      units: [{
+        packageType: draft.unitPackageType,
+        quantity: Number(draft.unitQuantity),
+        weightPerUnitKg: Number(draft.unitWeightPerUnitKg),
+        volumePerUnitM3: Number(draft.unitVolumePerUnitM3),
+        dimensionsCm: {
+          length: Number(draft.unitLengthCm),
+          width: Number(draft.unitWidthCm),
+          height: Number(draft.unitHeightCm),
+        },
+        indivisible: draft.unitIndivisible,
+        stackable: draft.unitStackable,
+      }],
+    },
+    contacts: {
+      pickup: {
+        name: draft.pickupContactName.trim(),
+        phoneE164: draft.pickupContactPhoneE164.trim(),
+        email: draft.pickupContactEmail.trim(),
+      },
+      recipient: {
+        name: draft.recipientContactName.trim(),
+        phoneE164: draft.recipientContactPhoneE164.trim(),
+        email: draft.recipientContactEmail.trim(),
+      },
+    },
   };
+}
+
+export function toggleRequirement(
+  requirements: string[],
+  requirement: string,
+  selected: boolean,
+) {
+  if (selected) return requirements.includes(requirement) ? requirements : [...requirements, requirement];
+  return requirements.filter((candidate) => candidate !== requirement);
 }

@@ -50,6 +50,27 @@
 .control[aria-invalid="true"] { border-color: #d96b63; background: var(--cm-color-danger-surface); }
 .control:disabled { background: var(--cm-color-surface-subtle); color: var(--cm-color-muted); cursor: not-allowed; }
 select.control { appearance: auto; }
+.textarea { min-height: 6.5rem; padding-top: 0.72rem; padding-bottom: 0.72rem; resize: vertical; line-height: 1.45; }
+
+.checkboxField {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 0.55rem;
+  min-width: 0;
+  border: 1px solid var(--cm-color-line);
+  border-radius: var(--cm-radius-md);
+  padding: 0.7rem 0.75rem;
+  background: var(--cm-color-surface);
+  color: var(--cm-color-ink);
+  cursor: pointer;
+}
+.checkboxField:hover { border-color: #9fb7b1; }
+.checkboxField:focus-within { outline: 3px solid rgb(43 174 154 / 32%); outline-offset: 2px; }
+.checkboxField input { width: 1rem; height: 1rem; margin: 0.08rem 0 0; accent-color: var(--cm-color-primary); }
+.checkboxField span { display: grid; gap: 0.2rem; }
+.checkboxField strong { color: var(--cm-color-heading); font-size: 0.68rem; }
+.checkboxField small { color: var(--cm-color-muted); font-size: 0.6rem; line-height: 1.4; }
 
 .badge {
   display: inline-flex;
