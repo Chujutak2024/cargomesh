@@ -136,6 +136,16 @@ function preferredOptionCode(
     ?? "";
 }
 
+function preferredFacilityId(
+  options: IntakeOptionsData["facilities"],
+  preferredCode: string,
+  excludedId?: string,
+) {
+  return options.find((facility) => facility.code === preferredCode && facility.facilityId !== excludedId)?.facilityId
+    ?? options.find((facility) => facility.facilityId !== excludedId)?.facilityId
+    ?? "";
+}
+
 /**
  * Builds the one-click example from the authenticated selector contract.
  * Static values remain presentation-only; every submitted selector value is
@@ -146,11 +156,13 @@ export function buildPrototypeExample(options: IntakeOptionsData): V2IntakeProto
     .filter((code) => options.requirementOptions.some((option) => option.code === code));
   const temperatureControlled = requirements.includes("TEMP_CONTROLLED");
   const packaging = preferredOptionCode(options.packagingOptions, ["PALLET"]);
+  const originFacilityId = preferredFacilityId(options.facilities, "QA-A-LIMA");
+  const destinationFacilityId = preferredFacilityId(options.facilities, "QA-A-AREQUIPA", originFacilityId);
 
   return {
     ...PROVISIONAL_PROTOTYPE_DRAFT,
-    originFacilityId: options.facilities[0]?.facilityId ?? "",
-    destinationFacilityId: options.facilities[1]?.facilityId ?? "",
+    originFacilityId,
+    destinationFacilityId,
     categoryCode: preferredOptionCode(options.cargoCategories, ["PHARMA"]),
     packaging,
     unitPackageType: packaging,

@@ -170,6 +170,18 @@ test("the one-click example uses facility ids and selector codes from the curren
   assert.doesNotThrow(() => mapDraftToCreateFreightRequestV2Input(example, options));
 });
 
+test("the one-click example keeps the HAC-12 positive lane when facilities arrive in another order", () => {
+  const fixture = getIntakeOptionsFixture().data;
+  const options = {
+    ...fixture,
+    facilities: [fixture.facilities[1], fixture.facilities[0], fixture.facilities[2]],
+  };
+
+  const example = buildPrototypeExample(options);
+  assert.equal(example.originFacilityId, fixture.facilities[0].facilityId);
+  assert.equal(example.destinationFacilityId, fixture.facilities[1].facilityId);
+});
+
 test("requirement toggling is deterministic and duplicate-free", () => {
   assert.deepEqual(toggleRequirement(["FRAGILE"], "FRAGILE", true), ["FRAGILE"]);
   assert.deepEqual(toggleRequirement(["FRAGILE"], "SECURITY_SEAL", true), ["FRAGILE", "SECURITY_SEAL"]);
