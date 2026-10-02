@@ -117,20 +117,31 @@ Coordination source: `docs/v2-amazon/delivery/HAC15_HAC14_INTEGRATION_HANDOFF.md
 
 ## 6. Automated and visual evidence
 
-Executed from `cargomesh/` on 2026-09-28:
+The branch-only checks were first executed from `cargomesh/` on 2026-09-28. On
+2026-10-02 the complete gate was repeated in a temporary integration worktree
+containing the heads of HAC-12 (PR #91), HAC-15 (PR #92), and HAC-14. No PR was
+merged or deployed for this validation.
 
 | Check | Result |
 | --- | --- |
-| `pnpm test:v2-intake` | Pass; 38/38 model, exact five-group Zod contract, eight-category structured guidance, auth/network/contract error, explicit fixture-mode, correlated POST→GET→serviceability, total consistency, shared selection, provenance, and map-mapper tests |
+| `pnpm test:v2-intake` | Pass; 39/39 model, exact five-group Zod contract, eight-category structured guidance, auth/network/contract error, explicit fixture-mode, correlated POST→GET→serviceability, total consistency, deterministic facility-code selection, timezone-stable example windows, shared selection, provenance, and map-mapper tests |
+| `pnpm exec tsx scripts/verify-hac15-contract.ts` | Pass; the real HAC-15 mapper and component contract cover candidate selection, zero candidates, nullable geometry, and endpoint pins without a fabricated polyline |
 | `pnpm typecheck` | Pass; 0 TypeScript errors |
-| `pnpm check:architecture` | Pass; 233 modules and 27 client entry points checked |
-| `pnpm test:release` | Pass; 410/410 existing release tests completed with 0 failures |
-| `pnpm build` | Pass; `/freight-request/new` compiles as a dynamic route (21.2 kB route bundle) |
+| `pnpm check:architecture` | Pass; 264 modules and 33 client entry points checked |
+| `pnpm test:release` | Pass; 458/458 release tests completed with 0 failures |
+| `pnpm build` | Pass; `/freight-request/new` compiles as a dynamic route (36.3 kB) and `/v2-workspace` as 19.3 kB |
+| `python supabase-v2/gate.py v2 ...` | Pass; immutable V1 controls 9/9, baseline drift check, 170/170 pgTAP assertions in six files, and scenario cleanup |
+| `node scripts/hac12-http-smoke.mjs` | Pass against local authenticated Supabase/API; Cookie and Bearer auth, tenant isolation, exact five-group catalog, POST→GET→serviceability, quantities/totals, coordinates, eligible/unknown/zero-candidate/stale states, and cleanup |
 | Desktop visual QA | Pass at 1440 px; no horizontal overflow |
 | Mobile visual QA | Pass at 390 px; single-column form and summary, no horizontal overflow |
 | Keyboard regression | Pass; after clearing a previously valid field and jumping to review, the UI returns to the invalid step and focuses the alert |
 
-The visual QA was repeated after the five-group contract alignment. Explicit fixture mode displayed backend-shaped IDs/codes, the four structured cargo-guidance sections as separate readable rows, and the `CAPTURE_ONLY`, `RESOURCE_EVIDENCE`, and `REQUIRES_REVIEW` notices. API mode received the currently expected `HTTP_404`, kept the form and one-click example disabled, displayed the real error with retry, and did not activate simulated data.
+The visual QA was repeated after the five-group contract alignment. Explicit fixture mode displayed backend-shaped IDs/codes, the four structured cargo-guidance sections as separate readable rows, and the `CAPTURE_ONLY`, `RESOURCE_EVIDENCE`, and `REQUIRES_REVIEW` notices. A final authenticated API-mode pass loaded the real catalog, created and reread a `DRAFT`, and rendered one eligible and one unknown candidate using the HAC-15 map component. `observedAt: null` appeared as `UNKNOWN`, missing geometry remained explicit, and choosing the unknown candidate in the card updated the map selection from the same parent-owned state.
+
+That final browser pass exposed and closed two integration defects before the PR:
+
+- the server sorts facilities by label, so the provisional example now selects the intended `QA-A-LIMA → QA-A-AREQUIPA` lane by backend code rather than array position;
+- `datetime-local` values now derive from the canonical UTC example instants in the browser's local timezone, preventing a Bogotá browser from shifting the intended `08:00Z` pickup to `13:00Z` and changing eligibility.
 
 Desktop evidence:
 
