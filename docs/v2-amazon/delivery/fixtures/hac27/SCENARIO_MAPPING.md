@@ -15,7 +15,7 @@ Los ocho JSON de esta carpeta son ejemplos sintéticos del DTO. Esta corresponde
 | `c1000000-0000-4000-8000-000000000002` | Carrier sin evidencia de capacidad `c2390000-0000-4000-8000-000000000001`. |
 | `d2000000-0000-4000-8000-000000000002` | Servicio UNKNOWN `c23a0000-0000-4000-8000-000000000001`. |
 | `e3000000-0000-4000-8000-000000000002` | Lane UNKNOWN `c23c0000-0000-4000-8000-000000000001`. |
-| `f4000000-0000-4000-8000-000000000002` | Cupo ilustrativo: **sin fila equivalente en el servicio UNKNOWN**. No sustituir por `c23e…001`, que pertenece al servicio cubierto. Su ausencia explica capacidad desconocida. |
+| `f4000000-0000-4000-8000-000000000002` | Cupo `c23e0000-0000-4000-8000-000000000001` del servicio UNKNOWN `c23a0000-0000-4000-8000-000000000001` y carrier `c2390000-0000-4000-8000-000000000001`; requiere escenario `v2-hac12-road-capacity`. El cupo existe, pero no tiene calendario asociado en ese seed: la disponibilidad permanece UNKNOWN (`calendarId: null`), no confirmada por sus límites nominales de peso/volumen. |
 | `c1000000-0000-4000-8000-000000000003` / `d2000000-0000-4000-8000-000000000003` | Caso ilustrativo rechazado; **no son un tercer carrier/servicio del seed**. El negativo canónico usa origen Piura `c233…003` o dirección inversa y devuelve cero candidatos; no esperar el candidato rechazado ilustrativo en esa respuesta real. |
 | `a9c4e112-84b1-47d0-91e3-52f8c7a6b501` | ID de solicitud de ejemplo, sin fila sembrada. Sustituir por el ID obtenido en POST para GET y serviceability. |
 | `6c84fb90-12c4-11e1-840d-7b25c5ee775a` | Clave de intento ilustrativa; generar un UUID estable por intento y conservarlo en reintentos. No referencia una entidad del seed. |
