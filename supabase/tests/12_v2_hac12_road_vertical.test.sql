@@ -57,7 +57,7 @@ select lives_ok($$
     'c2300000-0000-4000-8000-000000000001',
     'c2320000-0000-4000-8000-000000000001',
     'a1200000-0000-4000-8000-000000000001',
-    repeat('a',64), pg_temp.hac12_payload())
+    private.hash_v2_freight_payload(pg_temp.hac12_payload()), pg_temp.hac12_payload())
 $$, 'one transaction creates V2 draft plus receipt');
 select is((select count(*)::integer from public.freight_requests
   where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000001'), 1,
@@ -75,7 +75,7 @@ select is((public.create_v2_freight_request(
     'c2300000-0000-4000-8000-000000000001',
     'c2320000-0000-4000-8000-000000000001',
     'a1200000-0000-4000-8000-000000000001',
-    repeat('a',64), pg_temp.hac12_payload())->>'idempotentReplay'),
+    private.hash_v2_freight_payload(pg_temp.hac12_payload()), pg_temp.hac12_payload())->>'idempotentReplay'),
   'true', 'same key and hash replay');
 select throws_ok($$
   select public.create_v2_freight_request(
@@ -89,14 +89,14 @@ select throws_ok($$
     'c2300000-0000-4000-8000-000000000001',
     'c2320000-0000-4000-8000-000000000001',
     'a1200000-0000-4000-8000-000000000001',
-    repeat('a',64), jsonb_set(pg_temp.hac12_payload(), '{budget,amount}', '501'::jsonb))
+    private.hash_v2_freight_payload(pg_temp.hac12_payload()), jsonb_set(pg_temp.hac12_payload(), '{budget,amount}', '501'::jsonb))
 $$, 'PT409', 'IDEMPOTENCY_CONFLICT', 'same claimed hash cannot hide a changed payload');
 select throws_ok($$
   select public.create_v2_freight_request(
     'c2300000-0000-4000-8000-000000000001',
     'c2320000-0000-4000-8000-000000000001',
     'a1200000-0000-4000-8000-000000000002',
-    repeat('a',64), jsonb_set(pg_temp.hac12_payload(), '{origin,facilityId}',
+    private.hash_v2_freight_payload(pg_temp.hac12_payload()), jsonb_set(pg_temp.hac12_payload(), '{origin,facilityId}',
       '"c2330000-0000-4000-8000-000000000004"'::jsonb))
 $$, 'PT403', 'FORBIDDEN_TENANT', 'foreign facility rejects with contractual 403');
 select throws_ok($$
@@ -104,7 +104,7 @@ select throws_ok($$
     'c2300000-0000-4000-8000-000000000001',
     'c2320000-0000-4000-8000-000000000001',
     'a1200000-0000-4000-8000-000000000005',
-    repeat('a',64), jsonb_set(pg_temp.hac12_payload(), '{destination,facilityId}',
+    private.hash_v2_freight_payload(pg_temp.hac12_payload()), jsonb_set(pg_temp.hac12_payload(), '{destination,facilityId}',
       '"c2330000-0000-4000-8000-000000000004"'::jsonb))
 $$, 'PT403', 'FORBIDDEN_TENANT', 'foreign destination also rejects with 403');
 select throws_ok($$
@@ -112,7 +112,7 @@ select throws_ok($$
     'c2300000-0000-4000-8000-000000000001',
     'c2320000-0000-4000-8000-000000000001',
     'a1200000-0000-4000-8000-000000000006',
-    repeat('a',64), jsonb_set(pg_temp.hac12_payload(), '{origin,facilityId}',
+    private.hash_v2_freight_payload(pg_temp.hac12_payload()), jsonb_set(pg_temp.hac12_payload(), '{origin,facilityId}',
       '"ffffffff-ffff-4fff-8fff-ffffffffffff"'::jsonb))
 $$, 'PT400', 'VALIDATION_ERROR', 'missing facility remains a validation error');
 select is((select count(*)::integer from public.freight_requests
@@ -123,14 +123,14 @@ select throws_ok($$
     'c2300000-0000-4000-8000-000000000002',
     'c2320000-0000-4000-8000-000000000002',
     'a1200000-0000-4000-8000-000000000003',
-    repeat('a',64), pg_temp.hac12_payload())
+    private.hash_v2_freight_payload(pg_temp.hac12_payload()), pg_temp.hac12_payload())
 $$, 'PT403', 'FORBIDDEN_TENANT', 'actor cannot impersonate another tenant');
 select throws_ok($$
   select public.create_v2_freight_request(
     'c2300000-0000-4000-8000-000000000001',
     'c2320000-0000-4000-8000-000000000001',
     'a1200000-0000-4000-8000-000000000004',
-    repeat('a',64), jsonb_set(pg_temp.hac12_payload(), '{budget,currency}', '"PEN"'::jsonb))
+    private.hash_v2_freight_payload(pg_temp.hac12_payload()), jsonb_set(pg_temp.hac12_payload(), '{budget,currency}', '"PEN"'::jsonb))
 $$, 'PT400', 'VALIDATION_ERROR', 'PEN is rejected in MVP V2');
 select is((select count(*)::integer from public.freight_requests
   where creation_idempotency_key in (
@@ -165,13 +165,13 @@ select is((select v2_snapshot #>> '{origin,city}' from public.freight_requests
 select throws_ok($$
   select public.create_v2_freight_request(
     'c2300000-0000-4000-8000-000000000001', 'c2320000-0000-4000-8000-000000000001',
-    'a1200000-0000-4000-8000-000000000008', repeat('a',64),
+    'a1200000-0000-4000-8000-000000000008', private.hash_v2_freight_payload(pg_temp.hac12_payload()),
     jsonb_set(pg_temp.hac12_payload(), '{cargoSpecification,units,0,quantity}', '100'::jsonb))
 $$, 'PT400', 'VALIDATION_ERROR', 'quantity mismatch fails before persistence');
 select throws_ok($$
   select public.create_v2_freight_request(
     'c2300000-0000-4000-8000-000000000001', 'c2320000-0000-4000-8000-000000000001',
-    'a1200000-0000-4000-8000-000000000009', repeat('a',64),
+    'a1200000-0000-4000-8000-000000000009', private.hash_v2_freight_payload(pg_temp.hac12_payload()),
     jsonb_set(pg_temp.hac12_payload(), '{cargoSpecification,totalVolumeM3}', '1'::jsonb))
 $$, 'PT400', 'VALIDATION_ERROR', 'volume mismatch fails before persistence');
 select is((select count(*)::integer from public.freight_requests
@@ -182,7 +182,9 @@ select is((select count(*)::integer from public.freight_requests
 select lives_ok($$
   select public.create_v2_freight_request(
     'c2300000-0000-4000-8000-000000000001', 'c2320000-0000-4000-8000-000000000001',
-    'a1200000-0000-4000-8000-000000000010', repeat('a',64),
+    'a1200000-0000-4000-8000-000000000010', private.hash_v2_freight_payload(jsonb_set(jsonb_set(pg_temp.hac12_payload(), '{origin}',
+      '{"label":"Manual Lima","countryCode":"PE","city":"Lima","lat":-12.0464,"lng":-77.1181}'::jsonb),
+      '{destination}', '{"label":"Manual Arequipa","countryCode":"PE","city":"Arequipa","lat":-16.4,"lng":-71.53}'::jsonb)),
     jsonb_set(jsonb_set(pg_temp.hac12_payload(), '{origin}',
       '{"label":"Manual Lima","countryCode":"PE","city":"Lima","lat":-12.0464,"lng":-77.1181}'::jsonb),
       '{destination}', '{"label":"Manual Arequipa","countryCode":"PE","city":"Arequipa","lat":-16.4,"lng":-71.53}'::jsonb))
@@ -199,21 +201,22 @@ select ok((select origin_facility_id is null and destination_facility_id is null
 select throws_ok($$
   select public.create_v2_freight_request(
     'c2300000-0000-4000-8000-000000000001', 'c2320000-0000-4000-8000-000000000001',
-    'a1200000-0000-4000-8000-000000000011', repeat('a',64),
+    'a1200000-0000-4000-8000-000000000011', private.hash_v2_freight_payload(pg_temp.hac12_payload()),
     jsonb_set(pg_temp.hac12_payload(), '{origin}',
       '{"label":"Manual Lima","countryCode":"PE","city":"Lima","lat":-12.0464}'::jsonb))
 $$, 'PT400', 'VALIDATION_ERROR', 'incomplete manual coordinate pair is rejected by RPC');
 select throws_ok($$
   select public.create_v2_freight_request(
     'c2300000-0000-4000-8000-000000000001', 'c2320000-0000-4000-8000-000000000001',
-    'a1200000-0000-4000-8000-000000000012', repeat('a',64),
+    'a1200000-0000-4000-8000-000000000012', private.hash_v2_freight_payload(pg_temp.hac12_payload()),
     jsonb_set(pg_temp.hac12_payload(), '{destination}',
       '{"label":"Manual Arequipa","countryCode":"PE","city":"Arequipa","lat":-96,"lng":-71}'::jsonb))
 $$, 'PT400', 'VALIDATION_ERROR', 'out-of-range manual coordinate is rejected by RPC');
 select lives_ok($$
   select public.create_v2_freight_request(
     'c2300000-0000-4000-8000-000000000001', 'c2320000-0000-4000-8000-000000000001',
-    'a1200000-0000-4000-8000-000000000013', repeat('a',64),
+    'a1200000-0000-4000-8000-000000000013', private.hash_v2_freight_payload(jsonb_set(pg_temp.hac12_payload(), '{origin}',
+      '{"label":"Manual Lima","countryCode":"PE","city":"Lima"}'::jsonb)),
     jsonb_set(pg_temp.hac12_payload(), '{origin}',
       '{"label":"Manual Lima","countryCode":"PE","city":"Lima"}'::jsonb))
 $$, 'manual location without coordinates remains supported');
@@ -239,7 +242,7 @@ select throws_ok($$
     'c2300000-0000-4000-8000-000000000001',
     'c2320000-0000-4000-8000-000000000001',
     'a1200000-0000-4000-8000-000000000007',
-    repeat('a',64), pg_temp.hac12_payload())
+    private.hash_v2_freight_payload(pg_temp.hac12_payload()), pg_temp.hac12_payload())
 $$, 'P0001', 'HAC12_FORCED_AFTER_INSERT', 'post-insert failure propagates');
 select is((select count(*)::integer from public.freight_requests
   where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000007'), 0,
@@ -252,7 +255,7 @@ set local role authenticated;
 select lives_ok($$
   select public.create_v2_freight_request(
     'c2300000-0000-4000-8000-000000000001', 'c2320000-0000-4000-8000-000000000001',
-    'a1200000-0000-4000-8000-000000000007', repeat('a',64), pg_temp.hac12_payload())
+    'a1200000-0000-4000-8000-000000000007', private.hash_v2_freight_payload(pg_temp.hac12_payload()), pg_temp.hac12_payload())
 $$, 'same creation key succeeds after the forced failure is removed');
 select is((select count(*)::integer from public.freight_requests
   where creation_idempotency_key = 'a1200000-0000-4000-8000-000000000007'), 1,

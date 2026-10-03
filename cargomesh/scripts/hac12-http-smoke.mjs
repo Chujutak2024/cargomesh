@@ -178,6 +178,25 @@ try {
   assert.equal(absentCopy.data.length, 0);
   assert.equal((await call(`/api/v2/freight/requests/${requestId}/serviceability`, tenantA))
     .body.data.summaryCounts.totalEvaluated, 2);
+  // R-06-E1: a coherent own-tenant copy cannot occupy a key with a false hash.
+  const poisonedKey = crypto.randomUUID();
+  const poisonedId = crypto.randomUUID();
+  const poisoned = await userClient.from("freight_requests").insert({ ...source.data,
+    id: poisonedId, code: `V2-${poisonedId.replaceAll("-", "")}`,
+    creation_idempotency_key: poisonedKey, creation_payload_hash: "0".repeat(64),
+  });
+  assert.equal(poisoned.error?.code, "PT400", JSON.stringify(poisoned.error));
+  const absentPoison = await admin.from("freight_requests").select("id")
+    .eq("creation_idempotency_key", poisonedKey);
+  assert.equal(absentPoison.error, null);
+  assert.equal(absentPoison.data.length, 0);
+  const legitimate = await post(positive.requestBody, tenantA, poisonedKey);
+  assert.equal(legitimate.status, 201, JSON.stringify(legitimate.body));
+  createdIds.push(legitimate.body.data.id);
+  const legitimateReplay = await post(positive.requestBody, tenantA, poisonedKey);
+  assert.equal(legitimateReplay.status, 200, JSON.stringify(legitimateReplay.body));
+  assert.equal(legitimateReplay.body.data.id, legitimate.body.data.id);
+
   const canonicalCopy = await userClient.from("freight_requests").insert({ ...forgedCopy,
     v2_snapshot: source.data.v2_snapshot });
   assert.equal(canonicalCopy.error, null, JSON.stringify(canonicalCopy.error));

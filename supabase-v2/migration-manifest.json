@@ -215,6 +215,17 @@
       "dependencies": [
         "20261001201251"
       ]
+    },
+    {
+      "issue": "HAC-12",
+      "path": "supabase-v2/supabase/migrations/20261003035802_hac12_receipt_hash_and_service_role_guards.sql",
+      "version": "20261003035802",
+      "sha256": "aef93fe317167c9039d88d80306612fd5da0378f21791280780e76d619900822",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261002073853"
+      ]
     }
   ]
 }

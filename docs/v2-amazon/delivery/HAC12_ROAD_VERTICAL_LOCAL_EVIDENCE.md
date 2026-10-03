@@ -93,3 +93,28 @@ Verificación descubierta/ejecutada:
 Logs locales: `%TEMP%/hac12-rereview-20261002` (`v2-final/v2-pgtap.log`, `http-smoke.log`, `reservation-concurrency.log`, `release.log`, `build.log`, `final-reset.log`, `final-counts.log`). Primer gate fallido conservado en `v2/`: el test nuevo dependía indebidamente del fixture de otro archivo revertido; corregido con fixture propio y repetido desde reset limpio. El checkout de validación se respaldó antes de refrescar únicamente los archivos HAC-12; copia de sus cambios previos en `pre-refresh/`.
 
 Pendientes externos/aceptación: reprueba independiente R-06–R-09 y C-01/C-02; fixture RouteCondition por Jean/HAC-13; mcp_account_links por Axel/HAC-11; consumo conjunto HAC-14/15; conflictos/integración HAC-16 y autorización de aplicación al Supabase V2 alojado. La presencia de 19/20 tablas del conjunto UML local y los controles anteriores no certifican todos los atributos ni Alexa+ live. Sin merge ni despliegue por esta entrega.
+
+## Re-revisión posterior a 3cf966f — R-06-E1 / R-10 / R-11
+
+Reparación validada localmente; entrega para reprueba independiente, sin aceptación ni merge implícitos.
+
+- **R-06-E1:** migración aditiva `20261003035802_hac12_receipt_hash_and_service_role_guards.sql`. BEFORE INSERT V2 recalcula SHA-256 del payload canónico y rechaza hashes falsos con PT400/VALIDATION_ERROR antes de consumir fila o clave. Conserva el hash Node existente, normalización binary64, UTF-8 y orden de claves del DTO estricto. Legacy sin los tres marcadores V2 conserva la misma frontera del trigger previo; no se usa ausencia de clave como criterio legacy.
+- **R-10:** USAGE mínimo de private para service_role, sin cambiar SECURITY INVOKER ni guardas de tenant. La primera RPC de una conexión nueva en test 14 se ejecuta con service_role y persiste una fila válida.
+- **R-11:** activo/calendario de test 13 con sufijo 013, separados del seed 001. Test 13 54/54 sobre baseline solo y 54/54 con escenario de capacidad. No se alteran IDs del seed.
+- Tests 12/13 usan hashes del payload correcto; controles de coordenadas manuales y tolerancia decimal incluyen sus modificaciones. Test 14: 21 aserciones, con hash falso sin consumo de clave, POST/RPC legítimo posterior, INSERT coherente y replay, permiso anon y diez hashes golden generados por la función Node real.
+- Smoke HTTP autenticado ampliado: INSERT coherente con 64 ceros rechazado, cero recibos para esa clave, POST legítimo 201 y replay 200 con mismo ID. Conserva controles Cookie/Bearer, tenant A/B, mutación de snapshot, DTO, manual pins, capacidad/elegibilidad, LTL, conflictos y lectura.
+
+### Comprobaciones de esta entrega
+
+- Gate V2 desde cero: **PASS**, siete migraciones, siete archivos pgTAP **191/191**, procedencia/hashes/dependencias, baseline histórico equivalente, controles positivos V1 aislados, ausencia de fixtures V1 en V2, escenario y cleanup.
+- Tras cleanup: **0 organizaciones, sedes, carriers, miembros y usuarios/identidades Auth** del escenario; ocho categorías de referencia conservadas. Sin datos sintéticos incorporados a migraciones de producción.
+- HAC-12 **48/48**, typecheck y arquitectura PASS. Los ocho fixtures HAC-27 parsean contra Zod. RouteCondition PR #95 @07f480e: **11/11** contra artefactos, sin DB.
+- HTTP autenticado real **PASS** con la nueva guarda activa. Concurrencia de reservas R-09 no modificada; su carrera en dos sesiones ya fue confirmada por QA sobre 3cf966f.
+- Release completo/build no reejecutados en este delta de SQL, pruebas y contratos; los 458/458 previos corresponden a 3cf966f. El smoke usa el build existente de los módulos de aplicación sin cambios TypeScript.
+- Evidencia reproducible local en `tmp/HAC12_RECEIPT_REPAIR_2026-10-02/`: `gate-final/v2-pgtap.log`, `gate-final/cleanup-zero-assertion.log`, `test13-with-capacity-seed.log`, `http-smoke.log`. Comando gate: `python supabase-v2/gate.py v2 --evidence-dir <carpeta> --v1-replay-port-base 61300 --baseline-replay-port-base 62300`, usando el checkout combinado existente con metadatos HAC-29/HAC-12 resueltos.
+
+Primer intento detectó siete fallos: seis eran controles manuales que conservaban el hash del payload base y uno era la guarda legacy demasiado estricta. Corregidos y repetidos los siete archivos y el gate completo. Los diez vectores Node/SQL y la RPC service_role pasaron desde el primer intento.
+
+Docker recuperado tras reproducir dockerInference: carpeta IPC preservada y reconstruida con procesos detenidos, motor comprobado; detalle en FL-06. No se modificó Supabase alojado, V1 remoto ni producción.
+
+El candidato HAC-16 previo de seis migraciones sobre 3cf966f queda como evidencia histórica. Debe regenerarse contra el head definitivo con siete migraciones antes de aceptación/integración. Pendientes: reprueba independiente R-06-E1/R-10/R-11 y C-01, confirmación de consumo HAC-11/14/15 y gate HAC-16. Ningún PASS local demuestra MCP/Alexa live.
