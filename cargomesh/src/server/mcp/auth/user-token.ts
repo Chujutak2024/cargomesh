@@ -53,6 +53,35 @@ function configuredOAuthClientId(): string {
   return clientId;
 }
 
+// getUser verifies the token with the configured Supabase Auth project. These
+// claim checks additionally bind that verified user to this OAuth client and
+// project; a regular Supabase session must never inherit an MCP account link.
+export function requireSupabaseOAuthClaims(
+  claims: ReturnType<typeof decodeJwt>,
+  userId: string,
+  clientId: string,
+  supabaseUrl: string,
+  nowSeconds = Math.floor(Date.now() / 1000),
+): void {
+  let expectedIssuer: string;
+  try {
+    const url = new URL(supabaseUrl);
+    if (!(["https:", "http:"].includes(url.protocol)) || url.search || url.hash) throw new Error();
+    expectedIssuer = `${url.origin}${url.pathname.replace(/\/$/, "")}/auth/v1`;
+  } catch {
+    throw new Error("UNAUTHENTICATED: Supabase OAuth issuer is not configured.");
+  }
+  if (
+    claims.iss !== expectedIssuer || claims.sub !== userId ||
+    claims.aud !== "authenticated" || claims.role !== "authenticated" ||
+    claims.client_id !== clientId ||
+    typeof claims.iat !== "number" || claims.iat > nowSeconds + 60 ||
+    typeof claims.exp !== "number" || claims.exp <= nowSeconds
+  ) {
+    throw new Error("UNAUTHENTICATED: User token client binding is invalid.");
+  }
+}
+
 async function verifySupabaseIdentity(accessToken: string): Promise<VerifiedSupabaseIdentity> {
   if (process.env.CARGOMESH_MCP_USER_BEARER_ENABLED !== "true") {
     throw new Error("UNAUTHENTICATED: MCP user bearer authentication is disabled.");
@@ -64,12 +93,8 @@ async function verifySupabaseIdentity(accessToken: string): Promise<VerifiedSupa
   try { claims = decodeJwt(accessToken); } catch {
     throw new Error("UNAUTHENTICATED: Invalid Supabase user token.");
   }
-  const oauthClientId = typeof claims.client_id === "string"
-    ? claims.client_id
-    : typeof claims.azp === "string" ? claims.azp : null;
-  if (claims.sub !== user.id || oauthClientId !== configuredOAuthClientId()) {
-    throw new Error("UNAUTHENTICATED: User token client binding is invalid.");
-  }
+  const oauthClientId = configuredOAuthClientId();
+  requireSupabaseOAuthClaims(claims, user.id, oauthClientId, process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
   return { userId: user.id, userEmail: user.email ?? "", oauthClientId };
 }
 

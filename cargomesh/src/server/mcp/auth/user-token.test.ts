@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { authenticateMcpUserBearer, type McpAccountLink } from "./user-token";
+import { authenticateMcpUserBearer, requireSupabaseOAuthClaims, type McpAccountLink } from "./user-token";
 
 const identity = { userId: "user-a", userEmail: "a@example.invalid", oauthClientId: "alexa-client" };
 const link: McpAccountLink = {
@@ -65,4 +65,30 @@ test("inactive or absent exact membership is rejected", async () => {
       memberships: { findActive: async () => candidate },
     })), /FORBIDDEN/);
   }
+});
+
+test("verified OAuth claims require the configured issuer, audience, expiry and exact client_id", () => {
+  const now = 1_800_000_000;
+  const claims = {
+    iss: "https://v2.example.supabase.co/auth/v1",
+    sub: "user-a",
+    aud: "authenticated",
+    role: "authenticated",
+    client_id: "alexa-client",
+    iat: now - 10,
+    exp: now + 900,
+  };
+  const check = (candidate: Record<string, unknown>) =>
+    requireSupabaseOAuthClaims(candidate, "user-a", "alexa-client", "https://v2.example.supabase.co", now);
+  assert.doesNotThrow(() => check(claims));
+  for (const candidate of [
+    { ...claims, iss: "https://other.example.supabase.co/auth/v1" },
+    { ...claims, sub: "user-b" },
+    { ...claims, aud: "other-resource" },
+    { ...claims, role: "service_role" },
+    { ...claims, client_id: undefined, azp: "alexa-client" },
+    { ...claims, client_id: "other-client" },
+    { ...claims, exp: now },
+    { ...claims, iat: now + 61 },
+  ]) assert.throws(() => check(candidate), /UNAUTHENTICATED/);
 });

@@ -1,6 +1,6 @@
 # HAC-30 · AWS Builder evidence (pending verification)
 
-Cut: 2026-10-02. An authentic local Kiro Crew session subsequently produced HAC-11 commit `c212c62`; see the [sanitized evidence record](./evidence/hac-30/KIRO_CREW_HAC11_2026-10-02_REDACTED.md). Its five new pgTAP assertions have **not** been executed because Docker Desktop was unavailable. HAC-11 and HAC-30 remain `In Progress`. Codex work is not represented as Kiro work, and no CargoMesh Bedrock invocation is claimed.
+Initial cut: 2026-10-02. An authentic local Kiro Crew session produced HAC-11 commit `c212c62`; see the [sanitized evidence record](./evidence/hac-30/KIRO_CREW_HAC11_2026-10-02_REDACTED.md). On 2026-10-03, a separate Codex review corrected the expired-link test fixture and ran the HAC-11 pgTAP assertions **14/14** on local Docker; see [execution evidence](./evidence/hac-11/HAC11_LOCAL_AUTH_AND_PGTAP_2026-10-03.md). Do not attribute that later correction or execution to Kiro Crew. Human/Tech Lead acceptance is still pending, and no CargoMesh Bedrock invocation is claimed.
 
 ## Kiro Crew session to execute
 
@@ -18,18 +18,18 @@ Evidence to export after the authentic session: session identifier and date/time
 | Crew task and changed files | Extend `supabase/tests/12_hac11_mcp_account_links.test.sql` from 9 to 14 assertions |
 | Human review | Pending |
 | Commit/PR | `c212c62` local commit; PR #94 requires update |
-| Test results | pgTAP blocked by Docker; no PASS claim |
-| Redacted Drive artifacts / HAC-18 index | Pending upload/index |
+| Test results | Crew session: pgTAP blocked. Later independent Codex run after fixture correction: 14/14 local pgTAP; MCP 76/76, typecheck and build pass |
+| Redacted Drive artifacts / HAC-18 index | [Crew record](https://drive.google.com/file/d/1H4HXTiMyw1W2olxpaunnpDEV0RPi1hzS/view), [local HAC-11 verification](https://drive.google.com/file/d/16edQeFFEhAH2W8dQZwkYS_G1rETlwUvB/view), [Bedrock IAM check](https://drive.google.com/file/d/1ju6exIBqUcZ9O5UDZBSOuI6woUQ1cDKo/view), [evidence index](https://drive.google.com/file/d/1a3sO1qm8kAk1Y1yIDlNLVSlcF05Uxm58/view). Index verification by Jean Paul remains pending. |
 
 ## Bedrock sandbox
 
-AWS promotional credits were reported as claimed under HAC-17; credits are not IAM access. The `CARGOMESH_BEDROCK_NARRATION_ENABLED` adapter exists and the example configuration leaves it off. This Codex environment has no verified authorized AWS account session, model quota, or sandbox configuration; no Bedrock API call was made. The earlier Sprint 1 `ListFoundationModels` denial is historical and must not be presented as today's IAM status.
+AWS promotional credits were reported as claimed under HAC-17; credits are not IAM access. The `CARGOMESH_BEDROCK_NARRATION_ENABLED` adapter exists and the example configuration leaves it off. A read-only AWS STS check succeeded on 2026-10-03, but a Bedrock `ListFoundationModels` query in `us-east-1` returned `AccessDeniedException`. [Sanitized current check](./evidence/hac-30/BEDROCK_IAM_CHECK_2026-10-03.md). Model quota and `InvokeModel` remain unverified; no Bedrock runtime call was made.
 
 With an authorized sandbox, the AWS owner should verify `bedrock:ListFoundationModels` and `bedrock:InvokeModel`/Converse access without exposing identity data; then run one bounded narration call over an already computed ROAD result. Record model ID, region, timestamp, input/output token counts, latency, redacted output, estimated cost, and whether deterministic SSML fallback was used. Bedrock must not change eligibility, ranking, price, or booking. If access is denied, record the sanitized error and the deterministic fallback test instead of claiming a live invocation.
 
 | Bedrock evidence field | Current value |
 | --- | --- |
-| Current IAM/quota check | Requires authorized AWS access |
+| Current IAM/quota check | STS identity valid; `ListFoundationModels` denied in `us-east-1`; `InvokeModel` and quota unverified |
 | Sandbox model and region | Pending |
 | Real invocation, tokens, latency, output, cost | Pending |
 | Fallback evidence | Local mock tests only; no live AWS claim |

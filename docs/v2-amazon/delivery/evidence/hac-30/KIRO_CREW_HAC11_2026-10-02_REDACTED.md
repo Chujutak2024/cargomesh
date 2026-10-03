@@ -43,3 +43,7 @@ The official hackathon rules state that Kiro Crew can qualify as a development t
 2. Start the HAC-29 V2 local bootstrap and run the pgTAP file; attach sanitized output showing real `14/14` or defects.
 3. Export a genuine Kiro Crew UI screenshot, redact any account identifiers/secrets, and add it to the HAC-18 Drive index. Do not fabricate a screenshot from this markdown.
 4. Link the Drive artifacts and the PR/commit in HAC-30. Keep Alexa+ and CargoMesh Bedrock claims separate.
+
+## Later independent verification · 2026-10-03
+
+The original Crew session remains recorded exactly as blocked. In a separate Codex review, the expired-link setup was found to violate the migration's valid-lifetime constraint; Codex corrected the test fixture and reran all HAC-11 pgTAP assertions against local Docker. The result was **14/14** with a clean rollback. This later correction and run are **not** Kiro Crew actions. See [HAC-11 execution evidence](../hac-11/HAC11_LOCAL_AUTH_AND_PGTAP_2026-10-03.md). Human acceptance of the Crew contribution and a genuine Kiro UI screenshot remain pending.

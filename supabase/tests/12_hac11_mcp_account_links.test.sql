@@ -79,7 +79,8 @@ reset role;
 
 -- T9: expired link invisible via RLS (restore to ACTIVE first, then expire)
 update public.mcp_account_links set status = 'ACTIVE', revoked_at = null,
-  revoked_by_user_id = null, expires_at = now() - interval '1 minute'
+  revoked_by_user_id = null, linked_at = now() - interval '2 days',
+  expires_at = now() - interval '1 minute'
   where oauth_client_id = 'alexa-a';
 set local role authenticated;
 set local "request.jwt.claims" to '{"sub":"c2310000-0000-4000-8000-000000000001","role":"authenticated"}';
