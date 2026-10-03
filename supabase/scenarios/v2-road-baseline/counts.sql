@@ -12,3 +12,6 @@ union all select 'public.carrier_services', count(*) from public.carrier_service
 union all select 'public.service_areas', count(*) from public.service_areas
 union all select 'public.service_lanes', count(*) from public.service_lanes
 order by relation;
+
+-- Reference data survives scenario cleanup.
+select count(*) as reference_categories from public.cargo_categories;

@@ -1,0 +1,22 @@
+{
+  "v1": [
+    "supabase/tests/01_cargomesh_rls_and_golden_flow.test.sql",
+    "supabase/tests/02_c02_result_bridge_and_decision.test.sql",
+    "supabase/tests/03_int02a_result_bridge.test.sql",
+    "supabase/tests/04_int02a_orchestration_run.test.sql",
+    "supabase/tests/05_c03_booking_bridge.test.sql",
+    "supabase/tests/06_release_service_role_grants.test.sql",
+    "supabase/tests/07_d1_recommendation_draft_writer.test.sql",
+    "supabase/tests/08_draft_creation_idempotency.test.sql",
+    "supabase/tests/09_v2_road_network.test.sql"
+  ],
+  "v2": [
+    "supabase/tests/06_release_service_role_grants.test.sql",
+    "supabase/tests/09_v2_clean_road_network.test.sql",
+    "supabase/tests/10_v2_qa_negative_cases.test.sql",
+    "supabase/tests/11_v2_scenario_data.test.sql",
+    "supabase/tests/12_v2_hac12_road_vertical.test.sql",
+    "supabase/tests/13_v2_hac12_rereview.test.sql",
+    "supabase/tests/14_v2_hac12_receipt_hash.test.sql"
+  ]
+}

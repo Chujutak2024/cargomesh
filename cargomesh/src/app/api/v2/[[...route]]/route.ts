@@ -5,8 +5,8 @@ import { createHonoApp } from "@/server/hono/app";
 // Next.js App Router catch-all that mounts the Hono V2 application.
 //
 // URL mapping:
-//   /api/v2/health              → Hono GET /health
-//   /api/v2/freight/requests    → Hono POST /freight/requests
+//   /api/v2/health              → Hono GET /api/v2/health
+//   /api/v2/freight/requests    → Hono POST /api/v2/freight/requests
 //
 // The "hono/vercel" adapter handles the Next.js ↔ Hono bridging.
 // Existing /api/* routes are untouched and continue to work normally.
