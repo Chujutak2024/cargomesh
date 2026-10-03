@@ -1,53 +1,43 @@
-# HAC-23 V2 ROAD baseline — local synthetic scenario
+# Synthetic V2 ROAD baseline — HAC-29
 
-This package is `SYNTHETIC_DEMO_ONLY`. Run it only against the isolated local
-Supabase stack after `db reset`. It is not a migration and must never be deployed
-as hosted data. Its UUIDs occupy the `c230`–`c238` namespace, disjoint from D1
-(`a1`, `b1`, `d1`, `f1`, `f2`) and the FR-1042 baseline. `seed.sql` is
-idempotent; `cleanup.sql` names each package ID explicitly and leaves UI-created
-requests and all other scenarios untouched.
+Local-only scenario, separate from migrations and V1 fixtures. Follow the
+[bootstrap runbook](../../../docs/v2-amazon/delivery/HAC29_CLEAN_BOOTSTRAP.md) for exact
+reset/seed/verify/cleanup/count commands and external backup requirements.
 
-## Why each row exists for CP-3
+The original c230–c238 IDs remain unchanged: two organizations/Auth identities/active
+supervisors, four facilities (tenant A: Lima, Arequipa, Piura; tenant B: Lima), one
+carrier/service, a Piura depot, four endpoint areas and one Lima→Arequipa lane.
+The c239–c23c extension adds one carrier, one service, two areas and a second directed
+Lima→Arequipa lane. c23d/c23e/c23f reserve the HAC-27 asset/pool/calendar IDs but create
+no rows or tables. Both services lack Piura coverage and have no reverse lane.
 
-| Seeded data | CP-3 negative case enabled |
-|---|---|
-| Tenant A/B organizations, local Auth users/identities, exact ACTIVE memberships | User B must not read or mutate tenant A facilities/requests; MCP user identity must not select an arbitrary organization. The local-only password in `seed.sql` is a test fixture, not a hosted credential. |
-| Tenant A Lima pickup facility and Arequipa delivery facility | Positive control: a declared ROAD A→B lane exists. An area/lane is still not proof of capacity, booking, or a live offer. |
-| Tenant A Piura facility and physical Piura carrier depot | Negative “site without coverage”: neither facility nor depot creates a Piura service area or lane. |
-| Tenant B Lima facility | Same city, different tenant: geography must not bypass ownership/RLS. |
-| Four service areas (pickup/delivery at A and B), only A→B lane | Reverse B→A has valid endpoint roles but deliberately no lane; do not infer the reverse direction. |
+`manifest.json` is the stable identity inventory. `seed.sql` is idempotent by exact ID;
+`verify.sql` fails on missing/mismatched controls. No request, offer, booking, calendar
+or MCP link is created. The existing service's nominal 10000 kg / 30 m³ is metadata,
+not evidence of capacity availability. The second service copies those nominal maxima
+because the historical schema requires a weight limit; its calendar remains unverified.
+The seed does not claim that either service is presently eligible.
 
-`mcp_account_links` is **not seeded**: HAC-22 records its persistence as missing
-and requires fail-closed behavior. This package supports local negative identity
-and RLS tests, not a claim of Alexa+ or OAuth linking live. No freight request,
-offer, orchestration run, decision or booking is pre-created.
+`fixtures/id-map.json` maps the HAC-27 published example IDs to this scenario.
+The four case files provide request bodies plus explicit expected response projections
+for positive, zero (Piura), unknown and foreign tenant. They are BLOCKED contract
+expectations for HAC-12, not captured API outputs. Positive and unknown use the same
+two-candidate response: total 2, eligible 1, unknown 1, ineligible 0. The unknown case
+selects its candidate; it does not invent a third candidate or change global counts.
 
-## Commands from repository root (PowerShell)
+The input cargo/windows/contacts/budget are copied from HAC-27 PHARMA. Locations come
+from these canonical scenario facilities: no invented coordinates, region codes or
+Callao geometry. Geometry is null/UNKNOWN with no legs. Expected area codes and error
+wording are omitted where HAC-27 gives no adapted values. Bind `$createdRequestId`
+from the eventual native POST; do not seed or assume a request UUID.
 
-First run `npx supabase db reset`. The following commands target only the local
-`supabase_db_cargomesh` container; never point them at a shared/hosted database.
-`seed.sql` refuses to run unless psql receives `-v local_only=1`; this is an
-explicit safety acknowledgement in addition to the local-container command.
+Executable DB evidence: positive declared lanes, no Piura/reverse lane, preserved nominal
+metadata, actual authenticated tenant isolation and composite-FK rejection with a
+successful own-facility update. Capacity availability, HTTP statuses/counts, writer
+idempotency/rollback and UI/MCP behavior remain BLOCKED with owners in the manifest.
 
-```powershell
-Get-Content -Raw supabase/scenarios/v2-road-baseline/counts.sql |
-  docker exec -i supabase_db_cargomesh psql -U postgres -d postgres
-Get-Content -Raw supabase/scenarios/d1/seed.sql |
-  docker exec -i supabase_db_cargomesh psql -U postgres -d postgres
-Get-Content -Raw supabase/scenarios/v2-road-baseline/seed.sql |
-  docker exec -i supabase_db_cargomesh psql -X -v local_only=1 -U postgres -d postgres
-Get-Content -Raw supabase/scenarios/v2-road-baseline/verify.sql |
-  docker exec -i supabase_db_cargomesh psql -U postgres -d postgres
-npx supabase test db
-Get-Content -Raw supabase/scenarios/v2-road-baseline/cleanup.sql |
-  docker exec -i supabase_db_cargomesh psql -U postgres -d postgres
-Get-Content -Raw supabase/scenarios/v2-road-baseline/counts.sql |
-  docker exec -i supabase_db_cargomesh psql -U postgres -d postgres
-Get-Content -Raw supabase/scenarios/d1/verify.sql |
-  docker exec -i supabase_db_cargomesh psql -U postgres -d postgres
-```
-
-Compare every relation in `counts.sql` with its post-D1/pre-V2 count, then
-repeat V2 `seed.sql` with `-v local_only=1`, `verify.sql`, and `cleanup.sql`
-twice. A passing
-`verify.sql` alone does not prove that cleanup spared D1 or the baseline.
+Cleanup uses explicit IDs only and requires `local_only=1`, a prior external backup and
+`backup_confirmed=1`. Incoming FK/cascade checks reject any external dependent row.
+Never broaden the inventory to remove another task's data. `counts.sql` reports all
+ten affected relations and the retained reference count; the clean gate asserts zero
+scenario rows and eight meaningful reference categories after cleanup.

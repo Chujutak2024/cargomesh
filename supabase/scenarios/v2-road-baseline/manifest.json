@@ -1,14 +1,14 @@
 {
-  "schemaVersion": "1.0",
-  "package": "HAC-23-V2-ROAD-BASELINE",
+  "schemaVersion": "2.0",
+  "package": "HAC-29-V2-ROAD-BASELINE",
   "provenance": "SYNTHETIC_DEMO_ONLY",
   "baseClock": "2026-09-22T12:00:00Z",
-  "uuidRange": "c2300000-0000-4000-8000-000000000000 through c238ffff-ffff-4fff-8fff-ffffffffffff; this package uses c230..c238 only",
+  "uuidRange": "c230-c238 preserved; c239-c23c materialized; c23d-c23f reserved for HAC-12",
   "separation": {
     "seeded": [
       "two isolated organizations with one local Auth identity and ACTIVE member each",
       "three organization-A facilities and one organization-B facility",
-      "one synthetic ROAD carrier, one uncovered physical depot, one service, four explicit service areas and one A-to-B lane"
+      "two synthetic ROAD carriers/services, one uncovered depot, six explicit service areas and two Lima-to-Arequipa lanes"
     ],
     "neverSeeded": [
       "mcp_account_links (not yet implemented in the V2 schema)",
@@ -36,6 +36,36 @@
     "deliveryB": "c2370000-0000-4000-8000-000000000002",
     "pickupB": "c2370000-0000-4000-8000-000000000003",
     "deliveryA": "c2370000-0000-4000-8000-000000000004",
-    "laneAtoB": "c2380000-0000-4000-8000-000000000001"
+    "laneAtoB": "c2380000-0000-4000-8000-000000000001",
+    "unknownCarrier": "c2390000-0000-4000-8000-000000000001",
+    "unknownService": "c23a0000-0000-4000-8000-000000000001",
+    "unknownPickup": "c23b0000-0000-4000-8000-000000000001",
+    "unknownDelivery": "c23b0000-0000-4000-8000-000000000002",
+    "unknownLane": "c23c0000-0000-4000-8000-000000000001"
+  },
+  "reservedNotSeeded": {
+    "transportAsset": "c23d0000-0000-4000-8000-000000000001",
+    "capacityPool": "c23e0000-0000-4000-8000-000000000001",
+    "capacityCalendar": "c23f0000-0000-4000-8000-000000000001"
+  },
+  "blocked": [
+    {
+      "owner": "HAC-12 / Cristhian",
+      "scope": "capacity tables and verified positive calendar; API status/counts and canonical writer; QA-13-21/22/23"
+    },
+    {
+      "owner": "HAC-11 / Axel",
+      "scope": "MCP identity, atomic rotation and Web/MCP parity"
+    },
+    {
+      "owner": "HAC-14 / Luis; HAC-15 / Juan",
+      "scope": "UI mapper and geometry rendering"
+    }
+  ],
+  "cases": {
+    "positive": "Lima -> Arequipa; two declared lanes; full eligible outcome BLOCKED HAC-12",
+    "zero": "Piura -> Arequipa; no matching area/lane; HTTP 200 assertion BLOCKED HAC-12",
+    "unknown": "second Lima -> Arequipa service has declared coverage; no calendar evidence; full status and positive capacity control BLOCKED HAC-12",
+    "foreignTenant": "tenant A request referencing tenant B facility rejected by composite FK under authenticated role; HTTP 403 BLOCKED HAC-12"
   }
 }
