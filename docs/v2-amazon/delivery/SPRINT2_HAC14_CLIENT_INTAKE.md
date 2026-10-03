@@ -187,7 +187,7 @@ Integration state observed on 2026-10-03:
 
 - #91 was merged at `6e25254` from HAC-12 head `0c79a00`.
 - #92 was merged at `71f88bc` from head `3fd924c`, after the requested XSS validation head `2fcc9b4`.
-- #93 was merged at `33a0328` from HAC-14 head `a056f5b` while this validation was in progress. This delivery did not perform that merge or a deployment. The later evidence-only commit is `febda82` on the source branch and is linked from the PR/Linear record.
+- #93 was merged at `33a0328` from HAC-14 head `a056f5b` while this validation was in progress. This delivery did not perform that merge or a deployment. The later evidence-only documentation remains on the source branch and is linked from the PR/Linear record.
 - The integrated commit passed `test:v2-intake` 39/39, `test:release` 458/458, typecheck, architecture, build, the V2 database gate 191/191, authenticated HTTP, and authenticated browser card↔map smoke.
 - The earlier temporary combination required local conflict resolution in shared migration-manifest metadata and the duplicate `FL-03` filename. The actual merge commits supersede that temporary resolution; no such resolution was committed from HAC-14.
 - Linear remains `In Progress` until the Tech Lead confirms HAC-14 acceptance. The separately owned HAC-15 truck/MTC pilot or owner smoke is not represented as work completed by HAC-14.
