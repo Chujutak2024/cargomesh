@@ -1,0 +1,79 @@
+{
+  "confirmation": {
+    "status": "CONFIRMADO",
+    "source": "HAC-27 Documento Maestro — Correcciones de re-revisión C-01 y confirmación RouteCondition — 2 oct 2026",
+    "documentVersion": "2026-10-03T04:39:52Z",
+    "scope": "fixture simulado S2",
+    "contractCommit": "2c48923aeef8c4399f69e4c017afed075801f8b3"
+  },
+  "referenceAt": "2026-10-05T12:00:00Z",
+  "cases": [
+    {
+      "id": "c2400000-0000-4000-8000-000000000001",
+      "case": "active",
+      "association": {
+        "scenario": "v2-road-baseline",
+        "laneId": "c2380000-0000-4000-8000-000000000001"
+      },
+      "condition": {
+        "kind": "RESTRICTION",
+        "location": {
+          "facilityId": "c2330000-0000-4000-8000-000000000001",
+          "label": "[SYNTHETIC] A pickup on covered lane",
+          "countryCode": "PE",
+          "region": null,
+          "city": "Lima",
+          "lat": null,
+          "lng": null
+        },
+        "observedAt": "2026-10-01T00:00:00Z",
+        "validUntil": "2026-10-10T00:00:00Z",
+        "source": "SIMULATED",
+        "confidence": "SIMULATED"
+      },
+      "expectedProjection": [
+        {
+          "code": "RC_RESTRICTION",
+          "severity": "INFO",
+          "description": "[SYNTHETIC] SIMULATED RESTRICTION at [SYNTHETIC] A pickup on covered lane; observedAt=2026-10-01T00:00:00Z; validUntil=2026-10-10T00:00:00Z (exclusive). Display fixture only; no real incident or ETA, eligibility or capacity effect.",
+          "provenanceStatus": "SIMULATED"
+        }
+      ]
+    },
+    {
+      "id": "c2400000-0000-4000-8000-000000000002",
+      "case": "expired",
+      "association": {
+        "scenario": "v2-road-baseline",
+        "laneId": "c2380000-0000-4000-8000-000000000001"
+      },
+      "condition": {
+        "kind": "DELAY",
+        "location": {
+          "facilityId": "c2330000-0000-4000-8000-000000000002",
+          "label": "[SYNTHETIC] B delivery on covered lane",
+          "countryCode": "PE",
+          "region": null,
+          "city": "Arequipa",
+          "lat": null,
+          "lng": null
+        },
+        "observedAt": "2026-09-25T00:00:00Z",
+        "validUntil": "2026-10-01T00:00:00Z",
+        "source": "SIMULATED",
+        "confidence": "SIMULATED"
+      },
+      "expectedProjection": []
+    },
+    {
+      "id": "c2400000-0000-4000-8000-000000000003",
+      "case": "absent",
+      "association": {
+        "scenario": "v2-road-baseline",
+        "laneId": "c23c0000-0000-4000-8000-000000000001"
+      },
+      "condition": null,
+      "expectedProjection": []
+    }
+  ]
+}

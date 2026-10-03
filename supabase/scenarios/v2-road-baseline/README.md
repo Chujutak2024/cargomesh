@@ -1,5 +1,18 @@
 # Synthetic V2 ROAD baseline — HAC-29
 
+HAC-13 adds a file-only [RouteCondition fixture and HAC-15 map projection](./ROUTE_CONDITIONS_HAC15.md).
+The Tech Lead confirmed its projection exclusively for the simulated S2 fixture in the
+[HAC-27 Master Document](https://linear.app/hackatonteamcargomesh/document/hac-27-mapeo-57-clases-v2-a-bdapi-patrones-atomicidad-y-contratos-v20-d2a9ef6d0876),
+version `2026-10-03T04:39:52Z`, section "Correcciones de re-revisión C-01 y confirmación
+RouteCondition — 2 oct 2026", subsection "Confirmación para HAC-13 / PR #95";
+[repository confirmation at 2c48923](https://github.com/Chujutak2024/cargomesh/blob/2c48923aeef8c4399f69e4c017afed075801f8b3/docs/v2-amazon/delivery/SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md#L834).
+The fixture keeps SIMULATED source/confidence, fixed validity controls and INFO as
+informative presentation. It attaches only to an existing leg with approved geometry;
+today `routePreview: null` / `legs: []` means nothing is drawn. It creates no geometry
+and has no effect on ETA, eligibility, capacity or border decisions.
+Run `python supabase/scenarios/v2-road-baseline/verify_route_conditions.py` from
+the repository root; the V2 gate also runs it after seed/verify with local DB references.
+
 Local-only scenario, separate from migrations and V1 fixtures. Follow the
 [bootstrap runbook](../../../docs/v2-amazon/delivery/HAC29_CLEAN_BOOTSTRAP.md) for exact
 reset/seed/verify/cleanup/count commands and external backup requirements.

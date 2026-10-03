@@ -312,6 +312,21 @@ def blocked():
         print('BLOCKED ' + item['owner'] + ': ' + item['scope'], flush=True)
 
 
+def route_condition_checks():
+    # Read canonical references after the guarded baseline seed; fixture stays in JSON.
+    catalog = sql('routecondition-catalog', V2, """select jsonb_build_object(
+      'facilities', coalesce((select jsonb_agg(jsonb_build_object(
+        'facilityId', id, 'label', name, 'countryCode', country_code,
+        'region', region_code, 'city', city, 'lat', latitude, 'lng', longitude)
+        order by id) from public.facilities), '[]'::jsonb),
+      'lanes', coalesce((select jsonb_agg(id order by id)
+        from public.service_lanes), '[]'::jsonb));""")
+    catalog_path = EVIDENCE / 'routecondition-catalog.json'
+    write(catalog_path, catalog + '\n')
+    run('routecondition-contract', [sys.executable, SCENARIO/'verify_route_conditions.py',
+                                  '--catalog-file', catalog_path])
+
+
 def main():
     manifest()
     if ARGS.action in ('v1', 'v2'):
@@ -334,6 +349,7 @@ def main():
         drift()
         script('seed',V2,SCENARIO/'seed.sql')
         script('verify',V2,SCENARIO/'verify.sql')
+        route_condition_checks()
         tests('v2',PROFILE)
         backup_and_cleanup()
 
