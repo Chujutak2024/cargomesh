@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "2.0",
+  "origin": {
+    "facilityId": "11111111-2222-4333-8444-555555555555"
+  },
+  "destination": {
+    "facilityId": "66666666-7777-4888-8999-000000000000"
+  },
+  "pickupWindow": {
+    "startsAt": "2026-10-05T08:00:00Z",
+    "endsAt": "2026-10-05T18:00:00Z"
+  },
+  "deliveryWindow": {
+    "startsAt": "2026-10-07T08:00:00Z",
+    "endsAt": "2026-10-07T20:00:00Z"
+  },
+  "acceptedModes": [
+    "ROAD"
+  ],
+  "requiredEquipment": "REEFER_TRUCK",
+  "cargoSpecification": {
+    "categoryCode": "PHARMA",
+    "description": "Carga farmacéutica sintética con control térmico",
+    "packaging": "PALLET",
+    "totalWeightKg": 4800,
+    "totalVolumeM3": 19.2,
+    "divisible": false,
+    "requirements": [
+      "TEMP_CONTROLLED",
+      "SECURITY_SEAL"
+    ],
+    "temperatureRange": {
+      "minCelsius": 2,
+      "maxCelsius": 8
+    },
+    "units": [
+      {
+        "packageType": "PALLET",
+        "quantity": 8,
+        "weightPerUnitKg": 600,
+        "volumePerUnitM3": 2.4,
+        "dimensionsCm": {
+          "length": 120,
+          "width": 100,
+          "height": 200
+        },
+        "indivisible": true,
+        "stackable": false
+      }
+    ]
+  },
+  "contacts": {
+    "pickup": {
+      "name": "Contacto Sintético Recojo",
+      "phoneE164": "+51900000001",
+      "email": "pickup@example.invalid"
+    },
+    "recipient": {
+      "name": "Contacto Sintético Entrega",
+      "phoneE164": "+51900000002",
+      "email": "recipient@example.invalid"
+    }
+  },
+  "budget": {
+    "amount": 3200,
+    "currency": "USD"
+  }
+}

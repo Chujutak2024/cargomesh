@@ -10,11 +10,13 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "test:v2-road-map": "tsx --test src/features/v2-road-map/road-map-model.test.ts",
     "check:architecture": "node scripts/check-architecture.mjs",
     "test:mcp": "tsx --test src/server/mcp/capabilities.test.ts src/server/mcp/http.test.ts src/server/mcp/auth/configuration.test.ts src/server/mcp/auth/context.test.ts src/server/mcp/auth/request-context.test.ts src/server/mcp/auth/service-token.test.ts src/server/mcp/auth/token-endpoint.test.ts src/server/mcp/auth/metadata.test.ts src/server/mcp/auth/user-token.test.ts src/server/mcp/create-freight-request.test.ts src/server/mcp/submit-freight-request.test.ts src/server/mcp/find-freight-options.test.ts src/server/services/freight-requests/idempotent-draft-creation.test.ts src/server/services/freight-requests/submit-request.test.ts",
     "test:mcp:local": "tsx --test src/server/mcp/local-integration.test.ts",
     "test:narration": "tsx --test src/server/narration/narration.test.ts",
     "test:hono": "tsx --test src/server/hono/routes/freight/requests.test.ts src/server/hono/adapters/freight-request-adapter.test.ts",
+    "test:hac12:http": "node scripts/hac12-http-smoke.mjs",
     "worker:webmcp": "node scripts/autonomous-webmcp-worker.mjs",
     "probe:webmcp": "node scripts/automated-webmcp-spike.mjs",
     "evidence:mcp-client": "node scripts/mcp-external-client-evidence.mjs",
@@ -28,15 +30,17 @@
     "test:external-navigation": "tsx --test src/features/webmcp-runner/external-provider-navigation-adapter.test.ts src/features/webmcp-runner/external-webmcp-validation-harness.test.ts",
     "test:freight-intent": "tsx --test src/features/freight-requests/execution-intent.test.ts",
     "test:freight-intake": "tsx --test src/features/freight-requests/intake.test.ts src/features/freight-requests/intake-ui-adapter.test.ts src/features/freight-requests/manual-intake.test.ts src/features/freight-ui/int02a-client.test.ts src/features/freight-requests/new-draft-ui.test.ts src/server/services/freight-requests/draft-creation-server.test.ts src/features/freight-requests/intake-responsive-overflow.test.ts",
+    "test:v2-intake": "tsx --test src/features/v2-intake/prototype-model.test.ts src/features/v2-intake/v2-intake-client.test.ts src/features/v2-intake/provenance.test.ts src/features/v2-intake/mappers/road-map-props.mapper.test.ts",
     "test:dashboard": "tsx --test src/features/dashboard/dashboard-view-model.test.ts src/features/dashboard/dashboard-map.test.ts",
     "test:a04": "tsx --test src/features/providers/provider-route-params.test.ts src/features/providers/provider-query-tools.test.ts src/features/providers/provider-booking-tools.test.ts",
     "test:booking": "tsx --test src/features/booking/validation.test.ts src/server/services/booking/server-policy.test.ts src/features/booking/bridge-call-id.test.ts src/features/freight-ui/booking-ui-fixtures.test.ts src/features/freight-ui/booking-client.test.ts",
     "test:d1-recommendations": "tsx --test src/features/recommendations/recommendation-webmcp-runtime.test.ts src/features/recommendations/recommendation-draft-client.test.ts src/features/recommendations/recommendation-ui-policy.test.ts",
     "test:d1-writer": "tsx --test src/server/services/recommendations/recommendation-draft-server.test.ts src/server/services/recommendations/recommendation-draft-persistence.test.ts",
-    "test:release": "pnpm test:auth && pnpm test:i18n && pnpm test:landing && pnpm test:discovery && pnpm test:c02 && pnpm test:int02a && pnpm test:int02a-runner && pnpm test:external-navigation && pnpm test:freight-intent && pnpm test:freight-intake && pnpm test:dashboard && pnpm test:a04 && pnpm test:booking && pnpm test:d1-recommendations && pnpm test:d1-writer && pnpm test:mcp && pnpm test:narration && pnpm test:hono",
+    "test:release": "pnpm test:auth && pnpm test:i18n && pnpm test:landing && pnpm test:discovery && pnpm test:c02 && pnpm test:int02a && pnpm test:int02a-runner && pnpm test:external-navigation && pnpm test:freight-intent && pnpm test:freight-intake && pnpm test:dashboard && pnpm test:a04 && pnpm test:booking && pnpm test:d1-recommendations && pnpm test:d1-writer && pnpm test:mcp && pnpm test:narration && pnpm test:hono && pnpm test:hac12",
     "release:preflight": "node scripts/release-preflight.mjs",
     "release:smoke": "node scripts/release-smoke.mjs",
-    "release:verify": "pnpm typecheck && pnpm test:release && pnpm build && pnpm release:preflight"
+    "release:verify": "pnpm typecheck && pnpm test:release && pnpm build && pnpm release:preflight",
+    "test:hac12": "tsx --test src/shared/schemas/v2/contracts.test.ts src/server/modules/freight-requests/application/draft-service.test.ts src/server/modules/intake/application/get-intake-options.test.ts src/server/modules/road-serviceability/domain/evaluate-road.test.ts src/server/modules/road-serviceability/application/evaluate-v2-road.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1137.0",
@@ -57,6 +61,7 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@types/google.maps": "^3.66.4",
     "@types/leaflet": "1.9.21",
     "@types/node": "^22.13.4",
     "@types/react": "^19.0.8",

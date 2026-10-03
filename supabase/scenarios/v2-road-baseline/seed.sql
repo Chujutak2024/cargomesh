@@ -122,4 +122,30 @@ values ('c2380000-0000-4000-8000-000000000001',
         'DIRECT', 'qa-v2:lane-A-to-B', '2026-09-22T12:00:00Z', '2026-09-01T00:00:00Z')
 on conflict (id) do nothing;
 
+
+-- HAC-29: second covered service. Copy baseline nominal maxima, not availability.
+insert into public.carriers (id, name, code, provider_type, status, supports_webmcp)
+values ('c2390000-0000-4000-8000-000000000001', '[SYNTHETIC] QA unknown capacity carrier', 'QA_V2_UNKNOWN', 'CARRIER', 'ACTIVE', false)
+on conflict (id) do nothing;
+insert into public.carrier_services
+  (id, carrier_id, transport_mode, service_type, origin_country, origin_region,
+   destination_country, destination_region, max_capacity_kg, max_volume_m3, active, provider_service_code)
+values ('c23a0000-0000-4000-8000-000000000001', 'c2390000-0000-4000-8000-000000000001', 'ROAD', 'FTL', 'PE', 'Lima', 'PE', 'Arequipa', 10000, 30, true, 'QA-V2-ROAD-UNKNOWN')
+on conflict (id) do nothing;
+insert into public.service_areas
+  (id, carrier_service_id, area_role, coverage, granularity, country_code, city,
+   fulfilment_source, evidence_reference, verified_at, valid_from)
+values
+  ('c23b0000-0000-4000-8000-000000000001', 'c23a0000-0000-4000-8000-000000000001', 'PICKUP', 'INCLUDE', 'CITY', 'PE', 'Lima', 'OWN',
+   'qa-v2:unknown-pickup', '2026-09-22T12:00:00Z', '2026-09-01T00:00:00Z'),
+  ('c23b0000-0000-4000-8000-000000000002', 'c23a0000-0000-4000-8000-000000000001', 'DELIVERY', 'INCLUDE', 'CITY', 'PE', 'Arequipa', 'OWN',
+   'qa-v2:unknown-delivery', '2026-09-22T12:00:00Z', '2026-09-01T00:00:00Z')
+on conflict (id) do nothing;
+insert into public.service_lanes
+  (id, carrier_service_id, pickup_area_id, delivery_area_id, lane_kind, evidence_reference, verified_at, valid_from)
+values ('c23c0000-0000-4000-8000-000000000001', 'c23a0000-0000-4000-8000-000000000001', 'c23b0000-0000-4000-8000-000000000001', 'c23b0000-0000-4000-8000-000000000002', 'DIRECT',
+  'qa-v2:unknown-lane', '2026-09-22T12:00:00Z', '2026-09-01T00:00:00Z')
+on conflict (id) do nothing;
+-- BLOCKED HAC-12: no asset, pool, calendar or reservation tables are manufactured here.
+
 commit;

@@ -55,7 +55,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
     ] },
   ];
   const contexts = [
-    ["/freight-request/new", t("Nueva carga V2", "New shipment V2"), t("Prototipo navegable · no transaccional", "Navigable prototype · non-transactional")],
+    ["/freight-request/new", t("Nueva carga V2", "New shipment V2"), t("Intake cliente · DRAFT y elegibilidad ROAD", "Client intake · DRAFT and ROAD serviceability")],
     ["/booking", "Booking", t("Selección humana y confirmación", "Human selection and confirmation")],
     ["/dispatch", t("Despachos", "Dispatch"), t("Evaluación dinámica de opciones", "Dynamic option evaluation")],
     ["/providers", "Carriers WebMCP", t("Portal y herramientas WebMCP de transportistas", "Carrier portal and WebMCP tools")],

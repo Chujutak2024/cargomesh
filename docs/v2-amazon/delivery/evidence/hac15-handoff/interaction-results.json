@@ -1,0 +1,108 @@
+{
+  "testedAt": "2026-10-01T05:57:25.014Z",
+  "surface": "http://127.0.0.1:3093/hac15-preview",
+  "runner": "Codex integrated browser / CUA",
+  "data": "Local contract fixtures; no HAC-14/API/DB integration",
+  "map": "Google refused port3093 (RefererNotAllowedMapError); OSM fallback for simulated content. Google source fixture contains UNKNOWN and legs:[], no Routes request or invented geometry.",
+  "checks": [
+    {
+      "case": "parent Card B → map: controlled selection, null preview, 2 pins and 0 lines",
+      "pass": true
+    },
+    {
+      "case": "map callback → parent Card A and simulated line",
+      "pass": true
+    },
+    {
+      "case": "Tab + Enter selects B; visible 3px focus and no line",
+      "pass": true
+    },
+    {
+      "case": "Shift+Tab + Space selects A",
+      "pass": true
+    },
+    {
+      "case": "Tab: candidates → map → zoom → attribution → exit; no trap or unnamed overlay stops",
+      "pass": true,
+      "zoomFocus": {
+        "outline": "rgb(8, 127, 138) solid 3px",
+        "title": "Zoom in"
+      }
+    },
+    {
+      "case": "routePreview: null",
+      "pass": true,
+      "pins": 2,
+      "routePaths": 0
+    },
+    {
+      "case": "legs: []",
+      "pass": true,
+      "pins": 2,
+      "routePaths": 0
+    },
+    {
+      "case": "UNKNOWN con puntos",
+      "pass": true,
+      "pins": 2,
+      "routePaths": 0
+    },
+    {
+      "case": "Sin coordenada",
+      "pass": true,
+      "pins": 1,
+      "routePaths": 0
+    },
+    {
+      "case": "Sin coordenadas",
+      "pass": true,
+      "pins": 0,
+      "routePaths": 0
+    },
+    {
+      "case": "Sin candidatos",
+      "pass": true,
+      "pins": 2,
+      "routePaths": 0
+    },
+    {
+      "case": "OSM → Google source UNKNOWN: no fallback line, provider unavailable",
+      "pass": true
+    },
+    {
+      "case": "return to SIMULATED source restores OSM and declared fixture line",
+      "pass": true
+    },
+    {
+      "case": "parent clears selection: no first-candidate fallback",
+      "pass": true
+    },
+    {
+      "case": "390px EN touch-sized control selects B; line removed",
+      "pass": true
+    },
+    {
+      "case": "390px EN map selection restores A without horizontal overflow",
+      "pass": true,
+      "scrollWidth": 375,
+      "width": 390
+    },
+    {
+      "case": "320px EN reflow without horizontal overflow",
+      "pass": true,
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "case": "320px ES reflow and locale switch retains selection",
+      "pass": true,
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "case": "explicit UNKNOWN label when no usable geometry",
+      "pass": true
+    }
+  ],
+  "codeSha": "2c5cc8de7005b1cc5531296f64e56ba4920ebb49"
+}

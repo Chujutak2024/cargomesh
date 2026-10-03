@@ -1,60 +1,59 @@
 import { Hono } from "hono";
-import { authMiddleware, type AuthVariables } from "@/server/hono/middleware/auth";
-import { CreateFreightRequestSchema } from "@/shared/schemas/freight-request";
-import { adaptV2ToLegacyService } from "@/server/hono/adapters/freight-request-adapter";
-import { successResponse } from "@/shared/schemas/api-envelope";
-
-// ---------------------------------------------------------------------------
-// POST /freight/requests — CargoMesh V2
-//
-// Migrated vertical (Slice 1). Parallel to legacy POST /api/freight-requests/drafts.
-//
-// Flow:
-//   1. Auth middleware validates session → injects AuthenticatedMemberContext
-//   2. Zod validates the V2 flat request body
-//   3. adaptV2ToLegacyService() converts flat V2 input → { fields: ... }
-//   4. createFreightRequestDraftServer() is called unchanged
-//
-// Errors are thrown and caught by the global app.onError handler (error-handler.ts).
-// JSON parse failures are caught locally (pre-Zod) to return a clear INVALID_ARGUMENT.
-//
-// Auth note: requireAuthenticatedMember() runs in authMiddleware AND again inside
-// createFreightRequestDraftServer(). This double-check is intentional during the
-// migration: the service owns its own security boundary. The middleware check
-// provides an early-exit guard before any business logic runs.
-// TODO(v2-auth): Once all verticals are migrated, consider a single auth boundary
-// at the middleware level and passing the member context explicitly into services.
-// ---------------------------------------------------------------------------
+import type { AuthVariables } from "@/server/hono/middleware/auth";
+import { v2AuthMiddleware } from "@/server/hono/middleware/v2-auth";
+import { v2Error } from "@/server/hono/middleware/v2-error";
+import { V2DraftError, createV2Draft, getV2Draft } from
+  "@/server/modules/freight-requests/application/draft-service";
 
 const freightRequestsRouter = new Hono<{ Variables: AuthVariables }>();
+freightRequestsRouter.use("*", v2AuthMiddleware);
 
-freightRequestsRouter.post("/", authMiddleware, async (c) => {
-  // Step 1: Parse JSON body — catch parse errors locally for clear error codes
-  let body: unknown;
+freightRequestsRouter.post("/", async (c) => {
   try {
-    body = await c.req.json();
-  } catch {
-    // JSON.parse failures are not Zod errors; handle here to emit the right code.
-    const { errorResponse } = await import("@/shared/schemas/api-envelope");
-    return c.json(
-      errorResponse("INVALID_ARGUMENT", "Request body must be valid JSON."),
-      400,
+    let body: unknown;
+    try { body = await c.req.json(); }
+    catch { throw new V2DraftError("VALIDATION_ERROR", "Request body must be valid JSON.", 400); }
+    const { v2DraftRepository } = await import(
+      "@/server/modules/freight-requests/infrastructure/supabase-draft-repository"
     );
-  }
+    const member = c.get("member");
+    const result = await createV2Draft(body, c.req.header("Idempotency-Key") ?? null,
+      { memberId: member.memberId, organizationId: member.organizationId },
+      await v2DraftRepository());
+    return c.json(result, result.meta.idempotentReplay ? 200 : 201);
+  } catch (error) { return v2Error(c, error); }
+});
 
-  // Step 2: Validate schema — ZodError bubbles to global error handler
-  const input = CreateFreightRequestSchema.parse(body);
+freightRequestsRouter.get("/:id/serviceability", async (c) => {
+  try {
+    const [{ v2DraftRepository }, { createV2ServerSupabaseClient },
+      { loadRoadServices }, { evaluateV2RoadByRequestId, ExpectedDraftVersionSchema }] = await Promise.all([
+      import("@/server/modules/freight-requests/infrastructure/supabase-draft-repository"),
+      import("@/server/db/supabase/v2"),
+      import("@/server/modules/road-serviceability/infrastructure/supabase-road-catalog"),
+      import("@/server/modules/road-serviceability/application/evaluate-v2-road"),
+    ]);
+    const member = c.get("member");
+    const db = await createV2ServerSupabaseClient();
+    const expected = ExpectedDraftVersionSchema.parse(c.req.query("expectedDraftVersion"));
+    return c.json(await evaluateV2RoadByRequestId(
+      c.req.param("id"), expected,
+      { memberId: member.memberId, organizationId: member.organizationId },
+      await v2DraftRepository(), { listRoadServices: () => loadRoadServices(db) },
+    ));
+  } catch (error) { return v2Error(c, error); }
+});
 
-  // Step 3: Adapt V2 flat input to the legacy { fields: ... } contract
-  const legacyInput = adaptV2ToLegacyService(input);
-
-  // Step 4: Call the existing service function (unchanged)
-  const { createFreightRequestDraftServer } = await import(
-    "@/server/services/freight-requests/draft-creation-server"
-  );
-
-  const result = await createFreightRequestDraftServer(legacyInput);
-  return c.json(successResponse(result), 201);
+freightRequestsRouter.get("/:id", async (c) => {
+  try {
+    const { v2DraftRepository } = await import(
+      "@/server/modules/freight-requests/infrastructure/supabase-draft-repository"
+    );
+    const member = c.get("member");
+    return c.json(await getV2Draft(c.req.param("id"),
+      { memberId: member.memberId, organizationId: member.organizationId },
+      await v2DraftRepository()));
+  } catch (error) { return v2Error(c, error); }
 });
 
 export { freightRequestsRouter };

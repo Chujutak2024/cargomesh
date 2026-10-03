@@ -1,0 +1,36 @@
+{
+  "source": "https://linear.app/hackatonteamcargomesh/document/hac-27-mapeo-57-clases-v2-a-bdapi-patrones-atomicidad-y-contratos-v20-d2a9ef6d0876",
+  "sourceVersion": "2026-09-27T02:49:53.762Z",
+  "sourceSha256LF": "cc8efccab5e902ba8897159039d14f02f46d2090ea8bb2c2f616fd5a432f9c38",
+  "decision": "https://linear.app/hackatonteamcargomesh/issue/HAC-29",
+  "mapping": {
+    "8f5b7d42-3c1a-4b9e-8d2f-1a2b3c4d5e6f": "c2300000-0000-4000-8000-000000000001",
+    "11111111-2222-4333-8444-555555555555": "c2330000-0000-4000-8000-000000000001",
+    "66666666-7777-4888-8999-000000000000": "c2330000-0000-4000-8000-000000000002",
+    "c1000000-0000-4000-8000-000000000001": "c2340000-0000-4000-8000-000000000001",
+    "c1000000-0000-4000-8000-000000000002": "c2390000-0000-4000-8000-000000000001",
+    "d2000000-0000-4000-8000-000000000001": "c2360000-0000-4000-8000-000000000001",
+    "d2000000-0000-4000-8000-000000000002": "c23a0000-0000-4000-8000-000000000001",
+    "e3000000-0000-4000-8000-000000000001": "c2380000-0000-4000-8000-000000000001",
+    "e3000000-0000-4000-8000-000000000002": "c23c0000-0000-4000-8000-000000000001",
+    "f4000000-0000-4000-8000-000000000001": "c23d0000-0000-4000-8000-000000000001",
+    "f4000000-0000-4000-8000-000000000002": "c23e0000-0000-4000-8000-000000000001",
+    "a5000000-0000-4000-8000-000000000001": "c23f0000-0000-4000-8000-000000000001",
+    "a9c4e112-84b1-47d0-91e3-52f8c7a6b501": "$createdRequestId"
+  },
+  "reservedNotSeeded": [
+    "c23d0000-0000-4000-8000-000000000001",
+    "c23e0000-0000-4000-8000-000000000001",
+    "c23f0000-0000-4000-8000-000000000001"
+  ],
+  "derivedFacilities": {
+    "Piura": "c2330000-0000-4000-8000-000000000003",
+    "foreignTenantB": "c2330000-0000-4000-8000-000000000004"
+  },
+  "limitations": [
+    "No request rows are seeded; $createdRequestId must be bound from the real native writer.",
+    "c23d-c23f are reservations only, not evidence of existing assets/pools/calendars.",
+    "Regions and coordinates are absent from the existing canonical facilities; payload coordinates are null, region omitted.",
+    "The two coverage/lane controls are executable now. A positive capacity calendar and all HTTP outcomes remain BLOCKED."
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-02T05:14:51.461Z",
+  "url": "http://127.0.0.1:8080/hac15-preview",
+  "mode": "development",
+  "kind": "LOCAL FIXTURE QA — NOT HAC-14/API/DB",
+  "checks": [
+    {
+      "case": "zero candidates: Piura → Arequipa",
+      "pass": true
+    },
+    {
+      "case": "Enter map B updates parent selection and removes geometry",
+      "pass": true
+    },
+    {
+      "case": "Space parent card A updates map selection",
+      "pass": true
+    },
+    {
+      "case": "clear selection never selects first candidate",
+      "pass": true
+    },
+    {
+      "case": "null origin coordinates: destination pin only, no line",
+      "pass": true
+    },
+    {
+      "case": "both endpoints null: empty map, no pins/line",
+      "pass": true
+    },
+    {
+      "case": "empty legs: no geometry or metrics",
+      "pass": true
+    },
+    {
+      "case": "invalid UNKNOWN with points never draws supplied points",
+      "pass": true
+    },
+    {
+      "case": "390px EN zero candidates/ineligible; no horizontal overflow",
+      "pass": true,
+      "viewport": {
+        "page": 375,
+        "width": 390
+      }
+    },
+    {
+      "case": "390px EN keyboard selects null-preview B",
+      "pass": true
+    },
+    {
+      "case": "Tab exits map attribution without keyboard trap",
+      "pass": true,
+      "focus": ""
+    },
+    {
+      "case": "320px ES null preview reflows without horizontal overflow",
+      "pass": true,
+      "viewport": {
+        "page": 320,
+        "width": 320
+      }
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "timestamp": "2026-10-02T05:11:04.226Z",
+      "message": "As of February 21st, 2024, google.maps.Marker is deprecated. Please use google.maps.marker.AdvancedMarkerElement instead. At this time, google.maps.Marker is not scheduled to be discontinued, but google.maps.marker.AdvancedMarkerElement is recommended over google.maps.Marker. While google.maps.Marker will continue to receive bug fixes for any major regressions, existing bugs in google.maps.Marker will not be addressed. At least 12 months notice will be given before support is discontinued. Please see [URL redacted] for additional details and [URL redacted] for the migration guide."
+    }
+  ]
+}

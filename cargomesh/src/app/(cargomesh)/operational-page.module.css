@@ -1,4 +1,4 @@
-.page { display: grid; width: 100%; max-width: 100rem; gap: 1rem; margin: 0 auto; }
+.page { display: grid; width: 100%; max-width: var(--page-max-wide); gap: 1rem; margin: 0 auto; }
 .header { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding-top: 0.2rem; }
 .header h1 { margin: 0.3rem 0; color: #123c3a; font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.15; }
 .header p { max-width: 48rem; margin: 0; color: #687573; font-size: 0.77rem; line-height: 1.55; }

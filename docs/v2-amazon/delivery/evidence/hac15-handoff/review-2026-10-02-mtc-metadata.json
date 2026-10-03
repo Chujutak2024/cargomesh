@@ -1,0 +1,58 @@
+{
+  "retrievedAtUtc": "2026-10-02T17:31:25.4474391Z",
+  "source": "https://www.idep.gob.pe/geoportal/rest/services/INSTITUCIONALES/MTC/MapServer/10?f=pjson",
+  "id": 10,
+  "name": "RED VIAL NACIONAL",
+  "geometryType": "esriGeometryPolyline",
+  "capabilities": "Map,Query,Data",
+  "spatialReference": {
+    "wkid": 4326,
+    "latestWkid": 4326,
+    "xyTolerance": 8.983152841195215E-09,
+    "zTolerance": 0.001,
+    "mTolerance": 0.001,
+    "falseX": -400,
+    "falseY": -400,
+    "xyUnits": 11258999068426.24,
+    "falseZ": -100000,
+    "zUnits": 10000,
+    "falseM": -100000,
+    "mUnits": 10000
+  },
+  "copyrightText": "",
+  "maxRecordCount": 1000,
+  "fields": [
+    {
+      "name": "OBJECTID",
+      "type": "esriFieldTypeOID"
+    },
+    {
+      "name": "FECHA_ACT",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "Trayectori",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "RUTA",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "ESTADO",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "Fecha_GPS",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "Tramo",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "CAT_VIAL",
+      "type": "esriFieldTypeString"
+    }
+  ]
+}
