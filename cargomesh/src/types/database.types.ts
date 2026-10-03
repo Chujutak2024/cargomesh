@@ -9,6 +9,60 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      mcp_account_links: {
+        Row: {
+          id: string
+          auth_user_id: string
+          organization_member_id: string
+          oauth_client_id: string
+          organization_id: string
+          scopes: string[]
+          status: string
+          linked_at: string
+          expires_at: string
+          revoked_at: string | null
+          linked_by_user_id: string
+          revoked_by_user_id: string | null
+          revocation_reason: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          auth_user_id: string
+          organization_member_id: string
+          oauth_client_id: string
+          organization_id: string
+          scopes: string[]
+          status?: string
+          linked_at?: string
+          expires_at: string
+          revoked_at?: string | null
+          linked_by_user_id: string
+          revoked_by_user_id?: string | null
+          revocation_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          auth_user_id?: string
+          organization_member_id?: string
+          oauth_client_id?: string
+          organization_id?: string
+          scopes?: string[]
+          status?: string
+          linked_at?: string
+          expires_at?: string
+          revoked_at?: string | null
+          linked_by_user_id?: string
+          revoked_by_user_id?: string | null
+          revocation_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       booking_events: {
         Row: {
           booking_id: string

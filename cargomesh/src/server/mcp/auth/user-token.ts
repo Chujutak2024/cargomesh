@@ -6,12 +6,15 @@ export type McpAccountLink = {
   authUserId: string;
   oauthClientId: string;
   organizationId: string;
+  organizationMemberId: string;
   status: "ACTIVE" | "REVOKED";
   scopes: readonly string[];
+  expiresAt: string | null;
+  revokedAt: string | null;
 };
 
 export type McpAccountLinkRepository = {
-  findByUserAndClient(authUserId: string, oauthClientId: string): Promise<McpAccountLink | null>;
+  findByUserAndClient(authUserId: string, oauthClientId: string, accessToken: string): Promise<McpAccountLink | null>;
 };
 
 export type McpMembership = {
@@ -50,6 +53,35 @@ function configuredOAuthClientId(): string {
   return clientId;
 }
 
+// getUser verifies the token with the configured Supabase Auth project. These
+// claim checks additionally bind that verified user to this OAuth client and
+// project; a regular Supabase session must never inherit an MCP account link.
+export function requireSupabaseOAuthClaims(
+  claims: ReturnType<typeof decodeJwt>,
+  userId: string,
+  clientId: string,
+  supabaseUrl: string,
+  nowSeconds = Math.floor(Date.now() / 1000),
+): void {
+  let expectedIssuer: string;
+  try {
+    const url = new URL(supabaseUrl);
+    if (!(["https:", "http:"].includes(url.protocol)) || url.search || url.hash) throw new Error();
+    expectedIssuer = `${url.origin}${url.pathname.replace(/\/$/, "")}/auth/v1`;
+  } catch {
+    throw new Error("UNAUTHENTICATED: Supabase OAuth issuer is not configured.");
+  }
+  if (
+    claims.iss !== expectedIssuer || claims.sub !== userId ||
+    claims.aud !== "authenticated" || claims.role !== "authenticated" ||
+    claims.client_id !== clientId ||
+    typeof claims.iat !== "number" || claims.iat > nowSeconds + 60 ||
+    typeof claims.exp !== "number" || claims.exp <= nowSeconds
+  ) {
+    throw new Error("UNAUTHENTICATED: User token client binding is invalid.");
+  }
+}
+
 async function verifySupabaseIdentity(accessToken: string): Promise<VerifiedSupabaseIdentity> {
   if (process.env.CARGOMESH_MCP_USER_BEARER_ENABLED !== "true") {
     throw new Error("UNAUTHENTICATED: MCP user bearer authentication is disabled.");
@@ -61,19 +93,31 @@ async function verifySupabaseIdentity(accessToken: string): Promise<VerifiedSupa
   try { claims = decodeJwt(accessToken); } catch {
     throw new Error("UNAUTHENTICATED: Invalid Supabase user token.");
   }
-  const oauthClientId = typeof claims.client_id === "string"
-    ? claims.client_id
-    : typeof claims.azp === "string" ? claims.azp : null;
-  if (claims.sub !== user.id || oauthClientId !== configuredOAuthClientId()) {
-    throw new Error("UNAUTHENTICATED: User token client binding is invalid.");
-  }
+  const oauthClientId = configuredOAuthClientId();
+  requireSupabaseOAuthClaims(claims, user.id, oauthClientId, process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
   return { userId: user.id, userEmail: user.email ?? "", oauthClientId };
 }
 
-const blockedAccountLinks: McpAccountLinkRepository = {
-  async findByUserAndClient() {
-    // Fail closed until persistent account links have an approved implementation.
-    throw new Error("FORBIDDEN: MCP account-link persistence is not configured.");
+const supabaseAccountLinks: McpAccountLinkRepository = {
+  async findByUserAndClient(authUserId, oauthClientId, accessToken) {
+    const client = createUserAccessSupabaseClient(accessToken);
+    const { data, error } = await client.from("mcp_account_links")
+      .select("auth_user_id,oauth_client_id,organization_id,organization_member_id,status,scopes,expires_at,revoked_at")
+      .eq("auth_user_id", authUserId)
+      .eq("oauth_client_id", oauthClientId)
+      .maybeSingle();
+    if (error) throw new Error("FORBIDDEN: MCP account-link lookup failed.");
+    if (!data) return null;
+    return {
+      authUserId: data.auth_user_id,
+      oauthClientId: data.oauth_client_id,
+      organizationId: data.organization_id,
+      organizationMemberId: data.organization_member_id,
+      status: data.status as McpAccountLink["status"],
+      scopes: data.scopes,
+      expiresAt: data.expires_at,
+      revokedAt: data.revoked_at,
+    };
   },
 };
 
@@ -98,7 +142,7 @@ const supabaseMemberships: McpMembershipRepository = {
 
 const defaults: Dependencies = {
   verifyIdentity: verifySupabaseIdentity,
-  accountLinks: blockedAccountLinks,
+  accountLinks: supabaseAccountLinks,
   memberships: supabaseMemberships,
 };
 
@@ -107,10 +151,12 @@ export async function authenticateMcpUserBearer(
   dependencies: Dependencies = defaults,
 ): Promise<AuthenticatedMcpUserBearer> {
   const identity = await dependencies.verifyIdentity(accessToken);
-  const link = await dependencies.accountLinks.findByUserAndClient(identity.userId, identity.oauthClientId);
+  const link = await dependencies.accountLinks.findByUserAndClient(identity.userId, identity.oauthClientId, accessToken);
   if (
     !link || link.status !== "ACTIVE" || link.authUserId !== identity.userId ||
-    link.oauthClientId !== identity.oauthClientId || !link.scopes.includes("mcp:tools")
+    link.oauthClientId !== identity.oauthClientId || !link.scopes.includes("mcp:tools") ||
+    link.revokedAt !== null || !link.expiresAt ||
+    !Number.isFinite(Date.parse(link.expiresAt)) || Date.parse(link.expiresAt) <= Date.now()
   ) throw new Error("FORBIDDEN: No active MCP account link for this user and client.");
 
   const membership = await dependencies.memberships.findActive(
@@ -120,7 +166,7 @@ export async function authenticateMcpUserBearer(
   );
   if (
     !membership || membership.status !== "ACTIVE" ||
-    membership.organizationId !== link.organizationId
+    membership.organizationId !== link.organizationId || membership.memberId !== link.organizationMemberId
   ) throw new Error("FORBIDDEN: Linked organization membership is not active.");
 
   return {

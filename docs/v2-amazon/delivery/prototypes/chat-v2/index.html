@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CargoMesh · prototipo de conversación V2</title>
+  <style>
+    :root { color-scheme: light; font: 16px/1.5 system-ui, sans-serif; background: #edf3f4; color: #102c36; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible { outline: 3px solid #ffac55; outline-offset: 2px; }
+    .page { max-width: 1050px; margin: 0 auto; padding: 6vw 24px; }
+    .eyebrow { color: #006e72; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; font-size: .76rem; }
+    h1 { font-size: clamp(2.3rem, 5vw, 4.8rem); line-height: 1.08; max-width: 720px; margin: 12px 0; }
+    .page p { max-width: 620px; color: #46636b; }
+    .card { border: 1px solid #c8d9dc; border-radius: 18px; padding: 22px; margin-top: 32px; background: white; max-width: 640px; }
+    .fab { position: fixed; right: 24px; bottom: 24px; border: 0; border-radius: 999px; padding: 15px 22px; background: #00565f; color: white; box-shadow: 0 16px 36px #103a4444; font-weight: 800; z-index: 10; }
+    .panel { position: fixed; right: 24px; bottom: 92px; width: min(410px, calc(100vw - 32px)); height: min(650px, calc(100vh - 120px)); background: #fff; border: 1px solid #bdd3d6; border-radius: 22px; box-shadow: 0 24px 75px #0b2d3c44; display: flex; flex-direction: column; overflow: hidden; z-index: 10; }
+    [hidden] { display: none !important; }
+    header { background: #073943; color: white; padding: 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    header h2 { margin: 0; font-size: 1.1rem; }
+    header p { margin: 2px 0 0; font-size: .82rem; color: #bfdadd; }
+    .close { border: 0; border-radius: 8px; background: #22545d; color: white; padding: 5px 10px; }
+    .badge { margin: 12px 16px 0; padding: 7px 11px; background: #fff3d9; border: 1px solid #e5bc72; border-radius: 9px; color: #704612; font-weight: 800; font-size: .78rem; }
+    .history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .message { max-width: 88%; padding: 11px 13px; border-radius: 14px; background: #eef5f5; white-space: pre-line; }
+    .message.user { align-self: flex-end; background: #005d67; color: white; }
+    .message small { display: block; margin-top: 6px; opacity: .75; }
+    .choices { display: grid; gap: 8px; }
+    .choice { text-align: left; padding: 11px; border: 1px solid #9dbec3; border-radius: 11px; color: #103a43; background: #fff; }
+    .choice:hover { background: #eaf5f4; }
+    .choice small { display: block; color: #5c7074; }
+    .suggestions { padding: 8px 16px; display: flex; flex-wrap: wrap; gap: 7px; }
+    .suggestions button { border: 1px solid #a4c4c6; border-radius: 999px; background: #f2fafa; color: #07555e; padding: 5px 10px; font-size: .82rem; }
+    form { display: flex; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid #dce8e9; }
+    input { flex: 1; min-width: 0; border: 1px solid #9dbec3; border-radius: 10px; padding: 10px; }
+    form button { background: #005d67; color: white; border: 0; border-radius: 10px; padding: 0 15px; font-weight: 800; }
+    .foot { padding: 0 16px 10px; font-size: .72rem; color: #64777a; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    @media (max-width: 600px) { .page { padding: 48px 20px; } .panel { inset: 0; width: 100vw; height: 100dvh; border: 0; border-radius: 0; } .fab { right: 16px; bottom: 16px; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="eyebrow">CargoMesh V2 · diseño de canal</div>
+    <h1>Planifica una solicitud de flete con claridad.</h1>
+    <p>Explora el patrón conversacional propuesto. Este archivo es un prototipo aislado: no consulta transportistas ni el servicio ROAD.</p>
+    <div class="card"><strong>Estado de la integración</strong><p>La identidad MCP, la elegibilidad ROAD y la resolución de lugares están en desarrollo. El chat de prueba separa sus ejemplos simulados de cualquier resultado operativo.</p></div>
+  </main>
+  <button class="fab" id="open" type="button" aria-controls="panel" aria-expanded="false">Conversar sobre un flete</button>
+  <section class="panel" id="panel" role="dialog" aria-modal="false" aria-labelledby="chat-title" hidden>
+    <header><div><h2 id="chat-title" tabindex="-1">Asistente CargoMesh</h2><p>Solicitudes y elegibilidad ROAD</p></div><button class="close" id="close" type="button" aria-label="Cerrar chat">✕</button></header>
+    <div class="badge" role="status">SIMULACIÓN · Sin conexión al dominio ni a Alexa+</div>
+    <div class="history" id="history" aria-live="polite" aria-relevant="additions text"></div>
+    <div class="suggestions" id="suggestions"></div>
+    <form id="form"><label for="input" class="sr-only">Escribe tu mensaje</label><input id="input" autocomplete="off" placeholder="Escribe un lugar…" required /><button type="submit">Enviar</button></form>
+    <div class="foot">Sin ofertas, precios ni reservas. No ingreses datos personales.</div>
+  </section>
+  <script>
+    const panel = document.getElementById('panel');
+    const trigger = document.getElementById('open');
+    const closeButton = document.getElementById('close');
+    const history = document.getElementById('history');
+    const suggestions = document.getElementById('suggestions');
+    const input = document.getElementById('input');
+    let stage = 'origin';
+    let origin = '';
+    let destination = '';
+    function message(text, kind = 'assistant', source = '') {
+      const el = document.createElement('div'); el.className = 'message ' + kind;
+      el.textContent = text;
+      if (source) { const meta = document.createElement('small'); meta.textContent = source; el.append(meta); }
+      history.append(el); history.scrollTop = history.scrollHeight;
+    }
+    function actions(items) {
+      suggestions.replaceChildren();
+      for (const [label, action] of items) { const button = document.createElement('button'); button.type = 'button'; button.textContent = label; button.addEventListener('click', action); suggestions.append(button); }
+    }
+    function candidates(query, role) {
+      const list = document.createElement('div'); list.className = 'choices';
+      const sample = [
+        { label: query + ' · centro', precision: 'área aproximada', source: 'Dato sintético del prototipo' },
+        { label: query + ' · zona industrial', precision: 'área aproximada', source: 'Dato sintético del prototipo' }
+      ];
+      message('Encontré dos coincidencias simuladas. Elige una para revisar; aún no se guardará en una solicitud.');
+      for (const [index, item] of sample.entries()) {
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'choice';
+        button.textContent = `${index + 1}. ${item.label}`;
+        const detail = document.createElement('small'); detail.textContent = `${item.source} · Precisión: ${item.precision}`; button.append(detail);
+        button.addEventListener('click', () => {
+          list.remove(); message(item.label, 'user');
+          message(`¿Confirmas ${item.label} como ${role === 'origin' ? 'origen' : 'destino'} de este ensayo?`);
+          actions([['Confirmar elección', () => confirm(item.label, role)], ['Buscar de nuevo', () => { stage = role; actions([]); message('Escribe una ubicación más precisa.'); input.focus(); }]]);
+        }); list.append(button);
+      }
+      history.append(list); history.scrollTop = history.scrollHeight;
+      actions([]);
+    }
+    function confirm(label, role) {
+      message('Confirmo esta elección para el ensayo.', 'user'); actions([]);
+      if (role === 'origin') { origin = label; stage = 'destination'; message('Origen seleccionado en este prototipo. ¿Cuál es el destino?'); }
+      else { destination = label; stage = 'cargo'; message(`Trayecto de ensayo: ${origin} → ${destination}. Indica carga y fecha de recojo para continuar. No se ha creado una solicitud real.`); }
+      input.focus();
+    }
+    function submit(value) {
+      message(value, 'user');
+      if (stage === 'origin' || stage === 'destination') { const role = stage; stage = 'choose'; candidates(value, role); return; }
+      if (stage === 'choose') { message('Elige una coincidencia o busca de nuevo. No confirmaré un lugar por texto ambiguo.'); return; }
+      if (stage === 'cargo') { stage = 'result'; message('Elegibilidad ROAD: DESCONOCIDA. Motivo: este prototipo no consulta capacidad, ventana ni cobertura. Fuente: ninguna; no hay evaluación del dominio.'); actions([['Consultar precio', () => message('No disponible: no existe una oferta atribuible y vigente de un transportista.')], ['Reservar', () => message('No disponible: no hay oferta ni consentimiento de reserva.')]]); return; }
+      message('Este prototipo terminó. Para iniciar otro ensayo, cierra y vuelve a abrir.');
+    }
+    function open() { panel.hidden = false; trigger.hidden = true; trigger.setAttribute('aria-expanded','true'); if (!history.childElementCount) message('Hola. Empecemos por el origen de tu flete. Puedes escribir una ciudad o dirección. Los candidatos serán simulados.'); document.getElementById('chat-title').focus(); input.focus(); }
+    function close() { panel.hidden = true; trigger.hidden = false; trigger.setAttribute('aria-expanded','false'); trigger.focus(); }
+    trigger.addEventListener('click', open); closeButton.addEventListener('click', close);
+    document.addEventListener('keydown', event => { if (!panel.hidden && event.key === 'Escape') close(); });
+    document.getElementById('form').addEventListener('submit', event => { event.preventDefault(); const value = input.value.trim(); if (value) { submit(value); input.value = ''; } });
+    if (new URLSearchParams(location.search).get('preview') === 'open') open();
+  </script>
+</body>
+</html>
