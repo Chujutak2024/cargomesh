@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { authenticateMcpUserBearer, type McpAccountLink } from "./user-token";
+import { authenticateMcpUserBearer, requireSupabaseOAuthClaims, type McpAccountLink } from "./user-token";
 
 const identity = { userId: "user-a", userEmail: "a@example.invalid", oauthClientId: "alexa-client" };
 const link: McpAccountLink = {
-  authUserId: "user-a", oauthClientId: "alexa-client", organizationId: "org-a",
+  authUserId: "user-a", oauthClientId: "alexa-client", organizationId: "org-a", organizationMemberId: "member-a",
   status: "ACTIVE", scopes: ["mcp:tools"],
+  expiresAt: "2999-01-01T00:00:00.000Z", revokedAt: null,
 };
 const membership = {
   memberId: "member-a", organizationId: "org-a", role: "SUPERVISOR" as const, status: "ACTIVE",
@@ -30,10 +31,13 @@ test("active user/client link and exact membership produce a request-scoped user
   });
 });
 
-test("account linking fails closed for missing, revoked, wrong-client and unauthorized-scope links", async () => {
+test("account linking fails closed for missing, revoked, expired, wrong-client and unauthorized-scope links", async () => {
   const rejected = [
     null,
     { ...link, status: "REVOKED" },
+    { ...link, revokedAt: "2026-01-01T00:00:00.000Z" },
+    { ...link, expiresAt: "2020-01-01T00:00:00.000Z" },
+    { ...link, expiresAt: "invalid" },
     { ...link, oauthClientId: "other-client" },
     { ...link, scopes: [] },
   ];
@@ -56,9 +60,35 @@ test("the link fixes organization A and cannot be replaced by organization B mem
 });
 
 test("inactive or absent exact membership is rejected", async () => {
-  for (const candidate of [null, { ...membership, status: "INACTIVE" }]) {
+  for (const candidate of [null, { ...membership, status: "INACTIVE" }, { ...membership, memberId: "other-member" }]) {
     await assert.rejects(authenticateMcpUserBearer("user-token", dependencies({
       memberships: { findActive: async () => candidate },
     })), /FORBIDDEN/);
   }
+});
+
+test("verified OAuth claims require the configured issuer, audience, expiry and exact client_id", () => {
+  const now = 1_800_000_000;
+  const claims = {
+    iss: "https://v2.example.supabase.co/auth/v1",
+    sub: "user-a",
+    aud: "authenticated",
+    role: "authenticated",
+    client_id: "alexa-client",
+    iat: now - 10,
+    exp: now + 900,
+  };
+  const check = (candidate: Record<string, unknown>) =>
+    requireSupabaseOAuthClaims(candidate, "user-a", "alexa-client", "https://v2.example.supabase.co", now);
+  assert.doesNotThrow(() => check(claims));
+  for (const candidate of [
+    { ...claims, iss: "https://other.example.supabase.co/auth/v1" },
+    { ...claims, sub: "user-b" },
+    { ...claims, aud: "other-resource" },
+    { ...claims, role: "service_role" },
+    { ...claims, client_id: undefined, azp: "alexa-client" },
+    { ...claims, client_id: "other-client" },
+    { ...claims, exp: now },
+    { ...claims, iat: now + 61 },
+  ]) assert.throws(() => check(candidate), /UNAUTHENTICATED/);
 });
