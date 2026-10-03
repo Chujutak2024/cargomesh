@@ -20,3 +20,7 @@ Los fixtures deliberadamente **no** declaran precio, oferta o booking. `REFRIGER
 Las respuestas de serviceability son casos **independientes**, no una misma evaluación con conteos acumulados. Para el mapper de Luis, use `request-response.json` junto con una de ellas. El backend debe validar y producir las mismas formas, incluyendo `schemaVersion`, estados y `null`; no tomar estos ejemplos como prueba de que el servicio ya corre. Fuente normativa: [contrato HAC-27](../../SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md).
 
 Corte 2 oct: ejemplos `FTL` y `responseChannels: []`; no hay canal de respuesta V2 publicado. Geometría SIMULATED en estos casos independientes; HAC-12 devuelve routePreview:null en el escenario ejecutable actual. `meta.environmentProfile: v2-clean` conserva la forma literal del DTO canónico; estos archivos siguen siendo fixtures estáticos explícitos, no capturas de un servicio alojado.
+
+## Correspondencia para integración
+
+[Mapeo explícito de todas las referencias ilustrativas](./SCENARIO_MAPPING.md). Distingue IDs canónicos, categorías de referencia e identificadores sin fila equivalente; no realizar sustitución ciega de IDs o snapshots.

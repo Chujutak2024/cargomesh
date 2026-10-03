@@ -902,7 +902,7 @@ Tabla `public.organization_cargo_profiles`; RLS activada. Lectura sujeta a polí
 | `id: UUID` | PERSISTIDO | public.organization_cargo_profiles.id | Columna real; no acredita por sí sola flujo de edición, CRUD ni integración live. |
 | `name: string` | PERSISTIDO | public.organization_cargo_profiles.profile_name | Columna real; no acredita por sí sola flujo de edición, CRUD ni integración live. |
 | `typicalUnits: CargoUnitTemplate[]` | PARCIAL | organization_cargo_profiles.typical_entry_quantity / typical_unit_weight_kg / typical_units_per_entry / typical_length_cm / typical_width_cm / typical_height_cm | Plantilla plana, no CargoUnitTemplate[]. Precarga no revalida capacidad ni cotización; colección completa pendiente. |
-| `requirements: CargoRequirement[]` | PERSISTIDO | organization_cargo_profiles.default_requirements JSONB | Plantilla de captura; no constituye certificación de recurso. |
+| `requirements: CargoRequirement[]` | PARCIAL | organization_cargo_profiles.default_requirements JSONB **objeto**, CHECK jsonb_typeof = object | UML exige array; no existe transformación ni round-trip array↔objeto implementado. No acredita persistencia completa del atributo ni certificación de recurso. |
 | `preferredEquipment?: EquipmentType` | PARCIAL | organization_cargo_profiles.preferred_vehicle_classes | Vocabulario histórico de recomendaciones; no convertir REFRIGERATED_TRUCK a REEFER_TRUCK sin mapeo explícito. |
 | `updatedAt: Instant` | PERSISTIDO | public.organization_cargo_profiles.updated_at | Columna real; no acredita por sí sola flujo de edición, CRUD ni integración live. |
 
@@ -1328,7 +1328,7 @@ Se contrasta el vínculo físico cuando existe. Una FK acredita referencialidad,
 | 74 | `FreightRequest` → `ShipmentContact` | receptor de entrega · RECIPIENT | DTO/JSON PARCIAL: consultar filas de atributos; ruta backend null, no todas las asociaciones del diseño implementadas. |
 | 75 | `CarrierOperator` → `CarrierOffer` | emite manualmente | DIFERIDO: sin flujo V2 operativo; conservar relación para su hito. |
 | 76 | `CarrierOperator` → `Carrier` | pertenece a | DIFERIDO: sin flujo V2 operativo; conservar relación para su hito. |
-| 77 | `AssetCargoCapability` → `TransportAsset` | capacidades de carga | FK: asset_cargo_capabilities: FOREIGN KEY (transport_asset_id) REFERENCES transport_assets(id) ON DELETE CASCADE |
+| 77 | `AssetCargoCapability` → `TransportAsset` | capacidades de carga | **DIVERGENCIA DE CARDINALIDAD**: UML capability 1 / asset 0..*; BD cada capability tiene un asset, cada asset 0..N capabilities. FK transport_asset_id → transport_assets(id) no acredita la multiplicidad UML. |
 | 78 | `CargoCategory` → `AssetCargoCapability` | categoría compatible | FK: asset_cargo_capabilities: FOREIGN KEY (cargo_category_id) REFERENCES cargo_categories(id) |
 | 79 | `RouteSimulationScenario` → `RouteCorridor` | red sintética versionada | FIXTURE PARCIAL: escenario aislado y resultado esperado; sin vínculo persistente completo. |
 | 80 | `RouteSimulationScenario` → `RouteCondition` | inyecta eventos | FALTANTE S2: fixture y proyección HAC-13/HAC-15; no feed live. |

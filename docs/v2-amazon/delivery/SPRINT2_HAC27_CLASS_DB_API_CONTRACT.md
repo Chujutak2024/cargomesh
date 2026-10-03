@@ -86,9 +86,9 @@ Como varias tareas corren en paralelo sin bloqueos artificiales en cascada, se f
 | 8 | `CarrierService` | `«existente»` | Tabla `carrier_services` extendida en `HAC-21` | **Tabla persistente** | `public.carrier_services` | Carrier / Catálogo (`carrier_id` RLS) | Sprint 1 Base / Activo S2 |
 | 9 | `ServiceLane` | `«existente»` | Creada en `HAC-21` (`service_lanes`) | **Tabla persistente** | `public.service_lanes` (roles `pickup_area_id` y `delivery_area_id` dirigidos) | Carrier / Catálogo (`service_id` RLS) | Sprint 1 Base / Activo S2 |
 | 10 | `ResponseIntegration` | `«HITO 3–4»` | No existe (en V1 era columna `provider_url`) | **Diferido HITO 3–4 (`schema-ready` opcional)** | Configuración de canal por `CarrierService` (tabla/JSONB en HITO 3) | Carrier / Admin | HITO 3–4 |
-| 11 | `CapacitySource` | `«interface · HITO 2»` | No existe | **Interfaz TypeScript + Guarda XOR en BD** | Contrato TS `CapacitySource` + `CHECK (num_nonnulls(transport_asset_id, capacity_pool_id) = 1)` en `capacity_calendars` | N/A (Interfaz de dominio) — `HAC-12` | **Sprint 2 Operativo** |
+| 11 | `CapacitySource` | `«interface · HITO 2»` | No existe | **Interfaz TypeScript + Guarda XOR en BD** | Representación parcial: tipo TS `Capacity` del evaluador + XOR `CHECK (num_nonnulls(transport_asset_id, capacity_pool_id) = 1)` en `capacity_calendars`; puerto UML `CapacitySource.availability` pendiente | N/A (Interfaz de dominio) — `HAC-12` | **Sprint 2 Operativo** |
 | 12 | `TransportAsset` | `«HITO 2 · tabla V1»` | Tabla `vehicles` V1 (solo placa/capacidad nominal) | **Tabla persistente V2** | `public.transport_assets` (o extensión aislada V2 con modo, tipo de equipo, peso/volumen útiles) | Carrier / Servicio (`carrier_id` RLS) — `HAC-12` | **Sprint 2 Operativo** |
-| 13 | `RoadVehicle` | `«HITO 2»` | Filas en `vehicles` V1 | **Especialización de `TransportAsset` (`mode = 'ROAD'`)** | `public.transport_assets` donde `mode = 'ROAD'` + metadatos viales (`axle_config`, `plate`, `vehicle_Role`) | Carrier / Servicio (`carrier_id` RLS) — `HAC-12` | **Sprint 2 Operativo** |
+| 13 | `RoadVehicle` | `«HITO 2»` | Filas en `vehicles` V1 | **Especialización de `TransportAsset` (`mode = 'ROAD'`)** | `public.transport_assets` donde `mode = 'ROAD'` + metadatos viales (`axle_config`, `plate`, `asset_role`) | Carrier / Servicio (`carrier_id` RLS) — `HAC-12` | **Sprint 2 Operativo** |
 | 14 | `CapacityPool` | `«HITO 2»` | No existe en V1 | **Tabla persistente V2** | `public.capacity_pools` (cupo agregado por `carrier_service_id` cuando no se expone vehículo individual) | Carrier / Servicio (`carrier_service_id` RLS) — `HAC-12` | **Sprint 2 Operativo** |
 | 15 | `CapacityCalendar` | `«HITO 2»` | No existe en V1 | **Tabla persistente V2** | `public.capacity_calendars` (vinculada por XOR a `transport_asset_id` o `capacity_pool_id`, con fuente y `valid_until`) | Carrier / Servicio (RLS lectura evaluador) — `HAC-12` | **Sprint 2 Operativo** |
 | 16 | `CapacityReservation` | `«HITO 2»` | No existe en V1 | **Tabla persistente V2** | `public.capacity_reservations` (ocupación/hold por ventana temporal `[starts_at, ends_at)`) | Servicio transaccional / Carrier (`HAC-12`) | **Sprint 2 Operativo** |
@@ -193,9 +193,9 @@ flowchart TD
 
 ### 3.2 Los 6 Patrones de Diseño de Software aplicados en CargoMesh V2
 1. **Strategy / Policy Pattern (`RoadServiceabilityService` en S2 y `ScoringPolicy` en HITO 3):**
-   - Encapsula las reglas de evaluación de elegibilidad ROAD (cobertura `INCLUDED`/`EXCLUDED`, dirección de `ServiceLane`, compatibilidad de `CargoSpecification` y ventana en `CapacityCalendar`) como políticas puras e intercambiables, libres de código HTTP o SQL.
+   - Encapsula las reglas de evaluación de elegibilidad ROAD (cobertura `INCLUDE`/`EXCLUDE`, dirección de `ServiceLane`, compatibilidad de `CargoSpecification` y ventana en `CapacityCalendar`) como políticas puras e intercambiables, libres de código HTTP o SQL.
 2. **Ports & Adapters / Hexagonal (`CapacitySource` en S2 y `ResponseIntegration` en HITO 3):**
-   - `CapacitySource` actúa como puerto común implementado tanto por `TransportAsset` (`RoadVehicle`) como por `CapacityPool`, permitiendo que el motor de elegibilidad consulte disponibilidad temporal con una única firma `availability(window): AvailabilityResult`.
+   - El UML propone el puerto `CapacitySource.availability(window): AvailabilityResult`; **no está implementado como esa interfaz en S2**. El evaluador consume el tipo TS `Capacity`, con fuentes de activo/cupo y XOR persistido. Esta representación es parcial; no acredita implementación del puerto UML ni de sus métodos.
 3. **Aggregate Root (`FreightRequest`):**
    - `FreightRequest` gobierna el ciclo de vida de `CargoSpecification`, `CargoUnit[]` y `ShipmentContact`. Ningún consumidor externo modifica unidades sueltas sin pasar por la raíz del agregado y verificar `draft_version`.
 4. **Repository + Unit of Work (sentencia única o RPC PostgreSQL):**
@@ -730,7 +730,7 @@ export interface RoadRoutePreviewDto {
     waypoints: Array<{ lat: number; lng: number; label?: string }>;
     conditions: Array<{
       code: string;
-      severity: 'INFO' | 'WARNING' | 'CRITICAL';
+      severity: string; // Zod actual: texto no vacío; no enum cerrado de proveedor.
       description: string;
       provenanceStatus: ProvenanceStatusV2;
     }>;
@@ -823,3 +823,18 @@ export function mapServiceabilityToMapViewProps(
 - R-06/R-07/R-08/R-09: migración aditiva `20261002073853` valida INSERT canónico, DTO completo de RPC, estructura de ventanas y no-solape de reservas HELD/CONFIRMED por calendario en [inicio,fin). Booking y cupo residual LTL siguen pendientes.
 - RouteCondition faltante (C-03) va dentro de **HAC-13 / Jean**: fixture SIMULATED con fuente/vigencia/ubicación explícitas, controles de expiración/ausencia y proyección del mapa coordinada con HAC-15. HAC-29 cerrada no se reabre; no fabricar feed de tráfico ni cambiar ETA/elegibilidad sin regla aprobada.
 - `mcp_account_links` (D-01) sigue siendo entrega HAC-11/Axel. Las 20 tablas UML esperadas no equivalen a API pública GET/POST por clase; cada CRUD requiere contrato/seguridad propios. No se aplicó esta cadena al Supabase alojado.
+
+## Correcciones C-01 y proyección RouteCondition — 2 oct 2026
+
+- C-04: [correspondencia explícita de los fixtures](./fixtures/hac27/SCENARIO_MAPPING.md); categorías de referencia conservan c000 y se distinguen ejemplos sin fila equivalente. No presentar JSON ilustrativos como respuestas del escenario.
+- C-05: `asset_role`, cobertura `INCLUDE`/`EXCLUDE` y tipo ejecutable `Capacity`; `CapacitySource.availability` permanece parcial y pendiente.
+- C-06: la BD representa **un activo con 0..N capacidades; cada capacidad pertenece a un activo**. La relación 77 del UML tiene multiplicidad inversa y se registra como divergencia; una FK no acredita esa cardinalidad UML. El UML original se conserva sin modificar.
+- C-07: `CargoProfile.requirements: CargoRequirement[]` no corresponde directamente a `default_requirements`, que exige objeto JSONB. Se marca parcial. No existe transformación array↔objeto contractual ni round-trip implementado; no convertir ni afirmar equivalencia sin contrato posterior.
+
+### Proyección de fixture RouteCondition a conditions[] (HAC-13 / PR #95)
+
+Se confirma para el **fixture simulado S2** `code = RC_<KIND>`, `severity = INFO`, `provenanceStatus = SIMULATED`. INFO es presentación informativa del fixture, no gravedad real de un incidente. El schema ejecutable conserva `severity` como texto no vacío; INFO/WARNING/CRITICAL son ejemplos, no un enum cerrado.
+
+El fixture conserva los seis atributos UML `kind`, `location`, `observedAt`, `validUntil`, `source`, `confidence`. La proyección a cuatro campos no sustituye ese registro: `description` informa kind, lugar, fechas y límite exclusivo, y declara que es sintético; source/confidence deben ser ambos SIMULATED para esta proyección. Caso vigente: `observedAt <= referenceAt < validUntil`; expirado o ausente produce `[]`. Esta regla requiere límites explícitos en los casos del fixture; la semántica de vigencia sin `validUntil` permanece pendiente para un feed real, sin cambiar la opcionalidad UML.
+
+Solo se adjunta la condición a una leg ya existente con geometría del escenario. Con `routePreview: null` o `legs: []` no se fabrica leg ni traza para mostrarla. No cambia ETA, cobertura, disponibilidad, elegibilidad ni frontera. No habilita incidentes live o un feed externo. HAC-13 debe actualizar su metadato SUPUESTO para citar esta confirmación y conservar sus casos activo/expirado/ausente; HAC-15 debe verificar la presentación al integrar. La confirmación del contrato no aprueba ni mergea PR #95.
