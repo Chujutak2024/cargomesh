@@ -12,10 +12,14 @@ La [documentación de entrega en inglés](./en/README.md) traduce y consolida lo
 | [models/](./models/README.md) | Modelos conceptuales y de diseño **en revisión**, comparación con datos y guía de diagramas. Un dibujo no prueba implementación ni reemplaza los contratos. |
 | [delivery/](./delivery/README.md) | Roadmaps, Linear, sprints, calidad, revisión y preparación de gates. Una propuesta o acta no modifica por sí sola Linear ni aprueba un hito. |
 | [references/](./references/README.md) | Estudios externos y material comparativo; no son fuente de verdad del producto. |
-| `diagrams/` | Diagramas existentes del repositorio; los nuevos editables y vistas previas locales se excluyen de esta integración. |
+| `diagrams/` | Diagramas del repositorio. El UML `07` de HAC-27 se publica con su hash original y diccionario de trazabilidad; otros editables locales y vistas previas permanecen fuera de esta entrega. |
 | [en/](./en/README.md) | Traducción y consolidación para materiales de entrega; requiere auditoría final contra el commit presentado. |
 
 El [índice general de `docs/`](../README.md) explica qué material fuera de V1/V2 es histórico, transicional o sigue siendo consumido por pruebas. `AGENTS.md` y los archivos de `contracts/` gobiernan V2; ante una contradicción con un borrador o documento V1, prevalecen estos contratos.
+
+## Trazabilidad Sprint 2
+
+El [contrato HAC-27](./delivery/SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md) y su [diccionario de 57 clases / 397 atributos](./delivery/HAC27_UML_ATTRIBUTE_DICTIONARY_2026-10-02.md) acompañan el [UML 07 original](./diagrams/review-2026-09-24/07-complete-classes-sprint2-reviewed.drawio). Identifican representación física, alias y ausencias; la revisión/aceptación del PR no se presume. La [evidencia HAC-12](./delivery/HAC12_ROAD_VERTICAL_LOCAL_EVIDENCE.md) distingue esquema local de aplicación al Supabase V2 alojado.
 
 ## Estado
 

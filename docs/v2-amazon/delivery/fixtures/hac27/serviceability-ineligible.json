@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "2.0",
+  "data": {
+    "freightRequestId": "a9c4e112-84b1-47d0-91e3-52f8c7a6b501",
+    "evaluatedDraftVersion": 1,
+    "evaluatedAt": "2026-09-26T14:01:10Z",
+    "overallStatus": "ineligible",
+    "summaryCounts": {
+      "totalEvaluated": 1,
+      "eligibleCount": 0,
+      "unknownCount": 0,
+      "ineligibleCount": 1
+    },
+    "commercialNotice": "EVALUATION_ONLY_NO_OFFER_OR_BOOKING",
+    "candidates": [
+      {
+        "candidateId": "cand-road-ineligible-01",
+        "status": "ineligible",
+        "carrier": {
+          "id": "c1000000-0000-4000-8000-000000000003",
+          "code": "NORTE-ROAD",
+          "commercialName": "Norte Road Sintético"
+        },
+        "service": {
+          "id": "d2000000-0000-4000-8000-000000000003",
+          "code": "ROAD-NORTH-ONLY",
+          "mode": "ROAD",
+          "serviceClass": "FTL",
+          "responseChannels": []
+        },
+        "checks": {
+          "coverage": {
+            "status": "ineligible",
+            "pickupAreaCode": null,
+            "deliveryAreaCode": null,
+            "exclusionTriggered": true,
+            "reasonCode": "PICKUP_AREA_EXCLUDED"
+          },
+          "lane": {
+            "status": "ineligible",
+            "laneId": null,
+            "kind": null,
+            "borderReviewRequired": false,
+            "reasonCode": "DIRECTED_LANE_NOT_PUBLISHED"
+          },
+          "cargoAndEquipment": {
+            "status": "unknown",
+            "matchedCategory": "PHARMA",
+            "requiredEquipment": "REEFER_TRUCK",
+            "indivisibleUnitsFit": null,
+            "reasonCode": "NOT_EVALUATED_AFTER_HARD_EXCLUSION"
+          },
+          "capacityWindow": {
+            "status": "unknown",
+            "sourceType": null,
+            "sourceId": null,
+            "calendarId": null,
+            "availableWeightKg": null,
+            "availableVolumeM3": null,
+            "windowChecked": {
+              "startsAt": "2026-10-05T08:00:00Z",
+              "endsAt": "2026-10-07T20:00:00Z"
+            },
+            "provenance": {
+              "dataSource": "NOT_EVALUATED",
+              "provenanceStatus": "UNKNOWN",
+              "observedAt": "2026-09-26T14:01:10Z",
+              "validUntil": null
+            },
+            "reasonCode": "NOT_EVALUATED_AFTER_HARD_EXCLUSION"
+          }
+        },
+        "reasons": [
+          "La zona de recojo está excluida y no existe lane dirigida publicada.",
+          "No se infiere cobertura desde una sede cercana."
+        ],
+        "routePreview": null
+      }
+    ]
+  }
+}
