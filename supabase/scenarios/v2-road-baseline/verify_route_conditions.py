@@ -12,8 +12,14 @@ import unittest
 SCENARIO = Path(__file__).resolve().parent
 FIXTURE = SCENARIO / "fixtures/route-conditions.json"
 REFERENCE_AT = "2026-10-05T12:00:00Z"
+CONFIRMATION = {
+    "status": "CONFIRMADO",
+    "source": "HAC-27 Documento Maestro — Correcciones de re-revisión C-01 y confirmación RouteCondition — 2 oct 2026",
+    "documentVersion": "2026-10-03T04:39:52Z",
+    "scope": "fixture simulado S2",
+    "contractCommit": "2c48923aeef8c4399f69e4c017afed075801f8b3",
+}
 KINDS = {"CLOSURE", "DELAY", "HAZARD", "RESTRICTION"}
-SEVERITIES = {"INFO", "WARNING", "CRITICAL"}
 DOMAIN_FIELDS = {"kind", "location", "observedAt", "validUntil", "source", "confidence"}
 LOCATION_FIELDS = {"facilityId", "label", "countryCode", "region", "city", "lat", "lng"}
 PROJECTION_FIELDS = {"code", "severity", "description", "provenanceStatus"}
@@ -96,16 +102,19 @@ def validate_projection(items):
     for item in items:
         exact_fields(item, PROJECTION_FIELDS, "projection")
         require(isinstance(item["code"], str) and item["code"] in {f"RC_{kind}" for kind in KINDS}, "invalid projection code")
-        require(item["severity"] in SEVERITIES, "severity outside documented enum")
+        # General HAC-27/Zod severity accepts nonempty text, not a closed enum.
+        # INFO is informative presentation confirmed only for the simulated S2 fixture.
+        require(isinstance(item["severity"], str) and len(item["severity"]) > 0, "severity must be nonempty text")
         require(item["severity"] == "INFO", "fixture severity must be INFO")
         require(item["provenanceStatus"] == "SIMULATED", "projection must be SIMULATED")
         require(isinstance(item["description"], str) and item["description"].startswith("[SYNTHETIC] SIMULATED "), "synthetic description required")
 
 
 def validate_fixture(data, catalog):
-    exact_fields(data, {"assumption", "referenceAt", "cases"}, "fixture")
-    require(data["assumption"]["status"] == "SUPUESTO"
-            and data["assumption"]["pendingConfirmation"] == "Tech Lead / HAC-27", "assumption must remain explicit")
+    exact_fields(data, {"confirmation", "referenceAt", "cases"}, "fixture")
+    exact_fields(data["confirmation"], CONFIRMATION.keys(), "confirmation")
+    for field, expected in CONFIRMATION.items():
+        require(data["confirmation"][field] == expected, f"confirmation {field} must be {expected}")
     require(data["referenceAt"] == REFERENCE_AT, "fixed referenceAt changed")
     require(isinstance(data["cases"], list), "cases must be an array")
     seen = set()
@@ -140,6 +149,7 @@ class ContractChecks(unittest.TestCase):
 
     def positive_control(self):
         try:
+            validate_fixture(DATA, CATALOG)
             validate_condition(self.active["condition"], CATALOG)
             self.assertIn(self.active["association"]["laneId"], CATALOG["lanes"])
             self.assertEqual(state_at(self.active["condition"], REFERENCE_AT), "active")
@@ -151,6 +161,18 @@ class ContractChecks(unittest.TestCase):
     def test_valid_fixture_and_scenario_references(self):
         self.positive_control()
         validate_fixture(DATA, CATALOG)
+
+    def test_confirmation_required(self):
+        for mutation in ("missing", "wrong_status"):
+            with self.subTest(mutation=mutation):
+                self.positive_control()
+                bad = deepcopy(DATA)
+                if mutation == "missing":
+                    del bad["confirmation"]
+                else:
+                    bad["confirmation"]["status"] = "SUPUESTO"
+                with self.assertRaisesRegex(ValueError, "confirmation"):
+                    validate_fixture(bad, CATALOG)
 
     def test_expired_and_exclusive_end(self):
         self.positive_control()
@@ -210,7 +232,7 @@ class ContractChecks(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "validity range"):
                     validate_condition(bad, CATALOG)
 
-    def test_projection_strict_fields_and_enum(self):
+    def test_projection_strict_fields_and_severity(self):
         mutations = (("observedAt", REFERENCE_AT), ("severity", "DECORATIVE"), ("code", "RC_NORMAL"), ("provenanceStatus", "VERIFIED"))
         for field, value in mutations:
             with self.subTest(field=field):

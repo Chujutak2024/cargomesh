@@ -1,15 +1,21 @@
 # RouteCondition fixture and map projection — HAC-13 / HAC-15
 
-**SUPUESTO (HAC-13): pending confirmation by the Tech Lead in HAC-27.**
-The user authorized this fixture shape and projection on 2026-10-02. It implements
-the six UML attributes without claiming that HAC-27 already defines a JSON schema.
-The fixture is synthetic display data, with no real traffic incidents or feed.
+**CONFIRMADO: the Tech Lead confirmed this projection exclusively for the simulated S2 fixture.**
+Source: [HAC-27 Master Document](https://linear.app/hackatonteamcargomesh/document/hac-27-mapeo-57-clases-v2-a-bdapi-patrones-atomicidad-y-contratos-v20-d2a9ef6d0876),
+version `2026-10-03T04:39:52Z`, section
+"Correcciones de re-revisión C-01 y confirmación RouteCondition — 2 oct 2026",
+subsection "Confirmación para HAC-13 / PR #95". The confirmation is mirrored at
+contract commit `2c48923aeef8c4399f69e4c017afed075801f8b3` (PR #91).
+The fixture's `confirmation` metadata records that source, version, scope and commit.
+The six UML attributes remain in the original domain record. This is synthetic
+display data, with no real traffic incidents or feed; confirmation does not approve
+or merge PR #95, extend the scope to live feeds or change UML optionality.
 
-Contract references at commit `3cf966fa95e0ee315454b1950815b229497a8c7e` (PR #91):
+Contract references:
 
 - [HAC-27 dictionary, section 24](https://github.com/Chujutak2024/cargomesh/blob/3cf966fa95e0ee315454b1950815b229497a8c7e/docs/v2-amazon/delivery/HAC27_UML_ATTRIBUTE_DICTIONARY_2026-10-02.md#L660).
-- [Persistence decision and map props](https://github.com/Chujutak2024/cargomesh/blob/3cf966fa95e0ee315454b1950815b229497a8c7e/docs/v2-amazon/delivery/SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md#L719).
-- [Executable condition projection](https://github.com/Chujutak2024/cargomesh/blob/3cf966fa95e0ee315454b1950815b229497a8c7e/cargomesh/src/shared/schemas/v2/serviceability.ts#L23).
+- [Confirmed S2 projection and geometry limits](https://github.com/Chujutak2024/cargomesh/blob/2c48923aeef8c4399f69e4c017afed075801f8b3/docs/v2-amazon/delivery/SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md#L834).
+- [Executable condition projection](https://github.com/Chujutak2024/cargomesh/blob/2c48923aeef8c4399f69e4c017afed075801f8b3/cargomesh/src/shared/schemas/v2/serviceability.ts#L23).
 
 ## Fixture and fixed controls
 
@@ -41,7 +47,9 @@ area, lane or capacity data.
 | source | SIMULATED |
 | confidence | SIMULATED |
 
-`validUntil` is stricter than the UML's optional field. Unknown region/coordinates
+`validUntil` is stricter than the UML's optional field; the confirmation does not
+approve validity semantics for a real feed without this limit. Active if and only
+if `observedAt <= referenceAt < validUntil`. Unknown region/coordinates
 remain null; no coordinates are invented. The location labels and countries/cities
 match existing baseline facilities. Time comparisons use the supplied instant,
 never today's date. Before observedAt and at/after validUntil, no active projection
@@ -55,12 +63,14 @@ the active fixture's expected projection as the condition-array test contract.
 | Domain input | Strict map field |
 |---|---|
 | kind | code = RC_<KIND>, for example RC_RESTRICTION |
-| User-approved display assumption | severity = INFO |
+| Tech Lead-confirmed informative S2 presentation | severity = INFO; not real incident severity |
 | kind, location.label, observedAt, validUntil | description with [SYNTHETIC] SIMULATED, place name and both exact timestamps; end explicitly exclusive |
 | source/confidence = SIMULATED | provenanceStatus = SIMULATED |
 
 The object has exactly four fields: code, severity, description and
-provenanceStatus. Show SIMULATED prominently; expose the observedAt/validUntil
+provenanceStatus. The general HAC-27/Zod contract accepts any nonempty severity
+text; INFO is the confirmed display value for this fixture only.
+Show SIMULATED prominently; expose the observedAt/validUntil
 text from description in the condition detail/tooltip or accessible text.
 Do not add location or validity fields to the strict DTO. Expired/absent conditions
 produce no active badge, marker or condition item. A before-start condition is
@@ -74,8 +84,8 @@ a map marker. The future geometry must be separately approved; its provenance
 must not be upgraded by this fixture. This delivery documents the projection;
 it does not implement the frontend, mapper or runtime injection.
 
-No changes to estimatedTransitHours, ETA, eligibility, ranking, capacity, checks
-or service coverage are implied by any kind, including DELAY or RESTRICTION.
+No changes to estimatedTransitHours, ETA, eligibility, ranking, capacity, checks,
+service coverage or border decisions are implied by any kind, including DELAY or RESTRICTION.
 These are display fixtures, not functional road rules. HAC-29 remains closed.
 
 ## Executable validation and gate
@@ -96,8 +106,10 @@ Use the existing configurable replay ports if Windows excludes the defaults.
 
 Checks cover the valid active fixture, structural validity and fixed expiration
 of the expired fixture, lane-scoped absence, inclusive start/exclusive end, exact
-domain/projection fields, the three-value documented severity enum, and rejection
-of missing source/validity, a non-SIMULATED source/confidence and inverted ranges.
+domain/projection fields, the fixture's INFO presentation, and rejection of missing
+source/validity, a non-SIMULATED source/confidence and inverted ranges. Confirmation
+metadata must cite the source, version, S2 scope and contract commit above;
+missing confirmation or a status other than CONFIRMADO fails with a positive control.
 Every negative or empty-result test executes its active positive control in the
 same test. A failed control is reported BLOCKED and fails the process.
 
@@ -105,7 +117,7 @@ No RouteCondition DB cleanup is needed: no rows are inserted. The full gate stil
 loads the existing baseline using psql local_only=1, backs up outside Git, audits
 foreign keys and cleans the existing scenario by explicit IDs.
 
-## Identity reservation and low observation
+## Identity reservation and severity clarification
 
 c230–c23c already belong to the baseline; c23d–c23f are HAC-12 reservations.
 Before creation, these read-only searches returned exit 1 (no matches):
@@ -119,7 +131,7 @@ The fetched base was `f2a8e3eb441e7bdd35718e7c69192256c6aaf553`.
 This delivery reserves c2400000 ...000001 through ...000003 for file fixtures/cases.
 No existing scenario IDs or HAC-12 reservations are changed.
 
-Low observation for HAC-27/HAC-12: the mirror restricts severity to
-INFO | WARNING | CRITICAL, while the current Zod accepts any nonempty string.
-This validator enforces the documented enum and this fixture uses INFO, valid
-under both. No application schema or other owner's code is repaired here.
+The earlier low severity observation is clarified by the confirmed contract:
+INFO, WARNING and CRITICAL are examples, not a closed enum. The mirror at
+`2c48923` agrees with Zod's nonempty text. This validator requires INFO for this
+simulated S2 fixture only. No application schema or other owner's code is changed.

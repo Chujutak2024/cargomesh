@@ -1,9 +1,10 @@
 {
-  "assumption": {
-    "status": "SUPUESTO",
-    "owner": "HAC-13",
-    "pendingConfirmation": "Tech Lead / HAC-27",
-    "contractCommit": "3cf966fa95e0ee315454b1950815b229497a8c7e"
+  "confirmation": {
+    "status": "CONFIRMADO",
+    "source": "HAC-27 Documento Maestro — Correcciones de re-revisión C-01 y confirmación RouteCondition — 2 oct 2026",
+    "documentVersion": "2026-10-03T04:39:52Z",
+    "scope": "fixture simulado S2",
+    "contractCommit": "2c48923aeef8c4399f69e4c017afed075801f8b3"
   },
   "referenceAt": "2026-10-05T12:00:00Z",
   "cases": [
