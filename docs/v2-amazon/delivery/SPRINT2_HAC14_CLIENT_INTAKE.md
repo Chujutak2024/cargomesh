@@ -113,7 +113,7 @@ PR #92 also contains a polished `/v2-workspace` scenario shell. Its current draf
 
 To avoid two contradictory sources of truth, HAC-14 does **not** copy the connected controller into that workspace or expose workspace autosave as persisted CargoMesh data. The live HAC-14 controller remains on `/freight-request/new` and owns one API draft plus one card↔map selection state. A future presentation integration may render the workspace shell around this controller after the FE-2 owner and Tech Lead agree the boundary; it must replace the local draft adapter rather than synchronize two drafts. No defect or ownership from HAC-15 was absorbed into this PR.
 
-Coordination source: `docs/v2-amazon/delivery/HAC15_HAC14_INTEGRATION_HANDOFF.md` from PR #92 and the HAC-15 validated head `2fcc9b4`.
+Coordination source: `docs/v2-amazon/delivery/HAC15_HAC14_INTEGRATION_HANDOFF.md` from PR #92, the requested HAC-15 validation head `2fcc9b4`, and its subsequently merged head `3fd924c`.
 
 ## 6. Automated and visual evidence
 
@@ -125,8 +125,11 @@ created from `feat/cycle-2-integration@f2a8e3e` and containing these exact heads
 - HAC-15 / PR #92: `2fcc9b4`;
 - HAC-14 / PR #93: `a056f5b`.
 
-The resulting local-only validation tree was `3c297b6`. It was not pushed,
-merged, or deployed and does not replace the Tech Lead's integration decision.
+The resulting local-only validation tree was `3c297b6`. It was not pushed or
+deployed and did not replace the Tech Lead's integration decision. While that
+validation was running, the team merged #91, #92, and #93. Therefore a second
+gate was run against the actual integrated commit `33a0328` (whose first parent
+already contains #91 and #92), rather than treating the temporary tree as final.
 
 | Check | Result |
 | --- | --- |
@@ -135,7 +138,7 @@ merged, or deployed and does not replace the Tech Lead's integration decision.
 | `pnpm typecheck` | Pass; 0 TypeScript errors |
 | `pnpm check:architecture` | Pass; 264 modules and 33 client entry points checked |
 | `pnpm test:release` | Pass; 458/458 release tests completed with 0 failures |
-| `pnpm build` | Pass; `/freight-request/new` compiles as a dynamic route (36.3 kB) and `/v2-workspace` as 19.3 kB |
+| `pnpm build` | Pass on the temporary combination and again on integrated `33a0328`; `/freight-request/new` compiles as a dynamic route (36.3 kB) and `/v2-workspace` as 19.4 kB on the integrated commit |
 | `python supabase-v2/gate.py v2 ...` | Pass; immutable V1 controls 9/9, baseline drift check, seven V2 migrations, 191/191 pgTAP assertions in seven files, and scenario cleanup |
 | `node scripts/hac12-http-smoke.mjs` | Pass against local authenticated Supabase/API; Cookie and Bearer auth, tenant isolation, exact five-group catalog, POST→GET→serviceability, quantities/totals, coordinates, eligible/unknown/zero-candidate/stale states, and cleanup |
 | Desktop visual QA | Pass at 1440 px; no horizontal overflow |
@@ -144,7 +147,7 @@ merged, or deployed and does not replace the Tech Lead's integration decision.
 
 The visual QA was repeated after the five-group contract alignment. Explicit fixture mode displayed backend-shaped IDs/codes, the four structured cargo-guidance sections as separate readable rows, and the `CAPTURE_ONLY`, `RESOURCE_EVIDENCE`, and `REQUIRES_REVIEW` notices. A final authenticated API-mode pass against the three exact heads above loaded the real catalog, created and reread a `DRAFT v1`, and rendered one eligible and one unknown candidate using the HAC-15 map component. `observedAt: null` appeared as `UNKNOWN`, missing geometry remained explicit, and selecting either card updated the pressed state and map detail from the same parent-owned `selectedCandidateId`. Switching back to the eligible card restored the corresponding map detail. The browser console contained no errors.
 
-The authenticated HTTP smoke covered Cookie and Bearer sessions, tenant isolation, the five option groups, catalog codes, quantities, totals, coordinates, POST→GET→serviceability correlation, eligible/unknown/zero-candidate states, stale-version rejection, and cleanup. The first database-gate attempt found Docker Desktop unavailable because of a stale local engine socket; after restarting the existing local runtime, the exact same gate completed successfully. No application fallback or source change was introduced for that machine-only incident.
+The authenticated HTTP smoke covered Cookie and Bearer sessions, tenant isolation, the five option groups, catalog codes, quantities, totals, coordinates, POST→GET→serviceability correlation, eligible/unknown/zero-candidate states, stale-version rejection, and cleanup. It passed first on the requested three-head combination and then again on integrated `33a0328`. The integrated browser smoke also created and reread `DRAFT v1`, exposed the eligible and unknown candidates, synchronized both card selections with the map detail, kept absent geometry explicit, and produced no console errors. The first database-gate attempt on the temporary combination found Docker Desktop unavailable because of a stale local engine socket; after restarting the existing local runtime, the exact same gate completed successfully. No application fallback or source change was introduced for that machine-only incident.
 
 That final browser pass exposed and closed two integration defects before the PR:
 
@@ -178,15 +181,17 @@ These gaps are presentation constraints, not missing client defaults. They remai
 
 - **PR #91 / HAC-12:** supplies the real five-group options endpoint, `POST`, request `GET`, serviceability `GET`, shared executable Zod schemas, and tenant enforcement now consumed by HAC-14.
 - **PR #92 / HAC-15:** supplies the actual `<RoadCandidateMapView />` now mounted by HAC-14. The provider and workspace implementation remain FE-2 ownership.
-- **Merge order:** #91 and #92 must reach `feat/cycle-2-integration` before HAC-14 can compile directly against that base. HAC-14's combined worktree validation proves the three heads together without merging or deploying any PR.
+- **Observed merge order:** #91 and #92 reached `feat/cycle-2-integration` before #93. HAC-14's temporary combined worktree proved the requested heads together, and the subsequent gate on `33a0328` verified the actual integrated result.
 
-Current integration limits recorded on 2026-10-03:
+Integration state observed on 2026-10-03:
 
-- HAC-12 has QA technical conformity at `0c79a00`, but its final confirmation and authorized integration remain external to HAC-14.
-- HAC-15 has the XSS fix and independent PASS at `2fcc9b4`; its truck/MTC pilot and joint owner smoke remain open, so it is not yet fully accepted or integrated.
-- The combined worktree required a temporary conflict resolution in shared migration-manifest metadata and in the duplicate `FL-03` friction-log filename. Those resolutions were used only to run the gate and are not proposed as HAC-14 source changes; the integration owner must resolve them on the declared base.
-- PR #93 remains **Draft**. After #91 and #92 are accepted and integrated into `feat/cycle-2-integration`, this branch must update from that base and repeat the gate before it may become Ready for review.
+- #91 was merged at `6e25254` from HAC-12 head `0c79a00`.
+- #92 was merged at `71f88bc` from head `3fd924c`, after the requested XSS validation head `2fcc9b4`.
+- #93 was merged at `33a0328` from HAC-14 head `a056f5b` while this validation was in progress. This delivery did not perform that merge or a deployment. The later evidence-only commit is `febda82` on the source branch and is linked from the PR/Linear record.
+- The integrated commit passed `test:v2-intake` 39/39, `test:release` 458/458, typecheck, architecture, build, the V2 database gate 191/191, authenticated HTTP, and authenticated browser card↔map smoke.
+- The earlier temporary combination required local conflict resolution in shared migration-manifest metadata and the duplicate `FL-03` filename. The actual merge commits supersede that temporary resolution; no such resolution was committed from HAC-14.
+- Linear remains `In Progress` until the Tech Lead confirms HAC-14 acceptance. The separately owned HAC-15 truck/MTC pilot or owner smoke is not represented as work completed by HAC-14.
 
-HAC-14 must not move to `Done`; the Tech Lead owns the gate. Until #91/#92 merge, its PR must make the stacked dependencies explicit rather than hide them with fixtures or copied code.
+HAC-14 must not move to `Done`; the Tech Lead owns the gate. The recorded merge does not by itself provide that Linear acceptance.
 
 No merge, production deployment, Vercel root-directory change, carrier/company screen refactor, or Linear closure is part of this delivery.
