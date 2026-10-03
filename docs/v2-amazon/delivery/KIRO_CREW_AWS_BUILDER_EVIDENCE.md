@@ -19,7 +19,7 @@ Evidence to export after the authentic session: session identifier and date/time
 | Human review | Pending |
 | Commit/PR | `c212c62` local commit; PR #94 requires update |
 | Test results | Crew session: pgTAP blocked. Later independent Codex run after fixture correction: 14/14 local pgTAP; MCP 76/76, typecheck and build pass |
-| Redacted Drive artifacts / HAC-18 index | [Crew record](https://drive.google.com/file/d/1H4HXTiMyw1W2olxpaunnpDEV0RPi1hzS/view), [local HAC-11 verification](https://drive.google.com/file/d/16edQeFFEhAH2W8dQZwkYS_G1rETlwUvB/view), [Bedrock IAM check](https://drive.google.com/file/d/1ju6exIBqUcZ9O5UDZBSOuI6woUQ1cDKo/view), [evidence index](https://drive.google.com/file/d/1a3sO1qm8kAk1Y1yIDlNLVSlcF05Uxm58/view). Index verification by Jean Paul remains pending. |
+| Redacted Drive artifacts / HAC-18 index | [Crew record](https://drive.google.com/file/d/1H4HXTiMyw1W2olxpaunnpDEV0RPi1hzS/view), [local HAC-11 verification](https://drive.google.com/file/d/16edQeFFEhAH2W8dQZwkYS_G1rETlwUvB/view), [Bedrock IAM check](https://drive.google.com/file/d/1ju6exIBqUcZ9O5UDZBSOuI6woUQ1cDKo/view), [Axel's evidence dossier](https://drive.google.com/file/d/1a3sO1qm8kAk1Y1yIDlNLVSlcF05Uxm58/view). The separate HAC-18 general index still needs verification/update by Jean Paul. |
 
 ## Bedrock sandbox
 
