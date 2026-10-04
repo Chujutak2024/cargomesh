@@ -88,4 +88,8 @@ for (const [path, action] of [
   ["/carriers/:carrierId/executions/:id/positions", "executions.position"],
   ["/carriers/:carrierId/incidents/:id/updates", "incidents.update"],
   ["/carriers/:carrierId/consolidations/:id/closures", "consolidations.close"],
+  ["/carriers/:carrierId/consolidations/:id/starts", "consolidations.start"],
+  ["/carriers/:carrierId/consolidations/:id/completions", "consolidations.complete"],
+  ["/carriers/:carrierId/consolidations/:id/cancellations", "consolidations.cancel"],
+  ["/carriers/:carrierId/consolidations/:id/positions", "consolidations.position"],
 ] as [string, WorkflowActionV2][]) post(path, action, "id");

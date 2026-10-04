@@ -1,6 +1,6 @@
 # HAC-40 — planes, comercial, compromisos y operación persistentes
 
-Rama `codex/v2-full-backend`; Draft [#99](https://github.com/Chujutak2024/cargomesh/pull/99) hacia `feat/cycle-3-integration`. Migración nativa aditiva `20261004154048_hac40_workflow.sql`. No aplicada a Supabase alojado.
+Rama `codex/v2-full-backend`; [#99](https://github.com/Chujutak2024/cargomesh/pull/99) integrado históricamente y transferido a `codex/v2-amazon-contracts` por [#100](https://github.com/Chujutak2024/cargomesh/pull/100); incrementos nuevos apuntan directamente a esa base. Migración nativa aditiva `20261004154048_hac40_workflow.sql`. No aplicada a Supabase alojado.
 
 ## Contrato de consumo
 
@@ -32,7 +32,7 @@ Las publicaciones iniciales usan el DTO de `shared/schemas/v2/workflow.ts`; revi
 - Ruta dirigida y continua; origen/destino canónicos y modos aceptados; evidencia, vigencia, condiciones, duración y documentos requeridos. Conector de coordenadas sin fuente, frontera sin reglas y adaptador modal no verificado conservan `UNKNOWN`. No se deduce cobertura por cercanía ni se inventa geometría/peaje.
 - Plan carga cada unidad completa por tramo, calcula peso/volumen desde el snapshot y verifica categoría, servicio, lane, áreas, equipo, capacidades, dimensiones, temperatura/requisitos, ventanas, mantenimiento y reposicionamiento. Cambios de solicitud/nodo/corredor/política invalidan confirmaciones. Devuelve límite efectivo y referencias/versiones utilizadas.
 - Combinación: tara/bruto, compatibilidad y límites de fabricante/vía deben tener fuente. Una unidad portadora evita sumar capacidades nominales de tractor/remolque; el hold ocupa todos sus calendarios. La confirmación de VehicleAssignment deja de estar bloqueada cuando existe ese compromiso de plan verificado.
-- FTL excluye ocupación simultánea. LTL comparte un viaje explicitamente evidenciado, itinerario compatible, categorías y requisitos permitidos. Se controla el pico simultáneo de peso/volumen, sin sumar ventanas consecutivas. La exclusividad entre viajes diferentes permanece. Cada tenant conserva booking/ejecución/reservas propios. La prueba de reserva compartida no certifica todavía la operación física conjunta entre tenants: la coordinación de conductor/viaje común sigue pendiente.
+- FTL excluye ocupación simultánea. LTL comparte un viaje explícitamente evidenciado, itinerario compatible, categorías y requisitos permitidos. Se controla el pico simultáneo de peso/volumen, sin sumar ventanas consecutivas. La exclusividad entre viajes diferentes permanece. Cada tenant conserva booking/ejecución/reservas propios. El incremento LTL descrito abajo coordina conductor, recursos y operación física con ventana común; discovery y optimización multistop siguen sin acreditarse.
 - Oferta atribuida al carrier y actor real, no al shipper; versión/sustitución auditadas. USD a centavos, desglose consistente, vigencia/fuente/capacidad reservable. Datos estimados/excluidos/desconocidos no se comparan como precio final.
 - Ranking `DISJOINT_COVER_V1`: enumera conjuntos de ofertas vigentes que cubren exactamente todas las asignaciones de cada plan, sin doble cobertura. Costo suma centavos; tránsito suma duraciones declaradas por los emisores; fiabilidad usa mínimo de tasas carrier con muestra/período/fuente. Esas agregaciones son dimensiones del scoring, no ETA confirmada. Pesos/versiones y explicaciones persisten; empates por lista ordenada de UUIDs de oferta. Si el universo excede 65 536 estados por plan, la operación falla con `RANKING_COMPLEXITY_LIMIT`: no presenta una búsqueda truncada como óptima.
 - Decisión: solicitud presentada, plan vigente y cobertura completa una sola vez. Booking diferencia autorización shipper y confirmación carrier. Confirmar exige reservas confirmadas de todas las asignaciones cubiertas. Los bookings de distintas ofertas son independientes; no se afirma atomicidad de proveedores externos.
@@ -55,3 +55,25 @@ Las publicaciones iniciales usan el DTO de `shared/schemas/v2/workflow.ts`; revi
 Este incremento implementa las familias pendientes B3–B6; no certifica automáticamente las 57 clases/397 atributos/93 relaciones. La matriz atributo por atributo sigue requiriendo contraste del esquema real, incluyendo adaptadores/configuración y divergencias declaradas. RoutePlanner valida itinerarios publicados suministrados explícitamente; no se ha acreditado búsqueda automática completa de red/asignaciones. La capacidad contratada sin límites/capabilities comprobables permanece desconocida. Modos sin adaptador, polígonos/partners sin resolución espacial, pilotaje de camión/MTC y llamadas a carriers externos no quedan verificados por los positivos ROAD locales.
 
 HAC-41 integra permisos/MCP con estos servicios; HAC-42/43 conectan UI completa; HAC-44 contrasta/aplica el corte aprobado a Supabase V2 y valida round-trip alojado. Ninguna de esas dependencias autoriza cerrar HAC-40 ni retirar faltantes del alcance. No hubo merge, cambio de Vercel, seed/DDL alojado ni afirmación de Alexa live.
+
+
+## Operación física LTL compartida — incremento del 4 de octubre
+
+Migración aditiva `20261004232244_hac40_ltl_shared_operations.sql`. Las reservas previas siguen representando compromisos separados por organización; la consolidación coordina el viaje físico del carrier. GET de consolidaciones conserva sus rutas existentes. POST nuevos:
+
+| Acción | Ruta (prefijo `/api/v2`) |
+|---|---|
+| Iniciar | `/carriers/:carrierId/consolidations/:id/starts` |
+| Completar | `/carriers/:carrierId/consolidations/:id/completions` |
+| Cancelar | `/carriers/:carrierId/consolidations/:id/cancellations` |
+| Posición con fuente | `/carriers/:carrierId/consolidations/:id/positions` |
+
+Payload común: `schemaVersion`, `expectedVersion`, `note`, `evidence`; posición agrega `location`, `observedAt`, `correlationId`. `Idempotency-Key` obligatorio, identidad y permiso carrier derivados en servidor. Replays vuelven a comprobar acceso; una clave con payload distinto devuelve `IDEMPOTENCY_CONFLICT`; versión obsoleta `STALE_DRAFT`.
+
+El inicio exige reservas/booking confirmados, planes vigentes y crew confirmado idéntico para los miembros. El primer soporte físico exige ruta, ventana completa y recursos comunes: no ofrece recogidas escalonadas, relevo parcial ni optimización multistop. Una ocupación derivada del viaje permite las vinculaciones lógicas del mismo conductor; GiST sigue bloqueando viajes físicos diferentes que se solapan. La jornada usa la unión de intervalos para evitar contar dos veces el mismo trabajo.
+
+Estados: `OPEN → IN_PROGRESS → COMPLETED/CANCELLED → CLOSED`; también se permite cancelar antes de salir. Completar/cancelar libera compromisos dentro de la misma transacción. `COMPLETING/CANCELLING` son fases internas transaccionales, no estados que el cliente pueda publicar. Cancelar un booking puede retirar su carga y conservar el viaje activo para los demás. Mientras está en tránsito el crew permanece congelado.
+
+Los miembros no pueden iniciar/completar/publicar posiciones por separado (`CONSOLIDATION_ACTION_REQUIRED`). La posición física se proyecta a cada ejecución con `consolidationId`/`physicalEventId`, preservando el aislamiento de historiales por organización. La fuente puede ser una captura manual simulada; no se afirma GPS live. Datos ausentes/desconocidos no se inventan.
+
+Pruebas nativas: `29_v2_hac40_ltl_operations.test.sql`, `30_v2_hac40_ltl_cancellation.test.sql`, `31_v2_hac40_ltl_predeparture.test.sql`. Reconstrucción y aplicación exclusivamente local. La matriz UML/DER completa, discovery automático, consumo frontend/MCP y aplicación alojada conservan sus responsables y requisitos de aceptación.

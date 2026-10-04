@@ -43,4 +43,13 @@ describe("HAC-40 persistent workflow boundary",()=>{
   assert.equal(WorkflowInputsV2["plans.create"].safeParse({schemaVersion:"2.0",routeId:id,assignments:[]}).success,false);
   assert.equal(WorkflowInputsV2["scoring-policies.publish"].safeParse({schemaVersion:"2.0",active:true,policy:{version:"1",objective:"FASTEST",weights:{cost:1,transit:0,reliability:0},missingDataRule:"EXCLUDE",tieBreaker:"OFFER_ID_ASC"}}).success,false);
  });
+ it("requires audit/version for shared trips and rejects a client-selected physical occupancy key",()=>{
+  const audit={schemaVersion:"2.0",expectedVersion:1,note:"Carrier starts the physical trip",evidence};
+  for(const action of ["consolidations.start","consolidations.complete","consolidations.cancel"] as const){
+   assert.equal(WorkflowInputsV2[action].safeParse(audit).success,true);
+   assert.equal(WorkflowInputsV2[action].safeParse({...audit,occupancyGroupId:id}).success,false);
+   assert.equal(WorkflowInputsV2[action].safeParse({...audit,expectedVersion:0}).success,false);
+  }
+  assert.equal(WorkflowInputsV2["consolidations.position"].safeParse(audit).success,false);
+ });
 });
