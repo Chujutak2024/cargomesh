@@ -5,8 +5,8 @@ Rama `codex/v2-full-backend`; incremento sobre `057117fa50bf255fd29c3976dc0728c9
 | Comprobación | Resultado real |
 |---|---|
 | Cadena nativa V2 reconstruida de cero | 16 migraciones; incluye `20261004154048_hac40_workflow.sql` |
-| Manifest SHA-256 / secuencia | PASS, hash normalizado del workflow `ff3bde176443112fa49528c1230c146b771037ab7c15bd04c7104b6a81e94849` |
-| pgTAP del perfil V2 | 21 archivos, 685/685 PASS |
+| Manifest SHA-256 / secuencia | PASS, hash normalizado del workflow `919c61c1208b82567f5f98aebb2fe7c82d82f82cf6e42bfe6ba0b60790b1e684` |
+| pgTAP del perfil V2 | 22 archivos, 718/718 PASS |
 | Regresión sin fixtures V1 en V2 | 9/9 controles positivos de ausencia PASS |
 | Replay histórico vs baseline congelado | PASS; comparador excluye los deltas nuevos V2 |
 | RouteCondition del escenario | 12/12 PASS; no altera ETA/elegibilidad por el fixture |
@@ -34,7 +34,7 @@ python scripts/build-v2-full-der.py --check
 
 HTTP: reconstruir/sembrar explícitamente el escenario local autorizado, iniciar Next con las credenciales de ese stack y ejecutar `test:hac40:workflow-http`; exige URLs localhost, password sintético explícito y Python configurado. No acepta Supabase alojado. `hac40_workflow_local_fixture.py` prepara/limpia únicamente sus identificadores; un estado existente bloquea el reintento hasta resolverlo. Finalmente correr la limpieza protegida del gate.
 
-El gate publicado escribe logs/backups locales en `C:/Users/HP/AppData/Local/Temp/cargomesh-HAC40-workflow-published-20261004`; no se publican respaldos ni secretos. Las pruebas HTTP registran solo resultados; datos de prueba son explícitamente sintéticos.
+El gate publicado escribe logs/backups locales en `C:/Users/HP/AppData/Local/Temp/cargomesh-HAC40-workflow-final-cancel-v3-20261004`; no se publican respaldos ni secretos. Las pruebas HTTP registran solo resultados; datos de prueba son explícitamente sintéticos.
 
 ## Defectos encontrados y corregidos antes de publicar
 
@@ -43,6 +43,8 @@ El gate publicado escribe logs/backups locales en `C:/Users/HP/AppData/Local/Tem
 - Ranking de cotizaciones parciales: se sustituyó por conjuntos de cobertura completa disjunta y se comprobó el caso de dos tramos/dos ofertas frente a una oferta completa.
 - Contrato JSON de arrays: evidencia/capacidad se materializan como arrays JSON y se validan con salidas nativas reales.
 - Carrier inactivo: invalida elegibilidad y su baja se serializa con servicios, rechazándose si hay reservas activas. Positivos y negativos incluidos en pgTAP.
+
+- Cancelación de ejecución: cancela el booking y libera reservas/crew coordinadamente; después de movimiento, disponibilidad UNKNOWN hasta nueva evidencia de posición. La continuidad del mismo recurso entre tramos conserva la validación positiva.
 
 ## Lo que esta evidencia no acredita
 

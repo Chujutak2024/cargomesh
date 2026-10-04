@@ -510,6 +510,8 @@ begin
   elsif (a.leg_data->>'estimatedDurationSeconds')::numeric>extract(epoch from(win_e-win_s)) then reasons:=reasons||'"LEG_DURATION_EXCEEDS_WINDOW"'::jsonb;end if;
   if exists(select 1 from public.plan_leg_assignments b where b.plan_id=p.id and b.sequence=a.sequence+1 and b.starts_at<a.ends_at) then reasons:=reasons||'"TRANSFER_WINDOW_MISMATCH"'::jsonb;end if;
   if cal.carrier_service_id<>s.id or cal.transport_asset_id is distinct from a.asset_id or cal.capacity_pool_id is distinct from a.capacity_pool_id then reasons:=reasons||'"RESOURCE_SCOPE_MISMATCH"'::jsonb;end if;
+  if (cal.ready_pickup_area_id is null or private.workflow_area(cal.ready_pickup_area_id,a.leg_data->'origin',win_s,win_e)<>'eligible') and not exists(select 1 from public.plan_leg_assignments prev_a join public.plan_resources prev_r on prev_r.id=prev_a.resource_id join public.route_legs prev_leg on prev_leg.id=prev_a.route_leg_id
+   where prev_a.plan_id=p.id and prev_a.sequence=a.sequence-1 and prev_r.calendar_id=cal.id and prev_a.ends_at<=win_s and prev_leg.data->'destination'=a.leg_data->'origin') then pending:=pending||'"READY_PICKUP_POSITION_UNKNOWN"'::jsonb;end if;
   if not cal.complete or cal.observed_at is null or cal.observed_at>now() or cal.valid_until is null or cal.valid_until<win_e
    or cal.provenance_status not in ('VERIFIED','SIMULATED') or not private.crew_windows_cover(cal.available_windows,win_s,win_e) then pending:=pending||'"RESOURCE_WINDOW_UNKNOWN"'::jsonb;end if;
   if exists(select 1 from public.capacity_reservations rr where rr.capacity_calendar_id=cal.id and rr.status in ('HELD','CONFIRMED')
@@ -750,6 +752,13 @@ create function private.workflow_release_execution(i uuid) returns void language
  update public.driver_assignments set status='RELEASED',version=version+1,updated_at=now() where execution_id=i and status in ('PROPOSED','CONFIRMED');
  update public.vehicle_assignments set status='RELEASED',version=version+1,updated_at=now() where execution_id=i and status in ('PROPOSED','CONFIRMED');
  update public.capacity_reservations set status='RELEASED',version=version+1,updated_at=now() where execution_id=i and status in ('HELD','CONFIRMED');
+ -- Movement invalidates the former ready-pickup assertion. Reconfirm availability/location through
+ -- an evidenced calendar command; releasing a commitment does not teleport the physical resource.
+ if exists(select 1 from public.transport_executions where id=i and status='IN_PROGRESS') then
+  update public.capacity_calendars cc set complete=false,provenance_status='UNKNOWN',observed_at=now(),valid_until=null
+   where cc.id in(select capacity_calendar_id from public.capacity_reservations where execution_id=i)
+   and not exists(select 1 from public.capacity_reservations rr where rr.capacity_calendar_id=cc.id and rr.status in ('HELD','CONFIRMED'));
+ end if;
 end;$$;
 create function private.workflow_release_booking(i uuid,allow_running boolean) returns void language plpgsql security definer set search_path='' as $$declare e uuid;begin
  if not allow_running and exists(select 1 from public.transport_executions where booking_id=i and status='IN_PROGRESS') then raise exception 'EXECUTION_IN_PROGRESS' using errcode='PT409';end if;
@@ -1037,8 +1046,13 @@ begin
    update public.transport_executions set status='IN_PROGRESS',actual_started_at=now(),version=version+1,updated_at=now() where id=i;
   elsif p_action in ('executions.complete','executions.cancel') then
    if p_action='executions.complete' and e.status<>'IN_PROGRESS' or p_action='executions.cancel' and e.status not in ('PLANNED','IN_PROGRESS') then raise exception 'INVALID_EXECUTION_STATE' using errcode='PT409';end if;
-   perform private.workflow_release_execution(i);
-   update public.transport_executions set status=case when p_action='executions.complete' then 'COMPLETED' else 'CANCELLED' end,actual_completed_at=case when p_action='executions.complete' then now() else actual_completed_at end,version=version+1,updated_at=now() where id=i;
+   if p_action='executions.cancel' then
+    perform private.workflow_release_booking(b.id,true);
+    update public.v2_bookings set status='CANCELLED',version=version+1,updated_at=now(),data=data||jsonb_build_object('authorizationStatus','REVOKED','carrierConfirmationStatus','CANCELLED','cancellation',v,'cancelledAt',now(),'cancelledBy',p_member_id,'triggerExecutionId',i) where id=b.id;
+   else
+    perform private.workflow_release_execution(i);
+    update public.transport_executions set status='COMPLETED',actual_completed_at=now(),version=version+1,updated_at=now() where id=i;
+   end if;
    if p_action='executions.complete' and not exists(select 1 from jsonb_array_elements_text((select data->'coveredServiceIds' from public.v2_carrier_offers where id=b.offer_id)) ss where not exists(select 1 from public.transport_executions ee where ee.booking_id=b.id and ee.carrier_service_id=ss.value::uuid and ee.status='COMPLETED')) then update public.v2_bookings set status='COMPLETED',version=version+1,updated_at=now() where id=b.id;end if;
   elsif p_action='executions.position' then
    if not private.workflow_evidence(v->'evidence',(v->>'observedAt')::timestamptz,now()) then raise exception 'POSITION_EVIDENCE_REQUIRED' using errcode='PT409';end if;
@@ -1189,6 +1203,11 @@ create or replace function private.guard_v2_crew_dependencies() returns trigger 
    and capacity_reservation_id is distinct from new.id and (status='CONFIRMED' or execution_id is distinct from new.execution_id or capacity_reservation_id is not null) and not private.workflow_same_trip(execution_id,new.execution_id)
    and tstzrange(starts_at,ends_at,'[)')&&tstzrange(new.starts_at,new.ends_at,'[)')) then raise exception 'FLEET_COMMITMENT_CONFLICT' using errcode='PT409';end if;
  elsif tg_table_name in ('transport_assets','capacity_calendars') then
+  if tg_table_name='capacity_calendars' then
+   if new.complete=false and new.provenance_status='UNKNOWN' and new.valid_until is null
+   and (to_jsonb(new)-array['complete','provenance_status','observed_at','valid_until'])=(to_jsonb(old)-array['complete','provenance_status','observed_at','valid_until'])
+   and not exists(select 1 from public.vehicle_assignments where transport_asset_id=new.transport_asset_id and status in ('PROPOSED','CONFIRMED') and ends_at>now()) then return new;end if;
+  end if;
   if tg_table_name='transport_assets' then asset_id:=new.id;else asset_id:=new.transport_asset_id;end if;
   if exists(select 1 from public.vehicle_assignments where transport_asset_id=asset_id and status in ('PROPOSED','CONFIRMED') and ends_at>now())
    or exists(select 1 from public.vehicle_combination_assets where transport_asset_id=asset_id and active and ends_at>now()) then raise exception 'FLEET_COMMITMENT_CONFLICT' using errcode='PT409';end if;

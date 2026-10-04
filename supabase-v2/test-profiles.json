@@ -31,6 +31,7 @@
     "supabase/tests/24_v2_hac40_consolidation.test.sql",
     "supabase/tests/25_v2_hac40_combination.test.sql",
     "supabase/tests/26_v2_hac40_workflow_constraints.test.sql",
-    "supabase/tests/27_v2_hac40_multileg.test.sql"
+    "supabase/tests/27_v2_hac40_multileg.test.sql",
+    "supabase/tests/28_v2_hac40_execution_cancel.test.sql"
   ]
 }
