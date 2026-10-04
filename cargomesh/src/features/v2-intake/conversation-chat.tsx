@@ -33,10 +33,12 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [inputMode, setInputMode] = useState<"TEXT" | "EDITED_VOICE_TRANSCRIPT">("TEXT");
   const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const field = CONVERSATION_FIELDS[cursor] ?? null;
   const choices = field ? choicesForField(field, options) : [];
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [history]);
+  useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
 
   function add(user: string, assistant: string) {
     setHistory((current) => [...current, { speaker: "user", text: user }, { speaker: "assistant", text: assistant }]);
@@ -100,7 +102,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       </div>}
       <form onSubmit={(event) => { event.preventDefault(); send(); }} className={styles.composer}>
         <label htmlFor="v2-chat-text">Your message {inputMode === "EDITED_VOICE_TRANSCRIPT" ? "(edited voice transcript)" : ""}</label>
-        <div><input id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder="Type a detail, help, price or booking" /><button type="submit" disabled={!text.trim()}>Send</button></div>
+        <div><input ref={inputRef} id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder="Type a detail, help, price or booking" /><button type="submit" disabled={!text.trim()}>Send</button></div>
       </form>
       <button type="button" className={styles.link} onClick={() => setVoiceOpen(!voiceOpen)} aria-expanded={voiceOpen}>Optional voice controls</button>
       {voiceOpen && <PreparatoryVoiceControls onUseTranscript={(edited) => { setText(edited); setInputMode("EDITED_VOICE_TRANSCRIPT"); }} responseText={history.at(-1)?.speaker === "assistant" ? history.at(-1)?.text ?? "" : ""} />}
