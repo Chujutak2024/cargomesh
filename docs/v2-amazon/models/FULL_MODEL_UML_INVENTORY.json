@@ -1,0 +1,4128 @@
+{
+  "source": "docs/v2-amazon/diagrams/review-2026-09-24/07-complete-classes-sprint2-reviewed.drawio",
+  "sourceSha256": "104b126cc17565b57064fca0c6a8efd5cf43a076c1cb041355e5174cbe68dc88",
+  "counts": {
+    "classes": 57,
+    "attributes": 397,
+    "relations": 93
+  },
+  "implementationCertified": false,
+  "classes": [
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-1",
+      "name": "Organization",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "code",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "commercialName",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "legalName",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "taxIdType",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "taxIdValue",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "countryCode",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "corporateEmail",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "defaultCurrency",
+          "optional": false,
+          "type": "Currency"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "OrganizationStatus"
+        },
+        {
+          "name": "corporatePhone",
+          "optional": true,
+          "type": "string"
+        }
+      ],
+      "operations": [
+        "maySubmit(member: MemberId): boolean",
+        "owns(facility: Facility): boolean"
+      ],
+      "target": {
+        "name": "Organization",
+        "area": "Identidad",
+        "representation": "Entidad existente",
+        "persistence": "organizations",
+        "operations": "organizaciones y miembros",
+        "package": "B1",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-5",
+      "name": "Facility",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "code",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "location",
+          "optional": false,
+          "type": "GeoLocation"
+        },
+        {
+          "name": "active",
+          "optional": false,
+          "type": "boolean"
+        },
+        {
+          "name": "accessRestrictions",
+          "optional": false,
+          "type": "Rule[]"
+        },
+        {
+          "name": "operatingHours",
+          "optional": true,
+          "type": "Schedule"
+        }
+      ],
+      "operations": [
+        "belongsTo(org: Organization): boolean",
+        "accessibleAt(window: TimeWindow): Decision",
+        "canHandle(cargo: CargoSpecification): Decision"
+      ],
+      "target": {
+        "name": "Facility",
+        "area": "Identidad",
+        "representation": "Entidad existente",
+        "persistence": "facilities",
+        "operations": "sedes",
+        "package": "B1",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-9",
+      "name": "FreightRequest",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "origin",
+          "optional": false,
+          "type": "GeoLocation"
+        },
+        {
+          "name": "destination",
+          "optional": false,
+          "type": "GeoLocation"
+        },
+        {
+          "name": "pickupWindow",
+          "optional": false,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "deliveryDeadline",
+          "optional": true,
+          "type": "Instant"
+        },
+        {
+          "name": "acceptedModes",
+          "optional": false,
+          "type": "TransportMode[]"
+        },
+        {
+          "name": "budget",
+          "optional": true,
+          "type": "Money"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "RequestStatus"
+        },
+        {
+          "name": "draftVersion",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "serviceType",
+          "optional": true,
+          "type": "ServiceClass"
+        },
+        {
+          "name": "requiredEquipment",
+          "optional": true,
+          "type": "EquipmentType"
+        },
+        {
+          "name": "preferredEquipment",
+          "optional": true,
+          "type": "EquipmentType"
+        },
+        {
+          "name": "selectionObjective",
+          "optional": true,
+          "type": "RankingObjective"
+        }
+      ],
+      "operations": [
+        "revise(expectedVersion: number): Result",
+        "submit(expectedVersion: number): Result",
+        "validateCompleteness(): ValidationResult"
+      ],
+      "target": {
+        "name": "FreightRequest",
+        "area": "Solicitud",
+        "representation": "Entidad existente",
+        "persistence": "freight_requests",
+        "operations": "solicitudes y cambios versionados",
+        "package": "B3",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-13",
+      "name": "CargoSpecification",
+      "attributes": [
+        {
+          "name": "category",
+          "optional": false,
+          "type": "CargoCategory"
+        },
+        {
+          "name": "packaging",
+          "optional": false,
+          "type": "PackageType"
+        },
+        {
+          "name": "totalWeightKg",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "totalVolumeM3",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "divisible",
+          "optional": false,
+          "type": "boolean"
+        },
+        {
+          "name": "requirements",
+          "optional": false,
+          "type": "CargoRequirement[]"
+        },
+        {
+          "name": "temperatureRange",
+          "optional": true,
+          "type": "TemperatureRange"
+        },
+        {
+          "name": "description",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "availableDocuments",
+          "optional": false,
+          "type": "DocumentRef[]"
+        }
+      ],
+      "operations": [
+        "validate(): ConstraintResult",
+        "fits(capacity: EffectiveCapacity): Decision",
+        "requiresPermit(route: RoutePlan): Decision"
+      ],
+      "target": {
+        "name": "CargoSpecification",
+        "area": "Solicitud",
+        "representation": "Valor embebido",
+        "persistence": "freight_requests.cargo_specifications",
+        "operations": "payload de solicitud; sin CRUD independiente",
+        "package": "B3",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-17",
+      "name": "CargoUnit",
+      "attributes": [
+        {
+          "name": "packageType",
+          "optional": false,
+          "type": "PackageType"
+        },
+        {
+          "name": "quantity",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "weightPerUnitKg",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "volumePerUnitM3",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "dimensions",
+          "optional": false,
+          "type": "Dimensions"
+        },
+        {
+          "name": "indivisible",
+          "optional": false,
+          "type": "boolean"
+        },
+        {
+          "name": "stackable",
+          "optional": true,
+          "type": "boolean"
+        },
+        {
+          "name": "unitsPerPackage",
+          "optional": true,
+          "type": "number"
+        }
+      ],
+      "operations": [
+        "totalWeightKg(): number",
+        "totalVolumeM3(): number",
+        "validatesIndivisibility(): Decision"
+      ],
+      "target": {
+        "name": "CargoUnit",
+        "area": "Solicitud",
+        "representation": "Valor embebido",
+        "persistence": "cargo_specifications.units[]",
+        "operations": "payload de solicitud; sin CRUD independiente",
+        "package": "B3",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-21",
+      "name": "Carrier",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "code",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "commercialName",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "legalName",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "businessIdType",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "businessIdValue",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "registeredCountry",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "verifiedContact",
+          "optional": true,
+          "type": "Contact"
+        },
+        {
+          "name": "providerType",
+          "optional": false,
+          "type": "ProviderType"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "CarrierStatus"
+        },
+        {
+          "name": "operationalPhone",
+          "optional": true,
+          "type": "E164Phone"
+        }
+      ],
+      "operations": [
+        "publishes(service: CarrierService): boolean",
+        "isActiveAt(at: Instant): boolean",
+        "mayRespond(o: CarrierOpportunity): boolean",
+        "issued(offer: CarrierOffer): boolean"
+      ],
+      "target": {
+        "name": "Carrier",
+        "area": "Catálogo",
+        "representation": "Entidad existente",
+        "persistence": "carriers",
+        "operations": "carriers autorizados",
+        "package": "B1",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-25",
+      "name": "CarrierDepot",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "code",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "location",
+          "optional": false,
+          "type": "GeoLocation"
+        },
+        {
+          "name": "active",
+          "optional": false,
+          "type": "boolean"
+        },
+        {
+          "name": "handling",
+          "optional": true,
+          "type": "HandlingCapability[]"
+        }
+      ],
+      "operations": [
+        "supports(type: EquipmentType): Decision",
+        "activeAt(at: Instant): boolean"
+      ],
+      "target": {
+        "name": "CarrierDepot",
+        "area": "Catálogo",
+        "representation": "Entidad existente",
+        "persistence": "carrier_depots",
+        "operations": "depots",
+        "package": "B1",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-29",
+      "name": "CarrierService",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "mode",
+          "optional": false,
+          "type": "TransportMode"
+        },
+        {
+          "name": "serviceClass",
+          "optional": false,
+          "type": "ServiceClass"
+        },
+        {
+          "name": "maxWeightKg",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "maxVolumeM3",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "responseChannels",
+          "optional": false,
+          "type": "ResponseChannel[]"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "ServiceStatus"
+        },
+        {
+          "name": "admittedCargoTypes",
+          "optional": false,
+          "type": "CargoCategory[]"
+        },
+        {
+          "name": "temperatureRange",
+          "optional": true,
+          "type": "TemperatureRange"
+        },
+        {
+          "name": "requiredCertifications",
+          "optional": false,
+          "type": "Certification[]"
+        }
+      ],
+      "operations": [
+        "accepts(cargo: CargoSpecification): Decision",
+        "covers(leg: RouteLeg): Decision",
+        "validAt(at: Instant): boolean",
+        "supportsRequirements(cargo: CargoSpecification): Decision"
+      ],
+      "target": {
+        "name": "CarrierService",
+        "area": "Catálogo",
+        "representation": "Entidad existente",
+        "persistence": "carrier_services",
+        "operations": "servicios y publicación",
+        "package": "B1",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-37",
+      "name": "ServiceLane",
+      "attributes": [
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "DIRECT | WITHIN_AREA"
+        },
+        {
+          "name": "mode",
+          "optional": false,
+          "type": "TransportMode"
+        },
+        {
+          "name": "borderReviewRequired",
+          "optional": false,
+          "type": "boolean"
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef"
+        },
+        {
+          "name": "validUntil",
+          "optional": true,
+          "type": "Instant"
+        }
+      ],
+      "operations": [
+        "connects(pickup: ServiceArea, delivery: ServiceArea): boolean",
+        "validAt(at: Instant): boolean"
+      ],
+      "target": {
+        "name": "ServiceLane",
+        "area": "Cobertura",
+        "representation": "Relación existente",
+        "persistence": "service_lanes",
+        "operations": "lanes dirigidas",
+        "package": "B1",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-41",
+      "name": "ResponseIntegration",
+      "attributes": [
+        {
+          "name": "channel",
+          "optional": false,
+          "type": "MANUAL | API | MCP"
+        },
+        {
+          "name": "endpointRef",
+          "optional": true,
+          "type": "SecretRef"
+        },
+        {
+          "name": "verifiedAt",
+          "optional": true,
+          "type": "Instant"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "IntegrationStatus"
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef"
+        }
+      ],
+      "operations": [
+        "canRespond(at: Instant): Decision",
+        "validateContract(): ValidationResult"
+      ],
+      "target": {
+        "name": "ResponseIntegration",
+        "area": "Integración",
+        "representation": "Entidad/configuración a completar",
+        "persistence": "por decidir en DER; secretos fuera del DTO",
+        "operations": "configuración y diagnóstico de integración",
+        "package": "B1/A2",
+        "owner": "Axel"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-45",
+      "name": "CapacitySource",
+      "attributes": [
+        {
+          "name": "sourceId",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "provenance",
+          "optional": false,
+          "type": "FulfilmentSource"
+        }
+      ],
+      "operations": [
+        "availabilityFor(w: TimeWindow): Availability",
+        "effectiveCapacity(w: TimeWindow): Capacity"
+      ],
+      "target": {
+        "name": "CapacitySource",
+        "area": "Capacidad",
+        "representation": "Proyección de activos/cupos",
+        "persistence": "transport_assets / capacity_pools",
+        "operations": "consulta de disponibilidad y fuente",
+        "package": "B2",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-49",
+      "name": "TransportAsset",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "code",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "equipmentType",
+          "optional": false,
+          "type": "EquipmentType"
+        },
+        {
+          "name": "usefulCapacityKg",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "usableVolumeM3",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "operatingStatus",
+          "optional": false,
+          "type": "AssetStatus"
+        },
+        {
+          "name": "homeDepot",
+          "optional": true,
+          "type": "CarrierDepot"
+        }
+      ],
+      "operations": [
+        "capacityOn(route: RoutePlan): Capacity",
+        "canCarry(cargo: CargoSpecification): Decision",
+        "availabilityFor(w: TimeWindow): Availability",
+        "effectiveCapacity(w: TimeWindow): Capacity"
+      ],
+      "target": {
+        "name": "TransportAsset",
+        "area": "Flota",
+        "representation": "Entidad existente",
+        "persistence": "transport_assets",
+        "operations": "activos",
+        "package": "B2",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-53",
+      "name": "RoadVehicle",
+      "attributes": [
+        {
+          "name": "plate",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "registrationCode",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "registeredAt",
+          "optional": true,
+          "type": "LocalDate"
+        },
+        {
+          "name": "brand",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "model",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "variant",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "bodyType",
+          "optional": false,
+          "type": "VehicleBodyType"
+        },
+        {
+          "name": "usableDimensions",
+          "optional": true,
+          "type": "Dimensions"
+        },
+        {
+          "name": "grossWeightLimitKg",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "odometerKm",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "conditionReason",
+          "optional": true,
+          "type": "AssetConditionReason"
+        }
+      ],
+      "operations": [
+        "legalCapacityFor(route: RoutePlan): Capacity",
+        "isRoadworthy(at: Instant): Decision",
+        "recordOdometer(km: number): Result"
+      ],
+      "target": {
+        "name": "RoadVehicle",
+        "area": "Flota",
+        "representation": "Subtipo, tabla compartida",
+        "persistence": "transport_assets + campos/subtipo RoadVehicle",
+        "operations": "activos ROAD; round-trip de todos sus atributos",
+        "package": "B2",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-57",
+      "name": "CapacityPool",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "mode",
+          "optional": false,
+          "type": "TransportMode"
+        },
+        {
+          "name": "serviceWindow",
+          "optional": false,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "declaredCapacity",
+          "optional": false,
+          "type": "Capacity"
+        },
+        {
+          "name": "partner",
+          "optional": false,
+          "type": "FulfilmentSource"
+        },
+        {
+          "name": "evidence",
+          "optional": false,
+          "type": "EvidenceRef"
+        }
+      ],
+      "operations": [
+        "supports(window: TimeWindow): Decision",
+        "capacityFor(window: TimeWindow): Capacity",
+        "availabilityFor(w: TimeWindow): Availability",
+        "effectiveCapacity(w: TimeWindow): Capacity"
+      ],
+      "target": {
+        "name": "CapacityPool",
+        "area": "Capacidad",
+        "representation": "Entidad existente",
+        "persistence": "capacity_pools",
+        "operations": "cupos y capacidad contractual",
+        "package": "B2",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-61",
+      "name": "CapacityCalendar",
+      "attributes": [
+        {
+          "name": "timezone",
+          "optional": false,
+          "type": "TimeZone"
+        },
+        {
+          "name": "horizon",
+          "optional": false,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource"
+        },
+        {
+          "name": "lastVerifiedAt",
+          "optional": true,
+          "type": "Instant"
+        },
+        {
+          "name": "freshness",
+          "optional": false,
+          "type": "EvidenceStatus"
+        }
+      ],
+      "operations": [
+        "availableAt(window: TimeWindow): Availability",
+        "blocks(window: TimeWindow): BlockReason[]",
+        "nextAvailable(after: Instant): TimeWindow | unknown"
+      ],
+      "target": {
+        "name": "CapacityCalendar",
+        "area": "Capacidad",
+        "representation": "Entidad existente",
+        "persistence": "capacity_calendars",
+        "operations": "calendarios por ventana",
+        "package": "B2",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-65",
+      "name": "CapacityReservation",
+      "attributes": [
+        {
+          "name": "occupiedWindow",
+          "optional": false,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "committedCapacity",
+          "optional": false,
+          "type": "Capacity"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "ReservationStatus"
+        },
+        {
+          "name": "reference",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource"
+        },
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "planResourceId",
+          "optional": true,
+          "type": "UUID"
+        }
+      ],
+      "operations": [
+        "overlaps(window: TimeWindow): boolean",
+        "consumes(load: Capacity): Capacity",
+        "release(reason: ReasonCode): Result"
+      ],
+      "target": {
+        "name": "CapacityReservation",
+        "area": "Capacidad",
+        "representation": "Entidad existente y comandos",
+        "persistence": "capacity_reservations",
+        "operations": "hold/confirmación/liberación",
+        "package": "B2/B5",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-69",
+      "name": "ScheduledMaintenance",
+      "attributes": [
+        {
+          "name": "blockedWindow",
+          "optional": false,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "MaintenanceType"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "MaintenanceStatus"
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource"
+        }
+      ],
+      "operations": [
+        "blocks(window: TimeWindow): boolean",
+        "belongsTo(asset: TransportAsset): boolean"
+      ],
+      "target": {
+        "name": "ScheduledMaintenance",
+        "area": "Flota",
+        "representation": "Entidad existente",
+        "persistence": "scheduled_maintenances",
+        "operations": "mantenimientos",
+        "package": "B2",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-73",
+      "name": "Driver",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "fullName",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "portalAccount",
+          "optional": true,
+          "type": "CarrierOperator"
+        },
+        {
+          "name": "licenseClass",
+          "optional": false,
+          "type": "LicenseClass"
+        },
+        {
+          "name": "licenseValidUntil",
+          "optional": false,
+          "type": "LocalDate"
+        },
+        {
+          "name": "qualifications",
+          "optional": false,
+          "type": "Qualification[]"
+        },
+        {
+          "name": "experienceYears",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "dutyStatus",
+          "optional": false,
+          "type": "DutyStatus"
+        }
+      ],
+      "operations": [
+        "qualifiedFor(vehicle: RoadVehicle, cargo: CargoSpecification): Decision",
+        "availableFor(window: TimeWindow): Availability"
+      ],
+      "target": {
+        "name": "Driver",
+        "area": "Flota",
+        "representation": "Entidad a completar",
+        "persistence": "drivers propuesta; validar contra UML",
+        "operations": "conductores autorizados",
+        "package": "B2",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-77",
+      "name": "DriverAssignment",
+      "attributes": [
+        {
+          "name": "window",
+          "optional": false,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "role",
+          "optional": false,
+          "type": "PRIMARY | RELIEF"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "AssignmentStatus"
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef"
+        }
+      ],
+      "operations": [
+        "overlaps(other: DriverAssignment): boolean",
+        "validateHours(): Decision"
+      ],
+      "target": {
+        "name": "DriverAssignment",
+        "area": "Flota",
+        "representation": "Relación a completar",
+        "persistence": "driver_assignments propuesta",
+        "operations": "asignación de conductor por ventana",
+        "package": "B2",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-81",
+      "name": "VehicleAssignment",
+      "attributes": [
+        {
+          "name": "window",
+          "optional": false,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "AssignmentStatus"
+        },
+        {
+          "name": "capacityCommitted",
+          "optional": false,
+          "type": "Capacity"
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef"
+        }
+      ],
+      "operations": [
+        "isAvailable(): Decision",
+        "release(reason: ReasonCode): Result"
+      ],
+      "target": {
+        "name": "VehicleAssignment",
+        "area": "Flota",
+        "representation": "Relación a completar",
+        "persistence": "vehicle_assignments propuesta",
+        "operations": "asignación de vehículo por ventana",
+        "package": "B2",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-85",
+      "name": "AssetStatusEvent",
+      "attributes": [
+        {
+          "name": "at",
+          "optional": false,
+          "type": "Instant"
+        },
+        {
+          "name": "previous",
+          "optional": false,
+          "type": "AssetStatus"
+        },
+        {
+          "name": "next",
+          "optional": false,
+          "type": "AssetStatus"
+        },
+        {
+          "name": "reason",
+          "optional": false,
+          "type": "AssetConditionReason"
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef"
+        }
+      ],
+      "operations": [
+        "validateTransition(): Decision",
+        "isOperationalBlock(): boolean"
+      ],
+      "target": {
+        "name": "AssetStatusEvent",
+        "area": "Flota",
+        "representation": "Evento persistente a completar",
+        "persistence": "asset_status_events propuesta",
+        "operations": "historial/eventos del activo",
+        "package": "B2",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-89",
+      "name": "RoutePlan",
+      "attributes": [
+        {
+          "name": "origin",
+          "optional": false,
+          "type": "GeoLocation"
+        },
+        {
+          "name": "destination",
+          "optional": false,
+          "type": "GeoLocation"
+        },
+        {
+          "name": "estimatedDistanceKm",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "estimatedDuration",
+          "optional": true,
+          "type": "Duration"
+        },
+        {
+          "name": "geographicSource",
+          "optional": false,
+          "type": "DataSource"
+        },
+        {
+          "name": "confidence",
+          "optional": false,
+          "type": "EvidenceStatus"
+        },
+        {
+          "name": "estimatedTolls",
+          "optional": true,
+          "type": "Money"
+        },
+        {
+          "name": "borderCostEstimate",
+          "optional": true,
+          "type": "Money"
+        }
+      ],
+      "operations": [
+        "orderedLegs(): RouteLeg[]",
+        "validatesContinuity(): Decision",
+        "compareWith(other: RoutePlan, policy: RoutePlanningPolicy): Decision",
+        "evaluateConditions(at: Instant): RouteDecision"
+      ],
+      "target": {
+        "name": "RoutePlan",
+        "area": "Rutas",
+        "representation": "Valor/snapshot versionado",
+        "persistence": "JSONB/filas subordinadas a decidir por consultas/invariantes",
+        "operations": "consulta y cálculo de rutas; snapshot en plan/oferta",
+        "package": "B3",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-93",
+      "name": "RouteLeg",
+      "attributes": [
+        {
+          "name": "sequence",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "mode",
+          "optional": false,
+          "type": "TransportMode"
+        },
+        {
+          "name": "origin",
+          "optional": false,
+          "type": "GeoLocation"
+        },
+        {
+          "name": "destination",
+          "optional": false,
+          "type": "GeoLocation"
+        },
+        {
+          "name": "borderRequirements",
+          "optional": false,
+          "type": "Rule[]"
+        },
+        {
+          "name": "estimatedDistanceKm",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "estimatedDuration",
+          "optional": true,
+          "type": "Duration"
+        }
+      ],
+      "operations": [
+        "requiresPermit(): boolean",
+        "connects(next: RouteLeg): boolean",
+        "validatesBorderRequirements(): Decision"
+      ],
+      "target": {
+        "name": "RouteLeg",
+        "area": "Rutas",
+        "representation": "Valor/relación subordinada",
+        "persistence": "RoutePlan.legs[] o tabla por decisión DER",
+        "operations": "tramos de ruta; sin CRUD desligado del plan",
+        "package": "B3",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-97",
+      "name": "RouteCondition",
+      "attributes": [
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "CLOSURE | DELAY | HAZARD | RESTRICTION"
+        },
+        {
+          "name": "location",
+          "optional": false,
+          "type": "GeoLocation"
+        },
+        {
+          "name": "observedAt",
+          "optional": false,
+          "type": "Instant"
+        },
+        {
+          "name": "validUntil",
+          "optional": true,
+          "type": "Instant"
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource"
+        },
+        {
+          "name": "confidence",
+          "optional": false,
+          "type": "EvidenceStatus"
+        }
+      ],
+      "operations": [
+        "affects(leg: RouteLeg, at: Instant): Decision",
+        "requiresReplan(): boolean"
+      ],
+      "target": {
+        "name": "RouteCondition",
+        "area": "Rutas",
+        "representation": "Evidencia a completar y fixture separado",
+        "persistence": "route_conditions propuesta; fixture sintético aparte",
+        "operations": "condiciones con fuente/vigencia",
+        "package": "B3",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-101",
+      "name": "RouteWaypoint",
+      "attributes": [
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "FUEL | REST | BORDER | TRANSFER"
+        },
+        {
+          "name": "location",
+          "optional": false,
+          "type": "GeoLocation"
+        },
+        {
+          "name": "sequence",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource"
+        },
+        {
+          "name": "verifiedAt",
+          "optional": true,
+          "type": "Instant"
+        }
+      ],
+      "operations": [
+        "isUsableAt(at: Instant): Decision",
+        "addsDelay(): Duration | unknown"
+      ],
+      "target": {
+        "name": "RouteWaypoint",
+        "area": "Rutas",
+        "representation": "Valor subordinado",
+        "persistence": "RoutePlan/RouteLeg.waypoints[]",
+        "operations": "waypoints validados con su ruta",
+        "package": "B3",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-105",
+      "name": "RoutePlanningPolicy",
+      "attributes": [
+        {
+          "name": "version",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "objective",
+          "optional": false,
+          "type": "RouteObjective"
+        },
+        {
+          "name": "constraints",
+          "optional": false,
+          "type": "Rule[]"
+        },
+        {
+          "name": "weights",
+          "optional": false,
+          "type": "WeightSet"
+        },
+        {
+          "name": "missingDataRule",
+          "optional": false,
+          "type": "Rule"
+        }
+      ],
+      "operations": [
+        "evaluate(route: RoutePlan): RouteDecision",
+        "explain(route: RoutePlan): Explanation"
+      ],
+      "target": {
+        "name": "RoutePlanningPolicy",
+        "area": "Rutas",
+        "representation": "Política versionada a completar",
+        "persistence": "route_planning_policies propuesta",
+        "operations": "políticas de planificación",
+        "package": "B3",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-109",
+      "name": "TransportPlanCandidate",
+      "attributes": [
+        {
+          "name": "proposedWindow",
+          "optional": false,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "coverage",
+          "optional": false,
+          "type": "EvidenceStatus"
+        },
+        {
+          "name": "availability",
+          "optional": false,
+          "type": "EvidenceStatus"
+        },
+        {
+          "name": "pendingRequirements",
+          "optional": false,
+          "type": "Rule[]"
+        },
+        {
+          "name": "exclusionReasons",
+          "optional": false,
+          "type": "ReasonCode[]"
+        },
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        }
+      ],
+      "operations": [
+        "assessEligibility(): EligibilityDecision",
+        "require(resource: PlanResource): void",
+        "isQuotable(): boolean"
+      ],
+      "target": {
+        "name": "TransportPlanCandidate",
+        "area": "Planes",
+        "representation": "Derivado + snapshot auditable",
+        "persistence": "cálculo; identidad/snapshot persistido al ofertar/seleccionar",
+        "operations": "planes candidatos y detalle",
+        "package": "B3",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-113",
+      "name": "PlanResource",
+      "attributes": [
+        {
+          "name": "role",
+          "optional": false,
+          "type": "LOAD_BEARING | AUXILIARY"
+        },
+        {
+          "name": "equipment",
+          "optional": false,
+          "type": "EquipmentType"
+        },
+        {
+          "name": "units",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "window",
+          "optional": false,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "availability",
+          "optional": false,
+          "type": "EvidenceStatus"
+        },
+        {
+          "name": "applicableCapacity",
+          "optional": true,
+          "type": "Capacity"
+        },
+        {
+          "name": "verificationSource",
+          "optional": true,
+          "type": "EvidenceRef"
+        },
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        }
+      ],
+      "operations": [
+        "contributesCargoCapacity(): boolean",
+        "coversEntireWindow(): Decision",
+        "validateWithCalendar(): Decision"
+      ],
+      "target": {
+        "name": "PlanResource",
+        "area": "Planes",
+        "representation": "Asignación subordinada",
+        "persistence": "snapshot del plan / relación según DER",
+        "operations": "recursos del plan, roles y capacidades",
+        "package": "B3",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-117",
+      "name": "CarrierOpportunity",
+      "attributes": [
+        {
+          "name": "sentAt",
+          "optional": false,
+          "type": "Instant"
+        },
+        {
+          "name": "responseDeadline",
+          "optional": false,
+          "type": "Instant"
+        },
+        {
+          "name": "responseChannel",
+          "optional": false,
+          "type": "ResponseChannel"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "OpportunityStatus"
+        }
+      ],
+      "operations": [
+        "invite(carrier: Carrier): Result",
+        "accepts(offer: CarrierOffer): Decision"
+      ],
+      "target": {
+        "name": "CarrierOpportunity",
+        "area": "Comercial",
+        "representation": "Entidad a completar",
+        "persistence": "carrier_opportunities propuesta",
+        "operations": "invitaciones/publicación/respuestas",
+        "package": "B4",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-121",
+      "name": "CarrierOffer",
+      "attributes": [
+        {
+          "name": "carrierReference",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "price",
+          "optional": false,
+          "type": "Money"
+        },
+        {
+          "name": "breakdown",
+          "optional": false,
+          "type": "OfferCostComponent[]"
+        },
+        {
+          "name": "validity",
+          "optional": false,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "OfferSource"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "OfferStatus"
+        },
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "issuedAt",
+          "optional": false,
+          "type": "Instant"
+        },
+        {
+          "name": "estimatedPickupAt",
+          "optional": true,
+          "type": "Instant"
+        },
+        {
+          "name": "estimatedDeliveryAt",
+          "optional": true,
+          "type": "Instant"
+        },
+        {
+          "name": "transitDuration",
+          "optional": true,
+          "type": "Duration"
+        },
+        {
+          "name": "reservableCapacity",
+          "optional": true,
+          "type": "Capacity"
+        },
+        {
+          "name": "commercialTerms",
+          "optional": false,
+          "type": "Term[]"
+        },
+        {
+          "name": "evidence",
+          "optional": false,
+          "type": "EvidenceRef[]"
+        },
+        {
+          "name": "offerVersion",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "supersedesOfferId",
+          "optional": true,
+          "type": "UUID"
+        },
+        {
+          "name": "requestId",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "planCandidateId",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "opportunityId",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "carrierId",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "coveredServiceIds",
+          "optional": false,
+          "type": "UUID[]"
+        },
+        {
+          "name": "coveredAssignmentIds",
+          "optional": false,
+          "type": "UUID[]"
+        }
+      ],
+      "operations": [
+        "isValidAt(at: Instant): boolean",
+        "isComparableTo(other: CarrierOffer): Decision",
+        "covers(assignment: PlanLegAssignment): Decision",
+        "validatesBreakdownCurrency(policy: CurrencyPolicy): ValidationResult",
+        "bookableAt(window: TimeWindow): Decision",
+        "validatesAttribution(): Decision"
+      ],
+      "target": {
+        "name": "CarrierOffer",
+        "area": "Comercial",
+        "representation": "Entidad versionada a completar",
+        "persistence": "carrier_offers propuesta",
+        "operations": "emisión/listado/revisión/retiro/vigencia",
+        "package": "B4",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-125",
+      "name": "RankedOption",
+      "attributes": [
+        {
+          "name": "position",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "score",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "explanation",
+          "optional": false,
+          "type": "Explanation"
+        },
+        {
+          "name": "missingData",
+          "optional": false,
+          "type": "MissingDatum[]"
+        },
+        {
+          "name": "policyVersion",
+          "optional": false,
+          "type": "string"
+        }
+      ],
+      "operations": [
+        "isComparable(): boolean",
+        "provenance(): EvidenceRef[]"
+      ],
+      "target": {
+        "name": "RankedOption",
+        "area": "Comercial",
+        "representation": "Resultado derivado auditable",
+        "persistence": "ranking + snapshot/versiones de entradas",
+        "operations": "consulta de ranking y explicación",
+        "package": "B4",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-129",
+      "name": "ScoringPolicy",
+      "attributes": [
+        {
+          "name": "version",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "objective",
+          "optional": false,
+          "type": "RankingObjective"
+        },
+        {
+          "name": "weights",
+          "optional": false,
+          "type": "WeightSet"
+        },
+        {
+          "name": "missingDataRule",
+          "optional": false,
+          "type": "Rule"
+        },
+        {
+          "name": "tieBreaker",
+          "optional": false,
+          "type": "TieBreaker"
+        }
+      ],
+      "operations": [
+        "rank(offers: CarrierOffer[]): RankedOption[]",
+        "explain(option: RankedOption): Explanation"
+      ],
+      "target": {
+        "name": "ScoringPolicy",
+        "area": "Comercial",
+        "representation": "Política versionada a completar",
+        "persistence": "scoring_policies propuesta",
+        "operations": "políticas y activación versionada",
+        "package": "B4",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-133",
+      "name": "Booking",
+      "attributes": [
+        {
+          "name": "carrierReference",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "confirmedAt",
+          "optional": true,
+          "type": "Instant"
+        },
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "selectionDecisionId",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "authorizedAt",
+          "optional": true,
+          "type": "Instant"
+        },
+        {
+          "name": "authorizationStatus",
+          "optional": false,
+          "type": "AuthorizationStatus"
+        },
+        {
+          "name": "carrierConfirmationStatus",
+          "optional": false,
+          "type": "CarrierConfirmationStatus"
+        },
+        {
+          "name": "capacityEvidence",
+          "optional": false,
+          "type": "EvidenceRef[]"
+        }
+      ],
+      "operations": [
+        "recordResponse(reply: CarrierResponse): Result",
+        "cancel(authorizedBy: MemberId): Result",
+        "authorize(decision: SelectionDecision): Result",
+        "validateCapacityCommitment(): Decision"
+      ],
+      "target": {
+        "name": "Booking",
+        "area": "Booking",
+        "representation": "Entidad/comandos a completar",
+        "persistence": "bookings propuesta",
+        "operations": "autorización/confirmación/cancelación",
+        "package": "B5",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-137",
+      "name": "TransportExecution",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "ExecutionStatus"
+        },
+        {
+          "name": "plannedWindow",
+          "optional": false,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "actualStartedAt",
+          "optional": true,
+          "type": "Instant"
+        },
+        {
+          "name": "actualCompletedAt",
+          "optional": true,
+          "type": "Instant"
+        },
+        {
+          "name": "lastKnownPosition",
+          "optional": true,
+          "type": "GeoLocation"
+        }
+      ],
+      "operations": [
+        "start(expectedVersion: number): Result",
+        "complete(proof: EvidenceRef): Result",
+        "requestReplan(reason: ReasonCode): Result"
+      ],
+      "target": {
+        "name": "TransportExecution",
+        "area": "Seguimiento",
+        "representation": "Entidad a completar",
+        "persistence": "transport_executions propuesta",
+        "operations": "ejecuciones y estados/eventos",
+        "package": "B6",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-141",
+      "name": "OperationalIncident",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "IncidentKind"
+        },
+        {
+          "name": "severity",
+          "optional": false,
+          "type": "Severity"
+        },
+        {
+          "name": "occurredAt",
+          "optional": false,
+          "type": "Instant"
+        },
+        {
+          "name": "location",
+          "optional": true,
+          "type": "GeoLocation"
+        },
+        {
+          "name": "description",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "IncidentStatus"
+        },
+        {
+          "name": "reportedBy",
+          "optional": false,
+          "type": "ActorRef"
+        },
+        {
+          "name": "evidence",
+          "optional": false,
+          "type": "EvidenceRef[]"
+        }
+      ],
+      "operations": [
+        "classify(): IncidentDecision",
+        "escalate(to: ActorRef): Result",
+        "resolve(proof: EvidenceRef): Result"
+      ],
+      "target": {
+        "name": "OperationalIncident",
+        "area": "Seguimiento",
+        "representation": "Entidad a completar",
+        "persistence": "operational_incidents propuesta",
+        "operations": "incidentes operativos",
+        "package": "B6",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-145",
+      "name": "IncidentUpdate",
+      "attributes": [
+        {
+          "name": "at",
+          "optional": false,
+          "type": "Instant"
+        },
+        {
+          "name": "actor",
+          "optional": false,
+          "type": "ActorRef"
+        },
+        {
+          "name": "action",
+          "optional": false,
+          "type": "IncidentAction"
+        },
+        {
+          "name": "note",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef"
+        }
+      ],
+      "operations": [
+        "isAuthorized(): Decision",
+        "auditRecord(): AuditEvent"
+      ],
+      "target": {
+        "name": "IncidentUpdate",
+        "area": "Seguimiento",
+        "representation": "Evento subordinado a completar",
+        "persistence": "incident_updates propuesta",
+        "operations": "actualizaciones de incidentes",
+        "package": "B6",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "z1P_2RDf_z28FQ--q6sC-1",
+      "name": "LogisticsNode",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "PORT | TERMINAL | BORDER | HUB"
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "location",
+          "optional": false,
+          "type": "GeoLocation"
+        },
+        {
+          "name": "jurisdiction",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource"
+        },
+        {
+          "name": "verifiedAt",
+          "optional": true,
+          "type": "Instant"
+        }
+      ],
+      "operations": [
+        "supports(mode: TransportMode): Decision",
+        "activeAt(at: Instant): Decision"
+      ],
+      "target": {
+        "name": "LogisticsNode",
+        "area": "Rutas",
+        "representation": "Entidad a completar",
+        "persistence": "logistics_nodes propuesta",
+        "operations": "nodos logísticos y fronterizos",
+        "package": "B3",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "z1P_2RDf_z28FQ--q6sC-5",
+      "name": "RouteCorridor",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "mode",
+          "optional": false,
+          "type": "TransportMode"
+        },
+        {
+          "name": "estimatedDistanceKm",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "estimatedDuration",
+          "optional": true,
+          "type": "Duration"
+        },
+        {
+          "name": "restrictions",
+          "optional": false,
+          "type": "Rule[]"
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource"
+        },
+        {
+          "name": "version",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "validUntil",
+          "optional": true,
+          "type": "Instant"
+        }
+      ],
+      "operations": [
+        "connects(origin: LogisticsNode, destination: LogisticsNode): boolean",
+        "usableAt(at: Instant): Decision"
+      ],
+      "target": {
+        "name": "RouteCorridor",
+        "area": "Rutas",
+        "representation": "Valor versionado/red a completar",
+        "persistence": "JSONB o route_corridors según DER y multiplicidades",
+        "operations": "corredores/nodos/restricciones/fuentes",
+        "package": "B3",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "Btc221LeI3F3ZgxBBoag-1",
+      "name": "CargoProfile",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "typicalUnits",
+          "optional": false,
+          "type": "CargoUnitTemplate[]"
+        },
+        {
+          "name": "requirements",
+          "optional": false,
+          "type": "CargoRequirement[]"
+        },
+        {
+          "name": "preferredEquipment",
+          "optional": true,
+          "type": "EquipmentType"
+        },
+        {
+          "name": "updatedAt",
+          "optional": false,
+          "type": "Instant"
+        }
+      ],
+      "operations": [
+        "prefillRequest(): RequestDraft",
+        "requiresRevalidation(): boolean"
+      ],
+      "target": {
+        "name": "CargoProfile",
+        "area": "Catálogo",
+        "representation": "Entidad existente, atributos parciales",
+        "persistence": "organization_cargo_profiles",
+        "operations": "perfiles de carga y plantillas completas",
+        "package": "B1",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "Btc221LeI3F3ZgxBBoag-5",
+      "name": "CargoCategory",
+      "attributes": [
+        {
+          "name": "code",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "guidance",
+          "optional": false,
+          "type": "IntakeGuidance"
+        },
+        {
+          "name": "suggestedEquipment",
+          "optional": true,
+          "type": "EquipmentType"
+        },
+        {
+          "name": "version",
+          "optional": false,
+          "type": "string"
+        }
+      ],
+      "operations": [
+        "suggestRequirements(): CargoRequirement[]",
+        "isCurrent(at: Instant): boolean"
+      ],
+      "target": {
+        "name": "CargoCategory",
+        "area": "Catálogo",
+        "representation": "Referencia existente",
+        "persistence": "cargo_categories",
+        "operations": "lectura; escritura solo principal autorizado",
+        "package": "B1",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "tSlgQZ-C8XsGwiNcLELr-1",
+      "name": "LoadAllocation",
+      "attributes": [
+        {
+          "name": "quantity",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "assignedWeightKg",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "assignedVolumeM3",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "handlingRequirements",
+          "optional": false,
+          "type": "Rule[]"
+        },
+        {
+          "name": "verification",
+          "optional": false,
+          "type": "EvidenceStatus"
+        }
+      ],
+      "operations": [
+        "respectsIndivisibility(unit: CargoUnit): Decision",
+        "fits(resource: PlanResource): Decision"
+      ],
+      "target": {
+        "name": "LoadAllocation",
+        "area": "Planes",
+        "representation": "Asignación derivada validada",
+        "persistence": "plan/snapshot de asignaciones",
+        "operations": "carga por recurso/tramo y conservación de totales",
+        "package": "B3",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "QHG-sqxOf2_27DxS7uGC-1",
+      "name": "OrganizationMember",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "MemberId"
+        },
+        {
+          "name": "role",
+          "optional": false,
+          "type": "OrganizationRole"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "MemberStatus"
+        },
+        {
+          "name": "contactRef",
+          "optional": true,
+          "type": "ContactRef"
+        },
+        {
+          "name": "verifiedAt",
+          "optional": true,
+          "type": "Instant"
+        }
+      ],
+      "operations": [
+        "canSubmit(): boolean",
+        "canAuthorizeBooking(): boolean"
+      ],
+      "target": {
+        "name": "OrganizationMember",
+        "area": "Identidad",
+        "representation": "Entidad existente",
+        "persistence": "organization_members",
+        "operations": "invitación/roles/activación/revocación",
+        "package": "B1/A1",
+        "owner": "Axel"
+      }
+    },
+    {
+      "umlId": "2xsUHS_toCq_aFvuMJPX-1",
+      "name": "McpAccountLink",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "authUserId",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "oauthClientId",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "organizationId",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "scopes",
+          "optional": false,
+          "type": "string[]"
+        },
+        {
+          "name": "provider",
+          "optional": false,
+          "type": "ALEXA_PLUS | OTHER"
+        },
+        {
+          "name": "externalSubjectRef",
+          "optional": false,
+          "type": "OpaqueId"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "LinkStatus"
+        },
+        {
+          "name": "verifiedAt",
+          "optional": false,
+          "type": "Instant"
+        },
+        {
+          "name": "revokedAt",
+          "optional": true,
+          "type": "Instant"
+        },
+        {
+          "name": "expiresAt",
+          "optional": true,
+          "type": "Instant"
+        }
+      ],
+      "operations": [
+        "resolvesTo(member: OrganizationMember): boolean",
+        "validAt(at: Instant): boolean",
+        "hasScope(scope: string): boolean"
+      ],
+      "target": {
+        "name": "McpAccountLink",
+        "area": "Identidad",
+        "representation": "Entidad existente, flujo incompleto",
+        "persistence": "mcp_account_links",
+        "operations": "consentimiento/vinculación/revocación",
+        "package": "A1",
+        "owner": "Axel"
+      }
+    },
+    {
+      "umlId": "2yUqBqAz-HDDDDVWFXLk-1",
+      "name": "RepositioningBlock",
+      "attributes": [
+        {
+          "name": "occupiedWindow",
+          "optional": false,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "origin",
+          "optional": false,
+          "type": "GeoLocation"
+        },
+        {
+          "name": "nextPickup",
+          "optional": false,
+          "type": "GeoLocation"
+        },
+        {
+          "name": "estimatedTravel",
+          "optional": false,
+          "type": "Duration"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "BlockStatus"
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource"
+        }
+      ],
+      "operations": [
+        "blocks(window: TimeWindow): boolean",
+        "freshnessAt(at: Instant): EvidenceStatus"
+      ],
+      "target": {
+        "name": "RepositioningBlock",
+        "area": "Flota",
+        "representation": "Entidad existente",
+        "persistence": "repositioning_blocks",
+        "operations": "reposicionamientos por ventana",
+        "package": "B2",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "kfH2hY4qMQB0W6QYCK-c-1",
+      "name": "OrganizationPreferences",
+      "attributes": [
+        {
+          "name": "objective",
+          "optional": true,
+          "type": "RankingObjective"
+        },
+        {
+          "name": "maximumWait",
+          "optional": true,
+          "type": "Duration"
+        },
+        {
+          "name": "preferredMode",
+          "optional": true,
+          "type": "TransportMode"
+        },
+        {
+          "name": "preferredEquipment",
+          "optional": true,
+          "type": "EquipmentType"
+        },
+        {
+          "name": "usualBudget",
+          "optional": true,
+          "type": "Money"
+        },
+        {
+          "name": "validUntil",
+          "optional": true,
+          "type": "Instant"
+        }
+      ],
+      "operations": [
+        "suggestDefaults(): RequestDefaults",
+        "validFor(request: FreightRequest): Decision"
+      ],
+      "target": {
+        "name": "OrganizationPreferences",
+        "area": "Identidad",
+        "representation": "Entidad existente, atributos parciales",
+        "persistence": "organization_preferences",
+        "operations": "preferencias versionadas",
+        "package": "B1",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "0Y_tfA8dPl5QV5JYcC4k-1",
+      "name": "CarrierMetric",
+      "attributes": [
+        {
+          "name": "period",
+          "optional": false,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "corridorRef",
+          "optional": true,
+          "type": "CorridorId"
+        },
+        {
+          "name": "mode",
+          "optional": true,
+          "type": "TransportMode"
+        },
+        {
+          "name": "sampleSize",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "onTimeRate",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "successfulDeliveryRate",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource"
+        }
+      ],
+      "operations": [
+        "isRepresentative(minSample: number): boolean",
+        "comparableTo(other: CarrierMetric): boolean"
+      ],
+      "target": {
+        "name": "CarrierMetric",
+        "area": "Comercial",
+        "representation": "Derivado/observaciones atribuibles",
+        "persistence": "ejecuciones/reseñas/evidencia; modelo exacto según UML",
+        "operations": "consulta por período y tamaño de muestra",
+        "package": "B4/B6",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O51x0XQe5X2G-se8lcug-5",
+      "name": "VehicleCombination",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "CombinationType"
+        },
+        {
+          "name": "configuration",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "coupledWindow",
+          "optional": true,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "evidence",
+          "optional": false,
+          "type": "EvidenceRef[]"
+        },
+        {
+          "name": "combinedTareKg",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "grossWeightLimitKg",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "CombinationStatus"
+        }
+      ],
+      "operations": [
+        "validateCompatibility(): Decision",
+        "effectiveCapacityOn(route: RoutePlan): Capacity"
+      ],
+      "target": {
+        "name": "VehicleCombination",
+        "area": "Flota",
+        "representation": "Relación/entidad a completar",
+        "persistence": "vehicle_combinations y miembros propuestas",
+        "operations": "combinaciones compatibles y vigencia",
+        "package": "B2",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-33",
+      "name": "ServiceArea",
+      "attributes": [
+        {
+          "name": "role",
+          "optional": false,
+          "type": "PICKUP | DELIVERY"
+        },
+        {
+          "name": "inclusion",
+          "optional": false,
+          "type": "INCLUDE | EXCLUDE"
+        },
+        {
+          "name": "geography",
+          "optional": false,
+          "type": "Geography"
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "CoverageSource"
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef"
+        },
+        {
+          "name": "validUntil",
+          "optional": true,
+          "type": "Instant"
+        },
+        {
+          "name": "verifiedAt",
+          "optional": true,
+          "type": "Instant"
+        },
+        {
+          "name": "validFrom",
+          "optional": true,
+          "type": "Instant"
+        }
+      ],
+      "operations": [
+        "covers(place: GeoLocation): Decision",
+        "validAt(at: Instant): boolean"
+      ],
+      "target": {
+        "name": "ServiceArea",
+        "area": "Cobertura",
+        "representation": "Entidad existente",
+        "persistence": "service_areas",
+        "operations": "áreas por función, geometría y fuente",
+        "package": "B1",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "ew-K-2JuWHNgvpUnc-Aj-1",
+      "name": "FulfilmentPartner",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "registeredName",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "partnerCarrierRef",
+          "optional": true,
+          "type": "UUID"
+        },
+        {
+          "name": "agreementValidFrom",
+          "optional": false,
+          "type": "Instant"
+        },
+        {
+          "name": "agreementValidUntil",
+          "optional": false,
+          "type": "Instant"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "PartnerStatus"
+        },
+        {
+          "name": "coverageEvidence",
+          "optional": false,
+          "type": "EvidenceRef"
+        }
+      ],
+      "operations": [
+        "supports(leg: RouteLeg, at: Instant): Decision",
+        "isAuthorizedAt(at: Instant): boolean"
+      ],
+      "target": {
+        "name": "FulfilmentPartner",
+        "area": "Catálogo",
+        "representation": "Relación autorizada a completar",
+        "persistence": "fulfilment_partners propuesta",
+        "operations": "socios y responsabilidad por servicio/tramo",
+        "package": "B1",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "bh65ahPy-3lvovsz0reF-1",
+      "name": "PlanLegAssignment",
+      "attributes": [
+        {
+          "name": "sequence",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "window",
+          "optional": false,
+          "type": "TimeWindow"
+        },
+        {
+          "name": "responsibility",
+          "optional": false,
+          "type": "Responsibility"
+        },
+        {
+          "name": "coverage",
+          "optional": false,
+          "type": "EvidenceStatus"
+        },
+        {
+          "name": "availability",
+          "optional": false,
+          "type": "EvidenceStatus"
+        },
+        {
+          "name": "capacityNeeded",
+          "optional": false,
+          "type": "Capacity"
+        },
+        {
+          "name": "evidence",
+          "optional": false,
+          "type": "EvidenceRef[]"
+        },
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        }
+      ],
+      "operations": [
+        "validateEligibility(): EligibilityDecision",
+        "carrierForLeg(): Carrier",
+        "isQuotable(): boolean"
+      ],
+      "target": {
+        "name": "PlanLegAssignment",
+        "area": "Planes",
+        "representation": "Relación derivada/snapshot",
+        "persistence": "asignaciones de servicio/recurso por tramo",
+        "operations": "detalle de plan/oferta/selección",
+        "package": "B3/B4",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "2Kmcv4Ad8FPmq66OwCHh-1",
+      "name": "OfferCostComponent",
+      "attributes": [
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "CostKind"
+        },
+        {
+          "name": "amount",
+          "optional": true,
+          "type": "Money"
+        },
+        {
+          "name": "treatment",
+          "optional": false,
+          "type": "INCLUDED | QUOTED | ESTIMATED | EXCLUDED | UNKNOWN"
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource"
+        },
+        {
+          "name": "observedAt",
+          "optional": false,
+          "type": "Instant"
+        },
+        {
+          "name": "details",
+          "optional": true,
+          "type": "string"
+        }
+      ],
+      "operations": [
+        "contributesToQuotedTotal(): boolean",
+        "isComparable(): Decision"
+      ],
+      "target": {
+        "name": "OfferCostComponent",
+        "area": "Comercial",
+        "representation": "Valor/relación subordinada",
+        "persistence": "carrier_offers.cost_components JSONB o tabla según DER",
+        "operations": "desglose emitido por carrier; sin CRUD aislado",
+        "package": "B4",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "cK54gk-s0bDDQeAMSFYk-1",
+      "name": "ShipmentContact",
+      "attributes": [
+        {
+          "name": "role",
+          "optional": false,
+          "type": "PICKUP | RECIPIENT"
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "company",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "phone",
+          "optional": false,
+          "type": "E164Phone"
+        },
+        {
+          "name": "email",
+          "optional": true,
+          "type": "EmailAddress"
+        },
+        {
+          "name": "addressDetail",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "handlingInstructions",
+          "optional": true,
+          "type": "string"
+        }
+      ],
+      "operations": [
+        "canNotify(): Decision",
+        "matches(role: ContactRole): boolean"
+      ],
+      "target": {
+        "name": "ShipmentContact",
+        "area": "Solicitud",
+        "representation": "Valor embebido protegido",
+        "persistence": "snapshot/contactos de solicitud según DER",
+        "operations": "contactos de solicitud; autorización y minimización",
+        "package": "B3",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "mC9G5v3rfbQ6b9Yc-kdd-1",
+      "name": "CarrierOperator",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "displayName",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "role",
+          "optional": false,
+          "type": "CarrierRole"
+        },
+        {
+          "name": "email",
+          "optional": true,
+          "type": "EmailAddress"
+        },
+        {
+          "name": "phone",
+          "optional": true,
+          "type": "E164Phone"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "MemberStatus"
+        },
+        {
+          "name": "verifiedAt",
+          "optional": true,
+          "type": "Instant"
+        }
+      ],
+      "operations": [
+        "mayIssueOffer(): Decision",
+        "mayUpdateCapacity(): Decision"
+      ],
+      "target": {
+        "name": "CarrierOperator",
+        "area": "Identidad",
+        "representation": "Relación autorizada a completar",
+        "persistence": "carrier_operators propuesta",
+        "operations": "operadores y permisos de carrier",
+        "package": "B1/A1",
+        "owner": "Axel"
+      }
+    },
+    {
+      "umlId": "qge8m_vvFhvRPB6Z5rw--1",
+      "name": "AssetCargoCapability",
+      "attributes": [
+        {
+          "name": "requirements",
+          "optional": false,
+          "type": "CargoRequirement[]"
+        },
+        {
+          "name": "maxWeightKg",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "temperatureRange",
+          "optional": true,
+          "type": "TemperatureRange"
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef"
+        },
+        {
+          "name": "validUntil",
+          "optional": true,
+          "type": "Instant"
+        }
+      ],
+      "operations": [
+        "supports(cargo: CargoSpecification): Decision",
+        "currentAt(at: Instant): Decision"
+      ],
+      "target": {
+        "name": "AssetCargoCapability",
+        "area": "Flota",
+        "representation": "Relación existente, cardinalidad por corregir",
+        "persistence": "asset_cargo_capabilities",
+        "operations": "capacidades/evidencias por activo",
+        "package": "B2",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "jSKYVkFkDFWJeImlZA73-1",
+      "name": "RouteSimulationScenario",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "ScenarioId"
+        },
+        {
+          "name": "label",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "seed",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "networkVersion",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "clock",
+          "optional": false,
+          "type": "Instant"
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "SYNTHETIC"
+        },
+        {
+          "name": "expectedOutcome",
+          "optional": false,
+          "type": "RouteDecision"
+        }
+      ],
+      "operations": [
+        "inject(condition: RouteCondition): Result",
+        "replay(): RouteDecision"
+      ],
+      "target": {
+        "name": "RouteSimulationScenario",
+        "area": "Escenario",
+        "representation": "Fixture de desarrollo/pruebas",
+        "persistence": "supabase/scenarios/v2-* fuera de migraciones",
+        "operations": "dataset reproducible; no API productiva de fixture",
+        "package": "Q1",
+        "owner": "Jean"
+      }
+    },
+    {
+      "umlId": "KK_tjLDiXekPh69OoodI-1",
+      "name": "RoutePlanner",
+      "attributes": [
+        {
+          "name": "algorithmVersion",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "graphVersion",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource"
+        }
+      ],
+      "operations": [
+        "findAlternatives(request: FreightRequest, policy: RoutePlanningPolicy): RoutePlan[]",
+        "replan(plan: RoutePlan, condition: RouteCondition): RouteDecision",
+        "explain(plan: RoutePlan): Explanation"
+      ],
+      "target": {
+        "name": "RoutePlanner",
+        "area": "Rutas",
+        "representation": "Interfaz/servicio",
+        "persistence": "puerto de dominio/adaptadores; no tabla",
+        "operations": "resolución/cálculo vía servicio de rutas",
+        "package": "B3/A2",
+        "owner": "Cristhian"
+      }
+    },
+    {
+      "umlId": "3-0FiohA2Rbrks3vgz_X-1",
+      "name": "SelectionDecision",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "selectedAt",
+          "optional": false,
+          "type": "Instant"
+        },
+        {
+          "name": "rationale",
+          "optional": false,
+          "type": "Explanation"
+        },
+        {
+          "name": "policyVersion",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "consideredOptions",
+          "optional": false,
+          "type": "OptionRef[]"
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "DecisionStatus"
+        },
+        {
+          "name": "evidence",
+          "optional": false,
+          "type": "EvidenceRef[]"
+        },
+        {
+          "name": "selectedPlanId",
+          "optional": false,
+          "type": "UUID"
+        },
+        {
+          "name": "selectedOfferIds",
+          "optional": false,
+          "type": "UUID[]"
+        }
+      ],
+      "operations": [
+        "validatesSelectedOffer(): Decision",
+        "auditRecord(): AuditEvent",
+        "validatePlanAndOffers(): Decision"
+      ],
+      "target": {
+        "name": "SelectionDecision",
+        "area": "Comercial",
+        "representation": "Entidad/comando auditado a completar",
+        "persistence": "selection_decisions propuesta",
+        "operations": "selección y autorización por shipper",
+        "package": "B5",
+        "owner": "Cristhian"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-149",
+      "source": "Organization",
+      "target": "Facility",
+      "label": "registra",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1.0000;exitY=0.3441;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-152",
+      "source": "Organization",
+      "target": "FreightRequest",
+      "label": "presenta",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1.0000;exitY=0.7029;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.2920;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-155",
+      "source": "Facility",
+      "target": "FreightRequest",
+      "label": "origen",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-158",
+      "source": "Facility",
+      "target": "FreightRequest",
+      "label": "destino",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-161",
+      "source": "FreightRequest",
+      "target": "CargoSpecification",
+      "label": "describe",
+      "endLabels": [
+        "1",
+        "1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-164",
+      "source": "CargoSpecification",
+      "target": "CargoUnit",
+      "label": "contiene al enviar",
+      "endLabels": [
+        "1",
+        "1..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.5882;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-167",
+      "source": "Carrier",
+      "target": "CarrierDepot",
+      "label": "opera",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.0000;exitY=0.4169;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-170",
+      "source": "Carrier",
+      "target": "CarrierService",
+      "label": "publica",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1.0000;exitY=0.5597;exitDx=0;exitDy=0;entryX=0.0050;entryY=0.3448;entryDx=0;entryDy=0;entryPerimeter=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-173",
+      "source": "CarrierService",
+      "target": "ServiceArea",
+      "label": "declara",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1.0000;exitY=0.4284;exitDx=0;exitDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-176",
+      "source": "CarrierService",
+      "target": "ServiceLane",
+      "label": "declara",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;entryX=0.0000;entryY=0.4530;entryDx=0;entryDy=0;exitX=1.0000;exitY=0.5590;exitDx=0;exitDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-179",
+      "source": "ServiceArea",
+      "target": "ServiceLane",
+      "label": "origen cubierto",
+      "endLabels": [
+        "1 PICKUP",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-182",
+      "source": "ServiceArea",
+      "target": "ServiceLane",
+      "label": "destino cubierto",
+      "endLabels": [
+        "1 DELIVERY",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-185",
+      "source": "CarrierService",
+      "target": "ResponseIntegration",
+      "label": "responde por",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-188",
+      "source": "Carrier",
+      "target": "TransportAsset",
+      "label": "gestiona",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.0000;exitY=0.5597;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-191",
+      "source": "CarrierDepot",
+      "target": "TransportAsset",
+      "label": "base física",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-194",
+      "source": "RoadVehicle",
+      "target": "TransportAsset",
+      "label": "especializa",
+      "endLabels": [],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;endArrow=block;endFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-195",
+      "source": "TransportAsset",
+      "target": "CapacitySource",
+      "label": "realiza",
+      "endLabels": [],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;endArrow=block;endFill=0;dashed=1;exitX=1.0000;exitY=0.7989;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-196",
+      "source": "CapacityPool",
+      "target": "CapacitySource",
+      "label": "realiza",
+      "endLabels": [],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;endArrow=block;endFill=0;dashed=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-197",
+      "source": "CarrierService",
+      "target": "CapacityPool",
+      "label": "usa cupo",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1.0000;exitY=0.2978;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-200",
+      "source": "CapacitySource",
+      "target": "CapacityCalendar",
+      "label": "agenda",
+      "endLabels": [
+        "1",
+        "0..1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1.0000;exitY=0.8299;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-203",
+      "source": "CapacityCalendar",
+      "target": "CapacityReservation",
+      "label": "registra",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-206",
+      "source": "TransportAsset",
+      "target": "ScheduledMaintenance",
+      "label": "bloquea",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.0000;exitY=0.4008;exitDx=0;exitDy=0;entryX=0.9976;entryY=0.3395;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-209",
+      "source": "TransportAsset",
+      "target": "AssetStatusEvent",
+      "label": "historial",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;exitX=0.0000;exitY=0.5230;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-212",
+      "source": "Carrier",
+      "target": "Driver",
+      "label": "habilita",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.0000;exitY=0.8314;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.4599;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-215",
+      "source": "Driver",
+      "target": "DriverAssignment",
+      "label": "asignado",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-218",
+      "source": "RoadVehicle",
+      "target": "VehicleAssignment",
+      "label": "asignado",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-221",
+      "source": "FreightRequest",
+      "target": "TransportPlanCandidate",
+      "label": "genera",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-224",
+      "source": "TransportPlanCandidate",
+      "target": "RoutePlan",
+      "label": "propone",
+      "endLabels": [
+        "1",
+        "1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.08;entryDx=0;entryDy=0;entryPerimeter=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-227",
+      "source": "RoutePlan",
+      "target": "RouteLeg",
+      "label": "contiene",
+      "endLabels": [
+        "1",
+        "1..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;exitX=1.0000;exitY=0.8061;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.2430;entryDx=0;entryDy=0;entryPerimeter=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-230",
+      "source": "RoutePlan",
+      "target": "RouteWaypoint",
+      "label": "incluye",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.5742;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-233",
+      "source": "RouteLeg",
+      "target": "RouteCondition",
+      "label": "afectado por",
+      "endLabels": [
+        "0..*",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-236",
+      "source": "RoutePlanningPolicy",
+      "target": "RoutePlan",
+      "label": "evalúa",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-239",
+      "source": "TransportPlanCandidate",
+      "target": "PlanResource",
+      "label": "requiere",
+      "endLabels": [
+        "1",
+        "1..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;exitX=0;exitY=0.75;exitDx=0;exitDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-242",
+      "source": "TransportPlanCandidate",
+      "target": "CarrierService",
+      "label": "/servicios por tramo (derivada de PlanLegAssignment)",
+      "endLabels": [
+        "0..*",
+        "1..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-245",
+      "source": "PlanResource",
+      "target": "RouteLeg",
+      "label": "asignado a",
+      "endLabels": [
+        "0..*",
+        "1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.8741;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-248",
+      "source": "PlanResource",
+      "target": "CapacitySource",
+      "label": "usa fuente",
+      "endLabels": [
+        "0..*",
+        "0..1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-251",
+      "source": "TransportPlanCandidate",
+      "target": "CarrierOpportunity",
+      "label": "propone",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;entryX=1.0000;entryY=0.2305;entryDx=0;entryDy=0;exitX=0.0010;exitY=0.3429;exitDx=0;exitDy=0;exitPerimeter=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-254",
+      "source": "Carrier",
+      "target": "CarrierOpportunity",
+      "label": "invitado",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-257",
+      "source": "CarrierOpportunity",
+      "target": "CarrierOffer",
+      "label": "recibe",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.0030;exitY=0.4058;exitDx=0;exitDy=0;exitPerimeter=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-260",
+      "source": "Carrier",
+      "target": "CarrierOffer",
+      "label": "emite",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=1;entryY=0.75;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-263",
+      "source": "CarrierOffer",
+      "target": "RankedOption",
+      "label": "evaluada como",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-266",
+      "source": "ScoringPolicy",
+      "target": "RankedOption",
+      "label": "calcula",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-269",
+      "source": "CarrierOffer",
+      "target": "Booking",
+      "label": "fundamenta",
+      "endLabels": [
+        "1",
+        "0..1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;entryX=1;entryY=0.5;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-272",
+      "source": "Booking",
+      "target": "TransportExecution",
+      "label": "inicia",
+      "endLabels": [
+        "1",
+        "0..1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.7380;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-275",
+      "source": "TransportExecution",
+      "target": "DriverAssignment",
+      "label": "tripulación",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-278",
+      "source": "TransportExecution",
+      "target": "VehicleAssignment",
+      "label": "equipo",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.0000;exitY=0.4231;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-281",
+      "source": "TransportExecution",
+      "target": "OperationalIncident",
+      "label": "registra",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-284",
+      "source": "OperationalIncident",
+      "target": "IncidentUpdate",
+      "label": "bitácora",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;exitX=0.0000;exitY=0.4370;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-287",
+      "source": "OperationalIncident",
+      "target": "RouteCondition",
+      "label": "evidencia vial",
+      "endLabels": [
+        "0..*",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1.0000;exitY=0.8412;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "z1P_2RDf_z28FQ--q6sC-9",
+      "source": "LogisticsNode",
+      "target": "RouteCorridor",
+      "label": "inicio dirigido",
+      "endLabels": [
+        "1 origin",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;entryX=0.25;entryY=0;entryDx=0;entryDy=0;exitX=0.25;exitY=1;exitDx=0;exitDy=0;"
+    },
+    {
+      "umlId": "z1P_2RDf_z28FQ--q6sC-12",
+      "source": "LogisticsNode",
+      "target": "RouteCorridor",
+      "label": "fin dirigido",
+      "endLabels": [
+        "1 destination",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "2hVugEQixPLE8ubNQINt-1",
+      "source": "RouteCorridor",
+      "target": "RouteLeg",
+      "label": "tramo sobre corredor",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.0000;exitY=0.4627;exitDx=0;exitDy=0;"
+    },
+    {
+      "umlId": "Btc221LeI3F3ZgxBBoag-9",
+      "source": "CargoProfile",
+      "target": "CargoCategory",
+      "label": "clasifica",
+      "endLabels": [
+        "0..*",
+        "1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "1BKr3RNiIilfkyFQsFd3-1",
+      "source": "Organization",
+      "target": "CargoProfile",
+      "label": "guarda",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;exitX=0.0010;exitY=0.4446;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitPerimeter=0;"
+    },
+    {
+      "umlId": "u-VsSdGcmUxEkryfOKhH-1",
+      "source": "CargoUnit",
+      "target": "LoadAllocation",
+      "label": "se distribuye en",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;entryX=0.0000;entryY=0.4530;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "3KgDWDx9N2pGY3pWrg_W-1",
+      "source": "PlanResource",
+      "target": "LoadAllocation",
+      "label": "transporta",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1;exitY=0.25;exitDx=0;exitDy=0;"
+    },
+    {
+      "umlId": "g8S2DPwqzsmnHs3VKEzF-1",
+      "source": "OrganizationMember",
+      "target": "Organization",
+      "label": "miembros autorizados",
+      "endLabels": [
+        "1..*",
+        "1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "2xsUHS_toCq_aFvuMJPX-5",
+      "source": "OrganizationMember",
+      "target": "McpAccountLink",
+      "label": "vincula cuenta",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "2yUqBqAz-HDDDDVWFXLk-5",
+      "source": "CapacityCalendar",
+      "target": "RepositioningBlock",
+      "label": "bloquea por traslado",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "Kc00renXnkKxnfYvoeyl-4",
+      "source": "Organization",
+      "target": "OrganizationPreferences",
+      "label": "configura",
+      "endLabels": [
+        "1",
+        "0..1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;exitX=0.5000;exitY=1.0000;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "wq-PosFmHl-Mz6B2xIb8-4",
+      "source": "Carrier",
+      "target": "CarrierMetric",
+      "label": "métricas con muestra",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "1jDxd8enxLVPqxfFYbzY-1",
+      "source": "VehicleCombination",
+      "target": "PlanResource",
+      "label": "unidad combinada",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.4155;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "bR8ZHdLwjZc_sJT4jZ76-1",
+      "source": "VehicleCombination",
+      "target": "TransportAsset",
+      "label": "agrupa activos",
+      "endLabels": [
+        "0..*",
+        "1..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;entryX=0.75;entryY=1;entryDx=0;entryDy=0;exitX=0.0000;exitY=0.4627;exitDx=0;exitDy=0;"
+    },
+    {
+      "umlId": "oF6JfD9VbmF1wDjwixuT-1",
+      "source": "FulfilmentPartner",
+      "target": "ServiceArea",
+      "label": "respalda cobertura",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1.0000;exitY=0.6002;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "r3XODgQlmyjdfBrPmGPP-1",
+      "source": "FulfilmentPartner",
+      "target": "CapacityPool",
+      "label": "aporta cupo",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1.0000;exitY=0.3197;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.2840;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "itVb_8o_XJjBflcSYoN6-1",
+      "source": "Carrier",
+      "target": "FulfilmentPartner",
+      "label": "registra socio",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;entryX=0.0000;entryY=0.6002;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "FTiVxf39t15do1JHp-zJ-1",
+      "source": "FulfilmentPartner",
+      "target": "PlanLegAssignment",
+      "label": "ejecuta por acuerdo",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1.0000;exitY=0.1795;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "Fld38RXTpNTEaqT0KLbX-1",
+      "source": "PlanLegAssignment",
+      "target": "RouteLeg",
+      "label": "usa tramo",
+      "endLabels": [
+        "0..*",
+        "1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.7493;exitDx=0;exitDy=0;"
+    },
+    {
+      "umlId": "RGhOuhwsT8ZYOMnHYwK_-1",
+      "source": "TransportPlanCandidate",
+      "target": "PlanLegAssignment",
+      "label": "desglosa por tramo",
+      "endLabels": [
+        "1",
+        "1..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;exitX=1.0000;exitY=0.4170;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "fk9bowG78kA6Nmof4bi--1",
+      "source": "PlanLegAssignment",
+      "target": "PlanResource",
+      "label": "recursos del tramo",
+      "endLabels": [
+        "1",
+        "1..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;entryX=0.63;entryY=-0.004;entryDx=0;entryDy=0;entryPerimeter=0;"
+    },
+    {
+      "umlId": "C2sqDRVIhTB5ZJw0Zlot-1",
+      "source": "PlanLegAssignment",
+      "target": "CarrierService",
+      "label": "servicio responsable",
+      "endLabels": [
+        "0..*",
+        "1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "DK0aJlq7bGL-fGDcFSUt-1",
+      "source": "CarrierOffer",
+      "target": "PlanLegAssignment",
+      "label": "cotiza tramos atribuibles",
+      "endLabels": [
+        "0..*",
+        "1..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;entryX=0.0000;entryY=0.9463;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "72KwxI-JqKkcPOP_kNa3-1",
+      "source": "CarrierOffer",
+      "target": "OfferCostComponent",
+      "label": "desglosa costos",
+      "endLabels": [
+        "1",
+        "1..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.25;exitY=1;exitDx=0;exitDy=0;"
+    },
+    {
+      "umlId": "rg1mzH5NKyUcr1gneQok-1",
+      "source": "FreightRequest",
+      "target": "ShipmentContact",
+      "label": "receptor de entrega · RECIPIENT",
+      "endLabels": [
+        "1",
+        "0..1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;startSize=17;exitX=1.0000;exitY=0.2920;exitDx=0;exitDy=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "zAdGsDxVq7Eb_sLkxGRV-1",
+      "source": "CarrierOperator",
+      "target": "CarrierOffer",
+      "label": "emite manualmente",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.0000;exitY=0.4599;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "tmp4_OqPaU6kxuIBONix-1",
+      "source": "CarrierOperator",
+      "target": "Carrier",
+      "label": "pertenece a",
+      "endLabels": [
+        "0..*",
+        "1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.2740;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "6Ioss1hAN_-tinRlzXcZ-1",
+      "source": "AssetCargoCapability",
+      "target": "TransportAsset",
+      "label": "capacidades de carga",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.2786;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "bkNotKzCbFjlTCsTA6gs-1",
+      "source": "CargoCategory",
+      "target": "AssetCargoCapability",
+      "label": "categoría compatible",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.4530;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "jSKYVkFkDFWJeImlZA73-5",
+      "source": "RouteSimulationScenario",
+      "target": "RouteCorridor",
+      "label": "red sintética versionada",
+      "endLabels": [
+        "0..*",
+        "1..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "jSKYVkFkDFWJeImlZA73-8",
+      "source": "RouteSimulationScenario",
+      "target": "RouteCondition",
+      "label": "inyecta eventos",
+      "endLabels": [
+        "0..1",
+        "1..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.0000;exitY=0.4599;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "WNCIiRomMXHDXtrxWMq--1",
+      "source": "RoutePlanner",
+      "target": "RoutePlan",
+      "label": "genera alternativas",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;entryX=0.865;entryY=0.004;entryDx=0;entryDy=0;exitX=0.0000;exitY=0.8385;exitDx=0;exitDy=0;entryPerimeter=0;"
+    },
+    {
+      "umlId": "iFQi1_XGm5au44xV3qrT-1",
+      "source": "RoutePlanner",
+      "target": "RoutePlanningPolicy",
+      "label": "consulta política versionada",
+      "endLabels": [
+        "0..*",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "h7SgiR5XgM2d8XkbtD6E-1",
+      "source": "RoutePlanner",
+      "target": "RouteCorridor",
+      "label": "evalúa red",
+      "endLabels": [
+        "0..*",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "TTPNMglXCn0O7Q35afVn-1",
+      "source": "SelectionDecision",
+      "target": "Booking",
+      "label": "autoriza reserva",
+      "endLabels": [
+        "1",
+        "0..1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "VIKFyr6Zv-qFtDVTHai7-1",
+      "source": "OrganizationMember",
+      "target": "SelectionDecision",
+      "label": "decide",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.4599;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "Ftk5fUhrMQUH-lgMXdC8-1",
+      "source": "CarrierOffer",
+      "target": "SelectionDecision",
+      "label": "oferta elegida",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0;exitY=0.332;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "Hw6g2lMzjCy3rr25NsTR-1",
+      "source": "FreightRequest",
+      "target": "SelectionDecision",
+      "label": "decisión auditada",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.0000;exitY=0.5820;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "V-OUuwJpzMDYHvzWLT1--1",
+      "source": "TransportPlanCandidate",
+      "target": "SelectionDecision",
+      "label": "plan seleccionado",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0;exitY=0.25;entryX=0.667;entryY=0.005;entryDx=0;entryDy=0;exitDx=0;exitDy=0;entryPerimeter=0;"
+    },
+    {
+      "umlId": "Mhc5nrdr3FUa7mLKN28W-1",
+      "source": "FreightRequest",
+      "target": "CarrierOffer",
+      "label": "referencia de lo cotizado",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "Mhc5nrdr3FUa7mLKN28W-4",
+      "source": "PlanResource",
+      "target": "CapacityReservation",
+      "label": "ocupa capacidad en ventana",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8096ab;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1.0000;exitY=0.7207;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "cm-v2fix-3",
+      "source": "FreightRequest",
+      "target": "ShipmentContact",
+      "label": "contacto de recojo · PICKUP",
+      "endLabels": [
+        "1",
+        "0..1"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=diamond;startFill=1;endArrow=none;exitX=1.0000;exitY=0.4120;exitDx=0;exitDy=0;entryX=0.25;entryY=0.9500;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "cm-v2fix-8",
+      "source": "CarrierOffer",
+      "target": "CarrierService",
+      "label": "cubre servicio",
+      "endLabels": [
+        "0..*",
+        "1..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;"
+    },
+    {
+      "umlId": "cm-v2fix-11",
+      "source": "Booking",
+      "target": "CapacityReservation",
+      "label": "compromete capacidad",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#71849a;strokeWidth=1.5;fontFamily=Arial;fontSize=13;fontColor=#284057;labelBackgroundColor=#ffffff;startArrow=none;endArrow=none;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;"
+    }
+  ]
+}

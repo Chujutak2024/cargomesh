@@ -1,3 +1,5 @@
+import type { FreightRequestV2Response as BackendFreightRequestV2Response } from "@/shared/schemas/v2/freight-request";
+
 export type EligibilityStatusV2 = "eligible" | "ineligible" | "unknown";
 export type ProvenanceStatusV2 = "VERIFIED" | "ESTIMATED" | "SIMULATED" | "UNKNOWN";
 
@@ -76,7 +78,7 @@ export type FreightRequestV2Data = Omit<
   id: string;
   referenceCode: string;
   organizationId: string;
-  status: "DRAFT";
+  status: BackendFreightRequestV2Response["data"]["status"];
   draftVersion: number;
   requiredEquipment: string | null;
   budget: {

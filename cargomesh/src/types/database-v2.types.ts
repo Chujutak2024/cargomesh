@@ -2276,6 +2276,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      command_v2_freight_request: {
+        Args: {
+          p_organization_id: string
+          p_member_id: string
+          p_idempotency_key: string
+          p_request_id: string
+          p_expected_version: number
+          p_action: string
+          p_value: Json
+        }
+        Returns: Json
+      }
+      command_v2_facility: {
+        Args: {
+          p_organization_id: string
+          p_member_id: string
+          p_idempotency_key: string
+          p_facility_id: string | null
+          p_expected_version: number | null
+          p_value: Json
+        }
+        Returns: Json
+      }
       assert_booking_bridge_identity: {
         Args: {
           p_authorization: Database["public"]["Tables"]["booking_authorizations"]["Row"]

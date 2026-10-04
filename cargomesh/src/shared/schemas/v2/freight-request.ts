@@ -131,7 +131,7 @@ export const FreightRequestV2ResponseSchema = z.object({
     id: Uuid,
     referenceCode: z.string().min(1),
     organizationId: Uuid,
-    status: z.literal("DRAFT"),
+    status: z.enum(["DRAFT", "PENDING", "ORCHESTRATING", "AWAITING_SELECTION", "BOOKING", "BOOKED", "FAILED", "CANCELLED"]),
     draftVersion: z.number().int().positive(),
     origin: CanonicalLocationV2Schema,
     destination: CanonicalLocationV2Schema,

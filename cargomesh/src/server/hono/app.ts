@@ -3,6 +3,7 @@ import { errorHandler } from "./middleware/error-handler";
 import { healthRouter } from "./routes/health";
 import { freightRequestsRouter } from "./routes/freight/requests";
 import { intakeOptionsRouter } from "./routes/intake/options";
+import { facilitiesRouter } from "./routes/facilities";
 
 // ---------------------------------------------------------------------------
 // CargoMesh V2 Hono application factory.
@@ -24,6 +25,7 @@ export function createHonoApp() {
   app.route("/health", healthRouter);
   app.route("/freight/requests", freightRequestsRouter);
   app.route("/intake/options", intakeOptionsRouter);
+  app.route("/facilities", facilitiesRouter);
 
   return app;
 }

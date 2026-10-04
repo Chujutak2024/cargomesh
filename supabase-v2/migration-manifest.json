@@ -217,6 +217,17 @@
       ]
     },
     {
+      "issue": "HAC-11",
+      "path": "supabase-v2/supabase/migrations/20261002160000_hac11_mcp_account_links.sql",
+      "version": "20261002160000",
+      "sha256": "0927b25172be4f81aa62a68caf8a52fcfbe81a88f25e11d4680317d1bde3a034",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261002073853"
+      ]
+    },
+    {
       "issue": "HAC-12",
       "path": "supabase-v2/supabase/migrations/20261003035802_hac12_receipt_hash_and_service_role_guards.sql",
       "version": "20261003035802",
@@ -225,6 +236,28 @@
       "profile": "v2-clean",
       "dependencies": [
         "20261002073853"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004012929_hac40_facility_commands.sql",
+      "version": "20261004012929",
+      "sha256": "8f104d4a3cf03dcc1111174af5e7bba73aa29d619edf64f8a336e7fcc5e5bee4",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261003035802"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004014340_hac40_request_lifecycle.sql",
+      "version": "20261004014340",
+      "sha256": "7657f72904893519f4c3e1e32f9c26cd086f545a41a971c9fa14100093524a41",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004012929"
       ]
     }
   ]
