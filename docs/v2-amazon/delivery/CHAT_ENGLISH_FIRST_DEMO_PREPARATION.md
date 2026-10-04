@@ -31,6 +31,8 @@ On 2026-10-04, a second redesigned authenticated browser flow used local synthet
 
 The refreshed widget was inspected at desktop and 390 × 844 mobile viewport after reload. [Before desktop](./evidence/hac37-desktop-integrated.png), [before mobile](./evidence/hac37-mobile-integrated.png), [after desktop](./evidence/hac37-after-desktop.png), [after mobile](./evidence/hac37-after-mobile.png). The panel remains available on the real V2 intake route, with a compact header, message history and fixed text/microphone/send controls. The screenshots use only synthetic QA data.
 
+Follow-up voice check on 2026-10-04: the in-app browser emitted `audio-capture` immediately after the microphone gesture, which means it had no working input device. HAC-37 now keeps a continuous listening session where the browser supports it and distinguishes permission denial, missing microphone, network failure, silence and an unexplained recognition-service disconnect in English. None of these states submits a message. The local in-app browser check verified the missing-microphone message and the text fallback; successful capture on a physical microphone is still unverified. Test that separately in a supported browser with a selected input device and microphone permission for the preview origin.
+
 | Surface | Verified | Remaining |
 |---|---|---|
 | Web | Guided turns, correction, price refusal, text path, and authenticated POST/GET/ROAD in a browser against local seeded Supabase V2; reload reauthorizes GET | Hosted preview and HAC-33 location contract integration |

@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { recognitionEndMessage, recognitionErrorMessage } from "./voice-status";
 
-type RecognitionResult = { results: ArrayLike<ArrayLike<{ transcript: string }>> };
+type RecognitionResult = { results: ArrayLike<ArrayLike<{ transcript: string; confidence?: number }> & { isFinal?: boolean }> };
 type RecognitionError = { error?: string };
 type Recognition = {
   lang: string;
   interimResults: boolean;
+  continuous: boolean;
   onresult: ((event: RecognitionResult) => void) | null;
   onerror: ((event: RecognitionError) => void) | null;
   onend: (() => void) | null;
@@ -30,6 +32,7 @@ export function useConversationVoice({ onTranscript, responseText }: {
   const [message, setMessage] = useState("");
   const recognition = useRef<Recognition | null>(null);
   const stopped = useRef(false);
+  const hasTranscript = useRef(false);
 
   useEffect(() => {
     const browser = window as SpeechWindow;
@@ -45,7 +48,7 @@ export function useConversationVoice({ onTranscript, responseText }: {
     recognition.current?.stop();
     recognition.current = null;
     setState("available");
-    setMessage("Listening stopped. Edit the recognized text or continue typing.");
+    setMessage(hasTranscript.current ? recognitionEndMessage(true) : "Listening stopped. You can try again or type your message.");
   }
 
   function start() {
@@ -57,33 +60,37 @@ export function useConversationVoice({ onTranscript, responseText }: {
       return;
     }
     stopped.current = false;
+    hasTranscript.current = false;
     const instance = new Constructor();
     recognition.current = instance;
     instance.lang = "en-US";
-    instance.interimResults = false;
+    instance.interimResults = true;
+    instance.continuous = true;
     instance.onstart = () => {
       if (stopped.current) return;
       setState("listening");
       setMessage("Listening… Press Stop listening when finished.");
     };
     instance.onresult = (event) => {
-      if (stopped.current) return;
+      if (stopped.current || recognition.current !== instance) return;
       const recognized = Array.from(event.results).map((result) => result[0]?.transcript ?? "").join(" ").trim();
-      if (recognized) onTranscript(recognized);
-      setState("processing");
-      setMessage("Review or edit the recognized text, then press Send. Nothing was sent automatically.");
+      if (recognized) { hasTranscript.current = true; onTranscript(recognized); }
+      setState("listening");
+      setMessage("Listening… Your transcript is editable. Press Stop listening when finished; nothing is sent automatically.");
     };
     instance.onerror = (event) => {
-      if (stopped.current) return;
+      if (stopped.current || recognition.current !== instance) return;
       recognition.current = null;
       setState("error");
-      setMessage(event.error === "not-allowed" || event.error === "service-not-allowed"
-        ? "Microphone permission was denied. You can complete the request by typing."
-        : "Speech recognition failed. You can complete the request by typing.");
+      setMessage(recognitionErrorMessage(event.error));
     };
     instance.onend = () => {
+      if (recognition.current !== instance) return;
       recognition.current = null;
-      if (!stopped.current) setState((current) => current === "error" ? current : "available");
+      if (!stopped.current) {
+        setState("error");
+        setMessage(recognitionEndMessage(hasTranscript.current));
+      }
     };
     try {
       // start() is called only from the microphone button's user gesture.
