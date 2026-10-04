@@ -19,7 +19,7 @@ const RpcResultSchema = z.object({
   id: z.string().uuid(),
   referenceCode: z.string().min(1),
   organizationId: z.string().uuid(),
-  status: z.literal("DRAFT"),
+  status: FreightRequestV2ResponseSchema.shape.data.shape.status,
   draftVersion: z.number().int().positive(),
   snapshot: z.custom<Json>((value) => z.record(z.unknown()).safeParse(value).success),
   createdAt: z.string(),
@@ -28,8 +28,8 @@ const RpcResultSchema = z.object({
   idempotentReplay: z.boolean(),
 });
 
-function asRecord(row: DraftRow): PersistedV2Draft {
-  if (row.status !== "DRAFT" || !row.v2_snapshot || !row.creation_payload_hash) {
+export function asV2RequestRecord(row: DraftRow): PersistedV2Draft {
+  if (!row.v2_snapshot || !row.creation_payload_hash) {
     throw new Error("V2_DRAFT_CORRUPT");
   }
   const snapshot = z.record(z.unknown()).parse(row.v2_snapshot);
@@ -42,6 +42,9 @@ function asRecord(row: DraftRow): PersistedV2Draft {
       origin: snapshot.origin, destination: snapshot.destination,
       pickupWindow: snapshot.pickupWindow, deliveryWindow: snapshot.deliveryWindow,
       acceptedModes: snapshot.acceptedModes,
+      serviceType: snapshot.serviceType ?? "FTL",
+      preferredEquipment: snapshot.preferredEquipment ?? null,
+      selectionObjective: snapshot.selectionObjective ?? null,
       requiredEquipment: snapshot.requiredEquipment ?? null,
       cargoSpecification: snapshot.cargoSpecification,
       contacts: snapshot.contacts, budget: snapshot.budget ?? null,
@@ -74,7 +77,7 @@ export class SupabaseV2DraftRepository implements V2DraftRepository {
       .eq("v2_contract_version", "2.0")
       .maybeSingle();
     if (error) throwDbError(error);
-    return data ? asRecord(data) : null;
+    return data ? asV2RequestRecord(data) : null;
   }
 
   async insertAtomically(request: DraftInsert) {
@@ -87,7 +90,7 @@ export class SupabaseV2DraftRepository implements V2DraftRepository {
     });
     if (error) throwDbError(error);
     const result = RpcResultSchema.parse(data);
-    const record = asRecord({
+    const record = asV2RequestRecord({
       id: result.id, code: result.referenceCode,
       organization_id: result.organizationId, status: result.status,
       draft_version: result.draftVersion, v2_snapshot: result.snapshot,
@@ -105,7 +108,7 @@ export class SupabaseV2DraftRepository implements V2DraftRepository {
       .eq("v2_contract_version", "2.0")
       .maybeSingle();
     if (error) throwDbError(error);
-    return data ? asRecord(data) : null;
+    return data ? asV2RequestRecord(data) : null;
   }
 }
 

@@ -35,6 +35,10 @@ export async function evaluateV2RoadByRequestId(
   if (expectedDraftVersion !== undefined && expectedDraftVersion !== request.draftVersion) {
     throw new V2DraftError("STALE_DRAFT", "Draft version does not match.", 409);
   }
+  if (request.acceptedModes.length !== 1 || request.acceptedModes[0] !== "ROAD") {
+    throw new V2DraftError("MODE_EVALUATION_NOT_IMPLEMENTED",
+      "This evaluator supports ROAD only; other modes require their planning adapters.", 501);
+  }
   const window = {
     startsAt: request.pickupWindow.startsAt,
     endsAt: request.deliveryWindow.endsAt,
@@ -56,6 +60,7 @@ export async function evaluateV2RoadByRequestId(
     indivisibleUnits: request.cargoSpecification.units.filter((unit) => unit.indivisible)
       .map((unit) => ({ weightKg: unit.weightPerUnitKg, volumeM3: unit.volumePerUnitM3 })),
     requiredEquipmentCode: request.requiredEquipment,
+    serviceClass: request.serviceType ?? "FTL",
     requiredCertifications: request.cargoSpecification.requirements.filter((code) =>
       canCheckResourceRequirement(code, request.cargoSpecification.temperatureRange != null)),
     temperatureRange: request.cargoSpecification.temperatureRange ?? null,

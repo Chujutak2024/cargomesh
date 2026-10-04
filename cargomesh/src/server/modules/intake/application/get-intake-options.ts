@@ -1,5 +1,6 @@
 import {
   CargoCategoryCodeV2Schema,
+  StandardCargoCategoryCodesV2,
   IntakeOptionsV2ResponseSchema,
   ResourceEvidenceRequirementCodesV2,
   type IntakeOptionsV2Response,
@@ -42,7 +43,7 @@ export interface IntakeOptionsRepository {
   listSupportedRoadEquipment(): Promise<RoadEquipmentOption[]>;
 }
 
-const CATEGORY_CODES = CargoCategoryCodeV2Schema.options;
+const CATEGORY_CODES: readonly string[] = StandardCargoCategoryCodesV2;
 const RESOURCE_EVIDENCE_CODES = new Set<string>(ResourceEvidenceRequirementCodesV2);
 
 /** Versioned capture choices. They do not assert carrier support or availability. */
@@ -76,9 +77,7 @@ export async function getIntakeOptions(
   }
   const activeCategories = categories.filter((category) => category.active);
   const codes = activeCategories.map((category) => category.code);
-  if (codes.length !== CATEGORY_CODES.length
-    || new Set(codes).size !== CATEGORY_CODES.length
-    || CATEGORY_CODES.some((code) => !codes.includes(code))) {
+  if (!codes.length || new Set(codes).size !== codes.length) {
     throw new Error("CATALOG_NOT_READY");
   }
   const response = {
@@ -104,7 +103,11 @@ export async function getIntakeOptions(
           suggestedRequirements: category.suggested_requirements,
           recommendedVehicleClasses: category.recommended_vehicle_classes,
         },
-      })).sort((a, b) => CATEGORY_CODES.indexOf(a.code) - CATEGORY_CODES.indexOf(b.code)),
+      })).sort((a, b) => {
+        const ai = CATEGORY_CODES.indexOf(a.code), bi = CATEGORY_CODES.indexOf(b.code);
+        return (ai < 0 ? CATEGORY_CODES.length : ai) - (bi < 0 ? CATEGORY_CODES.length : bi)
+          || a.code.localeCompare(b.code);
+      }),
       equipmentOptions: equipmentOptions.sort((a, b) => a.code.localeCompare(b.code)),
       packagingOptions: PACKAGING_OPTIONS.map((option) => ({
         ...option, verification: "CAPTURE_ONLY" as const,

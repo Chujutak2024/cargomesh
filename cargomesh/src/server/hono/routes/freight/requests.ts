@@ -8,6 +8,36 @@ import { V2DraftError, createV2Draft, getV2Draft } from
 const freightRequestsRouter = new Hono<{ Variables: AuthVariables }>();
 freightRequestsRouter.use("*", v2AuthMiddleware);
 
+async function lifecycleService() {
+  const [{ RequestLifecycleServiceV2 }, { requestLifecycleRepositoryV2 }] = await Promise.all([
+    import("@/server/modules/freight-requests/application/request-lifecycle-service"),
+    import("@/server/modules/freight-requests/infrastructure/supabase-request-lifecycle-repository"),
+  ]);
+  return new RequestLifecycleServiceV2(await requestLifecycleRepositoryV2());
+}
+freightRequestsRouter.get("/", async (c) => {
+  try { return c.json(await (await lifecycleService()).list(c.get("member"), c.req.query())); }
+  catch (error) { return v2Error(c, error); }
+});
+freightRequestsRouter.post("/:id/revisions", async (c) => {
+  try {
+    let body: unknown;
+    try { body = await c.req.json(); }
+    catch { throw new V2DraftError("VALIDATION_ERROR", "Request body must be valid JSON.", 400); }
+    return c.json(await (await lifecycleService()).revise(c.get("member"), c.req.param("id"), body,
+      c.req.header("Idempotency-Key")));
+  } catch (error) { return v2Error(c, error); }
+});
+freightRequestsRouter.post("/:id/submissions", async (c) => {
+  try {
+    let body: unknown;
+    try { body = await c.req.json(); }
+    catch { throw new V2DraftError("VALIDATION_ERROR", "Request body must be valid JSON.", 400); }
+    return c.json(await (await lifecycleService()).submit(c.get("member"), c.req.param("id"), body,
+      c.req.header("Idempotency-Key")));
+  } catch (error) { return v2Error(c, error); }
+});
+
 freightRequestsRouter.post("/", async (c) => {
   try {
     let body: unknown;

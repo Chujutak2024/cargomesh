@@ -1,0 +1,64 @@
+// Local synthetic fixtures, real Bearer identity, Next/Hono and native workflow commands.
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync, existsSync, unlinkSync } from "node:fs";
+import { resolve } from "node:path";
+import { createClient } from "@supabase/supabase-js";
+import { WorkflowRecordV2Schema } from "../src/shared/schemas/v2/workflow.ts";
+const root = resolve(import.meta.dirname, "../..");
+const app = process.env.HAC40_APP_URL ?? "http://127.0.0.1:3172";
+const api = process.env.NEXT_PUBLIC_SUPABASE_URL, anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const password = process.env.HAC12_LOCAL_QA_PASSWORD;
+if (!api || !anon || !password || [app, api].some(url => !["127.0.0.1", "localhost"].includes(new URL(url).hostname))) throw new Error("Dedicated local stack required.");
+const statePath = resolve(root, "tmp/hac40-workflow-http-state.json");
+if (existsSync(statePath)) throw new Error("Fixture state exists; cleanup before retrying.");
+const python = process.env.HAC40_PYTHON ?? "python";
+function fixture(action) { execFileSync(python, [resolve(root, "scripts/hac40_workflow_local_fixture.py"), action, "--state", statePath], { cwd: root, stdio: "pipe" }); }
+const auth = createClient(api, anon, { auth: { persistSession: false, autoRefreshToken: false } });
+const second = createClient(api, anon, { auth: { persistSession: false, autoRefreshToken: false } });
+const login = await auth.auth.signInWithPassword({ email: "qa-v2-a@cargomesh.test", password });
+assert.equal(login.error, null);const token = login.data.session.access_token;
+const other = await second.auth.signInWithPassword({ email: "qa-v2-b@cargomesh.test", password });
+assert.equal(other.error, null);
+async function call(path, body, key = crypto.randomUUID(), access = token) {
+ const response = await fetch(new URL("/api/v2" + path, app), { method: body ? "POST" : "GET",
+  headers: { ...(access ? { Authorization: `Bearer ${access}` } : {}), ...(body ? { "Content-Type": "application/json", "Idempotency-Key": key } : {}) },
+  ...(body ? { body: JSON.stringify(body) } : {}) });
+ return { status: response.status, body: await response.json() };
+}
+let state;
+try {
+ fixture("prepare");state=JSON.parse(readFileSync(statePath, "utf8"));const refs=state.refs;
+ const carrier="c2340000-0000-4000-8000-000000000001";
+ for (const value of Object.values(refs).filter(v => v.kind)) WorkflowRecordV2Schema.parse(value);
+ const paths={ origin:"/routing/nodes", destination:"/routing/nodes", corridor:"/routing/corridors", policy:"/routing/policies",
+  limits:`/carriers/${carrier}/route-limits`, scorepolicy:"/scoring/policies", route:`/freight/requests/${refs.request.id}/routes`,
+  plan:`/freight/requests/${refs.request.id}/plans`, opportunity:`/carriers/${carrier}/opportunities`, offer:`/carriers/${carrier}/offers`,
+  ranking:`/freight/requests/${refs.request.id}/ranking`, decision:`/freight/requests/${refs.request.id}/decisions`, booking:"/bookings", execution:"/executions" };
+ for (const [name,path] of Object.entries(paths)) {
+  const read=await call(path+"/"+refs[name].id);assert.equal(read.status,200,`${name}: ${JSON.stringify(read.body)}`);WorkflowRecordV2Schema.parse(read.body.data);
+  const list=await call(path);assert.equal(list.status,200,JSON.stringify(list.body));assert.ok(list.body.data.some(row=>row.id===refs[name].id));
+ }
+ assert.equal((await call("/bookings/"+refs.booking.id,undefined,undefined,other.data.session.access_token)).status,404);
+ assert.equal((await call("/routing/nodes",undefined,undefined,null)).status,401);
+ const node={...refs.origin.data,name:"HTTP independent node"};const key=crypto.randomUUID();
+ const created=await call("/routing/nodes",node,key);assert.equal(created.status,201,JSON.stringify(created.body));state.refs.httpNode=created.body.data;writeFileSync(statePath,JSON.stringify(state));
+ const replay=await call("/routing/nodes",node,key);assert.equal(replay.status,200);assert.deepEqual(replay.body.data,created.body.data);
+ assert.equal((await call("/routing/nodes",{...node,name:"different"},key)).status,409);
+ const revision=await call(`/routing/nodes/${created.body.data.id}/revisions`,{expectedVersion:1,value:node});assert.equal(revision.status,200,JSON.stringify(revision.body));
+ assert.equal((await call(`/routing/nodes/${created.body.data.id}/revisions`,{expectedVersion:1,value:node})).status,409);
+ const evidence=refs.limits.data.source;
+ const hold=await call("/capacity/holds",{schemaVersion:"2.0",bookingId:refs.booking.id,assignmentId:refs.assignment.id,expiresAt:new Date(Date.now()+3600000).toISOString(),consolidationId:null,evidence});
+ assert.equal(hold.status,201,JSON.stringify(hold.body));WorkflowRecordV2Schema.parse(hold.body.data);
+ const audit={schemaVersion:"2.0",expectedVersion:1,note:"HTTP carrier confirms",evidence};
+ const confirmed=await call(`/carriers/${carrier}/capacity/holds/${hold.body.data.id}/confirmations`,audit);assert.equal(confirmed.status,200,JSON.stringify(confirmed.body));
+ const booked=await call(`/carriers/${carrier}/bookings/${refs.booking.id}/confirmations`,{...audit,carrierReference:"QA-HTTP-BOOK",confirmation:"CONFIRMED"});
+ assert.equal(booked.status,200,JSON.stringify(booked.body));assert.equal(booked.body.data.data.capacityEvidence.length,1);
+ const release=await call(`/capacity/holds/${hold.body.data.id}/releases`,{...audit,expectedVersion:2});assert.equal(release.status,409);
+ const cancel=await call(`/bookings/${refs.booking.id}/cancellations`,{...audit,expectedVersion:2});assert.equal(cancel.status,200,JSON.stringify(cancel.body));
+ const after=await call(`/capacity/holds/${hold.body.data.id}`);assert.equal(after.body.data.status,"RELEASED");
+ console.log("PASS: 14 workflow collections/details; typed native outputs; actor isolation; POST/replay/hash conflict/revision/stale; hold→confirm→booking→atomic cancellation over authenticated HTTP.");
+} finally {
+ if (state) { fixture("cleanup"); unlinkSync(statePath); }
+ await auth.auth.signOut({scope:"global"});await second.auth.signOut({scope:"global"});
+}

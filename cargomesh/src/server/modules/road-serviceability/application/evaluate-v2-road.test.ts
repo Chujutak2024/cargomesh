@@ -79,6 +79,27 @@ function service(): RoadService {
 }
 
 describe("HAC-12 ROAD application response", () => {
+  it("never evaluates SEA or a multimodal request as ROAD", async () => {
+    const repo = draft();
+    const saved = (await repo.findById(actor, requestId))!;
+    let reads = 0;
+    for (const modes of [["SEA"], ["ROAD", "SEA"]] as const) {
+      saved.data.acceptedModes = [...modes];
+      await assert.rejects(evaluateV2RoadByRequestId(requestId, 1, actor,
+        { ...repo, findById: async () => saved }, { listRoadServices: async () => { reads++; return [service()]; } }),
+        { code: "MODE_EVALUATION_NOT_IMPLEMENTED", httpStatus: 501 });
+    }
+    assert.equal(reads, 0);
+  });
+
+  it("does not substitute an FTL service for a declared LTL request", async () => {
+    const repo = draft();
+    const saved = (await repo.findById(actor, requestId))!;
+    saved.data.serviceType = "LTL";
+    const result = await evaluateV2RoadByRequestId(requestId, 1, actor,
+      { ...repo, findById: async () => saved }, { listRoadServices: async () => [service()] });
+    assert.equal(result.data.candidates.length, 0);
+  });
   it("maps a synthetic eligible service to the V2 DTO without inventing geometry or price", async () => {
     const result = await evaluateV2RoadByRequestId(requestId, 1, actor, draft(),
       { listRoadServices: async () => [service()] });
@@ -92,7 +113,10 @@ describe("HAC-12 ROAD application response", () => {
   it("exposes the LTL review reason and withholds available capacity in the DTO", async () => {
     const item = service();
     item.serviceClass = "LTL";
-    const result = await evaluateV2RoadByRequestId(requestId, 1, actor, draft(),
+    const repo = draft();
+    const saved = (await repo.findById(actor, requestId))!;
+    saved.data.serviceType = "LTL";
+    const result = await evaluateV2RoadByRequestId(requestId, 1, actor, { ...repo, findById: async () => saved },
       { listRoadServices: async () => [item] });
     const candidate = result.data.candidates[0]!;
     assert.equal(candidate.status, "unknown");

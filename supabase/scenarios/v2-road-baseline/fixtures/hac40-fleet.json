@@ -1,0 +1,152 @@
+{
+  "capability-definitions": {
+    "schemaVersion": "2.0",
+    "serviceId": "c2360000-0000-4000-8000-000000000001",
+    "categoryId": "c0000000-0000-0000-0000-000000000001",
+    "requirements": [],
+    "maxWeightKg": 8000,
+    "temperatureRange": null,
+    "certifications": [
+      "QA_CERT"
+    ],
+    "evidence": "fixture:inspection",
+    "verifiedAt": "2026-01-01T00:00:00Z",
+    "validUntil": "2027-03-01T00:00:00Z",
+    "active": true
+  },
+  "assets": {
+    "schemaVersion": "2.0",
+    "serviceId": "c2360000-0000-4000-8000-000000000001",
+    "code": "FLEET_QA",
+    "mode": "ROAD",
+    "equipmentType": "BOX_TRUCK",
+    "role": "LOAD_BEARING",
+    "usefulCapacityKg": 10000,
+    "usableVolumeM3": 40,
+    "operatingStatus": "AVAILABLE",
+    "homeDepotId": "c2350000-0000-4000-8000-000000000001",
+    "provenance": "OWN",
+    "partnerId": null,
+    "evidence": "fixture:asset",
+    "roadVehicle": {
+      "plate": "QA-001",
+      "registrationCode": "QA-REG",
+      "registeredAt": "2026-01-01",
+      "brand": "Synthetic",
+      "model": "Test",
+      "variant": null,
+      "bodyType": "BOX",
+      "usableDimensions": {
+        "length": 500,
+        "width": 240,
+        "height": 250
+      },
+      "grossWeightLimitKg": 15000,
+      "odometerKm": 5000,
+      "conditionReason": null,
+      "axleConfig": "2S1"
+    }
+  },
+  "capacity-pools": {
+    "schemaVersion": "2.0",
+    "serviceId": "c2360000-0000-4000-8000-000000000001",
+    "code": "POOL_QA",
+    "mode": "ROAD",
+    "equipmentType": "BOX_TRUCK",
+    "serviceWindow": {
+      "startsAt": "2027-01-01T00:00:00Z",
+      "endsAt": "2027-02-01T00:00:00Z"
+    },
+    "declaredCapacity": {
+      "weightKg": 10000,
+      "volumeM3": 40
+    },
+    "provenance": "CONTRACTED",
+    "partnerId": null,
+    "evidence": "fixture:agreement",
+    "supportedCargoCategoryIds": [
+      "c0000000-0000-0000-0000-000000000001"
+    ],
+    "active": true
+  },
+  "calendars": {
+    "schemaVersion": "2.0",
+    "serviceId": "c2360000-0000-4000-8000-000000000001",
+    "assetId": "ASSET",
+    "capacityPoolId": null,
+    "timezone": "America/Lima",
+    "horizon": {
+      "startsAt": "2027-01-01T00:00:00Z",
+      "endsAt": "2027-02-01T00:00:00Z"
+    },
+    "source": "fixture:calendar",
+    "lastVerifiedAt": "2026-01-01T00:00:00Z",
+    "freshness": "SIMULATED",
+    "validUntil": "2027-03-01T00:00:00Z",
+    "complete": true,
+    "availableWindows": [
+      {
+        "startsAt": "2027-01-01T00:00:00Z",
+        "endsAt": "2027-02-01T00:00:00Z"
+      }
+    ],
+    "readyPickupAreaId": "c2370000-0000-4000-8000-000000000001"
+  },
+  "maintenances": {
+    "schemaVersion": "2.0",
+    "serviceId": "c2360000-0000-4000-8000-000000000001",
+    "assetId": "ASSET",
+    "blockedWindow": {
+      "startsAt": "2027-01-10T00:00:00Z",
+      "endsAt": "2027-01-11T00:00:00Z"
+    },
+    "kind": "PREVENTIVE",
+    "status": "SCHEDULED",
+    "source": "fixture:work-order",
+    "reason": "Synthetic preventive inspection"
+  },
+  "repositioning-blocks": {
+    "schemaVersion": "2.0",
+    "serviceId": "c2360000-0000-4000-8000-000000000001",
+    "calendarId": "CALENDAR",
+    "occupiedWindow": {
+      "startsAt": "2027-01-12T00:00:00Z",
+      "endsAt": "2027-01-13T00:00:00Z"
+    },
+    "origin": {
+      "label": "Synthetic Lima",
+      "countryCode": "PE",
+      "region": "LIM",
+      "city": "Lima",
+      "lat": -12,
+      "lng": -77
+    },
+    "nextPickup": {
+      "label": "Synthetic Lima",
+      "countryCode": "PE",
+      "region": "LIM",
+      "city": "Lima",
+      "lat": -12,
+      "lng": -77
+    },
+    "estimatedTravelSeconds": 3600,
+    "status": "PLANNED",
+    "source": "fixture:dispatch",
+    "reason": "Synthetic positioning"
+  },
+  "asset-capabilities": {
+    "schemaVersion": "2.0",
+    "serviceId": "c2360000-0000-4000-8000-000000000001",
+    "assetId": "ASSET",
+    "categoryId": "c0000000-0000-0000-0000-000000000001",
+    "temperatureRange": null,
+    "certifications": [
+      "QA_CERT"
+    ],
+    "evidence": "fixture:inspection",
+    "verifiedAt": "2026-01-01T00:00:00Z",
+    "validUntil": "2027-03-01T00:00:00Z",
+    "active": true,
+    "definitionId": "DEFINITION"
+  }
+}

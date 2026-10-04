@@ -17,6 +17,21 @@
     "supabase/tests/11_v2_scenario_data.test.sql",
     "supabase/tests/12_v2_hac12_road_vertical.test.sql",
     "supabase/tests/13_v2_hac12_rereview.test.sql",
-    "supabase/tests/14_v2_hac12_receipt_hash.test.sql"
+    "supabase/tests/14_v2_hac12_receipt_hash.test.sql",
+    "supabase/tests/12_hac11_mcp_account_links.test.sql",
+    "supabase/tests/15_v2_hac40_facility_commands.test.sql",
+    "supabase/tests/16_v2_hac40_request_lifecycle.test.sql",
+    "supabase/tests/17_v2_hac40_organization_commands.test.sql",
+    "supabase/tests/18_v2_hac40_full_request_contract.test.sql",
+    "supabase/tests/19_v2_hac40_catalog.test.sql",
+    "supabase/tests/20_v2_hac40_fleet.test.sql",
+    "supabase/tests/21_v2_hac40_crew.test.sql",
+    "supabase/tests/22_v2_hac40_workflow.test.sql",
+    "supabase/tests/23_v2_hac40_operation.test.sql",
+    "supabase/tests/24_v2_hac40_consolidation.test.sql",
+    "supabase/tests/25_v2_hac40_combination.test.sql",
+    "supabase/tests/26_v2_hac40_workflow_constraints.test.sql",
+    "supabase/tests/27_v2_hac40_multileg.test.sql",
+    "supabase/tests/28_v2_hac40_execution_cancel.test.sql"
   ]
 }

@@ -351,6 +351,11 @@ def main():
         script('verify',V2,SCENARIO/'verify.sql')
         route_condition_checks()
         tests('v2',PROFILE)
+        run('hac40-request-race', [sys.executable, ROOT/'scripts/check-hac40-request-race.py'])
+        run('hac40-catalog-race', [sys.executable, ROOT/'scripts/check-hac40-catalog-race.py'])
+        run('hac40-fleet-race', [sys.executable, ROOT/'scripts/check-hac40-fleet-race.py'])
+        run('hac40-crew-race', [sys.executable, ROOT/'scripts/check-hac40-crew-race.py'])
+        run('hac40-workflow-race', [sys.executable, ROOT/'scripts/check-hac40-workflow-race.py'])
         backup_and_cleanup()
 
 

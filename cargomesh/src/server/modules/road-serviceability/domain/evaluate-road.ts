@@ -5,6 +5,7 @@ export type Location = { countryCode: string; regionCode?: string | null; city?:
 export type Window = { startsAt: string; endsAt: string };
 
 export type RoadRequest = {
+  serviceClass?: "FTL" | "LTL";
   origin: Location;
   destination: Location;
   /** Full period for which a carrying resource must be available. */
@@ -27,11 +28,13 @@ export type Area = {
   code?: string;
   role: "PICKUP" | "DELIVERY";
   coverage: "INCLUDE" | "EXCLUDE";
-  granularity: "COUNTRY" | "REGION" | "CITY" | "POSTAL_CODE";
+  granularity: "COUNTRY" | "REGION" | "CITY" | "POSTAL_CODE" | "POLYGON" | "POINTS";
   location: Location;
   active: boolean;
-  validFrom: string;
+  validFrom: string | null;
   validUntil: string | null;
+  evidenceAvailable?: boolean;
+  partnerAgreement?: { status: string; startsAt: string; endsAt: string } | null;
 };
 
 export type Lane = {
@@ -44,8 +47,9 @@ export type Lane = {
   pickupAreaId: string;
   deliveryAreaId: string;
   active: boolean;
-  validFrom: string;
+  validFrom: string | null;
   validUntil: string | null;
+  evidenceAvailable?: boolean;
 };
 
 export type Capacity = {
@@ -62,9 +66,16 @@ export type Capacity = {
     certifications: string[] | null;
     temperatureMinC: number | null;
     temperatureMaxC: number | null;
+    maxWeightKg?: number | null;
+    evidenceAvailable?: boolean;
+    validUntil?: string | null;
+    requirements?: string[];
   }> | null;
   maxWeightKg: number | null;
   maxVolumeM3: number | null;
+  /** Published fleet evidence is checked independently from a calendar slot. */
+  sourceWindow?: Window | null;
+  sourceEvidenceAvailable?: boolean;
   calendar: {
     validUntil: string | null;
     readyPickupAreaId?: string | null;
@@ -89,6 +100,8 @@ export type RoadService = {
   mode: "ROAD" | "RAIL" | "SEA" | "AIR";
   active: boolean;
   supportedCargoCategoryCodes: string[] | null;
+  maxWeightKg?: number | null;
+  maxVolumeM3?: number | null;
   areas: Area[];
   lanes: Lane[];
   capacities: Capacity[];
@@ -125,12 +138,12 @@ function validateWindow(window: Window): void {
   if (instant(window.startsAt) >= instant(window.endsAt)) throw new Error("INVALID_TIME_WINDOW");
 }
 
-function current(from: string, until: string | null, at: string): boolean {
-  return instant(from) <= instant(at) && (until === null || instant(until) > instant(at));
+function current(from: string | null, until: string | null, at: string): boolean {
+  return from !== null && instant(from) <= instant(at) && (until === null || instant(until) > instant(at));
 }
 
-function validThrough(from: string, until: string | null, window: Window): boolean {
-  return instant(from) <= instant(window.startsAt)
+function validThrough(from: string | null, until: string | null, window: Window): boolean {
+  return from !== null && instant(from) <= instant(window.startsAt)
     && (until === null || instant(until) >= instant(window.endsAt));
 }
 
@@ -138,8 +151,8 @@ function overlaps(a: Window, b: Window): boolean {
   return instant(a.startsAt) < instant(b.endsAt) && instant(b.startsAt) < instant(a.endsAt);
 }
 
-function overlapsValidity(from: string, until: string | null, window: Window): boolean {
-  return instant(from) < instant(window.endsAt)
+function overlapsValidity(from: string | null, until: string | null, window: Window): boolean {
+  return from !== null && instant(from) < instant(window.endsAt)
     && (until === null || instant(until) > instant(window.startsAt));
 }
 
@@ -149,6 +162,7 @@ function contains(a: Window, b: Window): boolean {
 
 function matches(area: Area, location: Location): boolean {
   if (area.location.countryCode !== location.countryCode) return false;
+  if (area.granularity === "POLYGON" || area.granularity === "POINTS") return false;
   if (area.granularity === "COUNTRY") return true;
   if (area.location.regionCode && area.location.regionCode !== location.regionCode) return false;
   if (area.granularity === "REGION") return true;
@@ -158,13 +172,25 @@ function matches(area: Area, location: Location): boolean {
 }
 
 function areaCheck(areas: Area[], role: Area["role"], location: Location, window: Window) {
+  const evidenced = (area: Area) => area.evidenceAvailable !== false
+    && (area.partnerAgreement === undefined || (area.partnerAgreement !== null
+      && area.partnerAgreement.status === "ACTIVE"
+      && contains({ startsAt: area.partnerAgreement.startsAt, endsAt: area.partnerAgreement.endsAt }, window)));
   const activeAtStart = areas.filter((area) => area.active && area.role === role
     && current(area.validFrom, area.validUntil, window.startsAt));
   // A published exclusion can begin after this pickup/delivery window starts.
   // Any overlap prevents confirmed coverage for the whole relevant window.
   if (areas.some((area) => area.active && area.role === role && area.coverage === "EXCLUDE"
-    && matches(area, location) && overlapsValidity(area.validFrom, area.validUntil, window))) {
+    && evidenced(area) && matches(area, location) && overlapsValidity(area.validFrom, area.validUntil, window))) {
     return { status: "ineligible" as const, reason: `${role}_EXCLUDED`, includedIds: [] as string[] };
+  }
+  if (areas.some(area => area.active && area.role === role && area.location.countryCode === location.countryCode
+    && (area.granularity === "POLYGON" || area.granularity === "POINTS"))) {
+    return { status: "unknown" as const, reason: "GEOGRAPHY_EVALUATION_NOT_IMPLEMENTED", includedIds: [] as string[] };
+  }
+  // A matching unevidenced inclusion/exclusion or expired partner cannot become confirmed coverage.
+  if (areas.some(area => area.active && area.role === role && matches(area, location) && !evidenced(area))) {
+    return { status: "unknown" as const, reason: `${role}_COVERAGE_EVIDENCE_UNKNOWN`, includedIds: [] as string[] };
   }
   const valid = activeAtStart.filter((area) => validThrough(area.validFrom, area.validUntil, window));
   const includedIds = valid.filter((area) => area.coverage === "INCLUDE" && matches(area, location))
@@ -179,12 +205,16 @@ function areaCheck(areas: Area[], role: Area["role"], location: Location, window
 
 function laneCheck(lanes: Lane[], pickupIds: string[], deliveryIds: string[], window: Window): Check & { laneId?: string } {
   if (pickupIds.length === 0 || deliveryIds.length === 0) return { status: "unknown", reason: "LANE_NOT_EVALUABLE" };
-  const activeAtStart = lanes.filter((lane) => lane.active
+  const activeAtStart = lanes.filter((lane) => lane.active && lane.evidenceAvailable !== false
     && current(lane.validFrom, lane.validUntil, window.startsAt));
   const valid = activeAtStart.filter((lane) => validThrough(lane.validFrom, lane.validUntil, window));
   const matched = valid.find((lane) => pickupIds.includes(lane.pickupAreaId)
     && deliveryIds.includes(lane.deliveryAreaId));
   if (matched) return { status: "eligible", laneId: matched.id };
+  if (lanes.some(lane => lane.active && lane.evidenceAvailable === false
+    && pickupIds.includes(lane.pickupAreaId) && deliveryIds.includes(lane.deliveryAreaId))) {
+    return { status: "unknown", reason: "LANE_EVIDENCE_UNKNOWN" };
+  }
   if (activeAtStart.some((lane) => pickupIds.includes(lane.pickupAreaId)
     && deliveryIds.includes(lane.deliveryAreaId))) {
     return { status: "unknown", reason: "LANE_EXPIRES" };
@@ -196,6 +226,20 @@ function laneCheck(lanes: Lane[], pickupIds: string[], deliveryIds: string[], wi
 
 function capacityCheck(capacity: Capacity, request: RoadRequest): Check {
   if (capacity.role !== "CARRIER") return { status: "ineligible", reason: "NOT_CARRYING_CAPACITY" };
+  const cargoCapability = capacity.cargoCapabilities?.find(item => item.categoryCode === request.cargoCategoryCode);
+  if (cargoCapability?.evidenceAvailable === false || (cargoCapability?.validUntil !== undefined
+    && (cargoCapability.validUntil === null || instant(cargoCapability.validUntil) < instant(request.operationWindow.endsAt)))) {
+    return { status: "unknown", reason: "CARGO_CAPABILITY_UNVERIFIED" };
+  }
+  if (cargoCapability?.requirements?.length) return { status: "unknown", reason: "CARGO_CAPABILITY_REQUIREMENTS_UNVERIFIED" };
+  if (cargoCapability?.maxWeightKg != null && request.totalWeightKg > cargoCapability.maxWeightKg) {
+    return { status: "ineligible", reason: "CARGO_CAPABILITY_OVER_CAPACITY" };
+  }
+  if (capacity.sourceEvidenceAvailable === false) return { status: "unknown", reason: "CAPACITY_SOURCE_UNVERIFIED" };
+  if (capacity.sourceWindow === null) return { status: "unknown", reason: "CAPACITY_SOURCE_WINDOW_UNKNOWN" };
+  if (capacity.sourceWindow && !contains(capacity.sourceWindow, request.operationWindow)) {
+    return { status: "ineligible", reason: "OUTSIDE_CAPACITY_SOURCE_WINDOW" };
+  }
   if (request.requiredEquipmentCode && capacity.equipmentCode === null) {
     return { status: "unknown", reason: "EQUIPMENT_UNKNOWN" };
   }
@@ -332,18 +376,25 @@ export function evaluateRoad(request: RoadRequest, services: RoadService[]) {
     || !Number.isFinite(request.totalVolumeM3) || request.totalVolumeM3 <= 0) {
     throw new Error("INVALID_CARGO_DIMENSIONS");
   }
-  const candidates: Candidate[] = services.filter((service) => service.active && service.mode === "ROAD")
+  const candidates: Candidate[] = services.filter((service) => service.active && service.mode === "ROAD"
+    && (!request.serviceClass || !service.serviceClass || service.serviceClass === request.serviceClass))
     .flatMap((service): Candidate[] => {
       const pickup = areaCheck(service.areas, "PICKUP", request.origin, request.pickupWindow);
       const delivery = areaCheck(service.areas, "DELIVERY", request.destination, request.deliveryWindow);
       // A known absence of declared coverage is not a route candidate. Missing
       // coverage evidence remains UNKNOWN and explicit exclusions stay visible.
       if (pickup.reason === "NO_PICKUP_COVERAGE" || delivery.reason === "NO_DELIVERY_COVERAGE") return [];
-      const cargo: Check = service.supportedCargoCategoryCodes === null
+      let cargo: Check = service.supportedCargoCategoryCodes === null
         ? { status: "unknown", reason: "SERVICE_CARGO_UNKNOWN" }
         : service.supportedCargoCategoryCodes.includes(request.cargoCategoryCode)
           ? { status: "eligible" }
           : { status: "ineligible", reason: "SERVICE_CARGO_UNSUPPORTED" };
+      if ((service.maxWeightKg != null && request.totalWeightKg > service.maxWeightKg)
+        || (service.maxVolumeM3 != null && request.totalVolumeM3 > service.maxVolumeM3)) {
+        cargo = { status: "ineligible", reason: "SERVICE_CAPACITY_LIMIT_EXCEEDED" };
+      } else if (cargo.status === "eligible" && (service.maxWeightKg === null || service.maxVolumeM3 === null)) {
+        cargo = { status: "unknown", reason: "SERVICE_CAPACITY_LIMIT_UNKNOWN" };
+      }
       const lane = laneCheck(service.lanes, pickup.includedIds, delivery.includedIds, request.operationWindow);
       const { capacity, requirements, temporal } = capacitiesCheck(service.capacities, request, lane, service);
       const border = borderCheck(request, service.lanes.find((item) => item.id === lane.laneId));
