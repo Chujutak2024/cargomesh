@@ -43,6 +43,20 @@ Migración aditiva `20261004042259_hac40_fleet.sql`, perfil pgTAP `20_v2_hac40_f
 
 **Pendientes de B2:** VehicleCombination, Driver/DriverAssignment/VehicleAssignment, AssetStatusEvent/auditoría operativa completa, reservas/holds públicos, consolidación LTL, disponibilidad conjunta y verificación de dimensiones/jurisdicción/permisos. B3–B6 (planes, comercial, booking y ejecución) continúan dentro de HAC-40. Identidad carrier/MCP/ResponseIntegration es dependencia HAC-41. El inventario/DER completo no se declara certificado por este avance.
 
+### Reglas compartidas de asignación — avance de dominio
+
+`cargomesh/src/server/modules/fleet/domain/assignment-policy.ts` implementa reglas puras para los servicios Web/MCP:
+
+- Ventanas semiabiertas, cobertura continua de slots adyacentes, bloqueos activos y vigencia de evidencia. Agenda incompleta o vencida conserva UNKNOWN.
+- Driver/DriverAssignment: carrier, clase de licencia y cualificaciones requeridas, licencia durante toda la ventana, estado de jornada y límite de horas con política/fuente explícitas. La fecha LocalDate se resuelve mediante un adaptador de jurisdicción; no se supone UTC ni se codifica una licencia o límite legal universal. El límite resolved debe corresponder a la fecha de la licencia evaluada.
+- VehicleCombination: miembros únicos del mismo carrier y modo ROAD, estado operativo, acople durante toda la ventana, compatibilidad con evidencia y disponibilidad de todos los activos. Capacidad efectiva como mínimo entre fabricante, servicio y límites brutos de combinación/vía menos tara; no suma capacidades nominales de tracto y remolque. Límites o evidencia ausentes conservan capacidad desconocida.
+- VehicleAssignment: scope carrier/servicio/ejecución/activo, disponibilidad, peso y volumen. AUXILIARY no porta carga. FTL excluye otra asignación simultánea; LTL solo consolida en la misma ejecución con evidencia. Se resta el pico simultáneo por dimensión; asignaciones secuenciales o de otra fecha no se suman.
+- CONFIRMED exige una reserva confirmada, coherente con carrier/servicio/ejecución/activo, ventana y capacidad, más evidencia vigente. Un hold no basta para confirmar.
+
+Estas políticas se incluyen en `test:hac40` y, por esa vía, en release/CI. Los vocabularios de licencia, jornada, acople y compatibilidad se reciben desde contratos/políticas con fuente; los valores de pruebas son explícitamente sintéticos.
+
+**Límite actual:** no son nuevos endpoints, tablas ni comandos persistentes. Faltan los repositorios, DTO HTTP definitivos y validación transaccional de estas asignaciones/combinaciones, junto con ejecución y reservas. Los adaptadores deberán proyectar solo bloqueos activos, evitar contar dos veces una asignación y su reserva, y excluir únicamente el compromiso propio validado al revisar su asignación. El contexto de prueba no certifica esa proyección SQL, RLS, carreras ni disponibilidad live. El total de API continúa siendo 77 y estas clases siguen pendientes de implementación integral.
+
 ## Friction log
 
 El generador local de tipos SQL no infiere parámetros RPC nullable. Se conservaron las anotaciones API ya revisadas de las funciones existentes y se regeneraron tablas/relaciones desde PostgreSQL; typecheck valida su compatibilidad. No se resolvió mediante casts a `any` ni clientes con service_role.
