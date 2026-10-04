@@ -13,6 +13,9 @@
 .history{display:flex;flex-direction:column;gap:.7rem}
 .assistantRow,.userRow{display:flex}.assistantRow{justify-content:flex-start}.userRow{justify-content:flex-end}
 .history p{max-width:91%;margin:0;padding:.7rem .85rem;border-radius:1rem;font-size:.86rem;line-height:1.45;overflow-wrap:anywhere}
+.nextQuestion{display:inline-block;max-width:91%;margin:.75rem 0 0;padding:.7rem .85rem;border:1px solid #d8e8e1;border-radius:1rem 1rem 1rem .3rem;background:#fff;color:var(--cm-color-heading);font-size:.86rem;font-weight:700;line-height:1.45}
+.choiceList,.suggestions{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.65rem}.choiceList button,.suggestions button,.suggestion{border:1px solid #b7d3c5;border-radius:999px;background:#f0f7f2;color:#174f44;padding:.45rem .7rem;font:inherit;font-size:.75rem;font-weight:700;cursor:pointer}.choiceList button:hover,.suggestions button:hover,.suggestion:hover{background:#dceee3}.suggestion{margin-top:.7rem}
+.loading{display:flex;align-items:center;gap:.45rem;margin:.8rem 0 0;color:#526960;font-size:.75rem}.loading::before{content:"";width:.7rem;height:.7rem;border:2px solid #b4d4c2;border-top-color:#185c55;border-radius:50%;animation:chatSpin .75s linear infinite}@keyframes chatSpin{to{transform:rotate(360deg)}}
 .speaker{display:block;margin-bottom:.25rem;font-size:.69rem;font-weight:800;letter-spacing:.02em;opacity:.8}
 .assistant{border:1px solid #e0e9e4;border-bottom-left-radius:.3rem!important;background:#eef5f1;color:var(--cm-color-ink)}
 .user{border-bottom-right-radius:.3rem!important;background:var(--cm-color-primary);color:#fff}

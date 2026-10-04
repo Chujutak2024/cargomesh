@@ -7,6 +7,7 @@ import { auditIntakeOptions, getIntakeOptionsFixture } from "./intake-options";
 import { INTAKE_OPTIONS_FIXTURE } from "./fixtures/intake-options.fixture";
 import {
   EMPTY_PROTOTYPE_DRAFT,
+  applyChatFieldToDraft,
   PROVISIONAL_PROTOTYPE_DRAFT,
   buildPrototypeExample,
   mapDraftToCreateFreightRequestV2Input,
@@ -15,6 +16,14 @@ import {
   validatePrototypeReview,
   validatePrototypeStep,
 } from "./prototype-model";
+
+test("multi-slot chat updates derive totals from the latest provisional values", () => {
+  let draft = applyChatFieldToDraft(EMPTY_PROTOTYPE_DRAFT, "unitQuantity", "2");
+  draft = applyChatFieldToDraft(draft, "unitWeightPerUnitKg", "1200");
+  draft = applyChatFieldToDraft(draft, "unitVolumePerUnitM3", "2.4");
+  assert.equal(draft.totalWeightKg, "2400");
+  assert.equal(draft.totalVolumeM3, "4.8");
+});
 
 test("the local HAC-27 options fixture covers every visible selector", () => {
   const options = getIntakeOptionsFixture();
@@ -192,9 +201,11 @@ test("requirement toggling is deterministic and duplicate-free", () => {
   assert.deepEqual(toggleRequirement(["FRAGILE", "SECURITY_SEAL"], "FRAGILE", false), ["SECURITY_SEAL"]);
 });
 
-test("the intake keeps step edits in React memory and does not expose autosave", () => {
+test("the intake keeps provisional details in React memory and stores only the request ID for recovery", () => {
   const source = fs.readFileSync(path.join(process.cwd(), "src/features/v2-intake/v2-intake-prototype.tsx"), "utf8");
-  assert.doesNotMatch(source, /localStorage|sessionStorage|autosave\s*\(/i);
+  assert.doesNotMatch(source, /localStorage|autosave\s*\(/i);
+  assert.match(source, /sessionStorage\.setItem\(CHAT_REQUEST_SESSION_KEY, roundTrip\.data\.id\)/);
+  assert.doesNotMatch(source, /sessionStorage\.setItem\([^,]+,\s*(?:draft|JSON\.stringify|history)/i);
   assert.match(source, /createFreightRequestV2\(payload/);
   assert.match(source, /POST.*GET.*serviceability/);
 });

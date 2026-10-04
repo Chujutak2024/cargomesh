@@ -3,22 +3,40 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { FreightRequestV2Data, IntakeOptionsData, RoadServiceabilityEvaluationV2Data } from "./contracts";
 import type { V2IntakePrototypeDraft } from "./prototype-model";
-import { CONVERSATION_FIELDS, FIELD_QUESTION, choicesForField, parseConversationField, type ConversationField } from "./conversation-fields";
-import { useConversationVoice } from "@/features/v2-conversation-prep/voice-controls";
-import { GuidedMessageV2Schema } from "@/features/v2-conversation-prep/contract";
 import { validatePrototypeReview } from "./prototype-model";
+import { CONVERSATION_FIELDS, FIELD_QUESTION, matchingConversationChoices, parseConversationField, type ConversationField, type GuidedConversationField } from "./conversation-fields";
+import { useConversationVoice } from "@/features/v2-conversation-prep/voice-controls";
+import { InterpretationResponseSchema, interpretDeterministically, type Interpretation } from "@/features/v2-conversation-prep/interpretation";
+import type { V2IntakeApiError } from "./v2-intake-client";
 import styles from "./conversation-chat.module.css";
 
 type Message = { speaker: "assistant" | "user"; text: string };
+type Choice = { value: string; label: string; field: ConversationField };
+const GREETING = "Hi! I can help you prepare a ROAD freight request.";
+const unavailable = "I can't quote a carrier price or book freight yet. ROAD eligibility is preliminary, not an offer.";
+const positive = /^(yes|yes,? create (?:the )?draft|create (?:the )?draft|confirm|go ahead)$/i;
 
-const GREETING = "Hi! I can help prepare a ROAD freight draft. Choose a pickup facility to begin. All details stay provisional until you create a valid draft.";
+function missingField(draft: V2IntakePrototypeDraft, filled: Set<ConversationField> = new Set()): GuidedConversationField | null {
+  return CONVERSATION_FIELDS.find((field) => !filled.has(field) && !String(draft[field] ?? "").trim()) ?? null;
+}
 
-export function ConversationChat({ draft, options, optionsSource = "api", request, evaluation, draftDirty = false, busy, onField, onCreate, onRead, onEvaluate, onStartOver }: {
+function locationName(id: string, options: IntakeOptionsData) {
+  const facility = options.facilities.find((item) => item.facilityId === id);
+  if (!facility) return "not selected";
+  return facility.label.includes("[SYNTHETIC]") ? `${facility.city} (synthetic test facility)` : `${facility.label}, ${facility.city}`;
+}
+
+function draftSummary(draft: V2IntakePrototypeDraft, options: IntakeOptionsData) {
+  return `Please review: ${locationName(draft.originFacilityId, options)} → ${locationName(draft.destinationFacilityId, options)}; ${draft.unitQuantity} unit(s) of ${draft.categoryCode.toLowerCase()} cargo, ${draft.unitWeightPerUnitKg} kg and ${draft.unitVolumePerUnitM3} m³ per unit; pickup ${draft.pickupWindowStartsAt}–${draft.pickupWindowEndsAt}; delivery ${draft.deliveryWindowStartsAt}–${draft.deliveryWindowEndsAt}. The saved draft will use the current authorized organization. Reply “yes, create draft” to save it, or tell me what to change.`;
+}
+
+export function ConversationChat({ draft, options, optionsSource = "api", request, evaluation, error = null, draftDirty = false, busy, onField, onCreate, onRead, onEvaluate, onStartOver }: {
   draft: V2IntakePrototypeDraft;
   options: IntakeOptionsData;
   optionsSource?: "api" | "fixture";
   request: FreightRequestV2Data | null;
   evaluation: RoadServiceabilityEvaluationV2Data | null;
+  error?: V2IntakeApiError | null;
   draftDirty?: boolean;
   busy: boolean;
   onField: (field: ConversationField, value: string) => void;
@@ -31,23 +49,23 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const [text, setText] = useState("");
   const [history, setHistory] = useState<Message[]>([{ speaker: "assistant", text: GREETING }]);
   const [announcement, setAnnouncement] = useState("");
-  const [cursor, setCursor] = useState(0);
-  const [inputMode, setInputMode] = useState<"TEXT" | "EDITED_VOICE_TRANSCRIPT">("TEXT");
+  const [interpretationBusy, setInterpretationBusy] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [choices, setChoices] = useState<Choice[]>([]);
   const [viewport, setViewport] = useState<{ height: number; keyboardInset: number } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
-  const field = CONVERSATION_FIELDS[cursor] ?? null;
-  const choices = field ? choicesForField(field, options) : [];
-  const canCreate = validatePrototypeReview(draft).valid;
-  const syntheticCatalog = optionsSource === "fixture" || options.facilities.some((facility) => facility.label.includes("[SYNTHETIC]"));
-  const environmentLabel = optionsSource === "fixture" ? "UI preview · synthetic options" : syntheticCatalog ? "V2 API · synthetic scenario" : "V2 API · authenticated";
+  const announcedDraftRef = useRef<string | null>(null);
+  const latestAssistant = history.findLast((message) => message.speaker === "assistant")?.text ?? "";
   const voice = useConversationVoice({
-    onTranscript: (recognized) => { setText(recognized); setInputMode("EDITED_VOICE_TRANSCRIPT"); inputRef.current?.focus(); },
-    responseText: history.at(-1)?.speaker === "assistant" ? history.at(-1)?.text ?? "" : "",
+    onTranscript: (recognized) => { setText(recognized); inputRef.current?.focus(); },
+    responseText: latestAssistant,
   });
+  const nextField = request ? null : missingField(draft);
+  const syntheticCatalog = optionsSource === "fixture" || options.facilities.some((facility) => facility.label.includes("[SYNTHETIC]"));
 
-  useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [history]);
+  useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [history, choices]);
   useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
   useEffect(() => {
     if (!open || !window.visualViewport) return;
@@ -61,79 +79,45 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   useEffect(() => {
     if (!open) return;
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        voice.stopResponse();
-        if (voice.state === "listening" || voice.state === "requesting_permission") voice.stop();
-        setOpen(false);
-        launcherRef.current?.focus();
-      }
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closePanel();
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, voice]);
+  });
   useEffect(() => {
-    if (request) {
-      setHistory((current) => current.length === 1 && current[0]?.text === GREETING
-        ? [{ speaker: "assistant", text: `Saved draft ${request.referenceCode} was reauthorized. Read it or evaluate ROAD, or start over to prepare another request.` }]
-        : current);
-      setAnnouncement(`Saved draft ${request.referenceCode}, version ${request.draftVersion}.`);
-    }
+    if (!request) return;
+    if (announcedDraftRef.current === request.id) return;
+    announcedDraftRef.current = request.id;
+    const message = `Saved draft ${request.referenceCode}, version ${request.draftVersion}. Ask “show draft” or “check ROAD”.`;
+    setHistory((current) => current.length === 1 && current[0]?.text === GREETING ? [{ speaker: "assistant", text: message }] : [...current, { speaker: "assistant", text: message }]);
+    setAnnouncement(message);
+    setAwaitingConfirmation(false);
   }, [request]);
   useEffect(() => {
-    if (evaluation) setAnnouncement(`ROAD result ${evaluation.overallStatus}. ${evaluation.candidates.length} candidates. Reasons and provenance are in the conversation.`);
+    if (!evaluation) return;
+    const details = evaluation.candidates.length ? evaluation.candidates.map((candidate) =>
+      `${candidate.carrier.commercialName}: ${candidate.status}; reasons ${candidate.reasons.join(", ") || "none"}; capacity source ${candidate.checks.capacityWindow.provenance.dataSource}; observed ${candidate.checks.capacityWindow.provenance.observedAt ?? "unknown"}`).join(". ")
+      : "The service returned no carrier candidates and no carrier-specific reason codes.";
+    const result = `ROAD is ${evaluation.overallStatus}. ${details} Evaluated ${evaluation.evaluatedAt} against draft version ${evaluation.evaluatedDraftVersion}. This is not a quote or booking.`;
+    setHistory((current) => [...current, { speaker: "assistant", text: result }]);
+    setAnnouncement(`ROAD result ${evaluation.overallStatus}. Reasons and provenance are in the latest message.`);
   }, [evaluation]);
+  useEffect(() => {
+    if (!error) return;
+    const reply = error.code === "STALE_DRAFT" ? "This draft version changed. Reload the authorized draft before evaluating it."
+      : error.code === "FORBIDDEN_TENANT" || error.status === 403 ? "This request is not available to your organization."
+      : error.status === 401 ? "Your session expired. Sign in again to continue."
+      : error.code === "IDEMPOTENCY_CONFLICT" ? "This retry key belongs to different details. Review the draft before trying again."
+      : "I could not complete that step. Your provisional details remain here; please retry.";
+    setHistory((current) => [...current, { speaker: "assistant", text: reply }]);
+    setAnnouncement(reply);
+  }, [error]);
 
-  function add(user: string, assistant: string) {
-    setHistory((current) => [...current, { speaker: "user", text: user }, { speaker: "assistant", text: assistant }]);
+  function add(user: string | null, assistant: string) {
+    setHistory((current) => [...current, ...(user ? [{ speaker: "user" as const, text: user }] : []), { speaker: "assistant", text: assistant }]);
     setAnnouncement(assistant);
-  }
-
-  function send() {
-    const parsedMessage = GuidedMessageV2Schema.safeParse({ schemaVersion: "2.0", text, inputMode });
-    if (!parsedMessage.success) return;
-    const value = parsedMessage.data.text;
-    setText("");
-    setInputMode("TEXT");
-    const lower = value.toLowerCase();
-    if (/^(price|quote|cost|book|booking|reserve|reservation)\b/.test(lower)) {
-      add(value, "Price and booking are unavailable until attributable V2 offer and booking services are live. ROAD eligibility is not a quote.");
-      return;
-    }
-    if (lower === "help") {
-      add(value, "Answer each question, or type 'correct <field number> <value>' to change a provisional detail. You can also edit the form directly. No data is saved to the server until draft creation.");
-      return;
-    }
-    if (lower.startsWith("correct ")) {
-      const match = /^correct\s+(\d+)\s+(.+)$/i.exec(value);
-      const index = Number(match?.[1]) - 1;
-      const target = CONVERSATION_FIELDS[index];
-      const parsed = target && match ? parseConversationField(target, match[2], options) : null;
-      if (!target || parsed === null) {
-        add(value, "I could not apply that correction. Use 'correct <field number> <value>' and a valid option number where needed.");
-        return;
-      }
-      onField(target, parsed);
-      add(value, `Updated ${FIELD_QUESTION[target]} This is still provisional. ${field ? FIELD_QUESTION[field] : "Review the draft before creating it."}`);
-      return;
-    }
-    if (request) {
-      add(value, "A saved draft is already open. Use Read draft or Evaluate ROAD, or Start over to prepare a separate request. Corrections to this form remain local until a V2 update contract is available.");
-      return;
-    }
-    if (!field) {
-      add(value, "All guided fields are collected. Review the full form and create the draft when valid.");
-      return;
-    }
-    const parsed = parseConversationField(field, value, options);
-    if (parsed === null) {
-      add(value, choices.length ? "That choice is ambiguous or unavailable. Select its number from the current list." : "Please enter a valid value for this field.");
-      return;
-    }
-    onField(field, parsed);
-    const next = CONVERSATION_FIELDS[cursor + 1];
-    setCursor(cursor + 1);
-    add(value, next ? `Saved provisionally. ${FIELD_QUESTION[next]}` : "The guided details are collected. Review the form for any remaining requirements, then create the ROAD draft.");
   }
 
   function closePanel() {
@@ -143,54 +127,132 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     launcherRef.current?.focus();
   }
 
+  async function interpret(value: string): Promise<Interpretation> {
+    const input = { schemaVersion: "2.0" as const, text: value, currentField: nextField };
+    if (optionsSource === "fixture") return interpretDeterministically(input);
+    const response = await fetch("/api/v2/conversation/interpret", {
+      method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) throw new Error(response.status === 401 ? "Your session or organization membership is no longer active. Sign in again." : "I could not interpret that message. Please retry.");
+    const parsed = InterpretationResponseSchema.safeParse(await response.json());
+    if (!parsed.success) throw new Error("The conversation service returned an invalid response. Please retry.");
+    return parsed.data.interpretation;
+  }
+
+  async function send() {
+    const value = text.trim();
+    if (!value || busy || interpretationBusy) return;
+    setText("");
+    setChoices([]);
+    if (awaitingConfirmation && positive.test(value)) {
+      if (request || !validatePrototypeReview(draft).valid) {
+        add(value, "The draft changed or is incomplete. I will review it again before saving.");
+        setAwaitingConfirmation(false);
+        return;
+      }
+      add(value, "Creating your authorized draft, then checking ROAD eligibility…");
+      setAwaitingConfirmation(false);
+      onCreate();
+      return;
+    }
+    if (awaitingConfirmation && /^(no|not yet|cancel)$/i.test(value)) {
+      setAwaitingConfirmation(false);
+      add(value, "Nothing was saved. Tell me what to correct, for example “change origin to Lima”.");
+      return;
+    }
+    setInterpretationBusy(true);
+    try {
+      const proposal = await interpret(value);
+      if (proposal.intent === "PRICE" || proposal.intent === "BOOKING") { add(value, unavailable); return; }
+      if (proposal.intent === "HELP") { add(value, "Tell me a pickup and delivery place, cargo details and timing. I will ask for missing details one at a time. You can correct a detail before saving."); return; }
+      if (proposal.intent === "START_OVER") {
+        onStartOver?.();
+        setAwaitingConfirmation(false);
+        add(value, "Starting a new provisional request. Where should the freight be picked up?");
+        return;
+      }
+      if (proposal.intent === "READ") {
+        if (!request) add(value, "There is no saved draft yet. Tell me about your shipment first.");
+        else { add(value, `Reading saved draft ${request.referenceCode} with your current authorization…`); onRead(); }
+        return;
+      }
+      if (proposal.intent === "EVALUATE") {
+        if (!request) add(value, "I need a saved draft before checking ROAD.");
+        else if (draftDirty) add(value, "Your changes are only local and have not been saved. I cannot reevaluate them yet. Start a new request for changed details.");
+        else { add(value, "Checking ROAD for the saved draft version…"); onEvaluate(); }
+        return;
+      }
+      if (request) {
+        add(value, "I cannot update this saved draft in chat yet. Start over for a new request, or ask me to show the saved draft or check ROAD.");
+        return;
+      }
+      if (proposal.intent === "CREATE") {
+        if (!validatePrototypeReview(draft).valid) add(value, `I still need one detail before saving. ${FIELD_QUESTION[missingField(draft) ?? "originFacilityId"]}`);
+        else { setAwaitingConfirmation(true); add(value, draftSummary(draft, options)); }
+        return;
+      }
+      const accepted = new Set<ConversationField>();
+      for (const suggestion of proposal.fields) {
+        const field = suggestion.field as ConversationField;
+        const parsed = parseConversationField(field, suggestion.value, options);
+        if (parsed === null) {
+          const matches = matchingConversationChoices(field, suggestion.value, options);
+          if (matches.length > 1) {
+            setChoices(matches.map((choice) => ({ ...choice, field })));
+            add(value, "I found more than one authorized location. Please confirm one of the labeled choices below. No location has been saved yet.");
+          } else if (field === "originFacilityId" || field === "destinationFacilityId") {
+            add(value, "I could not match that place to one of your organization's saved facilities. Searching and confirming other places is not available yet. Please name a saved facility or use the request form.");
+          } else add(value, `I could not validate that detail. ${FIELD_QUESTION[field]}`);
+          return;
+        }
+        onField(field, parsed);
+        accepted.add(field);
+      }
+      if (!accepted.size) { add(value, `I did not catch a freight detail. ${FIELD_QUESTION[nextField ?? "originFacilityId"]}`); return; }
+      setAwaitingConfirmation(false);
+      const remaining = missingField(draft, accepted);
+      const preface = proposal.acknowledgment ?? "Got it.";
+      const changed = proposal.intent === "CORRECT" ? ` Updated ${[...accepted].map((field) => field === "originFacilityId" ? "pickup" : field === "destinationFacilityId" ? "delivery" : field).join(", ")}.` : "";
+      if (remaining) add(value, `${preface}${changed} ${FIELD_QUESTION[remaining]}`);
+      else { setAwaitingConfirmation(true); add(value, draftSummary({ ...draft, ...Object.fromEntries(proposal.fields.map((item) => [item.field, parseConversationField(item.field as ConversationField, item.value, options) ?? item.value])) }, options)); }
+    } catch (error) {
+      add(value, error instanceof Error ? error.message : "I could not process that message. Please retry.");
+    } finally {
+      setInterpretationBusy(false);
+    }
+  }
+
   return <aside className={styles.shell} aria-label="CargoMesh ROAD assistant" style={viewport ? { "--chat-visual-height": `${viewport.height}px`, "--chat-keyboard-inset": `${viewport.keyboardInset}px` } as CSSProperties : undefined}>
     <button ref={launcherRef} type="button" className={styles.launcher} onClick={() => open ? closePanel() : setOpen(true)} aria-label={open ? "Close CargoMesh assistant" : "Open CargoMesh assistant"} aria-expanded={open} aria-controls="v2-chat-panel">
-      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M4 5.5h16v11H9l-5 3v-14Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M8 10h8M8 13h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-      <span>Ask CargoMesh</span>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M4 5.5h16v11H9l-5 3v-14Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M8 10h8M8 13h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>Ask CargoMesh</span>
     </button>
     {open && <section id="v2-chat-panel" className={styles.panel} aria-label="ROAD freight conversation">
-      <header className={styles.header}>
-        <span className={styles.headerIcon} aria-hidden="true">CM</span>
-        <div className={styles.headerCopy}><strong>CargoMesh assistant</strong><span>ROAD drafts & eligibility</span></div>
-        <button type="button" className={styles.close} aria-label="Close CargoMesh assistant" onClick={closePanel}>×</button>
-      </header>
-      <div className={styles.environment}><span className={styles.statusDot} aria-hidden="true" />{environmentLabel}<span className={styles.language}>English</span></div>
+      <header className={styles.header}><span className={styles.headerIcon} aria-hidden="true">CM</span><div className={styles.headerCopy}><strong>CargoMesh assistant</strong><span>{syntheticCatalog ? "V2 demo · synthetic facilities" : "ROAD freight"}</span></div><button type="button" className={styles.close} aria-label="Close CargoMesh assistant" onClick={closePanel}>×</button></header>
       <div className={styles.scrollArea}>
         <div className={styles.history} role="log" aria-live="off" aria-label="Conversation messages">
-          {history.map((message, index) => <div key={index} className={message.speaker === "user" ? styles.userRow : styles.assistantRow}>
-            <p className={message.speaker === "user" ? styles.user : styles.assistant}><span className={styles.speaker}>{message.speaker === "user" ? "You" : "CargoMesh"}</span>{message.text}</p>
-          </div>)}
-          {request && <div className={styles.assistantRow}><p className={styles.assistant}><span className={styles.speaker}>Saved draft</span>{request.referenceCode} · version {request.draftVersion}</p></div>}
-          {evaluation && <div className={styles.assistantRow}><p className={styles.assistant}><span className={styles.speaker}>ROAD result · {evaluation.overallStatus}</span>{evaluation.candidates.map((candidate) => `${candidate.carrier.commercialName}: ${candidate.status} (${candidate.reasons.join(", ") || "no reason code"}; capacity source ${candidate.checks.capacityWindow.provenance.dataSource}; observed ${candidate.checks.capacityWindow.provenance.observedAt ?? "unknown"})`).join("; ") || "No candidates"}. Evaluated {evaluation.evaluatedAt} for draft version {evaluation.evaluatedDraftVersion}.{draftDirty ? " This result predates your local corrections." : ""}</p></div>}
-          <div ref={endRef} />
+          {history.map((message, index) => <div key={index} className={message.speaker === "user" ? styles.userRow : styles.assistantRow}><p className={message.speaker === "user" ? styles.user : styles.assistant}><span className={styles.speaker}>{message.speaker === "user" ? "You" : "CargoMesh"}</span>{message.text}</p></div>)}
         </div>
         <div className={styles.srOnly} role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
-        {request && <div className={styles.prompt}><strong>Saved draft recovered.</strong><p>Read or evaluate this authorized draft. Start over to prepare another request.</p></div>}
-        {!request && field && <div className={styles.prompt}><strong>{cursor + 1}. {FIELD_QUESTION[field]}</strong>
-          {choices.length > 0 && <ol>{choices.map((choice) => <li key={choice.value}>{choice.label}</li>)}</ol>}
-        </div>}
-        <div className={styles.actions}>
-          <button type="button" disabled={busy || Boolean(request) || !canCreate} onClick={onCreate}>Create draft</button>
-          <button type="button" disabled={busy || !request} onClick={onRead}>Read draft</button>
-          <button type="button" disabled={busy || !request || draftDirty} onClick={onEvaluate}>Evaluate ROAD</button>
-          {onStartOver && <button type="button" disabled={busy} onClick={() => { onStartOver(); setCursor(0); setHistory([{ speaker: "assistant", text: GREETING }]); setText(""); }}>Start over</button>}
-        </div>
-        {draftDirty && <p className={styles.notice} role="status">Corrections are local only. This ROAD result belongs to the saved version. Start a new request for changed details until the V2 update contract is available.</p>}
-        <p className={styles.notice}>{optionsSource === "fixture" ? "Visual preview only. No server request is made." : "Authenticated V2 options and ROAD services."} Price and booking are unavailable.</p>
+        {!request && !awaitingConfirmation && !interpretationBusy && nextField && !history.at(-1)?.text.includes(FIELD_QUESTION[nextField]) && <p className={styles.nextQuestion}>{FIELD_QUESTION[nextField]}</p>}
+        {choices.length > 0 && <div className={styles.choiceList} aria-label="Confirm a location">{choices.map((choice) => <button key={choice.value} type="button" onClick={() => { onField(choice.field, choice.value); setChoices([]); add(null, `Confirmed ${choice.label}. ${FIELD_QUESTION[missingField(draft, new Set([choice.field])) ?? "categoryCode"]}`); }}>{choice.label}</button>)}</div>}
+        {!request && !nextField && !awaitingConfirmation && !busy && <button type="button" className={styles.suggestion} onClick={() => { setAwaitingConfirmation(true); add(null, draftSummary(draft, options)); }}>Review draft before saving</button>}
+        {request && !draftDirty && <div className={styles.suggestions}><button type="button" onClick={() => { add(null, `Reading ${request.referenceCode}…`); onRead(); }}>Show saved draft</button><button type="button" onClick={() => { add(null, "Checking the current saved version…"); onEvaluate(); }}>Check ROAD</button></div>}
+        {draftDirty && <p className={styles.notice} role="status">Local edits are not saved. ROAD cannot be reevaluated for them yet.</p>}
+        {busy && <p className={styles.loading} role="status">Working on your saved request…</p>}
+        <div ref={endRef} />
       </div>
       <div className={styles.composerDock}>
-        <div className={styles.voiceStatus} role="status" aria-live="polite">
-          {voice.message || (voice.state === "unsupported" ? "Speech recognition is unsupported here. You can type every step." : voice.state === "available" ? "Microphone available · text always works." : "Checking microphone support…")}
-        </div>
-        <form onSubmit={(event) => { event.preventDefault(); send(); }} className={styles.composer}>
-          <label className={styles.srOnly} htmlFor="v2-chat-text">Your message {inputMode === "EDITED_VOICE_TRANSCRIPT" ? "(editable voice transcript)" : ""}</label>
-          <input ref={inputRef} id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder="Type your message…" autoComplete="off" />
+        {(voice.message || voice.state === "unsupported") && <p className={styles.voiceStatus} role="status">{voice.message || "Speech recognition is unavailable here. You can type every step."}</p>}
+        <form onSubmit={(event) => { event.preventDefault(); void send(); }} className={styles.composer}>
+          <label className={styles.srOnly} htmlFor="v2-chat-text">Your message or editable voice transcript</label>
+          <input ref={inputRef} id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder="Message CargoMesh…" autoComplete="off" disabled={busy || interpretationBusy} />
           {voice.state === "listening" || voice.state === "requesting_permission"
             ? <button type="button" className={styles.micActive} aria-label="Stop listening" title="Stop listening" onClick={voice.stop}>■</button>
             : <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing"} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>}
-          <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim()}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
+          <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
-        <div className={styles.audioActions}><button type="button" onClick={voice.readResponse} disabled={!voice.canRead}>Read latest response</button><button type="button" onClick={voice.stopResponse}>Stop audio</button></div>
+        <div className={styles.audioActions}><button type="button" onClick={voice.readResponse} disabled={!voice.canRead}>Read response</button><button type="button" onClick={voice.stopResponse}>Stop audio</button></div>
       </div>
     </section>}
   </aside>;

@@ -35,6 +35,7 @@ import { auditIntakeOptions, EMPTY_INTAKE_OPTIONS } from "./intake-options";
 import { mapServiceabilityToMapViewProps } from "./mappers/road-map-props.mapper";
 import {
   EMPTY_PROTOTYPE_DRAFT,
+  applyChatFieldToDraft,
   buildPrototypeExample,
   findIntakeFacility,
   mapDraftToCreateFreightRequestV2Input,
@@ -277,16 +278,10 @@ export function V2IntakePrototype() {
   };
 
   const updateFromChat = (field: ConversationField, value: string) => {
-    update(field, value as never);
-    if (field === "packaging") update("unitPackageType", value);
-    if (field === "unitQuantity" || field === "unitWeightPerUnitKg" || field === "unitVolumePerUnitM3") {
-      const next = { ...draft, [field]: value };
-      const count = Number(next.unitQuantity);
-      const weight = Number(next.unitWeightPerUnitKg);
-      const volume = Number(next.unitVolumePerUnitM3);
-      if (count > 0 && weight > 0) update("totalWeightKg", String(count * weight));
-      if (count > 0 && volume > 0) update("totalVolumeM3", String(count * volume));
-    }
+    draftRevisionRef.current += 1;
+    setDraft((current) => applyChatFieldToDraft(current, field, value));
+    setIssues((current) => current.filter((issue) => issue.field !== field));
+    if (request) setDirtyAfterCreate(true);
   };
 
   return (
@@ -408,7 +403,7 @@ export function V2IntakePrototype() {
         ) : null}
         </> : null}
       </div>
-      <ConversationChat draft={draft} options={activeOptions} optionsSource={optionsSource === "fixture" ? "fixture" : "api"} request={request} evaluation={evaluation} draftDirty={dirtyAfterCreate}
+      <ConversationChat draft={draft} options={activeOptions} optionsSource={optionsSource === "fixture" ? "fixture" : "api"} request={request} evaluation={evaluation} error={submitError ?? optionsError} draftDirty={dirtyAfterCreate}
         busy={submitPhase === "creating" || submitPhase === "reading" || submitPhase === "evaluating"}
         onField={updateFromChat} onCreate={() => { void createDraftAndEvaluate(); }}
         onRead={() => { void retryAfterCreate(); }} onEvaluate={() => { void retryAfterCreate(); }} onStartOver={reset} />

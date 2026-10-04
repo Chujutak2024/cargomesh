@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { getIntakeOptionsFixture } from "./intake-options";
-import { choicesForField, parseConversationField } from "./conversation-fields";
+import { choicesForField, matchingConversationChoices, parseConversationField } from "./conversation-fields";
 
 const options = getIntakeOptionsFixture().data;
 
@@ -28,4 +28,18 @@ test("equipment prompts use English labels even when persisted selector copy is 
   const withSpanishLabel = { ...options, equipmentOptions: [{ code: "BOX_TRUCK", labelEs: "Camión furgón", labelEn: "Camión furgón", verification: "RESOURCE_EVIDENCE" as const }] };
   assert.deepEqual(choicesForField("requiredEquipment", withSpanishLabel), [{ value: "BOX_TRUCK", label: "Box truck" }]);
   assert.equal(parseConversationField("requiredEquipment", "1", withSpanishLabel), "BOX_TRUCK");
+});
+
+test("natural English category and packaging values resolve only configured V2 codes", () => {
+  assert.equal(parseConversationField("originFacilityId", "Lima", options), options.facilities.find((facility) => facility.city === "Lima")?.facilityId);
+  assert.equal(parseConversationField("categoryCode", "general cargo", options), "GENERAL");
+  assert.equal(parseConversationField("packaging", "pallets", options), "PALLET");
+  assert.equal(parseConversationField("categoryCode", "imaginary cargo", options), null);
+});
+
+test("two tenant facilities in one city stay ambiguous until one is selected", () => {
+  const lima = options.facilities.find((facility) => facility.city === "Lima")!;
+  const ambiguous = { ...options, facilities: [...options.facilities, { ...lima, facilityId: "c2330000-0000-4000-8000-000000000099", code: "QA-A-LIMA-2" }] };
+  assert.equal(parseConversationField("originFacilityId", "Lima", ambiguous), null);
+  assert.equal(matchingConversationChoices("originFacilityId", "Lima", ambiguous).length, 2);
 });
