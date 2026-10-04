@@ -6,6 +6,8 @@ La recuperación autorizada incorpora las **57 clases, 397 atributos y 93 relaci
 
 [Inventario completo extraído del UML](../models/FULL_MODEL_UML_INVENTORY.json) y [representaciones objetivo](../models/FULL_MODEL_TARGETS.json). El inventario conserva atributos, operaciones, IDs, relaciones y etiquetas originales. Se valida con `python scripts/check-v2-full-model.py`. Su PASS acredita integridad del inventario, **no implementación completa**.
 
+El [DER físico integral](../models/FULL_MODEL_DER.md) fija un destino objetivo para cada atributo y un tratamiento explícito para cada relación, incluidas las divergencias de selección multi-oferta. `python scripts/build-v2-full-der.py --check` detecta cambios o huecos entre el UML y los artefactos publicados. Todos sus campos `migrationVerified` siguen siendo falsos: el diseño no acredita que la cadena SQL implemente esos destinos.
+
 Principal: HAC-40, Cristhian. Habilitador: HAC-27 en esta misma entrega. Rama `codex/v2-full-backend`, desde `codex/v2-amazon-contracts`; target `feat/cycle-3-integration`. No se cambia la raíz `cargomesh/` ni se añade un servidor backend separado. Hono y MCP consumen los mismos servicios de aplicación.
 
 ## Contrato de transporte común
@@ -25,6 +27,8 @@ Estos necesitan la cadena V2 aplicada en el entorno elegido. La implementación 
 | Método | Ruta | Servicio / fuente |
 |---|---|---|
 | GET | `/intake/options` | intake existente, cinco grupos |
+| GET | `/organizations/current` | OrganizationServiceV2.get, organización de la sesión |
+| POST | `/organizations/current/revisions` | `{expectedVersion,value}`, solo OWNER; no altera identidad verificada |
 | GET | `/facilities` | FacilityServiceV2.list, tenant y paginación |
 | GET | `/facilities/:id` | FacilityServiceV2.get |
 | POST | `/facilities` | creación completa, idempotencia, roles OWNER/SUPERVISOR |
@@ -44,7 +48,7 @@ Rutas: `cargomesh/src/server/hono/routes/facilities.ts` y `routes/freight/reques
 
 | Bloque / clases | GET requeridos | POST requeridos / semántica | Permiso y responsable |
 |---|---|---|---|
-| Organization, OrganizationPreferences | `/organizations/current`, `/organizations/current/preferences` | `/organizations/current/revisions`, `/organizations/current/preferences/revisions` | propietario tenant, HAC-40; onboarding/miembros HAC-41 |
+| OrganizationPreferences | `/organizations/current/preferences` | `/organizations/current/preferences/revisions` | propietario tenant, HAC-40; organización implementada; onboarding/miembros HAC-41 |
 | OrganizationMember, McpAccountLink | `/organizations/current/members`, `/identity/mcp/links` | invitación/revisión/revocación de miembros; consentimiento y revocación de links | HAC-41 Axel; no autoconceder roles/scopes |
 | CargoProfile, CargoCategory | `/cargo/profiles`, `/cargo/profiles/:id`, `/cargo/categories` | `/cargo/profiles`, `/cargo/profiles/:id/revisions`; publicación versionada de categorías por administración | HAC-40; perfiles del tenant y vocabulario de referencia separado |
 | Carrier, CarrierOperator | `/carriers`, `/carriers/:id`, `/carriers/:id/operators` | alta/revisión carrier; invitación/revocación operadores | HAC-40 catálogo / HAC-41 identidad; principal carrier verificado |
@@ -80,12 +84,12 @@ Rutas: `cargomesh/src/server/hono/routes/facilities.ts` y `routes/freight/reques
 
 ## Persistencia actual y cierre pendiente
 
-Las migraciones nuevas completan atributos y comandos de Facility, y revisiones/presentación de FreightRequest. Recibos de mutación privados, RLS y sin grants cliente; creación conserva su recibo original. Las funciones privilegiadas verifican identidad real, pertenencia y rol antes de leer/escribir. Las filas legacy de sede conservan sus grants anteriores; al entrar por el comando V2 quedan protegidas. Una edición legacy también incrementa versión para no ocultar carreras. Las sedes gestionadas no permiten actualizar directamente su estado ni retirar su marca.
+Las migraciones nuevas completan atributos y comandos de Facility y Organization, y revisiones/presentación de FreightRequest. Organization exige OWNER y separa correo descriptivo de correo verificado; la revisión no concede roles ni identidad. Recibos de mutación privados, RLS y sin grants cliente; creación conserva su recibo original. Las funciones privilegiadas verifican identidad real, pertenencia y rol antes de leer/escribir. Las filas legacy de sede conservan sus grants anteriores; al entrar por el comando V2 quedan protegidas. Una edición legacy también incrementa versión para no ocultar carreras. Las sedes gestionadas no permiten actualizar directamente su estado ni retirar su marca.
 
 La revisión de solicitud reutiliza la validación/canonización SQL existente mediante una fila transitoria creada/copied/eliminada dentro de una sola transacción. No hay commits intermedios ni salida de esa fila; se preservan el código y recibo de creación. La presentación valida el snapshot y cambia únicamente DRAFT → PENDING: no crea oferta/reserva/booking.
 
 El manifest registra la migración HAC-11 previamente mergeada que faltaba en la base, sin modificar su SQL; el perfil ejecuta su pgTAP. No se cambió la lógica de account-linking de Axel.
 
-**Para cerrar HAC-40 sigue faltando** el DER físico definitivo de todo el modelo, atributos/multiplicidades de los demás agregados, persistencia/rutas de las familias anteriores, identidad carrier/MCP dependiente, disponibilidad multirrecurso/LTL, compromisos/reservas y operación, dataset autorizado alojado y consumo real de frontend/MCP. No se deben marcar esos huecos como futuros fuera del alcance ni cerrar la issue con los endpoints actuales.
+**Para cerrar HAC-40 sigue faltando** implementar y verificar contra PostgreSQL el DER objetivo de todo el modelo, atributos/multiplicidades de los demás agregados, persistencia/rutas de las familias anteriores, identidad carrier/MCP dependiente, disponibilidad multirrecurso/LTL, compromisos/reservas y operación, dataset autorizado alojado y consumo real de frontend/MCP. No se deben marcar esos huecos como futuros fuera del alcance ni cerrar la issue con los endpoints actuales.
 
 Supabase alojado requiere autorización específica después del gate completo de esquema; esta rama no aplica DDL ni seeds remotos. La revisión de implementación, publicación/merge autorizado y QA integrado siguen siendo requisitos separados de los tests locales.

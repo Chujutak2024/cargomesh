@@ -41,7 +41,7 @@
     "release:smoke": "node scripts/release-smoke.mjs",
     "release:verify": "pnpm typecheck && pnpm test:release && pnpm build && pnpm release:preflight",
     "test:hac12": "tsx --test src/shared/schemas/v2/contracts.test.ts src/server/modules/freight-requests/application/draft-service.test.ts src/server/modules/intake/application/get-intake-options.test.ts src/server/modules/road-serviceability/domain/evaluate-road.test.ts src/server/modules/road-serviceability/application/evaluate-v2-road.test.ts",
-    "test:hac40": "tsx --test src/server/modules/facilities/application/facility-service.test.ts src/server/modules/freight-requests/application/request-lifecycle-service.test.ts src/server/modules/commercial/domain/offer-policy.test.ts"
+    "test:hac40": "tsx --test src/server/modules/facilities/application/facility-service.test.ts src/server/modules/freight-requests/application/request-lifecycle-service.test.ts src/server/modules/commercial/domain/offer-policy.test.ts src/server/modules/organizations/application/organization-service.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1137.0",

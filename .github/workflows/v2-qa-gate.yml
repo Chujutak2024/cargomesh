@@ -50,6 +50,7 @@ jobs:
       - name: Validate full UML inventory and architecture
         run: |
           python3 ../scripts/check-v2-full-model.py
+          python3 ../scripts/build-v2-full-der.py --check
           pnpm check:architecture
 
       - name: Build production bundle

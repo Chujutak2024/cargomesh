@@ -1,0 +1,4696 @@
+{
+  "schemaVersion": "2.0",
+  "sourceSha256": "104b126cc17565b57064fca0c6a8efd5cf43a076c1cb041355e5174cbe68dc88",
+  "status": "PHYSICAL_DESIGN_NOT_MIGRATION_CERTIFICATION",
+  "counts": {
+    "classes": 57,
+    "attributes": 397,
+    "relations": 93
+  },
+  "classes": [
+    {
+      "name": "Organization",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "organizations",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "organizations.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "code",
+          "optional": false,
+          "type": "string",
+          "target": "organizations.code",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "commercialName",
+          "optional": false,
+          "type": "string",
+          "target": "organizations.name",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "legalName",
+          "optional": true,
+          "type": "string",
+          "target": "organizations.legal_name",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "taxIdType",
+          "optional": true,
+          "type": "string",
+          "target": "organizations.business_identifier_type",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "taxIdValue",
+          "optional": true,
+          "type": "string",
+          "target": "organizations.business_identifier_value",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "countryCode",
+          "optional": true,
+          "type": "string",
+          "target": "organizations.country_code",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "corporateEmail",
+          "optional": true,
+          "type": "string",
+          "target": "organizations.corporate_email",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "defaultCurrency",
+          "optional": false,
+          "type": "Currency",
+          "target": "organizations.default_currency",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "OrganizationStatus",
+          "target": "organizations.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "corporatePhone",
+          "optional": true,
+          "type": "string",
+          "target": "organizations.corporate_phone",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "Facility",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "facilities",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "facilities.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "code",
+          "optional": false,
+          "type": "string",
+          "target": "facilities.code",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string",
+          "target": "facilities.name",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "location",
+          "optional": false,
+          "type": "GeoLocation",
+          "target": "facilities.{country_code,region_code,city,address_line,latitude,longitude}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "active",
+          "optional": false,
+          "type": "boolean",
+          "target": "facilities.active",
+          "physicalType": "boolean",
+          "migrationVerified": false
+        },
+        {
+          "name": "accessRestrictions",
+          "optional": false,
+          "type": "Rule[]",
+          "target": "facilities.access_restrictions",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "operatingHours",
+          "optional": true,
+          "type": "Schedule",
+          "target": "facilities.operating_hours",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "FreightRequest",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "freight_requests",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "freight_requests.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "origin",
+          "optional": false,
+          "type": "GeoLocation",
+          "target": "freight_requests.v2_snapshot.origin",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "destination",
+          "optional": false,
+          "type": "GeoLocation",
+          "target": "freight_requests.v2_snapshot.destination",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "pickupWindow",
+          "optional": false,
+          "type": "TimeWindow",
+          "target": "freight_requests.v2_snapshot.pickupWindow",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "deliveryDeadline",
+          "optional": true,
+          "type": "Instant",
+          "target": "freight_requests.delivery_deadline",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "acceptedModes",
+          "optional": false,
+          "type": "TransportMode[]",
+          "target": "freight_requests.v2_snapshot.acceptedModes",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "budget",
+          "optional": true,
+          "type": "Money",
+          "target": "freight_requests.v2_snapshot.budget",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "RequestStatus",
+          "target": "freight_requests.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "draftVersion",
+          "optional": false,
+          "type": "number",
+          "target": "freight_requests.draft_version",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "serviceType",
+          "optional": true,
+          "type": "ServiceClass",
+          "target": "freight_requests.service_type",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "requiredEquipment",
+          "optional": true,
+          "type": "EquipmentType",
+          "target": "freight_requests.required_equipment_code",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "preferredEquipment",
+          "optional": true,
+          "type": "EquipmentType",
+          "target": "freight_requests.preferred_equipment",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "selectionObjective",
+          "optional": true,
+          "type": "RankingObjective",
+          "target": "freight_requests.selection_objective",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "CargoSpecification",
+      "representation": "EMBEDDED_VALUE",
+      "storage": "freight_requests.v2_snapshot.cargoSpecification",
+      "attributes": [
+        {
+          "name": "category",
+          "optional": false,
+          "type": "CargoCategory",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.categoryCode",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "packaging",
+          "optional": false,
+          "type": "PackageType",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.packaging",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "totalWeightKg",
+          "optional": false,
+          "type": "number",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.totalWeightKg",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "totalVolumeM3",
+          "optional": true,
+          "type": "number",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.totalVolumeM3",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "divisible",
+          "optional": false,
+          "type": "boolean",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.divisible",
+          "physicalType": "boolean",
+          "migrationVerified": false
+        },
+        {
+          "name": "requirements",
+          "optional": false,
+          "type": "CargoRequirement[]",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.requirements",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "temperatureRange",
+          "optional": true,
+          "type": "TemperatureRange",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.temperatureRange",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "description",
+          "optional": true,
+          "type": "string",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.description",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "availableDocuments",
+          "optional": false,
+          "type": "DocumentRef[]",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.availableDocuments",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "CargoUnit",
+      "representation": "EMBEDDED_VALUE",
+      "storage": "freight_requests.v2_snapshot.cargoSpecification.units[]",
+      "attributes": [
+        {
+          "name": "packageType",
+          "optional": false,
+          "type": "PackageType",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.units[].packageType",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "quantity",
+          "optional": false,
+          "type": "number",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.units[].quantity",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "weightPerUnitKg",
+          "optional": false,
+          "type": "number",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.units[].weightPerUnitKg",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "volumePerUnitM3",
+          "optional": true,
+          "type": "number",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.units[].volumePerUnitM3",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "dimensions",
+          "optional": false,
+          "type": "Dimensions",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.units[].dimensionsCm",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "indivisible",
+          "optional": false,
+          "type": "boolean",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.units[].indivisible",
+          "physicalType": "boolean",
+          "migrationVerified": false
+        },
+        {
+          "name": "stackable",
+          "optional": true,
+          "type": "boolean",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.units[].stackable",
+          "physicalType": "boolean",
+          "migrationVerified": false
+        },
+        {
+          "name": "unitsPerPackage",
+          "optional": true,
+          "type": "number",
+          "target": "freight_requests.v2_snapshot.cargoSpecification.units[].unitsPerPackage",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "Carrier",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "carriers",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "carriers.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "code",
+          "optional": false,
+          "type": "string",
+          "target": "carriers.code",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "commercialName",
+          "optional": false,
+          "type": "string",
+          "target": "carriers.name",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "legalName",
+          "optional": true,
+          "type": "string",
+          "target": "carriers.legal_name",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "businessIdType",
+          "optional": true,
+          "type": "string",
+          "target": "carriers.business_id_type",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "businessIdValue",
+          "optional": true,
+          "type": "string",
+          "target": "carriers.business_id_value",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "registeredCountry",
+          "optional": true,
+          "type": "string",
+          "target": "carriers.registered_country",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "verifiedContact",
+          "optional": true,
+          "type": "Contact",
+          "target": "carriers.verified_contact",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "providerType",
+          "optional": false,
+          "type": "ProviderType",
+          "target": "carriers.provider_type",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "CarrierStatus",
+          "target": "carriers.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "operationalPhone",
+          "optional": true,
+          "type": "E164Phone",
+          "target": "carriers.operational_phone",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "CarrierDepot",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "carrier_depots",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "carrier_depots.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "code",
+          "optional": false,
+          "type": "string",
+          "target": "carrier_depots.code",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "location",
+          "optional": false,
+          "type": "GeoLocation",
+          "target": "carrier_depots.location",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "active",
+          "optional": false,
+          "type": "boolean",
+          "target": "carrier_depots.active",
+          "physicalType": "boolean",
+          "migrationVerified": false
+        },
+        {
+          "name": "handling",
+          "optional": true,
+          "type": "HandlingCapability[]",
+          "target": "carrier_depots.handling",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "CarrierService",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "carrier_services",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "carrier_services.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "mode",
+          "optional": false,
+          "type": "TransportMode",
+          "target": "carrier_services.transport_mode",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "serviceClass",
+          "optional": false,
+          "type": "ServiceClass",
+          "target": "carrier_services.service_type",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "maxWeightKg",
+          "optional": true,
+          "type": "number",
+          "target": "carrier_services.max_capacity_kg",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "maxVolumeM3",
+          "optional": true,
+          "type": "number",
+          "target": "carrier_services.max_volume_m3",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "responseChannels",
+          "optional": false,
+          "type": "ResponseChannel[]",
+          "target": "carrier_services.response_channels",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "ServiceStatus",
+          "target": "carrier_services.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "admittedCargoTypes",
+          "optional": false,
+          "type": "CargoCategory[]",
+          "target": "carrier_services.carrier_service_cargo_categories.cargo_category_id",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "temperatureRange",
+          "optional": true,
+          "type": "TemperatureRange",
+          "target": "carrier_services.{temperature_min_c,temperature_max_c}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "requiredCertifications",
+          "optional": false,
+          "type": "Certification[]",
+          "target": "carrier_services.required_certifications",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "ServiceLane",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "service_lanes",
+      "attributes": [
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "DIRECT | WITHIN_AREA",
+          "target": "service_lanes.kind",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "mode",
+          "optional": false,
+          "type": "TransportMode",
+          "target": "service_lanes.mode",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "borderReviewRequired",
+          "optional": false,
+          "type": "boolean",
+          "target": "service_lanes.border_review_required",
+          "physicalType": "boolean",
+          "migrationVerified": false
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef",
+          "target": "service_lanes.evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "validUntil",
+          "optional": true,
+          "type": "Instant",
+          "target": "service_lanes.valid_until",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "ResponseIntegration",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "response_integrations",
+      "attributes": [
+        {
+          "name": "channel",
+          "optional": false,
+          "type": "MANUAL | API | MCP",
+          "target": "response_integrations.channel",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "endpointRef",
+          "optional": true,
+          "type": "SecretRef",
+          "target": "response_integrations.endpoint_ref",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "verifiedAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "response_integrations.verified_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "IntegrationStatus",
+          "target": "response_integrations.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef",
+          "target": "response_integrations.evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "CapacitySource",
+      "representation": "PORT_OR_PROJECTION",
+      "storage": "|capacity_source_projection",
+      "attributes": [
+        {
+          "name": "sourceId",
+          "optional": false,
+          "type": "UUID",
+          "target": "|capacity_source_projection.sourceId",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "provenance",
+          "optional": false,
+          "type": "FulfilmentSource",
+          "target": "|capacity_source_projection.provenance",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "TransportAsset",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "transport_assets",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "transport_assets.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "code",
+          "optional": false,
+          "type": "string",
+          "target": "transport_assets.code",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "equipmentType",
+          "optional": false,
+          "type": "EquipmentType",
+          "target": "transport_assets.equipment_code",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "usefulCapacityKg",
+          "optional": false,
+          "type": "number",
+          "target": "transport_assets.max_weight_kg",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "usableVolumeM3",
+          "optional": true,
+          "type": "number",
+          "target": "transport_assets.max_volume_m3",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "operatingStatus",
+          "optional": false,
+          "type": "AssetStatus",
+          "target": "transport_assets.operating_status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "homeDepot",
+          "optional": true,
+          "type": "CarrierDepot",
+          "target": "transport_assets.home_depot_id",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "RoadVehicle",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "transport_assets",
+      "attributes": [
+        {
+          "name": "plate",
+          "optional": false,
+          "type": "string",
+          "target": "transport_assets.plate",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "registrationCode",
+          "optional": true,
+          "type": "string",
+          "target": "transport_assets.registration_code",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "registeredAt",
+          "optional": true,
+          "type": "LocalDate",
+          "target": "transport_assets.registered_at",
+          "physicalType": "date",
+          "migrationVerified": false
+        },
+        {
+          "name": "brand",
+          "optional": true,
+          "type": "string",
+          "target": "transport_assets.brand",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "model",
+          "optional": true,
+          "type": "string",
+          "target": "transport_assets.model",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "variant",
+          "optional": true,
+          "type": "string",
+          "target": "transport_assets.variant",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "bodyType",
+          "optional": false,
+          "type": "VehicleBodyType",
+          "target": "transport_assets.body_type",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "usableDimensions",
+          "optional": true,
+          "type": "Dimensions",
+          "target": "transport_assets.usable_dimensions",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "grossWeightLimitKg",
+          "optional": true,
+          "type": "number",
+          "target": "transport_assets.gross_weight_limit_kg",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "odometerKm",
+          "optional": true,
+          "type": "number",
+          "target": "transport_assets.odometer_km",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "conditionReason",
+          "optional": true,
+          "type": "AssetConditionReason",
+          "target": "transport_assets.condition_reason",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "CapacityPool",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "capacity_pools",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "capacity_pools.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "mode",
+          "optional": false,
+          "type": "TransportMode",
+          "target": "capacity_pools.mode",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "serviceWindow",
+          "optional": false,
+          "type": "TimeWindow",
+          "target": "capacity_pools.{starts_at,ends_at}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "declaredCapacity",
+          "optional": false,
+          "type": "Capacity",
+          "target": "capacity_pools.{max_weight_kg,max_volume_m3}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "partner",
+          "optional": false,
+          "type": "FulfilmentSource",
+          "target": "capacity_pools.fulfilment_source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "evidence",
+          "optional": false,
+          "type": "EvidenceRef",
+          "target": "capacity_pools.evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "CapacityCalendar",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "capacity_calendars",
+      "attributes": [
+        {
+          "name": "timezone",
+          "optional": false,
+          "type": "TimeZone",
+          "target": "capacity_calendars.timezone",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "horizon",
+          "optional": false,
+          "type": "TimeWindow",
+          "target": "capacity_calendars.{horizon_starts_at,horizon_ends_at}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource",
+          "target": "capacity_calendars.source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "lastVerifiedAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "capacity_calendars.last_verified_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "freshness",
+          "optional": false,
+          "type": "EvidenceStatus",
+          "target": "capacity_calendars.freshness",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "CapacityReservation",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "capacity_reservations",
+      "attributes": [
+        {
+          "name": "occupiedWindow",
+          "optional": false,
+          "type": "TimeWindow",
+          "target": "capacity_reservations.{starts_at,ends_at}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "committedCapacity",
+          "optional": false,
+          "type": "Capacity",
+          "target": "capacity_reservations.committed_capacity",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "ReservationStatus",
+          "target": "capacity_reservations.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "reference",
+          "optional": false,
+          "type": "string",
+          "target": "capacity_reservations.reference",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource",
+          "target": "capacity_reservations.source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "capacity_reservations.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "planResourceId",
+          "optional": true,
+          "type": "UUID",
+          "target": "capacity_reservations.plan_resource_id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "ScheduledMaintenance",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "scheduled_maintenances",
+      "attributes": [
+        {
+          "name": "blockedWindow",
+          "optional": false,
+          "type": "TimeWindow",
+          "target": "scheduled_maintenances.{starts_at,ends_at}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "MaintenanceType",
+          "target": "scheduled_maintenances.kind",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "MaintenanceStatus",
+          "target": "scheduled_maintenances.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource",
+          "target": "scheduled_maintenances.source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "Driver",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "drivers",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "drivers.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "fullName",
+          "optional": false,
+          "type": "string",
+          "target": "drivers.full_name",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "portalAccount",
+          "optional": true,
+          "type": "CarrierOperator",
+          "target": "drivers.carrier_operator_id",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "licenseClass",
+          "optional": false,
+          "type": "LicenseClass",
+          "target": "drivers.license_class",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "licenseValidUntil",
+          "optional": false,
+          "type": "LocalDate",
+          "target": "drivers.license_valid_until",
+          "physicalType": "date",
+          "migrationVerified": false
+        },
+        {
+          "name": "qualifications",
+          "optional": false,
+          "type": "Qualification[]",
+          "target": "drivers.qualifications",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "experienceYears",
+          "optional": true,
+          "type": "number",
+          "target": "drivers.experience_years",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "dutyStatus",
+          "optional": false,
+          "type": "DutyStatus",
+          "target": "drivers.duty_status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "DriverAssignment",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "driver_assignments",
+      "attributes": [
+        {
+          "name": "window",
+          "optional": false,
+          "type": "TimeWindow",
+          "target": "driver_assignments.{starts_at,ends_at}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "role",
+          "optional": false,
+          "type": "PRIMARY | RELIEF",
+          "target": "driver_assignments.role",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "AssignmentStatus",
+          "target": "driver_assignments.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef",
+          "target": "driver_assignments.evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "VehicleAssignment",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "vehicle_assignments",
+      "attributes": [
+        {
+          "name": "window",
+          "optional": false,
+          "type": "TimeWindow",
+          "target": "vehicle_assignments.{starts_at,ends_at}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "AssignmentStatus",
+          "target": "vehicle_assignments.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "capacityCommitted",
+          "optional": false,
+          "type": "Capacity",
+          "target": "vehicle_assignments.capacity_committed",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef",
+          "target": "vehicle_assignments.evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "AssetStatusEvent",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "asset_status_events",
+      "attributes": [
+        {
+          "name": "at",
+          "optional": false,
+          "type": "Instant",
+          "target": "asset_status_events.at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "previous",
+          "optional": false,
+          "type": "AssetStatus",
+          "target": "asset_status_events.previous",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "next",
+          "optional": false,
+          "type": "AssetStatus",
+          "target": "asset_status_events.next",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "reason",
+          "optional": false,
+          "type": "AssetConditionReason",
+          "target": "asset_status_events.reason",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef",
+          "target": "asset_status_events.evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "RoutePlan",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "route_plans",
+      "attributes": [
+        {
+          "name": "origin",
+          "optional": false,
+          "type": "GeoLocation",
+          "target": "route_plans.origin",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "destination",
+          "optional": false,
+          "type": "GeoLocation",
+          "target": "route_plans.destination",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "estimatedDistanceKm",
+          "optional": true,
+          "type": "number",
+          "target": "route_plans.estimated_distance_km",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "estimatedDuration",
+          "optional": true,
+          "type": "Duration",
+          "target": "route_plans.estimated_duration_seconds",
+          "physicalType": "numeric seconds >= 0",
+          "migrationVerified": false
+        },
+        {
+          "name": "geographicSource",
+          "optional": false,
+          "type": "DataSource",
+          "target": "route_plans.geographic_source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "confidence",
+          "optional": false,
+          "type": "EvidenceStatus",
+          "target": "route_plans.confidence",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "estimatedTolls",
+          "optional": true,
+          "type": "Money",
+          "target": "route_plans.estimated_tolls",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "borderCostEstimate",
+          "optional": true,
+          "type": "Money",
+          "target": "route_plans.border_cost_estimate",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "RouteLeg",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "route_legs",
+      "attributes": [
+        {
+          "name": "sequence",
+          "optional": false,
+          "type": "number",
+          "target": "route_legs.sequence",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "mode",
+          "optional": false,
+          "type": "TransportMode",
+          "target": "route_legs.mode",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "origin",
+          "optional": false,
+          "type": "GeoLocation",
+          "target": "route_legs.origin",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "destination",
+          "optional": false,
+          "type": "GeoLocation",
+          "target": "route_legs.destination",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "borderRequirements",
+          "optional": false,
+          "type": "Rule[]",
+          "target": "route_legs.border_requirements",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "estimatedDistanceKm",
+          "optional": true,
+          "type": "number",
+          "target": "route_legs.estimated_distance_km",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "estimatedDuration",
+          "optional": true,
+          "type": "Duration",
+          "target": "route_legs.estimated_duration_seconds",
+          "physicalType": "numeric seconds >= 0",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "RouteCondition",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "route_conditions",
+      "attributes": [
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "CLOSURE | DELAY | HAZARD | RESTRICTION",
+          "target": "route_conditions.kind",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "location",
+          "optional": false,
+          "type": "GeoLocation",
+          "target": "route_conditions.location",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "observedAt",
+          "optional": false,
+          "type": "Instant",
+          "target": "route_conditions.observed_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "validUntil",
+          "optional": true,
+          "type": "Instant",
+          "target": "route_conditions.valid_until",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource",
+          "target": "route_conditions.source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "confidence",
+          "optional": false,
+          "type": "EvidenceStatus",
+          "target": "route_conditions.confidence",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "RouteWaypoint",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "route_waypoints",
+      "attributes": [
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "FUEL | REST | BORDER | TRANSFER",
+          "target": "route_waypoints.kind",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "location",
+          "optional": false,
+          "type": "GeoLocation",
+          "target": "route_waypoints.location",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "sequence",
+          "optional": false,
+          "type": "number",
+          "target": "route_waypoints.sequence",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource",
+          "target": "route_waypoints.source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "verifiedAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "route_waypoints.verified_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "RoutePlanningPolicy",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "route_planning_policies",
+      "attributes": [
+        {
+          "name": "version",
+          "optional": false,
+          "type": "string",
+          "target": "route_planning_policies.version",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "objective",
+          "optional": false,
+          "type": "RouteObjective",
+          "target": "route_planning_policies.objective",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "constraints",
+          "optional": false,
+          "type": "Rule[]",
+          "target": "route_planning_policies.constraints",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "weights",
+          "optional": false,
+          "type": "WeightSet",
+          "target": "route_planning_policies.weights",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "missingDataRule",
+          "optional": false,
+          "type": "Rule",
+          "target": "route_planning_policies.missing_data_rule",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "TransportPlanCandidate",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "transport_plan_candidates",
+      "attributes": [
+        {
+          "name": "proposedWindow",
+          "optional": false,
+          "type": "TimeWindow",
+          "target": "transport_plan_candidates.{starts_at,ends_at}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "coverage",
+          "optional": false,
+          "type": "EvidenceStatus",
+          "target": "transport_plan_candidates.coverage",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "availability",
+          "optional": false,
+          "type": "EvidenceStatus",
+          "target": "transport_plan_candidates.availability",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "pendingRequirements",
+          "optional": false,
+          "type": "Rule[]",
+          "target": "transport_plan_candidates.pending_requirements",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "exclusionReasons",
+          "optional": false,
+          "type": "ReasonCode[]",
+          "target": "transport_plan_candidates.exclusion_reasons",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "transport_plan_candidates.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "PlanResource",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "plan_resources",
+      "attributes": [
+        {
+          "name": "role",
+          "optional": false,
+          "type": "LOAD_BEARING | AUXILIARY",
+          "target": "plan_resources.role",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "equipment",
+          "optional": false,
+          "type": "EquipmentType",
+          "target": "plan_resources.equipment",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "units",
+          "optional": false,
+          "type": "number",
+          "target": "plan_resources.units",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "window",
+          "optional": false,
+          "type": "TimeWindow",
+          "target": "plan_resources.{starts_at,ends_at}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "availability",
+          "optional": false,
+          "type": "EvidenceStatus",
+          "target": "plan_resources.availability",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "applicableCapacity",
+          "optional": true,
+          "type": "Capacity",
+          "target": "plan_resources.applicable_capacity",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "verificationSource",
+          "optional": true,
+          "type": "EvidenceRef",
+          "target": "plan_resources.verification_source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "plan_resources.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "CarrierOpportunity",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "carrier_opportunities",
+      "attributes": [
+        {
+          "name": "sentAt",
+          "optional": false,
+          "type": "Instant",
+          "target": "carrier_opportunities.sent_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "responseDeadline",
+          "optional": false,
+          "type": "Instant",
+          "target": "carrier_opportunities.response_deadline",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "responseChannel",
+          "optional": false,
+          "type": "ResponseChannel",
+          "target": "carrier_opportunities.response_channel",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "OpportunityStatus",
+          "target": "carrier_opportunities.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "CarrierOffer",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "v2_carrier_offers",
+      "attributes": [
+        {
+          "name": "carrierReference",
+          "optional": false,
+          "type": "string",
+          "target": "v2_carrier_offers.carrier_reference",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "price",
+          "optional": false,
+          "type": "Money",
+          "target": "v2_carrier_offers.price",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "breakdown",
+          "optional": false,
+          "type": "OfferCostComponent[]",
+          "target": "v2_carrier_offers.breakdown",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "validity",
+          "optional": false,
+          "type": "TimeWindow",
+          "target": "v2_carrier_offers.{valid_from,valid_until}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "OfferSource",
+          "target": "v2_carrier_offers.source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "OfferStatus",
+          "target": "v2_carrier_offers.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "v2_carrier_offers.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "issuedAt",
+          "optional": false,
+          "type": "Instant",
+          "target": "v2_carrier_offers.issued_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "estimatedPickupAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "v2_carrier_offers.estimated_pickup_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "estimatedDeliveryAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "v2_carrier_offers.estimated_delivery_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "transitDuration",
+          "optional": true,
+          "type": "Duration",
+          "target": "v2_carrier_offers.transit_duration_seconds",
+          "physicalType": "numeric seconds >= 0",
+          "migrationVerified": false
+        },
+        {
+          "name": "reservableCapacity",
+          "optional": true,
+          "type": "Capacity",
+          "target": "v2_carrier_offers.reservable_capacity",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "commercialTerms",
+          "optional": false,
+          "type": "Term[]",
+          "target": "v2_carrier_offers.commercial_terms",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "evidence",
+          "optional": false,
+          "type": "EvidenceRef[]",
+          "target": "v2_carrier_offers.evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "offerVersion",
+          "optional": false,
+          "type": "number",
+          "target": "v2_carrier_offers.offer_version",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "supersedesOfferId",
+          "optional": true,
+          "type": "UUID",
+          "target": "v2_carrier_offers.supersedes_offer_id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "requestId",
+          "optional": false,
+          "type": "UUID",
+          "target": "v2_carrier_offers.request_id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "planCandidateId",
+          "optional": false,
+          "type": "UUID",
+          "target": "v2_carrier_offers.plan_candidate_id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "opportunityId",
+          "optional": false,
+          "type": "UUID",
+          "target": "v2_carrier_offers.opportunity_id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "carrierId",
+          "optional": false,
+          "type": "UUID",
+          "target": "v2_carrier_offers.carrier_id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "coveredServiceIds",
+          "optional": false,
+          "type": "UUID[]",
+          "target": "v2_carrier_offers.v2_offer_services.service_id",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "coveredAssignmentIds",
+          "optional": false,
+          "type": "UUID[]",
+          "target": "v2_carrier_offers.v2_offer_assignments.assignment_id",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "RankedOption",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "ranked_options",
+      "attributes": [
+        {
+          "name": "position",
+          "optional": false,
+          "type": "number",
+          "target": "ranked_options.position",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "score",
+          "optional": true,
+          "type": "number",
+          "target": "ranked_options.score",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "explanation",
+          "optional": false,
+          "type": "Explanation",
+          "target": "ranked_options.explanation",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "missingData",
+          "optional": false,
+          "type": "MissingDatum[]",
+          "target": "ranked_options.missing_data",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "policyVersion",
+          "optional": false,
+          "type": "string",
+          "target": "ranked_options.policy_version",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "ScoringPolicy",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "scoring_policies",
+      "attributes": [
+        {
+          "name": "version",
+          "optional": false,
+          "type": "string",
+          "target": "scoring_policies.version",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "objective",
+          "optional": false,
+          "type": "RankingObjective",
+          "target": "scoring_policies.objective",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "weights",
+          "optional": false,
+          "type": "WeightSet",
+          "target": "scoring_policies.weights",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "missingDataRule",
+          "optional": false,
+          "type": "Rule",
+          "target": "scoring_policies.missing_data_rule",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "tieBreaker",
+          "optional": false,
+          "type": "TieBreaker",
+          "target": "scoring_policies.tie_breaker",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "Booking",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "v2_bookings",
+      "attributes": [
+        {
+          "name": "carrierReference",
+          "optional": true,
+          "type": "string",
+          "target": "v2_bookings.carrier_reference",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "confirmedAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "v2_bookings.confirmed_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "v2_bookings.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "selectionDecisionId",
+          "optional": false,
+          "type": "UUID",
+          "target": "v2_bookings.selection_decision_id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "authorizedAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "v2_bookings.authorized_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "authorizationStatus",
+          "optional": false,
+          "type": "AuthorizationStatus",
+          "target": "v2_bookings.authorization_status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "carrierConfirmationStatus",
+          "optional": false,
+          "type": "CarrierConfirmationStatus",
+          "target": "v2_bookings.carrier_confirmation_status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "capacityEvidence",
+          "optional": false,
+          "type": "EvidenceRef[]",
+          "target": "v2_bookings.capacity_evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "TransportExecution",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "transport_executions",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "transport_executions.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "ExecutionStatus",
+          "target": "transport_executions.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "plannedWindow",
+          "optional": false,
+          "type": "TimeWindow",
+          "target": "transport_executions.{planned_starts_at,planned_ends_at}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "actualStartedAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "transport_executions.actual_started_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "actualCompletedAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "transport_executions.actual_completed_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "lastKnownPosition",
+          "optional": true,
+          "type": "GeoLocation",
+          "target": "transport_executions.last_known_position",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "OperationalIncident",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "operational_incidents",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "operational_incidents.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "IncidentKind",
+          "target": "operational_incidents.kind",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "severity",
+          "optional": false,
+          "type": "Severity",
+          "target": "operational_incidents.severity",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "occurredAt",
+          "optional": false,
+          "type": "Instant",
+          "target": "operational_incidents.occurred_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "location",
+          "optional": true,
+          "type": "GeoLocation",
+          "target": "operational_incidents.location",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "description",
+          "optional": false,
+          "type": "string",
+          "target": "operational_incidents.description",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "IncidentStatus",
+          "target": "operational_incidents.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "reportedBy",
+          "optional": false,
+          "type": "ActorRef",
+          "target": "operational_incidents.reported_by",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "evidence",
+          "optional": false,
+          "type": "EvidenceRef[]",
+          "target": "operational_incidents.evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "IncidentUpdate",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "incident_updates",
+      "attributes": [
+        {
+          "name": "at",
+          "optional": false,
+          "type": "Instant",
+          "target": "incident_updates.at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "actor",
+          "optional": false,
+          "type": "ActorRef",
+          "target": "incident_updates.actor",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "action",
+          "optional": false,
+          "type": "IncidentAction",
+          "target": "incident_updates.action",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "note",
+          "optional": false,
+          "type": "string",
+          "target": "incident_updates.note",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef",
+          "target": "incident_updates.evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "LogisticsNode",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "logistics_nodes",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "logistics_nodes.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "PORT | TERMINAL | BORDER | HUB",
+          "target": "logistics_nodes.kind",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string",
+          "target": "logistics_nodes.name",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "location",
+          "optional": false,
+          "type": "GeoLocation",
+          "target": "logistics_nodes.location",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "jurisdiction",
+          "optional": true,
+          "type": "string",
+          "target": "logistics_nodes.jurisdiction",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource",
+          "target": "logistics_nodes.source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "verifiedAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "logistics_nodes.verified_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "RouteCorridor",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "route_corridors",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "route_corridors.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "mode",
+          "optional": false,
+          "type": "TransportMode",
+          "target": "route_corridors.mode",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "estimatedDistanceKm",
+          "optional": true,
+          "type": "number",
+          "target": "route_corridors.estimated_distance_km",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "estimatedDuration",
+          "optional": true,
+          "type": "Duration",
+          "target": "route_corridors.estimated_duration_seconds",
+          "physicalType": "numeric seconds >= 0",
+          "migrationVerified": false
+        },
+        {
+          "name": "restrictions",
+          "optional": false,
+          "type": "Rule[]",
+          "target": "route_corridors.restrictions",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource",
+          "target": "route_corridors.source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "version",
+          "optional": false,
+          "type": "string",
+          "target": "route_corridors.version",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "validUntil",
+          "optional": true,
+          "type": "Instant",
+          "target": "route_corridors.valid_until",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "CargoProfile",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "organization_cargo_profiles",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "organization_cargo_profiles.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string",
+          "target": "organization_cargo_profiles.name",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "typicalUnits",
+          "optional": false,
+          "type": "CargoUnitTemplate[]",
+          "target": "organization_cargo_profiles.unit_templates",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "requirements",
+          "optional": false,
+          "type": "CargoRequirement[]",
+          "target": "organization_cargo_profiles.requirements",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "preferredEquipment",
+          "optional": true,
+          "type": "EquipmentType",
+          "target": "organization_cargo_profiles.preferred_equipment",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "updatedAt",
+          "optional": false,
+          "type": "Instant",
+          "target": "organization_cargo_profiles.updated_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "CargoCategory",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "cargo_categories",
+      "attributes": [
+        {
+          "name": "code",
+          "optional": false,
+          "type": "string",
+          "target": "cargo_categories.code",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string",
+          "target": "cargo_categories.name",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "guidance",
+          "optional": false,
+          "type": "IntakeGuidance",
+          "target": "cargo_categories.intake_guidance",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "suggestedEquipment",
+          "optional": true,
+          "type": "EquipmentType",
+          "target": "cargo_categories.suggested_equipment",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "version",
+          "optional": false,
+          "type": "string",
+          "target": "cargo_categories.version",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "LoadAllocation",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "load_allocations",
+      "attributes": [
+        {
+          "name": "quantity",
+          "optional": false,
+          "type": "number",
+          "target": "load_allocations.quantity",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "assignedWeightKg",
+          "optional": false,
+          "type": "number",
+          "target": "load_allocations.assigned_weight_kg",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "assignedVolumeM3",
+          "optional": true,
+          "type": "number",
+          "target": "load_allocations.assigned_volume_m3",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "handlingRequirements",
+          "optional": false,
+          "type": "Rule[]",
+          "target": "load_allocations.handling_requirements",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "verification",
+          "optional": false,
+          "type": "EvidenceStatus",
+          "target": "load_allocations.verification",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "OrganizationMember",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "organization_members",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "MemberId",
+          "target": "organization_members.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "role",
+          "optional": false,
+          "type": "OrganizationRole",
+          "target": "organization_members.role",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "MemberStatus",
+          "target": "organization_members.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "contactRef",
+          "optional": true,
+          "type": "ContactRef",
+          "target": "organization_members.{corporate_email,contact_ref}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "verifiedAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "organization_members.verified_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "McpAccountLink",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "mcp_account_links",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "mcp_account_links.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "authUserId",
+          "optional": false,
+          "type": "UUID",
+          "target": "mcp_account_links.auth_user_id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "oauthClientId",
+          "optional": false,
+          "type": "string",
+          "target": "mcp_account_links.oauth_client_id",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "organizationId",
+          "optional": false,
+          "type": "UUID",
+          "target": "mcp_account_links.organization_id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "scopes",
+          "optional": false,
+          "type": "string[]",
+          "target": "mcp_account_links.scopes",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "provider",
+          "optional": false,
+          "type": "ALEXA_PLUS | OTHER",
+          "target": "mcp_account_links.provider",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "externalSubjectRef",
+          "optional": false,
+          "type": "OpaqueId",
+          "target": "mcp_account_links.external_subject_ref",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "LinkStatus",
+          "target": "mcp_account_links.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "verifiedAt",
+          "optional": false,
+          "type": "Instant",
+          "target": "mcp_account_links.verified_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "revokedAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "mcp_account_links.revoked_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "expiresAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "mcp_account_links.expires_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "RepositioningBlock",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "repositioning_blocks",
+      "attributes": [
+        {
+          "name": "occupiedWindow",
+          "optional": false,
+          "type": "TimeWindow",
+          "target": "repositioning_blocks.{starts_at,ends_at}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "origin",
+          "optional": false,
+          "type": "GeoLocation",
+          "target": "repositioning_blocks.origin",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "nextPickup",
+          "optional": false,
+          "type": "GeoLocation",
+          "target": "repositioning_blocks.next_pickup",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "estimatedTravel",
+          "optional": false,
+          "type": "Duration",
+          "target": "repositioning_blocks.estimated_travel_seconds",
+          "physicalType": "numeric seconds >= 0",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "BlockStatus",
+          "target": "repositioning_blocks.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource",
+          "target": "repositioning_blocks.source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "OrganizationPreferences",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "organization_preferences",
+      "attributes": [
+        {
+          "name": "objective",
+          "optional": true,
+          "type": "RankingObjective",
+          "target": "organization_preferences.objective",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "maximumWait",
+          "optional": true,
+          "type": "Duration",
+          "target": "organization_preferences.maximum_wait_seconds",
+          "physicalType": "numeric seconds >= 0",
+          "migrationVerified": false
+        },
+        {
+          "name": "preferredMode",
+          "optional": true,
+          "type": "TransportMode",
+          "target": "organization_preferences.preferred_mode",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "preferredEquipment",
+          "optional": true,
+          "type": "EquipmentType",
+          "target": "organization_preferences.preferred_equipment",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "usualBudget",
+          "optional": true,
+          "type": "Money",
+          "target": "organization_preferences.usual_budget",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "validUntil",
+          "optional": true,
+          "type": "Instant",
+          "target": "organization_preferences.valid_until",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "CarrierMetric",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "v2_carrier_metrics",
+      "attributes": [
+        {
+          "name": "period",
+          "optional": false,
+          "type": "TimeWindow",
+          "target": "v2_carrier_metrics.{period_starts_at,period_ends_at}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "corridorRef",
+          "optional": true,
+          "type": "CorridorId",
+          "target": "v2_carrier_metrics.corridor_id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "mode",
+          "optional": true,
+          "type": "TransportMode",
+          "target": "v2_carrier_metrics.mode",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "sampleSize",
+          "optional": false,
+          "type": "number",
+          "target": "v2_carrier_metrics.sample_size",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "onTimeRate",
+          "optional": true,
+          "type": "number",
+          "target": "v2_carrier_metrics.on_time_rate",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "successfulDeliveryRate",
+          "optional": true,
+          "type": "number",
+          "target": "v2_carrier_metrics.successful_delivery_rate",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource",
+          "target": "v2_carrier_metrics.source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "VehicleCombination",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "vehicle_combinations",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "vehicle_combinations.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "CombinationType",
+          "target": "vehicle_combinations.kind",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "configuration",
+          "optional": false,
+          "type": "string",
+          "target": "vehicle_combinations.configuration",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "coupledWindow",
+          "optional": true,
+          "type": "TimeWindow",
+          "target": "vehicle_combinations.{starts_at,ends_at}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "evidence",
+          "optional": false,
+          "type": "EvidenceRef[]",
+          "target": "vehicle_combinations.evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "combinedTareKg",
+          "optional": true,
+          "type": "number",
+          "target": "vehicle_combinations.combined_tare_kg",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "grossWeightLimitKg",
+          "optional": true,
+          "type": "number",
+          "target": "vehicle_combinations.gross_weight_limit_kg",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "CombinationStatus",
+          "target": "vehicle_combinations.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "ServiceArea",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "service_areas",
+      "attributes": [
+        {
+          "name": "role",
+          "optional": false,
+          "type": "PICKUP | DELIVERY",
+          "target": "service_areas.role",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "inclusion",
+          "optional": false,
+          "type": "INCLUDE | EXCLUDE",
+          "target": "service_areas.inclusion",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "geography",
+          "optional": false,
+          "type": "Geography",
+          "target": "service_areas.geography",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "CoverageSource",
+          "target": "service_areas.source",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef",
+          "target": "service_areas.evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "validUntil",
+          "optional": true,
+          "type": "Instant",
+          "target": "service_areas.valid_until",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "verifiedAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "service_areas.verified_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "validFrom",
+          "optional": true,
+          "type": "Instant",
+          "target": "service_areas.valid_from",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "FulfilmentPartner",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "fulfilment_partners",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "fulfilment_partners.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "registeredName",
+          "optional": false,
+          "type": "string",
+          "target": "fulfilment_partners.registered_name",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "partnerCarrierRef",
+          "optional": true,
+          "type": "UUID",
+          "target": "fulfilment_partners.partner_carrier_ref",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "agreementValidFrom",
+          "optional": false,
+          "type": "Instant",
+          "target": "fulfilment_partners.agreement_valid_from",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "agreementValidUntil",
+          "optional": false,
+          "type": "Instant",
+          "target": "fulfilment_partners.agreement_valid_until",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "PartnerStatus",
+          "target": "fulfilment_partners.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "coverageEvidence",
+          "optional": false,
+          "type": "EvidenceRef",
+          "target": "fulfilment_partners.coverage_evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "PlanLegAssignment",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "plan_leg_assignments",
+      "attributes": [
+        {
+          "name": "sequence",
+          "optional": false,
+          "type": "number",
+          "target": "plan_leg_assignments.sequence",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "window",
+          "optional": false,
+          "type": "TimeWindow",
+          "target": "plan_leg_assignments.{starts_at,ends_at}",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "responsibility",
+          "optional": false,
+          "type": "Responsibility",
+          "target": "plan_leg_assignments.responsibility",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "coverage",
+          "optional": false,
+          "type": "EvidenceStatus",
+          "target": "plan_leg_assignments.coverage",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "availability",
+          "optional": false,
+          "type": "EvidenceStatus",
+          "target": "plan_leg_assignments.availability",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "capacityNeeded",
+          "optional": false,
+          "type": "Capacity",
+          "target": "plan_leg_assignments.capacity_needed",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "evidence",
+          "optional": false,
+          "type": "EvidenceRef[]",
+          "target": "plan_leg_assignments.evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "plan_leg_assignments.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "OfferCostComponent",
+      "representation": "EMBEDDED_VALUE",
+      "storage": "v2_carrier_offers.breakdown[]",
+      "attributes": [
+        {
+          "name": "kind",
+          "optional": false,
+          "type": "CostKind",
+          "target": "v2_carrier_offers.breakdown[].kind",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "amount",
+          "optional": true,
+          "type": "Money",
+          "target": "v2_carrier_offers.breakdown[].amount",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "treatment",
+          "optional": false,
+          "type": "INCLUDED | QUOTED | ESTIMATED | EXCLUDED | UNKNOWN",
+          "target": "v2_carrier_offers.breakdown[].treatment",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource",
+          "target": "v2_carrier_offers.breakdown[].source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "observedAt",
+          "optional": false,
+          "type": "Instant",
+          "target": "v2_carrier_offers.breakdown[].observedAt",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "details",
+          "optional": true,
+          "type": "string",
+          "target": "v2_carrier_offers.breakdown[].details",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "ShipmentContact",
+      "representation": "EMBEDDED_VALUE",
+      "storage": "freight_requests.v2_snapshot.contacts",
+      "attributes": [
+        {
+          "name": "role",
+          "optional": false,
+          "type": "PICKUP | RECIPIENT",
+          "target": "freight_requests.v2_snapshot.contacts.role",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string",
+          "target": "freight_requests.v2_snapshot.contacts.name",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "company",
+          "optional": true,
+          "type": "string",
+          "target": "freight_requests.v2_snapshot.contacts.company",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "phone",
+          "optional": false,
+          "type": "E164Phone",
+          "target": "freight_requests.v2_snapshot.contacts.phone",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "email",
+          "optional": true,
+          "type": "EmailAddress",
+          "target": "freight_requests.v2_snapshot.contacts.email",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "addressDetail",
+          "optional": true,
+          "type": "string",
+          "target": "freight_requests.v2_snapshot.contacts.addressDetail",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "handlingInstructions",
+          "optional": true,
+          "type": "string",
+          "target": "freight_requests.v2_snapshot.contacts.handlingInstructions",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "CarrierOperator",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "carrier_operators",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "carrier_operators.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "displayName",
+          "optional": false,
+          "type": "string",
+          "target": "carrier_operators.display_name",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "role",
+          "optional": false,
+          "type": "CarrierRole",
+          "target": "carrier_operators.role",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "email",
+          "optional": true,
+          "type": "EmailAddress",
+          "target": "carrier_operators.email",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "phone",
+          "optional": true,
+          "type": "E164Phone",
+          "target": "carrier_operators.phone",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "MemberStatus",
+          "target": "carrier_operators.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "verifiedAt",
+          "optional": true,
+          "type": "Instant",
+          "target": "carrier_operators.verified_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "AssetCargoCapability",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "cargo_capability_definitions",
+      "attributes": [
+        {
+          "name": "requirements",
+          "optional": false,
+          "type": "CargoRequirement[]",
+          "target": "cargo_capability_definitions.requirements",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "maxWeightKg",
+          "optional": true,
+          "type": "number",
+          "target": "cargo_capability_definitions.max_weight_kg",
+          "physicalType": "numeric; domain bounds/units required",
+          "migrationVerified": false
+        },
+        {
+          "name": "temperatureRange",
+          "optional": true,
+          "type": "TemperatureRange",
+          "target": "cargo_capability_definitions.temperature_range",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "evidence",
+          "optional": true,
+          "type": "EvidenceRef",
+          "target": "cargo_capability_definitions.evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "validUntil",
+          "optional": true,
+          "type": "Instant",
+          "target": "cargo_capability_definitions.valid_until",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "RouteSimulationScenario",
+      "representation": "PORT_OR_PROJECTION",
+      "storage": "|scenario_files",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "ScenarioId",
+          "target": "|scenario_files.id",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "label",
+          "optional": false,
+          "type": "string",
+          "target": "|scenario_files.label",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "seed",
+          "optional": false,
+          "type": "string",
+          "target": "|scenario_files.seed",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "networkVersion",
+          "optional": false,
+          "type": "string",
+          "target": "|scenario_files.networkVersion",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "clock",
+          "optional": false,
+          "type": "Instant",
+          "target": "|scenario_files.clock",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "SYNTHETIC",
+          "target": "|scenario_files.source",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "expectedOutcome",
+          "optional": false,
+          "type": "RouteDecision",
+          "target": "|scenario_files.expectedOutcome",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "RoutePlanner",
+      "representation": "PORT_OR_PROJECTION",
+      "storage": "|route_planner_port",
+      "attributes": [
+        {
+          "name": "algorithmVersion",
+          "optional": false,
+          "type": "string",
+          "target": "|route_planner_port.algorithmVersion",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "graphVersion",
+          "optional": false,
+          "type": "string",
+          "target": "|route_planner_port.graphVersion",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "type": "DataSource",
+          "target": "|route_planner_port.source",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    },
+    {
+      "name": "SelectionDecision",
+      "representation": "TABLE_OR_SUBTYPE",
+      "storage": "selection_decisions",
+      "attributes": [
+        {
+          "name": "id",
+          "optional": false,
+          "type": "UUID",
+          "target": "selection_decisions.id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "selectedAt",
+          "optional": false,
+          "type": "Instant",
+          "target": "selection_decisions.selected_at",
+          "physicalType": "timestamptz",
+          "migrationVerified": false
+        },
+        {
+          "name": "rationale",
+          "optional": false,
+          "type": "Explanation",
+          "target": "selection_decisions.rationale",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "policyVersion",
+          "optional": true,
+          "type": "string",
+          "target": "selection_decisions.policy_version",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "consideredOptions",
+          "optional": false,
+          "type": "OptionRef[]",
+          "target": "selection_decisions.considered_options",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "status",
+          "optional": false,
+          "type": "DecisionStatus",
+          "target": "selection_decisions.status",
+          "physicalType": "text; closed vocabulary when UML type is enum",
+          "migrationVerified": false
+        },
+        {
+          "name": "evidence",
+          "optional": false,
+          "type": "EvidenceRef[]",
+          "target": "selection_decisions.evidence",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        },
+        {
+          "name": "selectedPlanId",
+          "optional": false,
+          "type": "UUID",
+          "target": "selection_decisions.selected_plan_id",
+          "physicalType": "uuid / FK when reference",
+          "migrationVerified": false
+        },
+        {
+          "name": "selectedOfferIds",
+          "optional": false,
+          "type": "UUID[]",
+          "target": "selection_decisions.selection_decision_offers.offer_id",
+          "physicalType": "structured value; strict shape and referenced IDs validated",
+          "migrationVerified": false
+        }
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-149",
+      "source": "Organization",
+      "target": "Facility",
+      "label": "registra",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "facilities.organization_id -> organizations.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-152",
+      "source": "Organization",
+      "target": "FreightRequest",
+      "label": "presenta",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "freight_requests.organization_id -> organizations.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-155",
+      "source": "Facility",
+      "target": "FreightRequest",
+      "label": "origen",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "physicalTreatment": "freight_requests.origin_facility_id -> facilities.id; nullable; same organization",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-158",
+      "source": "Facility",
+      "target": "FreightRequest",
+      "label": "destino",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "physicalTreatment": "freight_requests.destination_facility_id -> facilities.id; nullable; same organization",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-161",
+      "source": "FreightRequest",
+      "target": "CargoSpecification",
+      "label": "describe",
+      "endLabels": [
+        "1",
+        "1"
+      ],
+      "physicalTreatment": "freight_requests.v2_snapshot.cargoSpecification; exactly one validated object",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-164",
+      "source": "CargoSpecification",
+      "target": "CargoUnit",
+      "label": "contiene al enviar",
+      "endLabels": [
+        "1",
+        "1..*"
+      ],
+      "physicalTreatment": "cargoSpecification.units[]; stable unit index; nonempty at submission",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-167",
+      "source": "Carrier",
+      "target": "CarrierDepot",
+      "label": "opera",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "carrier_depots.carrier_id -> carriers.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-170",
+      "source": "Carrier",
+      "target": "CarrierService",
+      "label": "publica",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "carrier_services.carrier_id -> carriers.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-173",
+      "source": "CarrierService",
+      "target": "ServiceArea",
+      "label": "declara",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "service_areas.carrier_service_id -> carrier_services.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-176",
+      "source": "CarrierService",
+      "target": "ServiceLane",
+      "label": "declara",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "service_lanes.carrier_service_id -> carrier_services.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-179",
+      "source": "ServiceArea",
+      "target": "ServiceLane",
+      "label": "origen cubierto",
+      "endLabels": [
+        "1 PICKUP",
+        "0..*"
+      ],
+      "physicalTreatment": "service_lanes.origin_service_area_id -> service_areas.id; role PICKUP; same service",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-182",
+      "source": "ServiceArea",
+      "target": "ServiceLane",
+      "label": "destino cubierto",
+      "endLabels": [
+        "1 DELIVERY",
+        "0..*"
+      ],
+      "physicalTreatment": "service_lanes.destination_service_area_id -> service_areas.id; role DELIVERY; same service",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-185",
+      "source": "CarrierService",
+      "target": "ResponseIntegration",
+      "label": "responde por",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "response_integrations.carrier_service_id -> carrier_services.id; secret reference only",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-188",
+      "source": "Carrier",
+      "target": "TransportAsset",
+      "label": "gestiona",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "transport_assets.carrier_id -> carriers.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-191",
+      "source": "CarrierDepot",
+      "target": "TransportAsset",
+      "label": "base física",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "physicalTreatment": "transport_assets.home_depot_id -> carrier_depots.id; nullable; same carrier",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-194",
+      "source": "RoadVehicle",
+      "target": "TransportAsset",
+      "label": "especializa",
+      "endLabels": [],
+      "physicalTreatment": "single-table inheritance: mode ROAD; vehicle fields not attached to other modes",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-195",
+      "source": "TransportAsset",
+      "target": "CapacitySource",
+      "label": "realiza",
+      "endLabels": [],
+      "physicalTreatment": "projection keyed ASSET/id; never independently writable",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-196",
+      "source": "CapacityPool",
+      "target": "CapacitySource",
+      "label": "realiza",
+      "endLabels": [],
+      "physicalTreatment": "projection keyed POOL/id; never independently writable",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-197",
+      "source": "CarrierService",
+      "target": "CapacityPool",
+      "label": "usa cupo",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "capacity_pools.carrier_service_id -> carrier_services.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-200",
+      "source": "CapacitySource",
+      "target": "CapacityCalendar",
+      "label": "agenda",
+      "endLabels": [
+        "1",
+        "0..1"
+      ],
+      "physicalTreatment": "capacity_calendars XOR transport_asset_id/capacity_pool_id; unique per source",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-203",
+      "source": "CapacityCalendar",
+      "target": "CapacityReservation",
+      "label": "registra",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "capacity_reservations.capacity_calendar_id -> capacity_calendars.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-206",
+      "source": "TransportAsset",
+      "target": "ScheduledMaintenance",
+      "label": "bloquea",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "scheduled_maintenances.transport_asset_id -> transport_assets.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-209",
+      "source": "TransportAsset",
+      "target": "AssetStatusEvent",
+      "label": "historial",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "asset_status_events.transport_asset_id -> transport_assets.id; append-only",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-212",
+      "source": "Carrier",
+      "target": "Driver",
+      "label": "habilita",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "drivers.carrier_id -> carriers.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-215",
+      "source": "Driver",
+      "target": "DriverAssignment",
+      "label": "asignado",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "driver_assignments.driver_id -> drivers.id; nonoverlapping active windows",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-218",
+      "source": "RoadVehicle",
+      "target": "VehicleAssignment",
+      "label": "asignado",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "vehicle_assignments.transport_asset_id -> transport_assets.id; ROAD; nonoverlapping active windows",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-221",
+      "source": "FreightRequest",
+      "target": "TransportPlanCandidate",
+      "label": "genera",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "transport_plan_candidates.request_id -> freight_requests.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-224",
+      "source": "TransportPlanCandidate",
+      "target": "RoutePlan",
+      "label": "propone",
+      "endLabels": [
+        "1",
+        "1"
+      ],
+      "physicalTreatment": "transport_plan_candidates.route_plan_id -> route_plans.id; mandatory; same request",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-227",
+      "source": "RoutePlan",
+      "target": "RouteLeg",
+      "label": "contiene",
+      "endLabels": [
+        "1",
+        "1..*"
+      ],
+      "physicalTreatment": "route_legs.route_plan_id -> route_plans.id; unique sequence; at least one on publication",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-230",
+      "source": "RoutePlan",
+      "target": "RouteWaypoint",
+      "label": "incluye",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "route_waypoints.route_plan_id -> route_plans.id; unique sequence",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-233",
+      "source": "RouteLeg",
+      "target": "RouteCondition",
+      "label": "afectado por",
+      "endLabels": [
+        "0..*",
+        "0..*"
+      ],
+      "physicalTreatment": "route_leg_conditions(leg_id,condition_id); composite primary key",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-236",
+      "source": "RoutePlanningPolicy",
+      "target": "RoutePlan",
+      "label": "evalúa",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "route_plans.policy_id -> route_planning_policies.id; immutable policy version",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-239",
+      "source": "TransportPlanCandidate",
+      "target": "PlanResource",
+      "label": "requiere",
+      "endLabels": [
+        "1",
+        "1..*"
+      ],
+      "physicalTreatment": "plan_resources.plan_candidate_id -> transport_plan_candidates.id; nonempty validated at publication",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-242",
+      "source": "TransportPlanCandidate",
+      "target": "CarrierService",
+      "label": "/servicios por tramo (derivada de PlanLegAssignment)",
+      "endLabels": [
+        "0..*",
+        "1..*"
+      ],
+      "physicalTreatment": "derived DISTINCT carrier_service_id from plan_leg_assignments; no duplicate editable relation",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-245",
+      "source": "PlanResource",
+      "target": "RouteLeg",
+      "label": "asignado a",
+      "endLabels": [
+        "0..*",
+        "1"
+      ],
+      "physicalTreatment": "plan_resources.route_leg_id -> route_legs.id; same plan",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-248",
+      "source": "PlanResource",
+      "target": "CapacitySource",
+      "label": "usa fuente",
+      "endLabels": [
+        "0..*",
+        "0..1"
+      ],
+      "physicalTreatment": "plan_resources XOR nullable asset_id/pool_id; neither allowed only for UNKNOWN; not both",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-251",
+      "source": "TransportPlanCandidate",
+      "target": "CarrierOpportunity",
+      "label": "propone",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "carrier_opportunities.plan_candidate_id -> transport_plan_candidates.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-254",
+      "source": "Carrier",
+      "target": "CarrierOpportunity",
+      "label": "invitado",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "carrier_opportunities.carrier_id -> carriers.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-257",
+      "source": "CarrierOpportunity",
+      "target": "CarrierOffer",
+      "label": "recibe",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "v2_carrier_offers.opportunity_id -> carrier_opportunities.id; request/plan/carrier must match",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-260",
+      "source": "Carrier",
+      "target": "CarrierOffer",
+      "label": "emite",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "v2_carrier_offers.carrier_id -> carriers.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-263",
+      "source": "CarrierOffer",
+      "target": "RankedOption",
+      "label": "evaluada como",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "ranked_options.offer_id -> v2_carrier_offers.id; immutable ranking snapshot",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-266",
+      "source": "ScoringPolicy",
+      "target": "RankedOption",
+      "label": "calcula",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "ranked_options.scoring_policy_id -> scoring_policies.id; immutable policy version",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-269",
+      "source": "CarrierOffer",
+      "target": "Booking",
+      "label": "fundamenta",
+      "endLabels": [
+        "1",
+        "0..1"
+      ],
+      "physicalTreatment": "v2_bookings.offer_id -> v2_carrier_offers.id; UNIQUE offer_id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-272",
+      "source": "Booking",
+      "target": "TransportExecution",
+      "label": "inicia",
+      "endLabels": [
+        "1",
+        "0..1"
+      ],
+      "physicalTreatment": "transport_executions.booking_id -> v2_bookings.id; UNIQUE booking_id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-275",
+      "source": "TransportExecution",
+      "target": "DriverAssignment",
+      "label": "tripulación",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "driver_assignments.execution_id -> transport_executions.id; same responsible carrier",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-278",
+      "source": "TransportExecution",
+      "target": "VehicleAssignment",
+      "label": "equipo",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "vehicle_assignments.execution_id -> transport_executions.id; same responsible carrier",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-281",
+      "source": "TransportExecution",
+      "target": "OperationalIncident",
+      "label": "registra",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "operational_incidents.execution_id -> transport_executions.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-284",
+      "source": "OperationalIncident",
+      "target": "IncidentUpdate",
+      "label": "bitácora",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "incident_updates.incident_id -> operational_incidents.id; append-only",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-287",
+      "source": "OperationalIncident",
+      "target": "RouteCondition",
+      "label": "evidencia vial",
+      "endLabels": [
+        "0..*",
+        "0..*"
+      ],
+      "physicalTreatment": "incident_route_conditions(incident_id,condition_id); composite primary key; source retained",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "z1P_2RDf_z28FQ--q6sC-9",
+      "source": "LogisticsNode",
+      "target": "RouteCorridor",
+      "label": "inicio dirigido",
+      "endLabels": [
+        "1 origin",
+        "0..*"
+      ],
+      "physicalTreatment": "route_corridors.origin_node_id -> logistics_nodes.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "z1P_2RDf_z28FQ--q6sC-12",
+      "source": "LogisticsNode",
+      "target": "RouteCorridor",
+      "label": "fin dirigido",
+      "endLabels": [
+        "1 destination",
+        "0..*"
+      ],
+      "physicalTreatment": "route_corridors.destination_node_id -> logistics_nodes.id; direction preserved",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "2hVugEQixPLE8ubNQINt-1",
+      "source": "RouteCorridor",
+      "target": "RouteLeg",
+      "label": "tramo sobre corredor",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "physicalTreatment": "route_legs.corridor_id -> route_corridors.id; nullable; preserve corridor version snapshot",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "Btc221LeI3F3ZgxBBoag-9",
+      "source": "CargoProfile",
+      "target": "CargoCategory",
+      "label": "clasifica",
+      "endLabels": [
+        "0..*",
+        "1"
+      ],
+      "physicalTreatment": "organization_cargo_profiles.cargo_category_id -> cargo_categories.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "1BKr3RNiIilfkyFQsFd3-1",
+      "source": "Organization",
+      "target": "CargoProfile",
+      "label": "guarda",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "organization_cargo_profiles.organization_id -> organizations.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "u-VsSdGcmUxEkryfOKhH-1",
+      "source": "CargoUnit",
+      "target": "LoadAllocation",
+      "label": "se distribuye en",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "load_allocations(request_id,cargo_unit_index) validated against immutable request cargo snapshot",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "3KgDWDx9N2pGY3pWrg_W-1",
+      "source": "PlanResource",
+      "target": "LoadAllocation",
+      "label": "transporta",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "load_allocations.plan_resource_id -> plan_resources.id; same request; totals bounded; indivisible not split",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "g8S2DPwqzsmnHs3VKEzF-1",
+      "source": "OrganizationMember",
+      "target": "Organization",
+      "label": "miembros autorizados",
+      "endLabels": [
+        "1..*",
+        "1"
+      ],
+      "physicalTreatment": "organization_members.organization_id -> organizations.id; active membership checked at command time",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "2xsUHS_toCq_aFvuMJPX-5",
+      "source": "OrganizationMember",
+      "target": "McpAccountLink",
+      "label": "vincula cuenta",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "mcp_account_links.organization_member_id -> organization_members.id; existing HAC-11 actor checks retained",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "2yUqBqAz-HDDDDVWFXLk-5",
+      "source": "CapacityCalendar",
+      "target": "RepositioningBlock",
+      "label": "bloquea por traslado",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "repositioning_blocks.capacity_calendar_id -> capacity_calendars.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "Kc00renXnkKxnfYvoeyl-4",
+      "source": "Organization",
+      "target": "OrganizationPreferences",
+      "label": "configura",
+      "endLabels": [
+        "1",
+        "0..1"
+      ],
+      "physicalTreatment": "organization_preferences.organization_id -> organizations.id; UNIQUE organization_id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "wq-PosFmHl-Mz6B2xIb8-4",
+      "source": "Carrier",
+      "target": "CarrierMetric",
+      "label": "métricas con muestra",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "v2_carrier_metrics.carrier_id -> carriers.id; sample and period mandatory",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "1jDxd8enxLVPqxfFYbzY-1",
+      "source": "VehicleCombination",
+      "target": "PlanResource",
+      "label": "unidad combinada",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "physicalTreatment": "plan_resources.vehicle_combination_id -> vehicle_combinations.id; nullable; carrier/time compatibility",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "bR8ZHdLwjZc_sJT4jZ76-1",
+      "source": "VehicleCombination",
+      "target": "TransportAsset",
+      "label": "agrupa activos",
+      "endLabels": [
+        "0..*",
+        "1..*"
+      ],
+      "physicalTreatment": "vehicle_combination_assets(combination_id,asset_id); nonempty; active coupling exclusion per asset",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "oF6JfD9VbmF1wDjwixuT-1",
+      "source": "FulfilmentPartner",
+      "target": "ServiceArea",
+      "label": "respalda cobertura",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "physicalTreatment": "service_areas.fulfilment_partner_id -> fulfilment_partners.id; nullable; same carrier and valid agreement",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "r3XODgQlmyjdfBrPmGPP-1",
+      "source": "FulfilmentPartner",
+      "target": "CapacityPool",
+      "label": "aporta cupo",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "physicalTreatment": "capacity_pools.fulfilment_partner_id -> fulfilment_partners.id; nullable; no fabricated individual vehicle",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "itVb_8o_XJjBflcSYoN6-1",
+      "source": "Carrier",
+      "target": "FulfilmentPartner",
+      "label": "registra socio",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "fulfilment_partners.carrier_id -> carriers.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "FTiVxf39t15do1JHp-zJ-1",
+      "source": "FulfilmentPartner",
+      "target": "PlanLegAssignment",
+      "label": "ejecuta por acuerdo",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "physicalTreatment": "plan_leg_assignments.fulfilment_partner_id -> fulfilment_partners.id; nullable; valid during assignment",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "Fld38RXTpNTEaqT0KLbX-1",
+      "source": "PlanLegAssignment",
+      "target": "RouteLeg",
+      "label": "usa tramo",
+      "endLabels": [
+        "0..*",
+        "1"
+      ],
+      "physicalTreatment": "plan_leg_assignments.route_leg_id -> route_legs.id; same route/plan",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "RGhOuhwsT8ZYOMnHYwK_-1",
+      "source": "TransportPlanCandidate",
+      "target": "PlanLegAssignment",
+      "label": "desglosa por tramo",
+      "endLabels": [
+        "1",
+        "1..*"
+      ],
+      "physicalTreatment": "plan_leg_assignments.plan_candidate_id -> transport_plan_candidates.id; nonempty when published",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "fk9bowG78kA6Nmof4bi--1",
+      "source": "PlanLegAssignment",
+      "target": "PlanResource",
+      "label": "recursos del tramo",
+      "endLabels": [
+        "1",
+        "1..*"
+      ],
+      "physicalTreatment": "plan_resources.plan_leg_assignment_id -> plan_leg_assignments.id; same leg/plan; nonempty per assignment",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "C2sqDRVIhTB5ZJw0Zlot-1",
+      "source": "PlanLegAssignment",
+      "target": "CarrierService",
+      "label": "servicio responsable",
+      "endLabels": [
+        "0..*",
+        "1"
+      ],
+      "physicalTreatment": "plan_leg_assignments.carrier_service_id -> carrier_services.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "DK0aJlq7bGL-fGDcFSUt-1",
+      "source": "CarrierOffer",
+      "target": "PlanLegAssignment",
+      "label": "cotiza tramos atribuibles",
+      "endLabels": [
+        "0..*",
+        "1..*"
+      ],
+      "physicalTreatment": "v2_offer_assignments(offer_id,assignment_id); nonempty; attributable carrier and plan",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "72KwxI-JqKkcPOP_kNa3-1",
+      "source": "CarrierOffer",
+      "target": "OfferCostComponent",
+      "label": "desglosa costos",
+      "endLabels": [
+        "1",
+        "1..*"
+      ],
+      "physicalTreatment": "v2_carrier_offers.breakdown[]; nonempty; quoted cents reconcile with issuer total",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "rg1mzH5NKyUcr1gneQok-1",
+      "source": "FreightRequest",
+      "target": "ShipmentContact",
+      "label": "receptor de entrega · RECIPIENT",
+      "endLabels": [
+        "1",
+        "0..1"
+      ],
+      "physicalTreatment": "freight_requests.v2_snapshot.contacts.recipient; nullable; RECIPIENT role",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "zAdGsDxVq7Eb_sLkxGRV-1",
+      "source": "CarrierOperator",
+      "target": "CarrierOffer",
+      "label": "emite manualmente",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "physicalTreatment": "v2_carrier_offers.issuer_operator_id -> carrier_operators.id; nullable for verified API/MCP issuer",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "tmp4_OqPaU6kxuIBONix-1",
+      "source": "CarrierOperator",
+      "target": "Carrier",
+      "label": "pertenece a",
+      "endLabels": [
+        "0..*",
+        "1"
+      ],
+      "physicalTreatment": "carrier_operators.carrier_id -> carriers.id; actual auth user and carrier permission required",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "6Ioss1hAN_-tinRlzXcZ-1",
+      "source": "AssetCargoCapability",
+      "target": "TransportAsset",
+      "label": "capacidades de carga",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "transport_assets.cargo_capability_definition_id -> cargo_capability_definitions.id; legacy per-asset capabilities retained for migration compatibility",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "bkNotKzCbFjlTCsTA6gs-1",
+      "source": "CargoCategory",
+      "target": "AssetCargoCapability",
+      "label": "categoría compatible",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "cargo_capability_definitions.cargo_category_id -> cargo_categories.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "jSKYVkFkDFWJeImlZA73-5",
+      "source": "RouteSimulationScenario",
+      "target": "RouteCorridor",
+      "label": "red sintética versionada",
+      "endLabels": [
+        "0..*",
+        "1..*"
+      ],
+      "physicalTreatment": "scenario file references versioned corridor fixtures; no scenario rows in production migrations",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "jSKYVkFkDFWJeImlZA73-8",
+      "source": "RouteSimulationScenario",
+      "target": "RouteCondition",
+      "label": "inyecta eventos",
+      "endLabels": [
+        "0..1",
+        "1..*"
+      ],
+      "physicalTreatment": "scenario file owns synthetic condition fixtures; never substitutes live condition evidence",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "WNCIiRomMXHDXtrxWMq--1",
+      "source": "RoutePlanner",
+      "target": "RoutePlan",
+      "label": "genera alternativas",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "route_plans planner_algorithm_version/planner_graph_version/planner_source snapshot; port not table",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "iFQi1_XGm5au44xV3qrT-1",
+      "source": "RoutePlanner",
+      "target": "RoutePlanningPolicy",
+      "label": "consulta política versionada",
+      "endLabels": [
+        "0..*",
+        "0..*"
+      ],
+      "physicalTreatment": "RoutePlanner receives immutable RoutePlanningPolicy; dependency, not an editable join table",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "h7SgiR5XgM2d8XkbtD6E-1",
+      "source": "RoutePlanner",
+      "target": "RouteCorridor",
+      "label": "evalúa red",
+      "endLabels": [
+        "0..*",
+        "0..*"
+      ],
+      "physicalTreatment": "RoutePlanner reads versioned corridor graph; dependency, not ownership",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "TTPNMglXCn0O7Q35afVn-1",
+      "source": "SelectionDecision",
+      "target": "Booking",
+      "label": "autoriza reserva",
+      "endLabels": [
+        "1",
+        "0..1"
+      ],
+      "physicalTreatment": "v2_bookings.selection_decision_id -> selection_decisions.id; approved recovery change 0..1 to 0..* bookings, one per selected offer",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "VIKFyr6Zv-qFtDVTHai7-1",
+      "source": "OrganizationMember",
+      "target": "SelectionDecision",
+      "label": "decide",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "selection_decisions.organization_member_id -> organization_members.id; audit actor and organization",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "Ftk5fUhrMQUH-lgMXdC8-1",
+      "source": "CarrierOffer",
+      "target": "SelectionDecision",
+      "label": "oferta elegida",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "selection_decision_offers(decision_id,offer_id); approved recovery change single offer to 1..*; exact assignment coverage",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "Hw6g2lMzjCy3rr25NsTR-1",
+      "source": "FreightRequest",
+      "target": "SelectionDecision",
+      "label": "decisión auditada",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "selection_decisions.request_id -> freight_requests.id",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "V-OUuwJpzMDYHvzWLT1--1",
+      "source": "TransportPlanCandidate",
+      "target": "SelectionDecision",
+      "label": "plan seleccionado",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "selection_decisions.selected_plan_id -> transport_plan_candidates.id; same request",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "Mhc5nrdr3FUa7mLKN28W-1",
+      "source": "FreightRequest",
+      "target": "CarrierOffer",
+      "label": "referencia de lo cotizado",
+      "endLabels": [
+        "1",
+        "0..*"
+      ],
+      "physicalTreatment": "v2_carrier_offers.request_id -> freight_requests.id; same opportunity/plan organization",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "Mhc5nrdr3FUa7mLKN28W-4",
+      "source": "PlanResource",
+      "target": "CapacityReservation",
+      "label": "ocupa capacidad en ventana",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "physicalTreatment": "capacity_reservations.plan_resource_id -> plan_resources.id; nullable for pre-plan hold; coherent source",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "cm-v2fix-3",
+      "source": "FreightRequest",
+      "target": "ShipmentContact",
+      "label": "contacto de recojo · PICKUP",
+      "endLabels": [
+        "1",
+        "0..1"
+      ],
+      "physicalTreatment": "freight_requests.v2_snapshot.contacts.pickup; nullable; PICKUP role",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "cm-v2fix-8",
+      "source": "CarrierOffer",
+      "target": "CarrierService",
+      "label": "cubre servicio",
+      "endLabels": [
+        "0..*",
+        "1..*"
+      ],
+      "physicalTreatment": "v2_offer_services(offer_id,service_id); nonempty; equals DISTINCT services of covered assignments",
+      "migrationVerified": false
+    },
+    {
+      "umlId": "cm-v2fix-11",
+      "source": "Booking",
+      "target": "CapacityReservation",
+      "label": "compromete capacidad",
+      "endLabels": [
+        "0..1",
+        "0..*"
+      ],
+      "physicalTreatment": "capacity_reservations.v2_booking_id -> v2_bookings.id; nullable for hold; active commitment proof per carrying resource",
+      "migrationVerified": false
+    }
+  ]
+}

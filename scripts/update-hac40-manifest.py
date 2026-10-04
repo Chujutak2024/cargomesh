@@ -28,7 +28,7 @@ manifest['migrations'].sort(key=lambda entry: entry['version'])
 path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
 profiles_path = ROOT / 'supabase-v2/test-profiles.json'
 profiles = json.loads(profiles_path.read_text())
-for test in ['12_hac11_mcp_account_links.test.sql','15_v2_hac40_facility_commands.test.sql', '16_v2_hac40_request_lifecycle.test.sql']:
+for test in ['12_hac11_mcp_account_links.test.sql','15_v2_hac40_facility_commands.test.sql', '16_v2_hac40_request_lifecycle.test.sql', '17_v2_hac40_organization_commands.test.sql']:
     name = 'supabase/tests/' + test
     if name not in profiles['v2']:
         profiles['v2'].append(name)

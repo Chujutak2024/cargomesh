@@ -2276,6 +2276,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      command_v2_organization: {
+        Args: { p_organization_id: string; p_member_id: string; p_idempotency_key: string;
+          p_expected_version: number; p_value: Json }
+        Returns: Json
+      }
       command_v2_freight_request: {
         Args: {
           p_organization_id: string
