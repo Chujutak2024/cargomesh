@@ -82,4 +82,3 @@ if __name__=='__main__':
   assert not args.state.exists(),'State exists; refusing overwrite.'
   args.state.write_text(json.dumps(prepare(),indent=2),encoding='utf-8')
  else:cleanup(json.loads(args.state.read_text()))
-

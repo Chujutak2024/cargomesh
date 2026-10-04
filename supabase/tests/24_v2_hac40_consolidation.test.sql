@@ -110,4 +110,3 @@ select is((select status from public.capacity_reservations where id=pg_temp.id('
 select throws_ok($$update public.capacity_reservations set committed_capacity='{"weightKg":11000,"volumeM3":2}' where id=pg_temp.id('hold-b')$$,'PT409','LTL_RESIDUAL_CAPACITY_EXCEEDED','native shared commitment cannot exceed manufacturer/route limits');
 select is((select count(distinct execution_id)::integer from public.capacity_reservations where consolidation_id=pg_temp.id('batch')),2,'separate request executions retain explicit shared-trip trace');
 select * from finish();rollback;
-
