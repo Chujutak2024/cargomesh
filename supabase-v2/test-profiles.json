@@ -25,6 +25,12 @@
     "supabase/tests/18_v2_hac40_full_request_contract.test.sql",
     "supabase/tests/19_v2_hac40_catalog.test.sql",
     "supabase/tests/20_v2_hac40_fleet.test.sql",
-    "supabase/tests/21_v2_hac40_crew.test.sql"
+    "supabase/tests/21_v2_hac40_crew.test.sql",
+    "supabase/tests/22_v2_hac40_workflow.test.sql",
+    "supabase/tests/23_v2_hac40_operation.test.sql",
+    "supabase/tests/24_v2_hac40_consolidation.test.sql",
+    "supabase/tests/25_v2_hac40_combination.test.sql",
+    "supabase/tests/26_v2_hac40_workflow_constraints.test.sql",
+    "supabase/tests/27_v2_hac40_multileg.test.sql"
   ]
 }

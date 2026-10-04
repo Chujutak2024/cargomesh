@@ -93,11 +93,11 @@ Se incorporan `preferredEquipment`, `selectionObjective`, `availableDocuments`, 
 Los equipos de intención incorporan ISO_CONTAINER, RAIL_WAGON y AIR_ULD junto a los cinco códigos ROAD. No se agregan al catálogo ROAD del intake ni se presentan como recursos disponibles sin datos.
 
 - Se admite la cardinalidad UML de selección `1..*` ofertas. Cada oferta cubre asignaciones de su carrier y servicios. Todas las asignaciones del plan deben quedar cubiertas una vez, sin huecos ni dobles cargos.
-- Una selección multicarrier produce compromisos/bookings separados por oferta. No se fabrica una oferta global ni se afirma atomicidad de llamadas a proveedores externos. Persistencia de estados de coordinación, reintentos y compensación es un requisito pendiente de B5.
+- Una selección multicarrier produce compromisos/bookings separados por oferta. No se fabrica una oferta global ni se afirma atomicidad de llamadas a proveedores externos. El incremento de workflow persiste autorización/confirmación/cancelación y liberación local atómica. La compensación de llamadas reales a proveedores requiere el adaptador y su evidencia; no se afirma atomicidad distribuida.
 - `price` es el total atribuible del emisor. Componentes QUOTED menos descuentos suman ese total; INCLUDED no vuelve a sumarse. ESTIMATED/EXCLUDED/UNKNOWN impiden comparar un costo final confirmado.
 - El corte USD se mantiene: no convertir PEN ni aceptar una moneda contradictoria. Una ampliación de moneda requerirá contrato y fuente FX independiente.
 - Scoring versionado con objetivos LOWEST_COST, FASTEST o WEIGHTED; pesos costo/tránsito/fiabilidad suman uno. EXCLUDE con razones para dimensiones requeridas sin dato; desempate estable por offerId. Métricas exigen período, muestra y vigencia.
-- Estas reglas están implementadas como políticas puras y schemas en `shared/schemas/v2/commercial.ts` y `server/modules/commercial/domain/offer-policy.ts`. **Faltan repositorios y rutas comerciales; no son tools/API live.**
+- Estas reglas están implementadas como políticas puras y schemas en `shared/schemas/v2/commercial.ts` y `server/modules/commercial/domain/offer-policy.ts`. **Actualización:** el [workflow persistente](./HAC40_WORKFLOW_API.md) implementa repositorio, RPC, rutas, ranking de coberturas completas, booking y operación. Su prueba local no acredita tools ni integración live.
 
 ## Persistencia actual y cierre pendiente
 
@@ -107,6 +107,6 @@ La revisión de solicitud reutiliza la validación/canonización SQL existente m
 
 El manifest registra la migración HAC-11 previamente mergeada que faltaba en la base, sin modificar su SQL; el perfil ejecuta su pgTAP. No se cambió la lógica de account-linking de Axel.
 
-**Para cerrar HAC-40 sigue faltando** implementar y verificar contra PostgreSQL el DER objetivo de todo el modelo, atributos/multiplicidades de los demás agregados, persistencia/rutas de las familias anteriores, identidad carrier/MCP dependiente, disponibilidad multirrecurso/LTL, compromisos/reservas y operación, dataset autorizado alojado y consumo real de frontend/MCP. No se deben marcar esos huecos como futuros fuera del alcance ni cerrar la issue con los endpoints actuales.
+**Estado actual:** catálogo, flota, crew y [workflow de planes/comercial/reservas/operación](./HAC40_WORKFLOW_API.md) están implementados y probados localmente; [200 GET/POST únicos](./HAC40_API_ENDPOINTS.md). **Para cerrar HAC-40 sigue faltando** certificar atributo por atributo y relación por relación todo el DER contra PostgreSQL, resolver faltantes/divergencias/puertos visibles del modelo, integrar identidad carrier/MCP, aplicar esquema/dataset autorizado alojado y comprobar consumo real de frontend/MCP. No se deben marcar esos huecos como futuros fuera del alcance ni cerrar la issue con los endpoints actuales.
 
 Supabase alojado requiere autorización específica después del gate completo de esquema; esta rama no aplica DDL ni seeds remotos. La revisión de implementación, publicación/merge autorizado y QA integrado siguen siendo requisitos separados de los tests locales.
