@@ -23,3 +23,9 @@ test("quantity, dimensions and dates reject invalid provisional turns", () => {
   assert.equal(parseConversationField("unitLengthCm", "-1", options), null);
   assert.equal(parseConversationField("pickupWindowStartsAt", "tomorrow", options), null);
 });
+
+test("equipment prompts use English labels even when persisted selector copy is Spanish", () => {
+  const withSpanishLabel = { ...options, equipmentOptions: [{ code: "BOX_TRUCK", labelEs: "Camión furgón", labelEn: "Camión furgón", verification: "RESOURCE_EVIDENCE" as const }] };
+  assert.deepEqual(choicesForField("requiredEquipment", withSpanishLabel), [{ value: "BOX_TRUCK", label: "Box truck" }]);
+  assert.equal(parseConversationField("requiredEquipment", "1", withSpanishLabel), "BOX_TRUCK");
+});

@@ -2,6 +2,11 @@ import type { IntakeOptionsData } from "./contracts";
 import type { V2IntakePrototypeDraft } from "./prototype-model";
 
 export type ConversationField = keyof V2IntakePrototypeDraft;
+const ENGLISH_EQUIPMENT_LABELS: Record<string, string> = {
+  BOX_TRUCK: "Box truck", REFRIGERATED_TRUCK: "Refrigerated truck", SECURE_BOX_TRUCK: "Secure box truck",
+  HAZMAT_TRUCK: "Hazmat truck", FLATBED: "Flatbed truck", DUMP_TRUCK: "Dump truck",
+  TANKER_TRUCK: "Tanker truck", TRACTOR_TRAILER: "Tractor trailer",
+};
 export const CONVERSATION_FIELDS: readonly ConversationField[] = [
   "originFacilityId", "destinationFacilityId", "categoryCode", "packaging", "cargoDescription",
   "unitQuantity", "unitWeightPerUnitKg", "unitVolumePerUnitM3", "unitLengthCm", "unitWidthCm",
@@ -40,7 +45,7 @@ export function choicesForField(field: ConversationField, options: IntakeOptions
   const list = field === "categoryCode" ? options.cargoCategories
     : field === "packaging" ? options.packagingOptions
     : field === "requiredEquipment" ? options.equipmentOptions : [];
-  return list.map((item) => ({ value: item.code, label: item.labelEn }));
+  return list.map((item) => ({ value: item.code, label: field === "requiredEquipment" ? ENGLISH_EQUIPMENT_LABELS[item.code] ?? item.labelEn : item.labelEn }));
 }
 
 export function parseConversationField(field: ConversationField, input: string, options: IntakeOptionsData): string | null {

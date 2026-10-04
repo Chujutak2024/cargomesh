@@ -6,6 +6,7 @@ import type { V2IntakePrototypeDraft } from "./prototype-model";
 import { CONVERSATION_FIELDS, FIELD_QUESTION, choicesForField, parseConversationField, type ConversationField } from "./conversation-fields";
 import { PreparatoryVoiceControls } from "@/features/v2-conversation-prep/voice-controls";
 import { GuidedMessageV2Schema } from "@/features/v2-conversation-prep/contract";
+import { validatePrototypeReview } from "./prototype-model";
 import styles from "./conversation-chat.module.css";
 
 type Message = { speaker: "assistant" | "user"; text: string };
@@ -36,9 +37,15 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const inputRef = useRef<HTMLInputElement>(null);
   const field = CONVERSATION_FIELDS[cursor] ?? null;
   const choices = field ? choicesForField(field, options) : [];
+  const canCreate = validatePrototypeReview(draft).valid;
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [history]);
   useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
+  useEffect(() => {
+    if (request) setHistory((current) => current.length === 1 && current[0]?.text === GREETING
+      ? [{ speaker: "assistant", text: `Saved draft ${request.referenceCode} was reauthorized. Read it or evaluate ROAD, or start over to prepare another request.` }]
+      : current);
+  }, [request]);
 
   function add(user: string, assistant: string) {
     setHistory((current) => [...current, { speaker: "user", text: user }, { speaker: "assistant", text: assistant }]);
@@ -72,6 +79,10 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       add(value, `Updated ${FIELD_QUESTION[target]} This is still provisional. ${field ? FIELD_QUESTION[field] : "Review the draft before creating it."}`);
       return;
     }
+    if (request) {
+      add(value, "A saved draft is already open. Use Read draft or Evaluate ROAD, or Start over to prepare a separate request. Corrections to this form remain local until a V2 update contract is available.");
+      return;
+    }
     if (!field) {
       add(value, request ? "Use Read draft or Evaluate ROAD below to retrieve the current authorized result." : "All guided fields are collected. Review the full form and create the draft when valid.");
       return;
@@ -97,7 +108,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         {evaluation && <p className={styles.assistant}>ROAD result: {evaluation.overallStatus}. {evaluation.candidates.map((candidate) => `${candidate.carrier.commercialName}: ${candidate.status} (${candidate.reasons.join(", ") || "no reason code"}; capacity source ${candidate.checks.capacityWindow.provenance.dataSource}; checked ${candidate.checks.capacityWindow.provenance.observedAt ?? "unknown"})`).join("; ") || "no candidates"}. Evaluated {evaluation.evaluatedAt} for draft version {evaluation.evaluatedDraftVersion}.{draftDirty ? " This result predates your local corrections." : ""}</p>}
         <div ref={endRef} />
       </div>
-      {field && <div className={styles.prompt}><strong>{cursor + 1}. {FIELD_QUESTION[field]}</strong>
+      {request && <div className={styles.prompt}><strong>Saved draft recovered: {request.referenceCode} · version {request.draftVersion}.</strong><p>Read or evaluate this authorized draft. Start over to prepare another request.</p></div>}
+      {!request && field && <div className={styles.prompt}><strong>{cursor + 1}. {FIELD_QUESTION[field]}</strong>
         {choices.length > 0 && <ol>{choices.map((choice) => <li key={choice.value}>{choice.label}</li>)}</ol>}
       </div>}
       <form onSubmit={(event) => { event.preventDefault(); send(); }} className={styles.composer}>
@@ -107,7 +119,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       <button type="button" className={styles.link} onClick={() => setVoiceOpen(!voiceOpen)} aria-expanded={voiceOpen}>Optional voice controls</button>
       {voiceOpen && <PreparatoryVoiceControls onUseTranscript={(edited) => { setText(edited); setInputMode("EDITED_VOICE_TRANSCRIPT"); }} responseText={history.at(-1)?.speaker === "assistant" ? history.at(-1)?.text ?? "" : ""} />}
       <div className={styles.actions}>
-        <button type="button" disabled={busy || Boolean(request)} onClick={onCreate}>Create valid draft</button>
+        <button type="button" disabled={busy || Boolean(request) || !canCreate} onClick={onCreate}>Create valid draft</button>
         <button type="button" disabled={busy || !request} onClick={onRead}>Read draft</button>
         <button type="button" disabled={busy || !request || draftDirty} onClick={onEvaluate}>Evaluate ROAD</button>
         {onStartOver && <button type="button" disabled={busy} onClick={() => { onStartOver(); setCursor(0); setHistory([{ speaker: "assistant", text: GREETING }]); setText(""); }}>Start over</button>}
