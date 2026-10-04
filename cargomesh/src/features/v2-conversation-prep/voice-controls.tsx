@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { recognitionEndMessage, recognitionErrorMessage } from "./voice-status";
 import { resolveBrowserSpeechSupport } from "./browser-speech-support";
+import { createSpeechTurnDetector } from "./speech-turn";
 
 type RecognitionResult = { results: ArrayLike<ArrayLike<{ transcript: string; confidence?: number }> & { isFinal?: boolean }> };
 type RecognitionError = { error?: string };
@@ -29,9 +30,10 @@ type BraveNavigator = Navigator & { brave?: { isBrave?: () => Promise<boolean> }
 
 export type VoiceState = "checking" | "available" | "requesting_permission" | "listening" | "processing" | "error" | "unsupported";
 
-/** Browser-only capture and playback. It never submits a conversation turn. */
-export function useConversationVoice({ onTranscript, responseText }: {
+/** Browser-only capture and playback. The parent decides how to handle a completed turn. */
+export function useConversationVoice({ onTranscript, onSilence, responseText }: {
   onTranscript: (text: string) => void;
+  onSilence: (text: string) => void;
   responseText: string;
 }) {
   const [state, setState] = useState<VoiceState>("checking");
@@ -39,7 +41,24 @@ export function useConversationVoice({ onTranscript, responseText }: {
   const recognition = useRef<Recognition | null>(null);
   const stopped = useRef(false);
   const hasTranscript = useRef(false);
+  const turnDetector = useRef<ReturnType<typeof createSpeechTurnDetector> | null>(null);
+  const onSilenceRef = useRef(onSilence);
+  const onTranscriptRef = useRef(onTranscript);
+  const [speaking, setSpeaking] = useState(false);
   const mode = useRef<"remote" | "local" | "unsupported">("unsupported");
+
+  onSilenceRef.current = onSilence;
+  onTranscriptRef.current = onTranscript;
+
+  function finishTurn(instance: Recognition, transcript: string) {
+    if (stopped.current || recognition.current !== instance) return;
+    stopped.current = true;
+    recognition.current = null;
+    try { instance.stop(); } catch { /* The browser may have already ended recognition. */ }
+    setState("processing");
+    setMessage("Speech ended. Preparing your response…");
+    onSilenceRef.current(transcript);
+  }
 
   useEffect(() => {
     const browser = window as SpeechWindow;
@@ -63,6 +82,7 @@ export function useConversationVoice({ onTranscript, responseText }: {
     })();
     return () => {
       active = false;
+      turnDetector.current?.cancel();
       recognition.current?.stop();
       window.speechSynthesis?.cancel();
     };
@@ -70,6 +90,7 @@ export function useConversationVoice({ onTranscript, responseText }: {
 
   function stop() {
     stopped.current = true;
+    turnDetector.current?.cancel();
     recognition.current?.stop();
     recognition.current = null;
     setState("available");
@@ -79,7 +100,7 @@ export function useConversationVoice({ onTranscript, responseText }: {
   function start() {
     const browser = window as SpeechWindow;
     const Constructor = browser.SpeechRecognition ?? browser.webkitSpeechRecognition;
-    if (!Constructor || mode.current === "unsupported") {
+    if (!Constructor || mode.current === "unsupported" || speaking) {
       setState("unsupported");
       setMessage("Speech recognition is unavailable here. Type your message, or use a browser with a working English speech engine.");
       return;
@@ -88,6 +109,8 @@ export function useConversationVoice({ onTranscript, responseText }: {
     hasTranscript.current = false;
     const instance = new Constructor();
     recognition.current = instance;
+    const detector = createSpeechTurnDetector((transcript) => finishTurn(instance, transcript));
+    turnDetector.current = detector;
     instance.lang = "en-US";
     if (mode.current === "local") instance.processLocally = true;
     instance.interimResults = true;
@@ -100,22 +123,30 @@ export function useConversationVoice({ onTranscript, responseText }: {
     instance.onresult = (event) => {
       if (stopped.current || recognition.current !== instance) return;
       const recognized = Array.from(event.results).map((result) => result[0]?.transcript ?? "").join(" ").trim();
-      if (recognized) { hasTranscript.current = true; onTranscript(recognized); }
+      if (recognized) {
+        hasTranscript.current = true;
+        onTranscriptRef.current(recognized);
+        detector.update(recognized);
+      }
       setState("listening");
-      setMessage("Listening… Your transcript is editable. Press Stop listening when finished; nothing is sent automatically.");
+      setMessage("Listening… Pause to send your transcript, or press Stop listening to edit it first.");
     };
     instance.onerror = (event) => {
       if (stopped.current || recognition.current !== instance) return;
+      detector.cancel();
       recognition.current = null;
       setState("error");
       setMessage(recognitionErrorMessage(event.error));
     };
     instance.onend = () => {
       if (recognition.current !== instance) return;
-      recognition.current = null;
       if (!stopped.current) {
-        setState("error");
-        setMessage(recognitionEndMessage(hasTranscript.current));
+        if (detector.hasTranscript()) detector.finish();
+        else {
+          recognition.current = null;
+          setState("error");
+          setMessage(recognitionEndMessage(false));
+        }
       }
     };
     try {
@@ -125,18 +156,35 @@ export function useConversationVoice({ onTranscript, responseText }: {
       instance.start();
     } catch {
       recognition.current = null;
+      detector.cancel();
       setState("error");
       setMessage("Speech recognition could not start. You can complete the request by typing.");
     }
   }
 
-  function readResponse() {
-    if (!responseText || !window.speechSynthesis) return;
+  function readResponse(text = responseText) {
+    if (!text || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(responseText);
+    setSpeaking(true);
+    const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-US";
+    utterance.onstart = () => { setSpeaking(true); setMessage("CargoMesh is speaking. Press Stop audio before starting another voice turn."); };
+    utterance.onend = () => { setSpeaking(false); setState("available"); setMessage(""); };
+    utterance.onerror = () => { setSpeaking(false); setState("available"); setMessage("Audio playback stopped. You can continue by voice or text."); };
     window.speechSynthesis.speak(utterance);
   }
 
-  return { state, message, start, stop, readResponse, stopResponse: () => window.speechSynthesis?.cancel(), canRead: Boolean(responseText) };
+  function stopResponse() {
+    window.speechSynthesis?.cancel();
+    setSpeaking(false);
+    setState("available");
+    setMessage("Audio stopped. You can speak again or type.");
+  }
+
+  function finishProcessing() {
+    setState("available");
+    setMessage("");
+  }
+
+  return { state, message, speaking, start, stop, readResponse, stopResponse, finishProcessing, canRead: Boolean(responseText) };
 }

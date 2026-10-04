@@ -57,15 +57,26 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const inputRef = useRef<HTMLInputElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const announcedDraftRef = useRef<string | null>(null);
+  const voiceTurnActive = useRef(false);
+  const lastSpokenMessage = useRef(-1);
   const latestAssistant = history.findLast((message) => message.speaker === "assistant")?.text ?? "";
   const voice = useConversationVoice({
     onTranscript: (recognized) => { setText(recognized); inputRef.current?.focus(); },
+    onSilence: (recognized) => { void send(recognized, true); },
     responseText: latestAssistant,
   });
   const nextField = request ? null : missingField(draft);
   const syntheticCatalog = optionsSource === "fixture" || options.facilities.some((facility) => facility.label.includes("[SYNTHETIC]"));
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [history, choices]);
+  useEffect(() => {
+    const index = history.length - 1;
+    const latest = history[index];
+    if (!voiceTurnActive.current || !latest || latest.speaker !== "assistant" || index <= lastSpokenMessage.current || latest.text.endsWith("…")) return;
+    lastSpokenMessage.current = index;
+    voice.finishProcessing();
+    voice.readResponse(latest.text);
+  }, [history]);
   useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
   useEffect(() => {
     if (!open || !window.visualViewport) return;
@@ -121,6 +132,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   }
 
   function closePanel() {
+    voiceTurnActive.current = false;
     if (voice.state === "listening" || voice.state === "requesting_permission") voice.stop();
     voice.stopResponse();
     setOpen(false);
@@ -140,9 +152,14 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     return parsed.data.interpretation;
   }
 
-  async function send() {
-    const value = text.trim();
-    if (!value || busy || interpretationBusy) return;
+  async function send(override?: string, fromVoice = false) {
+    const value = (override ?? text).trim();
+    if (!value || busy || interpretationBusy || voice.speaking) {
+      if (fromVoice) voice.finishProcessing();
+      return;
+    }
+    if (!fromVoice && (voice.state === "listening" || voice.state === "requesting_permission")) voice.stop();
+    voiceTurnActive.current = fromVoice;
     setText("");
     setChoices([]);
     if (awaitingConfirmation && positive.test(value)) {
@@ -246,13 +263,13 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         {(voice.message || voice.state === "unsupported") && <p className={styles.voiceStatus} role="status">{voice.message || "Speech recognition is unavailable here. You can type every step."}</p>}
         <form onSubmit={(event) => { event.preventDefault(); void send(); }} className={styles.composer}>
           <label className={styles.srOnly} htmlFor="v2-chat-text">Your message or editable voice transcript</label>
-          <input ref={inputRef} id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder="Message CargoMesh…" autoComplete="off" disabled={busy || interpretationBusy} />
+          <input ref={inputRef} id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder="Message CargoMesh…" autoComplete="off" disabled={busy || interpretationBusy || voice.speaking} />
           {voice.state === "listening" || voice.state === "requesting_permission"
             ? <button type="button" className={styles.micActive} aria-label="Stop listening" title="Stop listening" onClick={voice.stop}>■</button>
-            : <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing"} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>}
-          <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
+            : <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing" || voice.speaking || busy || interpretationBusy} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>}
+          <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || voice.speaking}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
-        <div className={styles.audioActions}><button type="button" onClick={voice.readResponse} disabled={!voice.canRead}>Read response</button><button type="button" onClick={voice.stopResponse}>Stop audio</button></div>
+        <div className={styles.audioActions}><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Read response</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button></div>
       </div>
     </section>}
   </aside>;

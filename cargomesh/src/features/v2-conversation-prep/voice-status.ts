@@ -20,6 +20,6 @@ export function recognitionErrorMessage(code: string | undefined): string {
 
 export function recognitionEndMessage(hasTranscript: boolean): string {
   return hasTranscript
-    ? "Listening ended. Review or edit the transcript, then press Send. Nothing was sent automatically."
+    ? "Listening ended. Review or edit the transcript, then send it as text."
     : "Listening ended without a transcript. The browser may have stopped its speech service; try again or type your message.";
 }
