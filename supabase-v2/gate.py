@@ -353,6 +353,7 @@ def main():
         tests('v2',PROFILE)
         run('hac40-request-race', [sys.executable, ROOT/'scripts/check-hac40-request-race.py'])
         run('hac40-catalog-race', [sys.executable, ROOT/'scripts/check-hac40-catalog-race.py'])
+        run('hac40-fleet-race', [sys.executable, ROOT/'scripts/check-hac40-fleet-race.py'])
         backup_and_cleanup()
 
 

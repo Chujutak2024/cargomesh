@@ -292,6 +292,17 @@
       "dependencies": [
         "20261004025720"
       ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004042259_hac40_fleet.sql",
+      "version": "20261004042259",
+      "sha256": "c684de8919545f5e9325eb44f844ab3b47676ce09a40a9a388d5417e9661678f",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004032151"
+      ]
     }
   ]
 }

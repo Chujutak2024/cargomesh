@@ -48,6 +48,10 @@ Rutas: `cargomesh/src/server/hono/routes/facilities.ts` y `routes/freight/reques
 
 ## Familias integrales pendientes
 
+### Avance B2 — recursos de flota
+
+[Contrato de flota y disponibilidad](./HAC40_FLEET_API.md): 28 operaciones nuevas de activos, cupos, calendarios, mantenimiento, reposicionamiento, definiciones de capacidad y sus asociaciones. Acumulado **77 endpoints de negocio**. Publicación/revisión segura y consumo por elegibilidad ROAD implementados; quedan combinaciones, conductores/asignaciones, auditoría de estados, reservas públicas, consolidación LTL y planes multirrecurso. Las familias de la tabla siguiente describen el cierre integral todavía requerido; la existencia de operaciones de un agregado no certifica todo B2.
+
 **Objetivo contractual, no anuncio de disponibilidad.** Todas estas familias permanecen en HAC-40 o en la principal dependiente indicada; frontend puede preparar mocks explícitos contra ellas, pero no sustituir errores del API por mocks.
 
 | Bloque / clases | GET requeridos | POST requeridos / semántica | Permiso y responsable |

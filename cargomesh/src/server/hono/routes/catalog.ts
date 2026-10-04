@@ -18,6 +18,13 @@ const resources: [CatalogKindV2, string][] = [
   ["cargo-categories", "/cargo-categories"], ["carriers", "/carriers"],
   ["depots", "/carriers/:carrierId/depots"], ["services", "/carriers/:carrierId/services"],
   ["partners", "/carriers/:carrierId/partners"],
+  ["assets", "/carriers/:carrierId/assets"],
+  ["capacity-pools", "/carriers/:carrierId/capacity-pools"],
+  ["calendars", "/carriers/:carrierId/calendars"],
+  ["maintenances", "/carriers/:carrierId/maintenances"],
+  ["repositioning-blocks", "/carriers/:carrierId/repositioning-blocks"],
+  ["asset-capabilities", "/carriers/:carrierId/asset-capabilities"],
+  ["capability-definitions", "/carriers/:carrierId/capability-definitions"],
   ["areas", "/carriers/:carrierId/services/:serviceId/areas"],
   ["lanes", "/carriers/:carrierId/services/:serviceId/lanes"],
 ];

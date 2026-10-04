@@ -6,7 +6,7 @@ import { V2DraftError } from "../../freight-requests/application/draft-service";
 function dbError(error: { code?: string; message: string }): never {
   const mapped: Record<string, [number, string]> = {
     PT400: [400, "VALIDATION_ERROR"], PT403: [403, "FORBIDDEN_CATALOG"], PT404: [404, "CATALOG_NOT_FOUND"],
-    PT409: [409, error.message === "IDEMPOTENCY_CONFLICT" ? "IDEMPOTENCY_CONFLICT" : "STALE_DRAFT"],
+    PT409: [409, ["IDEMPOTENCY_CONFLICT", "FLEET_COMMITMENT_CONFLICT"].includes(error.message) ? error.message : "STALE_DRAFT"],
     "23505": [409, "CATALOG_CONFLICT"], "23503": [400, "INVALID_CATALOG_REFERENCE"],
     "23514": [400, "VALIDATION_ERROR"], "22P02": [400, "VALIDATION_ERROR"],
     "22007": [400, "VALIDATION_ERROR"], "22008": [400, "VALIDATION_ERROR"], "22003": [400, "VALIDATION_ERROR"],

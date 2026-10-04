@@ -54,6 +54,31 @@ function service(): RoadService {
 }
 
 describe("pure ROAD eligibility", () => {
+  it("requires pool evidence and the same service window before confirming capacity", () => {
+    const item = service();
+    item.capacities[0]!.sourceEvidenceAvailable = false;
+    assert.ok(evaluateRoad(request, [item]).candidates[0]?.reasons.includes("CAPACITY_SOURCE_UNVERIFIED"));
+    item.capacities[0]!.sourceEvidenceAvailable = true;
+    item.capacities[0]!.sourceWindow = null;
+    assert.ok(evaluateRoad(request, [item]).candidates[0]?.reasons.includes("CAPACITY_SOURCE_WINDOW_UNKNOWN"));
+    item.capacities[0]!.sourceWindow = { startsAt: "2026-09-28T00:00:00Z", endsAt: "2026-09-28T23:00:00Z" };
+    assert.ok(evaluateRoad(request, [item]).candidates[0]?.reasons.includes("OUTSIDE_CAPACITY_SOURCE_WINDOW"));
+    item.capacities[0]!.sourceWindow = { startsAt: "2026-09-28T00:00:00Z", endsAt: "2026-09-30T00:00:00Z" };
+    assert.equal(evaluateRoad(request, [item]).candidates[0]?.status, "eligible");
+  });
+  it("uses category-specific weight limits and preserves expired capability evidence as unknown", () => {
+    const item = service();
+    item.capacities[0]!.cargoCapabilities = [{ categoryCode: "PHARMA", certifications: [],
+      temperatureMinC: null, temperatureMaxC: null, maxWeightKg: 1000, evidenceAvailable: true,
+      validUntil: "2026-12-31T00:00:00Z", requirements: [] }];
+    assert.ok(evaluateRoad(request, [item]).candidates[0]?.reasons.includes("CARGO_CAPABILITY_OVER_CAPACITY"));
+    item.capacities[0]!.cargoCapabilities[0]!.maxWeightKg = 8000;
+    item.capacities[0]!.cargoCapabilities[0]!.validUntil = "2026-09-28T00:00:00Z";
+    assert.ok(evaluateRoad(request, [item]).candidates[0]?.reasons.includes("CARGO_CAPABILITY_UNVERIFIED"));
+    item.capacities[0]!.cargoCapabilities[0]!.validUntil = "2026-12-31T00:00:00Z";
+    item.capacities[0]!.cargoCapabilities[0]!.requirements = ["PERMIT_REVIEW"];
+    assert.ok(evaluateRoad(request, [item]).candidates[0]?.reasons.includes("CARGO_CAPABILITY_REQUIREMENTS_UNVERIFIED"));
+  });
   it("accepts a verified directed ROAD service with carrying capacity", () => {
     const result = evaluateRoad(request, [service()]);
     assert.equal(result.overallStatus, "eligible");

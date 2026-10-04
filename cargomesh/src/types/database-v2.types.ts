@@ -11,25 +11,61 @@ export type Database = {
     Tables: {
       asset_cargo_capabilities: {
         Row: {
+          active: boolean
           cargo_category_id: string
+          carrier_id: string
+          carrier_service_id: string | null
           certifications: Json
+          created_at: string
+          definition_id: string | null
+          evidence: string | null
+          fleet_managed: boolean
+          id: string
           temperature_max_c: number | null
           temperature_min_c: number | null
           transport_asset_id: string
+          updated_at: string
+          valid_until: string | null
+          verified_at: string | null
+          version: number
         }
         Insert: {
+          active?: boolean
           cargo_category_id: string
+          carrier_id: string
+          carrier_service_id?: string | null
           certifications?: Json
+          created_at?: string
+          definition_id?: string | null
+          evidence?: string | null
+          fleet_managed?: boolean
+          id?: string
           temperature_max_c?: number | null
           temperature_min_c?: number | null
           transport_asset_id: string
+          updated_at?: string
+          valid_until?: string | null
+          verified_at?: string | null
+          version?: number
         }
         Update: {
+          active?: boolean
           cargo_category_id?: string
+          carrier_id?: string
+          carrier_service_id?: string | null
           certifications?: Json
+          created_at?: string
+          definition_id?: string | null
+          evidence?: string | null
+          fleet_managed?: boolean
+          id?: string
           temperature_max_c?: number | null
           temperature_min_c?: number | null
           transport_asset_id?: string
+          updated_at?: string
+          valid_until?: string | null
+          verified_at?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -40,11 +76,46 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "asset_cargo_capabilities_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_cargo_capabilities_carrier_service_id_fkey"
+            columns: ["carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_cargo_capabilities_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_capability_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_cargo_capabilities_fleet_service"
+            columns: ["carrier_service_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id", "carrier_id"]
+          },
+          {
             foreignKeyName: "asset_cargo_capabilities_transport_asset_id_fkey"
             columns: ["transport_asset_id"]
             isOneToOne: false
             referencedRelation: "transport_assets"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_definition_asset_scope"
+            columns: ["definition_id", "carrier_id", "carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_capability_definitions"
+            referencedColumns: ["id", "carrier_id", "carrier_service_id"]
           },
         ]
       }
@@ -389,13 +460,22 @@ export type Database = {
         Row: {
           available_windows: Json
           capacity_pool_id: string | null
+          carrier_id: string
           carrier_service_id: string
           complete: boolean
+          created_at: string
+          fleet_managed: boolean
+          freshness: string | null
+          horizon_ends_at: string | null
+          horizon_starts_at: string | null
           id: string
+          last_verified_at: string | null
           observed_at: string | null
           provenance_status: string
           ready_pickup_area_id: string | null
+          source: string | null
           source_reference: string
+          timezone: string | null
           transport_asset_id: string | null
           updated_at: string
           valid_until: string | null
@@ -404,13 +484,22 @@ export type Database = {
         Insert: {
           available_windows?: Json
           capacity_pool_id?: string | null
+          carrier_id: string
           carrier_service_id: string
           complete?: boolean
+          created_at?: string
+          fleet_managed?: boolean
+          freshness?: string | null
+          horizon_ends_at?: string | null
+          horizon_starts_at?: string | null
           id?: string
+          last_verified_at?: string | null
           observed_at?: string | null
           provenance_status?: string
           ready_pickup_area_id?: string | null
+          source?: string | null
           source_reference: string
+          timezone?: string | null
           transport_asset_id?: string | null
           updated_at?: string
           valid_until?: string | null
@@ -419,13 +508,22 @@ export type Database = {
         Update: {
           available_windows?: Json
           capacity_pool_id?: string | null
+          carrier_id?: string
           carrier_service_id?: string
           complete?: boolean
+          created_at?: string
+          fleet_managed?: boolean
+          freshness?: string | null
+          horizon_ends_at?: string | null
+          horizon_starts_at?: string | null
           id?: string
+          last_verified_at?: string | null
           observed_at?: string | null
           provenance_status?: string
           ready_pickup_area_id?: string | null
+          source?: string | null
           source_reference?: string
+          timezone?: string | null
           transport_asset_id?: string | null
           updated_at?: string
           valid_until?: string | null
@@ -440,11 +538,25 @@ export type Database = {
             referencedColumns: ["id", "carrier_service_id"]
           },
           {
+            foreignKeyName: "capacity_calendars_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "capacity_calendars_carrier_service_id_fkey"
             columns: ["carrier_service_id"]
             isOneToOne: false
             referencedRelation: "carrier_services"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capacity_calendars_fleet_service"
+            columns: ["carrier_service_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id", "carrier_id"]
           },
           {
             foreignKeyName: "capacity_calendars_ready_pickup_same_service"
@@ -469,12 +581,20 @@ export type Database = {
           carrier_service_id: string
           code: string
           created_at: string
+          ends_at: string | null
           equipment_code: string | null
+          evidence: string | null
+          fleet_managed: boolean
+          fulfilment_partner_id: string | null
+          fulfilment_source: string | null
           id: string
           max_volume_m3: number | null
           max_weight_kg: number | null
+          mode: string | null
+          starts_at: string | null
           supported_cargo_category_ids: string[]
           updated_at: string
+          version: number
         }
         Insert: {
           active?: boolean
@@ -482,12 +602,20 @@ export type Database = {
           carrier_service_id: string
           code: string
           created_at?: string
+          ends_at?: string | null
           equipment_code?: string | null
+          evidence?: string | null
+          fleet_managed?: boolean
+          fulfilment_partner_id?: string | null
+          fulfilment_source?: string | null
           id?: string
           max_volume_m3?: number | null
           max_weight_kg?: number | null
+          mode?: string | null
+          starts_at?: string | null
           supported_cargo_category_ids?: string[]
           updated_at?: string
+          version?: number
         }
         Update: {
           active?: boolean
@@ -495,12 +623,20 @@ export type Database = {
           carrier_service_id?: string
           code?: string
           created_at?: string
+          ends_at?: string | null
           equipment_code?: string | null
+          evidence?: string | null
+          fleet_managed?: boolean
+          fulfilment_partner_id?: string | null
+          fulfilment_source?: string | null
           id?: string
           max_volume_m3?: number | null
           max_weight_kg?: number | null
+          mode?: string | null
+          starts_at?: string | null
           supported_cargo_category_ids?: string[]
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -516,6 +652,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "carrier_services"
             referencedColumns: ["id", "carrier_id"]
+          },
+          {
+            foreignKeyName: "capacity_pools_fleet_service"
+            columns: ["carrier_service_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id", "carrier_id"]
+          },
+          {
+            foreignKeyName: "capacity_pools_fulfilment_partner_id_fkey"
+            columns: ["fulfilment_partner_id"]
+            isOneToOne: false
+            referencedRelation: "fulfilment_partners"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -561,6 +711,92 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "freight_requests"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      cargo_capability_definitions: {
+        Row: {
+          active: boolean
+          cargo_category_id: string
+          carrier_id: string
+          carrier_service_id: string
+          certifications: Json
+          created_at: string
+          evidence: string | null
+          fleet_managed: boolean
+          id: string
+          max_weight_kg: number | null
+          requirements: Json
+          temperature_range: Json | null
+          updated_at: string
+          valid_until: string | null
+          verified_at: string | null
+          version: number
+        }
+        Insert: {
+          active: boolean
+          cargo_category_id: string
+          carrier_id: string
+          carrier_service_id: string
+          certifications: Json
+          created_at?: string
+          evidence?: string | null
+          fleet_managed?: boolean
+          id?: string
+          max_weight_kg?: number | null
+          requirements: Json
+          temperature_range?: Json | null
+          updated_at?: string
+          valid_until?: string | null
+          verified_at?: string | null
+          version?: number
+        }
+        Update: {
+          active?: boolean
+          cargo_category_id?: string
+          carrier_id?: string
+          carrier_service_id?: string
+          certifications?: Json
+          created_at?: string
+          evidence?: string | null
+          fleet_managed?: boolean
+          id?: string
+          max_weight_kg?: number | null
+          requirements?: Json
+          temperature_range?: Json | null
+          updated_at?: string
+          valid_until?: string | null
+          verified_at?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_capability_definitions_cargo_category_id_fkey"
+            columns: ["cargo_category_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_capability_definitions_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_capability_definitions_carrier_service_id_fkey"
+            columns: ["carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_capability_definitions_fleet_service"
+            columns: ["carrier_service_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id", "carrier_id"]
           },
         ]
       }
@@ -2149,27 +2385,57 @@ export type Database = {
       repositioning_blocks: {
         Row: {
           capacity_calendar_id: string
+          carrier_id: string
+          carrier_service_id: string | null
           created_at: string
           ends_at: string
+          estimated_travel_seconds: number | null
+          fleet_managed: boolean
           id: string
+          next_pickup: Json | null
+          origin: Json | null
           reason: string
+          source: string | null
           starts_at: string
+          status: string
+          updated_at: string
+          version: number
         }
         Insert: {
           capacity_calendar_id: string
+          carrier_id: string
+          carrier_service_id?: string | null
           created_at?: string
           ends_at: string
+          estimated_travel_seconds?: number | null
+          fleet_managed?: boolean
           id?: string
+          next_pickup?: Json | null
+          origin?: Json | null
           reason: string
+          source?: string | null
           starts_at: string
+          status?: string
+          updated_at?: string
+          version?: number
         }
         Update: {
           capacity_calendar_id?: string
+          carrier_id?: string
+          carrier_service_id?: string | null
           created_at?: string
           ends_at?: string
+          estimated_travel_seconds?: number | null
+          fleet_managed?: boolean
           id?: string
+          next_pickup?: Json | null
+          origin?: Json | null
           reason?: string
+          source?: string | null
           starts_at?: string
+          status?: string
+          updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -2179,34 +2445,100 @@ export type Database = {
             referencedRelation: "capacity_calendars"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "repositioning_blocks_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repositioning_blocks_carrier_service_id_fkey"
+            columns: ["carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repositioning_blocks_fleet_service"
+            columns: ["carrier_service_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id", "carrier_id"]
+          },
         ]
       }
       scheduled_maintenances: {
         Row: {
+          carrier_id: string
+          carrier_service_id: string | null
           created_at: string
           ends_at: string
+          fleet_managed: boolean
           id: string
+          kind: string | null
           reason: string
+          source: string | null
           starts_at: string
+          status: string
           transport_asset_id: string
+          updated_at: string
+          version: number
         }
         Insert: {
+          carrier_id: string
+          carrier_service_id?: string | null
           created_at?: string
           ends_at: string
+          fleet_managed?: boolean
           id?: string
+          kind?: string | null
           reason: string
+          source?: string | null
           starts_at: string
+          status?: string
           transport_asset_id: string
+          updated_at?: string
+          version?: number
         }
         Update: {
+          carrier_id?: string
+          carrier_service_id?: string | null
           created_at?: string
           ends_at?: string
+          fleet_managed?: boolean
           id?: string
+          kind?: string | null
           reason?: string
+          source?: string | null
           starts_at?: string
+          status?: string
           transport_asset_id?: string
+          updated_at?: string
+          version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "scheduled_maintenances_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_maintenances_carrier_service_id_fkey"
+            columns: ["carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_maintenances_fleet_service"
+            columns: ["carrier_service_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id", "carrier_id"]
+          },
           {
             foreignKeyName: "scheduled_maintenances_transport_asset_id_fkey"
             columns: ["transport_asset_id"]
@@ -2251,7 +2583,7 @@ export type Database = {
           evidence_reference?: string | null
           fulfilment_partner_id?: string | null
           fulfilment_source: string
-          geometry: Json | null
+          geometry?: Json | null
           granularity: string
           id?: string
           partner_reference?: string | null
@@ -2396,51 +2728,109 @@ export type Database = {
           active: boolean
           asset_role: string
           axle_config: string | null
+          body_type: string | null
+          brand: string | null
           carrier_id: string
           carrier_service_id: string
           code: string
+          condition_reason: string | null
           created_at: string
           equipment_code: string
+          evidence: string | null
+          fleet_managed: boolean
+          fulfilment_partner_id: string | null
+          fulfilment_source: string
+          gross_weight_limit_kg: number | null
+          home_depot_id: string | null
           id: string
           max_volume_m3: number | null
           max_weight_kg: number | null
           mode: string
+          model: string | null
+          odometer_km: number | null
+          operating_status: string
           plate: string | null
+          registered_at: string | null
+          registration_code: string | null
           updated_at: string
+          usable_dimensions: Json | null
+          variant: string | null
+          version: number
         }
         Insert: {
           active?: boolean
           asset_role?: string
           axle_config?: string | null
+          body_type?: string | null
+          brand?: string | null
           carrier_id: string
           carrier_service_id: string
           code: string
+          condition_reason?: string | null
           created_at?: string
           equipment_code: string
+          evidence?: string | null
+          fleet_managed?: boolean
+          fulfilment_partner_id?: string | null
+          fulfilment_source?: string
+          gross_weight_limit_kg?: number | null
+          home_depot_id?: string | null
           id?: string
           max_volume_m3?: number | null
           max_weight_kg?: number | null
           mode?: string
+          model?: string | null
+          odometer_km?: number | null
+          operating_status?: string
           plate?: string | null
+          registered_at?: string | null
+          registration_code?: string | null
           updated_at?: string
+          usable_dimensions?: Json | null
+          variant?: string | null
+          version?: number
         }
         Update: {
           active?: boolean
           asset_role?: string
           axle_config?: string | null
+          body_type?: string | null
+          brand?: string | null
           carrier_id?: string
           carrier_service_id?: string
           code?: string
+          condition_reason?: string | null
           created_at?: string
           equipment_code?: string
+          evidence?: string | null
+          fleet_managed?: boolean
+          fulfilment_partner_id?: string | null
+          fulfilment_source?: string
+          gross_weight_limit_kg?: number | null
+          home_depot_id?: string | null
           id?: string
           max_volume_m3?: number | null
           max_weight_kg?: number | null
           mode?: string
+          model?: string | null
+          odometer_km?: number | null
+          operating_status?: string
           plate?: string | null
+          registered_at?: string | null
+          registration_code?: string | null
           updated_at?: string
+          usable_dimensions?: Json | null
+          variant?: string | null
+          version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "fleet_home_depot"
+            columns: ["home_depot_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_depots"
+            referencedColumns: ["id", "carrier_id"]
+          },
           {
             foreignKeyName: "transport_assets_carrier_id_fkey"
             columns: ["carrier_id"]
@@ -2454,6 +2844,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "carrier_services"
             referencedColumns: ["id", "carrier_id"]
+          },
+          {
+            foreignKeyName: "transport_assets_fleet_service"
+            columns: ["carrier_service_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id", "carrier_id"]
+          },
+          {
+            foreignKeyName: "transport_assets_fulfilment_partner_id_fkey"
+            columns: ["fulfilment_partner_id"]
+            isOneToOne: false
+            referencedRelation: "fulfilment_partners"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2911,3 +3315,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

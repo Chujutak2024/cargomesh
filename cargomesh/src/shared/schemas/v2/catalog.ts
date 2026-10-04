@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { FleetInputsV2, FleetOutputsV2 } from "./fleet";
 import { CanonicalLocationV2Schema, EquipmentCodeV2Schema, TransportModeV2Schema,
   RankingObjectiveV2Schema } from "./freight-request";
 
@@ -37,6 +38,7 @@ export const CoverageGeometryV2Schema = z.discriminatedUnion("type", [
 ]).refine(x => x.type !== "Polygon" || x.coordinates.every(ring =>
   ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1]), "Polygon rings must be closed.");
 export const CatalogInputsV2 = {
+  ...FleetInputsV2,
   preferences: z.object({ ...Base, objective: RankingObjectiveV2Schema.nullable(),
     maximumWaitMinutes: z.number().int().nonnegative().max(525600).nullable(),
     preferredMode: TransportModeV2Schema.nullable(), preferredEquipment: EquipmentCodeV2Schema.nullable(),
@@ -99,8 +101,10 @@ export const CatalogRecordV2Schema = z.object({ id: Id, organizationId: Id.nulla
   verifiedContact: z.object({ name: Name, email: z.string().email().nullable(),
     phoneE164: z.string().regex(/^\+[1-9]\d{6,14}$/).nullable() }).strict().nullable().optional(),
   createdAt: Instant, updatedAt: Instant, value: z.unknown() }).strict();
-export type CatalogRecordV2 = Omit<z.infer<typeof CatalogRecordV2Schema>, "value"> & { value: CatalogValueV2 };
+export type CatalogRecordV2 = Omit<z.infer<typeof CatalogRecordV2Schema>, "value"> & {
+  value: CatalogValueV2 | z.infer<(typeof FleetOutputsV2)[keyof typeof FleetOutputsV2]> };
 export function parseCatalogRecordV2(kind: CatalogKindV2, raw: unknown): CatalogRecordV2 {
   const record = CatalogRecordV2Schema.parse(raw);
-  return { ...record, value: CatalogInputsV2[kind].parse(record.value) };
+  const output = kind in FleetOutputsV2 ? FleetOutputsV2[kind as keyof typeof FleetOutputsV2] : CatalogInputsV2[kind];
+  return { ...record, value: output.parse(record.value) };
 }

@@ -66,9 +66,16 @@ export type Capacity = {
     certifications: string[] | null;
     temperatureMinC: number | null;
     temperatureMaxC: number | null;
+    maxWeightKg?: number | null;
+    evidenceAvailable?: boolean;
+    validUntil?: string | null;
+    requirements?: string[];
   }> | null;
   maxWeightKg: number | null;
   maxVolumeM3: number | null;
+  /** Published fleet evidence is checked independently from a calendar slot. */
+  sourceWindow?: Window | null;
+  sourceEvidenceAvailable?: boolean;
   calendar: {
     validUntil: string | null;
     readyPickupAreaId?: string | null;
@@ -219,6 +226,20 @@ function laneCheck(lanes: Lane[], pickupIds: string[], deliveryIds: string[], wi
 
 function capacityCheck(capacity: Capacity, request: RoadRequest): Check {
   if (capacity.role !== "CARRIER") return { status: "ineligible", reason: "NOT_CARRYING_CAPACITY" };
+  const cargoCapability = capacity.cargoCapabilities?.find(item => item.categoryCode === request.cargoCategoryCode);
+  if (cargoCapability?.evidenceAvailable === false || (cargoCapability?.validUntil !== undefined
+    && (cargoCapability.validUntil === null || instant(cargoCapability.validUntil) < instant(request.operationWindow.endsAt)))) {
+    return { status: "unknown", reason: "CARGO_CAPABILITY_UNVERIFIED" };
+  }
+  if (cargoCapability?.requirements?.length) return { status: "unknown", reason: "CARGO_CAPABILITY_REQUIREMENTS_UNVERIFIED" };
+  if (cargoCapability?.maxWeightKg != null && request.totalWeightKg > cargoCapability.maxWeightKg) {
+    return { status: "ineligible", reason: "CARGO_CAPABILITY_OVER_CAPACITY" };
+  }
+  if (capacity.sourceEvidenceAvailable === false) return { status: "unknown", reason: "CAPACITY_SOURCE_UNVERIFIED" };
+  if (capacity.sourceWindow === null) return { status: "unknown", reason: "CAPACITY_SOURCE_WINDOW_UNKNOWN" };
+  if (capacity.sourceWindow && !contains(capacity.sourceWindow, request.operationWindow)) {
+    return { status: "ineligible", reason: "OUTSIDE_CAPACITY_SOURCE_WINDOW" };
+  }
   if (request.requiredEquipmentCode && capacity.equipmentCode === null) {
     return { status: "unknown", reason: "EQUIPMENT_UNKNOWN" };
   }
