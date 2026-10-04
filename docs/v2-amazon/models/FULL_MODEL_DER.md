@@ -66,7 +66,7 @@ Diseño físico trazable de las 57 clases, 397 atributos y 93 relaciones del UML
 | `draftVersion` | number | `freight_requests.draft_version` |
 | `serviceType?` | ServiceClass | `freight_requests.service_type` |
 | `requiredEquipment?` | EquipmentType | `freight_requests.required_equipment_code` |
-| `preferredEquipment?` | EquipmentType | `freight_requests.preferred_equipment` |
+| `preferredEquipment?` | EquipmentType | `freight_requests.preferred_equipment_code` |
 | `selectionObjective?` | RankingObjective | `freight_requests.selection_objective` |
 
 ### CargoSpecification — `freight_requests.v2_snapshot.cargoSpecification`
@@ -641,10 +641,10 @@ Diseño físico trazable de las 57 clases, 397 atributos y 93 relaciones del UML
 
 | UML | Tipo | Destino físico objetivo |
 |---|---|---|
-| `role` | PICKUP / RECIPIENT | `freight_requests.v2_snapshot.contacts.role` |
+| `role` | PICKUP / RECIPIENT | `freight_requests.v2_snapshot.contacts.{pickup:PICKUP,recipient:RECIPIENT}` |
 | `name` | string | `freight_requests.v2_snapshot.contacts.name` |
 | `company?` | string | `freight_requests.v2_snapshot.contacts.company` |
-| `phone` | E164Phone | `freight_requests.v2_snapshot.contacts.phone` |
+| `phone` | E164Phone | `freight_requests.v2_snapshot.contacts.phoneE164` |
 | `email?` | EmailAddress | `freight_requests.v2_snapshot.contacts.email` |
 | `addressDetail?` | string | `freight_requests.v2_snapshot.contacts.addressDetail` |
 | `handlingInstructions?` | string | `freight_requests.v2_snapshot.contacts.handlingInstructions` |

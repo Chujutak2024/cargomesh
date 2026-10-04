@@ -263,7 +263,7 @@
           "name": "preferredEquipment",
           "optional": true,
           "type": "EquipmentType",
-          "target": "freight_requests.preferred_equipment",
+          "target": "freight_requests.preferred_equipment_code",
           "physicalType": "text; closed vocabulary when UML type is enum",
           "migrationVerified": false
         },
@@ -3246,7 +3246,7 @@
           "name": "role",
           "optional": false,
           "type": "PICKUP | RECIPIENT",
-          "target": "freight_requests.v2_snapshot.contacts.role",
+          "target": "freight_requests.v2_snapshot.contacts.{pickup:PICKUP,recipient:RECIPIENT}",
           "physicalType": "text; closed vocabulary when UML type is enum",
           "migrationVerified": false
         },
@@ -3270,7 +3270,7 @@
           "name": "phone",
           "optional": false,
           "type": "E164Phone",
-          "target": "freight_requests.v2_snapshot.contacts.phone",
+          "target": "freight_requests.v2_snapshot.contacts.phoneE164",
           "physicalType": "text; closed vocabulary when UML type is enum",
           "migrationVerified": false
         },

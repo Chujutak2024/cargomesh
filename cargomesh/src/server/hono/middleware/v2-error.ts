@@ -17,6 +17,6 @@ export function v2Error(c: Context, error: unknown) {
   }
   return c.json(ErrorEnvelopeV2Schema.parse({
     schemaVersion: "2.0",
-    error: { code, message, retryable: status >= 500 },
+    error: { code, message, retryable: status >= 500 && status !== 501 },
   }), status as Parameters<typeof c.json>[1]);
 }

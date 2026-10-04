@@ -75,6 +75,16 @@ Rutas: `cargomesh/src/server/hono/routes/facilities.ts` y `routes/freight/reques
 
 ## Decisiones comerciales del alcance completo
 
+### Solicitud ampliada — migración 20261004025720
+
+POST/GET/listado/revisión conservan `acceptedModes` como conjunto no vacío y sin duplicados de ROAD/RAIL/SEA/AIR. Aceptar el modo como intención no declara su adaptador implementado: `serviceability` evalúa únicamente una solicitud exclusivamente ROAD; otras solicitudes responden `501 MODE_EVALUATION_NOT_IMPLEMENTED`, no reintentable. El `transport_mode` plano conserva el primer modo solo por compatibilidad; el dominio V2 debe leer el conjunto del snapshot.
+
+`serviceType` admite FTL/LTL; omitirlo conserva el comportamiento FTL anterior sin cambiar el payload/huella de creación. La evaluación filtra la clase pedida: nunca sustituye un LTL por un FTL. LTL sin evidencia de capacidad residual/consolidación conserva UNKNOWN. Su agenda/holds residual y adaptadores de los demás modos siguen pendientes de implementación.
+
+Se incorporan `preferredEquipment`, `selectionObjective`, `availableDocuments`, `unitsPerPackage` y company/addressDetail/handlingInstructions en ambos contactos. Preferencia no equivale a restricción dura. Peso/volumen por unidad corresponden al embalaje contabilizado; unitsPerPackage informa su contenido y no vuelve a multiplicar los totales. DocumentRef `{code,reference,issuedAt,validUntil}` es una referencia declarada, no certificación de cumplimiento. Se valida su forma y orden de fechas; el motor debe comprobar su aplicabilidad/vigencia antes de dar un requisito por resuelto.
+
+Los equipos de intención incorporan ISO_CONTAINER, RAIL_WAGON y AIR_ULD junto a los cinco códigos ROAD. No se agregan al catálogo ROAD del intake ni se presentan como recursos disponibles sin datos.
+
 - Se admite la cardinalidad UML de selección `1..*` ofertas. Cada oferta cubre asignaciones de su carrier y servicios. Todas las asignaciones del plan deben quedar cubiertas una vez, sin huecos ni dobles cargos.
 - Una selección multicarrier produce compromisos/bookings separados por oferta. No se fabrica una oferta global ni se afirma atomicidad de llamadas a proveedores externos. Persistencia de estados de coordinación, reintentos y compensación es un requisito pendiente de B5.
 - `price` es el total atribuible del emisor. Componentes QUOTED menos descuentos suman ese total; INCLUDED no vuelve a sumarse. ESTIMATED/EXCLUDED/UNKNOWN impiden comparar un costo final confirmado.

@@ -3,6 +3,18 @@ import { CargoCategoryCodeV2Schema, RoadEquipmentCodeV2Schema } from "./intake-o
 
 const UtcInstant = z.string().datetime({ offset: true });
 const Uuid = z.string().uuid();
+export const TransportModeV2Schema = z.enum(["ROAD", "RAIL", "SEA", "AIR"]);
+export const AcceptedModesV2Schema = z.array(TransportModeV2Schema).min(1).max(4)
+  .refine((modes) => new Set(modes).size === modes.length, "Modes must be unique.");
+export const EquipmentCodeV2Schema = z.enum([...RoadEquipmentCodeV2Schema.options,
+  "ISO_CONTAINER", "RAIL_WAGON", "AIR_ULD"]);
+export const ServiceClassV2Schema = z.enum(["FTL", "LTL"]);
+export const RankingObjectiveV2Schema = z.enum(["LOWEST_COST", "FASTEST", "WEIGHTED"]);
+export const DocumentRefV2Schema = z.object({
+  code: z.string().trim().min(1).max(100), reference: z.string().trim().min(1).max(500),
+  issuedAt: UtcInstant.nullable(), validUntil: UtcInstant.nullable(),
+}).strict().refine((document) => document.issuedAt === null || document.validUntil === null
+  || Date.parse(document.validUntil) > Date.parse(document.issuedAt), "Document validity must follow issuance.");
 
 export const TimeWindowV2Schema = z.object({
   startsAt: UtcInstant,
@@ -14,7 +26,7 @@ export const TimeWindowV2Schema = z.object({
 
 /** A facility id is an assertion; the server resolves the canonical location. */
 export const LocationInputV2Schema = z.object({
-  facilityId: Uuid.optional(),
+  facilityId: Uuid.nullable().optional(),
   label: z.string().trim().min(1).max(200).optional(),
   countryCode: z.string().regex(/^[A-Z]{2}$/).optional(),
   region: z.string().trim().max(120).nullable().optional(),
@@ -52,6 +64,7 @@ const CargoUnitV2Schema = z.object({
   }).strict(),
   indivisible: z.boolean(),
   stackable: z.boolean(),
+  unitsPerPackage: z.number().int().positive().max(1000000).optional(),
 }).strict();
 
 /** Absolute rounding tolerance only: 0.000001 kg / cubic metres. */
@@ -77,6 +90,7 @@ export const CargoSpecificationV2Schema = z.object({
     maxCelsius: z.number(),
   }).strict().refine((range) => range.maxCelsius >= range.minCelsius).nullable().optional(),
   units: z.array(CargoUnitV2Schema).min(1),
+  availableDocuments: z.array(DocumentRefV2Schema).max(100).optional(),
 }).strict().superRefine((cargo, context) => {
   const totals = cargoUnitTotalsV2(cargo.units);
   for (const [field, computed] of [
@@ -94,6 +108,9 @@ const ShipmentContactV2Schema = z.object({
   name: z.string().trim().min(1).max(150),
   phoneE164: z.string().regex(/^\+[1-9]\d{6,14}$/),
   email: z.string().email().nullable().optional(),
+  company: z.string().trim().min(1).max(200).nullable().optional(),
+  addressDetail: z.string().trim().min(1).max(1000).nullable().optional(),
+  handlingInstructions: z.string().trim().min(1).max(2000).nullable().optional(),
 }).strict();
 
 const ShipmentContactsV2Schema = z.object({
@@ -114,8 +131,11 @@ export const CreateFreightRequestV2InputSchema = z.object({
   destination: LocationInputV2Schema,
   pickupWindow: TimeWindowV2Schema,
   deliveryWindow: TimeWindowV2Schema,
-  acceptedModes: z.tuple([z.literal("ROAD")]),
-  requiredEquipment: RoadEquipmentCodeV2Schema.nullable().optional(),
+  acceptedModes: AcceptedModesV2Schema,
+  serviceType: ServiceClassV2Schema.optional(),
+  selectionObjective: RankingObjectiveV2Schema.optional(),
+  requiredEquipment: EquipmentCodeV2Schema.nullable().optional(),
+  preferredEquipment: EquipmentCodeV2Schema.nullable().optional(),
   cargoSpecification: CargoSpecificationV2Schema,
   contacts: ShipmentContactsV2Schema,
   budget: UsdBudgetV2Schema.nullable().optional(),
@@ -137,7 +157,10 @@ export const FreightRequestV2ResponseSchema = z.object({
     destination: CanonicalLocationV2Schema,
     pickupWindow: TimeWindowV2Schema,
     deliveryWindow: TimeWindowV2Schema,
-    acceptedModes: z.tuple([z.literal("ROAD")]),
+    acceptedModes: AcceptedModesV2Schema,
+    serviceType: ServiceClassV2Schema.optional(),
+    selectionObjective: RankingObjectiveV2Schema.nullable().optional(),
+    preferredEquipment: EquipmentCodeV2Schema.nullable().optional(),
     requiredEquipment: z.string().nullable(),
     cargoSpecification: CargoSpecificationV2Schema,
     contacts: ShipmentContactsV2Schema,

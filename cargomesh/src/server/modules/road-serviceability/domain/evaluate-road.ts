@@ -5,6 +5,7 @@ export type Location = { countryCode: string; regionCode?: string | null; city?:
 export type Window = { startsAt: string; endsAt: string };
 
 export type RoadRequest = {
+  serviceClass?: "FTL" | "LTL";
   origin: Location;
   destination: Location;
   /** Full period for which a carrying resource must be available. */
@@ -332,7 +333,8 @@ export function evaluateRoad(request: RoadRequest, services: RoadService[]) {
     || !Number.isFinite(request.totalVolumeM3) || request.totalVolumeM3 <= 0) {
     throw new Error("INVALID_CARGO_DIMENSIONS");
   }
-  const candidates: Candidate[] = services.filter((service) => service.active && service.mode === "ROAD")
+  const candidates: Candidate[] = services.filter((service) => service.active && service.mode === "ROAD"
+    && (!request.serviceClass || !service.serviceClass || service.serviceClass === request.serviceClass))
     .flatMap((service): Candidate[] => {
       const pickup = areaCheck(service.areas, "PICKUP", request.origin, request.pickupWindow);
       const delivery = areaCheck(service.areas, "DELIVERY", request.destination, request.deliveryWindow);
