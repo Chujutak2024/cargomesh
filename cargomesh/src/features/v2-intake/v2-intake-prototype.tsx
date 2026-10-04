@@ -21,6 +21,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button, Checkbox, Input, Select, Textarea } from "@/components/ui";
 import { useLocale } from "@/features/i18n/locale-provider";
 import { CandidateResults } from "./components/candidate-results";
+import { ConversationChat } from "./conversation-chat";
+import type { ConversationField } from "./conversation-fields";
 import { RoadCandidateMapBoundary } from "./components/road-candidate-map-boundary";
 import type {
   FreightRequestV2Data,
@@ -56,6 +58,7 @@ import {
 import styles from "./v2-intake-prototype.module.css";
 
 const STEP_ICONS = [MapPinned, Package, CalendarDays, ClipboardCheck] as const;
+const CHAT_REQUEST_SESSION_KEY = "cargomesh-v2-chat-request-id";
 
 type SubmitPhase = "idle" | "creating" | "reading" | "evaluating" | "success" | "error";
 type Translate = (spanish: string, english: string) => string;
@@ -99,6 +102,20 @@ export function V2IntakePrototype() {
       });
     return () => { active = false; };
   }, [optionsAttempt]);
+
+  useEffect(() => {
+    const requestId = window.sessionStorage.getItem(CHAT_REQUEST_SESSION_KEY);
+    if (!requestId) return;
+    let active = true;
+    void getFreightRequestV2(requestId).then((loaded) => {
+      if (!active) return;
+      setRequest(loaded.data);
+      setSubmitPhase("success");
+    }).catch(() => {
+      if (active) window.sessionStorage.removeItem(CHAT_REQUEST_SESSION_KEY);
+    });
+    return () => { active = false; };
+  }, []);
 
   const activeOptions = options ?? EMPTY_INTAKE_OPTIONS;
   const origin = findIntakeFacility(activeOptions, draft.originFacilityId);
@@ -193,6 +210,7 @@ export function V2IntakePrototype() {
     setSelectedCandidateId(null);
     setDirtyAfterCreate(false);
     idempotencyRef.current = null;
+    window.sessionStorage.removeItem(CHAT_REQUEST_SESSION_KEY);
   };
 
   const readAndEvaluate = async (
@@ -205,6 +223,7 @@ export function V2IntakePrototype() {
     if (flowSequence !== flowSequenceRef.current) return;
     assertFreightRequestRoundTrip(created, roundTrip.data);
     setRequest(roundTrip.data);
+    window.sessionStorage.setItem(CHAT_REQUEST_SESSION_KEY, roundTrip.data.id);
     setSubmitPhase("evaluating");
     const result = await getRoadServiceabilityV2(roundTrip.data.id, roundTrip.data.draftVersion);
     if (flowSequence !== flowSequenceRef.current) return;
@@ -254,6 +273,19 @@ export function V2IntakePrototype() {
       if (flowSequence !== flowSequenceRef.current) return;
       setSubmitError(normalizeApiError(error));
       setSubmitPhase("error");
+    }
+  };
+
+  const updateFromChat = (field: ConversationField, value: string) => {
+    update(field, value as never);
+    if (field === "packaging") update("unitPackageType", value);
+    if (field === "unitQuantity" || field === "unitWeightPerUnitKg" || field === "unitVolumePerUnitM3") {
+      const next = { ...draft, [field]: value };
+      const count = Number(next.unitQuantity);
+      const weight = Number(next.unitWeightPerUnitKg);
+      const volume = Number(next.unitVolumePerUnitM3);
+      if (count > 0 && weight > 0) update("totalWeightKg", String(count * weight));
+      if (count > 0 && volume > 0) update("totalVolumeM3", String(count * volume));
     }
   };
 
@@ -376,6 +408,10 @@ export function V2IntakePrototype() {
         ) : null}
         </> : null}
       </div>
+      <ConversationChat draft={draft} options={activeOptions} optionsSource={optionsSource === "fixture" ? "fixture" : "api"} request={request} evaluation={evaluation} draftDirty={dirtyAfterCreate}
+        busy={submitPhase === "creating" || submitPhase === "reading" || submitPhase === "evaluating"}
+        onField={updateFromChat} onCreate={() => { void createDraftAndEvaluate(); }}
+        onRead={() => { void retryAfterCreate(); }} onEvaluate={() => { void retryAfterCreate(); }} />
     </div>
   );
 }
