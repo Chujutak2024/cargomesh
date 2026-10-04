@@ -6,6 +6,7 @@ import { registerSubmitFreightRequest, submitPersistedFreightRequest, type Submi
 import { requireMcpUser, type McpPrincipal } from "./auth/principal";
 import { implementedCapabilities, type McpCapabilityProfile } from "./capabilities";
 import { registerGetCargoMeshCapabilities } from "./tools/get-cargomesh-capabilities";
+import { registerV2RoadTools, type V2RoadToolServices } from "./tools/v2-road";
 
 function userOnly<TArguments extends unknown[], TResult>(
   principal: McpPrincipal,
@@ -25,6 +26,7 @@ export function createCargoMeshMcpServer(
   find: FindFreightOptions = startPersistedFreightOptions,
   submit: SubmitFreightRequest = submitPersistedFreightRequest,
   profile: McpCapabilityProfile = "V2",
+  v2RoadServices?: V2RoadToolServices,
 ) {
   const server = new McpServer({ name: "cargomesh", version: "0.1.0" });
   const names = new Set(implementedCapabilities(profile).map((capability) => capability.toolName));
@@ -33,5 +35,6 @@ export function createCargoMeshMcpServer(
   if (names.has("create_freight_request")) registerCreateFreightRequest(server, userOnly(principal, create));
   if (names.has("submit_freight_request")) registerSubmitFreightRequest(server, userOnly(principal, submit));
   if (names.has("find_freight_options")) registerFindFreightOptions(server, userOnly(principal, find));
+  if (profile === "V2") registerV2RoadTools(server, principal, v2RoadServices);
   return server;
 }

@@ -9,6 +9,7 @@ import { readPersistedFreightOptions, type ReadFreightOptions } from "./tools/ge
 import type { CreateFreightRequest } from "./tools/create-freight-request";
 import type { FindFreightOptions } from "./tools/find-freight-options";
 import type { SubmitFreightRequest } from "./tools/submit-freight-request";
+import type { V2RoadToolServices } from "./tools/v2-road";
 
 type Dependencies = {
   authenticate: (request: Request) => Promise<McpPrincipal | McpAuthentication>;
@@ -16,6 +17,7 @@ type Dependencies = {
   create?: CreateFreightRequest;
   find?: FindFreightOptions;
   submit?: SubmitFreightRequest;
+  v2RoadServices?: V2RoadToolServices;
   configuration: () => McpHttpConfiguration;
 };
 
@@ -213,6 +215,7 @@ export function createMcpHttpHandler(dependencies: Dependencies = {
           dependencies.find,
           dependencies.submit,
           profile,
+          dependencies.v2RoadServices,
         );
         const transport = new WebStandardStreamableHTTPServerTransport({
           sessionIdGenerator: undefined, enableJsonResponse: true,
