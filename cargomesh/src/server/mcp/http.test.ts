@@ -91,11 +91,13 @@ test("controlled MCP client calls V2 draft and ROAD tools through the direct app
   const fixture = (name: string) => JSON.parse(readFileSync(
     new globalThis.URL(`../../../../docs/v2-amazon/delivery/fixtures/hac27/${name}.json`, import.meta.url), "utf8"));
   const createInput = fixture("create-request");
+  const intakeOptions = fixture("intake-options");
   const draft = fixture("request-response");
   const evaluation = fixture("serviceability-unknown");
   const calls: string[] = [];
   const principal = { ...testMcpUserPrincipal(), organizationId: draft.data.organizationId } as McpPrincipal;
   const services: V2RoadToolServices = {
+    async options(actor) { calls.push(`options:${actor.organizationId}`); return intakeOptions; },
     async create(_input, actor) { calls.push(`create:${actor.organizationId}`); return draft; },
     async read(input) { calls.push(`read:${input.requestId}`); return draft; },
     async evaluate(input) { calls.push(`road:${input.requestId}:${input.expectedDraftVersion}`); return evaluation; },
@@ -109,8 +111,12 @@ test("controlled MCP client calls V2 draft and ROAD tools through the direct app
     await client.connect(transport);
     const listed = await client.listTools();
     assert.deepEqual(listed.tools.map((tool) => tool.name), [
-      "get_cargomesh_capabilities", "create_v2_freight_request", "get_v2_freight_request", "evaluate_v2_road",
+      "get_cargomesh_capabilities", "get_v2_intake_options", "create_v2_freight_request", "get_v2_freight_request", "evaluate_v2_road",
     ]);
+    const catalog = await client.callTool({ name: "get_v2_intake_options", arguments: {} });
+    assert.equal((catalog.structuredContent as { data: typeof intakeOptions }).data.schemaVersion, "2.0");
+    assert.deepEqual((catalog.structuredContent as { data: typeof intakeOptions }).data.data.facilities.map((facility: { id: string }) => facility.id),
+      intakeOptions.data.facilities.map((facility: { id: string }) => facility.id));
     const created = await client.callTool({ name: "create_v2_freight_request",
       arguments: { idempotencyKey: "4c8aaf0d-e006-4eba-a5d2-517168283031", request: createInput } });
     assert.equal((created.structuredContent as { data: typeof draft }).data.data.id, draft.data.id);
@@ -120,6 +126,7 @@ test("controlled MCP client calls V2 draft and ROAD tools through the direct app
       arguments: { requestId: draft.data.id, expectedDraftVersion: 1 } });
     assert.equal((road.structuredContent as { data: typeof evaluation }).data.data.overallStatus, "unknown");
     assert.deepEqual(calls, [
+      `options:${draft.data.organizationId}`,
       `create:${draft.data.organizationId}`, `read:${draft.data.id}`, `road:${draft.data.id}:1`,
     ]);
   } finally { await client.close(); }
@@ -272,7 +279,7 @@ test("configured remote HTTPS canonical origin initializes and lists tools in pr
   assert.equal(listed.status, 200);
   assert.deepEqual(
     (await listed.json()).result.tools.map((tool: { name: string }) => tool.name),
-    ["get_cargomesh_capabilities", "create_v2_freight_request", "get_v2_freight_request", "evaluate_v2_road"],
+    ["get_cargomesh_capabilities", "get_v2_intake_options", "create_v2_freight_request", "get_v2_freight_request", "evaluate_v2_road"],
   );
   assert.equal(h.authCalls(), 2);
 
@@ -371,6 +378,7 @@ test("service principal initializes and lists tools but cannot call business too
 test("V2 business tools reject a service principal before direct application dispatch", async () => {
   let calls = 0;
   const services: V2RoadToolServices = {
+    options: async () => { calls += 1; throw new Error("must not run"); },
     create: async () => { calls += 1; throw new Error("must not run"); },
     read: async () => { calls += 1; throw new Error("must not run"); },
     evaluate: async () => { calls += 1; throw new Error("must not run"); },
@@ -382,6 +390,7 @@ test("V2 business tools reject a service principal before direct application dis
   const createInput = JSON.parse(readFileSync(new globalThis.URL(
     "../../../../docs/v2-amazon/delivery/fixtures/hac27/create-request.json", import.meta.url), "utf8"));
   const attempts = [
+    { name: "get_v2_intake_options", arguments: {} },
     { name: "create_v2_freight_request", arguments: { idempotencyKey: "4c8aaf0d-e006-4eba-a5d2-517168283031", request: createInput } },
     { name: "get_v2_freight_request", arguments: { requestId: REQUEST } },
     { name: "evaluate_v2_road", arguments: { requestId: REQUEST, expectedDraftVersion: 1 } },

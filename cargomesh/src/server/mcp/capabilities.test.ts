@@ -15,7 +15,7 @@ test("V1 regression profile preserves all four historical tools with explicit le
 
 test("V2 profile exposes only shared-service draft and ROAD tools, never V1 offers or booking", () => {
   assert.deepEqual(implementedCapabilities("V2").map((item) => item.toolName), [
-    "get_cargomesh_capabilities", "create_v2_freight_request", "get_v2_freight_request", "evaluate_v2_road",
+    "get_cargomesh_capabilities", "get_v2_intake_options", "create_v2_freight_request", "get_v2_freight_request", "evaluate_v2_road",
   ]);
   const listed = MCP_CAPABILITY_CATALOG.filter((item) => item.profile === "V2");
   assert.ok(listed.every((item) => item.status === "IMPLEMENTED" && item.legacyDependency === "NONE"));

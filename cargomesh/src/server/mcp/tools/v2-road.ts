@@ -2,8 +2,10 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { CreateFreightRequestV2InputSchema, FreightRequestV2ResponseSchema } from "@/shared/schemas/v2/freight-request";
 import { RoadServiceabilityEvaluationV2ResponseSchema } from "@/shared/schemas/v2/serviceability";
+import { IntakeOptionsV2ResponseSchema } from "@/shared/schemas/v2/intake-options";
 import { createV2Draft, getV2Draft, V2DraftError } from "@/server/modules/freight-requests/application/draft-service";
 import { evaluateV2RoadByRequestId } from "@/server/modules/road-serviceability/application/evaluate-v2-road";
+import { getIntakeOptions } from "@/server/modules/intake/application/get-intake-options";
 import type { McpPrincipal } from "../auth/principal";
 
 const CreateInput = z.object({ idempotencyKey: z.string().uuid(), request: CreateFreightRequestV2InputSchema }).strict();
@@ -11,15 +13,21 @@ const ReadInput = z.object({ requestId: z.string().uuid() }).strict();
 const EvaluateInput = ReadInput.extend({ expectedDraftVersion: z.number().int().positive() }).strict();
 const DraftOutput = z.object({ ok: z.literal(true), data: FreightRequestV2ResponseSchema }).strict();
 const RoadOutput = z.object({ ok: z.literal(true), data: RoadServiceabilityEvaluationV2ResponseSchema }).strict();
+const OptionsOutput = z.object({ ok: z.literal(true), data: IntakeOptionsV2ResponseSchema }).strict();
 
 type Actor = { memberId: string; organizationId: string };
 export type V2RoadToolServices = {
+  options(actor: Actor): Promise<z.infer<typeof IntakeOptionsV2ResponseSchema>>;
   create(input: z.infer<typeof CreateInput>, actor: Actor): Promise<z.infer<typeof FreightRequestV2ResponseSchema>>;
   read(input: z.infer<typeof ReadInput>, actor: Actor): Promise<z.infer<typeof FreightRequestV2ResponseSchema>>;
   evaluate(input: z.infer<typeof EvaluateInput>, actor: Actor): Promise<z.infer<typeof RoadServiceabilityEvaluationV2ResponseSchema>>;
 };
 
 export const persistedV2RoadToolServices: V2RoadToolServices = {
+  async options(actor) {
+    const { v2IntakeOptionsRepository } = await import("@/server/modules/intake/infrastructure/supabase-intake-options-repository");
+    return getIntakeOptions(actor, await v2IntakeOptionsRepository());
+  },
   async create(input, actor) {
     const { v2DraftRepository } = await import("@/server/modules/freight-requests/infrastructure/supabase-draft-repository");
     return createV2Draft(input.request, input.idempotencyKey, actor, await v2DraftRepository());
@@ -78,6 +86,18 @@ function failure(error: unknown) {
 
 export function registerV2RoadTools(server: McpServer, principal: McpPrincipal,
   services: V2RoadToolServices = persistedV2RoadToolServices) {
+  server.registerTool("get_v2_intake_options", {
+    title: "List authorized V2 freight intake choices",
+    description: "Read the current linked organization's saved facilities and V2 cargo, packaging, requirement and ROAD equipment vocabulary. Ask the customer to clarify ambiguous places. A listed facility or equipment type does not prove carrier coverage, availability, price or booking. Never invent a facility ID.",
+    inputSchema: z.object({}).strict(), outputSchema: OptionsOutput,
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async () => {
+    try {
+      const actor = requireActor(principal);
+      const data = IntakeOptionsV2ResponseSchema.parse(await services.options(actor));
+      return success(data);
+    } catch (error) { return failure(error); }
+  });
   server.registerTool("create_v2_freight_request", {
     title: "Create a V2 ROAD freight draft",
     description: "Create a complete V2 draft for the authorized organization. Ask for missing details first. " +

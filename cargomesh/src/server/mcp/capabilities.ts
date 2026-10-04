@@ -5,7 +5,7 @@ export type McpCapabilityStatus = "IMPLEMENTED" | "BLOCKED" | "V1_REGRESSION";
 
 export type McpCapabilityDescriptor = {
   toolName: "get_cargomesh_capabilities" | "create_freight_request" | "submit_freight_request" | "find_freight_options" | "get_freight_options" |
-    "create_v2_freight_request" | "get_v2_freight_request" | "evaluate_v2_road";
+    "get_v2_intake_options" | "create_v2_freight_request" | "get_v2_freight_request" | "evaluate_v2_road";
   profile: McpCapabilityProfile;
   status: McpCapabilityStatus;
   blockedBy: "NONE" | "V2_FREIGHT_REQUEST_SERVICE";
@@ -23,6 +23,11 @@ export const MCP_CAPABILITY_CATALOG: readonly McpCapabilityDescriptor[] = [
     source: "CARGOMESH_SHARED_SERVICE",
     legacyDependency: "NONE",
     businessSemantics: "Reports the versioned MCP capability boundary and blocked V2 contracts without reading tenant data.",
+  },
+  {
+    toolName: "get_v2_intake_options", profile: "V2", status: "IMPLEMENTED", blockedBy: "NONE",
+    source: "CARGOMESH_SHARED_SERVICE", legacyDependency: "NONE",
+    businessSemantics: "Reads only linked-organization V2 facilities and capture vocabulary through the HAC-12 application service; it does not imply carrier coverage.",
   },
   {
     toolName: "create_v2_freight_request", profile: "V2", status: "IMPLEMENTED", blockedBy: "NONE",
