@@ -411,7 +411,7 @@ export function V2IntakePrototype() {
       <ConversationChat draft={draft} options={activeOptions} optionsSource={optionsSource === "fixture" ? "fixture" : "api"} request={request} evaluation={evaluation} draftDirty={dirtyAfterCreate}
         busy={submitPhase === "creating" || submitPhase === "reading" || submitPhase === "evaluating"}
         onField={updateFromChat} onCreate={() => { void createDraftAndEvaluate(); }}
-        onRead={() => { void retryAfterCreate(); }} onEvaluate={() => { void retryAfterCreate(); }} />
+        onRead={() => { void retryAfterCreate(); }} onEvaluate={() => { void retryAfterCreate(); }} onStartOver={reset} />
     </div>
   );
 }

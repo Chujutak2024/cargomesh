@@ -10,7 +10,9 @@ import styles from "./conversation-chat.module.css";
 
 type Message = { speaker: "assistant" | "user"; text: string };
 
-export function ConversationChat({ draft, options, optionsSource = "api", request, evaluation, draftDirty = false, busy, onField, onCreate, onRead, onEvaluate }: {
+const GREETING = "Hi! I can help prepare a ROAD freight draft. Choose a pickup facility to begin. All details stay provisional until you create a valid draft.";
+
+export function ConversationChat({ draft, options, optionsSource = "api", request, evaluation, draftDirty = false, busy, onField, onCreate, onRead, onEvaluate, onStartOver }: {
   draft: V2IntakePrototypeDraft;
   options: IntakeOptionsData;
   optionsSource?: "api" | "fixture";
@@ -22,10 +24,11 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   onCreate: () => void;
   onRead: () => void;
   onEvaluate: () => void;
+  onStartOver?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
-  const [history, setHistory] = useState<Message[]>([{ speaker: "assistant", text: "Hi! I can help prepare a ROAD freight draft. Choose a pickup facility to begin. All details stay provisional until you create a valid draft." }]);
+  const [history, setHistory] = useState<Message[]>([{ speaker: "assistant", text: GREETING }]);
   const [cursor, setCursor] = useState(0);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [inputMode, setInputMode] = useState<"TEXT" | "EDITED_VOICE_TRANSCRIPT">("TEXT");
@@ -105,6 +108,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         <button type="button" disabled={busy || Boolean(request)} onClick={onCreate}>Create valid draft</button>
         <button type="button" disabled={busy || !request} onClick={onRead}>Read draft</button>
         <button type="button" disabled={busy || !request || draftDirty} onClick={onEvaluate}>Evaluate ROAD</button>
+        {onStartOver && <button type="button" disabled={busy} onClick={() => { onStartOver(); setCursor(0); setHistory([{ speaker: "assistant", text: GREETING }]); setText(""); }}>Start over</button>}
       </div>
       {draftDirty && <p className={styles.notice} role="status">Your corrections are local only. The current ROAD result belongs to the saved draft version. Updating that draft requires the HAC-35 contract; start a new request for changed details.</p>}
       <p className={styles.notice}>{optionsSource === "fixture" ? "Synthetic local selector preview; no server request is made here." : "Facilities come from the authenticated V2 options API. The form remains available for every field and for corrections."} Price and booking are disabled.</p>
