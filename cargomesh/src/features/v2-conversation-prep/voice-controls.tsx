@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { recognitionEndMessage, recognitionErrorMessage } from "./voice-status";
+import { resolveBrowserSpeechSupport } from "./browser-speech-support";
 
 type RecognitionResult = { results: ArrayLike<ArrayLike<{ transcript: string; confidence?: number }> & { isFinal?: boolean }> };
 type RecognitionError = { error?: string };
@@ -9,6 +10,7 @@ type Recognition = {
   lang: string;
   interimResults: boolean;
   continuous: boolean;
+  processLocally?: boolean;
   onresult: ((event: RecognitionResult) => void) | null;
   onerror: ((event: RecognitionError) => void) | null;
   onend: (() => void) | null;
@@ -17,9 +19,13 @@ type Recognition = {
   stop(): void;
 };
 type SpeechWindow = Window & {
-  SpeechRecognition?: new () => Recognition;
-  webkitSpeechRecognition?: new () => Recognition;
+  SpeechRecognition?: RecognitionConstructor;
+  webkitSpeechRecognition?: RecognitionConstructor;
 };
+type RecognitionConstructor = (new () => Recognition) & {
+  available?: (options: { langs: string[]; processLocally: boolean }) => Promise<string>;
+};
+type BraveNavigator = Navigator & { brave?: { isBrave?: () => Promise<boolean> } };
 
 export type VoiceState = "checking" | "available" | "requesting_permission" | "listening" | "processing" | "error" | "unsupported";
 
@@ -33,11 +39,30 @@ export function useConversationVoice({ onTranscript, responseText }: {
   const recognition = useRef<Recognition | null>(null);
   const stopped = useRef(false);
   const hasTranscript = useRef(false);
+  const mode = useRef<"remote" | "local" | "unsupported">("unsupported");
 
   useEffect(() => {
     const browser = window as SpeechWindow;
-    setState(browser.SpeechRecognition || browser.webkitSpeechRecognition ? "available" : "unsupported");
+    let active = true;
+    const Constructor = browser.SpeechRecognition ?? browser.webkitSpeechRecognition;
+    void (async () => {
+      let isBrave = false;
+      try { isBrave = Boolean(await (navigator as BraveNavigator).brave?.isBrave?.()); } catch { /* Detection is advisory. */ }
+      let localAvailability: string | null = null;
+      if (isBrave && Constructor?.available) {
+        try { localAvailability = await Promise.race([
+          Constructor.available({ langs: ["en-US"], processLocally: true }),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+        ]); } catch { /* Do not present a broken engine as available. */ }
+      }
+      if (!active) return;
+      const support = resolveBrowserSpeechSupport({ hasRecognition: Boolean(Constructor), isBrave, localAvailability });
+      mode.current = support.mode;
+      setState(support.mode === "unsupported" ? "unsupported" : "available");
+      setMessage(support.message);
+    })();
     return () => {
+      active = false;
       recognition.current?.stop();
       window.speechSynthesis?.cancel();
     };
@@ -54,9 +79,9 @@ export function useConversationVoice({ onTranscript, responseText }: {
   function start() {
     const browser = window as SpeechWindow;
     const Constructor = browser.SpeechRecognition ?? browser.webkitSpeechRecognition;
-    if (!Constructor) {
+    if (!Constructor || mode.current === "unsupported") {
       setState("unsupported");
-      setMessage("Speech recognition is not supported in this browser. Type your message instead.");
+      setMessage("Speech recognition is unavailable here. Type your message, or use a browser with a working English speech engine.");
       return;
     }
     stopped.current = false;
@@ -64,6 +89,7 @@ export function useConversationVoice({ onTranscript, responseText }: {
     const instance = new Constructor();
     recognition.current = instance;
     instance.lang = "en-US";
+    if (mode.current === "local") instance.processLocally = true;
     instance.interimResults = true;
     instance.continuous = true;
     instance.onstart = () => {
