@@ -122,14 +122,18 @@ export function useConversationVoice({ onTranscript, onSilence, responseText }: 
     };
     instance.onresult = (event) => {
       if (stopped.current || recognition.current !== instance) return;
-      const recognized = Array.from(event.results).map((result) => result[0]?.transcript ?? "").join(" ").trim();
+      const results = Array.from(event.results);
+      const recognized = results.map((result) => result[0]?.transcript ?? "").join(" ").trim();
+      const final = results.filter((result) => result.isFinal).map((result) => result[0]?.transcript ?? "").join(" ").trim();
       if (recognized) {
         hasTranscript.current = true;
         onTranscriptRef.current(recognized);
-        detector.update(recognized);
+        if (final) {
+          detector.update(final);
+        }
       }
       setState("listening");
-      setMessage("Listening… Pause to send your transcript, or press Stop listening to edit it first.");
+      setMessage(final ? "Listening… Pause after speaking to send, or press Stop to edit first." : "Listening… Waiting for a confirmed transcript. Press Stop to edit first.");
     };
     instance.onerror = (event) => {
       if (stopped.current || recognition.current !== instance) return;
@@ -144,8 +148,8 @@ export function useConversationVoice({ onTranscript, onSilence, responseText }: 
         if (detector.hasTranscript()) detector.finish();
         else {
           recognition.current = null;
-          setState("error");
-          setMessage(recognitionEndMessage(false));
+          setState("available");
+          setMessage(hasTranscript.current ? "Recognition ended before confirming the words. Review the transcript and send it manually, or try again." : recognitionEndMessage(false));
         }
       }
     };

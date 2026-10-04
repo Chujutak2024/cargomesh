@@ -7,7 +7,11 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) {
+  const target = new URL(request.url);
+  let source: URL | null = null;
+  try { source = origin ? new URL(origin) : null; } catch { /* Reject malformed origins below. */ }
+  const localAlias = source && ["localhost", "127.0.0.1"].includes(source.hostname) && ["localhost", "127.0.0.1"].includes(target.hostname) && source.port === target.port && source.protocol === target.protocol;
+  if (origin && origin !== target.origin && !localAlias) {
     return NextResponse.json({ schemaVersion: "2.0", error: { code: "FORBIDDEN_ORIGIN", message: "This origin is not allowed." } }, { status: 403 });
   }
   if (!request.headers.get("content-type")?.startsWith("application/json")) {

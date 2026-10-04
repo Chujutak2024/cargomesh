@@ -50,6 +50,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const [history, setHistory] = useState<Message[]>([{ speaker: "assistant", text: GREETING }]);
   const [announcement, setAnnouncement] = useState("");
   const [interpretationBusy, setInterpretationBusy] = useState(false);
+  const [audioReplies, setAudioReplies] = useState(true);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [choices, setChoices] = useState<Choice[]>([]);
   const [viewport, setViewport] = useState<{ height: number; keyboardInset: number } | null>(null);
@@ -58,7 +59,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const launcherRef = useRef<HTMLButtonElement>(null);
   const announcedDraftRef = useRef<string | null>(null);
   const voiceTurnActive = useRef(false);
-  const lastSpokenMessage = useRef(-1);
+  const lastSpokenMessage = useRef(0);
   const latestAssistant = history.findLast((message) => message.speaker === "assistant")?.text ?? "";
   const voice = useConversationVoice({
     onTranscript: (recognized) => { setText(recognized); inputRef.current?.focus(); },
@@ -72,11 +73,11 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   useEffect(() => {
     const index = history.length - 1;
     const latest = history[index];
-    if (!voiceTurnActive.current || !latest || latest.speaker !== "assistant" || index <= lastSpokenMessage.current || latest.text.endsWith("…")) return;
+    if (!audioReplies || !latest || latest.speaker !== "assistant" || index <= lastSpokenMessage.current || latest.text.endsWith("…") || busy || interpretationBusy) return;
     lastSpokenMessage.current = index;
     voice.finishProcessing();
     voice.readResponse(latest.text);
-  }, [history]);
+  }, [history, busy, interpretationBusy, audioReplies]);
   useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
   useEffect(() => {
     if (!open || !window.visualViewport) return;
@@ -276,7 +277,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
             : <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing" || voice.speaking || busy || interpretationBusy} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>}
           <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || voice.speaking}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
-        <div className={styles.audioActions}><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Read response</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button></div>
+        <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button></div>
       </div>
     </section>}
   </aside>;
