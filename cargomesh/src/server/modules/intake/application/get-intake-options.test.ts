@@ -66,9 +66,13 @@ describe("V2 intake options application service", () => {
     await assert.rejects(() => getIntakeOptions(actor, repo), /FORBIDDEN_TENANT/);
   });
 
-  it("rejects missing categories instead of silently losing intake guidance", async () => {
+  it("uses active categories from the database rather than requiring the original eight", async () => {
     const repo = repository();
     repo.listActiveCargoCategories = async () => codes.slice(0, 7).map(category);
+    assert.equal((await getIntakeOptions(actor, repo)).data.cargoCategories.length, 7);
+    repo.listActiveCargoCategories = async () => [category("MINERALS", 0)];
+    assert.equal((await getIntakeOptions(actor, repo)).data.cargoCategories[0].code, "MINERALS");
+    repo.listActiveCargoCategories = async () => [];
     await assert.rejects(() => getIntakeOptions(actor, repo), /CATALOG_NOT_READY/);
   });
 

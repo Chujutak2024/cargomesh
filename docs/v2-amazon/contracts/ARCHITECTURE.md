@@ -1,5 +1,9 @@
 # Arquitectura CargoMesh V2
 
+## Alcance integral vigente — recuperación HAC-27/HAC-40
+
+El [contrato integral y catálogo de ejecución](../delivery/HAC40_FULL_API_AND_CLOSURE.md) incorpora las 57 clases y reemplaza las exclusiones del corte ROAD descrito debajo. La separación modular y los límites de identidad/atomicidad se conservan. Las reglas de selección multi-oferta están implementadas como políticas de dominio; su persistencia, coordinación de bookings y endpoints siguen pendientes y no se declaran live.
+
 ## Capas
 
 1. **Canales:** Web, Alexa+ y futuras integraciones.

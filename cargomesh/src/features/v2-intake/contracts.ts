@@ -1,3 +1,5 @@
+import type { FreightRequestV2Response as BackendFreightRequestV2Response } from "@/shared/schemas/v2/freight-request";
+
 export type EligibilityStatusV2 = "eligible" | "ineligible" | "unknown";
 export type ProvenanceStatusV2 = "VERIFIED" | "ESTIMATED" | "SIMULATED" | "UNKNOWN";
 
@@ -28,12 +30,16 @@ export type CargoUnitV2 = {
   };
   indivisible: boolean;
   stackable: boolean;
+  unitsPerPackage?: number;
 };
 
 export type ShipmentContactV2 = {
   name: string;
   phoneE164: string;
   email?: string | null;
+  company?: string | null;
+  addressDetail?: string | null;
+  handlingInstructions?: string | null;
 };
 
 export type CreateFreightRequestV2Input = {
@@ -43,7 +49,10 @@ export type CreateFreightRequestV2Input = {
   destination: FreightLocationV2;
   pickupWindow: FreightWindowV2;
   deliveryWindow: FreightWindowV2;
-  acceptedModes: ["ROAD"];
+  acceptedModes: Array<"ROAD" | "RAIL" | "SEA" | "AIR">;
+  serviceType?: "FTL" | "LTL";
+  selectionObjective?: "LOWEST_COST" | "FASTEST" | "WEIGHTED" | null;
+  preferredEquipment?: string | null;
   requiredEquipment?: string | null;
   cargoSpecification: {
     categoryCode: string;
@@ -58,6 +67,7 @@ export type CreateFreightRequestV2Input = {
       maxCelsius: number;
     } | null;
     units: CargoUnitV2[];
+    availableDocuments?: Array<{ code: string; reference: string; issuedAt: string | null; validUntil: string | null }>;
   };
   contacts: {
     pickup: ShipmentContactV2;
@@ -76,7 +86,7 @@ export type FreightRequestV2Data = Omit<
   id: string;
   referenceCode: string;
   organizationId: string;
-  status: "DRAFT";
+  status: BackendFreightRequestV2Response["data"]["status"];
   draftVersion: number;
   requiredEquipment: string | null;
   budget: {

@@ -1,0 +1,519 @@
+{
+  "schemaVersion": "2.0",
+  "scope": "HAC-27/HAC-40: complete model; targets are not evidence of implementation",
+  "classes": [
+    {
+      "name": "Organization",
+      "area": "Identidad",
+      "representation": "Entidad existente",
+      "persistence": "organizations",
+      "operations": "organizaciones y miembros",
+      "package": "B1",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "Facility",
+      "area": "Identidad",
+      "representation": "Entidad existente",
+      "persistence": "facilities",
+      "operations": "sedes",
+      "package": "B1",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "FreightRequest",
+      "area": "Solicitud",
+      "representation": "Entidad existente",
+      "persistence": "freight_requests",
+      "operations": "solicitudes y cambios versionados",
+      "package": "B3",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "CargoSpecification",
+      "area": "Solicitud",
+      "representation": "Valor embebido",
+      "persistence": "freight_requests.cargo_specifications",
+      "operations": "payload de solicitud; sin CRUD independiente",
+      "package": "B3",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "CargoUnit",
+      "area": "Solicitud",
+      "representation": "Valor embebido",
+      "persistence": "cargo_specifications.units[]",
+      "operations": "payload de solicitud; sin CRUD independiente",
+      "package": "B3",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "Carrier",
+      "area": "Catálogo",
+      "representation": "Entidad existente",
+      "persistence": "carriers",
+      "operations": "carriers autorizados",
+      "package": "B1",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "CarrierDepot",
+      "area": "Catálogo",
+      "representation": "Entidad existente",
+      "persistence": "carrier_depots",
+      "operations": "depots",
+      "package": "B1",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "CarrierService",
+      "area": "Catálogo",
+      "representation": "Entidad existente",
+      "persistence": "carrier_services",
+      "operations": "servicios y publicación",
+      "package": "B1",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "ServiceLane",
+      "area": "Cobertura",
+      "representation": "Relación existente",
+      "persistence": "service_lanes",
+      "operations": "lanes dirigidas",
+      "package": "B1",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "ResponseIntegration",
+      "area": "Integración",
+      "representation": "Entidad/configuración a completar",
+      "persistence": "por decidir en DER; secretos fuera del DTO",
+      "operations": "configuración y diagnóstico de integración",
+      "package": "B1/A2",
+      "owner": "Axel"
+    },
+    {
+      "name": "CapacitySource",
+      "area": "Capacidad",
+      "representation": "Proyección de activos/cupos",
+      "persistence": "transport_assets / capacity_pools",
+      "operations": "consulta de disponibilidad y fuente",
+      "package": "B2",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "TransportAsset",
+      "area": "Flota",
+      "representation": "Entidad existente",
+      "persistence": "transport_assets",
+      "operations": "activos",
+      "package": "B2",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "RoadVehicle",
+      "area": "Flota",
+      "representation": "Subtipo, tabla compartida",
+      "persistence": "transport_assets + campos/subtipo RoadVehicle",
+      "operations": "activos ROAD; round-trip de todos sus atributos",
+      "package": "B2",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "CapacityPool",
+      "area": "Capacidad",
+      "representation": "Entidad existente",
+      "persistence": "capacity_pools",
+      "operations": "cupos y capacidad contractual",
+      "package": "B2",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "CapacityCalendar",
+      "area": "Capacidad",
+      "representation": "Entidad existente",
+      "persistence": "capacity_calendars",
+      "operations": "calendarios por ventana",
+      "package": "B2",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "CapacityReservation",
+      "area": "Capacidad",
+      "representation": "Entidad existente y comandos",
+      "persistence": "capacity_reservations",
+      "operations": "hold/confirmación/liberación",
+      "package": "B2/B5",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "ScheduledMaintenance",
+      "area": "Flota",
+      "representation": "Entidad existente",
+      "persistence": "scheduled_maintenances",
+      "operations": "mantenimientos",
+      "package": "B2",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "Driver",
+      "area": "Flota",
+      "representation": "Entidad a completar",
+      "persistence": "drivers propuesta; validar contra UML",
+      "operations": "conductores autorizados",
+      "package": "B2",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "DriverAssignment",
+      "area": "Flota",
+      "representation": "Relación a completar",
+      "persistence": "driver_assignments propuesta",
+      "operations": "asignación de conductor por ventana",
+      "package": "B2",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "VehicleAssignment",
+      "area": "Flota",
+      "representation": "Relación a completar",
+      "persistence": "vehicle_assignments propuesta",
+      "operations": "asignación de vehículo por ventana",
+      "package": "B2",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "AssetStatusEvent",
+      "area": "Flota",
+      "representation": "Evento persistente a completar",
+      "persistence": "asset_status_events propuesta",
+      "operations": "historial/eventos del activo",
+      "package": "B2",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "RoutePlan",
+      "area": "Rutas",
+      "representation": "Valor/snapshot versionado",
+      "persistence": "JSONB/filas subordinadas a decidir por consultas/invariantes",
+      "operations": "consulta y cálculo de rutas; snapshot en plan/oferta",
+      "package": "B3",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "RouteLeg",
+      "area": "Rutas",
+      "representation": "Valor/relación subordinada",
+      "persistence": "RoutePlan.legs[] o tabla por decisión DER",
+      "operations": "tramos de ruta; sin CRUD desligado del plan",
+      "package": "B3",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "RouteCondition",
+      "area": "Rutas",
+      "representation": "Evidencia a completar y fixture separado",
+      "persistence": "route_conditions propuesta; fixture sintético aparte",
+      "operations": "condiciones con fuente/vigencia",
+      "package": "B3",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "RouteWaypoint",
+      "area": "Rutas",
+      "representation": "Valor subordinado",
+      "persistence": "RoutePlan/RouteLeg.waypoints[]",
+      "operations": "waypoints validados con su ruta",
+      "package": "B3",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "RoutePlanningPolicy",
+      "area": "Rutas",
+      "representation": "Política versionada a completar",
+      "persistence": "route_planning_policies propuesta",
+      "operations": "políticas de planificación",
+      "package": "B3",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "TransportPlanCandidate",
+      "area": "Planes",
+      "representation": "Derivado + snapshot auditable",
+      "persistence": "cálculo; identidad/snapshot persistido al ofertar/seleccionar",
+      "operations": "planes candidatos y detalle",
+      "package": "B3",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "PlanResource",
+      "area": "Planes",
+      "representation": "Asignación subordinada",
+      "persistence": "snapshot del plan / relación según DER",
+      "operations": "recursos del plan, roles y capacidades",
+      "package": "B3",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "CarrierOpportunity",
+      "area": "Comercial",
+      "representation": "Entidad a completar",
+      "persistence": "carrier_opportunities propuesta",
+      "operations": "invitaciones/publicación/respuestas",
+      "package": "B4",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "CarrierOffer",
+      "area": "Comercial",
+      "representation": "Entidad versionada a completar",
+      "persistence": "carrier_offers propuesta",
+      "operations": "emisión/listado/revisión/retiro/vigencia",
+      "package": "B4",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "RankedOption",
+      "area": "Comercial",
+      "representation": "Resultado derivado auditable",
+      "persistence": "ranking + snapshot/versiones de entradas",
+      "operations": "consulta de ranking y explicación",
+      "package": "B4",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "ScoringPolicy",
+      "area": "Comercial",
+      "representation": "Política versionada a completar",
+      "persistence": "scoring_policies propuesta",
+      "operations": "políticas y activación versionada",
+      "package": "B4",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "Booking",
+      "area": "Booking",
+      "representation": "Entidad/comandos a completar",
+      "persistence": "bookings propuesta",
+      "operations": "autorización/confirmación/cancelación",
+      "package": "B5",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "TransportExecution",
+      "area": "Seguimiento",
+      "representation": "Entidad a completar",
+      "persistence": "transport_executions propuesta",
+      "operations": "ejecuciones y estados/eventos",
+      "package": "B6",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "OperationalIncident",
+      "area": "Seguimiento",
+      "representation": "Entidad a completar",
+      "persistence": "operational_incidents propuesta",
+      "operations": "incidentes operativos",
+      "package": "B6",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "IncidentUpdate",
+      "area": "Seguimiento",
+      "representation": "Evento subordinado a completar",
+      "persistence": "incident_updates propuesta",
+      "operations": "actualizaciones de incidentes",
+      "package": "B6",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "LogisticsNode",
+      "area": "Rutas",
+      "representation": "Entidad a completar",
+      "persistence": "logistics_nodes propuesta",
+      "operations": "nodos logísticos y fronterizos",
+      "package": "B3",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "RouteCorridor",
+      "area": "Rutas",
+      "representation": "Valor versionado/red a completar",
+      "persistence": "JSONB o route_corridors según DER y multiplicidades",
+      "operations": "corredores/nodos/restricciones/fuentes",
+      "package": "B3",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "CargoProfile",
+      "area": "Catálogo",
+      "representation": "Entidad existente, atributos parciales",
+      "persistence": "organization_cargo_profiles",
+      "operations": "perfiles de carga y plantillas completas",
+      "package": "B1",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "CargoCategory",
+      "area": "Catálogo",
+      "representation": "Referencia existente",
+      "persistence": "cargo_categories",
+      "operations": "lectura; escritura solo principal autorizado",
+      "package": "B1",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "LoadAllocation",
+      "area": "Planes",
+      "representation": "Asignación derivada validada",
+      "persistence": "plan/snapshot de asignaciones",
+      "operations": "carga por recurso/tramo y conservación de totales",
+      "package": "B3",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "OrganizationMember",
+      "area": "Identidad",
+      "representation": "Entidad existente",
+      "persistence": "organization_members",
+      "operations": "invitación/roles/activación/revocación",
+      "package": "B1/A1",
+      "owner": "Axel"
+    },
+    {
+      "name": "McpAccountLink",
+      "area": "Identidad",
+      "representation": "Entidad existente, flujo incompleto",
+      "persistence": "mcp_account_links",
+      "operations": "consentimiento/vinculación/revocación",
+      "package": "A1",
+      "owner": "Axel"
+    },
+    {
+      "name": "RepositioningBlock",
+      "area": "Flota",
+      "representation": "Entidad existente",
+      "persistence": "repositioning_blocks",
+      "operations": "reposicionamientos por ventana",
+      "package": "B2",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "OrganizationPreferences",
+      "area": "Identidad",
+      "representation": "Entidad existente, atributos parciales",
+      "persistence": "organization_preferences",
+      "operations": "preferencias versionadas",
+      "package": "B1",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "CarrierMetric",
+      "area": "Comercial",
+      "representation": "Derivado/observaciones atribuibles",
+      "persistence": "ejecuciones/reseñas/evidencia; modelo exacto según UML",
+      "operations": "consulta por período y tamaño de muestra",
+      "package": "B4/B6",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "VehicleCombination",
+      "area": "Flota",
+      "representation": "Relación/entidad a completar",
+      "persistence": "vehicle_combinations y miembros propuestas",
+      "operations": "combinaciones compatibles y vigencia",
+      "package": "B2",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "ServiceArea",
+      "area": "Cobertura",
+      "representation": "Entidad existente",
+      "persistence": "service_areas",
+      "operations": "áreas por función, geometría y fuente",
+      "package": "B1",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "FulfilmentPartner",
+      "area": "Catálogo",
+      "representation": "Relación autorizada a completar",
+      "persistence": "fulfilment_partners propuesta",
+      "operations": "socios y responsabilidad por servicio/tramo",
+      "package": "B1",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "PlanLegAssignment",
+      "area": "Planes",
+      "representation": "Relación derivada/snapshot",
+      "persistence": "asignaciones de servicio/recurso por tramo",
+      "operations": "detalle de plan/oferta/selección",
+      "package": "B3/B4",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "OfferCostComponent",
+      "area": "Comercial",
+      "representation": "Valor/relación subordinada",
+      "persistence": "carrier_offers.cost_components JSONB o tabla según DER",
+      "operations": "desglose emitido por carrier; sin CRUD aislado",
+      "package": "B4",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "ShipmentContact",
+      "area": "Solicitud",
+      "representation": "Valor embebido protegido",
+      "persistence": "snapshot/contactos de solicitud según DER",
+      "operations": "contactos de solicitud; autorización y minimización",
+      "package": "B3",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "CarrierOperator",
+      "area": "Identidad",
+      "representation": "Relación autorizada a completar",
+      "persistence": "carrier_operators propuesta",
+      "operations": "operadores y permisos de carrier",
+      "package": "B1/A1",
+      "owner": "Axel"
+    },
+    {
+      "name": "AssetCargoCapability",
+      "area": "Flota",
+      "representation": "Relación existente, cardinalidad por corregir",
+      "persistence": "asset_cargo_capabilities",
+      "operations": "capacidades/evidencias por activo",
+      "package": "B2",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "RouteSimulationScenario",
+      "area": "Escenario",
+      "representation": "Fixture de desarrollo/pruebas",
+      "persistence": "supabase/scenarios/v2-* fuera de migraciones",
+      "operations": "dataset reproducible; no API productiva de fixture",
+      "package": "Q1",
+      "owner": "Jean"
+    },
+    {
+      "name": "RoutePlanner",
+      "area": "Rutas",
+      "representation": "Interfaz/servicio",
+      "persistence": "puerto de dominio/adaptadores; no tabla",
+      "operations": "resolución/cálculo vía servicio de rutas",
+      "package": "B3/A2",
+      "owner": "Cristhian"
+    },
+    {
+      "name": "SelectionDecision",
+      "area": "Comercial",
+      "representation": "Entidad/comando auditado a completar",
+      "persistence": "selection_decisions propuesta",
+      "operations": "selección y autorización por shipper",
+      "package": "B5",
+      "owner": "Cristhian"
+    }
+  ]
+}

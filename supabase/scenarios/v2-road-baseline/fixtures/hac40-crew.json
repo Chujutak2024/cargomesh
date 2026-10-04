@@ -1,0 +1,117 @@
+{
+  "drivers": {
+    "schemaVersion": "2.0",
+    "serviceId": "c2360000-0000-4000-8000-000000000001",
+    "fullName": "[SYNTHETIC] Crew QA",
+    "portalAccountId": null,
+    "licenseClass": "QA_LICENSE",
+    "licenseValidUntil": "2027-01-31",
+    "licenseTimezone": "America/Lima",
+    "qualifications": [
+      "QA_CERT"
+    ],
+    "experienceYears": 2,
+    "dutyStatus": "AVAILABLE",
+    "evidence": {
+      "reference": "fixture:crew",
+      "verifiedAt": "2026-01-01T00:00:00Z",
+      "validUntil": "2027-03-01T00:00:00Z",
+      "provenanceStatus": "SIMULATED"
+    },
+    "availableWindows": [
+      {
+        "startsAt": "2027-01-15T08:00:00Z",
+        "endsAt": "2027-01-15T12:00:00Z"
+      }
+    ],
+    "dutyWindow": {
+      "startsAt": "2027-01-15T00:00:00Z",
+      "endsAt": "2027-01-16T00:00:00Z"
+    },
+    "maximumDutySeconds": 28800,
+    "usedDutySeconds": 0
+  },
+  "vehicle-combinations": {
+    "schemaVersion": "2.0",
+    "serviceId": "c2360000-0000-4000-8000-000000000001",
+    "kind": "QA_COUPLING",
+    "configuration": "Synthetic pair",
+    "assetIds": [
+      "ASSET"
+    ],
+    "coupledWindow": {
+      "startsAt": "2027-01-15T08:00:00Z",
+      "endsAt": "2027-01-15T12:00:00Z"
+    },
+    "evidence": [
+      {
+        "reference": "fixture:crew",
+        "verifiedAt": "2026-01-01T00:00:00Z",
+        "validUntil": "2027-03-01T00:00:00Z",
+        "provenanceStatus": "SIMULATED"
+      }
+    ],
+    "combinedTareKg": 5000,
+    "grossWeightLimitKg": 15000,
+    "status": "PROPOSED",
+    "compatibilityEvidence": {
+      "reference": "fixture:crew",
+      "verifiedAt": "2026-01-01T00:00:00Z",
+      "validUntil": "2027-03-01T00:00:00Z",
+      "provenanceStatus": "SIMULATED"
+    }
+  },
+  "driver-assignments": {
+    "schemaVersion": "2.0",
+    "serviceId": "c2360000-0000-4000-8000-000000000001",
+    "executionId": "EXECUTION",
+    "driverId": "DRIVER",
+    "window": {
+      "startsAt": "2027-01-15T08:00:00Z",
+      "endsAt": "2027-01-15T12:00:00Z"
+    },
+    "status": "PROPOSED",
+    "evidence": {
+      "reference": "fixture:crew",
+      "verifiedAt": "2026-01-01T00:00:00Z",
+      "validUntil": "2027-03-01T00:00:00Z",
+      "provenanceStatus": "SIMULATED"
+    },
+    "role": "PRIMARY",
+    "acceptedLicenseClasses": [
+      "QA_LICENSE"
+    ],
+    "requiredQualifications": [
+      "QA_CERT"
+    ],
+    "policyEvidence": {
+      "reference": "fixture:crew",
+      "verifiedAt": "2026-01-01T00:00:00Z",
+      "validUntil": "2027-03-01T00:00:00Z",
+      "provenanceStatus": "SIMULATED"
+    }
+  },
+  "vehicle-assignments": {
+    "schemaVersion": "2.0",
+    "serviceId": "c2360000-0000-4000-8000-000000000001",
+    "executionId": "EXECUTION",
+    "assetId": "ASSET",
+    "combinationId": null,
+    "reservationId": "RESERVATION",
+    "window": {
+      "startsAt": "2027-01-15T08:00:00Z",
+      "endsAt": "2027-01-15T12:00:00Z"
+    },
+    "status": "PROPOSED",
+    "evidence": {
+      "reference": "fixture:crew",
+      "verifiedAt": "2026-01-01T00:00:00Z",
+      "validUntil": "2027-03-01T00:00:00Z",
+      "provenanceStatus": "SIMULATED"
+    },
+    "capacityCommitted": {
+      "weightKg": 1000,
+      "volumeM3": 2
+    }
+  }
+}

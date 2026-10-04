@@ -4,6 +4,12 @@ Esta carpeta es la fuente de verdad documental de CargoMesh V2. V2 transforma el
 
 La [documentación de entrega en inglés](./en/README.md) traduce y consolida los contratos centrales para el concurso. No sustituye la gobernanza interna en español ni implica que todo el repositorio esté traducido.
 
+## Base compartida e integración directa — 4 oct 2026
+
+Por decisión expresa de Cristhian, `codex/v2-amazon-contracts` es la base compartida de desarrollo e integración V2. Cada integrante conserva su rama registrada y entrega PR directamente a esa base, con pruebas, revisión y autorización. Se elimina la etapa de ramas `feat/cycle-*-integration` para entregas nuevas; sus commits y actas se conservan como historia. Esta decisión sustituye los targets de ciclo en planes anteriores y skills que describan ese flujo.
+
+El gate valida un SHA de la base compartida; no exige rama o PR agregado. Integrar un incremento no acredita el DoD completo, schema alojado, frontend conectado ni Alexa live. `main` conserva la versión estable existente y permanece congelada para V2. Las autorizaciones de Supabase alojado y despliegue se mantienen separadas. Véase [AGENTS.md](../../AGENTS.md).
+
 ## Dónde empezar
 
 | Carpeta | Uso y autoridad |
@@ -33,7 +39,7 @@ El [contrato HAC-27](./delivery/SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md) y su [di
 ## Principios
 
 - `0..N` carriers, sin nombres hardcodeados en reglas de dominio.
-- El corte demostrable ratificado es ROAD y USD, con disponibilidad sí/no/desconocida y una oferta atribuible por decisión comercial; [alcance exacto](./contracts/PRODUCT_SCOPE.md#corte-de-mvp) y [DER lógico propuesto](./models/V2_LOGICAL_ERD.md).
+- La recuperación autorizada HAC-40 incorpora el modelo completo y decisiones con `1..*` ofertas atribuibles, sin doble cobertura. ROAD y USD conservan la evidencia ejecutable actual; otros modos/adaptadores no se declaran operativos por estar modelados. [Contrato integral y límites actuales](./delivery/HAC40_FULL_API_AND_CLOSURE.md), [workflow persistente](./delivery/HAC40_WORKFLOW_API.md) e [inventario de APIs implementadas](./delivery/HAC40_API_ENDPOINTS.md) actualizan la cardinalidad del corte inicial.
 - Una sede no prueba cobertura: cada servicio declara áreas, lanes y capacidad por fecha.
 - Se recomienda un plan carrier + servicio + ruta + equipo/cupo + fecha; el peso y volumen del activo son restricciones, no puntos de ranking.
 - Distintos medios, sedes, patios, corredores y combinaciones multimodales.

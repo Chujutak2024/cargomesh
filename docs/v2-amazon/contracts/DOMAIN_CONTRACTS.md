@@ -1,5 +1,9 @@
 # Contratos de dominio y datos V2
 
+## Alcance completo autorizado
+
+El [contrato HAC-27/HAC-40](../delivery/HAC40_FULL_API_AND_CLOSURE.md) incorpora también ofertas, selección, booking y operación. La restricción de una sola oferta del corte ROAD que se conserva debajo describe el corte anterior. La nueva política admite `1..*` ofertas con cobertura exacta y compromisos separados por emisor; aún necesita persistencia y endpoints antes de declararse operativa.
+
 ## FreightRequest
 
 Debe representar identidad organizacional, origen/destino por sede o ubicación, ventana, carga, embalaje, cantidades, dimensiones/peso por unidad, divisibilidad, requisitos especiales, modos aceptables, tipo de equipo requerido o preferido, presupuesto opcional, estado y `draft_version`.

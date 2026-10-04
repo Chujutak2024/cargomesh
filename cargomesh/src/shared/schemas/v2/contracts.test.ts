@@ -82,10 +82,33 @@ describe("HAC-12 V2 DTOs", () => {
       origin: { ...manual, lng: undefined } }).success, false);
   });
 
-  it("does not accept PEN, another mode or contradictory coordinate shape", () => {
+  it("does not accept PEN, unknown modes or contradictory coordinate shape", () => {
     assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request, budget: { amount: 100, currency: "PEN" } }).success, false);
-    assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request, acceptedModes: ["AIR"] }).success, false);
+    assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request, acceptedModes: ["SPACE"] }).success, false);
     assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request, origin: { facilityId, lat: -12 } }).success, false);
+  });
+
+  it("accepts declared modes and LTL with full cargo/contact attributes, without multiplying package content twice", () => {
+    const value = CreateFreightRequestV2InputSchema.parse({ ...request, acceptedModes: ["ROAD", "SEA"],
+      serviceType: "LTL", selectionObjective: "LOWEST_COST", preferredEquipment: "ISO_CONTAINER",
+      cargoSpecification: { ...request.cargoSpecification,
+        units: request.cargoSpecification.units.map((unit) => ({ ...unit, unitsPerPackage: 12 })),
+        availableDocuments: [{ code: "MSDS", reference: "document:1", issuedAt: null, validUntil: null }] },
+      contacts: { ...request.contacts, recipient: { ...request.contacts.recipient,
+        company: "Consignee", addressDetail: "Gate 2", handlingInstructions: "Call before delivery" } } });
+    assert.equal(value.serviceType, "LTL");
+    assert.equal(value.cargoSpecification.totalWeightKg, 4800);
+    assert.equal(value.contacts.recipient.company, "Consignee");
+    assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request, acceptedModes: ["ROAD", "ROAD"] }).success, false);
+    assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request, serviceType: "PARCEL" }).success, false);
+  });
+
+  it("rejects invalid package contents and document validity", () => {
+    assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request, cargoSpecification: {
+      ...request.cargoSpecification, units: [{ ...request.cargoSpecification.units[0], unitsPerPackage: 0 }] } }).success, false);
+    assert.equal(CreateFreightRequestV2InputSchema.safeParse({ ...request, cargoSpecification: {
+      ...request.cargoSpecification, availableDocuments: [{ code: "MSDS", reference: "doc",
+        issuedAt: "2026-10-05T00:00:00Z", validUntil: "2026-10-04T00:00:00Z" }] } }).success, false);
   });
 
   it("rejects incomplete manual locations and inverted windows", () => {

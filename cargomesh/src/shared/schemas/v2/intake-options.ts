@@ -1,9 +1,11 @@
 import { z } from "zod";
 
-export const CargoCategoryCodeV2Schema = z.enum([
+export const StandardCargoCategoryCodesV2 = [
   "GENERAL", "FOOD", "PHARMA", "CHEMICAL", "MACHINERY",
   "CONSTRUCTION", "AGRICULTURAL", "LIQUID",
-]);
+] as const;
+/** The database is the category catalog; the initial eight are not an allowlist. */
+export const CargoCategoryCodeV2Schema = z.string().regex(/^[A-Z][A-Z0-9_]{0,99}$/);
 
 /** ROAD request vocabulary; these are selectable types, not available assets. */
 export const RoadEquipmentCodeV2Schema = z.enum([

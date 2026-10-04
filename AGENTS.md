@@ -12,7 +12,7 @@ Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de Ca
 
 ## 2. Base de datos y separación V1/V2
 
-- `supabase/migrations/` acepta solo cambios estructurales o lógica persistente de producción. No agregar datos sintéticos de demo mediante `INSERT` de organizaciones, carriers, vehículos, sedes, rutas u ofertas.
+- La cadena activa V2 es `supabase-v2/supabase/migrations/`; `supabase/migrations/` permanece como historia/regresión V1. Las migraciones V2 aceptan solo cambios estructurales o lógica persistente de producción. No agregar datos sintéticos de demo mediante `INSERT` de organizaciones, carriers, vehículos, sedes, rutas u ofertas.
 - Los datos sintéticos V2 deben vivir en `supabase/scenarios/v2-*/seed.sql`. Los escenarios existentes de V1 permanecen identificados como V1 y no se presentan como catálogo V2.
 - No modificar migraciones históricas ya aplicadas para borrar seeds V1. Documentar la excepción legacy y hacer la transición mediante migraciones aditivas o escenarios nuevos.
 - Toda tabla V2 con datos de organización o carrier debe definir RLS, índices, restricciones y pruebas pgTAP proporcionales al riesgo.
@@ -50,12 +50,12 @@ Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de Ca
 ## 6. Git, integración y despliegue
 
 - `main` permanece congelada para este trabajo: no mergear, pushear ni abrir un PR de V2 hacia `main`. La aprobación de un PR o una suite verde no autoriza por sí sola a tocarla.
-- La rama base activa de contratos V2 es `codex/v2-amazon-contracts`.
+- La rama base compartida de código, contratos e integración V2 es `codex/v2-amazon-contracts`. Por decisión expresa de Cristhian del 4 oct 2026, todos los PR de implementación V2 apuntan directamente allí. Esta decisión reemplaza el flujo previo por ramas de integración de ciclo.
 - Cada issue V2 con código declara su rama exacta y target PR en Linear **antes de crearla**; se basa en `codex/v2-amazon-contracts` y no reutiliza ramas cerradas o canceladas de V1. Un enabler sin código registra `No aplica` y no abre rama.
-- El manifiesto de ramas se aprueba por ciclo: una core por integrante, una rama de integración definida en la issue de gate y ramas emergentes solo después de aprobar su issue. No abrir ramas auxiliares por conveniencia; PR #81/#82 son excepciones de gobernanza previas a esta regla, no una plantilla.
-- Flujo por issue: el responsable culmina y entrega PR/evidencia; el integrador valida contra el DoD; el Tech Lead aprueba; solo entonces el integrador autorizado mergea a la base durante el gate. Un PR ya mergeado se registra como hecho consumado y se audita, nunca se mergea de nuevo.
+- El manifiesto de ramas se aprueba por ciclo: una core por integrante y ramas emergentes solo después de aprobar su issue; todas entregan PR directamente a `codex/v2-amazon-contracts`. No crear ramas intermedias de ciclo/testing/develop. Las ramas de integración previas quedan como historia; su traslado final autorizado no habilita nuevas entregas allí. No abrir ramas auxiliares por conveniencia; PR #81/#82 son excepciones previas, no una plantilla.
+- Flujo por issue: el responsable entrega PR/evidencia; el integrador valida el alcance entregado; el Tech Lead aprueba; solo entonces el integrador autorizado mergea directamente a la base V2. El gate verifica el conjunto sobre un SHA de esa base y no requiere rama ni PR agregado de ciclo. Un incremento integrado no cierra una issue cuyo DoD integral siga pendiente. Un PR ya mergeado se registra y audita, nunca se mergea de nuevo.
 - Antes de aprobar o mergear, ejecutar la suite pertinente descubierta desde el repositorio, sin asumir conteos estáticos. Si el gate detecta un defecto bajo puramente documental o de metadatos, el integrador puede corregirlo con diff y prueba visibles. Un defecto medio o alto vuelve al dueño de la issue para implementación, prueba y nueva revisión; no se traslada silenciosamente a otro integrante.
-- Los solapamientos entre ramas se resuelven en una rama de integración del ciclo; nunca mediante merges individuales oportunistas.
+- Los solapamientos se resuelven coordinadamente en la rama del responsable contra la base V2 vigente, con diff y pruebas. Antes de mergear se reconfirman head/base; si cambian, se revisa y verifica el delta. No integrar dependencias por merges oportunistas entre ramas de integrantes ni reescribir ramas compartidas.
 - Los previews automáticos de Vercel no cambian la rama de producción. No cambiar `productionBranch`, `rootDirectory`, alias ni desplegar a producción como efecto colateral de un PR V2; una migración de `frontend/` a otro directorio requiere plan y aprobación de despliegue separados.
 
 ## 7. Linear y trazabilidad

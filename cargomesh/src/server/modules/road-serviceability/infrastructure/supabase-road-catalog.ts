@@ -28,7 +28,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
   const serviceIds = serviceRows.map((service) => service.id);
   const carrierIds = [...new Set(serviceRows.map((service) => service.carrier_id))];
   const [carriersResult, categoriesResult, serviceCategoriesResult, areasResult,
-    lanesResult, assetsResult, poolsResult] = await Promise.all([
+    lanesResult, assetsResult, poolsResult, partnersResult, definitionsResult] = await Promise.all([
     db.from("carriers").select("id,code,name,status").in("id", carrierIds),
     db.from("cargo_categories").select("id,code").eq("active", true),
     db.from("carrier_service_cargo_categories").select("carrier_service_id,cargo_category_id")
@@ -36,11 +36,14 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
     db.from("service_areas").select("*").in("carrier_service_id", serviceIds),
     db.from("service_lanes").select("*").in("carrier_service_id", serviceIds),
     db.from("transport_assets")
-      .select("id,carrier_id,carrier_service_id,equipment_code,asset_role,max_weight_kg,max_volume_m3,active")
+      .select("id,carrier_id,carrier_service_id,equipment_code,asset_role,max_weight_kg,max_volume_m3,active,fleet_managed,evidence,fulfilment_source,fulfilment_partner_id")
       .in("carrier_service_id", serviceIds).eq("active", true),
     db.from("capacity_pools")
-      .select("id,carrier_id,carrier_service_id,equipment_code,max_weight_kg,max_volume_m3,supported_cargo_category_ids,active")
+      .select("id,carrier_id,carrier_service_id,equipment_code,max_weight_kg,max_volume_m3,supported_cargo_category_ids,active,starts_at,ends_at,evidence,fulfilment_source,fulfilment_partner_id")
       .in("carrier_service_id", serviceIds).eq("active", true),
+    db.from("fulfilment_partners").select("id,status,agreement_valid_from,agreement_valid_until")
+      .in("carrier_id", carrierIds),
+    db.from("cargo_capability_definitions").select("id,requirements,max_weight_kg,active"),
   ]);
   const carriers = byId(rows(carriersResult));
   const categories = byId(rows(categoriesResult));
@@ -49,13 +52,15 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
   const laneRows = rows(lanesResult);
   const assets = rows(assetsResult);
   const pools = rows(poolsResult);
+  const partners = byId(rows(partnersResult));
+  const definitions = byId(rows(definitionsResult));
   const assetIds = assets.map((asset) => asset.id);
   const sourceIds = [...assetIds, ...pools.map((pool) => pool.id)];
   const [assetCapabilitiesResult, calendarsResult, maintenancesResult] = await Promise.all([
     assetIds.length
       ? db.from("asset_cargo_capabilities")
-        .select("transport_asset_id,cargo_category_id,temperature_min_c,temperature_max_c,certifications")
-        .in("transport_asset_id", assetIds)
+        .select("transport_asset_id,cargo_category_id,temperature_min_c,temperature_max_c,certifications,definition_id,evidence,verified_at,valid_until")
+        .in("transport_asset_id", assetIds).eq("active", true)
       : Promise.resolve({ data: [], error: null }),
     sourceIds.length
       ? db.from("capacity_calendars")
@@ -64,7 +69,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
       : Promise.resolve({ data: [], error: null }),
     assetIds.length
       ? db.from("scheduled_maintenances").select("transport_asset_id,starts_at,ends_at")
-        .in("transport_asset_id", assetIds)
+        .in("transport_asset_id", assetIds).in("status", ["SCHEDULED", "IN_PROGRESS"])
       : Promise.resolve({ data: [], error: null }),
   ]);
   const assetCapabilities = rows(assetCapabilitiesResult);
@@ -78,7 +83,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
       : Promise.resolve({ data: [], error: null }),
     calendarIds.length
       ? db.from("repositioning_blocks").select("capacity_calendar_id,starts_at,ends_at")
-        .in("capacity_calendar_id", calendarIds)
+        .in("capacity_calendar_id", calendarIds).in("status", ["PLANNED", "IN_PROGRESS"])
       : Promise.resolve({ data: [], error: null }),
   ]);
   const reservations = rows(reservationsResult);
@@ -115,12 +120,18 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
           id: area.id,
           role: z.enum(["PICKUP", "DELIVERY"]).parse(area.area_role),
           coverage: z.enum(["INCLUDE", "EXCLUDE"]).parse(area.coverage),
-          granularity: z.enum(["COUNTRY", "REGION", "CITY", "POSTAL_CODE"]).parse(area.granularity),
+          granularity: z.enum(["COUNTRY", "REGION", "CITY", "POSTAL_CODE", "POLYGON", "POINTS"]).parse(area.granularity),
           location: {
             countryCode: area.country_code, regionCode: area.region_code,
             city: area.city, postalCode: area.postal_code,
           },
           active: area.active, validFrom: area.valid_from, validUntil: area.valid_until,
+          evidenceAvailable: Boolean(area.evidence_reference && area.verified_at && area.valid_from),
+          partnerAgreement: area.fulfilment_source === "PARTNER" ? (() => {
+            const partner = area.fulfilment_partner_id ? partners.get(area.fulfilment_partner_id) : undefined;
+            return partner ? { status: partner.status, startsAt: partner.agreement_valid_from,
+              endsAt: partner.agreement_valid_until } : null;
+          })() : undefined,
         }));
       const capacities: Capacity[] = [
         ...assets.filter((asset) => asset.carrier_service_id === service.id).map((asset) => {
@@ -143,9 +154,25 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
               return [{ categoryCode,
                 certifications: certifications.success ? certifications.data : null,
                 temperatureMinC: item.temperature_min_c,
-                temperatureMaxC: item.temperature_max_c }];
+                temperatureMaxC: item.temperature_max_c,
+                ...(item.definition_id ? {
+                  maxWeightKg: definitions.get(item.definition_id)?.max_weight_kg ?? null,
+                  evidenceAvailable: Boolean(item.evidence && item.verified_at && definitions.get(item.definition_id)?.active),
+                  validUntil: item.valid_until,
+                  requirements: z.array(z.string()).parse(definitions.get(item.definition_id)?.requirements ?? []),
+                } : {}) }];
             }),
             maxWeightKg: asset.max_weight_kg, maxVolumeM3: asset.max_volume_m3,
+            ...(asset.fleet_managed ? {
+              sourceEvidenceAvailable: Boolean(asset.evidence && (asset.fulfilment_source !== "PARTNER"
+                || (asset.fulfilment_partner_id && partners.get(asset.fulfilment_partner_id)?.status === "ACTIVE"))),
+              ...(asset.fulfilment_source === "PARTNER" ? {
+                sourceWindow: asset.fulfilment_partner_id && partners.get(asset.fulfilment_partner_id) ? {
+                  startsAt: partners.get(asset.fulfilment_partner_id)!.agreement_valid_from,
+                  endsAt: partners.get(asset.fulfilment_partner_id)!.agreement_valid_until,
+                } : null,
+              } : {}),
+            } : {}),
             calendar: makeCalendar(asset.id, true),
           };
         }),
@@ -162,6 +189,12 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
                 .filter((code): code is string => Boolean(code)) : null,
             cargoCapabilities: null,
             maxWeightKg: pool.max_weight_kg, maxVolumeM3: pool.max_volume_m3,
+            sourceWindow: pool.starts_at && pool.ends_at ? { startsAt: pool.starts_at, endsAt: pool.ends_at } : null,
+            sourceEvidenceAvailable: Boolean(pool.evidence && pool.fulfilment_source && (pool.fulfilment_source !== "PARTNER"
+              || (pool.fulfilment_partner_id && partners.get(pool.fulfilment_partner_id)?.status === "ACTIVE"
+                && pool.starts_at && pool.ends_at
+                && Date.parse(partners.get(pool.fulfilment_partner_id)!.agreement_valid_from) <= Date.parse(pool.starts_at)
+                && Date.parse(partners.get(pool.fulfilment_partner_id)!.agreement_valid_until) >= Date.parse(pool.ends_at)))),
             calendar: makeCalendar(pool.id, false),
           };
         }),
@@ -177,6 +210,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
         serviceClass: service.service_type, responseChannels: [],
         mode: "ROAD", active: service.active,
         supportedCargoCategoryCodes: supportedCategories.length ? supportedCategories : null,
+        maxWeightKg: service.max_capacity_kg, maxVolumeM3: service.max_volume_m3,
         areas: serviceAreas,
         lanes: laneRows.filter((lane) => lane.carrier_service_id === service.id).map((lane) => ({
           id: lane.id, kind: z.enum(["DIRECT", "WITHIN_AREA"]).parse(lane.lane_kind),
@@ -187,6 +221,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
             .parse(lane.transit_provenance_status),
           pickupAreaId: lane.pickup_area_id, deliveryAreaId: lane.delivery_area_id,
           active: lane.active, validFrom: lane.valid_from, validUntil: lane.valid_until,
+          evidenceAvailable: Boolean(lane.evidence_reference && lane.verified_at && lane.valid_from),
         })),
         capacities,
       };

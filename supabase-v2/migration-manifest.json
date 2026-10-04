@@ -217,6 +217,17 @@
       ]
     },
     {
+      "issue": "HAC-11",
+      "path": "supabase-v2/supabase/migrations/20261002160000_hac11_mcp_account_links.sql",
+      "version": "20261002160000",
+      "sha256": "0927b25172be4f81aa62a68caf8a52fcfbe81a88f25e11d4680317d1bde3a034",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261002073853"
+      ]
+    },
+    {
       "issue": "HAC-12",
       "path": "supabase-v2/supabase/migrations/20261003035802_hac12_receipt_hash_and_service_role_guards.sql",
       "version": "20261003035802",
@@ -225,6 +236,94 @@
       "profile": "v2-clean",
       "dependencies": [
         "20261002073853"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004012929_hac40_facility_commands.sql",
+      "version": "20261004012929",
+      "sha256": "8f104d4a3cf03dcc1111174af5e7bba73aa29d619edf64f8a336e7fcc5e5bee4",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261003035802"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004014340_hac40_request_lifecycle.sql",
+      "version": "20261004014340",
+      "sha256": "7657f72904893519f4c3e1e32f9c26cd086f545a41a971c9fa14100093524a41",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004012929"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004022650_hac40_organization_commands.sql",
+      "version": "20261004022650",
+      "sha256": "b6cf93ef75b4a2acb6aae46dfc770b10c0f7762f5a791f3874842e8362e09cea",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004014340"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004025720_hac40_full_request_contract.sql",
+      "version": "20261004025720",
+      "sha256": "17dc43d4769e76ff0ab8f7df10a8f9e184a20f59299463627eeab5f7a74f49ee",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004022650"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004032151_hac40_catalog.sql",
+      "version": "20261004032151",
+      "sha256": "d311c5e359374a984772b14ef95930cf737425f8b55a1d7a7971130de0c5a8d2",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004025720"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004042259_hac40_fleet.sql",
+      "version": "20261004042259",
+      "sha256": "c684de8919545f5e9325eb44f844ab3b47676ce09a40a9a388d5417e9661678f",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004032151"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004080506_hac40_crew_assignments.sql",
+      "version": "20261004080506",
+      "sha256": "ae221ac9a6d96a0ec5ea358c8f43dc8f852f3e25b2b730fa9996abc453cdf5ec",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004042259"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+      "version": "20261004154048",
+      "sha256": "919c61c1208b82567f5f98aebb2fe7c82d82f82cf6e42bfe6ba0b60790b1e684",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004080506"
       ]
     }
   ]

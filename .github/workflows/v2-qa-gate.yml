@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - codex/v2-amazon-contracts
-      - feat/cycle-2-integration
 
 permissions:
   contents: read
@@ -45,6 +44,12 @@ jobs:
 
       - name: Run release test chain
         run: pnpm test:release
+
+      - name: Validate full UML inventory and architecture
+        run: |
+          python3 ../scripts/check-v2-full-model.py
+          python3 ../scripts/build-v2-full-der.py --check
+          pnpm check:architecture
 
       - name: Build production bundle
         run: pnpm build
