@@ -46,11 +46,15 @@ Rutas: `cargomesh/src/server/hono/routes/facilities.ts` y `routes/freight/reques
 
 [Contrato exacto de catalogo, atributos, permisos y limites](./HAC40_CATALOG_API.md): 36 operaciones nuevas sobre preferencias, perfiles, categorias, carriers, depots, servicios, areas, lanes y socios. Sumadas a las 13 anteriores son **49 endpoints de negocio**, sin contar health. Rutas en `hono/routes/catalog.ts`, servicio de aplicacion `modules/catalog`, migracion `20261004032151_hac40_catalog.sql`.
 
+## Avance B2 — conductores, combinaciones y asignaciones
+
+[Contrato de conductores y asignaciones](./HAC40_CREW_API.md): 16 operaciones nuevas, cuatro por familia (listado, detalle, creación y revisión). Acumulado vigente: **93 endpoints de negocio**. Persistencia nativa, autorización carrier, idempotencia, versión, licencia/disponibilidad y no-solape verificados localmente. CarrierOperator y TransportExecution tienen soporte estructural restringido; su provisión y ciclo público siguen pendientes. Confirmar una asignación de combinación exige el verificador de límites del plan todavía pendiente y se bloquea sin esa evidencia. Las reservas públicas, eventos de estado y cierre de ejecución siguen pendientes.
+
 ## Familias integrales pendientes
 
 ### Avance B2 — recursos de flota
 
-[Contrato de flota y disponibilidad](./HAC40_FLEET_API.md): 28 operaciones nuevas de activos, cupos, calendarios, mantenimiento, reposicionamiento, definiciones de capacidad y sus asociaciones. Acumulado **77 endpoints de negocio**. Publicación/revisión segura y consumo por elegibilidad ROAD implementados; quedan combinaciones, conductores/asignaciones, auditoría de estados, reservas públicas, consolidación LTL y planes multirrecurso. Las familias de la tabla siguiente describen el cierre integral todavía requerido; la existencia de operaciones de un agregado no certifica todo B2.
+[Contrato de flota y disponibilidad](./HAC40_FLEET_API.md): 28 operaciones nuevas de activos, cupos, calendarios, mantenimiento, reposicionamiento, definiciones de capacidad y sus asociaciones. Acumulado **77 endpoints de negocio**. Publicación/revisión segura y consumo por elegibilidad ROAD implementados; El corte posterior de conductores/asignaciones está documentado arriba; quedan auditoría de estados, reservas públicas, consolidación comercial LTL y planes multirrecurso. Las familias de la tabla siguiente describen el cierre integral todavía requerido; la existencia de operaciones de un agregado no certifica todo B2.
 
 **Objetivo contractual, no anuncio de disponibilidad.** Todas estas familias permanecen en HAC-40 o en la principal dependiente indicada; frontend puede preparar mocks explícitos contra ellas, pero no sustituir errores del API por mocks.
 

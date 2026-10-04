@@ -303,6 +303,17 @@
       "dependencies": [
         "20261004032151"
       ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004080506_hac40_crew_assignments.sql",
+      "version": "20261004080506",
+      "sha256": "ae221ac9a6d96a0ec5ea358c8f43dc8f852f3e25b2b730fa9996abc453cdf5ec",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004042259"
+      ]
     }
   ]
 }

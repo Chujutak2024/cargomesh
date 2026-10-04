@@ -672,28 +672,43 @@ export type Database = {
       capacity_reservations: {
         Row: {
           capacity_calendar_id: string
+          committed_capacity: Json | null
           created_at: string
           ends_at: string
+          evidence: Json | null
+          execution_id: string | null
           freight_request_id: string | null
           id: string
+          reference: string | null
+          source: string | null
           starts_at: string
           status: string
         }
         Insert: {
           capacity_calendar_id: string
+          committed_capacity?: Json | null
           created_at?: string
           ends_at: string
+          evidence?: Json | null
+          execution_id?: string | null
           freight_request_id?: string | null
           id?: string
+          reference?: string | null
+          source?: string | null
           starts_at: string
           status: string
         }
         Update: {
           capacity_calendar_id?: string
+          committed_capacity?: Json | null
           created_at?: string
           ends_at?: string
+          evidence?: Json | null
+          execution_id?: string | null
           freight_request_id?: string | null
           id?: string
+          reference?: string | null
+          source?: string | null
           starts_at?: string
           status?: string
         }
@@ -703,6 +718,13 @@ export type Database = {
             columns: ["capacity_calendar_id"]
             isOneToOne: false
             referencedRelation: "capacity_calendars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capacity_reservations_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "transport_executions"
             referencedColumns: ["id"]
           },
           {
@@ -1152,6 +1174,56 @@ export type Database = {
           },
         ]
       }
+      carrier_operators: {
+        Row: {
+          auth_user_id: string | null
+          carrier_id: string
+          created_at: string
+          display_name: string
+          email: string | null
+          id: string
+          phone: string | null
+          role: string
+          status: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          auth_user_id?: string | null
+          carrier_id: string
+          created_at?: string
+          display_name: string
+          email?: string | null
+          id?: string
+          phone?: string | null
+          role: string
+          status: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          auth_user_id?: string | null
+          carrier_id?: string
+          created_at?: string
+          display_name?: string
+          email?: string | null
+          id?: string
+          phone?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carrier_operators_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       carrier_service_cargo_categories: {
         Row: {
           cargo_category_id: string
@@ -1330,6 +1402,183 @@ export type Database = {
           version?: number
         }
         Relationships: []
+      }
+      driver_assignments: {
+        Row: {
+          accepted_license_classes: Json
+          carrier_id: string
+          carrier_service_id: string
+          created_at: string
+          driver_id: string
+          ends_at: string
+          evidence: Json | null
+          execution_id: string
+          id: string
+          policy_evidence: Json | null
+          required_qualifications: Json
+          role: string
+          starts_at: string
+          status: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          accepted_license_classes: Json
+          carrier_id: string
+          carrier_service_id: string
+          created_at?: string
+          driver_id: string
+          ends_at: string
+          evidence?: Json | null
+          execution_id: string
+          id?: string
+          policy_evidence?: Json | null
+          required_qualifications: Json
+          role: string
+          starts_at: string
+          status: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          accepted_license_classes?: Json
+          carrier_id?: string
+          carrier_service_id?: string
+          created_at?: string
+          driver_id?: string
+          ends_at?: string
+          evidence?: Json | null
+          execution_id?: string
+          id?: string
+          policy_evidence?: Json | null
+          required_qualifications?: Json
+          role?: string
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_assignments_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_assignments_carrier_service_id_carrier_id_fkey"
+            columns: ["carrier_service_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id", "carrier_id"]
+          },
+          {
+            foreignKeyName: "driver_assignments_driver_id_carrier_id_carrier_service_id_fkey"
+            columns: ["driver_id", "carrier_id", "carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id", "carrier_id", "carrier_service_id"]
+          },
+          {
+            foreignKeyName: "driver_assignments_execution_id_carrier_id_carrier_service_fkey"
+            columns: ["execution_id", "carrier_id", "carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "transport_executions"
+            referencedColumns: ["id", "carrier_id", "carrier_service_id"]
+          },
+        ]
+      }
+      drivers: {
+        Row: {
+          available_windows: Json
+          carrier_id: string
+          carrier_operator_id: string | null
+          carrier_service_id: string
+          created_at: string
+          duty_ends_at: string | null
+          duty_starts_at: string | null
+          duty_status: string
+          evidence: Json | null
+          experience_years: number | null
+          full_name: string
+          id: string
+          license_class: string
+          license_timezone: string
+          license_valid_until: string
+          maximum_duty_seconds: number | null
+          qualifications: Json
+          updated_at: string
+          used_duty_seconds: number
+          version: number
+        }
+        Insert: {
+          available_windows: Json
+          carrier_id: string
+          carrier_operator_id?: string | null
+          carrier_service_id: string
+          created_at?: string
+          duty_ends_at?: string | null
+          duty_starts_at?: string | null
+          duty_status: string
+          evidence?: Json | null
+          experience_years?: number | null
+          full_name: string
+          id?: string
+          license_class: string
+          license_timezone: string
+          license_valid_until: string
+          maximum_duty_seconds?: number | null
+          qualifications: Json
+          updated_at?: string
+          used_duty_seconds: number
+          version?: number
+        }
+        Update: {
+          available_windows?: Json
+          carrier_id?: string
+          carrier_operator_id?: string | null
+          carrier_service_id?: string
+          created_at?: string
+          duty_ends_at?: string | null
+          duty_starts_at?: string | null
+          duty_status?: string
+          evidence?: Json | null
+          experience_years?: number | null
+          full_name?: string
+          id?: string
+          license_class?: string
+          license_timezone?: string
+          license_valid_until?: string
+          maximum_duty_seconds?: number | null
+          qualifications?: Json
+          updated_at?: string
+          used_duty_seconds?: number
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drivers_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drivers_carrier_operator_id_carrier_id_fkey"
+            columns: ["carrier_operator_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_operators"
+            referencedColumns: ["id", "carrier_id"]
+          },
+          {
+            foreignKeyName: "drivers_carrier_service_id_carrier_id_fkey"
+            columns: ["carrier_service_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id", "carrier_id"]
+          },
+        ]
       }
       facilities: {
         Row: {
@@ -2858,6 +3107,301 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "fulfilment_partners"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      transport_executions: {
+        Row: {
+          actual_completed_at: string | null
+          actual_started_at: string | null
+          carrier_id: string
+          carrier_service_id: string
+          created_at: string
+          freight_request_id: string
+          id: string
+          last_known_position: Json | null
+          organization_id: string
+          planned_ends_at: string
+          planned_starts_at: string
+          status: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          actual_completed_at?: string | null
+          actual_started_at?: string | null
+          carrier_id: string
+          carrier_service_id: string
+          created_at?: string
+          freight_request_id: string
+          id?: string
+          last_known_position?: Json | null
+          organization_id: string
+          planned_ends_at: string
+          planned_starts_at: string
+          status: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          actual_completed_at?: string | null
+          actual_started_at?: string | null
+          carrier_id?: string
+          carrier_service_id?: string
+          created_at?: string
+          freight_request_id?: string
+          id?: string
+          last_known_position?: Json | null
+          organization_id?: string
+          planned_ends_at?: string
+          planned_starts_at?: string
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_executions_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_executions_carrier_service_id_carrier_id_fkey"
+            columns: ["carrier_service_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id", "carrier_id"]
+          },
+          {
+            foreignKeyName: "transport_executions_freight_request_id_fkey"
+            columns: ["freight_request_id"]
+            isOneToOne: false
+            referencedRelation: "freight_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_executions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_assignments: {
+        Row: {
+          capacity_committed: Json
+          capacity_reservation_id: string | null
+          carrier_id: string
+          carrier_service_id: string
+          created_at: string
+          ends_at: string
+          evidence: Json | null
+          execution_id: string
+          id: string
+          starts_at: string
+          status: string
+          transport_asset_id: string
+          updated_at: string
+          vehicle_combination_id: string | null
+          version: number
+        }
+        Insert: {
+          capacity_committed: Json
+          capacity_reservation_id?: string | null
+          carrier_id: string
+          carrier_service_id: string
+          created_at?: string
+          ends_at: string
+          evidence?: Json | null
+          execution_id: string
+          id?: string
+          starts_at: string
+          status: string
+          transport_asset_id: string
+          updated_at?: string
+          vehicle_combination_id?: string | null
+          version?: number
+        }
+        Update: {
+          capacity_committed?: Json
+          capacity_reservation_id?: string | null
+          carrier_id?: string
+          carrier_service_id?: string
+          created_at?: string
+          ends_at?: string
+          evidence?: Json | null
+          execution_id?: string
+          id?: string
+          starts_at?: string
+          status?: string
+          transport_asset_id?: string
+          updated_at?: string
+          vehicle_combination_id?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_assignments_capacity_reservation_id_fkey"
+            columns: ["capacity_reservation_id"]
+            isOneToOne: false
+            referencedRelation: "capacity_reservations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_assignments_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_assignments_carrier_service_id_carrier_id_fkey"
+            columns: ["carrier_service_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id", "carrier_id"]
+          },
+          {
+            foreignKeyName: "vehicle_assignments_execution_id_carrier_id_carrier_servic_fkey"
+            columns: ["execution_id", "carrier_id", "carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "transport_executions"
+            referencedColumns: ["id", "carrier_id", "carrier_service_id"]
+          },
+          {
+            foreignKeyName: "vehicle_assignments_transport_asset_id_carrier_id_carrier__fkey"
+            columns: ["transport_asset_id", "carrier_id", "carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "transport_assets"
+            referencedColumns: ["id", "carrier_id", "carrier_service_id"]
+          },
+          {
+            foreignKeyName: "vehicle_assignments_vehicle_combination_id_carrier_id_carr_fkey"
+            columns: [
+              "vehicle_combination_id",
+              "carrier_id",
+              "carrier_service_id",
+            ]
+            isOneToOne: false
+            referencedRelation: "vehicle_combinations"
+            referencedColumns: ["id", "carrier_id", "carrier_service_id"]
+          },
+        ]
+      }
+      vehicle_combination_assets: {
+        Row: {
+          active: boolean
+          carrier_id: string
+          carrier_service_id: string
+          combination_id: string
+          ends_at: string | null
+          starts_at: string | null
+          transport_asset_id: string
+        }
+        Insert: {
+          active: boolean
+          carrier_id: string
+          carrier_service_id: string
+          combination_id: string
+          ends_at?: string | null
+          starts_at?: string | null
+          transport_asset_id: string
+        }
+        Update: {
+          active?: boolean
+          carrier_id?: string
+          carrier_service_id?: string
+          combination_id?: string
+          ends_at?: string | null
+          starts_at?: string | null
+          transport_asset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_combination_assets_combination_id_carrier_id_carri_fkey"
+            columns: ["combination_id", "carrier_id", "carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_combinations"
+            referencedColumns: ["id", "carrier_id", "carrier_service_id"]
+          },
+          {
+            foreignKeyName: "vehicle_combination_assets_transport_asset_id_carrier_id_c_fkey"
+            columns: ["transport_asset_id", "carrier_id", "carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "transport_assets"
+            referencedColumns: ["id", "carrier_id", "carrier_service_id"]
+          },
+        ]
+      }
+      vehicle_combinations: {
+        Row: {
+          carrier_id: string
+          carrier_service_id: string
+          combined_tare_kg: number | null
+          compatibility_evidence: Json | null
+          configuration: string
+          created_at: string
+          ends_at: string | null
+          evidence: Json
+          gross_weight_limit_kg: number | null
+          id: string
+          kind: string
+          starts_at: string | null
+          status: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          carrier_id: string
+          carrier_service_id: string
+          combined_tare_kg?: number | null
+          compatibility_evidence?: Json | null
+          configuration: string
+          created_at?: string
+          ends_at?: string | null
+          evidence: Json
+          gross_weight_limit_kg?: number | null
+          id?: string
+          kind: string
+          starts_at?: string | null
+          status: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          carrier_id?: string
+          carrier_service_id?: string
+          combined_tare_kg?: number | null
+          compatibility_evidence?: Json | null
+          configuration?: string
+          created_at?: string
+          ends_at?: string | null
+          evidence?: Json
+          gross_weight_limit_kg?: number | null
+          id?: string
+          kind?: string
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_combinations_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_combinations_carrier_service_id_carrier_id_fkey"
+            columns: ["carrier_service_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id", "carrier_id"]
           },
         ]
       }

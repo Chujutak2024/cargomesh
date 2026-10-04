@@ -43,6 +43,8 @@ Migración aditiva `20261004042259_hac40_fleet.sql`, perfil pgTAP `20_v2_hac40_f
 
 **Pendientes de B2:** VehicleCombination, Driver/DriverAssignment/VehicleAssignment, AssetStatusEvent/auditoría operativa completa, reservas/holds públicos, consolidación LTL, disponibilidad conjunta y verificación de dimensiones/jurisdicción/permisos. B3–B6 (planes, comercial, booking y ejecución) continúan dentro de HAC-40. Identidad carrier/MCP/ResponseIntegration es dependencia HAC-41. El inventario/DER completo no se declara certificado por este avance.
 
+**Actualización posterior:** conductores, combinaciones y asignaciones ya tienen persistencia y 16 operaciones adicionales; ver [contrato de APIs de crew](./HAC40_CREW_API.md). El acumulado actual es 93. La sección anterior registra el límite del primer corte de flota; las reglas y límites vigentes de este incremento se detallan en el nuevo contrato, incluida la confirmación de combinaciones aún bloqueada por el verificador del plan.
+
 ### Reglas compartidas de asignación — avance de dominio
 
 `cargomesh/src/server/modules/fleet/domain/assignment-policy.ts` implementa reglas puras para los servicios Web/MCP:

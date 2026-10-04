@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CrewInputsV2 } from "./crew";
 import { FleetInputsV2, FleetOutputsV2 } from "./fleet";
 import { CanonicalLocationV2Schema, EquipmentCodeV2Schema, TransportModeV2Schema,
   RankingObjectiveV2Schema } from "./freight-request";
@@ -38,6 +39,7 @@ export const CoverageGeometryV2Schema = z.discriminatedUnion("type", [
 ]).refine(x => x.type !== "Polygon" || x.coordinates.every(ring =>
   ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1]), "Polygon rings must be closed.");
 export const CatalogInputsV2 = {
+  ...CrewInputsV2,
   ...FleetInputsV2,
   preferences: z.object({ ...Base, objective: RankingObjectiveV2Schema.nullable(),
     maximumWaitMinutes: z.number().int().nonnegative().max(525600).nullable(),
