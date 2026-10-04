@@ -281,3 +281,33 @@ describe("pure ROAD eligibility", () => {
     });
   });
 });
+
+
+describe("HAC-40 catalog evidence and limits", () => {
+  it("does not confirm coverage without evidence or a valid-from instant", () => {
+    const candidate = service();
+    candidate.areas[0].evidenceAvailable = false; candidate.areas[0].validFrom = null;
+    const result = evaluateRoad(request, [candidate]).candidates[0];
+    assert.equal(result.status, "unknown");
+    assert.ok(result.reasons.includes("PICKUP_COVERAGE_EVIDENCE_UNKNOWN"));
+  });
+  it("does not inherit confirmed coverage from an expired partner agreement", () => {
+    const candidate = service();
+    candidate.areas[0].partnerAgreement = { status: "ACTIVE", startsAt: "2026-01-01T00:00:00Z", endsAt: "2026-09-01T00:00:00Z" };
+    const result = evaluateRoad(request, [candidate]).candidates[0];
+    assert.equal(result.status, "unknown");
+    assert.ok(result.reasons.includes("PICKUP_COVERAGE_EVIDENCE_UNKNOWN"));
+  });
+  it("enforces the service limit even when the asset has more capacity", () => {
+    const candidate = service(); candidate.maxWeightKg = request.totalWeightKg - 1;
+    const result = evaluateRoad(request, [candidate]).candidates[0];
+    assert.equal(result.status, "ineligible");
+    assert.ok(result.reasons.includes("SERVICE_CAPACITY_LIMIT_EXCEEDED"));
+  });
+  it("does not confirm a matching directed lane without evidence", () => {
+    const candidate = service(); candidate.lanes[0].evidenceAvailable = false;
+    const result = evaluateRoad(request, [candidate]).candidates[0];
+    assert.equal(result.status, "unknown");
+    assert.ok(result.reasons.includes("LANE_EVIDENCE_UNKNOWN"));
+  });
+});

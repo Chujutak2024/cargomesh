@@ -468,7 +468,7 @@
           "name": "businessIdType",
           "optional": true,
           "type": "string",
-          "target": "carriers.business_id_type",
+          "target": "carriers.business_identifier_type",
           "physicalType": "text; closed vocabulary when UML type is enum",
           "migrationVerified": false
         },
@@ -476,7 +476,7 @@
           "name": "businessIdValue",
           "optional": true,
           "type": "string",
-          "target": "carriers.business_id_value",
+          "target": "carriers.business_identifier_value",
           "physicalType": "text; closed vocabulary when UML type is enum",
           "migrationVerified": false
         },
@@ -547,7 +547,7 @@
           "name": "location",
           "optional": false,
           "type": "GeoLocation",
-          "target": "carrier_depots.location",
+          "target": "carrier_depots.{address_line,country_code,region_code,city,latitude,longitude}",
           "physicalType": "structured value; strict shape and referenced IDs validated",
           "migrationVerified": false
         },
@@ -626,7 +626,7 @@
           "name": "status",
           "optional": false,
           "type": "ServiceStatus",
-          "target": "carrier_services.status",
+          "target": "carrier_services.active; ACTIVE/INACTIVE projection",
           "physicalType": "text; closed vocabulary when UML type is enum",
           "migrationVerified": false
         },
@@ -665,7 +665,7 @@
           "name": "kind",
           "optional": false,
           "type": "DIRECT | WITHIN_AREA",
-          "target": "service_lanes.kind",
+          "target": "service_lanes.lane_kind",
           "physicalType": "text; closed vocabulary when UML type is enum",
           "migrationVerified": false
         },
@@ -673,7 +673,7 @@
           "name": "mode",
           "optional": false,
           "type": "TransportMode",
-          "target": "service_lanes.mode",
+          "target": "service_lanes.transport_mode",
           "physicalType": "text; closed vocabulary when UML type is enum",
           "migrationVerified": false
         },
@@ -681,7 +681,7 @@
           "name": "borderReviewRequired",
           "optional": false,
           "type": "boolean",
-          "target": "service_lanes.border_review_required",
+          "target": "service_lanes.cross_border_review_required",
           "physicalType": "boolean",
           "migrationVerified": false
         },
@@ -689,7 +689,7 @@
           "name": "evidence",
           "optional": true,
           "type": "EvidenceRef",
-          "target": "service_lanes.evidence",
+          "target": "service_lanes.evidence_reference",
           "physicalType": "structured value; strict shape and referenced IDs validated",
           "migrationVerified": false
         },
@@ -2459,7 +2459,7 @@
           "name": "name",
           "optional": false,
           "type": "string",
-          "target": "organization_cargo_profiles.name",
+          "target": "organization_cargo_profiles.profile_name",
           "physicalType": "text; closed vocabulary when UML type is enum",
           "migrationVerified": false
         },
@@ -2467,7 +2467,7 @@
           "name": "typicalUnits",
           "optional": false,
           "type": "CargoUnitTemplate[]",
-          "target": "organization_cargo_profiles.unit_templates",
+          "target": "organization_cargo_profiles.typical_units",
           "physicalType": "structured value; strict shape and referenced IDs validated",
           "migrationVerified": false
         },
@@ -2522,7 +2522,7 @@
           "name": "guidance",
           "optional": false,
           "type": "IntakeGuidance",
-          "target": "cargo_categories.intake_guidance",
+          "target": "cargo_categories.{recommended_entry_methods,intake_specification_schema,suggested_requirements,recommended_vehicle_classes}",
           "physicalType": "structured value; strict shape and referenced IDs validated",
           "migrationVerified": false
         },
@@ -2538,7 +2538,7 @@
           "name": "version",
           "optional": false,
           "type": "string",
-          "target": "cargo_categories.version",
+          "target": "cargo_categories.version; integer command revision rendered as a string when required",
           "physicalType": "text; closed vocabulary when UML type is enum",
           "migrationVerified": false
         }
@@ -2805,7 +2805,7 @@
           "name": "maximumWait",
           "optional": true,
           "type": "Duration",
-          "target": "organization_preferences.maximum_wait_seconds",
+          "target": "organization_preferences.maximum_wait_minutes; explicit minutes in API",
           "physicalType": "numeric seconds >= 0",
           "migrationVerified": false
         },
@@ -2986,7 +2986,7 @@
           "name": "role",
           "optional": false,
           "type": "PICKUP | DELIVERY",
-          "target": "service_areas.role",
+          "target": "service_areas.area_role",
           "physicalType": "text; closed vocabulary when UML type is enum",
           "migrationVerified": false
         },
@@ -2994,7 +2994,7 @@
           "name": "inclusion",
           "optional": false,
           "type": "INCLUDE | EXCLUDE",
-          "target": "service_areas.inclusion",
+          "target": "service_areas.coverage",
           "physicalType": "text; closed vocabulary when UML type is enum",
           "migrationVerified": false
         },
@@ -3002,7 +3002,7 @@
           "name": "geography",
           "optional": false,
           "type": "Geography",
-          "target": "service_areas.geography",
+          "target": "service_areas.{granularity,country_code,region_code,city,postal_code,geometry}",
           "physicalType": "structured value; strict shape and referenced IDs validated",
           "migrationVerified": false
         },
@@ -3010,7 +3010,7 @@
           "name": "source",
           "optional": false,
           "type": "CoverageSource",
-          "target": "service_areas.source",
+          "target": "service_areas.{fulfilment_source,fulfilment_partner_id}",
           "physicalType": "text; closed vocabulary when UML type is enum",
           "migrationVerified": false
         },
@@ -3018,7 +3018,7 @@
           "name": "evidence",
           "optional": true,
           "type": "EvidenceRef",
-          "target": "service_areas.evidence",
+          "target": "service_areas.evidence_reference",
           "physicalType": "structured value; strict shape and referenced IDs validated",
           "migrationVerified": false
         },
@@ -3714,7 +3714,7 @@
         "1 PICKUP",
         "0..*"
       ],
-      "physicalTreatment": "service_lanes.origin_service_area_id -> service_areas.id; role PICKUP; same service",
+      "physicalTreatment": "service_lanes.pickup_area_id -> service_areas.id; role PICKUP; same service",
       "migrationVerified": false
     },
     {
@@ -3726,7 +3726,7 @@
         "1 DELIVERY",
         "0..*"
       ],
-      "physicalTreatment": "service_lanes.destination_service_area_id -> service_areas.id; role DELIVERY; same service",
+      "physicalTreatment": "service_lanes.delivery_area_id -> service_areas.id; role DELIVERY; same service",
       "migrationVerified": false
     },
     {

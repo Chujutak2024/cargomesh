@@ -352,6 +352,7 @@ def main():
         route_condition_checks()
         tests('v2',PROFILE)
         run('hac40-request-race', [sys.executable, ROOT/'scripts/check-hac40-request-race.py'])
+        run('hac40-catalog-race', [sys.executable, ROOT/'scripts/check-hac40-catalog-race.py'])
         backup_and_cleanup()
 
 

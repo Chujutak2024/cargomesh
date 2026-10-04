@@ -104,8 +104,8 @@ Diseño físico trazable de las 57 clases, 397 atributos y 93 relaciones del UML
 | `code` | string | `carriers.code` |
 | `commercialName` | string | `carriers.name` |
 | `legalName?` | string | `carriers.legal_name` |
-| `businessIdType?` | string | `carriers.business_id_type` |
-| `businessIdValue?` | string | `carriers.business_id_value` |
+| `businessIdType?` | string | `carriers.business_identifier_type` |
+| `businessIdValue?` | string | `carriers.business_identifier_value` |
 | `registeredCountry?` | string | `carriers.registered_country` |
 | `verifiedContact?` | Contact | `carriers.verified_contact` |
 | `providerType` | ProviderType | `carriers.provider_type` |
@@ -118,7 +118,7 @@ Diseño físico trazable de las 57 clases, 397 atributos y 93 relaciones del UML
 |---|---|---|
 | `id` | UUID | `carrier_depots.id` |
 | `code` | string | `carrier_depots.code` |
-| `location` | GeoLocation | `carrier_depots.location` |
+| `location` | GeoLocation | `carrier_depots.{address_line,country_code,region_code,city,latitude,longitude}` |
 | `active` | boolean | `carrier_depots.active` |
 | `handling?` | HandlingCapability[] | `carrier_depots.handling` |
 
@@ -132,7 +132,7 @@ Diseño físico trazable de las 57 clases, 397 atributos y 93 relaciones del UML
 | `maxWeightKg?` | number | `carrier_services.max_capacity_kg` |
 | `maxVolumeM3?` | number | `carrier_services.max_volume_m3` |
 | `responseChannels` | ResponseChannel[] | `carrier_services.response_channels` |
-| `status` | ServiceStatus | `carrier_services.status` |
+| `status` | ServiceStatus | `carrier_services.active; ACTIVE/INACTIVE projection` |
 | `admittedCargoTypes` | CargoCategory[] | `carrier_services.carrier_service_cargo_categories.cargo_category_id` |
 | `temperatureRange?` | TemperatureRange | `carrier_services.{temperature_min_c,temperature_max_c}` |
 | `requiredCertifications` | Certification[] | `carrier_services.required_certifications` |
@@ -141,10 +141,10 @@ Diseño físico trazable de las 57 clases, 397 atributos y 93 relaciones del UML
 
 | UML | Tipo | Destino físico objetivo |
 |---|---|---|
-| `kind` | DIRECT / WITHIN_AREA | `service_lanes.kind` |
-| `mode` | TransportMode | `service_lanes.mode` |
-| `borderReviewRequired` | boolean | `service_lanes.border_review_required` |
-| `evidence?` | EvidenceRef | `service_lanes.evidence` |
+| `kind` | DIRECT / WITHIN_AREA | `service_lanes.lane_kind` |
+| `mode` | TransportMode | `service_lanes.transport_mode` |
+| `borderReviewRequired` | boolean | `service_lanes.cross_border_review_required` |
+| `evidence?` | EvidenceRef | `service_lanes.evidence_reference` |
 | `validUntil?` | Instant | `service_lanes.valid_until` |
 
 ### ResponseIntegration — `response_integrations`
@@ -489,8 +489,8 @@ Diseño físico trazable de las 57 clases, 397 atributos y 93 relaciones del UML
 | UML | Tipo | Destino físico objetivo |
 |---|---|---|
 | `id` | UUID | `organization_cargo_profiles.id` |
-| `name` | string | `organization_cargo_profiles.name` |
-| `typicalUnits` | CargoUnitTemplate[] | `organization_cargo_profiles.unit_templates` |
+| `name` | string | `organization_cargo_profiles.profile_name` |
+| `typicalUnits` | CargoUnitTemplate[] | `organization_cargo_profiles.typical_units` |
 | `requirements` | CargoRequirement[] | `organization_cargo_profiles.requirements` |
 | `preferredEquipment?` | EquipmentType | `organization_cargo_profiles.preferred_equipment` |
 | `updatedAt` | Instant | `organization_cargo_profiles.updated_at` |
@@ -501,9 +501,9 @@ Diseño físico trazable de las 57 clases, 397 atributos y 93 relaciones del UML
 |---|---|---|
 | `code` | string | `cargo_categories.code` |
 | `name` | string | `cargo_categories.name` |
-| `guidance` | IntakeGuidance | `cargo_categories.intake_guidance` |
+| `guidance` | IntakeGuidance | `cargo_categories.{recommended_entry_methods,intake_specification_schema,suggested_requirements,recommended_vehicle_classes}` |
 | `suggestedEquipment?` | EquipmentType | `cargo_categories.suggested_equipment` |
-| `version` | string | `cargo_categories.version` |
+| `version` | string | `cargo_categories.version; integer command revision rendered as a string when required` |
 
 ### LoadAllocation — `load_allocations`
 
@@ -557,7 +557,7 @@ Diseño físico trazable de las 57 clases, 397 atributos y 93 relaciones del UML
 | UML | Tipo | Destino físico objetivo |
 |---|---|---|
 | `objective?` | RankingObjective | `organization_preferences.objective` |
-| `maximumWait?` | Duration | `organization_preferences.maximum_wait_seconds` |
+| `maximumWait?` | Duration | `organization_preferences.maximum_wait_minutes; explicit minutes in API` |
 | `preferredMode?` | TransportMode | `organization_preferences.preferred_mode` |
 | `preferredEquipment?` | EquipmentType | `organization_preferences.preferred_equipment` |
 | `usualBudget?` | Money | `organization_preferences.usual_budget` |
@@ -592,11 +592,11 @@ Diseño físico trazable de las 57 clases, 397 atributos y 93 relaciones del UML
 
 | UML | Tipo | Destino físico objetivo |
 |---|---|---|
-| `role` | PICKUP / DELIVERY | `service_areas.role` |
-| `inclusion` | INCLUDE / EXCLUDE | `service_areas.inclusion` |
-| `geography` | Geography | `service_areas.geography` |
-| `source` | CoverageSource | `service_areas.source` |
-| `evidence?` | EvidenceRef | `service_areas.evidence` |
+| `role` | PICKUP / DELIVERY | `service_areas.area_role` |
+| `inclusion` | INCLUDE / EXCLUDE | `service_areas.coverage` |
+| `geography` | Geography | `service_areas.{granularity,country_code,region_code,city,postal_code,geometry}` |
+| `source` | CoverageSource | `service_areas.{fulfilment_source,fulfilment_partner_id}` |
+| `evidence?` | EvidenceRef | `service_areas.evidence_reference` |
 | `validUntil?` | Instant | `service_areas.valid_until` |
 | `verifiedAt?` | Instant | `service_areas.verified_at` |
 | `validFrom?` | Instant | `service_areas.valid_from` |
@@ -719,8 +719,8 @@ Diseño físico trazable de las 57 clases, 397 atributos y 93 relaciones del UML
 | 7 | Carrier → CarrierService (publica) | 1 / 0..* | carrier_services.carrier_id -> carriers.id |
 | 8 | CarrierService → ServiceArea (declara) | 1 / 0..* | service_areas.carrier_service_id -> carrier_services.id |
 | 9 | CarrierService → ServiceLane (declara) | 1 / 0..* | service_lanes.carrier_service_id -> carrier_services.id |
-| 10 | ServiceArea → ServiceLane (origen cubierto) | 1 PICKUP / 0..* | service_lanes.origin_service_area_id -> service_areas.id; role PICKUP; same service |
-| 11 | ServiceArea → ServiceLane (destino cubierto) | 1 DELIVERY / 0..* | service_lanes.destination_service_area_id -> service_areas.id; role DELIVERY; same service |
+| 10 | ServiceArea → ServiceLane (origen cubierto) | 1 PICKUP / 0..* | service_lanes.pickup_area_id -> service_areas.id; role PICKUP; same service |
+| 11 | ServiceArea → ServiceLane (destino cubierto) | 1 DELIVERY / 0..* | service_lanes.delivery_area_id -> service_areas.id; role DELIVERY; same service |
 | 12 | CarrierService → ResponseIntegration (responde por) | 1 / 0..* | response_integrations.carrier_service_id -> carrier_services.id; secret reference only |
 | 13 | Carrier → TransportAsset (gestiona) | 1 / 0..* | transport_assets.carrier_id -> carriers.id |
 | 14 | CarrierDepot → TransportAsset (base física) | 0..1 / 0..* | transport_assets.home_depot_id -> carrier_depots.id; nullable; same carrier |

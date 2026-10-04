@@ -22,6 +22,7 @@
     "supabase/tests/15_v2_hac40_facility_commands.test.sql",
     "supabase/tests/16_v2_hac40_request_lifecycle.test.sql",
     "supabase/tests/17_v2_hac40_organization_commands.test.sql",
-    "supabase/tests/18_v2_hac40_full_request_contract.test.sql"
+    "supabase/tests/18_v2_hac40_full_request_contract.test.sql",
+    "supabase/tests/19_v2_hac40_catalog.test.sql"
   ]
 }

@@ -28,7 +28,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
   const serviceIds = serviceRows.map((service) => service.id);
   const carrierIds = [...new Set(serviceRows.map((service) => service.carrier_id))];
   const [carriersResult, categoriesResult, serviceCategoriesResult, areasResult,
-    lanesResult, assetsResult, poolsResult] = await Promise.all([
+    lanesResult, assetsResult, poolsResult, partnersResult] = await Promise.all([
     db.from("carriers").select("id,code,name,status").in("id", carrierIds),
     db.from("cargo_categories").select("id,code").eq("active", true),
     db.from("carrier_service_cargo_categories").select("carrier_service_id,cargo_category_id")
@@ -41,6 +41,8 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
     db.from("capacity_pools")
       .select("id,carrier_id,carrier_service_id,equipment_code,max_weight_kg,max_volume_m3,supported_cargo_category_ids,active")
       .in("carrier_service_id", serviceIds).eq("active", true),
+    db.from("fulfilment_partners").select("id,status,agreement_valid_from,agreement_valid_until")
+      .in("carrier_id", carrierIds),
   ]);
   const carriers = byId(rows(carriersResult));
   const categories = byId(rows(categoriesResult));
@@ -49,6 +51,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
   const laneRows = rows(lanesResult);
   const assets = rows(assetsResult);
   const pools = rows(poolsResult);
+  const partners = byId(rows(partnersResult));
   const assetIds = assets.map((asset) => asset.id);
   const sourceIds = [...assetIds, ...pools.map((pool) => pool.id)];
   const [assetCapabilitiesResult, calendarsResult, maintenancesResult] = await Promise.all([
@@ -115,12 +118,18 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
           id: area.id,
           role: z.enum(["PICKUP", "DELIVERY"]).parse(area.area_role),
           coverage: z.enum(["INCLUDE", "EXCLUDE"]).parse(area.coverage),
-          granularity: z.enum(["COUNTRY", "REGION", "CITY", "POSTAL_CODE"]).parse(area.granularity),
+          granularity: z.enum(["COUNTRY", "REGION", "CITY", "POSTAL_CODE", "POLYGON", "POINTS"]).parse(area.granularity),
           location: {
             countryCode: area.country_code, regionCode: area.region_code,
             city: area.city, postalCode: area.postal_code,
           },
           active: area.active, validFrom: area.valid_from, validUntil: area.valid_until,
+          evidenceAvailable: Boolean(area.evidence_reference && area.verified_at && area.valid_from),
+          partnerAgreement: area.fulfilment_source === "PARTNER" ? (() => {
+            const partner = area.fulfilment_partner_id ? partners.get(area.fulfilment_partner_id) : undefined;
+            return partner ? { status: partner.status, startsAt: partner.agreement_valid_from,
+              endsAt: partner.agreement_valid_until } : null;
+          })() : undefined,
         }));
       const capacities: Capacity[] = [
         ...assets.filter((asset) => asset.carrier_service_id === service.id).map((asset) => {
@@ -177,6 +186,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
         serviceClass: service.service_type, responseChannels: [],
         mode: "ROAD", active: service.active,
         supportedCargoCategoryCodes: supportedCategories.length ? supportedCategories : null,
+        maxWeightKg: service.max_capacity_kg, maxVolumeM3: service.max_volume_m3,
         areas: serviceAreas,
         lanes: laneRows.filter((lane) => lane.carrier_service_id === service.id).map((lane) => ({
           id: lane.id, kind: z.enum(["DIRECT", "WITHIN_AREA"]).parse(lane.lane_kind),
@@ -187,6 +197,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
             .parse(lane.transit_provenance_status),
           pickupAreaId: lane.pickup_area_id, deliveryAreaId: lane.delivery_area_id,
           active: lane.active, validFrom: lane.valid_from, validUntil: lane.valid_until,
+          evidenceAvailable: Boolean(lane.evidence_reference && lane.verified_at && lane.valid_from),
         })),
         capacities,
       };

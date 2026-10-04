@@ -433,13 +433,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "capacity_calendars_ready_pickup_same_service"
-            columns: ["ready_pickup_area_id", "carrier_service_id"]
-            isOneToOne: false
-            referencedRelation: "service_areas"
-            referencedColumns: ["id", "carrier_service_id"]
-          },
-          {
             foreignKeyName: "capacity_calendars_capacity_pool_id_carrier_service_id_fkey"
             columns: ["capacity_pool_id", "carrier_service_id"]
             isOneToOne: false
@@ -452,6 +445,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "carrier_services"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capacity_calendars_ready_pickup_same_service"
+            columns: ["ready_pickup_area_id", "carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "service_areas"
+            referencedColumns: ["id", "carrier_service_id"]
           },
           {
             foreignKeyName: "capacity_calendars_transport_asset_id_carrier_service_id_fkey"
@@ -575,8 +575,10 @@ export type Database = {
           name: string
           recommended_entry_methods: Json
           recommended_vehicle_classes: Json
+          suggested_equipment: string | null
           suggested_requirements: Json
           updated_at: string
+          version: number
         }
         Insert: {
           active?: boolean
@@ -588,8 +590,10 @@ export type Database = {
           name: string
           recommended_entry_methods?: Json
           recommended_vehicle_classes?: Json
+          suggested_equipment?: string | null
           suggested_requirements?: Json
           updated_at?: string
+          version?: number
         }
         Update: {
           active?: boolean
@@ -601,8 +605,10 @@ export type Database = {
           name?: string
           recommended_entry_methods?: Json
           recommended_vehicle_classes?: Json
+          suggested_equipment?: string | null
           suggested_requirements?: Json
           updated_at?: string
+          version?: number
         }
         Relationships: []
       }
@@ -615,6 +621,7 @@ export type Database = {
           code: string
           country_code: string
           created_at: string
+          handling: Json
           id: string
           latitude: number | null
           longitude: number | null
@@ -622,6 +629,7 @@ export type Database = {
           postal_code: string | null
           region_code: string | null
           updated_at: string
+          version: number
         }
         Insert: {
           active?: boolean
@@ -631,6 +639,7 @@ export type Database = {
           code: string
           country_code: string
           created_at?: string
+          handling?: Json
           id?: string
           latitude?: number | null
           longitude?: number | null
@@ -638,6 +647,7 @@ export type Database = {
           postal_code?: string | null
           region_code?: string | null
           updated_at?: string
+          version?: number
         }
         Update: {
           active?: boolean
@@ -647,6 +657,7 @@ export type Database = {
           code?: string
           country_code?: string
           created_at?: string
+          handling?: Json
           id?: string
           latitude?: number | null
           longitude?: number | null
@@ -654,6 +665,7 @@ export type Database = {
           postal_code?: string | null
           region_code?: string | null
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -940,14 +952,16 @@ export type Database = {
           carrier_id: string
           created_at: string
           customs_coordination_included: boolean
-          destination_country: string
+          destination_country: string | null
           destination_region: string | null
           id: string
-          max_capacity_kg: number
+          max_capacity_kg: number | null
           max_volume_m3: number | null
-          origin_country: string
+          origin_country: string | null
           origin_region: string | null
           provider_service_code: string | null
+          required_certifications: Json
+          response_channels: Json
           service_type: string
           supports_cross_border: boolean
           supports_fragile: boolean
@@ -958,20 +972,23 @@ export type Database = {
           temperature_min_c: number | null
           transport_mode: string
           updated_at: string
+          version: number
         }
         Insert: {
           active?: boolean
           carrier_id: string
           created_at?: string
           customs_coordination_included?: boolean
-          destination_country: string
+          destination_country?: string | null
           destination_region?: string | null
           id?: string
-          max_capacity_kg: number
+          max_capacity_kg?: number | null
           max_volume_m3?: number | null
-          origin_country: string
+          origin_country?: string | null
           origin_region?: string | null
           provider_service_code?: string | null
+          required_certifications?: Json
+          response_channels?: Json
           service_type?: string
           supports_cross_border?: boolean
           supports_fragile?: boolean
@@ -982,20 +999,23 @@ export type Database = {
           temperature_min_c?: number | null
           transport_mode?: string
           updated_at?: string
+          version?: number
         }
         Update: {
           active?: boolean
           carrier_id?: string
           created_at?: string
           customs_coordination_included?: boolean
-          destination_country?: string
+          destination_country?: string | null
           destination_region?: string | null
           id?: string
-          max_capacity_kg?: number
+          max_capacity_kg?: number | null
           max_volume_m3?: number | null
-          origin_country?: string
+          origin_country?: string | null
           origin_region?: string | null
           provider_service_code?: string | null
+          required_certifications?: Json
+          response_channels?: Json
           service_type?: string
           supports_cross_border?: boolean
           supports_fragile?: boolean
@@ -1006,6 +1026,7 @@ export type Database = {
           temperature_min_c?: number | null
           transport_mode?: string
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -1019,43 +1040,65 @@ export type Database = {
       }
       carriers: {
         Row: {
+          business_identifier_type: string | null
+          business_identifier_value: string | null
           code: string
           created_at: string
           id: string
+          legal_name: string | null
           name: string
+          operational_phone: string | null
           provider_type: string
           provider_url: string | null
+          registered_country: string | null
           status: string
           supports_webmcp: boolean
           updated_at: string
+          verified_contact: Json | null
+          version: number
         }
         Insert: {
+          business_identifier_type?: string | null
+          business_identifier_value?: string | null
           code: string
           created_at?: string
           id?: string
+          legal_name?: string | null
           name: string
+          operational_phone?: string | null
           provider_type?: string
           provider_url?: string | null
+          registered_country?: string | null
           status?: string
           supports_webmcp?: boolean
           updated_at?: string
+          verified_contact?: Json | null
+          version?: number
         }
         Update: {
+          business_identifier_type?: string | null
+          business_identifier_value?: string | null
           code?: string
           created_at?: string
           id?: string
+          legal_name?: string | null
           name?: string
+          operational_phone?: string | null
           provider_type?: string
           provider_url?: string | null
+          registered_country?: string | null
           status?: string
           supports_webmcp?: boolean
           updated_at?: string
+          verified_contact?: Json | null
+          version?: number
         }
         Relationships: []
       }
       facilities: {
         Row: {
           access_notes: string | null
+          access_restrictions: Json
           active: boolean
           address_line: string
           city: string
@@ -1067,13 +1110,17 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           name: string
+          operating_hours: Json | null
           organization_id: string
           postal_code: string | null
           region_code: string | null
           updated_at: string
+          v2_command_managed: boolean
+          version: number
         }
         Insert: {
           access_notes?: string | null
+          access_restrictions?: Json
           active?: boolean
           address_line: string
           city: string
@@ -1085,13 +1132,17 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name: string
+          operating_hours?: Json | null
           organization_id: string
           postal_code?: string | null
           region_code?: string | null
           updated_at?: string
+          v2_command_managed?: boolean
+          version?: number
         }
         Update: {
           access_notes?: string | null
+          access_restrictions?: Json
           active?: boolean
           address_line?: string
           city?: string
@@ -1103,10 +1154,13 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name?: string
+          operating_hours?: Json | null
           organization_id?: string
           postal_code?: string | null
           region_code?: string | null
           updated_at?: string
+          v2_command_managed?: boolean
+          version?: number
         }
         Relationships: [
           {
@@ -1289,6 +1343,7 @@ export type Database = {
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
+          preferred_equipment_code: string | null
           receiver_company: string | null
           receiver_name: string | null
           receiver_phone: string | null
@@ -1297,6 +1352,7 @@ export type Database = {
           required_equipment_code: string | null
           required_pickup: string
           requires_refrigeration: boolean
+          selection_objective: string | null
           service_type: string
           special_instructions: string | null
           status: string
@@ -1361,6 +1417,7 @@ export type Database = {
           pickup_mode?: string
           pickup_window_end?: string | null
           pickup_window_start?: string | null
+          preferred_equipment_code?: string | null
           receiver_company?: string | null
           receiver_name?: string | null
           receiver_phone?: string | null
@@ -1369,6 +1426,7 @@ export type Database = {
           required_equipment_code?: string | null
           required_pickup: string
           requires_refrigeration?: boolean
+          selection_objective?: string | null
           service_type?: string
           special_instructions?: string | null
           status?: string
@@ -1433,6 +1491,7 @@ export type Database = {
           pickup_mode?: string
           pickup_window_end?: string | null
           pickup_window_start?: string | null
+          preferred_equipment_code?: string | null
           receiver_company?: string | null
           receiver_name?: string | null
           receiver_phone?: string | null
@@ -1441,6 +1500,7 @@ export type Database = {
           required_equipment_code?: string | null
           required_pickup?: string
           requires_refrigeration?: boolean
+          selection_objective?: string | null
           service_type?: string
           special_instructions?: string | null
           status?: string
@@ -1501,6 +1561,136 @@ export type Database = {
             columns: ["requested_by_member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fulfilment_partners: {
+        Row: {
+          agreement_valid_from: string
+          agreement_valid_until: string
+          carrier_id: string
+          coverage_evidence: string
+          created_at: string
+          id: string
+          partner_carrier_ref: string | null
+          registered_name: string
+          status: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          agreement_valid_from: string
+          agreement_valid_until: string
+          carrier_id: string
+          coverage_evidence: string
+          created_at?: string
+          id?: string
+          partner_carrier_ref?: string | null
+          registered_name: string
+          status: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          agreement_valid_from?: string
+          agreement_valid_until?: string
+          carrier_id?: string
+          coverage_evidence?: string
+          created_at?: string
+          id?: string
+          partner_carrier_ref?: string | null
+          registered_name?: string
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fulfilment_partners_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fulfilment_partners_partner_carrier_ref_fkey"
+            columns: ["partner_carrier_ref"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcp_account_links: {
+        Row: {
+          auth_user_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          linked_at: string
+          linked_by_user_id: string
+          oauth_client_id: string
+          organization_id: string
+          organization_member_id: string
+          revocation_reason: string | null
+          revoked_at: string | null
+          revoked_by_user_id: string | null
+          scopes: string[]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          linked_at?: string
+          linked_by_user_id: string
+          oauth_client_id: string
+          organization_id: string
+          organization_member_id: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by_user_id?: string | null
+          scopes: string[]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          linked_at?: string
+          linked_by_user_id?: string
+          oauth_client_id?: string
+          organization_id?: string
+          organization_member_id?: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by_user_id?: string | null
+          scopes?: string[]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_account_links_member_identity_fk"
+            columns: [
+              "organization_member_id",
+              "organization_id",
+              "auth_user_id",
+            ]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["id", "organization_id", "auth_user_id"]
+          },
+          {
+            foreignKeyName: "mcp_account_links_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1687,16 +1877,20 @@ export type Database = {
           default_requirements: Json
           id: string
           organization_id: string
+          preferred_equipment: string | null
           preferred_vehicle_classes: Json
           priority: number
           profile_name: string
+          requirements: Json
           typical_entry_quantity: number | null
           typical_height_cm: number | null
           typical_length_cm: number | null
           typical_unit_weight_kg: number | null
+          typical_units: Json
           typical_units_per_entry: number
           typical_width_cm: number | null
           updated_at: string
+          version: number
         }
         Insert: {
           active?: boolean
@@ -1706,16 +1900,20 @@ export type Database = {
           default_requirements?: Json
           id?: string
           organization_id: string
+          preferred_equipment?: string | null
           preferred_vehicle_classes?: Json
           priority?: number
           profile_name: string
+          requirements?: Json
           typical_entry_quantity?: number | null
           typical_height_cm?: number | null
           typical_length_cm?: number | null
           typical_unit_weight_kg?: number | null
+          typical_units?: Json
           typical_units_per_entry?: number
           typical_width_cm?: number | null
           updated_at?: string
+          version?: number
         }
         Update: {
           active?: boolean
@@ -1725,16 +1923,20 @@ export type Database = {
           default_requirements?: Json
           id?: string
           organization_id?: string
+          preferred_equipment?: string | null
           preferred_vehicle_classes?: Json
           priority?: number
           profile_name?: string
+          requirements?: Json
           typical_entry_quantity?: number | null
           typical_height_cm?: number | null
           typical_length_cm?: number | null
           typical_unit_weight_kg?: number | null
+          typical_units?: Json
           typical_units_per_entry?: number
           typical_width_cm?: number | null
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -1809,11 +2011,18 @@ export type Database = {
           default_strategy: string
           id: string
           max_pickup_wait_hours: number
+          maximum_wait_minutes: number | null
+          objective: string | null
           organization_id: string
           preferred_carrier_id: string | null
+          preferred_equipment: string | null
+          preferred_mode: string | null
           preferred_vehicle_brand: string | null
           selection_mode: string
           updated_at: string
+          usual_budget: Json | null
+          valid_until: string | null
+          version: number
         }
         Insert: {
           allow_auto_booking?: boolean
@@ -1826,11 +2035,18 @@ export type Database = {
           default_strategy?: string
           id?: string
           max_pickup_wait_hours?: number
+          maximum_wait_minutes?: number | null
+          objective?: string | null
           organization_id: string
           preferred_carrier_id?: string | null
+          preferred_equipment?: string | null
+          preferred_mode?: string | null
           preferred_vehicle_brand?: string | null
           selection_mode?: string
           updated_at?: string
+          usual_budget?: Json | null
+          valid_until?: string | null
+          version?: number
         }
         Update: {
           allow_auto_booking?: boolean
@@ -1843,11 +2059,18 @@ export type Database = {
           default_strategy?: string
           id?: string
           max_pickup_wait_hours?: number
+          maximum_wait_minutes?: number | null
+          objective?: string | null
           organization_id?: string
           preferred_carrier_id?: string | null
+          preferred_equipment?: string | null
+          preferred_mode?: string | null
           preferred_vehicle_brand?: string | null
           selection_mode?: string
           updated_at?: string
+          usual_budget?: Json | null
+          valid_until?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -1871,6 +2094,7 @@ export type Database = {
           business_identifier_type: string | null
           business_identifier_value: string | null
           code: string
+          corporate_email: string | null
           corporate_phone: string | null
           country_code: string | null
           created_at: string
@@ -1880,12 +2104,15 @@ export type Database = {
           name: string
           status: string
           updated_at: string
+          v2_command_managed: boolean
           verified_corporate_email: string | null
+          version: number
         }
         Insert: {
           business_identifier_type?: string | null
           business_identifier_value?: string | null
           code: string
+          corporate_email?: string | null
           corporate_phone?: string | null
           country_code?: string | null
           created_at?: string
@@ -1895,12 +2122,15 @@ export type Database = {
           name: string
           status?: string
           updated_at?: string
+          v2_command_managed?: boolean
           verified_corporate_email?: string | null
+          version?: number
         }
         Update: {
           business_identifier_type?: string | null
           business_identifier_value?: string | null
           code?: string
+          corporate_email?: string | null
           corporate_phone?: string | null
           country_code?: string | null
           created_at?: string
@@ -1910,7 +2140,9 @@ export type Database = {
           name?: string
           status?: string
           updated_at?: string
+          v2_command_managed?: boolean
           verified_corporate_email?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -1993,17 +2225,20 @@ export type Database = {
           country_code: string
           coverage: string
           created_at: string
-          evidence_reference: string
+          evidence_reference: string | null
+          fulfilment_partner_id: string | null
           fulfilment_source: string
+          geometry: Json | null
           granularity: string
           id: string
           partner_reference: string | null
           postal_code: string | null
           region_code: string | null
           updated_at: string
-          valid_from: string
+          valid_from: string | null
           valid_until: string | null
-          verified_at: string
+          verified_at: string | null
+          version: number
         }
         Insert: {
           active?: boolean
@@ -2013,17 +2248,20 @@ export type Database = {
           country_code: string
           coverage: string
           created_at?: string
-          evidence_reference: string
+          evidence_reference?: string | null
+          fulfilment_partner_id?: string | null
           fulfilment_source: string
+          geometry: Json | null
           granularity: string
           id?: string
           partner_reference?: string | null
           postal_code?: string | null
           region_code?: string | null
           updated_at?: string
-          valid_from: string
+          valid_from?: string | null
           valid_until?: string | null
-          verified_at: string
+          verified_at?: string | null
+          version?: number
         }
         Update: {
           active?: boolean
@@ -2033,17 +2271,20 @@ export type Database = {
           country_code?: string
           coverage?: string
           created_at?: string
-          evidence_reference?: string
+          evidence_reference?: string | null
+          fulfilment_partner_id?: string | null
           fulfilment_source?: string
+          geometry?: Json | null
           granularity?: string
           id?: string
           partner_reference?: string | null
           postal_code?: string | null
           region_code?: string | null
           updated_at?: string
-          valid_from?: string
+          valid_from?: string | null
           valid_until?: string | null
-          verified_at?: string
+          verified_at?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -2053,6 +2294,13 @@ export type Database = {
             referencedRelation: "carrier_services"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "service_areas_fulfilment_partner_id_fkey"
+            columns: ["fulfilment_partner_id"]
+            isOneToOne: false
+            referencedRelation: "fulfilment_partners"
+            referencedColumns: ["id"]
+          },
         ]
       }
       service_lanes: {
@@ -2060,61 +2308,64 @@ export type Database = {
           active: boolean
           carrier_service_id: string
           created_at: string
-          cross_border_review_required: boolean
           cross_border_prohibited: boolean
           cross_border_prohibition_reference: string | null
+          cross_border_review_required: boolean
           delivery_area_id: string
-          evidence_reference: string
+          evidence_reference: string | null
           id: string
           lane_kind: string
           pickup_area_id: string
           planned_transit_minutes: number | null
-          transport_mode: string
           transit_provenance_status: string
+          transport_mode: string
           updated_at: string
-          valid_from: string
+          valid_from: string | null
           valid_until: string | null
-          verified_at: string
+          verified_at: string | null
+          version: number
         }
         Insert: {
           active?: boolean
           carrier_service_id: string
           created_at?: string
-          cross_border_review_required?: boolean
           cross_border_prohibited?: boolean
           cross_border_prohibition_reference?: string | null
+          cross_border_review_required?: boolean
           delivery_area_id: string
-          evidence_reference: string
+          evidence_reference?: string | null
           id?: string
           lane_kind?: string
           pickup_area_id: string
           planned_transit_minutes?: number | null
-          transport_mode?: string
           transit_provenance_status?: string
+          transport_mode?: string
           updated_at?: string
-          valid_from: string
+          valid_from?: string | null
           valid_until?: string | null
-          verified_at: string
+          verified_at?: string | null
+          version?: number
         }
         Update: {
           active?: boolean
           carrier_service_id?: string
           created_at?: string
-          cross_border_review_required?: boolean
           cross_border_prohibited?: boolean
           cross_border_prohibition_reference?: string | null
+          cross_border_review_required?: boolean
           delivery_area_id?: string
-          evidence_reference?: string
+          evidence_reference?: string | null
           id?: string
           lane_kind?: string
           pickup_area_id?: string
           planned_transit_minutes?: number | null
-          transport_mode?: string
           transit_provenance_status?: string
+          transport_mode?: string
           updated_at?: string
-          valid_from?: string
+          valid_from?: string | null
           valid_until?: string | null
-          verified_at?: string
+          verified_at?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -2276,34 +2527,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      command_v2_organization: {
-        Args: { p_organization_id: string; p_member_id: string; p_idempotency_key: string;
-          p_expected_version: number; p_value: Json }
-        Returns: Json
-      }
-      command_v2_freight_request: {
-        Args: {
-          p_organization_id: string
-          p_member_id: string
-          p_idempotency_key: string
-          p_request_id: string
-          p_expected_version: number
-          p_action: string
-          p_value: Json
-        }
-        Returns: Json
-      }
-      command_v2_facility: {
-        Args: {
-          p_organization_id: string
-          p_member_id: string
-          p_idempotency_key: string
-          p_facility_id: string | null
-          p_expected_version: number | null
-          p_value: Json
-        }
-        Returns: Json
-      }
       assert_booking_bridge_identity: {
         Args: {
           p_authorization: Database["public"]["Tables"]["booking_authorizations"]["Row"]
@@ -2311,6 +2534,53 @@ export type Database = {
           p_tool_name: string
         }
         Returns: undefined
+      }
+      command_v2_catalog: {
+        Args: {
+          p_carrier_id: string | null
+          p_expected_version: number | null
+          p_id: string | null
+          p_idempotency_key: string
+          p_kind: string
+          p_member_id: string
+          p_organization_id: string
+          p_service_id: string | null
+          p_value: Json
+        }
+        Returns: Json
+      }
+      command_v2_facility: {
+        Args: {
+          p_expected_version: number | null
+          p_facility_id: string | null
+          p_idempotency_key: string
+          p_member_id: string
+          p_organization_id: string
+          p_value: Json
+        }
+        Returns: Json
+      }
+      command_v2_freight_request: {
+        Args: {
+          p_action: string
+          p_expected_version: number
+          p_idempotency_key: string
+          p_member_id: string
+          p_organization_id: string
+          p_request_id: string
+          p_value: Json
+        }
+        Returns: Json
+      }
+      command_v2_organization: {
+        Args: {
+          p_expected_version: number
+          p_idempotency_key: string
+          p_member_id: string
+          p_organization_id: string
+          p_value: Json
+        }
+        Returns: Json
       }
       create_v2_freight_request: {
         Args: {
@@ -2385,6 +2655,19 @@ export type Database = {
           provider_offer_reference: string
           selection_mode: string
         }[]
+      }
+      read_v2_catalog: {
+        Args: {
+          p_carrier_id: string | null
+          p_id: string | null
+          p_kind: string
+          p_limit: number
+          p_member_id: string
+          p_offset: number
+          p_organization_id: string
+          p_service_id: string | null
+        }
+        Returns: Json
       }
       record_provider_booking_result: {
         Args: {

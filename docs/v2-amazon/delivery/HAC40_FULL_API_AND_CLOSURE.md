@@ -42,18 +42,17 @@ Estos necesitan la cadena V2 aplicada en el entorno elegido. La implementación 
 
 Rutas: `cargomesh/src/server/hono/routes/facilities.ts` y `routes/freight/requests.ts`; composición `hono/app.ts`. Persistencia: módulos `facilities` y `freight-requests`. `GET /health` es soporte técnico y no otro endpoint de negocio.
 
-## Catálogo integral que falta implementar
+## Catalogo B1 implementado
+
+[Contrato exacto de catalogo, atributos, permisos y limites](./HAC40_CATALOG_API.md): 36 operaciones nuevas sobre preferencias, perfiles, categorias, carriers, depots, servicios, areas, lanes y socios. Sumadas a las 13 anteriores son **49 endpoints de negocio**, sin contar health. Rutas en `hono/routes/catalog.ts`, servicio de aplicacion `modules/catalog`, migracion `20261004032151_hac40_catalog.sql`.
+
+## Familias integrales pendientes
 
 **Objetivo contractual, no anuncio de disponibilidad.** Todas estas familias permanecen en HAC-40 o en la principal dependiente indicada; frontend puede preparar mocks explícitos contra ellas, pero no sustituir errores del API por mocks.
 
 | Bloque / clases | GET requeridos | POST requeridos / semántica | Permiso y responsable |
 |---|---|---|---|
-| OrganizationPreferences | `/organizations/current/preferences` | `/organizations/current/preferences/revisions` | propietario tenant, HAC-40; organización implementada; onboarding/miembros HAC-41 |
-| OrganizationMember, McpAccountLink | `/organizations/current/members`, `/identity/mcp/links` | invitación/revisión/revocación de miembros; consentimiento y revocación de links | HAC-41 Axel; no autoconceder roles/scopes |
-| CargoProfile, CargoCategory | `/cargo/profiles`, `/cargo/profiles/:id`, `/cargo/categories` | `/cargo/profiles`, `/cargo/profiles/:id/revisions`; publicación versionada de categorías por administración | HAC-40; perfiles del tenant y vocabulario de referencia separado |
-| Carrier, CarrierOperator | `/carriers`, `/carriers/:id`, `/carriers/:id/operators` | alta/revisión carrier; invitación/revocación operadores | HAC-40 catálogo / HAC-41 identidad; principal carrier verificado |
-| CarrierDepot, CarrierService, ServiceArea, ServiceLane | colecciones e individual bajo `/carriers/:id/depots`, `/services`, `/areas`, `/lanes` | alta y `/revisions` de cada colección/recurso | operador autorizado del carrier; no inferir lanes inversas |
-| FulfilmentPartner, ResponseIntegration | `/carriers/:id/partners`, `/integrations` | alta/revisión socios vigentes y configuración de respuesta | carrier; referencia de secreto, nunca valor en DTO |
+| OrganizationMember, CarrierOperator, McpAccountLink, ResponseIntegration | `/organizations/current/members`, `/identity/mcp/links` | invitación/revisión/revocación de miembros; consentimiento y revocación de links | HAC-41 Axel; no autoconceder roles/scopes |
 | TransportAsset / RoadVehicle, VehicleCombination | `/carriers/:id/assets`, `/combinations` e individuales | alta/revisiones; acoplamiento/desacoplamiento de combinaciones | carrier; atributos completos y compatibilidad de miembros |
 | Driver, DriverAssignment, VehicleAssignment, AssetStatusEvent | `/carriers/:id/drivers`, `/assignments`, `/assets/:assetId/events` | altas/revisiones/asignación/liberación y eventos válidos de estado | carrier; licencia, ventana y no-solape |
 | AssetCargoCapability | `/carriers/:id/assets/:assetId/capabilities` | alta/revisión de capacidades con evidencia y vigencia | carrier; resolver multiplicidad UML sin asumir catálogo global |
@@ -94,7 +93,7 @@ Los equipos de intención incorporan ISO_CONTAINER, RAIL_WAGON y AIR_ULD junto a
 
 ## Persistencia actual y cierre pendiente
 
-Las migraciones nuevas completan atributos y comandos de Facility y Organization, y revisiones/presentación de FreightRequest. Organization exige OWNER y separa correo descriptivo de correo verificado; la revisión no concede roles ni identidad. Recibos de mutación privados, RLS y sin grants cliente; creación conserva su recibo original. Las funciones privilegiadas verifican identidad real, pertenencia y rol antes de leer/escribir. Las filas legacy de sede conservan sus grants anteriores; al entrar por el comando V2 quedan protegidas. Una edición legacy también incrementa versión para no ocultar carreras. Las sedes gestionadas no permiten actualizar directamente su estado ni retirar su marca.
+Las migraciones nuevas completan atributos/comandos de Facility y Organization, revisiones de FreightRequest y el catalogo B1 descrito arriba. Organization exige OWNER y separa correo descriptivo de correo verificado; la revisión no concede roles ni identidad. Recibos de mutación privados, RLS y sin grants cliente; creación conserva su recibo original. Las funciones privilegiadas verifican identidad real, pertenencia y rol antes de leer/escribir. Las filas legacy de sede conservan sus grants anteriores; al entrar por el comando V2 quedan protegidas. Una edición legacy también incrementa versión para no ocultar carreras. Las sedes gestionadas no permiten actualizar directamente su estado ni retirar su marca.
 
 La revisión de solicitud reutiliza la validación/canonización SQL existente mediante una fila transitoria creada/copied/eliminada dentro de una sola transacción. No hay commits intermedios ni salida de esa fila; se preservan el código y recibo de creación. La presentación valida el snapshot y cambia únicamente DRAFT → PENDING: no crea oferta/reserva/booking.
 
