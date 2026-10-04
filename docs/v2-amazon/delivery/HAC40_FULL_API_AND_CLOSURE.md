@@ -8,7 +8,7 @@ La recuperación autorizada incorpora las **57 clases, 397 atributos y 93 relaci
 
 El [DER físico integral](../models/FULL_MODEL_DER.md) fija un destino objetivo para cada atributo y un tratamiento explícito para cada relación, incluidas las divergencias de selección multi-oferta. `python scripts/build-v2-full-der.py --check` detecta cambios o huecos entre el UML y los artefactos publicados. Todos sus campos `migrationVerified` siguen siendo falsos: el diseño no acredita que la cadena SQL implemente esos destinos.
 
-Principal: HAC-40, Cristhian. Habilitador: HAC-27 en esta misma entrega. Rama `codex/v2-full-backend`, desde `codex/v2-amazon-contracts`; target `feat/cycle-3-integration`. No se cambia la raíz `cargomesh/` ni se añade un servidor backend separado. Hono y MCP consumen los mismos servicios de aplicación.
+Principal: HAC-40, Cristhian. Habilitador: HAC-27 en esta misma entrega. Rama `codex/v2-full-backend`, desde `codex/v2-amazon-contracts`; target de entregas nuevas `codex/v2-amazon-contracts` por decisión del 4 oct. El PR #99 ya se integró en el ciclo anterior; ese corte se traslada una sola vez a la base y no se repite su merge. No se cambia la raíz `cargomesh/` ni se añade un servidor backend separado. Hono y MCP consumen los mismos servicios de aplicación.
 
 ## Contrato de transporte común
 

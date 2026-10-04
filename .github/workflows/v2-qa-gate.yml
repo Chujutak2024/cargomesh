@@ -4,8 +4,6 @@ on:
   pull_request:
     branches:
       - codex/v2-amazon-contracts
-      - feat/cycle-2-integration
-      - feat/cycle-3-integration
 
 permissions:
   contents: read
