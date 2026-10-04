@@ -6,6 +6,12 @@
 .history p{margin:0;padding:.65rem .8rem;border-radius:10px;font-size:.89rem;line-height:1.4;overflow-wrap:anywhere}
 .assistant{background:#edf5fb;align-self:flex-start}.user{background:#d9f3eb;align-self:flex-end}
 .prompt{overflow:auto;max-height:9rem;padding:.7rem 1rem;border-top:1px solid #e3eaf0;font-size:.87rem}.prompt ol{margin:.45rem 0 0;padding-left:1.35rem}.prompt li{margin:.2rem 0}
-.composer{padding:.7rem 1rem;display:grid;gap:.35rem}.composer label{font-size:.78rem;font-weight:700}.composer>div{display:flex;gap:.4rem}.composer input{min-width:0;flex:1;border:1px solid #aebfcd;border-radius:7px;padding:.6rem}.composer button,.actions button{background:#0b61aa;color:#fff;border:0;border-radius:7px;padding:.55rem .75rem;cursor:pointer}.composer button:disabled,.actions button:disabled{opacity:.45;cursor:not-allowed}
+.composer{padding:.7rem 1rem;display:grid;gap:.35rem}.composer label{font-size:.78rem;font-weight:700}.composer>div{display:flex;gap:.4rem}.composer input{min-width:0;flex:1;border:1px solid #aebfcd;border-radius:7px;padding:.6rem;background:#fff;color:#14233d}.composer button,.actions button{background:#0b61aa;color:#fff;border:0;border-radius:7px;padding:.55rem .75rem;cursor:pointer}.composer button:disabled,.actions button:disabled{opacity:.45;cursor:not-allowed}
 .link{border:0;background:transparent;color:#075795;text-decoration:underline;align-self:flex-start;padding:.2rem 1rem .5rem;cursor:pointer}.actions{display:flex;flex-wrap:wrap;gap:.4rem;padding:.5rem 1rem}.notice{font-size:.72rem;color:#526477;line-height:1.35;margin:.3rem 1rem 1rem}
+.panel [aria-label="Optional voice controls"]{display:grid;gap:.45rem;padding:.25rem 1rem .65rem;font-size:.78rem;max-height:11rem;overflow:auto}
+.panel [aria-label="Optional voice controls"] label{display:grid;gap:.25rem;font-weight:600}
+.panel [aria-label="Optional voice controls"] textarea{width:100%;min-height:2.5rem;resize:vertical;border:1px solid #aebfcd;border-radius:7px;background:#fff;color:#14233d;padding:.45rem;font:inherit}
+.panel [aria-label="Optional voice controls"] button{justify-self:start;border:1px solid #b8cbd9;background:#edf5fb;color:#075795;border-radius:7px;padding:.4rem .6rem;cursor:pointer;font:inherit}
+.panel [aria-label="Optional voice controls"] button:disabled{opacity:.5;cursor:not-allowed}
+.panel [aria-label="Optional voice controls"] p{margin:0;color:#526477}
 @media(max-width:520px){.shell{right:.6rem;bottom:.6rem}.panel{max-height:calc(100dvh - 5rem)}}
