@@ -75,6 +75,8 @@ export async function interpretConversationTurn(
 ) {
   const config = options.config ?? conversationBedrockConfig();
   const fallback = { schemaVersion: "2.0" as const, interpretation: interpretDeterministically(input), mode: "DETERMINISTIC" as const, telemetry: null };
+  // Explicit business commands stay deterministic; the model only proposes ambiguous chat details.
+  if (!["PROVIDE", "CORRECT"].includes(fallback.interpretation.intent)) return fallback;
   if (!config.enabled || !config.region || !config.modelId) return fallback;
   const started = (options.now ?? Date.now)();
   try {

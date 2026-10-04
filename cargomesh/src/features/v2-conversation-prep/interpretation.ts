@@ -38,7 +38,7 @@ export function interpretDeterministically(input: InterpretationRequest): Interp
   if (/\b(book|booking|reserve|reservation)\b/.test(lower)) return { intent: "BOOKING", fields: [] };
   if (/^(start over|reset|new request)$/i.test(text)) return { intent: "START_OVER", fields: [] };
   if (/^(help|what can you do)\??$/i.test(text)) return { intent: "HELP", fields: [] };
-  if (/\b(evaluate|eligib|road options|road result)\b/.test(lower)) return { intent: "EVALUATE", fields: [] };
+  if (/\b(evaluate|eligib|road options|road result|check road)\b/.test(lower)) return { intent: "EVALUATE", fields: [] };
   if (/\b(read|show|retrieve)\b.*\b(draft|request)\b/.test(lower)) return { intent: "READ", fields: [] };
   if (/\b(create|save|submit)\b.*\b(draft|request)\b/.test(lower)) return { intent: "CREATE", fields: [] };
   const correcting = /^(?:correct|change|update)\b/i.test(text);

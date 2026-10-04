@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { FreightRequestV2Data, IntakeOptionsData, RoadServiceabilityEvaluationV2Data } from "./contracts";
 import type { V2IntakePrototypeDraft } from "./prototype-model";
 import { validatePrototypeReview } from "./prototype-model";
-import { CONVERSATION_FIELDS, FIELD_QUESTION, matchingConversationChoices, parseConversationField, type ConversationField, type GuidedConversationField } from "./conversation-fields";
+import { CONVERSATION_FIELDS, FIELD_QUESTION, choicesForField, matchingConversationChoices, parseConversationField, type ConversationField, type GuidedConversationField } from "./conversation-fields";
 import { useConversationVoice } from "@/features/v2-conversation-prep/voice-controls";
 import { InterpretationResponseSchema, interpretDeterministically, type Interpretation } from "@/features/v2-conversation-prep/interpretation";
 import type { V2IntakeApiError } from "./v2-intake-client";
@@ -214,6 +214,14 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         const field = suggestion.field as ConversationField;
         const parsed = parseConversationField(field, suggestion.value, options);
         if (parsed === null) {
+          if (field === "categoryCode") {
+            onField("cargoDescription", suggestion.value);
+            const categories = choicesForField("categoryCode", options);
+            const examples = [categories.find((choice) => choice.value === "MACHINERY"), categories.find((choice) => choice.value === "GENERAL")]
+              .filter((choice): choice is { value: string; label: string } => Boolean(choice)).map((choice) => choice.label).join(" or ");
+            add(value, `I noted “${suggestion.value}” as the cargo description. ${FIELD_QUESTION.categoryCode}${examples ? ` For example, ${examples}.` : ""}`);
+            return;
+          }
           const matches = matchingConversationChoices(field, suggestion.value, options);
           if (matches.length > 1) {
             setChoices(matches.map((choice) => ({ ...choice, field })));
@@ -254,7 +262,6 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         {!request && !awaitingConfirmation && !interpretationBusy && nextField && !history.at(-1)?.text.includes(FIELD_QUESTION[nextField]) && <p className={styles.nextQuestion}>{FIELD_QUESTION[nextField]}</p>}
         {choices.length > 0 && <div className={styles.choiceList} aria-label="Confirm a location">{choices.map((choice) => <button key={choice.value} type="button" onClick={() => { onField(choice.field, choice.value); setChoices([]); add(null, `Confirmed ${choice.label}. ${FIELD_QUESTION[missingField(draft, new Set([choice.field])) ?? "categoryCode"]}`); }}>{choice.label}</button>)}</div>}
         {!request && !nextField && !awaitingConfirmation && !busy && <button type="button" className={styles.suggestion} onClick={() => { setAwaitingConfirmation(true); add(null, draftSummary(draft, options)); }}>Review draft before saving</button>}
-        {request && !draftDirty && <div className={styles.suggestions}><button type="button" onClick={() => { add(null, `Reading ${request.referenceCode}…`); onRead(); }}>Show saved draft</button><button type="button" onClick={() => { add(null, "Checking the current saved version…"); onEvaluate(); }}>Check ROAD</button></div>}
         {draftDirty && <p className={styles.notice} role="status">Local edits are not saved. ROAD cannot be reevaluated for them yet.</p>}
         {busy && <p className={styles.loading} role="status">Working on your saved request…</p>}
         <div ref={endRef} />

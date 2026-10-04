@@ -11,6 +11,15 @@ test("disabled Bedrock uses deterministic extraction without an AWS call", async
   assert.equal(result.interpretation.fields.length, 2);
 });
 
+test("an explicit ROAD command bypasses the model and retains domain intent", async () => {
+  const config = conversationBedrockConfig({ CARGOMESH_BEDROCK_CONVERSATION_ENABLED: "true", CARGOMESH_BEDROCK_REGION: "us-east-1", CARGOMESH_BEDROCK_MODEL_ID: "test-model" });
+  const result = await interpretConversationTurn({ schemaVersion: "2.0", text: "Check ROAD for my saved draft.", currentField: null }, {
+    config, invoke: async () => { throw new Error("explicit action should not reach the model"); },
+  });
+  assert.equal(result.mode, "DETERMINISTIC");
+  assert.equal(result.interpretation.intent, "EVALUATE");
+});
+
 test("configuration bounds tokens and timeout and never embeds credentials", () => {
   const config = conversationBedrockConfig({ CARGOMESH_BEDROCK_CONVERSATION_ENABLED: "true", CARGOMESH_BEDROCK_REGION: "us-east-1", CARGOMESH_BEDROCK_MODEL_ID: "test-model", CARGOMESH_BEDROCK_CONVERSATION_MAX_TOKENS: "99999", CARGOMESH_BEDROCK_CONVERSATION_TIMEOUT_MS: "99999" });
   assert.equal(config.maxTokens, 300);
