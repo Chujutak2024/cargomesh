@@ -17,7 +17,7 @@ export const InterpretationRequestSchema = z.object({
 export const InterpretationSchema = z.object({
   intent: z.enum(["PROVIDE", "CORRECT", "CREATE", "READ", "EVALUATE", "PRICE", "BOOKING", "HELP", "START_OVER"]),
   fields: z.array(z.object({ field: ConversationFieldNameSchema, value: z.string().trim().min(1).max(200) }).strict()).max(12),
-  acknowledgment: z.enum(["Got it.", "Thanks, I have that.", "Understood."]).optional(),
+  acknowledgment: z.enum(["Got it.", "Thanks, I have that.", "Understood.", "Entendido.", "Gracias, lo tengo.", "De acuerdo."]).optional(),
 }).strict();
 
 export const InterpretationResponseSchema = z.object({
@@ -34,14 +34,14 @@ export type Interpretation = z.infer<typeof InterpretationSchema>;
 export function interpretDeterministically(input: InterpretationRequest): Interpretation {
   const text = input.text.trim();
   const lower = text.toLowerCase();
-  if (/\b(price|quote|cost|rate)\b/.test(lower)) return { intent: "PRICE", fields: [] };
-  if (/\b(book|booking|reserve|reservation)\b/.test(lower)) return { intent: "BOOKING", fields: [] };
-  if (/^(start over|reset|new request)$/i.test(text)) return { intent: "START_OVER", fields: [] };
-  if (/^(help|what can you do)\??$/i.test(text)) return { intent: "HELP", fields: [] };
-  if (/\b(evaluate|eligib|road options|road result|check road)\b/.test(lower)) return { intent: "EVALUATE", fields: [] };
-  if (/\b(read|show|retrieve)\b.*\b(draft|request)\b/.test(lower)) return { intent: "READ", fields: [] };
-  if (/\b(create|save|submit)\b.*\b(draft|request)\b/.test(lower)) return { intent: "CREATE", fields: [] };
-  const correcting = /^(?:correct|change|update)\b/i.test(text);
+  if (/\b(price|quote|cost|rate|precio|cotizaci[oó]n|costo|tarifa)\b/.test(lower)) return { intent: "PRICE", fields: [] };
+  if (/\b(book|booking|reserve|reservation|reservar|reserva|contratar)\b/.test(lower)) return { intent: "BOOKING", fields: [] };
+  if (/^(start over|reset|new request|empezar de nuevo|reiniciar|nueva solicitud)$/i.test(text)) return { intent: "START_OVER", fields: [] };
+  if (/^(help|what can you do|ayuda|qu[eé] puedes hacer)\??$/i.test(text)) return { intent: "HELP", fields: [] };
+  if (/\b(evaluate|eligib|road options|road result|check road|evaluar|elegibilidad|opciones road|revisar road)\b/.test(lower)) return { intent: "EVALUATE", fields: [] };
+  if (/\b(read|show|retrieve|leer|mostrar|ver)\b.*\b(draft|request|borrador|solicitud)\b/.test(lower)) return { intent: "READ", fields: [] };
+  if (/\b(create|save|submit|crear|guardar|enviar)\b.*\b(draft|request|borrador|solicitud)\b/.test(lower)) return { intent: "CREATE", fields: [] };
+  const correcting = /^(?:correct|change|update|corregir|cambiar|actualizar)\b/i.test(text);
   if (correcting) {
     const correction = /^(?:correct|change|update)\s+(?:the\s+)?(pickup|origin|delivery|destination|cargo category|packaging|quantity|weight|volume|equipment)\s+(?:to|as)\s+(.+)$/i.exec(text);
     const fieldsByName = { pickup: "originFacilityId", origin: "originFacilityId", delivery: "destinationFacilityId", destination: "destinationFacilityId", "cargo category": "categoryCode", packaging: "packaging", quantity: "unitQuantity", weight: "unitWeightPerUnitKg", volume: "unitVolumePerUnitM3", equipment: "requiredEquipment" } as const;
@@ -49,32 +49,32 @@ export function interpretDeterministically(input: InterpretationRequest): Interp
     return { intent: "CORRECT", fields: [{ field: fieldsByName[correction[1].toLowerCase() as keyof typeof fieldsByName], value: correction[2].trim() }] };
   }
   const fields: Interpretation["fields"] = [];
-  const route = /\bfrom\s+([^,]+?)\s+to\s+([^,]+?)(?:[,.]|$)/i.exec(text);
+  const route = /\b(?:from|de)\s+([^,]+?)\s+(?:to|a)\s+([^,]+?)(?:[,.]|$)/i.exec(text);
   if (route) {
     fields.push({ field: "originFacilityId", value: route[1].trim() });
     fields.push({ field: "destinationFacilityId", value: route[2].trim() });
   } else {
-    const origin = /\b(?:from|pickup (?:in|at))\s+([^,.]+?)(?:[,.]|$)/i.exec(text);
-    const destination = /\b(?:to|deliver (?:in|at))\s+([^,.]+?)(?:[,.]|$)/i.exec(text);
+    const origin = /\b(?:from|pickup (?:in|at)|recojo (?:en|desde)|recoger (?:en|desde))\s+([^,.]+?)(?:[,.]|$)/i.exec(text);
+    const destination = /\b(?:to|deliver (?:in|at)|entrega (?:en|a)|entregar (?:en|a))\s+([^,.]+?)(?:[,.]|$)/i.exec(text);
     if (origin) fields.push({ field: "originFacilityId", value: origin[1].trim() });
     if (destination) fields.push({ field: "destinationFacilityId", value: destination[1].trim() });
   }
-  const count = /\b(\d+)\s+(units?|pallets?|boxes?|crates?)\b/i.exec(text);
+  const count = /\b(\d+)\s+(units?|pallets?|boxes?|crates?|unidades?|palets?|pallets?|cajas?)\b/i.exec(text);
   if (count) {
     fields.push({ field: "unitQuantity", value: count[1] });
     const packaging = count[2].toLowerCase();
     if (packaging.startsWith("pallet")) fields.push({ field: "packaging", value: "PALLET" });
-    if (packaging.startsWith("box")) fields.push({ field: "packaging", value: "BOX" });
+    if (packaging.startsWith("box") || packaging.startsWith("caja")) fields.push({ field: "packaging", value: "BOX" });
     if (packaging.startsWith("crate")) fields.push({ field: "packaging", value: "CRATE" });
   }
-  const weight = /\b(\d+(?:\.\d+)?)\s*(?:kg|kilograms?)\s*(?:each|per unit|per pallet|per box)\b/i.exec(text);
+  const weight = /\b(\d+(?:[.,]\d+)?)\s*(?:kg|kilograms?)\s*(?:each|per unit|per pallet|per box|cada|por unidad|por pallet|por caja)\b/i.exec(text);
   if (weight) fields.push({ field: "unitWeightPerUnitKg", value: weight[1] });
-  const volume = /\b(\d+(?:\.\d+)?)\s*(?:m3|m³|cubic meters?)\s*(?:each|per unit|per pallet|per box)\b/i.exec(text);
+  const volume = /\b(\d+(?:[.,]\d+)?)\s*(?:m3|m³|cubic meters?|metros c[uú]bicos?)\s*(?:each|per unit|per pallet|per box|cada|por unidad|por pallet|por caja)\b/i.exec(text);
   if (volume) fields.push({ field: "unitVolumePerUnitM3", value: volume[1] });
   const dimensions = /\b(\d+(?:\.\d+)?)\s*(?:x|×|by)\s*(\d+(?:\.\d+)?)\s*(?:x|×|by)\s*(\d+(?:\.\d+)?)\s*cm\b/i.exec(text);
   if (dimensions) fields.push({ field: "unitLengthCm", value: dimensions[1] }, { field: "unitWidthCm", value: dimensions[2] }, { field: "unitHeightCm", value: dimensions[3] });
   if (!fields.length && input.currentField) {
-    const cleaned = text.replace(/^(?:i need|it is|it's|the (?:answer|value) is|please use|change (?:it )?to)\s+/i, "").trim();
+    const cleaned = text.replace(/^(?:i need|it is|it's|the (?:answer|value) is|please use|change (?:it )?to|necesito|es|la (?:respuesta|cantidad) es|usa|cambia(?:lo)? a)\s+/i, "").trim().replace(",", ".");
     fields.push({ field: input.currentField, value: cleaned });
   }
   return { intent: "PROVIDE", fields };

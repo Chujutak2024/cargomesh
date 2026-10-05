@@ -21,26 +21,26 @@ export const CONVERSATION_FIELDS = [
 export type GuidedConversationField = (typeof CONVERSATION_FIELDS)[number];
 
 export const FIELD_QUESTION: Record<ConversationField, string> = {
-  originFacilityId: "Where should the freight be picked up?",
-  destinationFacilityId: "Where should it be delivered?",
-  categoryCode: "What kind of cargo are you shipping?",
-  packaging: "How is the cargo packaged?",
-  cargoDescription: "Describe the cargo.", totalWeightKg: "Total weight in kg?",
-  totalVolumeM3: "Total volume in m³?", divisible: "Is the cargo divisible? yes/no",
-  requirements: "Any special requirements?", temperatureMinCelsius: "Minimum temperature in °C?",
-  temperatureMaxCelsius: "Maximum temperature in °C?", unitPackageType: "Unit package type?",
-  unitQuantity: "How many units?", unitWeightPerUnitKg: "Weight per unit in kg?",
-  unitVolumePerUnitM3: "Volume per unit in m³?", unitLengthCm: "Unit length in cm?",
-  unitWidthCm: "Unit width in cm?", unitHeightCm: "Unit height in cm?",
-  unitIndivisible: "Is each unit indivisible? yes/no", unitStackable: "Are units stackable? yes/no",
-  pickupWindowStartsAt: "Pickup window start? Use YYYY-MM-DDTHH:mm.",
-  pickupWindowEndsAt: "Pickup window end? Use YYYY-MM-DDTHH:mm.",
-  deliveryWindowStartsAt: "Delivery window start? Use YYYY-MM-DDTHH:mm.",
-  deliveryWindowEndsAt: "Delivery window end? Use YYYY-MM-DDTHH:mm.",
-  requiredEquipment: "What truck or equipment do you need?",
-  pickupContactName: "Pickup contact name?", pickupContactPhoneE164: "Pickup phone in E.164 format?",
-  pickupContactEmail: "Pickup contact email?", recipientContactName: "Recipient name?",
-  recipientContactPhoneE164: "Recipient phone in E.164 format?", recipientContactEmail: "Recipient email?",
+  originFacilityId: "¿Dónde se recogerá la carga?",
+  destinationFacilityId: "¿Dónde se entregará la carga?",
+  categoryCode: "¿Qué tipo de carga transportarás?",
+  packaging: "¿Cómo está embalada la carga?",
+  cargoDescription: "Describe la carga.", totalWeightKg: "¿Peso total en kg?",
+  totalVolumeM3: "¿Volumen total en m³?", divisible: "¿La carga es divisible? sí/no",
+  requirements: "¿Algún requisito especial?", temperatureMinCelsius: "¿Temperatura mínima en °C?",
+  temperatureMaxCelsius: "¿Temperatura máxima en °C?", unitPackageType: "¿Tipo de empaque por unidad?",
+  unitQuantity: "¿Cuántas unidades son?", unitWeightPerUnitKg: "¿Peso por unidad en kg?",
+  unitVolumePerUnitM3: "¿Volumen por unidad en m³?", unitLengthCm: "¿Largo por unidad en cm?",
+  unitWidthCm: "¿Ancho por unidad en cm?", unitHeightCm: "¿Alto por unidad en cm?",
+  unitIndivisible: "¿Cada unidad es indivisible? sí/no", unitStackable: "¿Se pueden apilar las unidades? sí/no",
+  pickupWindowStartsAt: "¿Cuándo inicia la ventana de recojo? Usa AAAA-MM-DDTHH:mm.",
+  pickupWindowEndsAt: "¿Cuándo termina la ventana de recojo? Usa AAAA-MM-DDTHH:mm.",
+  deliveryWindowStartsAt: "¿Cuándo inicia la ventana de entrega? Usa AAAA-MM-DDTHH:mm.",
+  deliveryWindowEndsAt: "¿Cuándo termina la ventana de entrega? Usa AAAA-MM-DDTHH:mm.",
+  requiredEquipment: "¿Qué camión o equipo necesitas?",
+  pickupContactName: "¿Nombre del contacto de recojo?", pickupContactPhoneE164: "¿Teléfono de recojo en formato E.164?",
+  pickupContactEmail: "¿Correo del contacto de recojo?", recipientContactName: "¿Nombre de quien recibe?",
+  recipientContactPhoneE164: "¿Teléfono de quien recibe en formato E.164?", recipientContactEmail: "¿Correo de quien recibe?",
 };
 
 export function choicesForField(field: ConversationField, options: IntakeOptionsData): Array<{ value: string; label: string }> {
@@ -64,7 +64,13 @@ export function matchingConversationChoices(field: ConversationField, input: str
         ? `${facility.city} · synthetic test facility (${facility.code})` : `${facility.label} · ${facility.city}` }));
   }
   const singular = search.endsWith("s") ? search.slice(0, -1) : search;
-  return choicesForField(field, options).filter((choice) => choice.value.toLowerCase() === search || choice.label.toLowerCase() === search || choice.label.toLowerCase() === singular || choice.label.toLowerCase().includes(search));
+  const spanishAliases: Record<string, string[]> = {
+    GENERAL: ["carga general"], FOOD: ["alimentos", "comida"], PHARMA: ["farmacéutica", "farmaceutica", "medicinas"],
+    CHEMICAL: ["químicos", "quimicos"], MACHINERY: ["maquinaria"], CONSTRUCTION: ["materiales de construcción", "construcción"],
+    AGRICULTURAL: ["agrícola", "agricola", "productos agrícolas", "productos agricolas"], LIQUID: ["líquidos", "liquidos"],
+    BOX: ["caja", "cajas"], PALLET: ["pallet", "pallets", "palet", "palets"], CRATE: ["cajón", "cajon", "cajones"],
+  };
+  return choicesForField(field, options).filter((choice) => choice.value.toLowerCase() === search || choice.label.toLowerCase() === search || choice.label.toLowerCase() === singular || choice.label.toLowerCase().includes(search) || (spanishAliases[choice.value] ?? []).includes(search));
 }
 
 export function parseConversationField(field: ConversationField, input: string, options: IntakeOptionsData): string | null {

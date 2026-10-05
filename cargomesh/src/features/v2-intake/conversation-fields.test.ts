@@ -37,6 +37,12 @@ test("natural English category and packaging values resolve only configured V2 c
   assert.equal(parseConversationField("categoryCode", "imaginary cargo", options), null);
 });
 
+test("Spanish category and packaging names still resolve only configured V2 codes", () => {
+  assert.equal(parseConversationField("categoryCode", "maquinaria", options), "MACHINERY");
+  assert.equal(parseConversationField("packaging", "cajas", options), "BOX");
+  assert.equal(parseConversationField("categoryCode", "carga inventada", options), null);
+});
+
 test("two tenant facilities in one city stay ambiguous until one is selected", () => {
   const lima = options.facilities.find((facility) => facility.city === "Lima")!;
   const ambiguous = { ...options, facilities: [...options.facilities, { ...lima, facilityId: "c2330000-0000-4000-8000-000000000099", code: "QA-A-LIMA-2" }] };

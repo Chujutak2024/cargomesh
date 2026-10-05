@@ -12,9 +12,9 @@ import styles from "./conversation-chat.module.css";
 
 type Message = { speaker: "assistant" | "user"; text: string };
 type Choice = { value: string; label: string; field: ConversationField };
-const GREETING = "Hi! I can help you prepare a ROAD freight request.";
-const unavailable = "I can't quote a carrier price or book freight yet. ROAD eligibility is preliminary, not an offer.";
-const positive = /^(yes|yes,? create (?:the )?draft|create (?:the )?draft|confirm|go ahead)$/i;
+const GREETING = "¡Hola! Soy CargoMesh. Cuéntame qué necesitas transportar y te ayudaré a preparar la solicitud y revisar alternativas ROAD.";
+const unavailable = "Aún no puedo cotizar ni reservar transporte. La evaluación ROAD es preliminar; no es una oferta ni una reserva.";
+const positive = /^(yes|yes,? create (?:the )?draft|create (?:the )?draft|confirm|go ahead|s[ií]|s[ií],? crea(?:r)? (?:el )?borrador|crea(?:r)? (?:el )?borrador|confirmo|confirmar|adelante)$/i;
 
 function missingField(draft: V2IntakePrototypeDraft, filled: Set<ConversationField> = new Set()): GuidedConversationField | null {
   return CONVERSATION_FIELDS.find((field) => !filled.has(field) && !String(draft[field] ?? "").trim()) ?? null;
@@ -27,7 +27,7 @@ function locationName(id: string, options: IntakeOptionsData) {
 }
 
 function draftSummary(draft: V2IntakePrototypeDraft, options: IntakeOptionsData) {
-  return `Please review: ${locationName(draft.originFacilityId, options)} → ${locationName(draft.destinationFacilityId, options)}; ${draft.unitQuantity} unit(s) of ${draft.categoryCode.toLowerCase()} cargo, ${draft.unitWeightPerUnitKg} kg and ${draft.unitVolumePerUnitM3} m³ per unit; pickup ${draft.pickupWindowStartsAt}–${draft.pickupWindowEndsAt}; delivery ${draft.deliveryWindowStartsAt}–${draft.deliveryWindowEndsAt}. The saved draft will use the current authorized organization. Reply “yes, create draft” to save it, or tell me what to change.`;
+  return `Revisa el borrador: ${locationName(draft.originFacilityId, options)} → ${locationName(draft.destinationFacilityId, options)}; ${draft.unitQuantity} unidad(es) de carga ${draft.categoryCode.toLowerCase()}, ${draft.unitWeightPerUnitKg} kg y ${draft.unitVolumePerUnitM3} m³ por unidad; recojo ${draft.pickupWindowStartsAt}–${draft.pickupWindowEndsAt}; entrega ${draft.deliveryWindowStartsAt}–${draft.deliveryWindowEndsAt}. Se guardará para la organización autorizada actual. Responde “sí, crea el borrador” para guardarlo o indícame qué cambiar.`;
 }
 
 export function ConversationChat({ draft, options, optionsSource = "api", request, evaluation, error = null, draftDirty = false, busy, onField, onCreate, onRead, onEvaluate, onStartOver }: {
@@ -102,7 +102,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     if (!request) return;
     if (announcedDraftRef.current === request.id) return;
     announcedDraftRef.current = request.id;
-    const message = `Saved draft ${request.referenceCode}, version ${request.draftVersion}. Ask “show draft” or “check ROAD”.`;
+    const message = `Guardé el borrador ${request.referenceCode}, versión ${request.draftVersion}. Puedes decir “muestra el borrador” o “revisa ROAD”.`;
     setHistory((current) => current.length === 1 && current[0]?.text === GREETING ? [{ speaker: "assistant", text: message }] : [...current, { speaker: "assistant", text: message }]);
     setAnnouncement(message);
     setAwaitingConfirmation(false);
@@ -111,18 +111,18 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     if (!evaluation) return;
     const details = evaluation.candidates.length ? evaluation.candidates.map((candidate) =>
       `${candidate.carrier.commercialName}: ${candidate.status}; reasons ${candidate.reasons.join(", ") || "none"}; capacity source ${candidate.checks.capacityWindow.provenance.dataSource}; observed ${candidate.checks.capacityWindow.provenance.observedAt ?? "unknown"}`).join(". ")
-      : "The service returned no carrier candidates and no carrier-specific reason codes.";
-    const result = `ROAD is ${evaluation.overallStatus}. ${details} Evaluated ${evaluation.evaluatedAt} against draft version ${evaluation.evaluatedDraftVersion}. This is not a quote or booking.`;
+      : "El servicio no devolvió candidatos de carrier ni códigos de razón específicos.";
+    const result = `El resultado ROAD es ${evaluation.overallStatus}. ${details} Se evaluó ${evaluation.evaluatedAt} contra la versión ${evaluation.evaluatedDraftVersion} del borrador. No es una cotización ni una reserva.`;
     setHistory((current) => [...current, { speaker: "assistant", text: result }]);
-    setAnnouncement(`ROAD result ${evaluation.overallStatus}. Reasons and provenance are in the latest message.`);
+    setAnnouncement(`Resultado ROAD ${evaluation.overallStatus}. El último mensaje incluye razones y procedencia.`);
   }, [evaluation]);
   useEffect(() => {
     if (!error) return;
     const reply = error.code === "STALE_DRAFT" ? "This draft version changed. Reload the authorized draft before evaluating it."
-      : error.code === "FORBIDDEN_TENANT" || error.status === 403 ? "This request is not available to your organization."
-      : error.status === 401 ? "Your session expired. Sign in again to continue."
-      : error.code === "IDEMPOTENCY_CONFLICT" ? "This retry key belongs to different details. Review the draft before trying again."
-      : "I could not complete that step. Your provisional details remain here; please retry.";
+      : error.code === "FORBIDDEN_TENANT" || error.status === 403 ? "Esta solicitud no está disponible para tu organización."
+      : error.status === 401 ? "Tu sesión venció. Inicia sesión nuevamente para continuar."
+      : error.code === "IDEMPOTENCY_CONFLICT" ? "Esta clave de reintento corresponde a otros detalles. Revisa el borrador antes de intentarlo otra vez."
+      : "No pude completar ese paso. Tus datos provisionales permanecen aquí; inténtalo nuevamente.";
     setHistory((current) => [...current, { speaker: "assistant", text: reply }]);
     setAnnouncement(reply);
   }, [error]);
@@ -174,35 +174,35 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       onCreate();
       return;
     }
-    if (awaitingConfirmation && /^(no|not yet|cancel)$/i.test(value)) {
+    if (awaitingConfirmation && /^(no|not yet|cancel|no todav[ií]a|cancelar)$/i.test(value)) {
       setAwaitingConfirmation(false);
-      add(value, "Nothing was saved. Tell me what to correct, for example “change origin to Lima”.");
+      add(value, "No guardé nada. Dime qué deseas corregir, por ejemplo: “cambia el origen a Lima”.");
       return;
     }
     setInterpretationBusy(true);
     try {
       const proposal = await interpret(value);
       if (proposal.intent === "PRICE" || proposal.intent === "BOOKING") { add(value, unavailable); return; }
-      if (proposal.intent === "HELP") { add(value, "Tell me a pickup and delivery place, cargo details and timing. I will ask for missing details one at a time. You can correct a detail before saving."); return; }
+      if (proposal.intent === "HELP") { add(value, "Dime el lugar de recojo y entrega, la carga y las fechas. Te pediré solo los datos que falten y podrás corregirlos antes de guardar."); return; }
       if (proposal.intent === "START_OVER") {
         onStartOver?.();
         setAwaitingConfirmation(false);
-        add(value, "Starting a new provisional request. Where should the freight be picked up?");
+        add(value, "Empecemos una solicitud provisional nueva. ¿Dónde se recogerá la carga?");
         return;
       }
       if (proposal.intent === "READ") {
-        if (!request) add(value, "There is no saved draft yet. Tell me about your shipment first.");
-        else { add(value, `Reading saved draft ${request.referenceCode} with your current authorization…`); onRead(); }
+        if (!request) add(value, "Todavía no hay un borrador guardado. Cuéntame primero sobre el envío.");
+        else { add(value, `Leyendo el borrador ${request.referenceCode} con tu autorización actual…`); onRead(); }
         return;
       }
       if (proposal.intent === "EVALUATE") {
-        if (!request) add(value, "I need a saved draft before checking ROAD.");
-        else if (draftDirty) add(value, "Your changes are only local and have not been saved. I cannot reevaluate them yet. Start a new request for changed details.");
-        else { add(value, "Checking ROAD for the saved draft version…"); onEvaluate(); }
+        if (!request) add(value, "Necesito un borrador guardado antes de revisar ROAD.");
+        else if (draftDirty) add(value, "Tus cambios son solo locales y no se guardaron. Aún no puedo reevaluarlos; inicia una solicitud nueva con los datos corregidos.");
+        else { add(value, "Revisando ROAD para la versión guardada del borrador…"); onEvaluate(); }
         return;
       }
       if (request) {
-        add(value, "I cannot update this saved draft in chat yet. Start over for a new request, or ask me to show the saved draft or check ROAD.");
+        add(value, "Aún no puedo modificar este borrador guardado desde el chat. Puedes empezar una solicitud nueva, mostrar el borrador o revisar ROAD.");
         return;
       }
       if (proposal.intent === "CREATE") {

@@ -25,6 +25,21 @@ test("price and booking never become create or evaluation effects", () => {
   assert.equal(interpretDeterministically({ schemaVersion: "2.0", text: "book this now", currentField: null }).intent, "BOOKING");
 });
 
+test("Spanish freight turns keep their explicit values and never imply a booking", () => {
+  const turn = interpretDeterministically({ schemaVersion: "2.0", text: "Quiero 2 pallets de Lima a Piura", currentField: "originFacilityId" });
+  assert.deepEqual(turn, {
+    intent: "PROVIDE",
+    fields: [
+      { field: "originFacilityId", value: "Lima" },
+      { field: "destinationFacilityId", value: "Piura" },
+      { field: "unitQuantity", value: "2" },
+      { field: "packaging", value: "PALLET" },
+    ],
+  });
+  assert.equal(interpretDeterministically({ schemaVersion: "2.0", text: "quiero una cotización", currentField: null }).intent, "PRICE");
+  assert.equal(interpretDeterministically({ schemaVersion: "2.0", text: "reserva el camión", currentField: null }).intent, "BOOKING");
+});
+
 test("a named correction changes the requested field, not the current prompt", () => {
   const turn = interpretDeterministically({ schemaVersion: "2.0", text: "change origin to Piura", currentField: "cargoDescription" });
   assert.deepEqual(turn, { intent: "CORRECT", fields: [{ field: "originFacilityId", value: "Piura" }] });

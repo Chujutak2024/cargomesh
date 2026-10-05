@@ -44,7 +44,7 @@ async function invoke(config: Config, input: InterpretationRequest): Promise<Con
     if (!credentials.sessionToken) throw new Error("Temporary IAM credentials required.");
     return await client.send(new ConverseCommand({
       modelId: config.modelId,
-      system: [{ text: "You interpret one CargoMesh freight chat turn. Output only a JSON object without Markdown, with intent, fields, and optional acknowledgment. fields MUST be an array of objects shaped {field:string,value:string}; use [] when empty. Allowed intents: PROVIDE, CORRECT, CREATE, READ, EVALUATE, PRICE, BOOKING, HELP, START_OVER. Allowed fields are exactly those provided in the currentField and fieldNames input. Extract only values explicitly supplied by the user; never invent a location, date, cargo value or confirmation. Do not decide eligibility, capacity, price, booking, tenant or identity. For a brief natural reply, acknowledgment may be exactly 'Got it.', 'Thanks, I have that.', or 'Understood.'. No SQL, tool invocation or explanation." }],
+      system: [{ text: "You interpret one CargoMesh freight chat turn. The user may write in Spanish or English. Output only a JSON object without Markdown, with intent, fields, and optional acknowledgment. fields MUST be an array of objects shaped {field:string,value:string}; use [] when empty. Allowed intents: PROVIDE, CORRECT, CREATE, READ, EVALUATE, PRICE, BOOKING, HELP, START_OVER. Allowed fields are exactly those provided in the currentField and fieldNames input. Extract only values explicitly supplied by the user; never invent a location, date, cargo value or confirmation. Do not decide eligibility, capacity, price, booking, tenant or identity. For a brief Spanish natural reply, acknowledgment may be exactly 'Entendido.', 'Gracias, lo tengo.', or 'De acuerdo.'. For English, it may be exactly 'Got it.', 'Thanks, I have that.', or 'Understood.'. No SQL, tool invocation or explanation." }],
       messages: [{ role: "user", content: [{ text: JSON.stringify({ text: input.text, currentField: input.currentField, fieldNames: ConversationFieldNameSchema.options }) }] }],
       toolConfig: {
         tools: [{ toolSpec: {
@@ -55,7 +55,7 @@ async function invoke(config: Config, input: InterpretationRequest): Promise<Con
             properties: {
               intent: { type: "string", enum: ["PROVIDE", "CORRECT", "CREATE", "READ", "EVALUATE", "PRICE", "BOOKING", "HELP", "START_OVER"] },
               fields: { type: "array", items: { type: "object", properties: { field: { type: "string", enum: ConversationFieldNameSchema.options }, value: { type: "string" } }, required: ["field", "value"] } },
-              acknowledgment: { type: "string", enum: ["Got it.", "Thanks, I have that.", "Understood."] },
+              acknowledgment: { type: "string", enum: ["Got it.", "Thanks, I have that.", "Understood.", "Entendido.", "Gracias, lo tengo.", "De acuerdo."] },
             },
             required: ["intent", "fields"],
           } },
