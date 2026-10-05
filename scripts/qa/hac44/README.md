@@ -45,6 +45,13 @@ Keep these commands sequential. `pending.py` prepares independent FTL/LTL native
 
 `contract_verdict.py` intentionally exits 1 when a real product counterexample remains. The two-cycle orchestrator accepts only the three explicitly enumerated preexisting counterexamples and records them as FAIL; unexpected failures stop the run. It never calls those contract tests green. `guards.py` pairs each local-only denial with a valid connection/count control. `complete_recipe.py --check` verifies the committed completed-operation recipe against native crew inputs.
 
+`sql_layout.py` keeps the generated native recipe readable using only Python's standard
+library. SQL uses LF, four-space levels, no blank lines within a statement and a maximum
+of 120 columns. JSON literals are expanded without changing their parsed value; long
+standard SQL strings use PostgreSQL's newline concatenation without changing their
+contents. The formatter neither changes the clock nor executes SQL. No formatter is
+required as an installed repository dependency.
+
 ## Matrix generation and comparison
 
 `generate.py` rereads UML 07 + dictionary + physical design/DER from Git at the selected SHA, the freshly reconstructed PostgreSQL catalog, and real Zod/Hono runtime exports. It requires the fresh execution evidence described above; old JSON results are never imported as current tests. CSVs are written at the evidence root:
@@ -55,5 +62,18 @@ Keep these commands sequential. `pending.py` prepares independent FTL/LTL native
 `methods.py` includes every UML method, its related native operation, exact source/test references and an explicit certification limit. A related operation/test is not proof of the standalone UML method's entire semantics. Identity/integration classes without a canonical writer remain explicit gaps.
 
 Set `HAC44_CP1` to the external CP-1 evidence folder and run `compare.py` to list exact classification/FK promotions by stable UML/route/constraint keys. UUIDs, SHA/provenance and call counts are regenerated. `audit.py` also checks identical classifications between the two cycles, unchanged constraint/trigger definitions, staged scope and secrets/machine paths. `HAC44_ORIGINAL` optionally verifies the untouched original checkout.
+
+For a CP-2 repeat comparison, also set `HAC44_CP2` to the preserved CP-2 evidence root.
+`compare.py` then compares all four CSV matrices, including every column and `estado`,
+without sorting rows or JSON, dropping fields, changing whitespace, or changing expectations.
+Only thirteen-digit epoch-millisecond values, ISO-8601 timestamps with a timezone,
+UUIDs, and SHA-1/SHA-256 hashes are replaced with typed placeholders. Relative fixture
+clocks stay active. Headers, row counts, row order and every remaining character must
+match exactly. `logs/normalized-cp2-comparison.json` records X/Y identical rows per matrix
+and every residual difference; any residual difference fails the comparison.
+
+Run `python scripts/qa/hac44/test_normalized_compare.py` for paired positive/negative
+controls proving that real field values, `estado`, counts, headers, row order, case and
+whitespace differences remain failures.
 
 The secret filter is active in every captured command. Local CLI credentials are read only in memory and passed to the HTTP subprocess; status output and credential environment values are never logged. All data are LOCAL_ONLY/SIMULATED. Hosted databases and live MCP/provider integrations are outside this certification.

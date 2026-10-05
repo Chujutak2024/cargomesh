@@ -5,7 +5,11 @@
 \endif
 \if :local_only
 \else
-do $$begin raise exception 'HAC44_LOCAL_ONLY';end$$;
+do $$
+begin
+    raise exception 'HAC44_LOCAL_ONLY';
+end
+$$;
 \endif
 select hac44_qa.capture_ids();
-select 'HAC44_COUNTS:'||hac44_qa.counts()::text;
+select 'HAC44_COUNTS:' || hac44_qa.counts()::text;
