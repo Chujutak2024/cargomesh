@@ -31,10 +31,12 @@ type BraveNavigator = Navigator & { brave?: { isBrave?: () => Promise<boolean> }
 export type VoiceState = "checking" | "available" | "requesting_permission" | "listening" | "processing" | "error" | "unsupported";
 
 /** Browser-only capture and playback. The parent decides how to handle a completed turn. */
-export function useConversationVoice({ onTranscript, onSilence, responseText }: {
+export function useConversationVoice({ onTranscript, onSilence, responseText, language }: {
   onTranscript: (text: string) => void;
   onSilence: (text: string) => void;
   responseText: string;
+  /** Web Speech has no dependable automatic language detection. The user picks the recognition locale. */
+  language: "es-PE" | "en-US";
 }) {
   const [state, setState] = useState<VoiceState>("checking");
   const [message, setMessage] = useState("");
@@ -70,7 +72,7 @@ export function useConversationVoice({ onTranscript, onSilence, responseText }: 
       let localAvailability: string | null = null;
       if (isBrave && Constructor?.available) {
         try { localAvailability = await Promise.race([
-          Constructor.available({ langs: ["en-US"], processLocally: true }),
+          Constructor.available({ langs: [language], processLocally: true }),
           new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
         ]); } catch { /* Do not present a broken engine as available. */ }
       }
@@ -86,7 +88,7 @@ export function useConversationVoice({ onTranscript, onSilence, responseText }: 
       recognition.current?.stop();
       window.speechSynthesis?.cancel();
     };
-  }, []);
+  }, [language]);
 
   function stop() {
     stopped.current = true;
@@ -102,7 +104,7 @@ export function useConversationVoice({ onTranscript, onSilence, responseText }: 
     const Constructor = browser.SpeechRecognition ?? browser.webkitSpeechRecognition;
     if (!Constructor || mode.current === "unsupported" || speaking) {
       setState("unsupported");
-      setMessage("Speech recognition is unavailable here. Type your message, or use a browser with a working English speech engine.");
+      setMessage("Speech recognition is unavailable here. Type your message, or use a browser with a working speech engine for the selected language.");
       return;
     }
     stopped.current = false;
@@ -111,7 +113,7 @@ export function useConversationVoice({ onTranscript, onSilence, responseText }: 
     recognition.current = instance;
     const detector = createSpeechTurnDetector((transcript) => finishTurn(instance, transcript));
     turnDetector.current = detector;
-    instance.lang = "en-US";
+    instance.lang = language;
     if (mode.current === "local") instance.processLocally = true;
     instance.interimResults = true;
     instance.continuous = true;
@@ -171,7 +173,7 @@ export function useConversationVoice({ onTranscript, onSilence, responseText }: 
     window.speechSynthesis.cancel();
     setSpeaking(true);
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
+    utterance.lang = language;
     utterance.onstart = () => { setSpeaking(true); setMessage("CargoMesh is speaking. Press Stop audio before starting another voice turn."); };
     utterance.onend = () => { setSpeaking(false); setState("available"); setMessage(""); };
     utterance.onerror = () => { setSpeaking(false); setState("available"); setMessage("Audio playback stopped. You can continue by voice or text."); };

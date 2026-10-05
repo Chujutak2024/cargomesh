@@ -51,6 +51,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const [announcement, setAnnouncement] = useState("");
   const [interpretationBusy, setInterpretationBusy] = useState(false);
   const [audioReplies, setAudioReplies] = useState(true);
+  const [voiceLanguage, setVoiceLanguage] = useState<"es-PE" | "en-US">("es-PE");
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [choices, setChoices] = useState<Choice[]>([]);
   const [viewport, setViewport] = useState<{ height: number; keyboardInset: number } | null>(null);
@@ -65,6 +66,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     onTranscript: (recognized) => { setText(recognized); inputRef.current?.focus(); },
     onSilence: (recognized) => { void send(recognized, true); },
     responseText: latestAssistant,
+    language: voiceLanguage,
   });
   const nextField = request ? null : missingField(draft);
   const syntheticCatalog = optionsSource === "fixture" || options.facilities.some((facility) => facility.label.includes("[SYNTHETIC]"));
@@ -254,7 +256,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M4 5.5h16v11H9l-5 3v-14Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M8 10h8M8 13h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>Ask CargoMesh</span>
     </button>
     {open && <section id="v2-chat-panel" className={styles.panel} aria-label="ROAD freight conversation">
-      <header className={styles.header}><span className={styles.headerIcon} aria-hidden="true">CM</span><div className={styles.headerCopy}><strong>CargoMesh assistant</strong><span>{syntheticCatalog ? "V2 demo · synthetic facilities" : "ROAD freight"}</span></div><button type="button" className={styles.close} aria-label="Close CargoMesh assistant" onClick={closePanel}>×</button></header>
+      <header className={styles.header}><span className={styles.headerIcon} aria-hidden="true">CM</span><div className={styles.headerCopy}><strong>CargoMesh assistant</strong><span>{syntheticCatalog ? "V2 demo · instalaciones sintéticas" : "Carga ROAD"}</span></div><label className={styles.languagePicker}><span className={styles.srOnly}>Idioma de voz</span><select value={voiceLanguage} onChange={(event) => setVoiceLanguage(event.target.value as "es-PE" | "en-US")} aria-label="Idioma de voz"><option value="es-PE">ES</option><option value="en-US">EN</option></select></label><button type="button" className={styles.close} aria-label="Cerrar asistente CargoMesh" onClick={closePanel}>×</button></header>
       <div className={styles.scrollArea}>
         <div className={styles.history} role="log" aria-live="off" aria-label="Conversation messages">
           {history.map((message, index) => <div key={index} className={message.speaker === "user" ? styles.userRow : styles.assistantRow}><p className={message.speaker === "user" ? styles.user : styles.assistant}><span className={styles.speaker}>{message.speaker === "user" ? "You" : "CargoMesh"}</span>{message.text}</p></div>)}

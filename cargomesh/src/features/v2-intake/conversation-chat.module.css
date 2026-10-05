@@ -6,6 +6,7 @@
 .header{display:flex;align-items:center;gap:.75rem;flex:none;padding:.85rem 1rem;background:var(--cm-color-heading);color:#fff}
 .headerIcon{display:grid;place-items:center;width:2.25rem;height:2.25rem;flex:none;border:1px solid rgb(255 255 255 / 32%);border-radius:.75rem;background:rgb(255 255 255 / 13%);font-size:.8rem;font-weight:800;letter-spacing:.03em}
 .headerCopy{display:grid;gap:.1rem;min-width:0}.headerCopy strong{font-size:.97rem;line-height:1.2}.headerCopy span{color:#d9ebe5;font-size:.76rem}
+.languagePicker select{min-height:2rem;border:1px solid rgb(255 255 255 / 36%);border-radius:.5rem;background:#174e48;color:#fff;padding:.15rem .35rem;font:inherit;font-size:.72rem;font-weight:700;cursor:pointer}.languagePicker option{color:#172d29;background:#fff}
 .close{display:grid;place-items:center;width:2.5rem;height:2.5rem;margin-left:auto;border:0;border-radius:.6rem;background:transparent;color:#fff;font:inherit;font-size:1.6rem;line-height:1;cursor:pointer}.close:hover,.close:focus-visible{background:rgb(255 255 255 / 15%)}
 .environment{display:flex;align-items:center;gap:.45rem;min-height:2rem;padding:.35rem 1rem;border-bottom:1px solid var(--cm-color-line);background:var(--cm-color-surface-subtle);color:#355651;font-size:.7rem;font-weight:700}
 .statusDot{width:.44rem;height:.44rem;border-radius:50%;background:#27805f}.language{margin-left:auto;color:var(--cm-color-muted);font-weight:600}
