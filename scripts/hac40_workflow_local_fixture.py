@@ -24,7 +24,7 @@ def prepare():
   assert result.returncode==0,result.stderr;previous[table]=json.loads(result.stdout)
  link=sql(f"select count(*) from public.carrier_service_cargo_categories where carrier_service_id='{SERVICE}' and cargo_category_id='c0000000-0000-0000-0000-000000000001';")
  previous['categoryLink']=link.stdout.strip()=='1'
- source=(ROOT/'supabase/tests/22_v2_hac40_workflow.test.sql').read_text()
+ source=(ROOT/'supabase/tests/22_v2_hac40_workflow.test.sql').read_text(encoding='utf-8')
  source=source[:source.index("select pg_temp.save('hold'")]
  source='\n'.join(line for line in source.splitlines() if not line.startswith(('select ok(','select is(','select no_plan(')))
  source+="\nreset role;select 'HAC40_FIXTURE:'||jsonb_object_agg(name,value)::text from refs;commit;"
@@ -52,12 +52,13 @@ def cleanup(state):
  f"delete from public.v2_rankings where freight_request_id='{q}';",
  f"delete from public.v2_carrier_offers where freight_request_id='{q}';",
  f"delete from public.carrier_opportunities where freight_request_id='{q}';",
- f"delete from public.load_allocations where assignment_id in(select id from public.plan_leg_assignments where plan_id='{refs['plan']['id']}');",
+ f"delete from public.load_allocations where assignment_id in(select id from public.plan_resource_bindings where plan_id='{refs['plan']['id']}');",
+ f"delete from public.plan_resource_bindings where plan_id='{refs['plan']['id']}';",
  f"delete from public.plan_leg_assignments where plan_id='{refs['plan']['id']}';",
  f"delete from public.plan_resources where plan_id='{refs['plan']['id']}';",
  f"delete from public.transport_plan_candidates where freight_request_id='{q}';",
- f"delete from public.route_waypoints where route_leg_id in(select id from public.route_legs where route_plan_id='{refs['route']['id']}');",
- f"delete from public.route_legs where route_plan_id='{refs['route']['id']}';",
+ f"delete from public.route_waypoints where route_leg_id in(select id from public.route_legs where route_plan_id in(select id from public.route_plans where freight_request_id='{q}'));",
+ f"delete from public.route_legs where route_plan_id in(select id from public.route_plans where freight_request_id='{q}');",
  f"delete from public.route_plans where freight_request_id='{q}';"])
  for table in ['route_resource_limits','route_corridors','logistics_nodes','route_planning_policies','scoring_policies']:statements.append(f'delete from public.{table} where id in({ids});')
  for table in workflow:statements.append(f'alter table public.{table} enable trigger workflow_guard;')
@@ -81,4 +82,4 @@ if __name__=='__main__':
  if args.action=='prepare':
   assert not args.state.exists(),'State exists; refusing overwrite.'
   args.state.write_text(json.dumps(prepare(),indent=2),encoding='utf-8')
- else:cleanup(json.loads(args.state.read_text()))
+ else:cleanup(json.loads(args.state.read_text(encoding='utf-8')))

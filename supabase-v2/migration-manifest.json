@@ -347,6 +347,17 @@
       "dependencies": [
         "20261004232244"
       ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql",
+      "version": "20261005192012",
+      "sha256": "210ae5e2960be8cc3543b96273d2517f44871580a9de400a33c7f9b121d6eeca",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261005181940"
+      ]
     }
   ]
 }
