@@ -1,43 +1,19 @@
-# HAC-38 — Alexa+ MCP add-on development preparation
+# HAC-38 — Alexa+ track development path
 
-**Status:** package copy prepared; no Alexa+ add-on, hosted MCP endpoint, account link or Alexa-originated invocation has been observed. This document belongs to the HAC-38 MCP branch and does not change the HAC-37 Web PR.
+**Status:** CargoMesh has a controlled V2 MCP client test, but no Alexa+-originated invocation. The Amazon Developer Hackathon does not provide access to the gated Alexa+ MCP Toolkit, Alexa AI CLI, or Web Simulator. This branch must not claim a live Alexa+ add-on.
 
-## Supported first release
+## Hackathon access decision (2026-10-04)
 
-Name: **CargoMesh Freight Assistant**. Locale: `en-US`. The add-on should expose only the executable V2 tools `get_v2_intake_options`, `create_v2_freight_request`, `get_v2_freight_request`, and `evaluate_v2_road`. Alexa+ is the conversational MCP client; CargoMesh resolves the linked user, organization and scopes server-side and calls the same application services as Web. Creating a draft requires complete validated fields and explicit customer confirmation. ROAD returns `eligible`, `ineligible` or `unknown` with source and reasons. No tool offers a carrier price or makes a booking.
+The hackathon [FAQ](https://amazonappdev2026.devpost.com/details/faqs) states that Category SDK, MCP Toolkit, Alexa AI CLI, and Web Simulator access is limited to selected partners, with no application path for participants. An [organizer reply](https://amazonappdev2026.devpost.com/forum_topics/45262-is-the-alexa-mcp-toolkit-alexa-ai-cli-available-to-hackathon-participants) explicitly confirms that the Amazon-owned `AddOn3PDeveloperToolsRead` role will not be enabled for hackathon participants. The [official rules](https://amazonappdev2026.devpost.com/rules) instead accept either a working self-hosted MCP server implementing protocol version `2025-11-25` or later over Streamable HTTP, or a clearly identified simulated Alexa+ experience built with agentic tools.
 
-Suggested English listing copy:
+The user configured a dedicated `alexa-ai-tools` IAM principal with the documented `sts:AssumeRole` policy. Its base profile resolves to that IAM user, and the role profile matches the setup guide, but STS returns `AccessDenied` on the Amazon-owned role. The originally exposed access key was disabled and deleted; a replacement key was verified through `sts get-caller-identity` without displaying its secret. Do not request more IAM permissions or create more keys to pursue the gated CLI. The replacement `alexa-ai-tools` key can be removed once no other authorized use remains; the separate Bedrock development profile is unaffected.
 
-- Short description: `Prepare a freight request and check preliminary ROAD eligibility with CargoMesh.`
-- Full description: `CargoMesh helps an authorized shipper describe a freight request, clarify missing details, review a draft, and check preliminary ROAD eligibility. It explains unknown or unavailable evidence. It does not quote prices or reserve freight.`
-- Example phrases: `Help me prepare a ROAD freight request.`; `I need to ship machinery from Lima to Arequipa next week.`; `Read my saved freight draft.`; `Check ROAD eligibility for my draft.`
+## Supported prototype path
 
-## Verified preflight on 2026-10-04
+1. Keep the V2 Web conversation as the clearly labeled self-built Alexa+ simulation. It may call Amazon Bedrock for intent handling, but must not claim to be Alexa+ or use Alexa speech services unless independently verified.
+2. Preserve the HAC-38 server as a self-hosted MCP endpoint with Streamable HTTP and its explicit `2025-11-25` protocol-version test. Its V2 profile exposes `get_cargomesh_capabilities`, `create_v2_freight_request`, `get_v2_freight_request`, and `evaluate_v2_road`. Authentication, tenant resolution, confirmation, and business logic remain server-side and shared with Web.
+3. Exercise the endpoint with an independent MCP client through initialize, tools/list, and tools/call. Record an authorized draft and ROAD result, plus missing-auth and cross-tenant failures. A controlled local test is evidence for CargoMesh MCP operation, not Alexa+ integration.
+4. Provide reproducible local run instructions and a demo video that visibly exercises the conversation and MCP calls. For judging access, host only a separate non-production V2 preview if needed, verify its URL and auth, and retain an explicit teardown procedure to prevent continuing AWS charges.
+5. Label the submission accurately: self-hosted MCP and self-built Alexa+ simulation. Record the conflicting public setup guide and gated role as a friction log, not as an unresolved implementation dependency.
 
-- HAC-38 controlled MCP HTTP client test passed 36/36, including the V2 create/read/evaluate path and authorization failures. This is not an Alexa+ call.
-- `node --version` returned `v24.14.1`. The Alexa AI CLI is not installed.
-- `npm view @alexa-ai/cli version --json --prefer-online` against public npm returned HTTP 404. Amazon's setup guide configures a private CodeArtifact registry for `@alexa-ai/*`; the public registry cannot be used as proof that the CLI is unavailable.
-- A credential-safe `aws sts assume-role` probe using the existing temporary `cargomesh-bedrock` profile was denied: the dedicated IAM user lacks `sts:AssumeRole` for Amazon's `AddOn3PDeveloperToolsRead` role. No access key was created or printed.
-- The Alexa+ Developer Console at `/alexa/console/ask/addons#/` displayed `Coming Soon` in the user's account. This does not prove that CLI onboarding is unavailable.
-
-## Exact remaining sequence
-
-1. Grant the dedicated IAM user only `sts:AssumeRole` on `arn:aws:iam::372468808636:role/AddOn3PDeveloperToolsRead`, after confirming this role and the account's Alexa+ program access with Amazon. Re-test role assumption with temporary credentials; do not use root or create long-lived access keys merely to install the CLI.
-
-   Minimal proposed inline statement for `cargomesh-hackathon-local`:
-
-   ```json
-   {
-     "Effect": "Allow",
-     "Action": "sts:AssumeRole",
-     "Resource": "arn:aws:iam::372468808636:role/AddOn3PDeveloperToolsRead"
-   }
-   ```
-
-   This permission alone does not guarantee that the Amazon-owned role trusts this account; the follow-up `assume-role` result is the gate.
-2. In a supported macOS or Ubuntu environment with Node 24+, configure the private CodeArtifact registry as Amazon documents, install `@alexa-ai/cli`, then run `alexa-ai configure` with the registered **Amazon Developer** account. Windows support is not stated in Amazon's setup guide; this Windows host's WSL availability has not been verified.
-3. Bring up a separate, non-production V2 HTTPS preview for `/mcp`, with V2 profile, request-scoped user Bearer validation, resource metadata and OAuth authorization-code/PKCE account linking. Verify the hosted URL and redirect URIs. Never substitute `localhost`, the frozen V1 production domain or an unverified placeholder.
-4. Create the MCP add-on package in `en-US` using the verified HTTPS `/mcp` URL. Fill privacy/terms URLs and required raster assets with reviewed public artifacts. Keep it in Alexa development stage.
-5. Link an authorized CargoMesh test user and run the Alexa+ Web Simulator. Record an Alexa-originated initialize/list/call trace, the linked tenant and scopes, a draft confirmation, and a ROAD result with redacted evidence. Only then claim Alexa+ operation.
-
-The official [MCP quickstart](https://www.developer.amazon.com/docs/alexaplus/add-ons/mcp-toolkit-quickstart.html) defines the add-on package and remote HTTPS requirement. The [development setup](https://www.developer.amazon.com/docs/alexaplus/add-ons/set-up-your-development-environment.html) describes the private CLI registry and role setup. AWS credits and the existing USD 1 budget alert are not a spending cap; this preparation made no deployment or Bedrock call.
+The [MCP adapter transcript](./HAC38_CONTROLLED_MCP_TRANSCRIPT.md) records the controlled Streamable HTTP protocol test. It is local evidence, not public availability or a live Alexa+ integration. The USD 1 AWS Budget is an alert, not a hard spending cap.
