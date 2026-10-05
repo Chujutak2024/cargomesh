@@ -352,7 +352,7 @@
       "issue": "HAC-40",
       "path": "supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql",
       "version": "20261005192012",
-      "sha256": "a73ed6480e10a465c9a04127fd2a145b04fbdd637be49533c80e91d1a38447b0",
+      "sha256": "729a880ee0c3a4ff9a2693bf242fa4d039d65a90b1e1b59fc9efb2740e7ca979",
       "type": "schema",
       "profile": "v2-clean",
       "dependencies": [

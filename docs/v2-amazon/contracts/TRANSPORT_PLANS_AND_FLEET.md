@@ -8,6 +8,12 @@ La unidad recomendada al shipper es un **plan de transporte**, no un carrier ais
 
 Este documento define el contrato objetivo V2. No declara que la gestión de flota, la cotización multimodal o las autorizaciones fronterizas ya estén implementadas.
 
+### Cardinalidades ratificadas — F-05, 5 oct 2026
+
+Se conserva el UML: cada alternativa posee su snapshot de `RoutePlan`; una ruta asociada no pertenece a dos alternativas. Una plantilla de itinerario puede originar snapshots distintos. Cada `PlanLegAssignment` agrupa `1..N` `PlanResource`; cada recurso pertenece a una asignación. `CapacityReservation.planResourceId` identifica directamente el recurso comprometido. La confirmación del booking exige todos los recursos cubiertos, incluida la escolta sin aporte de carga.
+
+El contrato HTTP de HAC-40 acepta `assignments[].resources[]` para crear planes y devuelve `data.legAssignments` como agrupación canónica. Conserva `data.assignments` como detalle por recurso con `legAssignmentId` por compatibilidad; esos IDs de vínculo no sustituyen los IDs de cabecera en ofertas y oportunidades. Crear un hold para una cabecera con varios recursos exige `planResourceId`. La implementación candidata y sus límites de validación están en [el informe CP-1](../delivery/HAC40_CP1_RECONCILIATION_2026-10-05.md); ratificar el contrato no acredita por sí solo migración alojada ni aprobación QA.
+
 ## Taxonomía y propiedad
 
 - `TransportMode` identifica el medio de cada tramo: `ROAD`, `RAIL`, `SEA` o `AIR`. Un plan puede combinar tramos si existen servicios y conexiones verificables.

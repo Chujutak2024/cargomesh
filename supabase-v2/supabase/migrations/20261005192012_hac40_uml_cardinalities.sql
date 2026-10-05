@@ -1,6 +1,7 @@
 -- F-05: canonical leg assignments own 1..N resource bindings. Production data
 -- is preserved; the previous per-resource assignment rows become bindings.
 alter table public.plan_leg_assignments rename to plan_resource_bindings;
+alter table public.plan_resource_bindings rename constraint plan_leg_assignments_pkey to plan_resource_bindings_pkey;
 
 create table public.plan_leg_assignments (
  id uuid primary key,
