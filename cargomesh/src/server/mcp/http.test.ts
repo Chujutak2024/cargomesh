@@ -11,6 +11,8 @@ import { authenticateMcpRequest } from "./auth/context";
 import { issueMcpServiceToken, verifyMcpServiceToken } from "./auth/service-token";
 import { TEST_SERVICE_AUTH } from "./auth/test-configuration";
 import { currentMcpSupabaseAccessToken } from "./auth/request-context";
+import type { V2RoadToolServices } from "./tools/v2-road";
+import { readFileSync } from "node:fs";
 
 const RUN = "90000000-0000-0000-0000-000000000001";
 const REQUEST = "f2000000-0000-0000-0000-000000000001";
@@ -53,6 +55,7 @@ type Options = {
   principal?: McpPrincipal;
   read?: (id: string) => Promise<OrchestrationViewModel>;
   profile?: "V1_REGRESSION" | "V2";
+  v2RoadServices?: V2RoadToolServices;
 };
 function harness(options: Options = {}) {
   const calls: string[] = [];
@@ -73,6 +76,7 @@ function harness(options: Options = {}) {
     create: async () => { domainCalls.push("create"); throw new Error("unexpected create dispatch"); },
     find: async () => { domainCalls.push("find"); throw new Error("unexpected find dispatch"); },
     submit: async () => { domainCalls.push("submit"); throw new Error("unexpected submit dispatch"); },
+    v2RoadServices: options.v2RoadServices,
   });
   return { handle, calls, domainCalls, authCalls: () => authCalls };
 }
@@ -82,6 +86,51 @@ function rpc(method: string, params: unknown = {}, overrides: RequestInit = {}, 
   });
 }
 const call = (args: unknown = { runId: RUN }) => rpc("tools/call", { name: "get_freight_options", arguments: args });
+
+test("controlled MCP client calls V2 draft and ROAD tools through the direct application port", async () => {
+  const fixture = (name: string) => JSON.parse(readFileSync(
+    new globalThis.URL(`../../../../docs/v2-amazon/delivery/fixtures/hac27/${name}.json`, import.meta.url), "utf8"));
+  const createInput = fixture("create-request");
+  const intakeOptions = fixture("intake-options");
+  const draft = fixture("request-response");
+  const evaluation = fixture("serviceability-unknown");
+  const calls: string[] = [];
+  const principal = { ...testMcpUserPrincipal(), organizationId: draft.data.organizationId } as McpPrincipal;
+  const services: V2RoadToolServices = {
+    async options(actor) { calls.push(`options:${actor.organizationId}`); return intakeOptions; },
+    async create(_input, actor) { calls.push(`create:${actor.organizationId}`); return draft; },
+    async read(input) { calls.push(`read:${input.requestId}`); return draft; },
+    async evaluate(input) { calls.push(`road:${input.requestId}:${input.expectedDraftVersion}`); return evaluation; },
+  };
+  const h = harness({ profile: "V2", principal, v2RoadServices: services });
+  const transport = new StreamableHTTPClientTransport(new globalThis.URL(URL), {
+    fetch: async (input, init) => h.handle(new Request(input, init)),
+  });
+  const client = new Client({ name: "v2-controlled-test", version: "1.0.0" });
+  try {
+    await client.connect(transport);
+    const listed = await client.listTools();
+    assert.deepEqual(listed.tools.map((tool) => tool.name), [
+      "get_cargomesh_capabilities", "get_v2_intake_options", "create_v2_freight_request", "get_v2_freight_request", "evaluate_v2_road",
+    ]);
+    const catalog = await client.callTool({ name: "get_v2_intake_options", arguments: {} });
+    assert.equal((catalog.structuredContent as { data: typeof intakeOptions }).data.schemaVersion, "2.0");
+    assert.deepEqual((catalog.structuredContent as { data: typeof intakeOptions }).data.data.facilities.map((facility: { id: string }) => facility.id),
+      intakeOptions.data.facilities.map((facility: { id: string }) => facility.id));
+    const created = await client.callTool({ name: "create_v2_freight_request",
+      arguments: { idempotencyKey: "4c8aaf0d-e006-4eba-a5d2-517168283031", request: createInput } });
+    assert.equal((created.structuredContent as { data: typeof draft }).data.data.id, draft.data.id);
+    const read = await client.callTool({ name: "get_v2_freight_request", arguments: { requestId: draft.data.id } });
+    assert.equal((read.structuredContent as { data: typeof draft }).data.data.draftVersion, 1);
+    const road = await client.callTool({ name: "evaluate_v2_road",
+      arguments: { requestId: draft.data.id, expectedDraftVersion: 1 } });
+    assert.equal((road.structuredContent as { data: typeof evaluation }).data.data.overallStatus, "unknown");
+    assert.deepEqual(calls, [
+      `options:${draft.data.organizationId}`,
+      `create:${draft.data.organizationId}`, `read:${draft.data.id}`, `road:${draft.data.id}:1`,
+    ]);
+  } finally { await client.close(); }
+});
 
 test("official MCP client initializes, lists and calls the actual HTTP/SDK stack", async () => {
   const h = harness();
@@ -230,7 +279,7 @@ test("configured remote HTTPS canonical origin initializes and lists tools in pr
   assert.equal(listed.status, 200);
   assert.deepEqual(
     (await listed.json()).result.tools.map((tool: { name: string }) => tool.name),
-    ["get_cargomesh_capabilities"],
+    ["get_cargomesh_capabilities", "get_v2_intake_options", "create_v2_freight_request", "get_v2_freight_request", "evaluate_v2_road"],
   );
   assert.equal(h.authCalls(), 2);
 
@@ -324,6 +373,33 @@ test("service principal initializes and lists tools but cannot call business too
   assert.equal(result.isError, true);
   assert.equal(result.structuredContent.error.code, "FORBIDDEN");
   assert.deepEqual(h.calls, []);
+});
+
+test("V2 business tools reject a service principal before direct application dispatch", async () => {
+  let calls = 0;
+  const services: V2RoadToolServices = {
+    options: async () => { calls += 1; throw new Error("must not run"); },
+    create: async () => { calls += 1; throw new Error("must not run"); },
+    read: async () => { calls += 1; throw new Error("must not run"); },
+    evaluate: async () => { calls += 1; throw new Error("must not run"); },
+  };
+  const h = harness({ profile: "V2", v2RoadServices: services, principal: {
+    kind: "service", clientId: "alexa-service-test", scopes: ["mcp:service"],
+    tokenId: "token-id", issuedAt: 1, expiresAt: 901,
+  } });
+  const createInput = JSON.parse(readFileSync(new globalThis.URL(
+    "../../../../docs/v2-amazon/delivery/fixtures/hac27/create-request.json", import.meta.url), "utf8"));
+  const attempts = [
+    { name: "get_v2_intake_options", arguments: {} },
+    { name: "create_v2_freight_request", arguments: { idempotencyKey: "4c8aaf0d-e006-4eba-a5d2-517168283031", request: createInput } },
+    { name: "get_v2_freight_request", arguments: { requestId: REQUEST } },
+    { name: "evaluate_v2_road", arguments: { requestId: REQUEST, expectedDraftVersion: 1 } },
+  ];
+  for (const attempt of attempts) {
+    const response = await h.handle(rpc("tools/call", attempt));
+    assert.equal((await response.json()).result.structuredContent.error.code, "FORBIDDEN");
+  }
+  assert.equal(calls, 0);
 });
 
 test("signed service bearer authenticates initialize/list and is denied before business dispatch", async () => {
