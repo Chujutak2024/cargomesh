@@ -107,6 +107,9 @@ La revisión de solicitud reutiliza la validación/canonización SQL existente m
 
 El manifest registra la migración HAC-11 previamente mergeada que faltaba en la base, sin modificar su SQL; el perfil ejecuta su pgTAP. No se cambió la lógica de account-linking de Axel.
 
-**Estado actual:** catálogo, flota, crew y [workflow de planes/comercial/reservas/operación](./HAC40_WORKFLOW_API.md) están implementados y probados localmente; [200 GET/POST únicos](./HAC40_API_ENDPOINTS.md). **Para cerrar HAC-40 sigue faltando** certificar atributo por atributo y relación por relación todo el DER contra PostgreSQL, resolver faltantes/divergencias/puertos visibles del modelo, integrar identidad carrier/MCP, aplicar esquema/dataset autorizado alojado y comprobar consumo real de frontend/MCP. No se deben marcar esos huecos como futuros fuera del alcance ni cerrar la issue con los endpoints actuales.
+**Estado actual:** catálogo, flota, crew y [workflow de planes/comercial/reservas/operación](./HAC40_WORKFLOW_API.md) están implementados y probados localmente; [204 GET/POST únicos](./HAC40_API_ENDPOINTS.md). **Para cerrar HAC-40 sigue faltando** certificar atributo por atributo y relación por relación todo el DER contra PostgreSQL, resolver faltantes/divergencias/puertos visibles del modelo, integrar identidad carrier/MCP, aplicar esquema/dataset autorizado alojado y comprobar consumo real de frontend/MCP. No se deben marcar esos huecos como futuros fuera del alcance ni cerrar la issue con los endpoints actuales.
 
 Supabase alojado requiere autorización específica después del gate completo de esquema; esta rama no aplica DDL ni seeds remotos. La revisión de implementación, publicación/merge autorizado y QA integrado siguen siendo requisitos separados de los tests locales.
+
+
+Actualización LTL del 4-oct: el workflow ahora coordina una operación física compartida con ventana/crew comunes, eventos correlacionados y cancelaciones aisladas. Véase [contrato](./HAC40_WORKFLOW_API.md). Esto no certifica todavía la matriz completa ni discovery/adaptadores live.

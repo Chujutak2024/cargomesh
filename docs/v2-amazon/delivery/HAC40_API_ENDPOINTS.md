@@ -1,6 +1,6 @@
 # HAC-40 — inventario de endpoints implementados
 
-200 operaciones únicas GET/POST de negocio, extraídas de `createHonoApp().routes`; excluye health y middleware duplicado. 107 pertenecen al router nuevo de workflow; las 93 anteriores permanecen. Presencia de una ruta no acredita dato alojado, consumo frontend/MCP ni proveedor live.
+204 operaciones únicas GET/POST de negocio, extraídas de `createHonoApp().routes`; excluye health y middleware duplicado. 111 pertenecen al router nuevo de workflow; las 93 anteriores permanecen. Presencia de una ruta no acredita dato alojado, consumo frontend/MCP ni proveedor live.
 
 [Contrato y límites de workflow](./HAC40_WORKFLOW_API.md). Prefijo incluido; parámetros son UUID. Listados paginados; la identidad se resuelve en servidor. POST requiere Idempotency-Key y schemaVersion; acciones/revisiones requieren versión esperada.
 
@@ -62,7 +62,11 @@
 | GET | `/api/v2/carriers/:carrierId/consolidations` |
 | POST | `/api/v2/carriers/:carrierId/consolidations` |
 | GET | `/api/v2/carriers/:carrierId/consolidations/:id` |
+| POST | `/api/v2/carriers/:carrierId/consolidations/:id/cancellations` |
 | POST | `/api/v2/carriers/:carrierId/consolidations/:id/closures` |
+| POST | `/api/v2/carriers/:carrierId/consolidations/:id/completions` |
+| POST | `/api/v2/carriers/:carrierId/consolidations/:id/positions` |
+| POST | `/api/v2/carriers/:carrierId/consolidations/:id/starts` |
 | GET | `/api/v2/carriers/:carrierId/depots` |
 | POST | `/api/v2/carriers/:carrierId/depots` |
 | GET | `/api/v2/carriers/:carrierId/depots/:id` |

@@ -32,6 +32,9 @@
     "supabase/tests/25_v2_hac40_combination.test.sql",
     "supabase/tests/26_v2_hac40_workflow_constraints.test.sql",
     "supabase/tests/27_v2_hac40_multileg.test.sql",
-    "supabase/tests/28_v2_hac40_execution_cancel.test.sql"
+    "supabase/tests/28_v2_hac40_execution_cancel.test.sql",
+    "supabase/tests/29_v2_hac40_ltl_operations.test.sql",
+    "supabase/tests/30_v2_hac40_ltl_cancellation.test.sql",
+    "supabase/tests/31_v2_hac40_ltl_predeparture.test.sql"
   ]
 }

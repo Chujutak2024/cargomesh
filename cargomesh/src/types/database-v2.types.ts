@@ -1699,6 +1699,7 @@ export type Database = {
           evidence: Json | null
           execution_id: string
           id: string
+          occupancy_group_id: string
           policy_evidence: Json | null
           required_qualifications: Json
           role: string
@@ -1717,6 +1718,7 @@ export type Database = {
           evidence?: Json | null
           execution_id: string
           id?: string
+          occupancy_group_id?: string
           policy_evidence?: Json | null
           required_qualifications: Json
           role: string
@@ -1735,6 +1737,7 @@ export type Database = {
           evidence?: Json | null
           execution_id?: string
           id?: string
+          occupancy_group_id?: string
           policy_evidence?: Json | null
           required_qualifications?: Json
           role?: string
@@ -1868,6 +1871,7 @@ export type Database = {
       execution_events: {
         Row: {
           carrier_id: string | null
+          consolidation_id: string | null
           created_at: string
           data: Json
           freight_request_id: string | null
@@ -1875,12 +1879,14 @@ export type Database = {
           kind: string
           organization_id: string | null
           parent_id: string | null
+          physical_event_id: string | null
           status: string
           updated_at: string
           version: number
         }
         Insert: {
           carrier_id?: string | null
+          consolidation_id?: string | null
           created_at?: string
           data: Json
           freight_request_id?: string | null
@@ -1888,12 +1894,14 @@ export type Database = {
           kind?: string
           organization_id?: string | null
           parent_id?: string | null
+          physical_event_id?: string | null
           status: string
           updated_at?: string
           version?: number
         }
         Update: {
           carrier_id?: string | null
+          consolidation_id?: string | null
           created_at?: string
           data?: Json
           freight_request_id?: string | null
@@ -1901,6 +1909,7 @@ export type Database = {
           kind?: string
           organization_id?: string | null
           parent_id?: string | null
+          physical_event_id?: string | null
           status?: string
           updated_at?: string
           version?: number
@@ -1918,6 +1927,13 @@ export type Database = {
             columns: ["carrier_id"]
             isOneToOne: false
             referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execution_events_consolidation_id_fkey"
+            columns: ["consolidation_id"]
+            isOneToOne: false
+            referencedRelation: "capacity_consolidations"
             referencedColumns: ["id"]
           },
           {
@@ -5730,4 +5746,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
