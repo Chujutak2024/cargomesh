@@ -88,4 +88,17 @@ select lives_ok($$select pg_temp.w('bookings.cancel',jsonb_build_object('schemaV
 reset role;
 select is((select status from public.capacity_reservations where id=pg_temp.id('hold')),'RELEASED','cancelled booking leaves no hold');
 select is((select status from public.transport_executions where id=pg_temp.id('execution')),'CANCELLED','cancelled booking cancels planned execution');
+select is((select value#>>'{data,planner,algorithmVersion}' from refs where name='route'),
+ 'PUBLISHED_ITINERARY_VALIDATOR_V1','CP-1: route declares its implemented validator version');
+select is((select value#>>'{data,planner,source,scope}' from refs where name='route'),
+ 'SELECTED_ITINERARY_SNAPSHOT','CP-1: itinerary provenance does not claim automatic graph search');
+select is((select value#>>'{data,planner,graphVersion}' from refs where name='route'),
+ (select private.workflow_planner_snapshot(value->'data')->>'graphVersion' from refs where name='route'),
+ 'CP-1: stored planner fingerprint is reproducible from its immutable snapshot');
+select isnt((select private.workflow_planner_snapshot(jsonb_set(value->'data','{policyVersion}','2'))->>'graphVersion' from refs where name='route'),
+ (select value#>>'{data,planner,graphVersion}' from refs where name='route'),
+ 'CP-1: changed policy revision changes the planner fingerprint');
+select isnt((select private.workflow_planner_snapshot(jsonb_set(value->'data','{legs,0,corridorVersion}','2'))->>'graphVersion' from refs where name='route'),
+ (select value#>>'{data,planner,graphVersion}' from refs where name='route'),
+ 'CP-1: changed corridor revision changes the planner fingerprint');
 select * from finish();rollback;

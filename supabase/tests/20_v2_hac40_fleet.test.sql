@@ -38,6 +38,20 @@ select is((select pg_temp.fleet_cmd('capability-definitions',null,key,null,(sele
 with keys as materialized(select gen_random_uuid() key),saved as materialized(select key,pg_temp.fleet_cmd('assets',null,key,null,(select value from fleet_inputs where kind='assets')) r from keys)
 insert into fleet_saved select 'assets',(r#>>'{record,id}')::uuid,key,r from saved;
 select is((select receipt#>>'{record,version}' from fleet_saved where kind='assets'),'1','assets: create');
+select throws_ok($$select pg_temp.fleet_cmd('assets',null,gen_random_uuid(),null,
+ jsonb_set((select value from fleet_inputs where kind='assets'),'{roadVehicle,bodyType}','null'))$$,
+ 'PT400','VALIDATION_ERROR','CP-1: native command rejects NULL required body type');
+select throws_ok($$select pg_temp.fleet_cmd('assets',null,gen_random_uuid(),null,
+ jsonb_set((select value from fleet_inputs where kind='assets'),'{roadVehicle,plate}','null'))$$,
+ 'PT400','VALIDATION_ERROR','CP-1: native command rejects NULL required plate');
+select throws_ok($$select pg_temp.fleet_cmd('assets',null,gen_random_uuid(),null,
+ jsonb_set((select value from fleet_inputs where kind='assets'),'{usefulCapacityKg}','null'))$$,
+ 'PT400','VALIDATION_ERROR','CP-1: native command rejects unknown mandatory carrying capacity');
+select is(pg_temp.fleet_read('assets',(select id from fleet_saved where kind='assets'))#>>'{0,value,roadVehicle,bodyType}',
+ 'BOX','CP-1: valid body type survives authenticated create and GET');
+select is(pg_temp.fleet_cmd('assets',null,gen_random_uuid(),null,(select value from fleet_inputs where kind='assets')
+ ||'{"code":"CP1_ESCORT","role":"AUXILIARY","usefulCapacityKg":0,"usableVolumeM3":null}')#>>'{record,value,usefulCapacityKg}',
+ '0','CP-1: auxiliary capacity projects zero without contributing cargo capacity');
 select is((select pg_temp.fleet_cmd('assets',null,key,null,(select value from fleet_inputs where kind='assets'))->>'replay' from fleet_saved where kind='assets'),'true','assets: creation replay');
 select is((pg_temp.fleet_read('assets',(select id from fleet_saved where kind='assets'))#>>'{0,carrierId}'),'c2340000-0000-4000-8000-000000000001','assets: scoped read');
 select is((select pg_temp.fleet_cmd('assets',id,gen_random_uuid(),1,(select value from fleet_inputs where kind='assets'))#>>'{record,version}' from fleet_saved where kind='assets'),'2','assets: revision');

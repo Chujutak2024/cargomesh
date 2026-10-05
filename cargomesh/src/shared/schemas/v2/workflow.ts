@@ -113,7 +113,7 @@ const VerificationSource = z.object({ calendarId: Id, calendarVersion: z.number(
   limitsVersion: z.number().int().nullable(), corridorId: Id, source: Evidence.nullable(), laneId: Id }).strict();
 const EffectiveCapacity = Capacity.extend({ usableDimensions: Dimensions.nullable() }).strict();
 const Resource = z.object({ assetId: Id.nullable(), poolId: Id.nullable(), calendarId: Id, combinationId: Id.nullable(),
-  role: z.enum(["LOAD_BEARING", "AUXILIARY"]), equipment: Text.nullable(), units: z.number().int().positive(),
+  role: z.enum(["LOAD_BEARING", "AUXILIARY"]), equipment: Text, units: z.number().int().positive(),
   window: TimeWindowV2Schema, availability: Verification, applicableCapacity: EffectiveCapacity.nullable(),
   verificationSource: VerificationSource.nullable() }).strict();
 const Allocation = z.object({ unitIndex: z.number().int().nonnegative(), quantity: z.number().int().positive(),
@@ -145,6 +145,10 @@ export const WorkflowRecordV2Schema = z.discriminatedUnion("kind", [
   z.object({ ...Metadata, kind: z.literal("routes"), data: Stored({ origin: Location, destination: Location,
     corridorIds: z.array(Id), policyId: Id, policyVersion: z.number().int().positive(), estimatedDistanceKm: z.number().nullable(),
     estimatedDurationSeconds: z.number().nullable(), geographicSource: z.object({ kind: z.literal("PUBLISHED_CORRIDORS"), references: z.array(Id) }).strict(),
+    planner: z.object({ algorithmVersion: z.literal("PUBLISHED_ITINERARY_VALIDATOR_V1"),
+      graphVersion: z.string().regex(/^[0-9a-f]{64}$/),
+      source: z.object({ kind: z.literal("PUBLISHED_CORRIDORS"), scope: z.literal("SELECTED_ITINERARY_SNAPSHOT"),
+        references: z.array(Id) }).strict() }).strict(),
     confidence: Verification, estimatedTolls: z.null(), borderCostEstimate: z.null(), reasons: z.array(Text), legs: z.array(Leg) }) }).strict(),
   z.object({ ...Metadata, kind: z.literal("plans"), data: Stored({ routeId: Id, requestVersion: z.number().int().positive(),
     eligibility: z.enum(["eligible", "unknown", "ineligible"]), evaluatedAt: Instant, exclusionReasons: z.array(Text),

@@ -18,8 +18,8 @@ const LocalDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(x => {
   const date = new Date(x + "T00:00:00Z");
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === x;
 }, "Invalid calendar date.");
-const roadVehicle = z.object({ plate: Text.nullable(), registrationCode: Text.nullable(), registeredAt: LocalDate.nullable(),
-  brand: Text.nullable(), model: Text.nullable(), variant: Text.nullable(), bodyType: Text.nullable(),
+const roadVehicle = z.object({ plate: Text, registrationCode: Text.nullable(), registeredAt: LocalDate.nullable(),
+  brand: Text.nullable(), model: Text.nullable(), variant: Text.nullable(), bodyType: Text,
   usableDimensions: Dimensions.nullable(), grossWeightLimitKg: z.number().positive().nullable(),
   odometerKm: z.number().nonnegative().nullable(), conditionReason: Text.nullable(), axleConfig: Text.nullable() }).strict();
 
@@ -29,13 +29,14 @@ export const FleetInputsV2 = {
     certifications: Strings, evidence: Text.nullable(), verifiedAt: Instant.nullable(), validUntil: Instant.nullable(), active: z.boolean() }).strict()
     .refine(x => !x.verifiedAt || !x.validUntil || Date.parse(x.validUntil) > Date.parse(x.verifiedAt), "Invalid evidence window."),
   assets: z.object({ ...Base, code: Code, mode: TransportModeV2Schema, equipmentType: EquipmentCodeV2Schema,
-    role: z.enum(["LOAD_BEARING", "AUXILIARY"]), usefulCapacityKg: z.number().positive().nullable(),
+    role: z.enum(["LOAD_BEARING", "AUXILIARY"]), usefulCapacityKg: z.number().nonnegative(),
     usableVolumeM3: z.number().positive().nullable(), operatingStatus: AssetStatus,
     homeDepotId: Id.nullable(), provenance: z.enum(["OWN", "CONTRACTED", "PARTNER"]),
     partnerId: Id.nullable(), evidence: Text.nullable(), roadVehicle: roadVehicle.nullable() }).strict()
     .refine(x => (x.mode === "ROAD") === (x.roadVehicle !== null), "ROAD requires vehicle attributes.")
     .refine(x => (x.provenance === "PARTNER") === (x.partnerId !== null), "Partner provenance requires partner.")
-    .refine(x => x.role !== "AUXILIARY" || (x.usefulCapacityKg === null && x.usableVolumeM3 === null), "Auxiliary capacity must be null.")
+    .refine(x => x.role === "AUXILIARY" ? x.usefulCapacityKg === 0 && x.usableVolumeM3 === null : x.usefulCapacityKg > 0,
+      "Auxiliary useful capacity must be zero; a load-bearing asset requires positive capacity.")
     .refine(x => !x.roadVehicle?.grossWeightLimitKg || !x.usefulCapacityKg || x.usefulCapacityKg <= x.roadVehicle.grossWeightLimitKg,
       "Useful capacity exceeds gross weight limit."),
   "capacity-pools": z.object({ ...Base, code: Code, mode: TransportModeV2Schema,
@@ -69,8 +70,8 @@ export const FleetInputsV2 = {
     .refine(x => !x.verifiedAt || !x.validUntil || Date.parse(x.validUntil) > Date.parse(x.verifiedAt), "Invalid evidence window."),
 } as const;
 
-// Imported rows may lack the new UML fields. Reads preserve those unknowns;
-// a new publication/revision must still satisfy the full input contract above.
+// Canonical reads require the mandatory UML fields. Incomplete imported rows
+// produce CATALOG_DATA_INCOMPLETE and remain repairable through a revision.
 type UnwrapEffects<T extends z.ZodTypeAny> = T extends z.ZodEffects<infer Inner> ? UnwrapEffects<Inner> : T;
 function objectOf<T extends z.ZodTypeAny>(schema: T): UnwrapEffects<T> {
   return (schema instanceof z.ZodEffects ? objectOf(schema.innerType()) : schema) as UnwrapEffects<T>;
@@ -78,16 +79,9 @@ function objectOf<T extends z.ZodTypeAny>(schema: T): UnwrapEffects<T> {
 export const FleetOutputsV2 = {
   "capability-definitions": FleetInputsV2["capability-definitions"],
   assets: FleetInputsV2.assets,
-  "capacity-pools": objectOf(FleetInputsV2["capacity-pools"]).extend({
-    mode: TransportModeV2Schema.nullable(), serviceWindow: TimeWindowV2Schema.nullable(),
-    provenance: z.enum(["OWN", "CONTRACTED", "PARTNER"]).nullable(), evidence: Text.nullable(),
-  }),
-  calendars: objectOf(FleetInputsV2.calendars).extend({ timezone: Text.nullable(), horizon: TimeWindowV2Schema.nullable(),
-    source: Text.nullable(), freshness: Evidence.nullable() }),
-  maintenances: objectOf(FleetInputsV2.maintenances).extend({ kind: Text.nullable(), source: Text.nullable() }),
-  "repositioning-blocks": objectOf(FleetInputsV2["repositioning-blocks"]).extend({
-    origin: Location.nullable(), nextPickup: Location.nullable(), estimatedTravelSeconds: z.number().int().positive().nullable(),
-    source: Text.nullable(),
-  }),
+  "capacity-pools": FleetInputsV2["capacity-pools"],
+  calendars: FleetInputsV2.calendars,
+  maintenances: FleetInputsV2.maintenances,
+  "repositioning-blocks": FleetInputsV2["repositioning-blocks"],
   "asset-capabilities": objectOf(FleetInputsV2["asset-capabilities"]).extend({ definitionId: Id.nullable() }),
 } as const;

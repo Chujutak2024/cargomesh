@@ -64,87 +64,71 @@ Como varias tareas corren en paralelo sin bloqueos artificiales en cascada, se f
 
 ---
 
-## 2. Matriz Completa de las 57 Clases del UML `07` (Contraste V1 vs. V2)
+## 2. Matriz vigente de las 57 clases — recuperación integral, 5 oct 2026
 
-> **Regla normativa:** Una caja en el diagrama de clases UML **no** obliga a crear una tabla SQL. Cada una de las 57 clases del archivo `07-complete-classes-sprint2-reviewed.drawio` tiene asignado aquí su tratamiento físico/lógico exacto:
-> - **21 clases asociadas a tablas persistentes** (**11** de base Sprint 1 activas en S2 + **10** de Sprint 2 Core, donde `TransportAsset` y `RoadVehicle` comparten `public.transport_assets` con `mode = 'ROAD'`).
-> - **7 clases como valores embebidos / columnas / JSONB validado** (`CargoSpecification`, `CargoUnit`, `ShipmentContact`, `RoutePlan`, `RouteLeg`, `RouteWaypoint`, `RouteCorridor`).
-> - **6 clases como interfaces, servicios de aplicación, reglas o resultados derivados en S2** (`CapacitySource`, `RoutePlanner`, `TransportPlanCandidate`, `PlanResource`, `PlanLegAssignment`, `LoadAllocation`).
-> - **2 clases como fixtures de escenario simulado V2** (`RouteSimulationScenario`, `RouteCondition`).
-> - **21 clases diferidas fuera del corte operativo de Sprint 2** (**10** diferidas a HITO 3–4 + **11** diferidas a Roadmap).
-> - **Total verificado:** $21 + 7 + 6 + 2 + 21 = 57$ clases únicas.
+El plan del 3 de octubre incorpora las 57 clases al alcance. La antigua división de 21 clases diferidas queda sustituida por esta matriz. Una clase puede ser tabla, valor embebido, proyección o puerto; su presencia no acredita implementación completa.
 
-| # | Clase UML (`07`) | Estereotipo UML | Estado en V1 (As-Is) | Tratamiento en V2 (`cargomesh-v2`) | Tabla / Ubicación Física V2 | Dueño Escritura / Tenant / RLS | Corte de Activación |
-|---|---|---|---|---|---|---|---|
-| 1 | `Organization` | `«existente»` | Tabla `organizations` | **Tabla persistente** | `public.organizations` | Admin / Tenant root (`id = current_org_id()`) | Sprint 1 Base / Activo S2 |
-| 2 | `Facility` | `«existente»` | No existía en V1; creada en `HAC-21` | **Tabla persistente** | `public.facilities` | Shipper (`organization_id` RLS + FK compuesta) | Sprint 1 Base / Activo S2 |
-| 3 | `FreightRequest` | `«existente»` | Tabla `freight_requests` con semántica mixta V1/V2 | **Tabla persistente (Aggregate Root)** | `public.freight_requests` (con `draft_version`, FKs a `facilities` y JSONB tipado) | Shipper (`organization_id` RLS) — `HAC-12` | **Sprint 2 Operativo** |
-| 4 | `CargoSpecification` | `«existente»` | Columnas sueltas + JSONB parcial en `freight_requests` | **Valor embebido / JSONB validado + columnas** | `freight_requests.cargo_specifications` (JSONB) + `cargo_category_id`, `cargo_weight_kg`, `cargo_volume_m3` | Shipper (dentro de `FreightRequest`) — `HAC-12` | **Sprint 2 Operativo** |
-| 5 | `CargoUnit` | `«existente»` | Arreglo JSONB dentro de `cargo_specifications.units` | **Valor embebido en colección JSONB** | `freight_requests.cargo_specifications -> 'units'` (validado por Zod y CHECK SQL) | Shipper (dentro de `FreightRequest`) — `HAC-12` | **Sprint 2 Operativo** |
-| 6 | `Carrier` | `«existente»` | Tabla `carriers` (con columnas V1 `supports_webmcp`) | **Tabla persistente** | `public.carriers` (sin depender de `supports_webmcp` en V2) | Catálogo Carrier / Lectura autenticada; escritura servicio/operador | Sprint 1 Base / Activo S2 |
-| 7 | `CarrierDepot` | `«existente»` | Creada en `HAC-21` (`carrier_depots`) | **Tabla persistente** | `public.carrier_depots` | Carrier / Catálogo (`carrier_id` RLS) | Sprint 1 Base / Activo S2 |
-| 8 | `CarrierService` | `«existente»` | Tabla `carrier_services` extendida en `HAC-21` | **Tabla persistente** | `public.carrier_services` | Carrier / Catálogo (`carrier_id` RLS) | Sprint 1 Base / Activo S2 |
-| 9 | `ServiceLane` | `«existente»` | Creada en `HAC-21` (`service_lanes`) | **Tabla persistente** | `public.service_lanes` (roles `pickup_area_id` y `delivery_area_id` dirigidos) | Carrier / Catálogo (`service_id` RLS) | Sprint 1 Base / Activo S2 |
-| 10 | `ResponseIntegration` | `«HITO 3–4»` | No existe (en V1 era columna `provider_url`) | **Diferido HITO 3–4 (`schema-ready` opcional)** | Configuración de canal por `CarrierService` (tabla/JSONB en HITO 3) | Carrier / Admin | HITO 3–4 |
-| 11 | `CapacitySource` | `«interface · HITO 2»` | No existe | **Interfaz TypeScript + Guarda XOR en BD** | Representación parcial: tipo TS `Capacity` del evaluador + XOR `CHECK (num_nonnulls(transport_asset_id, capacity_pool_id) = 1)` en `capacity_calendars`; puerto UML `CapacitySource.availability` pendiente | N/A (Interfaz de dominio) — `HAC-12` | **Sprint 2 Operativo** |
-| 12 | `TransportAsset` | `«HITO 2 · tabla V1»` | Tabla `vehicles` V1 (solo placa/capacidad nominal) | **Tabla persistente V2** | `public.transport_assets` (o extensión aislada V2 con modo, tipo de equipo, peso/volumen útiles) | Carrier / Servicio (`carrier_id` RLS) — `HAC-12` | **Sprint 2 Operativo** |
-| 13 | `RoadVehicle` | `«HITO 2»` | Filas en `vehicles` V1 | **Especialización de `TransportAsset` (`mode = 'ROAD'`)** | `public.transport_assets` donde `mode = 'ROAD'` + metadatos viales (`axle_config`, `plate`, `asset_role`) | Carrier / Servicio (`carrier_id` RLS) — `HAC-12` | **Sprint 2 Operativo** |
-| 14 | `CapacityPool` | `«HITO 2»` | No existe en V1 | **Tabla persistente V2** | `public.capacity_pools` (cupo agregado por `carrier_service_id` cuando no se expone vehículo individual) | Carrier / Servicio (`carrier_service_id` RLS) — `HAC-12` | **Sprint 2 Operativo** |
-| 15 | `CapacityCalendar` | `«HITO 2»` | No existe en V1 | **Tabla persistente V2** | `public.capacity_calendars` (vinculada por XOR a `transport_asset_id` o `capacity_pool_id`, con fuente y `valid_until`) | Carrier / Servicio (RLS lectura evaluador) — `HAC-12` | **Sprint 2 Operativo** |
-| 16 | `CapacityReservation` | `«HITO 2»` | No existe en V1 | **Tabla persistente V2** | `public.capacity_reservations` (ocupación/hold por ventana temporal `[starts_at, ends_at)`) | Servicio transaccional / Carrier (`HAC-12`) | **Sprint 2 Operativo** |
-| 17 | `ScheduledMaintenance` | `«HITO 2»` | No existe en V1 | **Tabla persistente V2** | `public.scheduled_maintenances` (bloqueos técnicos por ventana sobre `transport_asset_id`) | Carrier / Servicio (`HAC-12`) | **Sprint 2 Operativo** |
-| 18 | `Driver` | `«roadmap»` | Columnas sueltas `driver_name` en `vehicles` V1 | **Diferido (Roadmap)** | Fuera del esquema de Sprint 2; no se modela como tabla activa | N/A (Diferido) | Roadmap (Post-HITO 4) |
-| 19 | `DriverAssignment` | `«roadmap»` | No existe | **Diferido (Roadmap)** | Fuera del esquema de Sprint 2 | N/A (Diferido) | Roadmap (Post-HITO 4) |
-| 20 | `VehicleAssignment` | `«roadmap»` | No existe | **Diferido (Roadmap)** | En Sprint 2 la ocupación se verifica por `CapacityReservation`; asignación operativa queda para ejecución | N/A (Diferido) | Roadmap (Post-HITO 4) |
-| 21 | `AssetStatusEvent` | `«roadmap»` | No existe | **Diferido / Fixture de simulación si aplica** | No es telemetría GPS live en Sprint 2 | N/A (Diferido) | Roadmap |
-| 22 | `RoutePlan` | `«HITO 3–4»` | No existe en V1 | **Valor estructurado / Snapshot JSONB en S2** | DTO `routePreview` (backend actual: `null`) en evaluación ROAD (`HAC-12` / `HAC-15`) | Servicio de elegibilidad / Mapa (`HAC-12`) | **Sprint 2 (DTO/Snapshot)** / HITO 3 |
-| 23 | `RouteLeg` | `«HITO 3–4»` | No existe en V1 | **Valor estructurado dentro de `RoutePlan`** | Arreglo tipado `legs[]` dentro del resultado de servicio/ruta ROAD | Servicio de elegibilidad (`HAC-12`) | **Sprint 2 (DTO/Snapshot)** / HITO 3 |
-| 24 | `RouteCondition` | `«roadmap»` | No existe | **Fixture de escenario simulado (`v2-road-baseline`)** | Datos sintéticos rotulados `SIMULATED` en `supabase/scenarios/v2-*/` | QA / Escenario (`HAC-13`; consumo `HAC-15`) | Escenario S2 (`SIMULATED`) |
-| 25 | `RouteWaypoint` | `«roadmap»` | No existe | **Valor embebido en geometría de ruta** | Coordenadas dentro de `RouteLeg.waypoints[]` para renderizado en mapa (`HAC-15`) | Servicio / Escenario (`HAC-12`/`HAC-15`) | **Sprint 2 (DTO Mapa)** |
-| 26 | `RoutePlanningPolicy` | `«roadmap»` | No existe | **Diferido (Roadmap)** | No hay optimizador heurístico global en Sprint 2 | N/A (Diferido) | Roadmap |
-| 27 | `TransportPlanCandidate` | `«HITO 2»` | No existe en V1 | **Resultado derivado en S2 (`schema-ready` para HITO 3)** | En Sprint 2 se devuelve como candidato evaluado por `RoadServiceabilityService`; persistencia de planes seleccionados se activa con oportunidades en HITO 3 | Servicio ROAD (`HAC-12`) | **Sprint 2 (Resultado Servicio)** / HITO 3 Tabla |
-| 28 | `PlanResource` | `«HITO 2»` | No existe en V1 | **Resultado derivado en S2 (`schema-ready` para HITO 3)** | Recurso portador requerido/verificado dentro de `TransportPlanCandidate` | Servicio ROAD (`HAC-12`) | **Sprint 2 (Resultado Servicio)** / HITO 3 Tabla |
-| 29 | `CarrierOpportunity` | `«HITO 3–4»` | No existe en V1 | **Diferido a HITO 3** | No se abren oportunidades comerciales ni subastas en Sprint 2 | N/A en Sprint 2 | HITO 3 |
-| 30 | `CarrierOffer` | `«HITO 3–4 · tabla V1»` | Tabla `carrier_offers` V1 (con scores WebMCP) | **Diferido a HITO 3 (No usar tabla V1 como V2)** | En Sprint 2 **no hay cotización ni precio**; la tabla V1 queda aislada para regresión V1 | N/A en Sprint 2 | HITO 3 |
-| 31 | `RankedOption` | `«HITO 3–4»` | Embebido en `freight_decisions` V1 | **Resultado calculado (Nunca es tabla propia)** | Proyección derivada de `CarrierOffer` + `ScoringPolicy` en HITO 3 | Motor de Ranking (HITO 3) | HITO 3 |
-| 32 | `ScoringPolicy` | `«HITO 3–4»` | Constantes hardcoded `BALANCED` en V1 | **Diferido a HITO 3** | Política versionada determinística (pesos y dimensiones auditables) | Admin / Gobernanza (HITO 3) | HITO 3 |
-| 33 | `Booking` | `«HITO 3–4 · tabla V1»` | Tabla `bookings` V1 (con auto-booking heredado) | **Diferido a HITO 4 (No usar auto-booking V1)** | Requiere `SelectionDecision` humana y `CarrierOffer` vigente en USD | Shipper autorizado (HITO 4) | HITO 4 |
-| 34 | `TransportExecution` | `«roadmap»` | No existe | **Diferido (Roadmap)** | Fuera de alcance de Sprint 2 | N/A | Roadmap |
-| 35 | `OperationalIncident` | `«roadmap»` | No existe | **Diferido (Roadmap)** | Fuera de alcance de Sprint 2 | N/A | Roadmap |
-| 36 | `IncidentUpdate` | `«roadmap»` | No existe | **Diferido (Roadmap)** | Fuera de alcance de Sprint 2 | N/A | Roadmap |
-| 37 | `LogisticsNode` | `«roadmap»` | No existe | **Diferido / Referencia geográfica en escenario** | No concede cobertura comercial; cobertura sigue en `ServiceArea` + `ServiceLane` | N/A | Roadmap |
-| 38 | `RouteCorridor` | `«roadmap»` | No existe | **Valor / Referencia de corredor en escenario ROAD** | Metadato de corredor (`corridor_code`, `geometry_source`) en respuesta para `HAC-15` | Servicio / Escenario (`HAC-12`/`HAC-15`) | **Sprint 2 (Metadato Mapa)** |
-| 39 | `CargoProfile` | `«existente»` | Tabla `organization_cargo_profiles` | **Tabla persistente** | `public.organization_cargo_profiles` (plantillas reutilizables del tenant) | Shipper (`organization_id` RLS) | Sprint 1 Base / Activo S2 |
-| 40 | `CargoCategory` | `«existente»` | Tabla `cargo_categories` (8 categorías) | **Tabla persistente de referencia** | `public.cargo_categories` (8 categorías canónicas preservadas en `HAC-29`) | Catálogo de referencia (Lectura pública/auth) | Sprint 1 Base / Activo S2 |
-| 41 | `LoadAllocation` | `«roadmap»` | No existe | **Regla de validación en dominio (`CargoUnit.indivisible`)** | En Sprint 2 se valida que ninguna unidad indivisible supere la capacidad de un activo portador | Servicio ROAD (`HAC-12`) | **Sprint 2 (Regla Dominio)** |
-| 42 | `OrganizationMember` | `«existente»` | Tabla `organization_members` | **Tabla persistente** | `public.organization_members` (`organization_id`, `auth_user_id`, `role`, `status`) | Admin / Tenant (`organization_id` RLS) | Sprint 1 Base / Activo S2 |
-| 43 | `McpAccountLink` | `«HITO 2»` | No existe en V1 | **Tabla persistente nueva en Sprint 2** | `public.mcp_account_links` (campos/contrato físicos pendientes de HAC-11; véase diccionario de atributos) | Servicio Auth MCP (`organization_id` RLS) — **`HAC-11`** | **Sprint 2 Operativo (`HAC-11`)** |
-| 44 | `RepositioningBlock` | `«roadmap»` | No existe en V1 | **Tabla persistente V2 (o bloqueo tipado en agenda)** | `public.repositioning_blocks` (bloquea ventana en `capacity_calendars` por reubicación de vacío) | Carrier / Servicio (`HAC-12`) | **Sprint 2 Operativo (`HAC-12`)** |
-| 45 | `OrganizationPreferences` | `«existente»` | Tabla `organization_preferences` | **Tabla persistente (con restricción V2)** | `public.organization_preferences` (`allow_auto_booking` de V1 se ignora/desactiva en V2) | Shipper (`organization_id` RLS) | Sprint 1 Base / Activo S2 |
-| 46 | `CarrierMetric` | `«HITO 3–4 · tabla V1»` | Columnas de score estático en `carriers` V1 | **Diferido a HITO 3** | En Sprint 2 no se ranquean carriers por score histórico | N/A en Sprint 2 | HITO 3 |
-| 47 | `VehicleCombination` | `«roadmap»` | No existe | **Diferido (Roadmap)** | En Sprint 2 cada `TransportAsset` declara su capacidad efectiva neta | N/A | Roadmap |
-| 48 | `ServiceArea` | `«existente»` | Creada en `HAC-21` (`service_areas`) | **Tabla persistente** | `public.service_areas` (`area_role`: `PICKUP`/`DELIVERY`, `coverage`: `INCLUDE`/`EXCLUDE`) | Carrier / Catálogo (`service_id` RLS) | Sprint 1 Base / Activo S2 |
-| 49 | `FulfilmentPartner` | `«roadmap»` | No existe | **Diferido (Roadmap)** | Fuera del corte de Sprint 2 | N/A | Roadmap |
-| 50 | `PlanLegAssignment` | `«HITO 3–4»` | No existe | **Proyección en candidato ROAD S2 / Tabla HITO 3** | En Sprint 2 un candidato ROAD unimodal vincula su tramo al `CarrierService` evaluado | Servicio ROAD (`HAC-12`) | **Sprint 2 (DTO)** / HITO 3 Tabla |
-| 51 | `OfferCostComponent` | `«HITO 3–4»` | JSONB `quote_breakdown` en V1 | **Diferido a HITO 3** | Desglose tipado de `CarrierOffer` en USD | Carrier (HITO 3) | HITO 3 |
-| 52 | `ShipmentContact` | `«existente · solo pickup»` | Columnas `pickup_contact_*` en `freight_requests` | **Columnas / Valor embebido en `freight_requests`** | `pickup_contact_*` y `recipient_contact_*` (o JSONB `contacts`) en `public.freight_requests` | Shipper (`organization_id` RLS) — `HAC-12` | **Sprint 2 Operativo** |
-| 53 | `CarrierOperator` | `«HITO 3–4»` | No existe | **Diferido a HITO 3–4 (`schema-ready` opcional)** | Representa al operador autorizado del carrier para emitir ofertas/confirmar bookings | Carrier / Admin | HITO 3–4 |
-| 54 | `AssetCargoCapability` | `«HITO 2»` | No existe en V1 | **Tabla puente persistente V2** | `public.asset_cargo_capabilities` (`transport_asset_id`, `cargo_category_id`, `temperature_min_c`, `temperature_max_c`, `certifications`) | Carrier / Servicio (`HAC-12`) | **Sprint 2 Operativo (`HAC-12`)** |
-| 55 | `RouteSimulationScenario` | `«roadmap»` | Seeds V1 mezclados en migraciones | **Fixture aislado de escenario V2** | `supabase/scenarios/v2-road-baseline/seed.sql` (con etiqueta explícita `SIMULATED`) | QA / Bootstrap (`HAC-29` / `HAC-13`) | **Sprint 2 Escenario** |
-| 56 | `RoutePlanner` | `«roadmap»` | No existe | **Servicio de Aplicación Backend** | `RoadServiceabilityService` en `cargomesh/src/server/modules/road-serviceability/` | Backend (`HAC-12`) | **Sprint 2 Operativo (`HAC-12`)** |
-| 57 | `SelectionDecision` | `«HITO 3–4 · tabla V1»` | Tabla `freight_decisions` V1 | **Diferido a HITO 3–4** | Auditoría de elección de oferta/plan por un `OrganizationMember` | Shipper autorizado (HITO 3–4) | HITO 3–4 |
+Observación independiente de HAC-44 sobre `abba805`, 17 migraciones: **2 completas / 43 parciales / 2 faltantes / 10 divergentes**, sin diferidos aprobados. Las correcciones posteriores requieren una nueva prueba. El detalle atributo/relación se conserva en el [diccionario vigente](./HAC27_UML_ATTRIBUTE_DICTIONARY_2026-10-02.md), [baseline QA](../models/FULL_MODEL_QA_BASELINE.json) y [DER](../models/FULL_MODEL_DER.md).
 
-### 2.1 Resolución explícita de relaciones UML abiertas en `07`
-1. **Puente `CarrierService` $\leftrightarrow$ `CargoCategory`:** Ya existe físicamente como `public.carrier_service_cargo_categories` (creada en `HAC-21`). En el modelo físico V2 se conserva esta tabla puente con FK compuesta/simple y RLS.
-2. **Guarda XOR de `CapacitySource` en `CapacityCalendar`:** Una agenda (`capacity_calendars`) pertenece **exclusivamente** a un `TransportAsset` o a un `CapacityPool`:
-   ```sql
-   CONSTRAINT capacity_calendars_xor_source_chk
-     CHECK (num_nonnulls(transport_asset_id, capacity_pool_id) = 1)
-   ```
-3. **`ShipmentContact` (`PICKUP` y `RECIPIENT`):** En `freight_requests` se soportan ambos roles (`pickup_contact` y `recipient_contact`) sin obligar a crear una tabla separada de contactos en Sprint 2.
-4. **Frontera `schema-ready` vs. `feature-live`:** Ninguna tabla o tipo de HITO 3–4 (`CarrierOpportunity`, `CarrierOffer`, `ScoringPolicy`, `SelectionDecision`, `Booking`) se declara operativa en Sprint 2.
-
----
+| Clase UML | Representación | Destino observado | Estado QA | Límite pendiente |
+|---|---|---|---|---|
+| Organization | TABLE_OR_SUBTYPE | organizations | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| Facility | TABLE_OR_SUBTYPE | facilities | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| FreightRequest | TABLE_OR_SUBTYPE | freight_requests | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| CargoSpecification | EMBEDDED_VALUE | freight_requests.v2_snapshot.cargoSpecification | DIVERGENTE | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| CargoUnit | EMBEDDED_VALUE | freight_requests.v2_snapshot.cargoSpecification.units[] | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| Carrier | TABLE_OR_SUBTYPE | carriers | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| CarrierDepot | TABLE_OR_SUBTYPE | carrier_depots | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| CarrierService | TABLE_OR_SUBTYPE | carrier_services | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| ServiceLane | TABLE_OR_SUBTYPE | service_lanes | COMPLETO | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| ResponseIntegration | TABLE_OR_SUBTYPE | response_integrations | FALTANTE | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| CapacitySource | PORT_OR_PROJECTION | /capacity_source_projection | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| TransportAsset | TABLE_OR_SUBTYPE | transport_assets | DIVERGENTE | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| RoadVehicle | TABLE_OR_SUBTYPE | transport_assets | DIVERGENTE | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| CapacityPool | TABLE_OR_SUBTYPE | capacity_pools | DIVERGENTE | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| CapacityCalendar | TABLE_OR_SUBTYPE | capacity_calendars | DIVERGENTE | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| CapacityReservation | TABLE_OR_SUBTYPE | capacity_reservations | DIVERGENTE | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| ScheduledMaintenance | TABLE_OR_SUBTYPE | scheduled_maintenances | DIVERGENTE | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| Driver | TABLE_OR_SUBTYPE | drivers | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| DriverAssignment | TABLE_OR_SUBTYPE | driver_assignments | COMPLETO | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| VehicleAssignment | TABLE_OR_SUBTYPE | vehicle_assignments | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| AssetStatusEvent | TABLE_OR_SUBTYPE | asset_status_events | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| RoutePlan | TABLE_OR_SUBTYPE | route_plans | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| RouteLeg | TABLE_OR_SUBTYPE | route_legs | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| RouteCondition | TABLE_OR_SUBTYPE | route_conditions | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| RouteWaypoint | TABLE_OR_SUBTYPE | route_waypoints | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| RoutePlanningPolicy | TABLE_OR_SUBTYPE | route_planning_policies | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| TransportPlanCandidate | TABLE_OR_SUBTYPE | transport_plan_candidates | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| PlanResource | TABLE_OR_SUBTYPE | plan_resources | DIVERGENTE | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| CarrierOpportunity | TABLE_OR_SUBTYPE | carrier_opportunities | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| CarrierOffer | TABLE_OR_SUBTYPE | v2_carrier_offers | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| RankedOption | TABLE_OR_SUBTYPE | ranked_options | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| ScoringPolicy | TABLE_OR_SUBTYPE | scoring_policies | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| Booking | TABLE_OR_SUBTYPE | v2_bookings | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| TransportExecution | TABLE_OR_SUBTYPE | transport_executions | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| OperationalIncident | TABLE_OR_SUBTYPE | operational_incidents | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| IncidentUpdate | TABLE_OR_SUBTYPE | incident_updates | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| LogisticsNode | TABLE_OR_SUBTYPE | logistics_nodes | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| RouteCorridor | TABLE_OR_SUBTYPE | route_corridors | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| CargoProfile | TABLE_OR_SUBTYPE | organization_cargo_profiles | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| CargoCategory | TABLE_OR_SUBTYPE | cargo_categories | DIVERGENTE | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| LoadAllocation | TABLE_OR_SUBTYPE | load_allocations | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| OrganizationMember | TABLE_OR_SUBTYPE | organization_members | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| McpAccountLink | TABLE_OR_SUBTYPE | mcp_account_links | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| RepositioningBlock | TABLE_OR_SUBTYPE | repositioning_blocks | DIVERGENTE | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| OrganizationPreferences | TABLE_OR_SUBTYPE | organization_preferences | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| CarrierMetric | TABLE_OR_SUBTYPE | v2_carrier_metrics | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| VehicleCombination | TABLE_OR_SUBTYPE | vehicle_combinations | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| ServiceArea | TABLE_OR_SUBTYPE | service_areas | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| FulfilmentPartner | TABLE_OR_SUBTYPE | fulfilment_partners | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| PlanLegAssignment | TABLE_OR_SUBTYPE | plan_leg_assignments | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| OfferCostComponent | EMBEDDED_VALUE | v2_carrier_offers.breakdown[] | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| ShipmentContact | EMBEDDED_VALUE | freight_requests.v2_snapshot.contacts | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| CarrierOperator | TABLE_OR_SUBTYPE | carrier_operators | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| AssetCargoCapability | TABLE_OR_SUBTYPE | cargo_capability_definitions | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| RouteSimulationScenario | PORT_OR_PROJECTION | /scenario_files | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| RoutePlanner | PORT_OR_PROJECTION | /route_planner_port | FALTANTE | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
+| SelectionDecision | TABLE_OR_SUBTYPE | selection_decisions | PARCIAL | Class complete only with all attributes, related associations and explicit semantic method evidence; green suites alone never promote rows |
 
 ## 3. Arquitectura en Capas y Patrones de Diseño de Software (Backend V2)
 
