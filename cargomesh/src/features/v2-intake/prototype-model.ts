@@ -40,6 +40,18 @@ export type V2IntakePrototypeDraft = {
   recipientContactEmail: string;
 };
 
+/** Apply one provisional chat field against the latest draft, including canonical UI totals. */
+export function applyChatFieldToDraft(draft: V2IntakePrototypeDraft, field: keyof V2IntakePrototypeDraft, value: string): V2IntakePrototypeDraft {
+  const next = { ...draft, [field]: value };
+  if (field === "packaging") next.unitPackageType = value;
+  const count = Number(next.unitQuantity);
+  const weight = Number(next.unitWeightPerUnitKg);
+  const volume = Number(next.unitVolumePerUnitM3);
+  if (count > 0 && weight > 0) next.totalWeightKg = String(count * weight);
+  if (count > 0 && volume > 0) next.totalVolumeM3 = String(count * volume);
+  return next;
+}
+
 export type PrototypeValidationCode =
   | "required"
   | "same-facility"
