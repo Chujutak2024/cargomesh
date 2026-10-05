@@ -78,4 +78,12 @@ select ok(not has_table_privilege('authenticated','public.plan_leg_assignments',
 select throws_ok($$insert into public.transport_plan_candidates(id,organization_id,freight_request_id,route_plan_id,request_version,status,data)
  select gen_random_uuid(),organization_id,freight_request_id,route_plan_id,request_version,status,data from public.transport_plan_candidates where id=pg_temp.id('plan')$$,'23505',null,'F05: database prevents two candidates owning one route');
 select throws_ok($$update public.capacity_reservations set plan_resource_id=gen_random_uuid() where id=pg_temp.id('hold')$$,'PT400','RESOURCE_ASSIGNMENT_MISMATCH','F05: reservation cannot substitute another plan resource');
+create function pg_temp.empty_assignment() returns void language plpgsql as $$begin
+ insert into public.plan_leg_assignments(id,plan_id,route_leg_id,carrier_service_id,lane_id,sequence,starts_at,ends_at)
+ select gen_random_uuid(),plan_id,route_leg_id,carrier_service_id,lane_id,sequence,starts_at,ends_at from public.plan_leg_assignments where id=pg_temp.id('assignment');
+ set constraints all immediate;
+end;$$;
+select throws_ok($$select pg_temp.empty_assignment()$$,'23514','ASSIGNMENT_REQUIRES_RESOURCES','F05: zero-resource assignment cannot survive constraint verification');
+set constraints all immediate;
+select pass('F05: valid grouped assignment satisfies deferred constraints');
 select * from finish();rollback;

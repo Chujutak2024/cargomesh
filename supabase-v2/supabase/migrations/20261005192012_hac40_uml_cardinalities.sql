@@ -193,11 +193,13 @@ create function private.command_v2_workflow(p_organization_id uuid,p_member_id u
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare v jsonb:=p_value;result jsonb;pid uuid;b uuid;matches integer;begin
  perform private.workflow_member(p_organization_id,p_member_id,false);
+ if p_action in ('opportunities.create','offers.create','holds.create') then perform private.workflow_validate(p_action,p_value);end if;
  if p_action='opportunities.create' then
   pid:=(v->>'planId')::uuid;
   perform private.workflow_scope(p_organization_id,null,'plans',pid);
   v:=jsonb_set(v,'{assignmentIds}',private.expand_leg_assignments(v->'assignmentIds',pid));
  elsif p_action='offers.create' then
+  perform private.workflow_scope(p_organization_id,(p_context->>'carrierId')::uuid,'opportunities',(p_context->>'parentId')::uuid);
   v:=jsonb_set(v,'{coveredAssignmentIds}',private.expand_leg_assignments(v->'coveredAssignmentIds',(v->>'planCandidateId')::uuid));
  elsif p_action='holds.create' then
   perform private.workflow_scope(p_organization_id,null,'bookings',(v->>'bookingId')::uuid);
@@ -238,8 +240,9 @@ declare a jsonb;r jsonb;flat jsonb:='[]';meta jsonb:='[]';gid uuid;rid uuid;begi
     'calendarId',r->'calendarId','assetId',r->'assetId','poolId',r->'capacityPoolId'));
   end loop;
  end loop;
- if exists(select 1 from jsonb_array_elements(meta) x where x->>'groupId' is not null
-  group by x->>'sequence',x->>'serviceId',x->>'calendarId',x->>'assetId',x->>'poolId' having count(*)>1)
+ if exists(select 1 from jsonb_array_elements(meta) x
+  group by x->>'sequence',x->>'serviceId',x->>'calendarId',x->>'assetId',x->>'poolId'
+  having count(*)>1 and bool_or(x->>'groupId' is not null))
  then raise exception 'DUPLICATE_PLAN_RESOURCE' using errcode='PT400';end if;
  perform set_config('cargomesh.f05_groups',meta::text,true);
  perform private.workflow_build_plan_before_f05(o,qid,jsonb_set(jsonb_set(v,'{routeId}',to_jsonb(rid)),'{assignments}',flat),pid);
@@ -259,6 +262,9 @@ revoke all on function private.guard_leg_resource_binding(),private.require_leg_
 alter function private.workflow_validate(text,jsonb) rename to workflow_validate_before_f05;
 create function private.workflow_validate(a text,v jsonb) returns void language plpgsql set search_path='' as $$
 declare item jsonb;r jsonb;resources jsonb;s json;begin
+ if a='holds.create' then
+  if not coalesce(extensions.jsonb_matches_schema('{"type":"object","properties":{"schemaVersion":{"type":"string","const":"2.0"},"bookingId":{"type":"string","format":"uuid"},"assignmentId":{"type":"string","format":"uuid"},"planResourceId":{"type":"string","format":"uuid"},"expiresAt":{"type":"string","format":"date-time"},"consolidationId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}],"default":null},"evidence":{"type":"object","properties":{"reference":{"type":"string","minLength":1,"maxLength":500},"provider":{"type":"string","minLength":1,"maxLength":150},"observedAt":{"type":"string","format":"date-time"},"validUntil":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}]},"provenanceStatus":{"type":"string","enum":["VERIFIED","ESTIMATED","SIMULATED","UNKNOWN"]}},"required":["reference","provider","observedAt","validUntil","provenanceStatus"],"additionalProperties":false}},"required":["schemaVersion","bookingId","assignmentId","expiresAt","evidence"],"additionalProperties":false,"$schema":"http://json-schema.org/draft-07/schema#"}'::json,v),false) then raise exception 'VALIDATION_ERROR' using errcode='PT400';end if;return;
+ end if;
  if a<>'plans.create' then perform private.workflow_validate_before_f05(a,v);return;end if;
  s:='{"type":"object","properties":{"schemaVersion":{"type":"string","const":"2.0"},"routeId":{"type":"string","format":"uuid"},"assignments":{"type":"array","items":{"anyOf":[{"type":"object","properties":{"legSequence":{"type":"integer","exclusiveMinimum":0},"serviceId":{"type":"string","format":"uuid"},"laneId":{"type":"string","format":"uuid"},"window":{"type":"object","properties":{"startsAt":{"type":"string","format":"date-time"},"endsAt":{"type":"string","format":"date-time"}},"required":["startsAt","endsAt"],"additionalProperties":false},"resources":{"type":"array","items":{"type":"object","properties":{"calendarId":{"type":"string","format":"uuid"},"assetId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"capacityPoolId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"combinationId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"role":{"type":"string","enum":["LOAD_BEARING","AUXILIARY"]},"allocations":{"type":"array","items":{"type":"object","properties":{"unitIndex":{"type":"integer","minimum":0},"quantity":{"type":"integer","exclusiveMinimum":0}},"required":["unitIndex","quantity"],"additionalProperties":false},"maxItems":100}},"required":["calendarId","assetId","capacityPoolId","combinationId","role","allocations"],"additionalProperties":false},"minItems":1,"maxItems":100}},"required":["legSequence","serviceId","laneId","window","resources"],"additionalProperties":false},{"type":"object","properties":{"legSequence":{"type":"integer","exclusiveMinimum":0},"serviceId":{"type":"string","format":"uuid"},"laneId":{"type":"string","format":"uuid"},"calendarId":{"type":"string","format":"uuid"},"assetId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"capacityPoolId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"combinationId":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}]},"role":{"type":"string","enum":["LOAD_BEARING","AUXILIARY"]},"window":{"type":"object","properties":{"startsAt":{"type":"string","format":"date-time"},"endsAt":{"type":"string","format":"date-time"}},"required":["startsAt","endsAt"],"additionalProperties":false},"allocations":{"type":"array","items":{"type":"object","properties":{"unitIndex":{"type":"integer","minimum":0},"quantity":{"type":"integer","exclusiveMinimum":0}},"required":["unitIndex","quantity"],"additionalProperties":false},"maxItems":100}},"required":["legSequence","serviceId","laneId","calendarId","assetId","capacityPoolId","combinationId","role","window","allocations"],"additionalProperties":false}]},"minItems":1,"maxItems":100}},"required":["schemaVersion","routeId","assignments"],"additionalProperties":false,"$schema":"http://json-schema.org/draft-07/schema#"}'::json;
  if not coalesce(extensions.jsonb_matches_schema(s,v),false) then raise exception 'VALIDATION_ERROR' using errcode='PT400';end if;
