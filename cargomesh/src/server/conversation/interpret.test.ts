@@ -1,8 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { conversationBedrockConfig, interpretConversationTurn } from "./interpret";
+import { buildConversationPrompt, conversationBedrockConfig, interpretConversationTurn } from "./interpret";
 
 const input = { schemaVersion: "2.0" as const, text: "from Lima to Arequipa", currentField: "originFacilityId" as const };
+
+test("Bedrock receives bounded prior facts as context, never as a business action", () => {
+  const prompt = JSON.parse(buildConversationPrompt({ ...input, text: "change it to Piura", context: {
+    knownFields: [{ field: "originFacilityId", value: "Lima" }], lastAskedField: "destinationFacilityId", failedAttempts: 1,
+  } }));
+  assert.equal(prompt.context.knownFields[0].value, "Lima");
+  assert.equal(prompt.context.lastAskedField, "destinationFacilityId");
+  assert.equal(prompt.organizationId, undefined);
+  assert.equal(prompt.confirmed, undefined);
+});
 
 test("disabled Bedrock uses deterministic extraction without an AWS call", async () => {
   const config = conversationBedrockConfig({});

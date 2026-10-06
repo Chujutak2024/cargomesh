@@ -8,10 +8,28 @@ export const ConversationFieldNameSchema = z.enum([
   "pickupContactEmail", "recipientContactName", "recipientContactPhoneE164", "recipientContactEmail",
 ]);
 
+// Only non-contact provisional facts cross the Bedrock boundary. IDs, when present,
+// are hints for interpreting a correction, never proof of authorization or coverage.
+export const ConversationContextFieldSchema = ConversationFieldNameSchema.exclude([
+  "cargoDescription",
+  "pickupContactName", "pickupContactPhoneE164", "pickupContactEmail",
+  "recipientContactName", "recipientContactPhoneE164", "recipientContactEmail",
+]);
+
+export const ConversationContextSchema = z.object({
+  knownFields: z.array(z.object({
+    field: ConversationContextFieldSchema,
+    value: z.string().trim().min(1).max(100),
+  }).strict()).max(12),
+  lastAskedField: ConversationFieldNameSchema.nullable(),
+  failedAttempts: z.number().int().min(0).max(3),
+}).strict();
+
 export const InterpretationRequestSchema = z.object({
   schemaVersion: z.literal("2.0"),
   text: z.string().trim().min(1).max(1000),
   currentField: ConversationFieldNameSchema.nullable(),
+  context: ConversationContextSchema.optional(),
 }).strict();
 
 export const InterpretationSchema = z.object({

@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { InterpretationResponseSchema, interpretDeterministically } from "./interpretation";
+import { InterpretationRequestSchema, InterpretationResponseSchema, interpretDeterministically } from "./interpretation";
+
+test("bounded conversation context accepts provisional facts but rejects contacts and extra authority", () => {
+  const request = { schemaVersion: "2.0", text: "Change it to Piura", currentField: "destinationFacilityId", context: {
+    knownFields: [{ field: "originFacilityId", value: "Lima" }], lastAskedField: "destinationFacilityId", failedAttempts: 1,
+  } };
+  assert.equal(InterpretationRequestSchema.safeParse(request).success, true);
+  assert.equal(InterpretationRequestSchema.safeParse({ ...request, context: { ...request.context, knownFields: [{ field: "pickupContactEmail", value: "person@example.com" }] } }).success, false);
+  assert.equal(InterpretationRequestSchema.safeParse({ ...request, context: { ...request.context, organizationId: "forged" } }).success, false);
+  assert.equal(InterpretationRequestSchema.safeParse({ ...request, context: { ...request.context, failedAttempts: 99 } }).success, false);
+});
 
 test("local parser extracts an explicit route and quantity without inventing a facility ID", () => {
   const result = interpretDeterministically({ schemaVersion: "2.0", text: "Ship 2 pallets from Lima to Arequipa", currentField: "originFacilityId" });

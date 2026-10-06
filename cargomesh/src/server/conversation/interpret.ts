@@ -1,10 +1,20 @@
 import "server-only";
 
 import { BedrockRuntimeClient, ConverseCommand, type ConverseCommandOutput } from "@aws-sdk/client-bedrock-runtime";
-import { ConversationFieldNameSchema, InterpretationSchema, interpretDeterministically, type InterpretationRequest } from "@/features/v2-conversation-prep/interpretation";
+import { ConversationFieldNameSchema, InterpretationRequestSchema, InterpretationSchema, interpretDeterministically, type InterpretationRequest } from "@/features/v2-conversation-prep/interpretation";
 
 type Config = { enabled: boolean; region: string; modelId: string; maxTokens: number; timeoutMs: number; inputUsdPerMillion: number | null; outputUsdPerMillion: number | null };
 type Invoke = (config: Config, input: InterpretationRequest) => Promise<ConverseCommandOutput>;
+
+export function buildConversationPrompt(input: InterpretationRequest): string {
+  const validated = InterpretationRequestSchema.parse(input);
+  return JSON.stringify({
+    text: validated.text,
+    currentField: validated.currentField,
+    fieldNames: ConversationFieldNameSchema.options,
+    context: validated.context ?? null,
+  });
+}
 
 function parseModelProposal(raw: string) {
   const json = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
@@ -44,8 +54,8 @@ async function invoke(config: Config, input: InterpretationRequest): Promise<Con
     if (!credentials.sessionToken) throw new Error("Temporary IAM credentials required.");
     return await client.send(new ConverseCommand({
       modelId: config.modelId,
-      system: [{ text: "You interpret one CargoMesh freight chat turn. The user may write in Spanish or English. Output only a JSON object without Markdown, with intent, fields, and optional acknowledgment. fields MUST be an array of objects shaped {field:string,value:string}; use [] when empty. Allowed intents: PROVIDE, CORRECT, CREATE, READ, EVALUATE, PRICE, BOOKING, HELP, START_OVER. Allowed fields are exactly those provided in the currentField and fieldNames input. Extract only values explicitly supplied by the user; never invent a location, date, cargo value or confirmation. Do not decide eligibility, capacity, price, booking, tenant or identity. For a brief Spanish natural reply, acknowledgment may be exactly 'Entendido.', 'Gracias, lo tengo.', or 'De acuerdo.'. For English, it may be exactly 'Got it.', 'Thanks, I have that.', or 'Understood.'. No SQL, tool invocation or explanation." }],
-      messages: [{ role: "user", content: [{ text: JSON.stringify({ text: input.text, currentField: input.currentField, fieldNames: ConversationFieldNameSchema.options }) }] }],
+      system: [{ text: "You interpret one CargoMesh freight chat turn. The user may write in Spanish or English. Output only a JSON object without Markdown, with intent, fields, and optional acknowledgment. fields MUST be an array of objects shaped {field:string,value:string}; use [] when empty. Allowed intents: PROVIDE, CORRECT, CREATE, READ, EVALUATE, PRICE, BOOKING, HELP, START_OVER. Allowed fields are exactly those provided in the currentField and fieldNames input. Context contains provisional facts from earlier turns and the last question; use it only to resolve references and corrections in the latest text. Extract fields only when the latest text provides or explicitly changes them. Do not repeat context fields as new output or treat them as confirmed. Never invent a location, date, cargo value or confirmation. Do not decide eligibility, capacity, price, booking, tenant or identity. For a brief Spanish natural reply, acknowledgment may be exactly 'Entendido.', 'Gracias, lo tengo.', or 'De acuerdo.'. For English, it may be exactly 'Got it.', 'Thanks, I have that.', or 'Understood.'. No SQL, tool invocation or explanation." }],
+      messages: [{ role: "user", content: [{ text: buildConversationPrompt(input) }] }],
       toolConfig: {
         tools: [{ toolSpec: {
           name: "propose_conversation_turn",
