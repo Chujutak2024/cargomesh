@@ -162,7 +162,11 @@ export const FreightRequestV2ResponseSchema = z.object({
     selectionObjective: RankingObjectiveV2Schema.nullable().optional(),
     preferredEquipment: EquipmentCodeV2Schema.nullable().optional(),
     requiredEquipment: z.string().nullable(),
-    cargoSpecification: CargoSpecificationV2Schema,
+    // Read normalization must not change the creation payload fingerprint:
+    // omitted documents in existing receipts mean no submitted documents.
+    cargoSpecification: CargoSpecificationV2Schema.transform(value => ({
+      ...value, availableDocuments: value.availableDocuments ?? [],
+    })),
     contacts: ShipmentContactsV2Schema,
     budget: UsdBudgetV2Schema.nullable(),
     createdAt: UtcInstant,

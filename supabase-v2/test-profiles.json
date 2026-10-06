@@ -35,6 +35,7 @@
     "supabase/tests/28_v2_hac40_execution_cancel.test.sql",
     "supabase/tests/29_v2_hac40_ltl_operations.test.sql",
     "supabase/tests/30_v2_hac40_ltl_cancellation.test.sql",
-    "supabase/tests/31_v2_hac40_ltl_predeparture.test.sql"
+    "supabase/tests/31_v2_hac40_ltl_predeparture.test.sql",
+    "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql"
   ]
 }

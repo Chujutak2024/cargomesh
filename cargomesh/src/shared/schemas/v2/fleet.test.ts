@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { FleetInputsV2 } from "./fleet";
+import { FleetInputsV2, FleetOutputsV2 } from "./fleet";
 import { CatalogServiceV2, type CatalogRepositoryV2 } from "@/server/modules/catalog/application/catalog-service";
 const fixtures = JSON.parse(readFileSync("../supabase/scenarios/v2-road-baseline/fixtures/hac40-fleet.json", "utf8"));
 const assetId = "d1000000-0000-4000-8000-000000000001";
@@ -30,6 +30,44 @@ describe("HAC-40 fleet contracts", () => {
       { ...calendar, availableWindows: [...calendar.availableWindows, ...calendar.availableWindows] },
       { ...calendar, horizon: { ...calendar.horizon, endsAt: "2027-01-15T00:00:00Z" } },
       { ...calendar, lastVerifiedAt: null }]) assert.equal(FleetInputsV2.calendars.safeParse(raw).success, false);
+  });
+  it("rejects missing mandatory vehicle fields and distinguishes auxiliary capacity from unknown", () => {
+    const asset = value("assets");
+    for (const field of ["plate", "bodyType"]) {
+      assert.equal(FleetInputsV2.assets.safeParse({ ...asset, roadVehicle: { ...asset.roadVehicle, [field]: null } }).success, false);
+    }
+    assert.ok(FleetInputsV2.assets.safeParse({ ...asset, role: "AUXILIARY", usefulCapacityKg: 0, usableVolumeM3: null }).success);
+    assert.equal(FleetInputsV2.assets.safeParse({ ...asset, role: "LOAD_BEARING", usefulCapacityKg: 0 }).success, false);
+    assert.equal(FleetInputsV2.assets.safeParse({ ...asset, usefulCapacityKg: null }).success, false);
+  });
+  it("returns an actionable conflict for an incomplete persisted row without blocking a valid revision", async () => {
+    const payload = value("assets");
+    const actor = { memberId: assetId, organizationId: calendarId };
+    const scope = { carrierId: "c2340000-0000-4000-8000-000000000001", serviceId: null };
+    const record = { id: assetId, organizationId: null, carrierId: scope.carrierId, serviceId: payload.serviceId,
+      version: 1, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z", value: payload };
+    const repo: CatalogRepositoryV2 = {
+      async read() { return [{ ...record, value: { ...payload, roadVehicle: { ...payload.roadVehicle, bodyType: null } } }]; },
+      async command() { return { record: { ...record, version: 2 }, replay: false }; },
+    };
+    const service = new CatalogServiceV2(repo);
+    await assert.rejects(service.get(actor, "assets", scope, assetId), { code: "CATALOG_DATA_INCOMPLETE", httpStatus: 409 });
+    assert.equal((await service.command(actor, "assets", scope, assetId, { expectedVersion: 1, value: payload }, calendarId)).data.version, 2);
+  });
+  it("does not relax mandatory fields when reading imported fleet records", () => {
+    const fields = {
+      "capacity-pools": ["mode", "serviceWindow", "provenance", "evidence"],
+      calendars: ["timezone", "horizon", "source", "freshness"],
+      maintenances: ["kind", "source"],
+      "repositioning-blocks": ["origin", "nextPickup", "source"],
+    } as const;
+    for (const kind of Object.keys(fields) as (keyof typeof fields)[]) {
+      const valid = value(kind);
+      assert.ok(FleetOutputsV2[kind].safeParse(valid).success, kind);
+      for (const field of fields[kind]) {
+        assert.equal(FleetOutputsV2[kind].safeParse({ ...valid, [field]: null }).success, false, `${kind}.${field}`);
+      }
+    }
   });
   it("passes the authenticated scope and version to the atomic repository", async () => {
     const actor = { memberId: assetId, organizationId: calendarId };

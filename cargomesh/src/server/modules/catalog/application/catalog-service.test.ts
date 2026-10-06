@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { CatalogServiceV2, type CatalogRepositoryV2 } from "./catalog-service";
+import { parseCatalogRecordV2 } from "@/shared/schemas/v2/catalog";
 
 const actor = { memberId: "c2320000-0000-4000-8000-000000000001", organizationId: "c2300000-0000-4000-8000-000000000001" };
 const id = "d0900000-0000-4000-8000-000000000001";
@@ -13,6 +14,19 @@ function repository(): CatalogRepositoryV2 {
   return { async read() { return [record]; }, async command() { return { record, replay: false }; } };
 }
 describe("HAC-40 catalog application boundary", () => {
+  it("projects category domain revisions as strings while preserving numeric concurrency and old receipts", () => {
+    const category = { schemaVersion: "2.0", code: "QA", name: "Synthetic",
+      guidance: { recommendedEntryMethods: ["MANUAL"], intakeSpecificationSchema: {},
+        suggestedRequirements: {}, recommendedVehicleClasses: [] }, suggestedEquipment: null, active: true };
+    for (const version of [1, 2]) {
+      const stored = { ...record, organizationId: null, version, value: { ...category, version: String(version) } };
+      const parsed = parseCatalogRecordV2("cargo-categories", stored);
+      assert.equal(parsed.version, version);
+      assert.equal((parsed.value as { version: string }).version, String(version));
+      assert.deepEqual(parseCatalogRecordV2("cargo-categories", { ...stored, value: category }), parsed);
+    }
+    assert.throws(() => parseCatalogRecordV2("cargo-categories", { ...record, value: { ...category, version: 2 } }));
+  });
   it("passes expected version, identity, scope and key to one atomic command", async () => {
     const repo = repository();
     let called = false;

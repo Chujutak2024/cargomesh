@@ -87,3 +87,14 @@ jobs:
 
       - name: Run V2 local profile (Supabase CLI 2.117.0 via npx)
         run: python3 supabase-v2/gate.py v2 --evidence-dir "$RUNNER_TEMP/hac29-v2"
+
+      - name: Set up pnpm for authenticated HTTP
+        uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 11.19.0
+
+      - name: Install HTTP smoke dependencies
+        run: pnpm --dir cargomesh install --frozen-lockfile
+
+      - name: Verify authenticated local HTTP workflow
+        run: python3 scripts/check-hac40-workflow-http-ci.py

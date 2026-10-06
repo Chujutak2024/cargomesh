@@ -245,6 +245,13 @@ def sql_type(attribute):
 
 def build():
     model = extract()
+    baseline = json.loads((OUT / 'FULL_MODEL_QA_BASELINE.json').read_text(encoding='utf-8'))
+    observed = {(a['clase'], a['atributo']): a for a in baseline['attributes']}
+    assert len(observed) == model['counts']['attributes'] == 397
+    assert len(baseline['relations']) == len(model['relations']) == 93
+    for uml, actual in zip(model['relations'], baseline['relations']):
+        assert (uml['umlId'], uml['source'], uml['target']) == (
+            actual['uml_id'], actual['origen'], actual['destino'])
     assert set(STORAGE) == {c['name'] for c in model['classes']}
     assert len(RELATIONS) == len(model['relations']) == 93
     classes = []
@@ -256,23 +263,30 @@ def build():
             # JSON value spelling remains the exact DTO spelling, not snake_case.
             field = ALIASES.get(name, {}).get(attr['name'],
                 attr['name'] if '.' in storage or storage.startswith('|') else snake(attr['name']))
-            fields.append({**attr, 'target': f'{storage}.{field}',
-                'physicalType': sql_type(attr), 'migrationVerified': False})
+            actual = observed[(name, attr['name'])]
+            fields.append({**attr, 'target': actual['representacion_real'],
+                'designTarget': f'{storage}.{field}',
+                'physicalType': actual['tipo_fisico'], 'designType': sql_type(attr),
+                'observedNullable': actual['nullable_fisico'], 'qaStatus': actual['estado'],
+                'migrationVerified': False})
         classes.append({'name': name, 'representation':
             'PORT_OR_PROJECTION' if storage.startswith('|') else
             'EMBEDDED_VALUE' if '.' in storage else 'TABLE_OR_SUBTYPE',
             'storage': storage, 'attributes': fields})
     relations = [{**{k: r[k] for k in ('umlId', 'source', 'target', 'label', 'endLabels')},
-        'physicalTreatment': treatment, 'migrationVerified': False}
-        for r, treatment in zip(model['relations'], RELATIONS)]
+        'physicalTreatment': actual['equivalente_real'], 'designTreatment': treatment,
+        'observedMultiplicity': actual['multiplicidad_fisica'], 'qaStatus': actual['estado'],
+        'migrationVerified': False}
+        for r, treatment, actual in zip(model['relations'], RELATIONS, baseline['relations'])]
     return {'schemaVersion': '2.0', 'sourceSha256': model['sourceSha256'],
-        'status': 'PHYSICAL_DESIGN_NOT_MIGRATION_CERTIFICATION',
+        'status': 'QA_BASELINE_RECONCILED_NOT_CURRENT_MIGRATION_CERTIFICATION',
+        'observedCommit': baseline['sourceCommit'],
         'counts': model['counts'], 'classes': classes, 'relations': relations}
 
 def render(model):
-    lines = ['# DER integral objetivo — HAC-27 / HAC-40', '',
+    lines = ['# DER integral reconciliado — HAC-27 / HAC-40', '',
         'Diseño físico trazable de las 57 clases, 397 atributos y 93 relaciones del UML 07. '
-        'Los destinos nuevos son objetivos de implementación: esta matriz no certifica migraciones ni endpoints. '
+        'Los destinos observados corresponden al corte QA abba805 (5 oct, 17 migraciones). Se conservan el objetivo previo y sus diferencias: esta matriz no certifica el incremento actual ni Supabase alojado. '
         'No se elimina ninguna clase del alcance.', '',
         '## Decisiones de persistencia', '',
         '- Reutilizar tablas nativas existentes para identidad, catálogo, sedes, solicitudes y capacidad mediante migraciones aditivas.',
@@ -292,16 +306,16 @@ def render(model):
         '## Atributos', '']
     for cls in model['classes']:
         lines += [f"### {cls['name']} — `{cls['storage']}`", '',
-            '| UML | Tipo | Destino físico objetivo |', '|---|---|---|']
+            '| UML | Tipo | Destino observado QA | Objetivo previo | Estado QA |', '|---|---|---|---|---|']
         for attr in cls['attributes']:
             optional = '?' if attr['optional'] else ''
-            lines.append(f"| `{attr['name']}{optional}` | {attr['type'].replace('|', '/')} | `{attr['target']}` |")
+            lines.append(f"| `{attr['name']}{optional}` | {attr['type'].replace('|', '/')} | `{attr['target'].replace('|', '/')}` | `{attr['designTarget'].replace('|', '/')}` | {attr['qaStatus']} |")
         lines.append('')
     lines += ['## Relaciones y restricciones', '',
-        '| Nº | UML | Cardinalidad original | Tratamiento físico objetivo |', '|---|---|---|---|']
+        '| Nº | UML | Cardinalidad original | Tratamiento observado QA | Objetivo previo | Estado QA |', '|---|---|---|---|---|---|']
     for index, relation in enumerate(model['relations']):
         lines.append(f"| {index} | {relation['source']} → {relation['target']} ({relation['label']}) | "
-            f"{' / '.join(relation['endLabels']) or 'herencia/realización'} | {relation['physicalTreatment']} |")
+            f"{' / '.join(relation['endLabels']) or 'herencia/realización'} | {relation['physicalTreatment'].replace('|', '/')} | {relation['designTreatment']} | {relation['qaStatus']} |")
     lines += ['', '## Gate antes de aplicar el esquema', '',
         'El inventario y este diseño deben coincidir exactamente con el UML. Después se comprobará cada destino contra pg_catalog, constraints, RLS y comandos reales; '
         'los 397 destinos y 93 tratamientos no pasan a IMPLEMENTADO por aparecer aquí. '

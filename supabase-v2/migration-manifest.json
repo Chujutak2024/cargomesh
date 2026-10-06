@@ -336,6 +336,28 @@
       "dependencies": [
         "20261004154048"
       ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261005181940_hac40_cp1_contract_reconciliation.sql",
+      "version": "20261005181940",
+      "sha256": "6fcccf9626cd55966a63552581df14347a7df251362a1981d3cf89f68dd9c4a3",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004232244"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql",
+      "version": "20261005192012",
+      "sha256": "729a880ee0c3a4ff9a2693bf242fa4d039d65a90b1e1b59fc9efb2740e7ca979",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261005181940"
+      ]
     }
   ]
 }

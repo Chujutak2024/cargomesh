@@ -150,4 +150,11 @@ set local role authenticated;
 select throws_ok($$select pg_temp.cat_cmd('depots',null,(select key from cat_saved where kind='depots'),null,(select value from cat_inputs where kind='depots'))$$,'PT403','FORBIDDEN_CATALOG','revoked grant cannot replay privileged command');
 reset role;
 select is((select count(*)::integer from private.v2_catalog_receipts where organization_id='c2300000-0000-4000-8000-000000000001'),22,'only successful commands consume keys');
+set local role authenticated;
+set local "request.jwt.claims"='{"sub":"c2310000-0000-4000-8000-000000000001","role":"authenticated"}';
+select is(jsonb_typeof(pg_temp.cat_read('cargo-categories',(select id from cat_saved where kind='cargo-categories'))#>'{0,value,version}'),
+ 'string','CP-1: category domain revision is textual in authenticated GET');
+select is(jsonb_typeof(pg_temp.cat_read('cargo-categories',(select id from cat_saved where kind='cargo-categories'))#>'{0,version}'),
+ 'number','CP-1: concurrency revision remains numeric');
+reset role;
 select * from finish();rollback;

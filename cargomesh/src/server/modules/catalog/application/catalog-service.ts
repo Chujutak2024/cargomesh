@@ -14,7 +14,15 @@ export interface CatalogRepositoryV2 {
 export class CatalogServiceV2 {
   constructor(private readonly repository: CatalogRepositoryV2) {}
   private record(actor: V2Actor, kind: CatalogKindV2, scope: CatalogScopeV2, raw: unknown) {
-    const record = parseCatalogRecordV2(kind, raw);
+    let record: CatalogRecordV2;
+    try {
+      record = parseCatalogRecordV2(kind, raw);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new V2DraftError("CATALOG_DATA_INCOMPLETE", "Persisted catalog data does not satisfy the current contract. Revise the entry before using it.", 409);
+      }
+      throw error;
+    }
     if (((kind === "preferences" || kind === "cargo-profiles") && record.organizationId !== actor.organizationId)
       || (scope.carrierId !== null && record.carrierId !== scope.carrierId)
       || (scope.serviceId !== null && record.serviceId !== scope.serviceId)) {

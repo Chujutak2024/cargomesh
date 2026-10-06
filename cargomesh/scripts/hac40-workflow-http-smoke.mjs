@@ -41,6 +41,19 @@ try {
  }
  assert.equal((await call("/bookings/"+refs.booking.id,undefined,undefined,other.data.session.access_token)).status,404);
  assert.equal((await call("/routing/nodes",undefined,undefined,null)).status,401);
+ const oldAssignment=refs.plan.data.assignments[0];
+ const resource={calendarId:oldAssignment.resource.verificationSource.calendarId,assetId:refs.asset.id,
+  capacityPoolId:null,combinationId:null,role:"LOAD_BEARING",allocations:oldAssignment.allocations.map(({unitIndex,quantity})=>({unitIndex,quantity}))};
+ const assignment={legSequence:oldAssignment.sequence,serviceId:oldAssignment.serviceId,laneId:oldAssignment.resource.verificationSource.laneId,
+  window:oldAssignment.window,resources:[resource]};
+ const planBody={schemaVersion:"2.0",routeId:refs.route.id,assignments:[assignment]};
+ const planPath=`/freight/requests/${refs.request.id}/plans`;const planKey=crypto.randomUUID();
+ const plan=await call(planPath,planBody,planKey);assert.equal(plan.status,201,JSON.stringify(plan.body));WorkflowRecordV2Schema.parse(plan.body.data);
+ assert.equal(plan.body.data.data.legAssignments.length,1);assert.equal(plan.body.data.data.legAssignments[0].resources.length,1);
+ assert.notEqual(plan.body.data.data.routeId,refs.route.id,"each plan owns a distinct route snapshot");
+ const planReplay=await call(planPath,planBody,planKey);assert.equal(planReplay.status,200);assert.deepEqual(planReplay.body.data,plan.body.data);
+ assert.equal((await call(planPath,{...planBody,assignments:[{...assignment,resources:[resource,resource]}]})).status,400);
+ assert.equal((await call(planPath,{...planBody,assignments:[{...assignment,resources:[]}]})).status,400);
  const node={...refs.origin.data,name:"HTTP independent node"};const key=crypto.randomUUID();
  const created=await call("/routing/nodes",node,key);assert.equal(created.status,201,JSON.stringify(created.body));state.refs.httpNode=created.body.data;writeFileSync(statePath,JSON.stringify(state));
  const replay=await call("/routing/nodes",node,key);assert.equal(replay.status,200);assert.deepEqual(replay.body.data,created.body.data);

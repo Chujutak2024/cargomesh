@@ -31,7 +31,7 @@ function draft(originCity = "Lima", requirements: string[] = [],
     acceptedModes: ["ROAD"], requiredEquipment: "BOX_TRUCK",
     cargoSpecification: {
       categoryCode: "GENERAL", description: "Prueba sintética", packaging: "PALLET",
-      totalWeightKg: 1000, totalVolumeM3: 2, divisible: true, requirements,
+      totalWeightKg: 1000, totalVolumeM3: 2, divisible: true, requirements, availableDocuments: [],
       temperatureRange: temperatureRange ?? null,
       units: [{ packageType: "PALLET", quantity: 1, weightPerUnitKg: 1000,
         volumePerUnitM3: 2, dimensionsCm: { length: 100, width: 100, height: 200 },

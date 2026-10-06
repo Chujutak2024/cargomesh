@@ -95,6 +95,9 @@ export const CatalogInputsV2 = {
   }).strict().refine(x => Date.parse(x.agreementValidUntil) > Date.parse(x.agreementValidFrom), "Invalid agreement window."),
 } as const;
 export type CatalogKindV2 = keyof typeof CatalogInputsV2;
+export const CargoCategoryValueV2Schema = CatalogInputsV2["cargo-categories"].extend({
+  version: z.string().regex(/^[1-9]\d*$/),
+});
 export type CatalogValueV2 = z.infer<(typeof CatalogInputsV2)[CatalogKindV2]>;
 export const CatalogScopeV2Schema = z.object({ carrierId: Id.nullable(), serviceId: Id.nullable() }).strict();
 export type CatalogScopeV2 = z.infer<typeof CatalogScopeV2Schema>;
@@ -104,9 +107,16 @@ export const CatalogRecordV2Schema = z.object({ id: Id, organizationId: Id.nulla
     phoneE164: z.string().regex(/^\+[1-9]\d{6,14}$/).nullable() }).strict().nullable().optional(),
   createdAt: Instant, updatedAt: Instant, value: z.unknown() }).strict();
 export type CatalogRecordV2 = Omit<z.infer<typeof CatalogRecordV2Schema>, "value"> & {
-  value: CatalogValueV2 | z.infer<(typeof FleetOutputsV2)[keyof typeof FleetOutputsV2]> };
+  value: CatalogValueV2 | z.infer<typeof CargoCategoryValueV2Schema>
+    | z.infer<(typeof FleetOutputsV2)[keyof typeof FleetOutputsV2]> };
 export function parseCatalogRecordV2(kind: CatalogKindV2, raw: unknown): CatalogRecordV2 {
   const record = CatalogRecordV2Schema.parse(raw);
-  const output = kind in FleetOutputsV2 ? FleetOutputsV2[kind as keyof typeof FleetOutputsV2] : CatalogInputsV2[kind];
-  return { ...record, value: output.parse(record.value) };
+  const output = kind === "cargo-categories" ? CargoCategoryValueV2Schema
+    : kind in FleetOutputsV2 ? FleetOutputsV2[kind as keyof typeof FleetOutputsV2] : CatalogInputsV2[kind];
+  // Old idempotency receipts preserve their original result. Project the
+  // domain revision from their authoritative technical revision when absent.
+  const value = kind === "cargo-categories" && record.value !== null
+    && typeof record.value === "object" && !("version" in record.value)
+    ? { ...record.value, version: String(record.version) } : record.value;
+  return { ...record, value: output.parse(value) };
 }

@@ -14,6 +14,15 @@ const Revision = { expectedVersion: z.number().int().positive() };
 const Audit = { ...Revision, note: Text, evidence: Evidence };
 const Base = { schemaVersion: z.literal("2.0") };
 const Publishing = { ...Base, active: z.boolean() };
+const PlanResourceInput = z.object({ calendarId: Id, assetId: Id.nullable(), capacityPoolId: Id.nullable(), combinationId: Id.nullable(),
+  role: z.enum(["LOAD_BEARING", "AUXILIARY"]),
+  allocations: z.array(z.object({ unitIndex: z.number().int().nonnegative(), quantity: z.number().int().positive() }).strict()).max(100)
+}).strict().refine(v => (v.assetId === null) !== (v.capacityPoolId === null))
+  .refine(v => v.role !== "AUXILIARY" || v.allocations.length === 0);
+const GroupedPlanAssignmentInput = z.object({ legSequence: z.number().int().positive(), serviceId: Id, laneId: Id,
+  window: TimeWindowV2Schema, resources: z.array(PlanResourceInput).min(1).max(100) }).strict()
+  .refine(v => new Set(v.resources.map(r => r.assetId ?? r.capacityPoolId)).size === v.resources.length,
+    "A physical capacity source cannot occur twice in one assignment.");
 export const WorkflowInputsV2 = {
   "nodes.publish": z.object({ ...Publishing, kind: z.enum(["PORT", "TERMINAL", "BORDER", "HUB"]), name: Text,
     location: Location, jurisdiction: Text.nullable(), source: Evidence, verifiedAt: Instant.nullable() }).strict(),
@@ -43,12 +52,12 @@ export const WorkflowInputsV2 = {
     sampleSize: z.number().int().positive(), onTimeRate: z.number().min(0).max(1).nullable(),
     successfulDeliveryRate: z.number().min(0).max(1).nullable(), source: Evidence }).strict(),
   "routes.create": z.object({ ...Base, corridorIds: UniqueIds, policyId: Id }).strict(),
-  "plans.create": z.object({ ...Base, routeId: Id, assignments: z.array(z.object({ legSequence: z.number().int().positive(),
+  "plans.create": z.object({ ...Base, routeId: Id, assignments: z.array(z.union([GroupedPlanAssignmentInput, z.object({ legSequence: z.number().int().positive(),
     serviceId: Id, laneId: Id, calendarId: Id, assetId: Id.nullable(), capacityPoolId: Id.nullable(), combinationId: Id.nullable(),
     role: z.enum(["LOAD_BEARING", "AUXILIARY"]), window: TimeWindowV2Schema,
     allocations: z.array(z.object({ unitIndex: z.number().int().nonnegative(), quantity: z.number().int().positive() }).strict()).max(100)
   }).strict().refine(v => (v.assetId === null) !== (v.capacityPoolId === null))
-    .refine(v => v.role !== "AUXILIARY" || v.allocations.length === 0)).min(1).max(100) }).strict(),
+    .refine(v => v.role !== "AUXILIARY" || v.allocations.length === 0)])).min(1).max(100) }).strict(),
   "opportunities.create": z.object({ ...Base, planId: Id, carrierId: Id, assignmentIds: UniqueIds,
     responseDeadline: Instant, responseChannel: z.enum(["MANUAL", "API", "MCP"]) }).strict(),
   "opportunities.respond": z.object({ ...Base, ...Audit, response: z.enum(["ACCEPTED", "DECLINED"]) }).strict(),
@@ -78,7 +87,7 @@ export const WorkflowInputsV2 = {
   "consolidations.complete": z.object({ ...Base, ...Audit }).strict(),
   "consolidations.cancel": z.object({ ...Base, ...Audit }).strict(),
   "consolidations.position": z.object({ ...Base, ...Audit, location: Location, observedAt: Instant, correlationId: Text }).strict(),
-  "holds.create": z.object({ ...Base, bookingId: Id, assignmentId: Id, expiresAt: Instant,
+  "holds.create": z.object({ ...Base, bookingId: Id, assignmentId: Id, planResourceId: Id.optional(), expiresAt: Instant,
     consolidationId: Id.nullable().default(null), evidence: Evidence }).strict(),
   "holds.confirm": z.object({ ...Base, ...Audit }).strict(),
   "holds.release": z.object({ ...Base, ...Audit }).strict(),
@@ -99,7 +108,7 @@ const Capacity = z.object({ weightKg: z.number().nonnegative(), volumeM3: z.numb
 const Metadata = { id: Id, organizationId: Id.nullable(), carrierId: Id.nullable(), requestId: Id.nullable(),
   version: z.number().int().positive(), status: Text, createdAt: Instant, updatedAt: Instant };
 const StoredEvidence = z.object({ reference: Text, verifiedAt: Instant, validUntil: Instant.nullable(), provenanceStatus: Verification }).strict();
-const HoldData = z.object({ bookingId: Id, assignmentId: Id, calendarId: Id, window: TimeWindowV2Schema,
+const HoldData = z.object({ bookingId: Id, assignmentId: Id, planResourceId: Id, calendarId: Id, window: TimeWindowV2Schema,
   expiresAt: Instant.nullable(), active: z.boolean(), consolidationId: Id.nullable(), parentReservationId: Id.nullable(),
   capacityCommitted: Capacity, evidence: StoredEvidence }).strict();
 const HoldRecord = z.object({ ...Metadata, kind: z.literal("holds"), data: HoldData }).strict();
@@ -113,16 +122,21 @@ const VerificationSource = z.object({ calendarId: Id, calendarVersion: z.number(
   limitsVersion: z.number().int().nullable(), corridorId: Id, source: Evidence.nullable(), laneId: Id }).strict();
 const EffectiveCapacity = Capacity.extend({ usableDimensions: Dimensions.nullable() }).strict();
 const Resource = z.object({ assetId: Id.nullable(), poolId: Id.nullable(), calendarId: Id, combinationId: Id.nullable(),
-  role: z.enum(["LOAD_BEARING", "AUXILIARY"]), equipment: Text.nullable(), units: z.number().int().positive(),
+  role: z.enum(["LOAD_BEARING", "AUXILIARY"]), equipment: Text, units: z.number().int().positive(),
   window: TimeWindowV2Schema, availability: Verification, applicableCapacity: EffectiveCapacity.nullable(),
   verificationSource: VerificationSource.nullable() }).strict();
 const Allocation = z.object({ unitIndex: z.number().int().nonnegative(), quantity: z.number().int().positive(),
   assignedWeightKg: z.number().positive(), assignedVolumeM3: z.number().positive(), handlingRequirements: z.array(Text),
   verification: Verification, indivisible: z.boolean(), dimensionsCm: Dimensions }).strict();
-const Assignment = z.object({ id: Id, resourceId: Id, serviceId: Id, carrierId: Id, sequence: z.number().int().positive(),
+const Assignment = z.object({ id: Id, legAssignmentId: Id, resourceId: Id, serviceId: Id, carrierId: Id, sequence: z.number().int().positive(),
   window: TimeWindowV2Schema, responsibility: z.object({ carrierId: Id, serviceId: Id }).strict(), coverage: Verification,
   availability: Verification, capacityNeeded: Capacity, evidence: z.array(Evidence), resource: Resource,
   allocations: z.array(Allocation) }).strict();
+const LegAssignment = z.object({ id: Id, serviceId: Id, carrierId: Id, sequence: z.number().int().positive(),
+  window: TimeWindowV2Schema, responsibility: z.object({ carrierId: Id, serviceId: Id }).strict(), coverage: Verification,
+  availability: Verification, capacityNeeded: Capacity, evidence: z.array(Evidence),
+  resources: z.array(z.object({ bindingId: Id, resourceId: Id, resource: Resource, allocations: z.array(Allocation) }).strict()).min(1),
+}).strict();
 const RankingOption = z.object({ offerId: Id, offerIds: z.array(Id).min(1), planId: Id, assignments: z.array(Id).min(1),
   costCents: z.number().nonnegative(), transit: z.number().nonnegative().nullable(), reliability: z.number().min(0).max(1).nullable(),
   metrics: z.array(Id.nullable()), policyVersion: Text, transitAggregation: z.literal("SUM_ISSUER_DURATIONS"),
@@ -143,13 +157,17 @@ export const WorkflowRecordV2Schema = z.discriminatedUnion("kind", [
   z.object({ ...Metadata, kind: z.literal("metrics"), data: WorkflowInputsV2["metrics.publish"] }).strict(),
   z.object({ ...Metadata, kind: z.literal("consolidations"), data: Stored(WorkflowInputsV2["consolidations.create"].shape) }).strict(),
   z.object({ ...Metadata, kind: z.literal("routes"), data: Stored({ origin: Location, destination: Location,
-    corridorIds: z.array(Id), policyId: Id, policyVersion: z.number().int().positive(), estimatedDistanceKm: z.number().nullable(),
+    copiedFromRouteId: Id.optional(), corridorIds: z.array(Id), policyId: Id, policyVersion: z.number().int().positive(), estimatedDistanceKm: z.number().nullable(),
     estimatedDurationSeconds: z.number().nullable(), geographicSource: z.object({ kind: z.literal("PUBLISHED_CORRIDORS"), references: z.array(Id) }).strict(),
+    planner: z.object({ algorithmVersion: z.literal("PUBLISHED_ITINERARY_VALIDATOR_V1"),
+      graphVersion: z.string().regex(/^[0-9a-f]{64}$/),
+      source: z.object({ kind: z.literal("PUBLISHED_CORRIDORS"), scope: z.literal("SELECTED_ITINERARY_SNAPSHOT"),
+        references: z.array(Id) }).strict() }).strict(),
     confidence: Verification, estimatedTolls: z.null(), borderCostEstimate: z.null(), reasons: z.array(Text), legs: z.array(Leg) }) }).strict(),
   z.object({ ...Metadata, kind: z.literal("plans"), data: Stored({ routeId: Id, requestVersion: z.number().int().positive(),
     eligibility: z.enum(["eligible", "unknown", "ineligible"]), evaluatedAt: Instant, exclusionReasons: z.array(Text),
     pendingRequirements: z.array(Text), provenance: Verification, proposedWindow: TimeWindowV2Schema,
-    coverage: Verification, availability: Verification, assignments: z.array(Assignment), resourceAssessments: z.array(z.object({
+    coverage: Verification, availability: Verification, assignments: z.array(Assignment), legAssignments: z.array(LegAssignment).min(1), resourceAssessments: z.array(z.object({
       assignmentId: Id, resourceId: Id, applicableCapacity: EffectiveCapacity, verificationSource: VerificationSource }).strict()) }) }).strict(),
   z.object({ ...Metadata, kind: z.literal("opportunities"), data: Stored({ ...WorkflowInputsV2["opportunities.create"].shape,
     sentAt: Instant, cargoSpecification: z.object({ categoryCode: Text }).passthrough(), origin: CanonicalLocationV2Schema,

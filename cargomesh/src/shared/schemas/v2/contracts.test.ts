@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { CreateFreightRequestV2InputSchema } from "./freight-request";
+import { CreateFreightRequestV2InputSchema, FreightRequestV2ResponseSchema } from "./freight-request";
 import { RoadRoutePreviewV2Schema, RoadServiceabilityEvaluationV2ResponseSchema } from "./serviceability";
 
 const facilityId = "11111111-2222-4333-8444-555555555555";
@@ -29,6 +29,13 @@ const request = {
 };
 
 describe("HAC-12 V2 DTOs", () => {
+  it("normalizes absent documents on reads without changing legacy creation fingerprints", () => {
+    const input = CreateFreightRequestV2InputSchema.parse(request);
+    assert.equal(Object.hasOwn(input.cargoSpecification, "availableDocuments"), false);
+    const output = FreightRequestV2ResponseSchema.shape.data.shape.cargoSpecification.parse(input.cargoSpecification);
+    assert.deepEqual(output.availableDocuments, []);
+    assert.equal(Object.hasOwn(input.cargoSpecification, "availableDocuments"), false);
+  });
   it("accepts a minimal facility-based ROAD draft without trusting browser coordinates", () => {
     const result = CreateFreightRequestV2InputSchema.parse(request);
     assert.deepEqual(result.origin, { facilityId });
