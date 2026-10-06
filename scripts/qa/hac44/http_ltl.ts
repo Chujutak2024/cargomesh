@@ -1,0 +1,200 @@
+import { randomUUID } from "node:crypto";
+export async function ltl({
+  call,
+  refs,
+  fixture,
+  records,
+  roundtrips,
+  output,
+  CARRIER,
+  clone,
+}: any) {
+  const carrier = "/carriers/" + CARRIER,
+    service = "d44d0000-0000-4000-8000-000000000001",
+    ev = refs.limits.data.source,
+    audit = (v = 1) => ({
+      schemaVersion: "2.0",
+      expectedVersion: v,
+      note: "HAC44 independent LTL physical action",
+      evidence: ev,
+    });
+  async function create(kind: string, path: string, v: any) {
+    const key = randomUUID();
+    const c = await call("ltl-" + kind + "-create", path, v, key, 1, 201);
+    if (c.http !== 201) return null;
+    records[kind] = c.response.data;
+    const r = await call(
+      "ltl-" + kind + "-read",
+      path + "/" + c.response.data.id,
+      undefined,
+      undefined,
+      1,
+      200,
+    );
+    await call("ltl-" + kind + "-list", path, undefined, undefined, 1, 200);
+    await call("ltl-" + kind + "-replay", path, v, key, 1, 200);
+    roundtrips.push({
+      kind,
+      id: c.response.data.id,
+      input: v,
+      written: c.response.data,
+      read: r.response.data,
+      status: JSON.stringify(c.response.data) === JSON.stringify(r.response.data) ? "PASS" : "FAIL",
+    });
+    return c.response.data;
+  }
+  const batchpath = carrier + "/consolidations";
+  await call("ltl-batch-read", batchpath + "/" + refs.batch.id, undefined, undefined, 1, 200);
+  await call("ltl-batch-foreign", batchpath + "/" + refs.batch.id, undefined, undefined, 2, 403);
+  const hold = await create("holds", "/capacity/holds", {
+    schemaVersion: "2.0",
+    bookingId: refs.booking.id,
+    assignmentId: refs.assignment.id,
+    expiresAt: new Date(Date.now() + 3600000).toISOString(),
+    consolidationId: refs.batch.id,
+    evidence: ev,
+  });
+  if (!hold) return;
+  await call(
+    "ltl-close-invalid-commitment",
+    batchpath + "/" + refs.batch.id + "/closures",
+    audit(),
+    undefined,
+    1,
+    409,
+  );
+  await call(
+    "ltl-confirm-hold",
+    carrier + "/capacity/holds/" + hold.id + "/confirmations",
+    audit(),
+    undefined,
+    1,
+    200,
+  );
+  await call(
+    "ltl-confirm-booking",
+    carrier + "/bookings/" + refs.booking.id + "/confirmations",
+    { ...audit(), carrierReference: "HAC44-LTL-BOOK", confirmation: "CONFIRMED" },
+    undefined,
+    1,
+    200,
+  );
+  const win = refs.execution.data.plannedWindow;
+  const dv = {
+    ...clone(fixture.drivers),
+    serviceId: service,
+    fullName: "HAC44 LTL driver",
+    availableWindows: [win],
+    dutyWindow: win,
+    maximumDutySeconds: 86400,
+  };
+  const driver = await create("drivers", carrier + "/drivers", dv);
+  if (!driver) return;
+  await create("driver-assignments", carrier + "/driver-assignments", {
+    ...clone(fixture["driver-assignments"]),
+    serviceId: service,
+    driverId: driver.id,
+    executionId: refs.execution.id,
+    window: win,
+    status: "CONFIRMED",
+  });
+  await create("vehicle-assignments", carrier + "/vehicle-assignments", {
+    ...clone(fixture["vehicle-assignments"]),
+    serviceId: service,
+    executionId: refs.execution.id,
+    assetId: refs.asset.id,
+    combinationId: null,
+    reservationId: hold.id,
+    capacityCommitted: hold.data.capacityCommitted,
+    window: win,
+    status: "CONFIRMED",
+  });
+  await call(
+    "ltl-child-start-invalid",
+    carrier + "/executions/" + refs.execution.id + "/starts",
+    audit(),
+    undefined,
+    1,
+    409,
+  );
+  const start = await call(
+    "ltl-batch-start",
+    batchpath + "/" + refs.batch.id + "/starts",
+    audit(),
+    undefined,
+    1,
+    200,
+  );
+  if (start.http === 200) {
+    const pos = await call(
+      "ltl-batch-position",
+      batchpath + "/" + refs.batch.id + "/positions",
+      {
+        ...audit(2),
+        location: refs.origin.data.location,
+        observedAt: new Date().toISOString(),
+        correlationId: "HAC44-LTL-POS",
+      },
+      undefined,
+      1,
+      200,
+    );
+    if (pos.http === 200)
+      await call(
+        "ltl-batch-complete",
+        batchpath + "/" + refs.batch.id + "/completions",
+        audit(3),
+        undefined,
+        1,
+        200,
+      );
+  }
+  const extra = await create("consolidations", batchpath, {
+    schemaVersion: "2.0",
+    serviceId: service,
+    calendarId: refs.calendar.id,
+    routeId: refs.route.id,
+    window: refs.batch.data.window,
+    cargoCategoryIds: ["c0000000-0000-0000-0000-000000000001"],
+    compatibleRequirementCodes: [],
+    evidence: ev,
+  });
+  if (extra) {
+    await call(
+      "ltl-empty-start-invalid",
+      batchpath + "/" + extra.id + "/starts",
+      audit(),
+      undefined,
+      1,
+      409,
+    );
+    await call(
+      "ltl-close-positive",
+      batchpath + "/" + extra.id + "/closures",
+      audit(),
+      undefined,
+      1,
+      200,
+    );
+  }
+  const cancel = await create("consolidations-cancel-control", batchpath, {
+    schemaVersion: "2.0",
+    serviceId: service,
+    calendarId: refs.calendar.id,
+    routeId: refs.route.id,
+    window: refs.batch.data.window,
+    cargoCategoryIds: ["c0000000-0000-0000-0000-000000000001"],
+    compatibleRequirementCodes: [],
+    evidence: ev,
+  });
+  if (cancel)
+    await call(
+      "ltl-batch-cancel",
+      batchpath + "/" + cancel.id + "/cancellations",
+      audit(),
+      undefined,
+      1,
+      [200, 409],
+    );
+  output("records.json", records);
+}

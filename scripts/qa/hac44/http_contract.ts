@@ -1,0 +1,132 @@
+export async function contract({
+  call,
+  refs,
+  fixture,
+  records,
+  roundtrips,
+  output,
+  CARRIER,
+  SERVICE,
+  clone,
+}: any) {
+  const suffix = Date.now();
+  const path = "/carriers/" + CARRIER + "/assets";
+  const a = clone(refs.asset.value);
+  a.code = "HAC44_REQUIRED_POS_" + suffix;
+  a.roadVehicle.plate = "HAC44-POS-" + suffix;
+  const positive = await call("required-road-positive", path, a, undefined, 1, 201);
+  const negative = await call(
+    "required-road-null-bodytype",
+    path,
+    {
+      ...a,
+      code: "HAC44_REQUIRED_NULL_" + suffix,
+      roadVehicle: { ...a.roadVehicle, plate: "HAC44-NULL-" + suffix, bodyType: null },
+    },
+    undefined,
+    1,
+    400,
+  );
+  output("required-field-result.json", {
+    status: positive.http !== 201 ? "BLOQUEADO" : negative.http === 400 ? "PASS" : "FAIL",
+    positive: positive.http,
+    negative: negative.http,
+    expected:
+      "UML RoadVehicle.bodyType is required; null must be rejected or explicitly reconciled by approved contract",
+    actual: negative.response,
+  });
+  const q = "/freight/requests/" + refs.request.id + "/plans";
+  const p = {
+    schemaVersion: "2.0",
+    routeId: refs.route.id,
+    assignments: [
+      {
+        legSequence: 1,
+        serviceId: SERVICE,
+        laneId: "d4480000-0000-4000-8000-000000000001",
+        calendarId: refs.calendar.id,
+        assetId: refs.asset.id,
+        capacityPoolId: null,
+        combinationId: null,
+        role: "LOAD_BEARING",
+        window: refs.execution.data.plannedWindow,
+        allocations: [{ unitIndex: 0, quantity: 1 }],
+      },
+    ],
+  };
+  const p1 = await call("route-plan-cardinality-positive", q, p, undefined, 1, 201);
+  const p2 = await call("route-plan-cardinality-negative", q, p, undefined, 1, 409);
+  output("route-cardinality-result.json", {
+    status: p1.http !== 201 ? "BLOQUEADO" : p2.http === 409 ? "PASS" : "FAIL",
+    positive: p1.http,
+    negative: p2.http,
+    routeId: refs.route.id,
+    firstId: p1.response.data?.id,
+    secondId: p2.response.data?.id,
+    expected:
+      "UML relation 28 is 1:1; canonical maximum or approved multiplicity change must be reconciled",
+  });
+  const cats = await call(
+    "category-version-read-control",
+    "/cargo-categories",
+    undefined,
+    undefined,
+    1,
+    200,
+  );
+  const category = cats.response.data?.find((r: any) => r.value.code.startsWith("HAC44_API"));
+  output("category-version-result.json", {
+    status:
+      cats.http !== 200 || !category
+        ? "BLOQUEADO"
+        : typeof category.version === "string"
+          ? "PASS"
+          : "FAIL",
+    positiveCodeType: typeof category?.value?.code,
+    actualVersionType: typeof category?.version,
+    actualVersion: category?.version,
+    expected:
+      "UML CargoCategory.version:string; DER says integer must be rendered as string when required",
+  });
+  const own = "/carriers/d4490000-0000-4000-8000-000000000001/depots";
+  const depot = {
+    ...clone(fixture.depots),
+    schemaVersion: "2.0",
+    code: "HAC44_B_CARRIER_DEPOT_" + suffix,
+  };
+  const b = await call("carrier-B-write-positive", own, depot, undefined, 2, 201);
+  if (b.http === 201) {
+    const rd = await call(
+      "carrier-B-read-positive",
+      own + "/" + b.response.data.id,
+      undefined,
+      undefined,
+      2,
+      200,
+    );
+    roundtrips.push({
+      kind: "depots",
+      id: b.response.data.id,
+      input: depot,
+      written: b.response.data,
+      read: rd.response.data,
+      status:
+        JSON.stringify(b.response.data) === JSON.stringify(rd.response.data) ? "PASS" : "FAIL",
+    });
+  }
+  const denied = await call(
+    "carrier-B-write-foreign",
+    "/carriers/" + CARRIER + "/depots",
+    { ...depot, code: "HAC44_B_FORGED_A" },
+    undefined,
+    2,
+    403,
+  );
+  output("carrier-isolation-result.json", {
+    status: b.http !== 201 ? "BLOQUEADO" : denied.http === 403 ? "PASS" : "FAIL",
+    positive: b.http,
+    negative: denied.http,
+    scope:
+      "Carrier B editor has a valid own write, cannot mutate foreign carrier A; real authenticated HTTP",
+  });
+}
