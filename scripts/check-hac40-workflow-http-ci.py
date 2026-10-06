@@ -14,8 +14,15 @@ def run(args, **kwargs):
 
 if __name__ == '__main__':
     cli = ['npx', '--yes', 'supabase@2.117.0']
+    # The database gate leaves a DB-only stack running. Stop that dedicated
+    # local project (preserving its volume) before starting Auth and the API.
+    run(cli + ['stop', '--workdir', 'supabase-v2'], timeout=120)
     run(cli + ['start', '--workdir', 'supabase-v2'], timeout=600)
     status = json.loads(run(cli + ['status', '--workdir', 'supabase-v2', '-o', 'json'], timeout=60))
+    required = {'API_URL', 'ANON_KEY', 'SERVICE_ROLE_KEY'}
+    if any(not status.get(key) for key in required):
+        # Names are safe diagnostics; never print local credential values.
+        raise RuntimeError('Local Auth/API stack incomplete; status keys: ' + ', '.join(sorted(status)))
     url = status['API_URL']
     assert urllib.parse.urlparse(url).hostname in ('127.0.0.1', 'localhost')
     seed = (ROOT/'supabase/scenarios/v2-road-baseline/seed.sql').read_text(encoding='utf-8')
