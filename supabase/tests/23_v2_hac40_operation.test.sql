@@ -101,4 +101,9 @@ select is((select status from public.capacity_reservations where id=pg_temp.id('
 select is((select count(*)::integer from public.incident_updates where parent_id=pg_temp.id('incident')),1,'incident history preserved');
 select is((select count(*)::integer from public.execution_events where parent_id=pg_temp.id('execution')),3,'source events retained for start, position and completion');
 select is((select complete from public.capacity_calendars where id=pg_temp.id('calendar')),false,'movement requires new source/location before reusing the resource');
+select is((select freshness from public.capacity_calendars where id=pg_temp.id('calendar')),'UNKNOWN','released calendar no longer claims simulated evidence');
+select is((select valid_until from public.capacity_calendars where id=pg_temp.id('calendar')),null::timestamptz,'movement does not invent a new evidence validity');
+set local role authenticated;
+select is(public.read_v2_catalog('c2300000-0000-4000-8000-000000000001','c2320000-0000-4000-8000-000000000001','calendars','c2340000-0000-4000-8000-000000000001',null,pg_temp.id('calendar'),25,0)#>>'{0,value,freshness}','UNKNOWN','authenticated detail exposes invalidated calendar coherently');
+select lives_ok($$set constraints all immediate$$,'operation constraints execute under authenticated role');
 select * from finish();rollback;

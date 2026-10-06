@@ -358,6 +358,17 @@
       "dependencies": [
         "20261005181940"
       ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql",
+      "version": "20261006161533",
+      "sha256": "53092b95bedde265369720bb29278215e4e07ab28be61a7f358c249c82722096",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261005192012"
+      ]
     }
   ]
 }
