@@ -25,6 +25,7 @@ ARTIFACTS = {
 CONTRACT_CASES = {
     "contract-required-field-result.json", "contract-route-cardinality-result.json",
     "contract-category-version-result.json", "contract-carrier-isolation-result.json",
+    "contract-normalization-result.json",
 }
 
 
