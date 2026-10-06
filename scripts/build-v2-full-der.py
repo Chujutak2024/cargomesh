@@ -278,7 +278,19 @@ def build():
         'observedMultiplicity': actual['multiplicidad_fisica'], 'qaStatus': actual['estado'],
         'migrationVerified': False}
         for r, treatment, actual in zip(model['relations'], RELATIONS, baseline['relations'])]
+    current = json.loads((OUT / 'FULL_MODEL_CURRENT_RELATIONS.json').read_text(encoding='utf-8'))
+    seen = set()
+    for update in current['relations']:
+        index = update['number']
+        assert index not in seen and 0 <= index < len(relations)
+        seen.add(index)
+        relation = relations[index]
+        assert (relation['source'], relation['target']) == (update['source'], update['target'])
+        for path in update['evidence']:
+            assert (ROOT / path).is_file(), f'Missing relation evidence: {path}'
+        relation['currentTreatment'] = update
     return {'schemaVersion': '2.0', 'sourceSha256': model['sourceSha256'],
+        'currentRelationReconciliation': current,
         'status': 'QA_BASELINE_RECONCILED_NOT_CURRENT_MIGRATION_CERTIFICATION',
         'observedCommit': baseline['sourceCommit'],
         'counts': model['counts'], 'classes': classes, 'relations': relations}
@@ -312,11 +324,19 @@ def render(model):
             lines.append(f"| `{attr['name']}{optional}` | {attr['type'].replace('|', '/')} | `{attr['target'].replace('|', '/')}` | `{attr['designTarget'].replace('|', '/')}` | {attr['qaStatus']} |")
         lines.append('')
     lines += ['## Relaciones y restricciones', '',
+        'La observación QA y el objetivo previo son históricos. La reconciliación vigente de F-02 se muestra aparte sin sustituir estados independientes.', '',
         '| Nº | UML | Cardinalidad original | Tratamiento observado QA | Objetivo previo | Estado QA |', '|---|---|---|---|---|---|']
     for index, relation in enumerate(model['relations']):
         lines.append(f"| {index} | {relation['source']} → {relation['target']} ({relation['label']}) | "
             f"{' / '.join(relation['endLabels']) or 'herencia/realización'} | {relation['physicalTreatment'].replace('|', '/')} | {relation['designTreatment']} | {relation['qaStatus']} |")
-    lines += ['', '## Gate antes de aplicar el esquema', '',
+    lines += ['', '## Reconciliación vigente F-02: relaciones 34, 55, 69 y 89', '',
+        f"Base integrada: `{model['currentRelationReconciliation']['sourceCommit']}` (20 migraciones). El baseline anterior permanece intacto.", '',
+        model['currentRelationReconciliation']['qaEvidence'], '',
+        '| Nº | Tratamiento actual en el código | Consumo API | Estado documental | Evidencia |', '|---|---|---|---|---|']
+    for update in model['currentRelationReconciliation']['relations']:
+        evidence = '; '.join(f'`{path}`' for path in update['evidence'])
+        lines.append(f"| {update['number']} | {update['treatment']} | {update['api']} | {update['status']} | {evidence} |")
+    lines += ['', 'El enlace indirecto de LoadAllocation al recurso es deliberado y explícito; no se promete una columna directa inexistente. La nulabilidad pre-plan de reservas no permite un recurso incoherente. Esta sección no reobserva los 397 atributos ni certifica las 93 relaciones o Supabase alojado.', '', '## Gate antes de aplicar el esquema', '',
         'El inventario y este diseño deben coincidir exactamente con el UML. Después se comprobará cada destino contra pg_catalog, constraints, RLS y comandos reales; '
         'los 397 destinos y 93 tratamientos no pasan a IMPLEMENTADO por aparecer aquí. '
         'Faltan las migraciones y servicios restantes, pruebas de concurrencia y aislamiento, datos autorizados y consumo Web/MCP del flujo completo.', '']
