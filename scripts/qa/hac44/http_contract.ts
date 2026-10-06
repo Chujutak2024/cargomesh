@@ -79,14 +79,17 @@ export async function contract({
     status:
       cats.http !== 200 || !category
         ? "BLOQUEADO"
-        : typeof category.version === "string"
+        : typeof category.value?.version === "string"
+            && /^[1-9]\d*$/.test(category.value.version)
+            && category.value.version === String(category.version)
           ? "PASS"
           : "FAIL",
     positiveCodeType: typeof category?.value?.code,
-    actualVersionType: typeof category?.version,
-    actualVersion: category?.version,
+    actualVersionType: typeof category?.value?.version,
+    actualVersion: category?.value?.version,
+    envelopeVersion: category?.version,
     expected:
-      "UML CargoCategory.version:string; DER says integer must be rendered as string when required",
+      "CargoCategory value.version is a positive integer string projected from the technical revision",
   });
   const own = "/carriers/d4490000-0000-4000-8000-000000000001/depots";
   const depot = {
