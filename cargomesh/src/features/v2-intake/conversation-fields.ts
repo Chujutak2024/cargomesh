@@ -20,6 +20,17 @@ export const CONVERSATION_FIELDS = [
 ] as const satisfies readonly ConversationField[];
 export type GuidedConversationField = (typeof CONVERSATION_FIELDS)[number];
 
+export function resolveConversationSuggestions(
+  suggestions: Array<{ field: GuidedConversationField; value: string }>,
+  options: IntakeOptionsData,
+) {
+  return suggestions.map(({ field, value }) => ({
+    field,
+    value,
+    parsed: parseConversationField(field, value, options),
+  }));
+}
+
 export const FIELD_QUESTION: Record<ConversationField, string> = {
   originFacilityId: "¿Dónde se recogerá la carga?",
   destinationFacilityId: "¿Dónde se entregará la carga?",

@@ -20,7 +20,7 @@ export const ConversationContextSchema = z.object({
   knownFields: z.array(z.object({
     field: ConversationContextFieldSchema,
     value: z.string().trim().min(1).max(100),
-  }).strict()).max(12),
+  }).strict()).max(16),
   lastAskedField: ConversationFieldNameSchema.nullable(),
   failedAttempts: z.number().int().min(0).max(3),
 }).strict();

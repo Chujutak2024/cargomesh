@@ -4,9 +4,10 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { FreightRequestV2Data, IntakeOptionsData, RoadServiceabilityEvaluationV2Data } from "./contracts";
 import type { V2IntakePrototypeDraft } from "./prototype-model";
 import { validatePrototypeReview } from "./prototype-model";
-import { CONVERSATION_FIELDS, FIELD_QUESTION, choicesForField, matchingConversationChoices, parseConversationField, type ConversationField, type GuidedConversationField } from "./conversation-fields";
+import { CONVERSATION_FIELDS, FIELD_QUESTION, choicesForField, matchingConversationChoices, resolveConversationSuggestions, type ConversationField, type GuidedConversationField } from "./conversation-fields";
 import { useConversationVoice } from "@/features/v2-conversation-prep/voice-controls";
 import { InterpretationResponseSchema, interpretDeterministically, type Interpretation } from "@/features/v2-conversation-prep/interpretation";
+import { conversationContext } from "./conversation-context";
 import type { V2IntakeApiError } from "./v2-intake-client";
 import styles from "./conversation-chat.module.css";
 
@@ -61,6 +62,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const announcedDraftRef = useRef<string | null>(null);
   const voiceTurnActive = useRef(false);
   const lastSpokenMessage = useRef(0);
+  const failedAttempts = useRef(0);
   const latestAssistant = history.findLast((message) => message.speaker === "assistant")?.text ?? "";
   const voice = useConversationVoice({
     onTranscript: (recognized) => { setText(recognized); inputRef.current?.focus(); },
@@ -143,7 +145,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   }
 
   async function interpret(value: string): Promise<Interpretation> {
-    const input = { schemaVersion: "2.0" as const, text: value, currentField: nextField };
+    const input = { schemaVersion: "2.0" as const, text: value, currentField: nextField,
+      context: conversationContext(draft, nextField, failedAttempts.current) };
     if (optionsSource === "fixture") return interpretDeterministically(input);
     const response = await fetch("/api/v2/conversation/interpret", {
       method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
@@ -188,6 +191,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       if (proposal.intent === "HELP") { add(value, "Dime el lugar de recojo y entrega, la carga y las fechas. Te pediré solo los datos que falten y podrás corregirlos antes de guardar."); return; }
       if (proposal.intent === "START_OVER") {
         onStartOver?.();
+        failedAttempts.current = 0;
         setAwaitingConfirmation(false);
         add(value, "Empecemos una solicitud provisional nueva. ¿Dónde se recogerá la carga?");
         return;
@@ -213,37 +217,58 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         return;
       }
       const accepted = new Set<ConversationField>();
-      for (const suggestion of proposal.fields) {
-        const field = suggestion.field as ConversationField;
-        const parsed = parseConversationField(field, suggestion.value, options);
+      const applied: Partial<Record<GuidedConversationField, string>> = {};
+      let clarification: string | null = null;
+      for (const suggestion of resolveConversationSuggestions(proposal.fields, options)) {
+        const field = suggestion.field;
+        const parsed = suggestion.parsed;
         if (parsed === null) {
           if (field === "categoryCode") {
             onField("cargoDescription", suggestion.value);
+            applied.cargoDescription = suggestion.value;
+            accepted.add("cargoDescription");
             const categories = choicesForField("categoryCode", options);
             const examples = [categories.find((choice) => choice.value === "MACHINERY"), categories.find((choice) => choice.value === "GENERAL")]
               .filter((choice): choice is { value: string; label: string } => Boolean(choice)).map((choice) => choice.label).join(" or ");
-            add(value, `I noted “${suggestion.value}” as the cargo description. ${FIELD_QUESTION.categoryCode}${examples ? ` For example, ${examples}.` : ""}`);
-            return;
+            clarification ??= `I noted “${suggestion.value}” as the cargo description. ${FIELD_QUESTION.categoryCode}${examples ? ` For example, ${examples}.` : ""}`;
+            continue;
           }
           const matches = matchingConversationChoices(field, suggestion.value, options);
           if (matches.length > 1) {
-            setChoices(matches.map((choice) => ({ ...choice, field })));
-            add(value, "I found more than one authorized location. Please confirm one of the labeled choices below. No location has been saved yet.");
+            if (!clarification) {
+              setChoices(matches.map((choice) => ({ ...choice, field })));
+              clarification = "I found more than one authorized location. Please confirm one of the labeled choices below. No location has been saved yet.";
+            }
           } else if (field === "originFacilityId" || field === "destinationFacilityId") {
-            add(value, "I could not match that place to one of your organization's saved facilities. Searching and confirming other places is not available yet. Please name a saved facility or use the request form.");
-          } else add(value, `I could not validate that detail. ${FIELD_QUESTION[field]}`);
-          return;
+            clarification ??= "I could not match that place to one of your organization's saved facilities. Searching and confirming other places is not available yet. Please name a saved facility or use the request form.";
+          } else clarification ??= `I could not validate that detail. ${FIELD_QUESTION[field]}`;
+          continue;
         }
         onField(field, parsed);
+        applied[field] = parsed;
         accepted.add(field);
       }
-      if (!accepted.size) { add(value, `I did not catch a freight detail. ${FIELD_QUESTION[nextField ?? "originFacilityId"]}`); return; }
+      if (clarification) {
+        failedAttempts.current = accepted.size ? 0 : Math.min(3, failedAttempts.current + 1);
+        setAwaitingConfirmation(false);
+        add(value, accepted.size ? `I kept the other ${accepted.size} valid detail${accepted.size === 1 ? "" : "s"}. ${clarification}`
+          : failedAttempts.current >= 2 ? `${clarification} You can also enter this detail in the request form.` : clarification);
+        return;
+      }
+      if (!accepted.size) {
+        failedAttempts.current = Math.min(3, failedAttempts.current + 1);
+        add(value, failedAttempts.current >= 2
+          ? "I still could not identify that detail. You can type a specific value or enter it in the request form."
+          : `I did not catch a freight detail. ${FIELD_QUESTION[nextField ?? "originFacilityId"]}`);
+        return;
+      }
+      failedAttempts.current = 0;
       setAwaitingConfirmation(false);
       const remaining = missingField(draft, accepted);
       const preface = proposal.acknowledgment ?? "Got it.";
       const changed = proposal.intent === "CORRECT" ? ` Updated ${[...accepted].map((field) => field === "originFacilityId" ? "pickup" : field === "destinationFacilityId" ? "delivery" : field).join(", ")}.` : "";
       if (remaining) add(value, `${preface}${changed} ${FIELD_QUESTION[remaining]}`);
-      else { setAwaitingConfirmation(true); add(value, draftSummary({ ...draft, ...Object.fromEntries(proposal.fields.map((item) => [item.field, parseConversationField(item.field as ConversationField, item.value, options) ?? item.value])) }, options)); }
+      else { setAwaitingConfirmation(true); add(value, draftSummary({ ...draft, ...applied }, options)); }
     } catch (error) {
       add(value, error instanceof Error ? error.message : "I could not process that message. Please retry.");
     } finally {
