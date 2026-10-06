@@ -11,6 +11,24 @@ function value(kind: keyof typeof FleetInputsV2) {
   return JSON.parse(raw);
 }
 describe("HAC-40 fleet contracts", () => {
+  it("reads invalidated calendars as UNKNOWN without fabricating evidence", async () => {
+    const valid = value("calendars");
+    assert.equal(FleetOutputsV2.calendars.safeParse(valid).success, true);
+    const invalidated = { ...valid, complete: false, validUntil: null };
+    assert.equal(FleetOutputsV2.calendars.safeParse(invalidated).success, false);
+    const unknown = { ...invalidated, freshness: "UNKNOWN" };
+    assert.equal(FleetOutputsV2.calendars.safeParse(unknown).success, true);
+    const actor = { organizationId: assetId, memberId: calendarId };
+    const scope = { carrierId: assetId, serviceId: valid.serviceId };
+    const record = { id: calendarId, organizationId: null, carrierId: assetId, serviceId: valid.serviceId,
+      version: 1, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z", value: unknown };
+    const repo: CatalogRepositoryV2 = { async read() { return [record]; }, async command() { throw new Error("READ_ONLY_TEST"); } };
+    const service = new CatalogServiceV2(repo);
+    const detail = await service.get(actor, "calendars", scope, calendarId);
+    const list = await service.list(actor, "calendars", scope, {});
+    assert.deepEqual(detail.data.value, unknown);
+    assert.deepEqual(list.data[0].value, unknown);
+  });
   it("validates all fleet publications and rejects injected identity fields", () => {
     for (const kind of Object.keys(FleetInputsV2) as (keyof typeof FleetInputsV2)[]) {
       assert.ok(FleetInputsV2[kind].safeParse(value(kind)).success, kind);
