@@ -1,12 +1,14 @@
-# Modelos y revisiones V2
+# UML, DER y modelos V2
 
-**En revisión, no DER aprobado ni prueba de funcionalidad.** El equipo está ajustando los editables; evita citar una versión anterior como contrato vigente.
+## Entradas actuales
 
-- [Modelo de dominio conceptual](./DOMAIN_UML_MODEL.md): conceptos, atributos esenciales y cardinalidades de negocio.
-- [Diseño de clases](./CLASS_DIAGRAM_DESIGN.md) e [índice de editables](../diagrams/README.md): atributos, operaciones, asociaciones e interfaces. El `06` es la última revisión versionada; el XML manual posterior aún tiene conectores sin corregir y no es una aprobación definitiva.
-- [DER lógico V2 y contraste físico](./V2_LOGICAL_ERD.md): relaciones/keys propuestas por fase, tablas existentes en migraciones, resultados derivados y delta con RLS pendiente. **No** certifica el Supabase V2 remoto ni autoriza migraciones.
-- [Paquete de diagramas](./MODEL_DIAGRAMS_REVIEW.md): dominio, clases, estados, secuencias y contenedores; distingue lo comprobado de lo propuesto.
-- [Decisiones ROAD/simulación](./ROAD_UML_AND_SIMULATION_REVIEW.md): procedencia del escenario cartográfico y límites de las cotizaciones sintéticas.
-- [Auditoría previa de datos](./DATA_MODEL_REVIEW.md): fotografía histórica superada por migraciones posteriores; **no usarla como DER ni estado remoto actual**.
+- [UML 07 original](../diagrams/review-2026-09-24/07-complete-classes-sprint2-reviewed.drawio): fuente trazable de 57 clases, 397 atributos y 93 relaciones.
+- [Contrato HAC-27](../delivery/SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md) y [diccionario fechado](../delivery/HAC27_UML_ATTRIBUTE_DICTIONARY_2026-10-02.md): atributos, alias y trazabilidad; contrastar estados con la matriz del SHA revisado.
+- [DER integral](./FULL_MODEL_DER.md), [diseño físico](./FULL_MODEL_PHYSICAL_DESIGN.json) y [reconciliación de relaciones](./FULL_MODEL_CURRENT_RELATIONS.json): distinguen baseline histórico y decisiones posteriores. #106 es reconciliación documental, no cierre de F-02 ni certificado alojado.
+- [Flujo de entrega vigente](../delivery/CURRENT_DELIVERY_STATE.md): revisión e integración.
 
-Los editables y generadores permanecen en [diagrams/](../diagrams/). El DER lógico es una **propuesta derivada** para esa sincronización, no su aprobación final: antes de fijar el físico se deben ratificar concepto, clases, estados y secuencias con los [contratos](../contracts/README.md).
+## Antecedentes de diseño
+
+El modelo conceptual, CLASS_DIAGRAM_DESIGN, V2_LOGICAL_ERD, MODEL_DIAGRAMS_REVIEW, ROAD_UML_AND_SIMULATION_REVIEW y DATA_MODEL_REVIEW conservan propuestas/revisiones anteriores. Sus referencias a UML 06 o ajustes pendientes del XML pertenecen a ese corte; no sustituyen UML 07 ni el DER integral.
+
+Un diagrama no prueba implementación. La matriz UML → BD → API debe identificar SHA, entorno, casos ejecutados y faltantes; las afirmaciones de esquema alojado necesitan evidencia independiente.

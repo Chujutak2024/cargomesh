@@ -1,21 +1,21 @@
 # Entrega, coordinación y calidad V2
 
-Esta carpeta registra **planes, plantillas y evidencia**, no redefine el dominio ni concede automáticamente estado `Done` en Linear. La fuente normativa está en [contracts/](../contracts/README.md).
+Comienza por el [flujo vigente](./CURRENT_DELIVERY_STATE.md). Esta carpeta contiene contratos de entrega, plantillas y evidencia; el dominio se define en [contracts/](../contracts/README.md).
 
-## Planificación y Linear
+## Trabajo actual
 
-- [Roadmap por sprint](./SPRINT_ROADMAP.md) y [roadmap de hitos](./cargomesh_v2_milestones_architecture_roadmap.md): el primero ordena trabajo semanal; el segundo resume resultados/hitos. Se conservan separados por escala temporal.
-- [Plantilla de issue](./LINEAR_ISSUE_TEMPLATE.md), [auditoría/rebase de Linear](./LINEAR_REBASE_PLAN.md) y [fichas Sprint 1](./linear_sprint1_v2_rebase_proposal.md): formato, decisiones registradas e historia de carga; no son tres backlog activos independientes.
-- [Plan Sprint 2](./SPRINT2_EXECUTION_PLAN.md) y [ficha HAC-28](./SPRINT2_WEBMCP_RETIREMENT_ISSUE.md): refinamiento de entregas; contrastar con Linear antes de cambiar estado.
+- [Plantilla de Linear](./LINEAR_ISSUE_TEMPLATE.md): alcance, dueño, dependencias, DoD y evidencia.
+- [Calidad y aceptación de PR](./QUALITY_AND_VALIDATION_PLAN.md).
+- [Backend completo HAC-40 y límites](./HAC40_FULL_API_AND_CLOSURE.md), [endpoints](./HAC40_API_ENDPOINTS.md) y [workflow persistente](./HAC40_WORKFLOW_API.md).
+- [Trazabilidad UML → BD → API](./SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md) y [diccionario UML fechado](./HAC27_UML_ATTRIBUTE_DICTIONARY_2026-10-02.md): contrastar con el DER actual y la matriz del SHA revisado.
+- [Bootstrap local V2](./HAC29_CLEAN_BOOTSTRAP.md).
 
-## Verificación y evidencia
+## Evidencia fechada e historia
 
 - [Reinicio del diseño conversacional V2](./CHAT_V2_CONVERSATION_RESET_2026-10-07.md): diagnóstico de las respuestas repetitivas, estado real de Bedrock y criterios de la siguiente implementación.
+- [Handoff mapa → intake](./HAC15_HAC14_INTEGRATION_HANDOFF.md): evidencia del corte que declara, no certificación del estado presente.
+- [Acta Gate-1](./SPRINT1_GATE_V2.md) y [friction logs](./friction-logs/FL-01.md): antecedentes.
+- [Planes superados de septiembre](./archive/2026-09-plans/README.md): archivo sin autoridad operativa.
+- [Regresión y evidencia V1](https://github.com/Chujutak2024/cargomesh/blob/feef2419fa5f786c9a6063f85aeee452dd9eb84b/docs/v1-webmcp/README.md).
 
-- [HAC-15 → HAC-14: handoff del mapa ROAD](./HAC15_HAC14_INTEGRATION_HANDOFF.md) y [evidencia local](./evidence/hac15-handoff/README.md): punto de montaje, props, dueño del estado y casos para el smoke conjunto; no certifican integración ni aceptación QA.
-
-- [Plan de calidad y revisión técnica](./QUALITY_AND_VALIDATION_PLAN.md): verificación, checklist de PR, validación humana selectiva y escala de hallazgos. La [guía breve de revisión](./CODE_REVIEW_GUIDELINES.md) se conserva como lista de comprobación; ante diferencias, prevalece el plan de calidad.
-- [HAC-21: mapeo de datos](./SPRINT1_DATA_MAPPING.md), [HAC-22: seguridad MCP](./SPRINT1_ALEXA_SECURITY_AND_BEDROCK.md) y [readiness Alexa+](./ALEXA_DEPLOYMENT_AND_ACCOUNT_LINKING_READINESS.md): cortes y pendientes de implementación; no son pruebas de Alexa+ live.
-- [Separación WebMCP/V2](./WEBMCP_FREEZE_AND_V2_WORKFLOW.md): operación durante el freeze V1. El [acta Gate-1](./SPRINT1_GATE_V2.md) y los [friction logs V2](./friction-logs/FL-01.md) están aquí; la evidencia pública WebMCP permanece en [V1](../../v1-webmcp/04-execution/REL02_Public_WebMCP_UAT_Evidence.md).
-
-No se fusionaron documentos solo por compartir palabras: las propuestas de Sprint 1, la planificación de Sprint 2 y la evidencia de gate tienen fechas y autoridad diferentes.
+Una propuesta, un acta o un PR integrado no conceden automáticamente estado Done ni autorización de despliegue.

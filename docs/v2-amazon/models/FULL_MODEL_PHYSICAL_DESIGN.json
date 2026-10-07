@@ -1,6 +1,73 @@
 {
   "schemaVersion": "2.0",
   "sourceSha256": "104b126cc17565b57064fca0c6a8efd5cf43a076c1cb041355e5174cbe68dc88",
+  "currentRelationReconciliation": {
+    "sourceCommit": "c686aeae7d17a6b641447c15dcf86cd9edd7dfa4",
+    "scope": "F-02 relations 34/55/69/89; source reconciliation only, not full-model or hosted certification",
+    "qaEvidence": "User-provided HAC-44 report for #104 @ 1e241b3: F-05 BD 10/10, HTTP 10/10. F-02 remains partial pending independent documentary review.",
+    "relations": [
+      {
+        "number": 34,
+        "source": "PlanResource",
+        "target": "RouteLeg",
+        "treatment": "plan_resource_bindings.(resource_id, plan_id) -> plan_resources.(id, plan_id); plan_resource_bindings.route_leg_id -> route_legs.id; resource_binding_leg_fk and guard_leg_resource_binding enforce the canonical leg and plan",
+        "api": "GET/POST plans: data.assignments[].resourceId, legAssignmentId and legAssignments[].resources",
+        "status": "DOCUMENTED_PENDING_F02_REVIEW",
+        "evidence": [
+          "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+          "supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql",
+          "supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql",
+          "cargomesh/src/shared/schemas/v2/workflow.ts",
+          "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql"
+        ]
+      },
+      {
+        "number": 55,
+        "source": "PlanResource",
+        "target": "LoadAllocation",
+        "treatment": "load_allocations.assignment_id -> plan_resource_bindings.id -> plan_resources.id via resource_id; PostgreSQL preserves the FK target when the old assignment table is renamed; no load_allocations.plan_resource_id column",
+        "api": "GET plans: data.assignments[].allocations; POST plans: assignments[].resources[].allocations",
+        "status": "DOCUMENTED_PENDING_F02_REVIEW",
+        "evidence": [
+          "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+          "supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql",
+          "supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql",
+          "cargomesh/src/shared/schemas/v2/workflow.ts",
+          "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql"
+        ]
+      },
+      {
+        "number": 69,
+        "source": "PlanLegAssignment",
+        "target": "PlanResource",
+        "treatment": "plan_resource_bindings.(leg_assignment_id, plan_id) -> plan_leg_assignments.(id, plan_id); (resource_id, plan_id) -> plan_resources.(id, plan_id); UNIQUE(resource_id); deferred leg_requires_resources/binding_preserves_resources enforce 1..N",
+        "api": "GET plans: data.legAssignments[].resources; POST plans: assignments[].resources (min 1)",
+        "status": "DOCUMENTED_PENDING_F02_REVIEW",
+        "evidence": [
+          "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+          "supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql",
+          "supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql",
+          "cargomesh/src/shared/schemas/v2/workflow.ts",
+          "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql"
+        ]
+      },
+      {
+        "number": 89,
+        "source": "PlanResource",
+        "target": "CapacityReservation",
+        "treatment": "capacity_reservations.plan_resource_id -> plan_resources.id; plan_leg_assignment_id -> plan_leg_assignments.id; plan_assignment_id -> plan_resource_bindings.id retained for compatibility; a_reservation_resource validates coherence; NULL is allowed only for a pre-plan hold",
+        "api": "POST capacity/holds: assignmentId canonical header plus planResourceId for multiple resources; GET hold: data.planResourceId",
+        "status": "DOCUMENTED_PENDING_F02_REVIEW",
+        "evidence": [
+          "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+          "supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql",
+          "supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql",
+          "cargomesh/src/shared/schemas/v2/workflow.ts",
+          "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql"
+        ]
+      }
+    ]
+  },
   "status": "QA_BASELINE_RECONCILED_NOT_CURRENT_MIGRATION_CERTIFICATION",
   "observedCommit": "abba8056825bb4d7170fe8cdf57bfeefa8b73eb1",
   "counts": {
@@ -5688,7 +5755,22 @@
       "designTreatment": "plan_resources.route_leg_id -> route_legs.id; same plan",
       "observedMultiplicity": "FOREIGN KEY (resource_id, plan_id) REFERENCES plan_resources(id, plan_id); FOREIGN KEY (route_leg_id) REFERENCES route_legs(id); max child count limited only by matching UNIQUE; NULL flags above; minimum 1..* not proven by a FK",
       "qaStatus": "PARCIAL",
-      "migrationVerified": false
+      "migrationVerified": false,
+      "currentTreatment": {
+        "number": 34,
+        "source": "PlanResource",
+        "target": "RouteLeg",
+        "treatment": "plan_resource_bindings.(resource_id, plan_id) -> plan_resources.(id, plan_id); plan_resource_bindings.route_leg_id -> route_legs.id; resource_binding_leg_fk and guard_leg_resource_binding enforce the canonical leg and plan",
+        "api": "GET/POST plans: data.assignments[].resourceId, legAssignmentId and legAssignments[].resources",
+        "status": "DOCUMENTED_PENDING_F02_REVIEW",
+        "evidence": [
+          "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+          "supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql",
+          "supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql",
+          "cargomesh/src/shared/schemas/v2/workflow.ts",
+          "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql"
+        ]
+      }
     },
     {
       "umlId": "O3AsrRVXhiO8iDlZrkKS-248",
@@ -6003,7 +6085,22 @@
       "designTreatment": "load_allocations.plan_resource_id -> plan_resources.id; same request; totals bounded; indivisible not split",
       "observedMultiplicity": "FOREIGN KEY (assignment_id) REFERENCES plan_leg_assignments(id); FOREIGN KEY (resource_id, plan_id) REFERENCES plan_resources(id, plan_id); max child count limited only by matching UNIQUE; NULL flags above; minimum 1..* not proven by a FK",
       "qaStatus": "PARCIAL",
-      "migrationVerified": false
+      "migrationVerified": false,
+      "currentTreatment": {
+        "number": 55,
+        "source": "PlanResource",
+        "target": "LoadAllocation",
+        "treatment": "load_allocations.assignment_id -> plan_resource_bindings.id -> plan_resources.id via resource_id; PostgreSQL preserves the FK target when the old assignment table is renamed; no load_allocations.plan_resource_id column",
+        "api": "GET plans: data.assignments[].allocations; POST plans: assignments[].resources[].allocations",
+        "status": "DOCUMENTED_PENDING_F02_REVIEW",
+        "evidence": [
+          "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+          "supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql",
+          "supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql",
+          "cargomesh/src/shared/schemas/v2/workflow.ts",
+          "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql"
+        ]
+      }
     },
     {
       "umlId": "g8S2DPwqzsmnHs3VKEzF-1",
@@ -6213,7 +6310,22 @@
       "designTreatment": "plan_resources.plan_leg_assignment_id -> plan_leg_assignments.id; same leg/plan; nonempty per assignment",
       "observedMultiplicity": "FOREIGN KEY (resource_id, plan_id) REFERENCES plan_resources(id, plan_id); max child count limited only by matching UNIQUE; NULL flags above; minimum 1..* not proven by a FK",
       "qaStatus": "DIVERGENTE",
-      "migrationVerified": false
+      "migrationVerified": false,
+      "currentTreatment": {
+        "number": 69,
+        "source": "PlanLegAssignment",
+        "target": "PlanResource",
+        "treatment": "plan_resource_bindings.(leg_assignment_id, plan_id) -> plan_leg_assignments.(id, plan_id); (resource_id, plan_id) -> plan_resources.(id, plan_id); UNIQUE(resource_id); deferred leg_requires_resources/binding_preserves_resources enforce 1..N",
+        "api": "GET plans: data.legAssignments[].resources; POST plans: assignments[].resources (min 1)",
+        "status": "DOCUMENTED_PENDING_F02_REVIEW",
+        "evidence": [
+          "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+          "supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql",
+          "supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql",
+          "cargomesh/src/shared/schemas/v2/workflow.ts",
+          "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql"
+        ]
+      }
     },
     {
       "umlId": "C2sqDRVIhTB5ZJw0Zlot-1",
@@ -6513,7 +6625,22 @@
       "designTreatment": "capacity_reservations.plan_resource_id -> plan_resources.id; nullable for pre-plan hold; coherent source",
       "observedMultiplicity": "FOREIGN KEY (plan_assignment_id) REFERENCES plan_leg_assignments(id); FOREIGN KEY (resource_id, plan_id) REFERENCES plan_resources(id, plan_id); max child count limited only by matching UNIQUE; NULL flags above; minimum 1..* not proven by a FK",
       "qaStatus": "DIVERGENTE",
-      "migrationVerified": false
+      "migrationVerified": false,
+      "currentTreatment": {
+        "number": 89,
+        "source": "PlanResource",
+        "target": "CapacityReservation",
+        "treatment": "capacity_reservations.plan_resource_id -> plan_resources.id; plan_leg_assignment_id -> plan_leg_assignments.id; plan_assignment_id -> plan_resource_bindings.id retained for compatibility; a_reservation_resource validates coherence; NULL is allowed only for a pre-plan hold",
+        "api": "POST capacity/holds: assignmentId canonical header plus planResourceId for multiple resources; GET hold: data.planResourceId",
+        "status": "DOCUMENTED_PENDING_F02_REVIEW",
+        "evidence": [
+          "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+          "supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql",
+          "supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql",
+          "cargomesh/src/shared/schemas/v2/workflow.ts",
+          "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql"
+        ]
+      }
     },
     {
       "umlId": "cm-v2fix-3",

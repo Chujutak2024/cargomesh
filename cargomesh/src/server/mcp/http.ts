@@ -5,18 +5,10 @@ import { runWithMcpRequestIdentity } from "./auth/request-context";
 import { parseMcpCapabilityProfile, type McpCapabilityProfile } from "./capabilities";
 import { publicMcpError } from "./errors";
 import { createCargoMeshMcpServer } from "./server";
-import { readPersistedFreightOptions, type ReadFreightOptions } from "./tools/get-freight-options";
-import type { CreateFreightRequest } from "./tools/create-freight-request";
-import type { FindFreightOptions } from "./tools/find-freight-options";
-import type { SubmitFreightRequest } from "./tools/submit-freight-request";
 import type { V2RoadToolServices } from "./tools/v2-road";
 
 type Dependencies = {
   authenticate: (request: Request) => Promise<McpPrincipal | McpAuthentication>;
-  read: ReadFreightOptions;
-  create?: CreateFreightRequest;
-  find?: FindFreightOptions;
-  submit?: SubmitFreightRequest;
   v2RoadServices?: V2RoadToolServices;
   configuration: () => McpHttpConfiguration;
 };
@@ -132,7 +124,6 @@ function isRemoteRequest(
 
 export function createMcpHttpHandler(dependencies: Dependencies = {
   authenticate: authenticateMcpRequestContext,
-  read: readPersistedFreightOptions,
   configuration: () => ({
     mode: process.env.CARGOMESH_MCP_MODE ?? "local",
     environment: process.env.NODE_ENV,
@@ -210,10 +201,6 @@ export function createMcpHttpHandler(dependencies: Dependencies = {
         });
         const server = createCargoMeshMcpServer(
           authentication.principal,
-          dependencies.read,
-          dependencies.create,
-          dependencies.find,
-          dependencies.submit,
           profile,
           dependencies.v2RoadServices,
         );

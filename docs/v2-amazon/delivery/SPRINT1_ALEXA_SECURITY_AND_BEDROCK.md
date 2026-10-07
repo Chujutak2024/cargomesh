@@ -1,3 +1,5 @@
+> **EVIDENCIA HISTÓRICA — SPRINT 1.** Los estados y pendientes corresponden al corte indicado, no al presente. Para trabajo nuevo consulta [el flujo vigente](./CURRENT_DELIVERY_STATE.md).
+
 # Sprint 1 — Seguridad MCP para Alexa+ y decisión Bedrock
 
 ## 1. Alcance y estado

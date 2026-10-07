@@ -1,3 +1,5 @@
+> **EVIDENCIA HISTÓRICA — SPRINT 1.** Los estados y pendientes corresponden al corte indicado, no al presente. Para trabajo nuevo consulta [el flujo vigente](./CURRENT_DELIVERY_STATE.md).
+
 # Gate 1 V2 — acta de integración y cierre condicionado
 
 **Corte:** 25 de septiembre de 2026 (Lima). **Base recibida:** `codex/v2-amazon-contracts` @ `92b9735` con PR #87 y #88 ya mergeados. **Rama de gate:** `feat/cycle-1-integration` con el árbol integrado en el checkout local; el remoto aún está en `abdb2bc` hasta publicar el commit preparado. [PR #86](https://github.com/Chujutak2024/cargomesh/pull/86) fue cerrado sin merge; no se depende de reabrirlo. **Responsable:** Cristhian, HAC-26. **Estado:** integración local verificada, pendiente de publicar el PR/CI y del merge autorizado en la base V2.

@@ -9,7 +9,6 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from common import OUT, ROOT, run, save
-from local import HEAD
 
 
 def plain(s):
@@ -90,8 +89,59 @@ def splitrow(line):
     return parts
 
 
+def parse_dictionary(text, official, design):
+    """Read the flat dictionary and its referenced relations, validating UML 07 exactly."""
+    expected = {"classes": 57, "attributes": 397, "relations": 93}
+    if official["counts"] != expected:
+        raise ValueError(f"UML 07 inventory mismatch: expected {expected}, got {official['counts']}")
+    sections = {}
+    table = False
+    for number, line in enumerate(text.splitlines(), 1):
+        if line.startswith("## "):
+            table = False
+        if line.startswith("| Clase | Atributo UML | Tipo UML | Opcional UML |"):
+            table = True
+            continue
+        if not table or not line.startswith("|") or line.startswith("|---"):
+            continue
+        parts = splitrow(line)
+        if len(parts) != 8 or parts[3] not in ("True", "False"):
+            raise ValueError(f"Invalid flat UML dictionary row at line {number}: {parts}")
+        name, attr, kind, optional, representation, treatment, owner, operations = parts
+        current = sections.setdefault(name, {
+            "number": len(sections) + 1, "name": name, "treatment": "Flat UML dictionary",
+            "line": number, "attributes": [], "physical": [],
+        })
+        current["attributes"].append({
+            "uml": attr + ("?" if optional == "True" else "") + ": " + kind.replace(" / ", " | "),
+            "treatment": treatment, "representation": representation,
+            "limit": owner + "; " + operations, "line": number,
+        })
+    relations = design.get("relations", [])
+    counts = {"classes": len(sections),
+              "attributes": sum(len(c["attributes"]) for c in sections.values()),
+              "relations": len(relations)}
+    if counts != expected:
+        raise ValueError(f"UML dictionary inventory mismatch: expected {expected}, got {counts}")
+    inventory = {c["name"]: c["attributes"] for c in official["classes"]}
+    mismatches = [name for name, c in sections.items()
+                  if name not in inventory or [a["uml"] for a in c["attributes"]] != inventory[name]]
+    if sections.keys() != inventory.keys() or mismatches:
+        raise ValueError(f"UML dictionary class/attribute mismatch: {mismatches}; "
+                         f"missing={sorted(inventory.keys() - sections.keys())}")
+    identity = lambda r: (r["umlId"], r["source"], r["target"], r["label"], tuple(r["endLabels"]))
+    actual = collections.Counter(identity(r) for r in relations)
+    canonical = collections.Counter((r["id"], r["source"], r["target"], r["label"],
+                                     tuple(x["text"] for x in r["labels"]))
+                                    for r in official["relations"])
+    if actual != canonical:
+        raise ValueError("UML dictionary relation mismatch in referenced physical design")
+    return list(sections.values()), relations
+
+
 def main():
     """Run the local evidence checks owned by this script."""
+    from local import HEAD
     paths = [
         "docs/v2-amazon/diagrams/review-2026-09-24/07-complete-classes-sprint2-reviewed.drawio",
         "docs/v2-amazon/delivery/HAC27_UML_ATTRIBUTE_DICTIONARY_2026-10-02.md",
@@ -115,62 +165,11 @@ def main():
         assert target.read_bytes() == blob
         sources.append({"head": HEAD, "path": path, "sha256": hashlib.sha256(blob).hexdigest()})
     official = parse(OUT / "repro/sources" / Path(paths[0]).name)
-    sections = []
-    current = None
-    mode = None
-    rels = []
-    for number, line in enumerate(
-        (OUT / "repro/sources" / Path(paths[1]).name).read_text(encoding="utf-8").splitlines(), 1
-    ):
-        m = re.match(r"^## (\d+)\. (\w+) — (.+)", line)
-        if m:
-            current = {
-                "number": int(m[1]),
-                "name": m[2],
-                "treatment": m[3],
-                "line": number,
-                "attributes": [],
-                "physical": [],
-            }
-            sections.append(current)
-            mode = None
-        elif line.startswith("| Atributo y tipo UML"):
-            mode = "attribute"
-        elif line.startswith("| Columna física"):
-            mode = "physical"
-        elif current and line.startswith("| `"):
-            parts = splitrow(line)
-            if mode == "attribute" and len(parts) == 4:
-                current["attributes"].append(
-                    {
-                        "uml": parts[0].strip("`"),
-                        "treatment": parts[1],
-                        "representation": parts[2],
-                        "limit": parts[3],
-                        "line": number,
-                    }
-                )
-            elif mode == "physical" and len(parts) == 3:
-                current["physical"].append(
-                    {
-                        "column": parts[0].strip("`"),
-                        "type": parts[1].strip("`"),
-                        "nullable": parts[2],
-                        "line": number,
-                    }
-                )
-        m = re.match(r"^\| (\d+) \| `(\w+)` → `(\w+)` \| (.*?) \| (.*?) \|$", line)
-        if m:
-            rels.append(
-                {
-                    "number": int(m[1]),
-                    "source": m[2],
-                    "target": m[3],
-                    "label": m[4],
-                    "implementation": m[5],
-                    "line": number,
-                }
-            )
+    sections, rels = parse_dictionary(
+        (OUT / "repro/sources" / Path(paths[1]).name).read_text(encoding="utf-8"),
+        official,
+        json.loads((OUT / "repro/sources" / "FULL_MODEL_PHYSICAL_DESIGN.json").read_text(encoding="utf-8")),
+    )
     new = {x["name"]: x for x in official["classes"]}
     mismatches = [
         {"class": c["name"]}

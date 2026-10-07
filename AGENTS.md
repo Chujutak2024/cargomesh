@@ -1,6 +1,6 @@
 # CargoMesh V2 Agent Invariants — Amazon Developer Hackathon
 
-Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de CargoMesh V1/WebMCP se conserva en `docs/v1-webmcp/` únicamente como historia, evidencia y regresión. Una regla V1 no limita V2 salvo que este archivo la reafirme.
+Este archivo gobierna el trabajo activo de CargoMesh V2. El código y la documentación retirados de V1/WebMCP se conservan en el historial Git (corte anterior `feef2419fa5f786c9a6063f85aeee452dd9eb84b`). Las cadenas SQL históricas permanecen identificadas como regresión y no son el runtime V2. Una regla V1 no limita V2 salvo que este archivo la reafirme.
 
 ## 1. Fuente de verdad y alcance de versión
 
@@ -50,6 +50,7 @@ Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de Ca
 ## 6. Git, integración y despliegue
 
 - `main` permanece congelada para este trabajo: no mergear, pushear ni abrir un PR de V2 hacia `main`. La aprobación de un PR o una suite verde no autoriza por sí sola a tocarla.
+- Excepción ya ejecutada por autorización expresa de Cristhian: PR #108 promovió el árbol V2 a `main` el 7-oct-2026 (merge `feef2419fa5f786c9a6063f85aeee452dd9eb84b`). Esto no autoriza futuras promociones, DDL alojado ni despliegues. La limpieza posterior entrega PR a la base V2 para revisión.
 - La rama base compartida de código, contratos e integración V2 es `codex/v2-amazon-contracts`. Por decisión expresa de Cristhian del 4 oct 2026, todos los PR de implementación V2 apuntan directamente allí. Esta decisión reemplaza el flujo previo por ramas de integración de ciclo.
 - Cada issue V2 con código declara su rama exacta y target PR en Linear **antes de crearla**; se basa en `codex/v2-amazon-contracts` y no reutiliza ramas cerradas o canceladas de V1. Un enabler sin código registra `No aplica` y no abre rama.
 - El manifiesto de ramas se aprueba por ciclo: una core por integrante y ramas emergentes solo después de aprobar su issue; todas entregan PR directamente a `codex/v2-amazon-contracts`. No crear ramas intermedias de ciclo/testing/develop. Las ramas de integración previas quedan como historia; su traslado final autorizado no habilita nuevas entregas allí. No abrir ramas auxiliares por conveniencia; PR #81/#82 son excepciones previas, no una plantilla.
@@ -61,7 +62,7 @@ Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de Ca
 ## 7. Linear y trazabilidad
 
 - Las issues de implementación canceladas permanecen canceladas como historia. Un alcance V2 nuevo recibe una issue nueva y enlaza su antecedente V1; HAC-17 (créditos AWS) y HAC-18 (Drive) son soporte vigente que se verifica por su propia evidencia.
-- El Sprint 1 actual puede contener nuevas issues V2 sin reciclar las canceladas. La planificación semanal sigue el modelo `1 core + 1 enabler + N emergentes` por integrante: el core técnico usa rama y PR; un enabler operativo puede cerrarse con evidencia sin rama.
+- Los sprints anteriores se conservan como historia; consulta el flujo vigente en docs/v2-amazon/delivery/CURRENT_DELIVERY_STATE.md y la issue actual, sin reciclar las canceladas. La planificación semanal sigue el modelo `1 core + 1 enabler + N emergentes` por integrante: el core técnico usa rama y PR; un enabler operativo puede cerrarse con evidencia sin rama.
 - Cada issue tiene un único dueño, que implementa, prueba y corrige los defectos funcionales de su entrega. Otros integrantes entregan contratos dependientes o revisan al terminar; no se crea una issue «colaborativa» sin responsable. La única excepción de corrección por el integrador es la clase baja definida en la plantilla Linear; las clases media/alta regresan al dueño con evidencia y criterio de nueva validación.
 - Estados: `Backlog` definido; `In Progress` con ejecución iniciada; `In Review` es la entrega del responsable (PR verificado para código o enlace/evidencia para soporte). Solo el Tech Lead valida el gate y mueve a `Done`; para código exige merge autorizado, pruebas y documentación.
 - Cada issue V2 usa la [plantilla vigente](./docs/v2-amazon/delivery/LINEAR_ISSUE_TEMPLATE.md) y declara versión, tipo, objetivo, fuera de alcance, dependencias, contrato afectado, DoD verificable y evidencia. Las cantidades históricas de tests y la rama `codex/c-mcp-contracts` no son criterios V2.

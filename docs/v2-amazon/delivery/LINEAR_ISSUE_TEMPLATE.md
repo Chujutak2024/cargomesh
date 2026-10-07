@@ -79,4 +79,4 @@ La escala describe **impacto**, no esfuerzo. Una edición de una línea puede se
 - **Friction log:** registrar un incidente material en `docs/v2-amazon/delivery/friction-logs/` y en la carpeta Drive acordada cuando aplique; no crear logs por cada error trivial corregido.
 - **Estado final del responsable:** `In Review` con PR/evidencia. **Solo el Tech Lead** mueve a `Done` tras verificar DoD y merge autorizado para código, o enlace/acceso para soporte.
 
-El sprint asigna una principal por persona y solo apoyos con entregable distinto y capacidad disponible; no se crean enablers por simetría. Una emergente requiere bloqueo real, relación con su issue madre y DoD propio. Véase [SPRINT_ROADMAP.md](./SPRINT_ROADMAP.md).
+El sprint asigna una principal por persona y solo apoyos con entregable distinto y capacidad disponible; no se crean enablers por simetría. Una emergente requiere bloqueo real, relación con su issue madre y DoD propio. Véase [flujo vigente](./CURRENT_DELIVERY_STATE.md).

@@ -70,6 +70,9 @@ select throws_ok($$select pg_temp.w('bookings.confirm',jsonb_build_object('schem
 select pg_temp.save('aux-hold','holds.create',jsonb_build_object('schemaVersion','2.0','bookingId',pg_temp.id('booking'),'assignmentId',pg_temp.id('assignment'),'planResourceId',(select value#>'{data,assignments,1,resourceId}' from refs where name='plan'),'expiresAt',now()+interval '1 hour','evidence',pg_temp.ev()));
 select lives_ok($$select pg_temp.w('holds.confirm',jsonb_build_object('schemaVersion','2.0','expectedVersion',1,'note','F05 escort','evidence',pg_temp.ev()),pg_temp.ctx(null,'c2340000-0000-4000-8000-000000000001',null,pg_temp.id('aux-hold')))$$,'F05: auxiliary resource confirms independently');
 select lives_ok($$select pg_temp.w('bookings.confirm',jsonb_build_object('schemaVersion','2.0','expectedVersion',1,'note','F05 complete','evidence',pg_temp.ev(),'carrierReference','F05','confirmation','CONFIRMED'),pg_temp.ctx(null,'c2340000-0000-4000-8000-000000000001',null,pg_temp.id('booking')))$$,'F05: booking requires and accepts both resources');
+select is(current_user::text,'authenticated','F05: deferred verification retains the real caller role');
+select lives_ok($$set constraints all immediate$$,'F05: authenticated command reaches deferred constraint verification');
+set constraints all deferred;
 reset role;
 select is((select count(*)::integer from public.capacity_reservations where booking_id=pg_temp.id('booking') and plan_resource_id is not null and plan_leg_assignment_id=pg_temp.id('assignment')),2,'F05: reservations have direct resource and canonical assignment FKs');
 select is((select count(*)::integer from public.plan_leg_assignments where plan_id=pg_temp.id('plan') and data ? 'capacityNeeded'),1,'F05: UML assignment attributes persisted');

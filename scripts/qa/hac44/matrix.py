@@ -1,12 +1,14 @@
 import collections
 import csv
 import functools
+import hashlib
 import io
 import json
 import re
 
 from common import LOGS, OUT, ROOT, save, write
 from local import HEAD
+from matrix_rules import attribute_state, relationship_state, native_control
 
 CAT = json.loads((LOGS / "catalog.json").read_text(encoding="utf-8"))
 SRC = json.loads((LOGS / "sources.json").read_text(encoding="utf-8"))
@@ -66,16 +68,24 @@ WFKINDS = dict(
     SelectionDecision="decisions",
     OfferCostComponent="offers",
 )
+CAT_OUTPUT_KEYS = {"cargo-categories": "catalog.ts:CargoCategoryValueV2Schema"}
+READ_PROJECTIONS = {}
+projection_file = LOGS / "contract-normalization-result.json"
+if projection_file.exists():
+    projection = json.loads(projection_file.read_text(encoding="utf-8"))
+    if projection.get("status") == "PASS":
+        READ_PROJECTIONS[projection["schema"], projection["path"]] = {
+            **projection, "file": projection_file.name,
+        }
 ALIASES = {
     "FreightRequest": {"deliveryDeadline": "deliveryWindow.endsAt"},
     "CargoSpecification": {"category": "categoryCode"},
     "CargoUnit": {"dimensions": "dimensionsCm"},
     "TransportAsset": {"homeDepot": "homeDepotId"},
-    "CapacityPool": {"partner": "partnerId"},
+    "CapacityPool": {"partner": "provenance"},
     "CapacityReservation": {
         "occupiedWindow": "window",
         "committedCapacity": "capacityCommitted",
-        "planResourceId": "assignmentId",
         "reference": "evidence.reference",
         "source": "evidence",
     },
@@ -146,13 +156,13 @@ OVERRIDE = {
     ("CarrierOffer", "opportunityId"): "v2_carrier_offers.parent_id",
     ("Booking", "selectionDecisionId"): "v2_bookings.decision_id",
     ("SelectionDecision", "selectedPlanId"): "selection_decisions.plan_id",
-    ("CapacityReservation", "planResourceId"): "capacity_reservations.plan_assignment_id",
+    ("CapacityReservation", "planResourceId"): "capacity_reservations.plan_resource_id",
 }
 WFSPECIAL = {
     "RouteLeg": "legs[]",
     "RouteWaypoint": "legs[].waypoints[]",
     "PlanResource": "assignments[].resource",
-    "PlanLegAssignment": "assignments[]",
+    "PlanLegAssignment": "legAssignments[]",
     "LoadAllocation": "assignments[].allocations[]",
     "RankedOption": "options[]",
     "ScoringPolicy": "policy",
@@ -214,11 +224,11 @@ def schema_paths(name, attr):
     if name in CATKINDS:
         kind = CATKINDS[name]
         it = TREES["catalog.ts:CatalogInputsV2:" + kind]
-        ot = TREES.get("fleet.ts:FleetOutputsV2:" + kind, it)
+        ot = TREES.get(CAT_OUTPUT_KEYS.get(kind, "fleet.ts:FleetOutputsV2:" + kind), it)
         prefix = "roadVehicle." if name == "RoadVehicle" else ""
         ip = prefix + a
         op = "value." + prefix + a
-        if attr in ("id", "version", "createdAt", "updatedAt") and name != "RoadVehicle":
+        if attr in ("id", "version", "createdAt", "updatedAt") and name != "RoadVehicle" and node(ot, prefix + a) is None:
             op = attr
         if name == "Carrier" and attr == "verifiedContact":
             op = attr
@@ -261,9 +271,13 @@ def schema_paths(name, attr):
         }[name]
         ip = prefix + a
         op = ip
+        output = node(TREES["freight-request.ts:FreightRequestV2ResponseSchema"], "data." + op)
+        proof = READ_PROJECTIONS.get(("freight-request.ts:FreightRequestV2ResponseSchema", "data." + op))
+        if proof:
+            output = {**(output or {}), **proof["outputNode"], "measuredProjection":proof["file"]}
         return (
             node(TREES["freight-request.ts:CreateFreightRequestV2InputSchema"], ip),
-            node(TREES["freight-request.ts:FreightRequestV2ResponseSchema"], "data." + op),
+            output,
             ip,
             op,
             "freight-request.ts:CreateFreightRequestV2InputSchema",
@@ -335,6 +349,10 @@ def storage(name, a, op):
     ]["target"]
     if (name, a) in OVERRIDE:
         target = OVERRIDE[name, a]
+    if "{" in target:
+        return [target], "container"
+    if tab.startswith("|") and tab.endswith(("_projection", "_files")):
+        return [target], "external_projection"
     if (name, a) in GROUPS:
         return [tab + "." + col for col in GROUPS[name, a]], "projection"
     if name in ("CargoSpecification", "CargoUnit", "ShipmentContact"):
@@ -436,6 +454,9 @@ def dto_line(key, attr):
 def output_key(name, attr, key):
     if name in CATKINDS:
         kind = CATKINDS[name]
+        domain = CAT_OUTPUT_KEYS.get(kind)
+        if domain and node(TREES[domain], ALIASES.get(name, {}).get(attr, attr)) is not None:
+            return domain
         if (
             attr in ("id", "version", "createdAt", "updatedAt")
             or name == "Carrier"
@@ -626,103 +647,20 @@ def attributes():
             cols = [COL.get(tuple(p.split(".")[:2])) for p in paths]
             exists = all(cols)
             ev = ev_for(name, op, ip)
-            notes = []
-            status = "PARCIAL"
-            if not exists:
-                status = "FALTANTE"
-                notes.append("No real column/validated JSON representation at the declared target")
-            if exists and mode == "json" and ot is None:
-                status = "FALTANTE"
-                notes.append(
-                    (
-                        "JSON path absent in typed output and independent response; existing "
-                        "container does not represent the "
-                        "field"
-                    )
-                )
-            if exists and ot is not None:
-                if not a["optional"] and (ot.get("nullable") or ot.get("optional")):
-                    status = "DIVERGENTE"
-                    notes.append("Required UML field permits null/absence in output DTO")
-                elif (
-                    not a["optional"]
-                    and mode == "column"
-                    and any(x["is_nullable"] == "YES" for x in cols)
-                ):
-                    status = "PARCIAL"
-                    notes.append(
-                        "Required UML / nullable physical; command guard needs field-specific proof"
-                    )
-                elif ev and any(e["state"] == "VALUE" for e in ev):
-                    status = "COMPLETO"
-                else:
-                    notes.append(
-                        (
-                            "No non-null independent POST→GET value; nullable/empty fixture is not full "
-                            "proof"
-                        )
-                    )
-            if exists and ot is None:
-                notes.append("No corresponding typed Hono DTO; physical-only evidence")
-            if name == "OrganizationMember" and attr == "contactRef":
-                status = "PARCIAL"
-                notes.append("corporate_email is only a partial Contact reference; no contact_ref")
-            if name == "CapacityReservation" and attr == "planResourceId":
-                status = "DIVERGENTE"
-                notes.append(
-                    (
-                        "API assignmentId + plan_assignment FK, no planResourceId DTO/direct FK; "
-                        "resource requires "
-                        "dereference"
-                    )
-                )
-            if name == "CargoCategory" and attr == "version":
-                status = "DIVERGENTE"
-                notes.append("UML string version; real integer revision and API integer")
-            if name == "Booking" and attr == "selectionDecisionId":
-                status = "PARCIAL"
-                notes.append(
-                    (
-                        "decision_id FK exists but typed GET does not expose "
-                        "decisionId/selectionDecisionId"
-                    )
-                )
-            if name == "ShipmentContact" and attr == "role":
-                status = "PARCIAL"
-                paths = ["freight_requests.v2_snapshot.contacts.{pickup,recipient}"]
-                notes.append("Role implicit in container, no explicit role field")
-            if name == "Carrier" and attr == "verifiedContact":
-                status = "PARCIAL"
-                notes.append(
-                    (
-                        "Server controlled contact is read-only; no authorized verification write "
-                        "exercised"
-                    )
-                )
+            proof = READ_PROJECTIONS.get((output_key(name, attr, key), "data." + op))
+            if proof:
+                ev.append({"file":proof["file"], "row":1, "id":proof.get("id"),
+                    "state":"VALUE", "inputState":"MISSING", "inputEqualsRead":None,
+                    "value":proof["value"], "controls":proof["checks"]})
+            status, reason = attribute_state(exists, mode, a["optional"], ot, ev,
+                nullable=any(x and x["is_nullable"] == "YES" for x in cols), uml_type=a["type"])
+            notes = [reason]
+            if proof:
+                notes.append("Current response transform measured with valid/omitted array and rejected null: " + proof["file"])
+            if ot and ot.get("type") == "ZodString" and any(x and x["data_type"] in ("integer", "bigint") for x in cols):
+                notes.append("Domain string is projected from the technical integer; verify exact POST/GET value and contract-category-version-result.json")
             if mode == "json" and paths[0] != a["target"]:
-                notes.append(
-                    (
-                        "DER names a separate column; actual is guarded JSON, documentary "
-                        "reconciliation "
-                        "needed"
-                    )
-                )
-            if name in ("RoutePlanner", "CapacitySource", "RouteSimulationScenario"):
-                status = "FALTANTE" if name == "RoutePlanner" else "PARCIAL"
-                notes = [
-                    (
-                        "Port/projection/fixture must have exact field evidence; no independent Hono "
-                        "CRUD expected. "
-                    )
-                    + (
-                        "No algorithmVersion/graphVersion/source snapshot in routes DTO/catalog."
-                        if name == "RoutePlanner"
-                        else (
-                            "Source DTO/QA scenario differs from canonical representation; not "
-                            "deferred."
-                        )
-                    )
-                ]
+                notes.append("DER names a separate column; actual is typed JSON; documentary reconciliation remains")
             owner = (
                 "HAC-41 / Axel"
                 if name
@@ -845,8 +783,8 @@ REL_OVERRIDE = {
     31: "route_legs.data.conditions[] (snapshot; no route_leg_conditions bridge)",
     33: "plan_resources.plan_id",
     35: (
-        "plan_leg_assignments.resource_id -> plan_resources.id; "
-        "plan_leg_assignments.route_leg_id -> "
+        "plan_resource_bindings.resource_id -> plan_resources.id; "
+        "plan_resource_bindings.route_leg_id -> "
         "route_legs.id"
     ),
     37: "carrier_opportunities.plan_id",
@@ -856,7 +794,7 @@ REL_OVERRIDE = {
     48: "incident_updates.parent_id",
     49: "NO incident_route_conditions bridge or incident→condition API",
     52: "route_legs.corridor_id",
-    56: "load_allocations.assignment_id -> plan_leg_assignments.resource_id -> plan_resources.id",
+    56: "load_allocations.assignment_id -> plan_resource_bindings.resource_id -> plan_resources.id",
     62: "plan_resources.combination_id",
     67: (
         "NO plan_leg_assignments.fulfilment_partner_id; partner available only "
@@ -864,7 +802,7 @@ REL_OVERRIDE = {
         "snapshots"
     ),
     69: "plan_leg_assignments.plan_id",
-    70: "plan_leg_assignments.resource_id -> plan_resources.id (one resource per assignment)",
+    70: "plan_resource_bindings.leg_assignment_id -> plan_leg_assignments.id; plan_resource_bindings.resource_id -> plan_resources.id",
     72: (
         "v2_carrier_offers.data.coveredAssignmentIds[] (validated command; no "
         "v2_offer_assignments "
@@ -882,11 +820,7 @@ REL_OVERRIDE = {
     87: "selection_decisions.freight_request_id",
     88: "selection_decisions.plan_id",
     89: "v2_carrier_offers.freight_request_id",
-    90: (
-        "capacity_reservations.plan_assignment_id -> "
-        "plan_leg_assignments.resource_id -> "
-        "plan_resources.id"
-    ),
+    90: "capacity_reservations.plan_resource_id -> plan_resources.id",
     92: (
         "v2_carrier_offers.data.coveredServiceIds[] (validated command; no "
         "v2_offer_services "
@@ -894,6 +828,74 @@ REL_OVERRIDE = {
     ),
     93: "capacity_reservations.booking_id",
 }
+
+
+def semantic_controls():
+    """Join fresh native/HTTP controls to physical paths, never to a UML row verdict."""
+    source_path = ROOT / "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql"
+    source = source_path.read_text(encoding="utf-8-sig")
+    native_path = LOGS / "gate-v2-pgtap.log"
+    native_log = native_path.read_text(encoding="utf-8") if native_path.exists() else ""
+    gate_path = LOGS / "native-gates.json"
+    gate = json.loads(gate_path.read_text(encoding="utf-8")) if gate_path.exists() else {}
+    same_cut = gate.get("head") == HEAD and gate.get("status") == "PASS"
+    def unique(table, column):
+        return any(c["relation"].split(".")[-1] == table and c["contype"] in ("u", "p")
+            and re.search(r"(?:UNIQUE|PRIMARY KEY) \(" + re.escape(column) + r"\)", c["definition"])
+            for c in CAT["constraints"])
+    descriptors = [
+        {"tokens":[["transport_plan_candidates","route_plan_id"]],
+         "positive":["F05: load-bearing and auxiliary resources are both evaluated"],
+         "negative":["F05: database prevents two candidates owning one route"],
+         "unique":["transport_plan_candidates","route_plan_id"],
+         "http":"contract-route-cardinality-result.json"},
+        {"tokens":[["plan_resource_bindings","leg_assignment_id"],["plan_resource_bindings","resource_id"]],
+         "positive":["F05: one canonical leg assignment","F05: assignment owns two resources","F05: authenticated command reaches deferred constraint verification"],
+         "negative":["F05: empty resource ownership is rejected before storage","F05: zero-resource assignment cannot survive constraint verification"],
+         "unique":["plan_resource_bindings","resource_id"],
+         "minimumPath":"data.legAssignments[].resources"},
+        {"tokens":[["capacity_reservations","plan_resource_id"]],
+         "positive":["F05: first resource confirms","F05: reservations have direct resource and canonical assignment FKs"],
+         "negative":["F05: multi-resource hold requires explicit resource","F05: reservation cannot substitute another plan resource"],
+         "outputPath":"data.planResourceId"},
+    ]
+    proofs = []
+    for descriptor in descriptors:
+        proof = native_control(source, native_log, descriptor["positive"], descriptor["negative"], same_cut)
+        physical = all(tuple(token) in COL for token in descriptor["tokens"])
+        if descriptor.get("unique"):
+            physical = physical and unique(*descriptor["unique"])
+        if descriptor.get("http"):
+            path = LOGS / descriptor["http"]
+            http = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+            physical = physical and http.get("status") == "PASS" and all(http.get("checks", {}).values()) and bool(http.get("checks"))
+            proof["HTTP"] = {"file":descriptor["http"],"status":http.get("status"),"checks":http.get("checks")}
+        if descriptor.get("minimumPath"):
+            output = node(workflow_output("plans"), descriptor["minimumPath"])
+            guarded = any(t["tgname"] == "leg_requires_resources" and t["tgenabled"] != "D"
+                and "DEFERRABLE INITIALLY DEFERRED" in t["definition"] for t in CAT["triggers"])
+            physical = physical and bool(output) and output.get("minLength", {}).get("value", 0) >= 1 and guarded
+            proof["typedMinimum"] = output
+            proof["deferredGuardEnabled"] = guarded
+        if descriptor.get("outputPath"):
+            output = node(workflow_output("holds"), descriptor["outputPath"])
+            physical = physical and bool(output) and not output.get("optional") and not output.get("nullable")
+            proof["typedReference"] = output
+        proof.update({"tokens":descriptor["tokens"],"physicalVerified":bool(physical),
+            "source":"supabase/tests/32_v2_hac40_uml_cardinalities.test.sql",
+            "sourceSha256":hashlib.sha256(source.encode()).hexdigest(),"log":native_path.name,"cut":HEAD,
+            "sourceLines":{label: next((i for i,line in enumerate(source.splitlines(),1) if "'"+label+"'" in line),None)
+                for label in descriptor["positive"] + descriptor["negative"]}})
+        proofs.append(proof)
+    save("matrix-semantic-controls.json",proofs)
+    return proofs
+
+
+SEMANTIC_CONTROLS = semantic_controls()
+
+
+def semantic_for(tokens):
+    return next((proof for proof in SEMANTIC_CONTROLS if set(map(tuple,proof["tokens"])).issubset(set(tokens))),None)
 
 
 def relationships():
@@ -923,87 +925,14 @@ def relationships():
             for c in CAT["constraints"]
             if c["relation"].split(".")[-1] in tables and c["contype"] in ("c", "u", "p", "x")
         ]
-        status = "PARCIAL"
-        reason = (
-            "Equivalent representation/command validation; full minimum/cardinality not "
-            "independently established by FK "
-            "alone"
-        )
-        if treatment.startswith("NO "):
-            status = "FALTANTE"
-            reason = (
-                "Declared bridge/reference/snapshot absent in actual catalog and typed operation"
-            )
-        elif (
-            evidence
-            and len(evidence) == len(constraints)
-            and all(x["status"] == "PASS" for x in evidence)
-        ):
-            status = "COMPLETO"
-            reason = (
-                "All matched FKs tested with an existing reference and an orphan; basic "
-                "multiplicity checked from "
-                "nullability/index"
-            )
-        if any(x["status"] == "FAIL" for x in evidence):
-            status = "DIVERGENTE"
-            reason = "Independent FK positive/negative pair failed"
-        # Exact UML maximum / minimum may need more than the existence of a foreign key.
-        minimum = any("1..*" in x for x in r["endLabels"])
-        oneone = r["endLabels"] == ["1", "1"]
-        if minimum or oneone:
-            if status == "COMPLETO":
-                status = "PARCIAL"
-                reason += (
-                    "; UML nonempty/bijective cardinality requires dedicated command/unique proof"
-                )
-        if n in (28, 70, 75, 90):
-            status = "DIVERGENTE"
-            reason = {
-                28: (
-                    "UML 1:1 route/plan; no unique route_plan_id, multiple plans can share one "
-                    "route"
-                ),
-                70: (
-                    "UML 1..* resources per assignment; actual assignment has one non-null "
-                    "resource_id"
-                ),
-                75: (
-                    "Manual issuer is organization_member + catalog grant; canonical "
-                    "CarrierOperator link "
-                    "absent"
-                ),
-                90: (
-                    "Canonical PlanResource reference replaced by assignment FK; DTO "
-                    "planResourceId "
-                    "absent"
-                ),
-            }[n]
-        if n == 84:
-            status = "PARCIAL"
-            reason = (
-                "Actual 0..* bookings per decision; recovery change described in DER, human "
-                "acceptance/date not verified in local "
-                "sources"
-            )
-        if n in (16, 17, 18, 20, 34, 36, 55, 63, 74, 79, 80, 82, 83, 91):
-            status = "PARCIAL"
-            reason = (
-                "Subtype/projection/JSON/derived/scenario semantics; dedicated "
-                "semantic/cardinality case needed; not "
-                "deferred"
-            )
-        if n in (31, 35, 42, 56, 72, 77, 86, 92, 93) and status == "COMPLETO":
-            status = "PARCIAL"
-            reason = (
-                "Equivalent join/JSON or additional state invariant: FK pair verifies "
-                "integrity only, not the entire association "
-                "semantics"
-            )
-        if any(e["status"] == "BLOQUEADO" for e in evidence) and not any(
-            e["status"] == "PASS" for e in evidence
-        ):
-            reason += "; missing independent compatible positive fixture (BLOQUEADO)"
+        semantic = semantic_for(tokens)
+        canonical_tokens = re.findall(r"\b([a-z][a-z0-9_]+)\.([a-z][a-z0-9_]+)\b", r.get("designTreatment", ""))
+        canonical_missing = bool(canonical_tokens) and not all((t, c) in COL for t, c in canonical_tokens)
+        absent = treatment.startswith("NO ") or bool(re.search(r"\bno [a-z_]+ FK", treatment)) and canonical_missing
+        status, reason = relationship_state(treatment + "; " + r.get("designTreatment", ""),
+            r["endLabels"], constraints, evidence, semantic, absent=absent)
+        if any(e["status"] == "BLOQUEADO" for e in evidence):
+            reason += "; at least one independent FK prerequisite is BLOQUEADO"
         owner = "HAC-41 / Axel" if n in (13, 57, 58, 75, 76) else "HAC-40 / Cristhian"
         api = CATKINDS.get(r["target"], WFKINDS.get(r["target"], r["target"]))
         rows.append(
@@ -1026,10 +955,7 @@ def relationships():
                 or source_line(CLASS[r["target"]]["storage"].split(".")[0]),
                 "api_servicio": api,
                 "evidencia": jsonstr(evidence),
-                "evidencia_semantica": (
-                    "logs/pgtap-v2.log; logs/extended-api-results.json; evaluate exact row / no "
-                    "blanket certification"
-                ),
+                "evidencia_semantica": jsonstr(semantic) if semantic else "No dedicated semantic proof for this resolved physical path; FK evidence above is limited",
                 "estado": status,
                 "justificacion": reason,
                 "dueno": owner,
