@@ -34,7 +34,7 @@ const audit={schemaVersion:"2.0",expectedVersion:1,note:"Model closure QA",evide
 try{
  fixture("prepare");state=JSON.parse(readFileSync(statePath,"utf8"));const refs=state.refs;
  const searchPath=`/freight/requests/${refs.request.id}/route-alternatives`;
- const searchInput={schemaVersion:"2.0",policyId:refs.policy.id,maxLegs:3,maxAlternatives:10};const searchKey=crypto.randomUUID();
+ const searchInput={schemaVersion:"2.0",policyId:refs.policy.id,expectedDraftVersion:2,maxLegs:3,maxAlternatives:10};const searchKey=crypto.randomUUID();
  const searches=await Promise.all([call(searchPath,searchInput,searchKey),call(searchPath,searchInput,searchKey)]);
  assert.deepEqual(searches.map(r=>r.status).sort(),[200,201],JSON.stringify(searches));
  const search=check("find alternatives",searches.find(r=>r.status===201),201);RoutePlannerResultV2Schema.parse(search.data);
@@ -45,6 +45,13 @@ try{
  check("search conflict",await call(searchPath,{...searchInput,maxLegs:2},searchKey),409);
  check("search tenant B",await call(searchPath,searchInput,crypto.randomUUID(),otherToken),404);
  check("search anonymous",await call(searchPath,searchInput,crypto.randomUUID(),null),401);
+ const duplicateCorridor=check('B01 corridor source',await call(`/routing/corridors/${refs.route.data.corridorIds[0]}`),200).data;
+ remember('alternative-corridor',check('B01 second path',await call('/routing/corridors',duplicateCorridor.data),201).data);
+ const limited=check('search maxAlternatives=1',await call(searchPath,{...searchInput,maxAlternatives:1}),201);
+ assert.equal(limited.data.alternatives.length,1);assert.ok(limited.data.search.evaluatedPaths>=2);assert.equal(limited.data.search.presentationTruncated,true);
+ check('search stale request',await call(searchPath,{...searchInput,expectedDraftVersion:999}),409);
+ const {expectedDraftVersion:discardedVersion,...unversionedSearch}=searchInput;
+ check('search missing request version',await call(searchPath,unversionedSearch),400);
  const explanation=check("explain selected route",await call(`/routes/${route.id}/explanation`),200);
  assert.equal(explanation.data.planner.graphVersion,route.data.planner.graphVersion);assert.equal(explanation.data.currentAvailabilityConfirmed,false);
  assert.equal(explanation.data.planner.search.graphVersion,search.data.search.graphVersion);
@@ -105,6 +112,23 @@ try{
  check("replan stale",await call(replanPath,{...replanInput,expectedVersion:99}),409);
  check("replan unknown condition",await call(replanPath,{...replanInput,conditionId:crypto.randomUUID()}),400);
  check("replan tenant B",await call(replanPath,replanInput,undefined,otherToken),404);
+ // Corridor payload regressions use real authenticated revisions and search commits.
+ const payloadSource=check('payload corridor GET',await call(`/routing/corridors/${refs.route.data.corridorIds[0]}`),200).data;
+ const corridor=remember('payload-test-corridor',check('payload isolated corridor',await call('/routing/corridors',payloadSource.data),201).data);
+ const corridorId=corridor.id;
+ let corridorVersion=corridor.version;
+ for(const [name,limit,reason] of [['overweight',100,'ROUTE_PAYLOAD_LIMIT_EXCEEDED'],['equal',1000,null],['missing',null,'ROUTE_PAYLOAD_LIMIT_UNKNOWN'],['expired',10000,'ROUTE_PAYLOAD_LIMIT_UNKNOWN'],['unproven',10000,'ROUTE_PAYLOAD_LIMIT_UNKNOWN']]) {
+  const revision=check(`payload ${name} revision`,await call(`/routing/corridors/${corridorId}/revisions`,
+   {expectedVersion:corridorVersion,value:{...corridor.data,payloadLimitKg:limit,...(name==='expired'?{validUntil:'2020-01-01T00:00:00Z'}:{}),...(name==='unproven'?{limitsEvidence:null}:{})}}),200);
+  corridorVersion=revision.data.version;
+  const found=check(`payload ${name} search`,await call(searchPath,searchInput),201);
+  const affected=found.data.alternatives.filter(r=>r.data.corridorIds.includes(corridorId));
+  assert.ok(affected.length);
+  for(const route of affected){
+   if(reason){assert.ok(route.data.reasons.includes(reason));assert.notEqual(route.status,'eligible');if(name==='overweight')assert.equal(route.status,'ineligible');}
+   else {assert.ok(!route.data.reasons.includes('ROUTE_PAYLOAD_LIMIT_EXCEEDED'));assert.equal(route.status,'eligible');}
+  }
+ }
  console.log(`PASS: ${results.length}/${results.length} authenticated HTTP controls for partners, incident conditions, find/replan/explain.`);
  writeFileSync(resolve(root,"tmp/model-closure-http-results.json"),JSON.stringify(results,null,2));
 }finally{

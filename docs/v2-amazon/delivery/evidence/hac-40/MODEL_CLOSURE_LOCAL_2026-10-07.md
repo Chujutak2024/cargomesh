@@ -37,3 +37,7 @@ No se modificó el harness `scripts/qa/hac44`. Su matriz histórica no se convie
 HAC-44 debe observar este SHA y migraciones, comprobar relaciones UML 48/66 y los tres métodos RoutePlanner, actualizar la matriz desde evidencia y contrastar la corrección documental de reservas (relación 89). Incluir restricciones temporales, rechazo por ruta ajena, límites de búsqueda, nuevas FK y permisos; negativos con controles positivos. El cierre documental de F-02 y el del modelo completo requieren su propio veredicto.
 
 Límites: red publicada acotada, sin conectores viales de última milla, optimización de asignaciones/recursos o multistop. Replan propone snapshots, no modifica compromisos. Sin certificación Supabase alojado, providers live ni Alexa+. Faltantes de HAC-41 y conexión de consumidores conservan sus responsables. No se hizo merge, promoción a main, cambio de Vercel ni despliegue. CI se registra por run/SHA en el PR de entrega; las suites locales no se presentan como CI.
+
+## Correcciones posteriores a la reprueba independiente
+
+El corte `58f32ee` falló B01/B02. La evidencia de la corrección aditiva está en [PLANNER_QA_FIXES_LOCAL_2026-10-07.md](PLANNER_QA_FIXES_LOCAL_2026-10-07.md); esta tabla histórica no se presenta como certificación del nuevo corte.

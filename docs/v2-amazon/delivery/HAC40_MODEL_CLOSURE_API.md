@@ -12,7 +12,7 @@ Prefijo `/api/v2`. Sesión autenticada; identidad y tenant derivados por servido
 | GET | `/plans/:id` | `data.data.legAssignments[].fulfilmentPartnerId`; nullable |
 | POST | `/carriers/:carrierId/incidents/:id/conditions` | `{schemaVersion:"2.0",expectedVersion,note,evidence,conditionIds:[UUID]}`; reemplaza la asociación, incidente actualizado, `200` |
 | GET | `/carriers/:carrierId/executions/:executionId/incidents/:id` | `data.data.routeConditionIds`; array vacío si no hay asociaciones |
-| POST | `/freight/requests/:requestId/route-alternatives` | `{schemaVersion:"2.0",policyId,maxLegs,maxAlternatives}`; `{data:{alternatives,search,decision:null},meta:{idempotentReplay}}`; `201` o replay `200` |
+| POST | `/freight/requests/:requestId/route-alternatives` | `{schemaVersion:"2.0",policyId,expectedDraftVersion,maxLegs,maxAlternatives}`; `{data:{alternatives,search,decision:null},meta:{idempotentReplay}}`; `201` o replay `200` |
 | POST | `/routes/:id/replans` | `{schemaVersion:"2.0",expectedVersion,conditionId,maxLegs,maxAlternatives}`; alternativas nuevas y decisión explicada, `201` o replay `200` |
 | GET | `/routes/:id/explanation` | Snapshot persistido: versión, status, planner, reasons, confidence, distancias/duración y legs/fuentes; `currentAvailabilityConfirmed:false` |
 
@@ -38,7 +38,7 @@ Cada condición debe pertenecer a un corredor del servicio ejecutado por el book
 
 El origen/destino coincide por país y ciudad con el contrato del validador existente. No calcula un conector vial de última milla desde coordenadas; esos datos conservan UNKNOWN. Cada alternativa usa el validador persistente existente para restricciones, fuentes, vigencias, condiciones y reglas de frontera/carga. Orden: eligible, unknown, ineligible; después objetivo SHORTEST/FASTEST/WEIGHTED con pesos publicados, distancia/duración y empate lexical por IDs de corredores. WEIGHTED normaliza por el máximo de cada dimensión en el universo evaluado. Dimensiones ausentes quedan detrás de las conocidas, sin inventar cero.
 
-`maxAlternatives` 1..20 limita la presentación después de evaluar todos los caminos permitidos. `search` distingue `evaluatedPaths`, `returnedPaths`, `completeWithinBounds` y `presentationTruncated`. Universo vacío devuelve `[]`, no una ruta inventada. Los snapshots no presentados se eliminan dentro de la transacción.
+`maxAlternatives` 1..20 limita la presentación después de evaluar todos los caminos permitidos. `search` distingue `evaluatedPaths`, `returnedPaths`, `completeWithinBounds` y `presentationTruncated`. Universo vacío devuelve `[]`, no una ruta inventada. Los snapshots evaluados se conservan como historial inmutable, incluso si no se presentan. Una nueva búsqueda exige `expectedDraftVersion` vigente y responde `409 STALE_DRAFT` si cambió la solicitud; el replay idéntico conserva el resultado original. Los corredores con carga superior a `payloadLimitKg` quedan `ineligible` (`ROUTE_PAYLOAD_LIMIT_EXCEEDED`); límite ausente, sin evidencia vigente o vencido queda `unknown` (`ROUTE_PAYLOAD_LIMIT_UNKNOWN`).
 
 Cada ruta automática conserva `planner.search`: algoritmo, SHA-256 de grafo/política/condiciones, versión de política, versiones de corredores/nodos y fuentes/versiones de condiciones. La metadata del validador por itinerario sigue separada. El receipt conserva el resultado completo y la hora de evaluación. Cambios de red, política o condiciones producen una nueva huella.
 

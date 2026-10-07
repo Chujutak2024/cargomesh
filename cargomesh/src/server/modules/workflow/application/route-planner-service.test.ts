@@ -5,7 +5,7 @@ import { WorkflowServiceV2 } from "./workflow-service";
 
 const id="00000000-0000-4000-8000-000000000001", org="00000000-0000-4000-8000-000000000002";
 const actor={organizationId:org,memberId:id};
-const input={schemaVersion:"2.0",policyId:id,maxLegs:3,maxAlternatives:2};
+const input={schemaVersion:"2.0",policyId:id,expectedDraftVersion:1,maxLegs:3,maxAlternatives:2};
 const result=()=>({alternatives:[],decision:null,search:{algorithmVersion:"BOUNDED_SIMPLE_PATHS_V1",
  requestId:id,policyId:id,graphVersion:"a".repeat(64),maxLegs:3,evaluatedPaths:0,returnedPaths:0,
  completeWithinBounds:true,presentationTruncated:false,universe:"ACTIVE_PUBLISHED_DIRECTED_NETWORK",evaluatedAt:"2026-10-07T12:00:00Z"}});
@@ -14,7 +14,7 @@ describe("RoutePlanner authenticated boundary",()=>{
  it("rejects injected scope, missing key and unbounded search before database access",async()=>{
   const repo:RoutePlannerRepositoryV2={async command(){throw new Error("UNEXPECTED_DATABASE_ACCESS")}};
   const service=new RoutePlannerServiceV2(repo,workflow);
-  for(const body of [{...input,organizationId:org},{...input,maxLegs:9},{...input,maxAlternatives:21}])
+  for(const body of [{...input,organizationId:org},{...input,maxLegs:9},{...input,maxAlternatives:21},{...input,expectedDraftVersion:undefined},{...input,expectedDraftVersion:0}])
    await assert.rejects(service.command(actor,"find",id,body,id),{name:"ZodError"});
   await assert.rejects(service.command(actor,"find",id,input),{name:"ZodError"});
  });

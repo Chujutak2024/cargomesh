@@ -66,7 +66,7 @@ select pg_temp.save('second-alternative','corridors.publish',
 insert into refs values('search-key',jsonb_build_object('id',gen_random_uuid()));
 insert into refs values('search',public.command_v2_route_planner('c2300000-0000-4000-8000-000000000001',
  'c2320000-0000-4000-8000-000000000001','find',pg_temp.id('request'),pg_temp.id('search-key'),
- jsonb_build_object('schemaVersion','2.0','policyId',pg_temp.id('policy'),'maxLegs',2,'maxAlternatives',10)));
+ jsonb_build_object('schemaVersion','2.0','policyId',pg_temp.id('policy'),'expectedDraftVersion',2,'maxLegs',2,'maxAlternatives',10)));
 select ok((select jsonb_array_length(value#>'{result,alternatives}')>=1 from refs where name='search'),
  'RoutePlanner: automatic directed search finds a published path');
 select is((select value#>'{result,alternatives,0,data,corridorIds}' from refs where name='search'),
@@ -74,21 +74,21 @@ select is((select value#>'{result,alternatives,0,data,corridorIds}' from refs wh
  'RoutePlanner: policy ranks the shorter multi-leg route before the direct route');
 select is((public.command_v2_route_planner('c2300000-0000-4000-8000-000000000001',
  'c2320000-0000-4000-8000-000000000001','find',pg_temp.id('request'),pg_temp.id('search-key'),
- jsonb_build_object('schemaVersion','2.0','policyId',pg_temp.id('policy'),'maxLegs',2,'maxAlternatives',10))->>'replay'),
+ jsonb_build_object('schemaVersion','2.0','policyId',pg_temp.id('policy'),'expectedDraftVersion',2,'maxLegs',2,'maxAlternatives',10))->>'replay'),
  'true','RoutePlanner: identical search replays without extra routes');
 insert into refs values('search-again',public.command_v2_route_planner('c2300000-0000-4000-8000-000000000001',
  'c2320000-0000-4000-8000-000000000001','find',pg_temp.id('request'),gen_random_uuid(),
- jsonb_build_object('schemaVersion','2.0','policyId',pg_temp.id('policy'),'maxLegs',2,'maxAlternatives',10)));
+ jsonb_build_object('schemaVersion','2.0','policyId',pg_temp.id('policy'),'expectedDraftVersion',2,'maxLegs',2,'maxAlternatives',10)));
 select is((select value#>'{result,alternatives,0,data,corridorIds}' from refs where name='search-again'),
  (select value#>'{result,alternatives,0,data,corridorIds}' from refs where name='search'),
  'RoutePlanner: ordering is deterministic across distinct requests with the same graph');
 select throws_ok($$select public.command_v2_route_planner('c2300000-0000-4000-8000-000000000001',
  'c2320000-0000-4000-8000-000000000001','find',pg_temp.id('request'),pg_temp.id('search-key'),
- jsonb_build_object('schemaVersion','2.0','policyId',pg_temp.id('policy'),'maxLegs',1,'maxAlternatives',10))$$,
+ jsonb_build_object('schemaVersion','2.0','policyId',pg_temp.id('policy'),'expectedDraftVersion',2,'maxLegs',1,'maxAlternatives',10))$$,
  'PT409','IDEMPOTENCY_CONFLICT','RoutePlanner: conflicting search does not consume an existing receipt');
 select throws_ok($$select public.command_v2_route_planner('c2300000-0000-4000-8000-000000000001',
  'c2320000-0000-4000-8000-000000000001','find',pg_temp.id('request'),gen_random_uuid(),
- jsonb_build_object('schemaVersion','2.0','policyId',pg_temp.id('policy'),'maxLegs',9,'maxAlternatives',10))$$,
+ jsonb_build_object('schemaVersion','2.0','policyId',pg_temp.id('policy'),'expectedDraftVersion',2,'maxLegs',9,'maxAlternatives',10))$$,
  'PT400','VALIDATION_ERROR','RoutePlanner: explicit search bounds are enforced');
 insert into refs select 'aux',public.command_v2_catalog('c2300000-0000-4000-8000-000000000001','c2320000-0000-4000-8000-000000000001','assets','c2340000-0000-4000-8000-000000000001',null,null,gen_random_uuid(),null,value||jsonb_build_object('code','F05_ESCORT','role','AUXILIARY','usefulCapacityKg',0,'usableVolumeM3',null,'roadVehicle',(value->'roadVehicle')||jsonb_build_object('plate','QA-F05-AUX')))->'record' from fixtures where kind='assets';
 insert into refs select 'aux-calendar',public.command_v2_catalog('c2300000-0000-4000-8000-000000000001','c2320000-0000-4000-8000-000000000001','calendars','c2340000-0000-4000-8000-000000000001',null,null,gen_random_uuid(),null,value||jsonb_build_object('assetId',pg_temp.id('aux'),'horizon',jsonb_build_object('startsAt',now()-interval '2 hours','endsAt',now()+interval '1 day'),'availableWindows',jsonb_build_array(jsonb_build_object('startsAt',now()-interval '2 hours','endsAt',now()+interval '1 day')),'validUntil','2030-01-01T00:00:00Z'))->'record' from fixtures where kind='calendars';
@@ -248,4 +248,33 @@ end;$$;
 select throws_ok($$select pg_temp.empty_assignment()$$,'23514','ASSIGNMENT_REQUIRES_RESOURCES','F05: zero-resource assignment cannot survive constraint verification');
 set constraints all immediate;
 select pass('F05: valid grouped assignment satisfies deferred constraints');
+
+-- QA B01/B02: authenticated commands reach real deferred constraint evaluation.
+insert into refs values('limited',public.command_v2_route_planner('c2300000-0000-4000-8000-000000000001',
+ 'c2320000-0000-4000-8000-000000000001','find',pg_temp.id('request'),gen_random_uuid(),
+ jsonb_build_object('schemaVersion','2.0','policyId',pg_temp.id('policy'),'expectedDraftVersion',2,'maxLegs',2,'maxAlternatives',1)));
+select is((select jsonb_array_length(value#>'{result,alternatives}') from refs where name='limited'),1,'B01: maxAlternatives=1 succeeds without deleting immutable history');
+select throws_ok($$select public.command_v2_route_planner('c2300000-0000-4000-8000-000000000001',
+ 'c2320000-0000-4000-8000-000000000001','find',pg_temp.id('request'),gen_random_uuid(),
+ jsonb_build_object('schemaVersion','2.0','policyId',pg_temp.id('policy'),'expectedDraftVersion',99,'maxLegs',2,'maxAlternatives',1))$$,
+ 'PT409','STALE_DRAFT','find rejects a stale request version');
+select throws_ok($$select public.command_v2_route_planner('c2300000-0000-4000-8000-000000000001',
+ 'c2320000-0000-4000-8000-000000000001','find',pg_temp.id('request'),gen_random_uuid(),
+ jsonb_build_object('schemaVersion','2.0','policyId',pg_temp.id('policy'),'maxLegs',2,'maxAlternatives',1))$$,
+ 'PT400','VALIDATION_ERROR','find requires the expected request version');
+select pg_temp.save('payload-corridor','corridors.publish',(select value->'data' from refs where name='corridor')||jsonb_build_object('payloadLimitKg',100));
+select pg_temp.save('overweight-route','routes.create',jsonb_build_object('schemaVersion','2.0','corridorIds',jsonb_build_array(pg_temp.id('payload-corridor')),'policyId',pg_temp.id('policy')),pg_temp.ctx(pg_temp.id('request')));
+select is((select value->>'status' from refs where name='overweight-route'),'ineligible','B02: 1000kg exceeds corridor 100kg');
+select ok((select value#>'{data,reasons}' ? 'ROUTE_PAYLOAD_LIMIT_EXCEEDED' from refs where name='overweight-route'),'B02: overweight reason is explicit');
+select pg_temp.save('payload-equal','corridors.publish',jsonb_build_object('expectedVersion',1,'value',
+ (select value->'data' from refs where name='corridor')||jsonb_build_object('payloadLimitKg',1000)),pg_temp.ctx(null,null,null,pg_temp.id('payload-corridor')));
+select pg_temp.save('equal-route','routes.create',jsonb_build_object('schemaVersion','2.0','corridorIds',jsonb_build_array(pg_temp.id('payload-corridor')),'policyId',pg_temp.id('policy')),pg_temp.ctx(pg_temp.id('request')));
+select is((select value->>'status' from refs where name='equal-route'),'eligible','B02: exact payload limit positive control is eligible');
+select pg_temp.save('payload-unknown','corridors.publish',jsonb_build_object('expectedVersion',2,'value',
+ (select value->'data' from refs where name='corridor')||jsonb_build_object('payloadLimitKg',null)),pg_temp.ctx(null,null,null,pg_temp.id('payload-corridor')));
+select pg_temp.save('unknown-route','routes.create',jsonb_build_object('schemaVersion','2.0','corridorIds',jsonb_build_array(pg_temp.id('payload-corridor')),'policyId',pg_temp.id('policy')),pg_temp.ctx(pg_temp.id('request')));
+select ok((select value#>'{data,reasons}' ? 'ROUTE_PAYLOAD_LIMIT_UNKNOWN' and value->>'status'<>'eligible' from refs where name='unknown-route'),'B02: missing limit cannot become eligible');
+set constraints all immediate;
+select pass('B01/B02: constraints evaluated as authenticated without reset role');
+
 select * from finish();rollback;

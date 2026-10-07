@@ -3,7 +3,7 @@ import { WorkflowRecordV2Schema } from "./workflow";
 
 const Id = z.string().uuid();
 const Bounds = { maxLegs: z.number().int().min(1).max(8), maxAlternatives: z.number().int().min(1).max(20) };
-export const RoutePlannerSearchV2Schema = z.object({ schemaVersion: z.literal("2.0"), policyId: Id, ...Bounds }).strict();
+export const RoutePlannerSearchV2Schema = z.object({ schemaVersion: z.literal("2.0"), policyId: Id, expectedDraftVersion: z.number().int().positive(), ...Bounds }).strict();
 export const RoutePlannerReplanV2Schema = z.object({ schemaVersion: z.literal("2.0"), expectedVersion: z.number().int().positive(),
   conditionId: Id, ...Bounds }).strict();
 export const RoutePlannerResultV2Schema = z.object({ alternatives: z.array(WorkflowRecordV2Schema).max(20),
