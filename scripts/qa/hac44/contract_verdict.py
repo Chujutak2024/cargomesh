@@ -8,6 +8,7 @@ names = [
     "contract-route-cardinality-result.json",
     "contract-category-version-result.json",
     "contract-carrier-isolation-result.json",
+    "contract-normalization-result.json",
 ]
 cases = []
 for f in names:
