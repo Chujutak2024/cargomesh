@@ -10,6 +10,8 @@ Esta carpeta registra **planes, plantillas y evidencia**, no redefine el dominio
 
 ## Verificación y evidencia
 
+- [Reinicio del diseño conversacional V2](./CHAT_V2_CONVERSATION_RESET_2026-10-07.md): diagnóstico de las respuestas repetitivas, estado real de Bedrock y criterios de la siguiente implementación.
+
 - [HAC-15 → HAC-14: handoff del mapa ROAD](./HAC15_HAC14_INTEGRATION_HANDOFF.md) y [evidencia local](./evidence/hac15-handoff/README.md): punto de montaje, props, dueño del estado y casos para el smoke conjunto; no certifican integración ni aceptación QA.
 
 - [Plan de calidad y revisión técnica](./QUALITY_AND_VALIDATION_PLAN.md): verificación, checklist de PR, validación humana selectiva y escala de hallazgos. La [guía breve de revisión](./CODE_REVIEW_GUIDELINES.md) se conserva como lista de comprobación; ante diferencias, prevalece el plan de calidad.

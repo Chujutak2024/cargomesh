@@ -1,5 +1,7 @@
 # Chat V2: voz del navegador y prueba de modelo (7 oct 2026)
 
+> **Actualización:** la arquitectura conversacional y el resultado de las pruebas live están en [CHAT_V2_CONVERSATION_RESET_2026-10-07.md](./CHAT_V2_CONVERSATION_RESET_2026-10-07.md). Esta guía conserva la investigación de voz; su comparación propuesta con Claude y su nota sobre sesión expirada ya no describen el estado actual.
+
 `main` conserva V1; el chat autenticado V2 parte de `codex/v2-amazon-contracts`. El usuario descartó servicios Amazon para modular la voz. El chat ahora utiliza `SpeechSynthesis` del navegador y muestra las voces españolas o inglesas disponibles. Elige primero una voz local, si existe, y permite escoger otra manualmente. No se envía texto a un endpoint CargoMesh de síntesis ni se requiere Polly. La calidad depende del navegador y del sistema operativo; `(device)` indica `localService` reportado por el navegador. El reconocimiento del micrófono sigue separado, con selección ES/EN.
 
 ## Bibliotecas investigadas

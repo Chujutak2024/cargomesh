@@ -1,9 +1,10 @@
 import "server-only";
 
 import { BedrockRuntimeClient, ConverseCommand, type ConverseCommandOutput } from "@aws-sdk/client-bedrock-runtime";
-import { ConversationFieldNameSchema, InterpretationRequestSchema, InterpretationSchema, interpretDeterministically, type InterpretationRequest } from "@/features/v2-conversation-prep/interpretation";
+import OpenAI from "openai";
+import { ConversationFieldNameSchema, InterpretationRequestSchema, InterpretationSchema, interpretDeterministically, isProductHelpQuestion, type InterpretationRequest } from "@/features/v2-conversation-prep/interpretation";
 
-type Config = { enabled: boolean; region: string; modelId: string; maxTokens: number; timeoutMs: number; inputUsdPerMillion: number | null; outputUsdPerMillion: number | null };
+type Config = { enabled: boolean; endpoint: "runtime" | "mantle"; region: string; modelId: string; maxTokens: number; timeoutMs: number; inputUsdPerMillion: number | null; outputUsdPerMillion: number | null };
 type Invoke = (config: Config, input: InterpretationRequest) => Promise<ConverseCommandOutput>;
 
 export function buildConversationPrompt(input: InterpretationRequest): string {
@@ -36,16 +37,68 @@ export function conversationBedrockConfig(env: Record<string, string | undefined
   const price = (value: string | undefined) => value && Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : null;
   return {
     enabled: env.CARGOMESH_BEDROCK_CONVERSATION_ENABLED === "true",
+    endpoint: env.CARGOMESH_BEDROCK_ENDPOINT === "mantle" ? "mantle" : "runtime",
     region: env.CARGOMESH_BEDROCK_REGION ?? "",
     modelId: env.CARGOMESH_BEDROCK_MODEL_ID ?? "",
-    maxTokens: boundedNumber(env.CARGOMESH_BEDROCK_CONVERSATION_MAX_TOKENS, 300, 64, 500),
+    maxTokens: boundedNumber(env.CARGOMESH_BEDROCK_CONVERSATION_MAX_TOKENS, 400, 64, 500),
     timeoutMs: boundedNumber(env.CARGOMESH_BEDROCK_CONVERSATION_TIMEOUT_MS, 6000, 1000, 10000),
     inputUsdPerMillion: price(env.CARGOMESH_BEDROCK_INPUT_USD_PER_MILLION_TOKENS),
     outputUsdPerMillion: price(env.CARGOMESH_BEDROCK_OUTPUT_USD_PER_MILLION_TOKENS),
   };
 }
 
+const INTERPRETER_INSTRUCTIONS = "Interpret one CargoMesh freight chat turn in Spanish or English. Return JSON only: intent, fields, optional acknowledgment. intents: PROVIDE, CORRECT, CREATE, READ, EVALUATE, PRICE, BOOKING, HELP, START_OVER. fields is an array of {field:string,value:string}, using only fieldNames from the user input. Extract only facts explicitly stated or changed in the latest text; context is provisional and never proof of authorization. Never invent locations, dates, cargo, capacity, price, offers or booking. acknowledgment is a helpful reply in the user's language, at most 420 characters. If no fields, answer briefly or ask for one specific missing detail. Do not claim an action was completed. No Markdown or text outside JSON.";
+const PRODUCT_HELP_INSTRUCTIONS = "You are CargoMesh. Reply in the user's language using only these verified facts: CargoMesh helps prepare freight request drafts, reviews preliminary ROAD serviceability from backend data, and can compare carrier-authored offers when they exist. A local preview does not save or evaluate requests. Never state or imply a confirmed price, free service, capacity, availability, route or booking; these require backend evidence. Answer the specific question in two short sentences, then ask one useful next question.";
+
+async function invokeMantle(config: Config, input: InterpretationRequest): Promise<ConverseCommandOutput> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey?.startsWith("bedrock-api-key-")) throw new Error("A Bedrock API key is required for Bedrock Mantle.");
+  // Force AWS's endpoint. A Bedrock key must never be sent to api.openai.com.
+  const client = new OpenAI({ apiKey, baseURL: `https://bedrock-mantle.${config.region}.api.aws/v1`, timeout: config.timeoutMs, maxRetries: 0 });
+  if (isProductHelpQuestion(input.text)) {
+    const response = await client.responses.create({
+      model: config.modelId,
+      input: [
+        { role: "system", content: PRODUCT_HELP_INSTRUCTIONS },
+        { role: "user", content: input.text },
+      ],
+      reasoning: { effort: "low" },
+      max_output_tokens: Math.min(config.maxTokens, 220),
+      store: false,
+    });
+    const proposed = response.output_text?.replace(/[*_`#]/g, "").replace(/\s+/g, " ").trim() ?? "";
+    const answer = /\b(?:gratis|gratuito|free|sin compromiso|garantizad[oa])\b/i.test(proposed)
+      ? "CargoMesh ayuda a preparar solicitudes de transporte y revisar opciones preliminares con datos del backend. Las ofertas y condiciones deben venir del transportista. ¿Qué necesitas enviar?"
+      : proposed.slice(0, 420);
+    if (!answer) throw new Error("Bedrock returned no guidance.");
+    return {
+      output: { message: { role: "assistant", content: [{ text: JSON.stringify({ intent: "HELP", fields: [], acknowledgment: answer }) }] } },
+      usage: { inputTokens: response.usage?.input_tokens, outputTokens: response.usage?.output_tokens, totalTokens: response.usage?.total_tokens },
+      stopReason: "end_turn", metrics: { latencyMs: 0 }, $metadata: {},
+    };
+  }
+  const response = await client.responses.create({
+    model: config.modelId,
+    input: [
+      { role: "system", content: INTERPRETER_INSTRUCTIONS },
+      { role: "user", content: buildConversationPrompt(input) },
+    ],
+    reasoning: { effort: "low" },
+    text: { format: { type: "json_object" } },
+    max_output_tokens: config.maxTokens,
+    store: false,
+  });
+  return {
+    output: { message: { role: "assistant", content: [{ text: response.output_text }] } },
+    usage: { inputTokens: response.usage?.input_tokens, outputTokens: response.usage?.output_tokens, totalTokens: response.usage?.total_tokens },
+    stopReason: "end_turn",
+    metrics: { latencyMs: 0 },
+    $metadata: {},
+  };
+}
+
 async function invoke(config: Config, input: InterpretationRequest): Promise<ConverseCommandOutput> {
+  if (config.endpoint === "mantle") return invokeMantle(config, input);
   // The AWS SDK resolves an IAM role or temporary credentials from its standard chain.
   // No static key is accepted from the browser or stored in this module.
   const client = new BedrockRuntimeClient({ region: config.region, maxAttempts: 1 });
@@ -54,7 +107,7 @@ async function invoke(config: Config, input: InterpretationRequest): Promise<Con
     if (!credentials.sessionToken) throw new Error("Temporary IAM credentials required.");
     return await client.send(new ConverseCommand({
       modelId: config.modelId,
-      system: [{ text: "You interpret one CargoMesh freight chat turn. The user may write in Spanish or English. Output only a JSON object without Markdown, with intent, fields, and optional acknowledgment. fields MUST be an array of objects shaped {field:string,value:string}; use [] when empty. Allowed intents: PROVIDE, CORRECT, CREATE, READ, EVALUATE, PRICE, BOOKING, HELP, START_OVER. Allowed fields are exactly those provided in the currentField and fieldNames input. Context contains provisional facts from earlier turns and the last question; use it only to resolve references and corrections in the latest text. Extract fields only when the latest text provides or explicitly changes them. Do not repeat context fields as new output or treat them as confirmed. Never invent a location, date, cargo value or confirmation. Do not decide eligibility, capacity, price, booking, tenant or identity. For a brief Spanish natural reply, acknowledgment may be exactly 'Entendido.', 'Gracias, lo tengo.', or 'De acuerdo.'. For English, it may be exactly 'Got it.', 'Thanks, I have that.', or 'Understood.'. No SQL, tool invocation or explanation." }],
+      system: [{ text: INTERPRETER_INSTRUCTIONS }],
       messages: [{ role: "user", content: [{ text: buildConversationPrompt(input) }] }],
       toolConfig: {
         tools: [{ toolSpec: {
@@ -65,7 +118,7 @@ async function invoke(config: Config, input: InterpretationRequest): Promise<Con
             properties: {
               intent: { type: "string", enum: ["PROVIDE", "CORRECT", "CREATE", "READ", "EVALUATE", "PRICE", "BOOKING", "HELP", "START_OVER"] },
               fields: { type: "array", items: { type: "object", properties: { field: { type: "string", enum: ConversationFieldNameSchema.options }, value: { type: "string" } }, required: ["field", "value"] } },
-              acknowledgment: { type: "string", enum: ["Got it.", "Thanks, I have that.", "Understood.", "Entendido.", "Gracias, lo tengo.", "De acuerdo."] },
+              acknowledgment: { type: "string", maxLength: 420 },
             },
             required: ["intent", "fields"],
           } },
@@ -86,7 +139,7 @@ export async function interpretConversationTurn(
   const config = options.config ?? conversationBedrockConfig();
   const fallback = { schemaVersion: "2.0" as const, interpretation: interpretDeterministically(input), mode: "DETERMINISTIC" as const, telemetry: null };
   // Explicit business commands stay deterministic; the model only proposes ambiguous chat details.
-  if (!["PROVIDE", "CORRECT"].includes(fallback.interpretation.intent)) return fallback;
+  if (!["PROVIDE", "CORRECT", "HELP"].includes(fallback.interpretation.intent)) return fallback;
   if (!config.enabled || !config.region || !config.modelId) return fallback;
   const started = (options.now ?? Date.now)();
   try {

@@ -6,7 +6,7 @@ import type { V2IntakePrototypeDraft } from "./prototype-model";
 import { validatePrototypeReview } from "./prototype-model";
 import { CONVERSATION_FIELDS, FIELD_QUESTION, choicesForField, matchingConversationChoices, resolveConversationSuggestions, type ConversationField, type GuidedConversationField } from "./conversation-fields";
 import { useConversationVoice } from "@/features/v2-conversation-prep/voice-controls";
-import { InterpretationResponseSchema, interpretDeterministically, type Interpretation } from "@/features/v2-conversation-prep/interpretation";
+import { InterpretationResponseSchema, type Interpretation } from "@/features/v2-conversation-prep/interpretation";
 import { conversationContext } from "./conversation-context";
 import type { V2IntakeApiError } from "./v2-intake-client";
 import styles from "./conversation-chat.module.css";
@@ -144,18 +144,18 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     launcherRef.current?.focus();
   }
 
-  async function interpret(value: string): Promise<Interpretation> {
+  async function interpret(value: string): Promise<{ interpretation: Interpretation; mode: "BEDROCK" | "DETERMINISTIC" }> {
     const input = { schemaVersion: "2.0" as const, text: value, currentField: nextField,
       context: conversationContext(draft, nextField, failedAttempts.current) };
-    if (optionsSource === "fixture") return interpretDeterministically(input);
-    const response = await fetch("/api/v2/conversation/interpret", {
+    const endpoint = optionsSource === "fixture" ? "/api/v2/conversation/preview" : "/api/v2/conversation/interpret";
+    const response = await fetch(endpoint, {
       method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
     });
     if (!response.ok) throw new Error(response.status === 401 ? "Your session or organization membership is no longer active. Sign in again." : "I could not interpret that message. Please retry.");
     const parsed = InterpretationResponseSchema.safeParse(await response.json());
     if (!parsed.success) throw new Error("The conversation service returned an invalid response. Please retry.");
-    return parsed.data.interpretation;
+    return { interpretation: parsed.data.interpretation, mode: parsed.data.mode };
   }
 
   async function send(override?: string, fromVoice = false) {
@@ -169,6 +169,11 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     setText("");
     setChoices([]);
     if (awaitingConfirmation && positive.test(value)) {
+      if (optionsSource === "fixture") {
+        setAwaitingConfirmation(false);
+        add(value, "Esta vista solo prueba la conversación. Para guardar la solicitud, inicia sesión en la página de carga V2.");
+        return;
+      }
       if (request || !validatePrototypeReview(draft).valid) {
         add(value, "The draft changed or is incomplete. I will review it again before saving.");
         setAwaitingConfirmation(false);
@@ -186,9 +191,9 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     }
     setInterpretationBusy(true);
     try {
-      const proposal = await interpret(value);
+      const { interpretation: proposal, mode } = await interpret(value);
       if (proposal.intent === "PRICE" || proposal.intent === "BOOKING") { add(value, unavailable); return; }
-      if (proposal.intent === "HELP") { add(value, "Dime el lugar de recojo y entrega, la carga y las fechas. Te pediré solo los datos que falten y podrás corregirlos antes de guardar."); return; }
+      if (proposal.intent === "HELP") { add(value, proposal.acknowledgment ?? "Dime el lugar de recojo y entrega, la carga y las fechas. Te pediré solo los datos que falten y podrás corregirlos antes de guardar."); return; }
       if (proposal.intent === "START_OVER") {
         onStartOver?.();
         failedAttempts.current = 0;
@@ -211,7 +216,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         add(value, "Aún no puedo modificar este borrador guardado desde el chat. Puedes empezar una solicitud nueva, mostrar el borrador o revisar ROAD.");
         return;
       }
-      if (proposal.intent === "CREATE") {
+      if (proposal.intent === "CREATE" && !proposal.fields.length) {
+        if (optionsSource === "fixture") { add(value, "Podemos preparar los datos aquí, pero esta vista de prueba no guarda solicitudes."); return; }
         if (!validatePrototypeReview(draft).valid) add(value, `I still need one detail before saving. ${FIELD_QUESTION[missingField(draft) ?? "originFacilityId"]}`);
         else { setAwaitingConfirmation(true); add(value, draftSummary(draft, options)); }
         return;
@@ -257,6 +263,14 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       }
       if (!accepted.size) {
         failedAttempts.current = Math.min(3, failedAttempts.current + 1);
+        if (mode === "DETERMINISTIC" && optionsSource !== "fixture") {
+          add(value, "La conversación automática no está disponible ahora. Conservé tus datos provisionales; puedes indicar un dato concreto o continuar en el formulario.");
+          return;
+        }
+        if (mode === "BEDROCK" && proposal.acknowledgment) {
+          add(value, proposal.acknowledgment);
+          return;
+        }
         add(value, failedAttempts.current >= 2
           ? "I still could not identify that detail. You can type a specific value or enter it in the request form."
           : `I did not catch a freight detail. ${FIELD_QUESTION[nextField ?? "originFacilityId"]}`);
@@ -289,7 +303,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         <div className={styles.srOnly} role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
         {!request && !awaitingConfirmation && !interpretationBusy && nextField && !history.at(-1)?.text.includes(FIELD_QUESTION[nextField]) && <p className={styles.nextQuestion}>{FIELD_QUESTION[nextField]}</p>}
         {choices.length > 0 && <div className={styles.choiceList} aria-label="Confirm a location">{choices.map((choice) => <button key={choice.value} type="button" onClick={() => { onField(choice.field, choice.value); setChoices([]); add(null, `Confirmed ${choice.label}. ${FIELD_QUESTION[missingField(draft, new Set([choice.field])) ?? "categoryCode"]}`); }}>{choice.label}</button>)}</div>}
-        {!request && !nextField && !awaitingConfirmation && !busy && <button type="button" className={styles.suggestion} onClick={() => { setAwaitingConfirmation(true); add(null, draftSummary(draft, options)); }}>Review draft before saving</button>}
+        {optionsSource !== "fixture" && !request && !nextField && !awaitingConfirmation && !busy && <button type="button" className={styles.suggestion} onClick={() => { setAwaitingConfirmation(true); add(null, draftSummary(draft, options)); }}>Review draft before saving</button>}
         {draftDirty && <p className={styles.notice} role="status">Local edits are not saved. ROAD cannot be reevaluated for them yet.</p>}
         {busy && <p className={styles.loading} role="status">Working on your saved request…</p>}
         <div ref={endRef} />

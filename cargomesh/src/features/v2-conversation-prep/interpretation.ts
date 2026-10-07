@@ -35,7 +35,7 @@ export const InterpretationRequestSchema = z.object({
 export const InterpretationSchema = z.object({
   intent: z.enum(["PROVIDE", "CORRECT", "CREATE", "READ", "EVALUATE", "PRICE", "BOOKING", "HELP", "START_OVER"]),
   fields: z.array(z.object({ field: ConversationFieldNameSchema, value: z.string().trim().min(1).max(200) }).strict()).max(12),
-  acknowledgment: z.enum(["Got it.", "Thanks, I have that.", "Understood.", "Entendido.", "Gracias, lo tengo.", "De acuerdo."]).optional(),
+  acknowledgment: z.string().trim().min(1).max(420).optional(),
 }).strict();
 
 export const InterpretationResponseSchema = z.object({
@@ -48,10 +48,15 @@ export const InterpretationResponseSchema = z.object({
 export type InterpretationRequest = z.infer<typeof InterpretationRequestSchema>;
 export type Interpretation = z.infer<typeof InterpretationSchema>;
 
+export function isProductHelpQuestion(text: string): boolean {
+  return /\b(?:para qu[eé] sirve|qu[eé] es cargomesh|c[oó]mo funciona|c[oó]mo (?:me )?ayuda|qu[eé] puedes hacer|escoger|elegir|comparar|what is cargomesh|what can you do|how (?:does it|can you) help|how does it work|choose|compare)\b/i.test(text);
+}
+
 /** A bounded, local fallback. It extracts only explicit statements and never infers domain facts. */
 export function interpretDeterministically(input: InterpretationRequest): Interpretation {
   const text = input.text.trim();
   const lower = text.toLowerCase();
+  if (isProductHelpQuestion(text)) return { intent: "HELP", fields: [] };
   if (/\b(price|quote|cost|rate|precio|cotizaci[oó]n|costo|tarifa)\b/.test(lower)) return { intent: "PRICE", fields: [] };
   if (/\b(book|booking|reserve|reservation|reservar|reserva|contratar)\b/.test(lower)) return { intent: "BOOKING", fields: [] };
   if (/^(start over|reset|new request|empezar de nuevo|reiniciar|nueva solicitud)$/i.test(text)) return { intent: "START_OVER", fields: [] };

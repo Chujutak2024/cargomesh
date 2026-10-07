@@ -125,7 +125,8 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
     hasTranscript.current = false;
     const instance = new Constructor();
     recognition.current = instance;
-    const detector = createSpeechTurnDetector((transcript) => finishTurn(instance, transcript));
+    // A short hesitation is common while dictating a route or cargo details.
+    const detector = createSpeechTurnDetector((transcript) => finishTurn(instance, transcript), 2200);
     turnDetector.current = detector;
     instance.lang = language;
     if (mode.current === "local") instance.processLocally = true;
