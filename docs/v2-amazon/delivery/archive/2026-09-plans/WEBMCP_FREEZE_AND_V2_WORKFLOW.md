@@ -1,3 +1,5 @@
+> **ARCHIVO HISTÓRICO — PLAN SUPERADO.** Corte de septiembre de 2026; no usar para ramas, alcance, fechas ni estados actuales. Consulta [el flujo vigente](../../CURRENT_DELIVERY_STATE.md). Se conserva como trazabilidad; sus afirmaciones no certifican el entorno actual.
+
 # WebMCP freeze and V2 work separation — 23 September 2026
 
 Status: operational recommendation, **not** proof that either deployed environment has been isolated. No GitHub, Vercel or Supabase settings were changed for this document.
@@ -14,7 +16,7 @@ The [WebMCP organizer update](https://webmcp.devpost.com/updates/46577-new-date-
 
 ## Today's remote migration: bounded compatibility assessment
 
-The linked Supabase project has migration history entries `20260918120000_c_draft_creation_idempotency` and `20260922053512_v2_road_facilities_services` (see [FL-02](./friction-logs/FL-02.md)). A read-only check on 23 September found **0** rows in each of `facilities`, `carrier_depots`, `service_areas` and `service_lanes`, while `FR-1042` still exists; its creation receipt and facility references remain null. No V2 seed was loaded by these migrations.
+The linked Supabase project has migration history entries `20260918120000_c_draft_creation_idempotency` and `20260922053512_v2_road_facilities_services` (see [FL-02](../../friction-logs/FL-02.md)). A read-only check on 23 September found **0** rows in each of `facilities`, `carrier_depots`, `service_areas` and `service_lanes`, while `FR-1042` still exists; its creation receipt and facility references remain null. No V2 seed was loaded by these migrations.
 
 | Change | Static impact on the V1 WebMCP flow |
 |---|---|

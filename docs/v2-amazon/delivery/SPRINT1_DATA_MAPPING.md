@@ -1,3 +1,5 @@
+> **EVIDENCIA HISTÓRICA — SPRINT 1.** Los estados y pendientes corresponden al corte indicado, no al presente. Para trabajo nuevo consulta [el flujo vigente](./CURRENT_DELIVERY_STATE.md).
+
 # HAC-21 — mapeo aditivo de sedes y servicios ROAD V2
 
 Estado: contrato de datos implementado en la migración `20260922053512_v2_road_facilities_services.sql`. Reset local y pgTAP ejecutados el 2026-09-22; PR #83 ya fue mergeado en `codex/v2-amazon-contracts` y HAC-21 figura `Done` en Linear. Su alcance no incluye account linking MCP ni servicios FreightRequest V2.

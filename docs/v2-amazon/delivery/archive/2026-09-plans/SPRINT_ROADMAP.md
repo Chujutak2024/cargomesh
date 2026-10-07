@@ -1,12 +1,14 @@
+> **ARCHIVO HISTÓRICO — PLAN SUPERADO.** Corte de septiembre de 2026; no usar para ramas, alcance, fechas ni estados actuales. Consulta [el flujo vigente](../../CURRENT_DELIVERY_STATE.md). Se conserva como trazabilidad; sus afirmaciones no certifican el entorno actual.
+
 # Ruta por sprint — CargoMesh V2
 
-El [roadmap de hitos](./cargomesh_v2_milestones_architecture_roadmap.md) separa resultados y fechas; la [ficha de Sprint 1](./linear_sprint1_v2_rebase_proposal.md) documenta cada issue. Las seis issues nuevas HAC-21…26 se cargaron en Linear el 22 sep, junto con la corrección del HITO 1. HAC-17/18 permanecen como soportes existentes.
+El [roadmap de hitos](cargomesh_v2_milestones_architecture_roadmap.md) separa resultados y fechas; la [ficha de Sprint 1](linear_sprint1_v2_rebase_proposal.md) documenta cada issue. Las seis issues nuevas HAC-21…26 se cargaron en Linear el 22 sep, junto con la corrección del HITO 1. HAC-17/18 permanecen como soportes existentes.
 
-La [guía de calidad y validación](./QUALITY_AND_VALIDATION_PLAN.md) añade trazabilidad de pruebas, estimación ligera y validaciones humanas selectivas en cada gate. Es una mejora de planificación documental: no cambia automáticamente las fichas ya cargadas ni acredita pruebas aún no ejecutadas.
+La [guía de calidad y validación](../../QUALITY_AND_VALIDATION_PLAN.md) añade trazabilidad de pruebas, estimación ligera y validaciones humanas selectivas en cada gate. Es una mejora de planificación documental: no cambia automáticamente las fichas ya cargadas ni acredita pruebas aún no ejecutadas.
 
 ## Regla operativa y ramas
 
-Cinco personas, **una issue principal sustancial por persona**. Los apoyos se agregan solo con resultado separable y capacidad: HAC-17 de Axel, HAC-18 de Jean Paul y Gate-1 de Cristhian ya cubren tres necesidades. No se fuerza una secundaria a Luis o Juan. Cada dueño implementa y prueba; luego culmina → validamos → aprobamos → mergeamos a `codex/v2-amazon-contracts`. Hallazgos bajos no semánticos puede resolverlos el integrador con evidencia; medios/altos regresan al dueño. Solo el Tech Lead autorizado acepta `Done`; el detalle está en [la plantilla](./LINEAR_ISSUE_TEMPLATE.md#flujo-de-aceptación-y-escala-de-hallazgos).
+Cinco personas, **una issue principal sustancial por persona**. Los apoyos se agregan solo con resultado separable y capacidad: HAC-17 de Axel, HAC-18 de Jean Paul y Gate-1 de Cristhian ya cubren tres necesidades. No se fuerza una secundaria a Luis o Juan. Cada dueño implementa y prueba; luego culmina → validamos → aprobamos → mergeamos a `codex/v2-amazon-contracts`. Hallazgos bajos no semánticos puede resolverlos el integrador con evidencia; medios/altos regresan al dueño. Solo el Tech Lead autorizado acepta `Done`; el detalle está en [la plantilla](../../LINEAR_ISSUE_TEMPLATE.md#flujo-de-aceptación-y-escala-de-hallazgos).
 
 Antes de abrir una rama, registrar issue, dueño, fecha, labels, DoD y rama exacta en el manifiesto. Sprint 1 declara cinco ramas principales y `feat/cycle-1-integration`, que se abre solo al existir PRs revisables. Todas parten de y hacen PR a `codex/v2-amazon-contracts`. Soporte HAC-17/18 no necesita rama. No reutilizar V1, improvisar ramas, pushear a `main` ni alterar Vercel producción para arreglar el preview.
 
@@ -28,9 +30,9 @@ Antes de abrir una rama, registrar issue, dueño, fecha, labels, DoD y rama exac
 
 Las seis issues HAC-11…16 estaban `Pendiente`, sin PRs ni trabajo iniciado; por decisión del equipo se conservaron sus IDs, ciclo, HITO 2 y fechas, y se sustituyeron los contratos WebMCP/BALANCED/Andes-Inca-Pacific por DoD V2. HAC-15 pasó a Juan; HAC-13 pasó de puente WebMCP a QA. HAC-27, ya existente, permanece como enabler de análisis bloqueado por HAC-23. No se crearon issues adicionales por simetría ni por el plan Free.
 
-El [plan detallado de Sprint 2](./SPRINT2_EXECUTION_PLAN.md) propone criterios verificables y un orden de entrega para cada issue. No constituye edición automática de Linear; conservar las fechas, dueños, labels y ramas registrados hasta confirmar capacidad y el manifiesto con el equipo.
+El [plan detallado de Sprint 2](SPRINT2_EXECUTION_PLAN.md) propone criterios verificables y un orden de entrega para cada issue. No constituye edición automática de Linear; conservar las fechas, dueños, labels y ramas registrados hasta confirmar capacidad y el manifiesto con el equipo.
 
-**Emergente creada el 23 sep:** [HAC-28 · retiro WebMCP del runtime V2](./SPRINT2_WEBMCP_RETIREMENT_ISSUE.md), con Jean Paul como dueño adicional a HAC-13. Estado `Pendiente`; inventario inmediato; implementación bloqueada por HAC-12/HAC-11; fecha límite 2 oct y rama propia declarada en HAC-16, pendiente de aprobación del manifiesto antes de abrirse. Cristhian valida el PR de forma independiente en Gate-2.
+**Emergente creada el 23 sep:** [HAC-28 · retiro WebMCP del runtime V2](SPRINT2_WEBMCP_RETIREMENT_ISSUE.md), con Jean Paul como dueño adicional a HAC-13. Estado `Pendiente`; inventario inmediato; implementación bloqueada por HAC-12/HAC-11; fecha límite 2 oct y rama propia declarada en HAC-16, pendiente de aprobación del manifiesto antes de abrirse. Cristhian valida el PR de forma independiente en Gate-2.
 
 | Issue | Dueño y resultado V2 | Bloqueo duro en Linear |
 |---|---|---|

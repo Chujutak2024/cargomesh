@@ -1,3 +1,5 @@
+> **ARCHIVO HISTÓRICO — PLAN SUPERADO.** Corte de septiembre de 2026; no usar para ramas, alcance, fechas ni estados actuales. Consulta [el flujo vigente](../../CURRENT_DELIVERY_STATE.md). Se conserva como trazabilidad; sus afirmaciones no certifican el entorno actual.
+
 # Plan de hitos y transición arquitectónica — CargoMesh V2
 
 **Estado:** roadmap auditado; Hitos 0–5 tienen descripciones alineadas en Linear al corte del 22 sep. HITO 0 se mantiene pendiente de aceptación explícita; Linear muestra HITO 1 al 25% tras pasar HAC-22/26 a `In Progress`, lo que no implica 25% de entregas aceptadas. Hitos 2–5 son dirección de producto, no promesa de capacidades live. PR #81/#82/#83/#85 ya están mergeados en la base V2.
@@ -27,7 +29,7 @@ Los **hitos** expresan resultados de producto y evidencia; los **sprints** son v
 | HITO 4 · Experiencia dual y auditoría | Sprint 4 · 10–16 oct | E2E Web + Alexa+ **real si se conecta**, o simulación claramente rotulada según ruta de postulación elegida. Confirmación humana para booking, autorización y auditabilidad; no auto-reserva por umbral arbitrario. |
 | HITO 5 · Hardening, demo y postulación Devpost | Sprint 5 · 17–23 oct | Freeze interno propuesto el 19, regresión, documentación de instalación/pruebas, benchmark, video <3 min y postulación antes del cierre oficial. Sprints 6/7 quedan fuera de la postulación. |
 
-HITO 2 tiene issues y dependencias concretas en Linear, pero sus ramas propuestas aún necesitan aprobación del equipo antes de abrirse. El alcance de Hitos 3–5 es dirección, no compromiso de branches ni issues futuras. La [ficha detallada de Sprint 1](./linear_sprint1_v2_rebase_proposal.md) registra IDs reales, dueños, fechas y evidencia esperada; la [ruta por sprint](./SPRINT_ROADMAP.md#rebase-de-sprint-2-en-linear) resume la asignación V2 de Sprint 2.
+HITO 2 tiene issues y dependencias concretas en Linear, pero sus ramas propuestas aún necesitan aprobación del equipo antes de abrirse. El alcance de Hitos 3–5 es dirección, no compromiso de branches ni issues futuras. La [ficha detallada de Sprint 1](linear_sprint1_v2_rebase_proposal.md) registra IDs reales, dueños, fechas y evidencia esperada; la [ruta por sprint](SPRINT_ROADMAP.md#rebase-de-sprint-2-en-linear) resume la asignación V2 de Sprint 2.
 
 ## 3. Correcciones aplicadas a las descripciones de hitos en Linear
 
@@ -56,14 +58,14 @@ También separar en la descripción del proyecto «subasta inversa» como objeti
 
 No crear ramas «por si acaso». En cada sprint se aprueba primero el manifiesto de issues: **una persona responsable por issue**, rama exacta si hay código y target `codex/v2-amazon-contracts`. Una core por integrante normalmente usa una rama; un enabler de evidencia no necesita otra. La rama de integración del ciclo se define en la issue de gate y solo el integrador autorizado la crea cuando hay PRs revisables. Una emergente que exija código añade su rama al manifiesto tras aprobar su issue; no se mezcla en la rama de otro miembro. Las ramas antiguas permanecen como historia, sin borrados precipitados. `main` y producción no se alteran para arreglar un preview.
 
-El dueño de cada issue implementa y prueba; culmina → el equipo valida DoD y evidencia → el Tech Lead aprueba → el integrador autorizado mergea a `codex/v2-amazon-contracts`. Si se detecta un hallazgo bajo no semántico, el integrador puede corregirlo con evidencia y aviso; un hallazgo medio/alto vuelve al dueño con reproducción y criterio de nueva revisión. Si el PR ya se mergeó, se audita ese hecho sin repetirlo ni convertirlo automáticamente en aceptación. Las dependencias entregan un contrato, no transfieren la responsabilidad funcional. Gate-1 tiene dueño único y Hitos futuros no preasignan ramas antes de aprobar issues. Véase [la escala](./LINEAR_ISSUE_TEMPLATE.md#flujo-de-aceptación-y-escala-de-hallazgos).
+El dueño de cada issue implementa y prueba; culmina → el equipo valida DoD y evidencia → el Tech Lead aprueba → el integrador autorizado mergea a `codex/v2-amazon-contracts`. Si se detecta un hallazgo bajo no semántico, el integrador puede corregirlo con evidencia y aviso; un hallazgo medio/alto vuelve al dueño con reproducción y criterio de nueva revisión. Si el PR ya se mergeó, se audita ese hecho sin repetirlo ni convertirlo automáticamente en aceptación. Las dependencias entregan un contrato, no transfieren la responsabilidad funcional. Gate-1 tiene dueño único y Hitos futuros no preasignan ramas antes de aprobar issues. Véase [la escala](../../LINEAR_ISSUE_TEMPLATE.md#flujo-de-aceptación-y-escala-de-hallazgos).
 
 ## 6. Documentación mínima por sprint
 
 | Sprint | Documentación / evidencia que habilita el gate |
 |---|---|
 | 1 | Mapping entidad/tabla/RLS y migración; decisión de seguridad MCP/identidad Alexa y prueba Bedrock o bloqueo+fallback; escenario y matriz QA; guía de componentes, prototipo; ADR Google Maps/alternativa y mapa piloto; manifiesto y acta Gate-1. HAC-17/18 con comprobantes y evidencia auténtica de Kiro Crew desde esta semana. |
-| 2 | HAC-11…16 vigentes: contrato y pruebas de elegibilidad/capacidad ROAD, account linking y tool MCP V2, matriz QA separada de regresión V1, preview Web, mapa con procedencia y acta Gate-2. Ver [refinamiento propuesto](./SPRINT2_EXECUTION_PLAN.md); benchmark inicial solo con método/baseline y no como sustituto de aceptación. |
+| 2 | HAC-11…16 vigentes: contrato y pruebas de elegibilidad/capacidad ROAD, account linking y tool MCP V2, matriz QA separada de regresión V1, preview Web, mapa con procedencia y acta Gate-2. Ver [refinamiento propuesto](SPRINT2_EXECUTION_PLAN.md); benchmark inicial solo con método/baseline y no como sustituto de aceptación. |
 | 3 | Contratos de oportunidad/oferta y `ScoringPolicy`, procedencia de rutas/costos/mapa, pruebas E2E Web y dataset V2 reproducible. |
 | 4 | Guion y evidencia E2E Web/Alexa o simulación declarada, política de confirmación/booking, auditoría de versiones, resultados p50/p95 y errores. |
 | 5 | Guía de instalación y acceso para jueces, reporte de suites descubiertas, video y texto coherentes con el runtime, feedback de herramientas, AWS Builder/Open Source solo si se demuestran, friction logs materiales y comprobante de envío. |
