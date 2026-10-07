@@ -1,12 +1,14 @@
+> **ANTECEDENTE DE DISEÑO.** Consulta [UML 07 y DER integral](./README.md) para la trazabilidad actual. Este corte anterior no acredita implementación ni estado alojado.
+
 # Revisión previa del modelo de datos V2 — inventario, no paquete visual vigente
 
 **Sustituido para la revisión del jueves por [MODEL_DIAGRAMS_REVIEW.md](./MODEL_DIAGRAMS_REVIEW.md).** Los `.drawio` enlazados abajo fueron exploratorios y no deben presentarse como diagramas de clases, estados o DER V2 aprobado. La comparación remota de esta página fue una **fotografía del 22 sep**, ya superada por la aplicación de migraciones del 23 sep; para el estado vigente, ver [DOMAIN_UML_MODEL.md](./DOMAIN_UML_MODEL.md) y [FL-02](../delivery/friction-logs/FL-02.md).
 
 **Paquete editable para diagrams.net/draw.io:**
 
-- [DER / modelo de datos exploratorio](../diagrams/archive/CARGOMESH_V2_DATA_MODEL.drawio): tres páginas: (1) SQL integrado en Git por HAC-21, (2) decisiones Sprint 2, (3) dominio objetivo posterior.
-- [Diagrama de clases exploratorio](../diagrams/archive/CARGOMESH_V2_DOMAIN_CLASSES.drawio): solicitud/cobertura y capacidad/mercado.
-- [Diagramas de estado exploratorios](../diagrams/archive/CARGOMESH_V2_STATE_MODELS.drawio): solicitud, oportunidad/oferta, booking/vínculo MCP y capacidad por ventana.
+- DER / modelo de datos exploratorio (referencia histórica: ../diagrams/archive/CARGOMESH_V2_DATA_MODEL.drawio; archivo no incluido en este corte): tres páginas: (1) SQL integrado en Git por HAC-21, (2) decisiones Sprint 2, (3) dominio objetivo posterior.
+- Diagrama de clases exploratorio (referencia histórica: ../diagrams/archive/CARGOMESH_V2_DOMAIN_CLASSES.drawio; archivo no incluido en este corte): solicitud/cobertura y capacidad/mercado.
+- Diagramas de estado exploratorios (referencia histórica: ../diagrams/archive/CARGOMESH_V2_STATE_MODELS.drawio; archivo no incluido en este corte): solicitud, oportunidad/oferta, booking/vínculo MCP y capacidad por ventana.
 
 **Estado:** borrador de revisión histórica; los dibujos no aprueban tablas, estados ni integraciones. La primera página del DER se cotejó con la migración del repo antes de su aplicación remota; el despliegue posterior no convierte este DER exploratorio en aprobado. Los conceptos amarillos son hipótesis explícitas.
 

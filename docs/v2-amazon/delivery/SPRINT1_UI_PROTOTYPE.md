@@ -1,3 +1,5 @@
+> **EVIDENCIA HISTÓRICA — SPRINT 1.** Los estados y pendientes corresponden al corte indicado, no al presente. Para trabajo nuevo consulta [el flujo vigente](./CURRENT_DELIVERY_STATE.md).
+
 # CargoMesh V2 · Sprint 1 UI prototype (HAC-24)
 
 Status: implementation complete on `feat/fe1-v2-design-system-prototype`; [PR #88](https://github.com/Chujutak2024/cargomesh/pull/88) is open for review against `codex/v2-amazon-contracts`. Review feedback received through 2026-09-24 is addressed below; merge and issue closure remain Gate-1 decisions.
@@ -196,7 +198,7 @@ Mobile · 390 × 844 viewport focused on the validated summary:
 
 ### Vercel preview boundary
 
-The failed Vercel deployment is not treated as a passing gate. The repository's existing [FL-01](../04-execution/friction-logs/FL-01.md) records the cause: production still builds `main` from `frontend/`, while the V2 base and this branch contain the Next.js application under `cargomesh/`. Local `pnpm build` passes from the correct directory. HAC-24 does not change Vercel `rootDirectory`, `productionBranch`, aliases, or production; the integrator owns the separate preview strategy.
+The failed Vercel deployment is not treated as a passing gate. The repository's existing [FL-01](./friction-logs/FL-01.md) records the cause: production still builds `main` from `frontend/`, while the V2 base and this branch contain the Next.js application under `cargomesh/`. Local `pnpm build` passes from the correct directory. HAC-24 does not change Vercel `rootDirectory`, `productionBranch`, aliases, or production; the integrator owns the separate preview strategy.
 
 ## 9. Files and ownership
 

@@ -16,7 +16,7 @@ El gate valida un SHA de la base compartida; no exige rama o PR agregado. Integr
 |---|---|
 | [contracts/](./contracts/README.md) | **Contratos normativos V2**: alcance, arquitectura, dominio, cobertura, discovery/ranking, flota, Alexa/MCP y límite V1/V2. Comienza aquí para tomar decisiones de producto. |
 | [models/](./models/README.md) | Modelos conceptuales y de diseño **en revisión**, comparación con datos y guía de diagramas. Un dibujo no prueba implementación ni reemplaza los contratos. |
-| [delivery/](./delivery/README.md) | Roadmaps, Linear, sprints, calidad, revisión y preparación de gates. Una propuesta o acta no modifica por sí sola Linear ni aprueba un hito. |
+| [delivery/](./delivery/README.md) | Flujo vigente, Linear, calidad, revisión y evidencia fechada. Una propuesta o acta no modifica por sí sola Linear ni aprueba un hito. |
 | [references/](./references/README.md) | Estudios externos y material comparativo; no son fuente de verdad del producto. |
 | `diagrams/` | Diagramas del repositorio. El UML `07` de HAC-27 se publica con su hash original y diccionario de trazabilidad; otros editables locales y vistas previas permanecen fuera de esta entrega. |
 | [en/](./en/README.md) | Traducción y consolidación para materiales de entrega; requiere auditoría final contra el commit presentado. |
@@ -33,8 +33,7 @@ El [contrato HAC-27](./delivery/SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md) y su [di
 - **Review input:** las propuestas del equipo se consolidaron en los contratos superiores. Los borradores de revisión no forman parte de esta rama base pública.
 - **Material transicional mergeado:** `docs/architecture-v2/` y el código de PR #80 son inventario de reutilización, no contrato vigente ni prueba de Alexa+ live. Esa carpeta también contiene un fixture JSON consumido por pruebas; no se mueve sin actualizar esos consumidores.
 - La implementación existente se migra incrementalmente. Una capacidad documentada no se considera live hasta tener código, datos, pruebas y evidencia.
-- PR #83 (HAC-21) y PR #85 (HAC-22) ya están mergeados en `codex/v2-amazon-contracts`; la aceptación de cada issue sigue su DoD y el gate. `mcp_account_links` y tools comerciales V2 permanecen pendientes, aunque el esquema ROAD de HAC-21 ya está integrado.
-- El 23 de septiembre de 2026 se aplicaron al proyecto Supabase enlazado las migraciones estructurales de idempotencia y ROAD; las cuatro tablas ROAD tienen RLS pero aún no contienen catálogo V2 remoto. Véase [FL-02](./delivery/friction-logs/FL-02.md). Esto no convierte discovery ni Alexa+ en capacidades live.
+- El [flujo vigente y corte documentado](./delivery/CURRENT_DELIVERY_STATE.md) identifica las integraciones recientes y los pendientes. Los estados de septiembre se conservan como evidencia histórica; no describen el estado alojado actual.
 
 ## Principios
 

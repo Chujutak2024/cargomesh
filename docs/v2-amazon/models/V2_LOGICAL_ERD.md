@@ -1,3 +1,5 @@
+> **ANTECEDENTE DE DISEÑO.** Consulta [UML 07 y DER integral](./README.md) para la trazabilidad actual. Este corte anterior no acredita implementación ni estado alojado.
+
 # DER lógico V2 — corte ROAD y contraste físico
 
 **Estado:** propuesta de modelo lógico para revisión, no migración, esquema remoto certificado ni aprobación del UML manual. **Corte:** 24 sep 2026. La decisión comercial del MVP está en [PRODUCT_SCOPE](../contracts/PRODUCT_SCOPE.md); las cardinalidades de negocio completas están en [DOMAIN_UML_MODEL](./DOMAIN_UML_MODEL.md) y la revisión de clases en [CLASS_DIAGRAM_DESIGN](./CLASS_DIAGRAM_DESIGN.md).
@@ -106,7 +108,7 @@ Este diagrama muestra el **objetivo lógico**, no que todas las asociaciones deb
 
 ## 5. Reglas de aceptación antes de migraciones comerciales
 
-1. Corregir conectores y nomenclatura del XML manual de clases; ratificar multiplicidades de revisiones de oferta, ruta alternativa y booking/hold. Hasta entonces el [editable `06`](../diagrams/review-2026-09-24/06-complete-classes-commercial-reviewed.drawio) es la última revisión versionada, no un DER aprobado.
+1. Corregir conectores y nomenclatura del XML manual de clases; ratificar multiplicidades de revisiones de oferta, ruta alternativa y booking/hold. Hasta entonces el editable `06` (referencia histórica: ../diagrams/review-2026-09-24/06-complete-classes-commercial-reviewed.drawio; archivo no incluido en este corte) es la última revisión versionada, no un DER aprobado.
 2. Para cada tabla V2 nueva: dueño de escritura, tenant/rol, RLS, índices para FKs/ventanas, restricciones de unicidad y vigencia, pruebas negativas y limpieza del escenario. Para relaciones entre tenant y recursos, comprobar igualdad de organización además de existencia de UUID.
 3. Probar disponibilidad positiva, negativa y desconocida; sede sin cobertura, lane inversa, reserva solapada, dato vencido, oferta ausente/vencida, USD inválido, emisor distinto y booking sin autorización. Una fila V1 o un mapa no satisface esos oráculos.
 4. Separar `as-is` **de Git**, `as-is` del Supabase V2 remoto (pendiente de acceso/consulta) y `to-be` lógico. No modificar migraciones históricas ni hacer `db push` por este DER.

@@ -1,3 +1,5 @@
+> **ARCHIVO HISTÓRICO — PLAN SUPERADO.** Corte de septiembre de 2026; no usar para ramas, alcance, fechas ni estados actuales. Consulta [el flujo vigente](../../CURRENT_DELIVERY_STATE.md). Se conserva como trazabilidad; sus afirmaciones no certifican el entorno actual.
+
 # Sprint 2 · HAC-28 — retiro WebMCP del runtime V2
 
 **Estado:** [HAC-28](https://linear.app/hackatonteamcargomesh/issue/HAC-28/chore-retirar-webmcp-v1-del-runtime-y-catalogo-activo-tras-el-corte) creada en Linear para Sprint 2, `Pendiente`. Esta ficha no acredita ejecución ni autoriza marcar HAC-12, HAC-11 o HAC-13 como terminadas. La rama exacta está registrada en HAC-28 y HAC-16, pero no debe abrirse hasta aprobar el manifiesto completo.

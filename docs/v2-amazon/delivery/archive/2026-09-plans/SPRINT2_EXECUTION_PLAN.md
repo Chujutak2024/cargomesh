@@ -1,3 +1,5 @@
+> **ARCHIVO HISTÓRICO — PLAN SUPERADO.** Corte de septiembre de 2026; no usar para ramas, alcance, fechas ni estados actuales. Consulta [el flujo vigente](../../CURRENT_DELIVERY_STATE.md). Se conserva como trazabilidad; sus afirmaciones no certifican el entorno actual.
+
 # Sprint 2 V2 — plan de ejecución y aceptación para Linear
 
 **Estado:** propuesta documental para afinar HAC-11…16 en sus IDs existentes; aún no sincronizada con Linear ni aprobada como nuevo DoD por los dueños. **Ventana registrada:** 26 septiembre–2 octubre 2026 (Lima). **Hito:** HITO 2. **Base de PR:** `codex/v2-amazon-contracts`, nunca `main`. Fechas vigentes a confirmar con cada dueño: HAC-11…15, 30 sep; HAC-16, 2 oct. Antes de abrir ramas, aprobar el manifiesto exacto ya propuesto en HAC-16 y registrar la rama en cada issue.
@@ -33,7 +35,7 @@ Registrar estimación ligera, confianza y horas disponibles con cada integrante 
 
 ### HAC-13 — Jean Paul · QA V2 y separación de regresiones
 
-**Entrega:** escenario V2 reusable, matriz `contrato → caso → esperado → comando/pasos → real → evidencia → defecto/reprueba`, y reporte Gate-2. Mantener explícita la separación entre regresión V1 y prueba de integración V2, según el [ajuste ya propuesto](./SPRINT_ROADMAP.md#ajuste-de-dod-propuesto-para-hac-13--separación-v1v2).
+**Entrega:** escenario V2 reusable, matriz `contrato → caso → esperado → comando/pasos → real → evidencia → defecto/reprueba`, y reporte Gate-2. Mantener explícita la separación entre regresión V1 y prueba de integración V2, según el [ajuste ya propuesto](SPRINT_ROADMAP.md#ajuste-de-dod-propuesto-para-hac-13--separación-v1v2).
 
 **Rama candidata para el manifiesto:** `feat/be3-v2-qa-serviceability` (propuesta por Jean Paul). El Tech Lead debe aprobarla por nombre en HAC-13 y HAC-16 antes de crearla; se abre **después de Gate-1** desde la base V2 actualizada, con PR solo hacia `codex/v2-amazon-contracts`. Mientras tanto, el diseño de casos en un documento de Linear enlazado a HAC-13 no requiere rama. No reutilizar la rama de HAC-23 ni comenzar código HAC-13 sobre un escenario QA que aún no fue aceptado/integrado.
 
@@ -70,6 +72,6 @@ HAC-27 puede analizar hallazgos de HAC-23 y proponer prioridades; no sustituye l
 
 ## Issue emergente aprobada para Sprint 2 · retiro WebMCP del runtime V2
 
-El Tech Lead aprobó el 23 sep incorporar [HAC-28](https://linear.app/hackatonteamcargomesh/issue/HAC-28/chore-retirar-webmcp-v1-del-runtime-y-catalogo-activo-tras-el-corte) a Sprint 2, con Jean Paul como dueño además de HAC-13. La ficha A/B/C y el mensaje para el responsable están en [SPRINT2_WEBMCP_RETIREMENT_ISSUE.md](./SPRINT2_WEBMCP_RETIREMENT_ISSUE.md). Fecha límite: **2 oct**. Prioridad High; labels `backend`, `audit` e `Improvement` aplicados. Rama declarada `feat/be3-v2-webmcp-retirement` en HAC-28 y HAC-16, pendiente de aprobación del manifiesto antes de abrirse; PR únicamente a `codex/v2-amazon-contracts`.
+El Tech Lead aprobó el 23 sep incorporar [HAC-28](https://linear.app/hackatonteamcargomesh/issue/HAC-28/chore-retirar-webmcp-v1-del-runtime-y-catalogo-activo-tras-el-corte) a Sprint 2, con Jean Paul como dueño además de HAC-13. La ficha A/B/C y el mensaje para el responsable están en [SPRINT2_WEBMCP_RETIREMENT_ISSUE.md](SPRINT2_WEBMCP_RETIREMENT_ISSUE.md). Fecha límite: **2 oct**. Prioridad High; labels `backend`, `audit` e `Improvement` aplicados. Rama declarada `feat/be3-v2-webmcp-retirement` en HAC-28 y HAC-16, pendiente de aprobación del manifiesto antes de abrirse; PR únicamente a `codex/v2-amazon-contracts`.
 
 Esta emergente **no duplica HAC-12**: HAC-12 entrega elegibilidad ROAD V2 y HAC-11 la consume por MCP. Jean Paul puede inventariar dependencias ahora, pero el retiro de funciones, columna `supports_webmcp` y filas V1 activas espera ese corte integrado. HAC-13 conserva su escenario/matriz y no se usa como sustituto de revisión independiente del PR de esta emergente: Cristhian valida en HAC-16. Si la ruta funcional o la limpieza segura no alcanzan antes del Gate-2, la issue sigue abierta y el gate registra el límite sin afirmar WebMCP retirado.

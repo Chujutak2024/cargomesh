@@ -10,12 +10,12 @@ description: >-
 
 ## Fuentes obligatorias
 
-Lee `../../../docs/v2-amazon/delivery/LINEAR_REBASE_PLAN.md`, `../../../docs/v2-amazon/delivery/SPRINT_ROADMAP.md`, `../../../docs/v2-amazon/delivery/linear_sprint1_v2_rebase_proposal.md`, `../../../docs/v2-amazon/delivery/cargomesh_v2_milestones_architecture_roadmap.md`, `../../../docs/v2-amazon/delivery/LINEAR_ISSUE_TEMPLATE.md` y la sección de revisión técnica de `../../../docs/v2-amazon/delivery/QUALITY_AND_VALIDATION_PLAN.md`. Los dos archivos de propuesta revisan los hitos ya cargados; no son autorización para modificar Linear. Trata la guía intermedia 1+1+N como origen del **formato**, no como autoridad para ramas, conteos de pruebas o WebMCP.
+Lee AGENTS.md, docs/v2-amazon/README.md, docs/v2-amazon/delivery/CURRENT_DELIVERY_STATE.md, docs/v2-amazon/delivery/LINEAR_ISSUE_TEMPLATE.md y la sección de revisión técnica de docs/v2-amazon/delivery/QUALITY_AND_VALIDATION_PLAN.md. Los planes archivados de septiembre son historia, no autoridad para ramas, alcance, fechas o estados actuales. Consulta la issue vigente antes de modificar Linear.
 
 ## Reglas de Linear
 
 - Conserva las issues V1 canceladas como historia; no las borres, recicles ni reabras para simular avance V2. HAC-17 y HAC-18 son enablers vigentes, no duplicados V2.
-- Rebaselina el proyecto y los ciclos existentes. El Sprint 1 actual puede recibir **issues nuevas V2** además de su historia cancelada; no postergues por defecto todo V2 al Sprint 2.
+- Usa el alcance y ciclo vigentes de la issue; no recrees el backlog de septiembre desde planes históricos.
 - Planifica `1 core + 1 enabler + N emergentes` por integrante. Crea emergentes solo ante un bloqueo real; relaciona dependencias y usa la plantilla de tres bloques.
 - Asigna un único dueño por issue, responsable de implementar, probar y corregir defectos funcionales. El flujo es culminar → validar → aprobar → mergear a la base V2; un merge ya ocurrido se audita y registra, no se repite. Un hallazgo bajo y no semántico puede corregirlo el integrador con evidencia; uno medio/alto vuelve al dueño para corrección y nueva revisión. Usa la escala de `LINEAR_ISSUE_TEMPLATE.md`. Antes de crear ramas, aprueba con el equipo el manifiesto de nombres por ciclo y escríbelos en las issues; no inventes IDs HAC ni branches auxiliares.
 - La core técnica pasa a `In Progress` con responsable y rama aislada; un enabler de gestión puede no tener rama. `In Review` exige PR/pruebas para código o enlace/evidencia para soporte y es el límite de entrega del responsable.
