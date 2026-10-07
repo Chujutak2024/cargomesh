@@ -5,8 +5,8 @@ V2 es una nueva línea de producto. Reutilizar código o aprendizajes no convier
 ## Se conserva
 
 - patrones útiles de idempotencia, concurrencia y RLS;
-- código WebMCP solo como regresión o referencia histórica; V2 no depende de él para stepper, Alexa ni selección de carriers;
-- escenarios y el Golden Flow FR-1042 como regresión histórica;
+- código y documentación WebMCP únicamente en el historial Git, corte `feef2419fa5f786c9a6063f85aeee452dd9eb84b`; no se sirven rutas ni tools V1;
+- cadenas SQL históricas y escenarios V1 como regresión separada; FR-1042 no se carga en el escenario V2;
 - evidencia y decisiones arquitectónicas que sigan siendo válidas.
 
 ## Se reemplaza

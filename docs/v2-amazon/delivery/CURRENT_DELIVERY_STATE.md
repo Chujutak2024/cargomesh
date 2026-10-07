@@ -22,7 +22,7 @@ Actualizado el 7 de octubre de 2026. Este documento organiza la lectura; los con
 
 ## Corte documentado, no certificado de cierre
 
-La base consultada para esta limpieza es `eebd500670df67cfa4b06be7323cff0819225435`: incorpora #104 (correcciones F-05/calendars), #105 (harness QA) y #106 (reconciliación documental DER F-02).
+La base de esta limpieza es `50c12d115dd9b2171d9375acd215593de29e8f34`: incorpora #104 (correcciones F-05/calendars), #105 (harness QA), #106 (reconciliación documental DER F-02) y #107 (retiro de planes superados). El PR #108 promovió ese árbol a `main` con autorización expresa (merge `feef2419fa5f786c9a6063f85aeee452dd9eb84b`). La limpieza del runtime V1 y su prueba local se documentan en [esta evidencia](./V1_RUNTIME_RETIREMENT_LOCAL_EVIDENCE_2026-10-07.md); no se presumen integradas por estar documentadas.
 
 HAC-40 conserva pendientes del modelo completo. La integración documental de #106 no sustituye su revisión independiente de F-02. La matriz debe distinguir implementación, cobertura parcial y faltantes por dueño; el número de rutas existentes no demuestra que todas las clases o relaciones estén completas.
 

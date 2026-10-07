@@ -8,7 +8,7 @@ La [documentación de entrega en inglés](./en/README.md) traduce y consolida lo
 
 Por decisión expresa de Cristhian, `codex/v2-amazon-contracts` es la base compartida de desarrollo e integración V2. Cada integrante conserva su rama registrada y entrega PR directamente a esa base, con pruebas, revisión y autorización. Se elimina la etapa de ramas `feat/cycle-*-integration` para entregas nuevas; sus commits y actas se conservan como historia. Esta decisión sustituye los targets de ciclo en planes anteriores y skills que describan ese flujo.
 
-El gate valida un SHA de la base compartida; no exige rama o PR agregado. Integrar un incremento no acredita el DoD completo, schema alojado, frontend conectado ni Alexa live. `main` conserva la versión estable existente y permanece congelada para V2. Las autorizaciones de Supabase alojado y despliegue se mantienen separadas. Véase [AGENTS.md](../../AGENTS.md).
+El gate valida un SHA de la base compartida; no exige rama o PR agregado. Integrar un incremento no acredita el DoD completo, schema alojado, frontend conectado ni Alexa live. El PR #108 promovió V2 a `main` por autorización expresa el 7-oct-2026; futuras promociones siguen requiriendo autorización. Supabase alojado y despliegue mantienen autorizaciones separadas. Véase [AGENTS.md](../../AGENTS.md).
 
 ## Dónde empezar
 
@@ -31,7 +31,7 @@ El [contrato HAC-27](./delivery/SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md) y su [di
 
 - **Approved baseline:** `contracts/` reemplaza como gobernanza activa a `docs/v1-webmcp/`.
 - **Review input:** las propuestas del equipo se consolidaron en los contratos superiores. Los borradores de revisión no forman parte de esta rama base pública.
-- **Material transicional mergeado:** `docs/architecture-v2/` y el código de PR #80 son inventario de reutilización, no contrato vigente ni prueba de Alexa+ live. Esa carpeta también contiene un fixture JSON consumido por pruebas; no se mueve sin actualizar esos consumidores.
+- **Material transicional retirado:** el runtime WebMCP V1 y `docs/architecture-v2/` fueron retirados del árbol activo por autorización de Cristhian. El corte histórico `feef2419fa5f786c9a6063f85aeee452dd9eb84b` conserva código, fixtures y evidencia; las pruebas V2 ya no consumen esa carpeta. Las cadenas SQL de regresión permanecen separadas.
 - La implementación existente se migra incrementalmente. Una capacidad documentada no se considera live hasta tener código, datos, pruebas y evidencia.
 - El [flujo vigente y corte documentado](./delivery/CURRENT_DELIVERY_STATE.md) identifica las integraciones recientes y los pendientes. Los estados de septiembre se conservan como evidencia histórica; no describen el estado alojado actual.
 

@@ -8,7 +8,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "CargoMesh",
-  description: "Agent-native B2B freight orchestration through WebMCP.",
+  description: "CargoMesh V2: solicitudes y operaciones de transporte con API y MCP.",
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

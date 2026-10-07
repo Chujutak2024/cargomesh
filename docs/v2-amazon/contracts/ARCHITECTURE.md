@@ -51,4 +51,4 @@ Intake Web/Alexa
 - Hono routes y MCP tools: validación y mapping de transporte.
 - Schemas Zod compartidos: contratos cerrados y versionados.
 
-La documentación histórica de V1 se identifica desde [el índice V1](../../v1-webmcp/README.md) para comparar y migrar, no para limitar V2.
+La documentación histórica de V1 se identifica desde [el índice V1](https://github.com/Chujutak2024/cargomesh/blob/feef2419fa5f786c9a6063f85aeee452dd9eb84b/docs/v1-webmcp/README.md) para comparar y migrar, no para limitar V2.

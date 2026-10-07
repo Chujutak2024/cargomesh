@@ -1,6 +1,6 @@
 # CargoMesh V2 Agent Invariants — Amazon Developer Hackathon
 
-Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de CargoMesh V1/WebMCP se conserva en `docs/v1-webmcp/` únicamente como historia, evidencia y regresión. Una regla V1 no limita V2 salvo que este archivo la reafirme.
+Este archivo gobierna el trabajo activo de CargoMesh V2. El código y la documentación retirados de V1/WebMCP se conservan en el historial Git (corte anterior `feef2419fa5f786c9a6063f85aeee452dd9eb84b`). Las cadenas SQL históricas permanecen identificadas como regresión y no son el runtime V2. Una regla V1 no limita V2 salvo que este archivo la reafirme.
 
 ## 1. Fuente de verdad y alcance de versión
 
@@ -50,6 +50,7 @@ Este archivo gobierna el trabajo activo de CargoMesh V2. La documentación de Ca
 ## 6. Git, integración y despliegue
 
 - `main` permanece congelada para este trabajo: no mergear, pushear ni abrir un PR de V2 hacia `main`. La aprobación de un PR o una suite verde no autoriza por sí sola a tocarla.
+- Excepción ya ejecutada por autorización expresa de Cristhian: PR #108 promovió el árbol V2 a `main` el 7-oct-2026 (merge `feef2419fa5f786c9a6063f85aeee452dd9eb84b`). Esto no autoriza futuras promociones, DDL alojado ni despliegues. La limpieza posterior entrega PR a la base V2 para revisión.
 - La rama base compartida de código, contratos e integración V2 es `codex/v2-amazon-contracts`. Por decisión expresa de Cristhian del 4 oct 2026, todos los PR de implementación V2 apuntan directamente allí. Esta decisión reemplaza el flujo previo por ramas de integración de ciclo.
 - Cada issue V2 con código declara su rama exacta y target PR en Linear **antes de crearla**; se basa en `codex/v2-amazon-contracts` y no reutiliza ramas cerradas o canceladas de V1. Un enabler sin código registra `No aplica` y no abre rama.
 - El manifiesto de ramas se aprueba por ciclo: una core por integrante y ramas emergentes solo después de aprobar su issue; todas entregan PR directamente a `codex/v2-amazon-contracts`. No crear ramas intermedias de ciclo/testing/develop. Las ramas de integración previas quedan como historia; su traslado final autorizado no habilita nuevas entregas allí. No abrir ramas auxiliares por conveniencia; PR #81/#82 son excepciones previas, no una plantilla.
