@@ -50,9 +50,6 @@ importers:
       tailwind-merge:
         specifier: ^3.0.1
         version: 3.6.0
-      webmcp-types:
-        specifier: ^0.1.5
-        version: 0.1.5
       zod:
         specifier: 3.25.76
         version: 3.25.76
@@ -1395,9 +1392,6 @@ packages:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
 
-  webmcp-types@0.1.5:
-    resolution: {integrity: sha512-QAfuzNJ+hiY2JLpPbD/6xZruLQlsqtWUDqQCRruqD0dbtZHDg6IUZ2K0zctlRokwuscGlr47i6hKv8mQPSQLhw==}
-
   which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
     engines: {node: '>= 8'}
@@ -2715,8 +2709,6 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   vary@1.1.2: {}
-
-  webmcp-types@0.1.5: {}
 
   which@2.0.2:
     dependencies:

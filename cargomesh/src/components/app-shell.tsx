@@ -11,8 +11,6 @@ import {
   PackagePlus,
   Route,
   Search,
-  ShieldAlert,
-  Truck,
   Waypoints,
   X,
 } from "lucide-react";
@@ -20,9 +18,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { LanguageSwitcher } from "./language-switcher";
-import { JudgeDrawer } from "./judge-drawer";
 import { useLocale } from "@/features/i18n/locale-provider";
-import { buildCanonicalDemoProviderHref } from "@/features/providers/provider-route-params";
 import styles from "./app-shell.module.css";
 
 type ShellIdentity = { organizationName: string; displayName: string; role: string } | null;
@@ -36,18 +32,11 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/freight-request/new", label: t("Nueva carga", "New shipment"), icon: PackagePlus },
       { href: "/requests", label: t("Mis cargas", "My shipments"), icon: ClipboardList },
-      { href: "/dispatch", label: t("Despachos", "Dispatch"), icon: Route },
+      { href: "/bookings", label: t("Reservas", "Bookings"), icon: Route },
       { href: "/tracking", label: t("Seguimiento", "Tracking"), icon: MapPinned },
-    ] },
-    { label: t("Carriers WebMCP", "WebMCP Carriers"), items: [
-      { href: "/providers", label: t("Directorio de Carriers", "Carriers Directory"), icon: Waypoints },
-      { href: buildCanonicalDemoProviderHref("andes"), label: "Andes Express", icon: Truck },
-      { href: buildCanonicalDemoProviderHref("inca"), label: "Transportes Inca", icon: Truck },
-      { href: buildCanonicalDemoProviderHref("pacific"), label: "Pacific Cargo", icon: Truck },
     ] },
     { label: t("Gestión", "Management"), items: [
       { href: "/organization", label: t("Organización", "Organization"), icon: Building2 },
-      { href: "/supervisor/exceptions", label: t("Excepciones", "Exceptions"), icon: ShieldAlert },
     ] },
     { label: t("Otros", "Other"), items: [
       { href: "/support", label: t("Soporte", "Support"), icon: Headphones },
@@ -56,13 +45,10 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
   ];
   const contexts = [
     ["/freight-request/new", t("Nueva carga V2", "New shipment V2"), t("Intake cliente · DRAFT y elegibilidad ROAD", "Client intake · DRAFT and ROAD serviceability")],
-    ["/booking", "Booking", t("Selección humana y confirmación", "Human selection and confirmation")],
-    ["/dispatch", t("Despachos", "Dispatch"), t("Evaluación dinámica de opciones", "Dynamic option evaluation")],
-    ["/providers", "Carriers WebMCP", t("Portal y herramientas WebMCP de transportistas", "Carrier portal and WebMCP tools")],
+    ["/bookings", t("Reservas V2", "V2 bookings"), t("Compromisos persistidos", "Persisted commitments")],
     ["/requests", t("Mis cargas", "My shipments"), t("Solicitudes de la organización", "Organization requests")],
     ["/tracking", t("Seguimiento", "Tracking"), t("Eventos reportados por carriers", "Carrier-reported events")],
     ["/organization", t("Organización", "Organization"), t("Perfil, miembros y políticas", "Profile, members, and policies")],
-    ["/supervisor/exceptions", t("Excepciones", "Exceptions"), t("Revisión operativa", "Operational review")],
     ["/support", t("Soporte", "Support"), t("Canales de asistencia", "Support channels")],
     ["/help", t("Centro de ayuda", "Help center"), t("Guías del flujo operativo", "Operational flow guides")],
   ] as const;
@@ -102,9 +88,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
               <p>{section.label}</p>
               {section.items.map(({ href, label, icon: Icon }) => {
                 const hrefPath = href.split("?")[0];
-                const active = href === "/providers"
-                  ? pathname === "/providers"
-                  : pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
+                const active = pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
                 return (
                   <Link key={href} href={href} aria-current={active ? "page" : undefined} className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`} onClick={() => setOpen(false)}>
                     <Icon size={17} strokeWidth={1.8} aria-hidden="true" />
@@ -118,7 +102,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
 
         <div className={styles.sidebarFoot}>
           <span className={styles.environmentDot} aria-hidden="true" />
-          <span><strong>{t("Sistema operativo", "System operational")}</strong><small>{t("Datos protegidos por organización", "Organization-scoped data")}</small></span>
+          <span><strong>{t("CargoMesh V2", "CargoMesh V2")}</strong><small>{t("Datos protegidos por organización", "Organization-scoped data")}</small></span>
         </div>
       </aside>
 
@@ -135,7 +119,6 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
           </div>
           <div className={styles.topbarActions}>
             <LanguageSwitcher compact />
-            {pathname.startsWith("/freight-request/new") ? null : <JudgeDrawer />}
             <form className={styles.search} action="/requests">
               <Search size={17} aria-hidden="true" />
               <span className={styles.srOnly}>{t("Buscar en operaciones", "Search operations")}</span>
@@ -147,6 +130,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
               <strong>{identity?.displayName ?? "CargoMesh"}</strong>
               <span>{identity?.role ?? t("Invitado", "Guest")}</span>
             </div>
+            <form action="/api/auth/logout" method="post"><button type="submit">{t("Cerrar sesión", "Sign out")}</button></form>
           </div>
         </header>
         <main id="main-content" className={styles.main}>{children}</main>
