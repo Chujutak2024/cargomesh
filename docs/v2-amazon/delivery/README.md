@@ -15,6 +15,6 @@ Comienza por el [flujo vigente](./CURRENT_DELIVERY_STATE.md). Esta carpeta conti
 - [Handoff mapa → intake](./HAC15_HAC14_INTEGRATION_HANDOFF.md): evidencia del corte que declara, no certificación del estado presente.
 - [Acta Gate-1](./SPRINT1_GATE_V2.md) y [friction logs](./friction-logs/FL-01.md): antecedentes.
 - [Planes superados de septiembre](./archive/2026-09-plans/README.md): archivo sin autoridad operativa.
-- [Regresión y evidencia V1](../../v1-webmcp/README.md).
+- [Regresión y evidencia V1](https://github.com/Chujutak2024/cargomesh/blob/feef2419fa5f786c9a6063f85aeee452dd9eb84b/docs/v1-webmcp/README.md).
 
 Una propuesta, un acta o un PR integrado no conceden automáticamente estado Done ni autorización de despliegue.
