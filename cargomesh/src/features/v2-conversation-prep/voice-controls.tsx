@@ -47,6 +47,10 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
   const onSilenceRef = useRef(onSilence);
   const onTranscriptRef = useRef(onTranscript);
   const [speaking, setSpeaking] = useState(false);
+  const audio = useRef<HTMLAudioElement | null>(null);
+  const audioUrl = useRef<string | null>(null);
+  const speechRequest = useRef<AbortController | null>(null);
+  const playbackId = useRef(0);
   const mode = useRef<"remote" | "local" | "unsupported">("unsupported");
 
   onSilenceRef.current = onSilence;
@@ -87,6 +91,9 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
       turnDetector.current?.cancel();
       recognition.current?.stop();
       window.speechSynthesis?.cancel();
+      speechRequest.current?.abort();
+      audio.current?.pause();
+      if (audioUrl.current) URL.revokeObjectURL(audioUrl.current);
     };
   }, [language]);
 
@@ -168,20 +175,67 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
     }
   }
 
-  function readResponse(text = responseText) {
-    if (!text || !window.speechSynthesis) return;
+  function readBrowserResponse(text: string) {
+    if (!window.speechSynthesis) { setSpeaking(false); return; }
     window.speechSynthesis.cancel();
-    setSpeaking(true);
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = language;
+    const voices = window.speechSynthesis.getVoices();
+    utterance.voice = voices.find((voice) => voice.lang === language && /natural|neural|enhanced|premium/i.test(voice.name))
+      ?? voices.find((voice) => voice.lang === language)
+      ?? voices.find((voice) => voice.lang.startsWith(language.slice(0, 2))) ?? null;
+    utterance.rate = 0.96;
     utterance.onstart = () => { setSpeaking(true); setMessage("CargoMesh is speaking. Press Stop audio before starting another voice turn."); };
     utterance.onend = () => { setSpeaking(false); setState("available"); setMessage(""); };
     utterance.onerror = () => { setSpeaking(false); setState("available"); setMessage("Audio playback stopped. You can continue by voice or text."); };
     window.speechSynthesis.speak(utterance);
   }
 
-  function stopResponse() {
+  function clearAudio() {
+    speechRequest.current?.abort();
+    speechRequest.current = null;
+    audio.current?.pause();
+    audio.current = null;
+    if (audioUrl.current) URL.revokeObjectURL(audioUrl.current);
+    audioUrl.current = null;
     window.speechSynthesis?.cancel();
+  }
+
+  function readResponse(text = responseText) {
+    if (!text) return;
+    clearAudio();
+    const id = ++playbackId.current;
+    const controller = new AbortController();
+    speechRequest.current = controller;
+    setSpeaking(true);
+    void (async () => {
+      try {
+        const response = await fetch("/api/v2/conversation/speech", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, language }), signal: controller.signal,
+        });
+        if (!response.ok) throw new Error("Speech service unavailable");
+        const blob = await response.blob();
+        if (id !== playbackId.current) return;
+        const url = URL.createObjectURL(blob);
+        audioUrl.current = url;
+        const player = new Audio(url);
+        audio.current = player;
+        player.onended = () => { if (id === playbackId.current) { clearAudio(); setSpeaking(false); setState("available"); setMessage(""); } };
+        player.onerror = () => { if (id === playbackId.current) { clearAudio(); readBrowserResponse(text); } };
+        await player.play();
+        setMessage("CargoMesh is speaking. Press Stop audio to interrupt.");
+      } catch {
+        if (id !== playbackId.current || controller.signal.aborted) return;
+        clearAudio();
+        readBrowserResponse(text);
+      }
+    })();
+  }
+
+  function stopResponse() {
+    playbackId.current += 1;
+    clearAudio();
     setSpeaking(false);
     setState("available");
     setMessage("Audio stopped. You can speak again or type.");
