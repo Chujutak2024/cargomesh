@@ -707,6 +707,8 @@ Diseño físico trazable de las 57 clases, 397 atributos y 93 relaciones del UML
 
 ## Relaciones y restricciones
 
+La observación QA y el objetivo previo son históricos. La reconciliación vigente de F-02 se muestra aparte sin sustituir estados independientes.
+
 | Nº | UML | Cardinalidad original | Tratamiento observado QA | Objetivo previo | Estado QA |
 |---|---|---|---|---|---|
 | 0 | Organization → Facility (registra) | 1 / 0..* | facilities.organization_id -> organizations.id | facilities.organization_id -> organizations.id | COMPLETO |
@@ -802,6 +804,21 @@ Diseño físico trazable de las 57 clases, 397 atributos y 93 relaciones del UML
 | 90 | FreightRequest → ShipmentContact (contacto de recojo · PICKUP) | 1 / 0..1 | freight_requests.v2_snapshot.contacts.pickup; nullable; PICKUP role | freight_requests.v2_snapshot.contacts.pickup; nullable; PICKUP role | PARCIAL |
 | 91 | CarrierOffer → CarrierService (cubre servicio) | 0..* / 1..* | v2_carrier_offers.data.coveredServiceIds[] (validated command; no v2_offer_services bridge) | v2_offer_services(offer_id,service_id); nonempty; equals DISTINCT services of covered assignments | PARCIAL |
 | 92 | Booking → CapacityReservation (compromete capacidad) | 0..1 / 0..* | capacity_reservations.booking_id | capacity_reservations.v2_booking_id -> v2_bookings.id; nullable for hold; active commitment proof per carrying resource | PARCIAL |
+
+## Reconciliación vigente F-02: relaciones 34, 55, 69 y 89
+
+Base integrada: `c686aeae7d17a6b641447c15dcf86cd9edd7dfa4` (20 migraciones). El baseline anterior permanece intacto.
+
+User-provided HAC-44 report for #104 @ 1e241b3: F-05 BD 10/10, HTTP 10/10. F-02 remains partial pending independent documentary review.
+
+| Nº | Tratamiento actual en el código | Consumo API | Estado documental | Evidencia |
+|---|---|---|---|---|
+| 34 | plan_resource_bindings.(resource_id, plan_id) -> plan_resources.(id, plan_id); plan_resource_bindings.route_leg_id -> route_legs.id; resource_binding_leg_fk and guard_leg_resource_binding enforce the canonical leg and plan | GET/POST plans: data.assignments[].resourceId, legAssignmentId and legAssignments[].resources | DOCUMENTED_PENDING_F02_REVIEW | `supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql`; `supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql`; `supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql`; `cargomesh/src/shared/schemas/v2/workflow.ts`; `supabase/tests/32_v2_hac40_uml_cardinalities.test.sql` |
+| 55 | load_allocations.assignment_id -> plan_resource_bindings.id -> plan_resources.id via resource_id; PostgreSQL preserves the FK target when the old assignment table is renamed; no load_allocations.plan_resource_id column | GET plans: data.assignments[].allocations; POST plans: assignments[].resources[].allocations | DOCUMENTED_PENDING_F02_REVIEW | `supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql`; `supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql`; `supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql`; `cargomesh/src/shared/schemas/v2/workflow.ts`; `supabase/tests/32_v2_hac40_uml_cardinalities.test.sql` |
+| 69 | plan_resource_bindings.(leg_assignment_id, plan_id) -> plan_leg_assignments.(id, plan_id); (resource_id, plan_id) -> plan_resources.(id, plan_id); UNIQUE(resource_id); deferred leg_requires_resources/binding_preserves_resources enforce 1..N | GET plans: data.legAssignments[].resources; POST plans: assignments[].resources (min 1) | DOCUMENTED_PENDING_F02_REVIEW | `supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql`; `supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql`; `supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql`; `cargomesh/src/shared/schemas/v2/workflow.ts`; `supabase/tests/32_v2_hac40_uml_cardinalities.test.sql` |
+| 89 | capacity_reservations.plan_resource_id -> plan_resources.id; plan_leg_assignment_id -> plan_leg_assignments.id; plan_assignment_id -> plan_resource_bindings.id retained for compatibility; a_reservation_resource validates coherence; NULL is allowed only for a pre-plan hold | POST capacity/holds: assignmentId canonical header plus planResourceId for multiple resources; GET hold: data.planResourceId | DOCUMENTED_PENDING_F02_REVIEW | `supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql`; `supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql`; `supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql`; `cargomesh/src/shared/schemas/v2/workflow.ts`; `supabase/tests/32_v2_hac40_uml_cardinalities.test.sql` |
+
+El enlace indirecto de LoadAllocation al recurso es deliberado y explícito; no se promete una columna directa inexistente. La nulabilidad pre-plan de reservas no permite un recurso incoherente. Esta sección no reobserva los 397 atributos ni certifica las 93 relaciones o Supabase alojado.
 
 ## Gate antes de aplicar el esquema
 
