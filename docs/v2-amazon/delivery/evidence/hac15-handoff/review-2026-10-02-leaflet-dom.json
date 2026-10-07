@@ -1,0 +1,471 @@
+{
+  "date": "2026-10-02T17:25:37.826Z",
+  "origin": "http://127.0.0.1:3093",
+  "reviewedHead": "51ed9a5939bb0b4f31a52949b5df5da2d3cc5df5",
+  "red": {
+    "executed": "executed",
+    "tooltips": [
+      {
+        "images": 1,
+        "text": ""
+      },
+      {
+        "images": 1,
+        "text": ""
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "initial markup: both endpoints literal, no HTML/handler execution",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>&lt;img src=\"/hac15-missing-image\" onerror=\"document.documentElement.setAttribute('data-hac15xss','executed')\"&gt;</span>",
+          "<span>&lt;img src=\"/hac15-missing-image\" onerror=\"document.documentElement.setAttribute('data-hac15xss','executed')\"&gt;</span>"
+        ],
+        "labels": [
+          "<img src=\"/hac15-missing-image\" onerror=\"document.documentElement.setAttribute('data-hac15xss','executed')\">",
+          "<img src=\"/hac15-missing-image\" onerror=\"document.documentElement.setAttribute('data-hac15xss','executed')\">"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 1,
+        "providerText": "Map: OpenStreetMap · Simulated geometry",
+        "selection": "selectedCandidateId: road-a"
+      }
+    },
+    {
+      "name": "data update: origin/destination preserve angle brackets, ampersands and quotes",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Sede &lt;Norte&gt; &amp; \"Callao\"</span>",
+          "<span>Empresa &lt;Sur&gt; &amp; 'Arequipa'</span>"
+        ],
+        "labels": [
+          "Sede <Norte> & \"Callao\"",
+          "Empresa <Sur> & 'Arequipa'"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 1,
+        "providerText": "Map: OpenStreetMap · Simulated geometry",
+        "selection": "selectedCandidateId: road-a"
+      }
+    },
+    {
+      "name": "keyboard selection B: null preview removes route, literal endpoint labels preserved",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Sede &lt;Norte&gt; &amp; \"Callao\"</span>",
+          "<span>Empresa &lt;Sur&gt; &amp; 'Arequipa'</span>"
+        ],
+        "labels": [
+          "Sede <Norte> & \"Callao\"",
+          "Empresa <Sur> & 'Arequipa'"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 0,
+        "providerText": "Map: OpenStreetMap · Route geometry unavailable",
+        "selection": "selectedCandidateId: road-b"
+      }
+    },
+    {
+      "name": "keyboard selection A: declared simulated route restored, literal labels preserved",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Sede &lt;Norte&gt; &amp; \"Callao\"</span>",
+          "<span>Empresa &lt;Sur&gt; &amp; 'Arequipa'</span>"
+        ],
+        "labels": [
+          "Sede <Norte> & \"Callao\"",
+          "Empresa <Sur> & 'Arequipa'"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 1,
+        "providerText": "Map: OpenStreetMap · Simulated geometry",
+        "selection": "selectedCandidateId: road-a"
+      }
+    },
+    {
+      "name": "markup data update: neither endpoint interprets HTML",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>&lt;img src=\"/hac15-missing-image\" onerror=\"document.documentElement.setAttribute('data-hac15xss','executed')\"&gt;</span>",
+          "<span>&lt;img src=\"/hac15-missing-image\" onerror=\"document.documentElement.setAttribute('data-hac15xss','executed')\"&gt;</span>"
+        ],
+        "labels": [
+          "<img src=\"/hac15-missing-image\" onerror=\"document.documentElement.setAttribute('data-hac15xss','executed')\">",
+          "<img src=\"/hac15-missing-image\" onerror=\"document.documentElement.setAttribute('data-hac15xss','executed')\">"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 1,
+        "providerText": "Map: OpenStreetMap · Simulated geometry",
+        "selection": "selectedCandidateId: road-a"
+      }
+    },
+    {
+      "name": "normal data update: both canonical names render unchanged",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Planta Callao Norte</span>",
+          "<span>Centro de distribución Arequipa</span>"
+        ],
+        "labels": [
+          "Planta Callao Norte",
+          "Centro de distribución Arequipa"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 1,
+        "providerText": "Map: OpenStreetMap · Simulated geometry",
+        "selection": "selectedCandidateId: road-a"
+      }
+    },
+    {
+      "name": "normal labels on fresh initial load",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Planta Callao Norte</span>",
+          "<span>Centro de distribución Arequipa</span>"
+        ],
+        "labels": [
+          "Planta Callao Norte",
+          "Centro de distribución Arequipa"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 1,
+        "providerText": "Map: OpenStreetMap · Simulated geometry",
+        "selection": "selectedCandidateId: road-a"
+      }
+    },
+    {
+      "name": "special characters on fresh initial load: both endpoints literal",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Sede &lt;Norte&gt; &amp; \"Callao\"</span>",
+          "<span>Empresa &lt;Sur&gt; &amp; 'Arequipa'</span>"
+        ],
+        "labels": [
+          "Sede <Norte> & \"Callao\"",
+          "Empresa <Sur> & 'Arequipa'"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 1,
+        "providerText": "Map: OpenStreetMap · Simulated geometry",
+        "selection": "selectedCandidateId: road-a"
+      }
+    },
+    {
+      "name": "UNKNOWN with supplied points: no invented route",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Planta Callao Norte</span>",
+          "<span>Centro de distribución Arequipa</span>"
+        ],
+        "labels": [
+          "Planta Callao Norte",
+          "Centro de distribución Arequipa"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 0,
+        "providerText": "Map: OpenStreetMap · Route geometry unavailable",
+        "selection": "selectedCandidateId: road-a"
+      }
+    },
+    {
+      "name": "empty legs: pins without route",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Planta Callao Norte</span>",
+          "<span>Centro de distribución Arequipa</span>"
+        ],
+        "labels": [
+          "Planta Callao Norte",
+          "Centro de distribución Arequipa"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 0,
+        "providerText": "Map: OpenStreetMap · Route geometry unavailable",
+        "selection": "selectedCandidateId: road-a"
+      }
+    },
+    {
+      "name": "null origin coordinates: destination only, no route",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Centro de distribución Arequipa</span>"
+        ],
+        "labels": [
+          "Centro de distribución Arequipa"
+        ],
+        "markers": 1,
+        "overflow": false,
+        "paths": 0,
+        "providerText": "Map: OpenStreetMap · Route geometry unavailable",
+        "selection": "selectedCandidateId: road-a"
+      }
+    },
+    {
+      "name": "both coordinates null: no pins or route",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [],
+        "labels": [],
+        "markers": 0,
+        "overflow": false,
+        "paths": 0,
+        "selection": "selectedCandidateId: road-a"
+      }
+    },
+    {
+      "name": "zero candidates: parent selection null, canonical pins, no route",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Sede de escenario Piura</span>",
+          "<span>Centro de distribución Arequipa</span>"
+        ],
+        "labels": [
+          "Sede de escenario Piura",
+          "Centro de distribución Arequipa"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 0,
+        "providerText": "Map: OpenStreetMap · Route geometry unavailable",
+        "selection": "selectedCandidateId: null"
+      }
+    },
+    {
+      "name": "mobile 390x844: zero candidates, no overflow, no route",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Sede de escenario Piura</span>",
+          "<span>Centro de distribución Arequipa</span>"
+        ],
+        "labels": [
+          "Sede de escenario Piura",
+          "Centro de distribución Arequipa"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 0,
+        "providerText": "Map: OpenStreetMap · Route geometry unavailable",
+        "selection": "selectedCandidateId: null"
+      }
+    },
+    {
+      "name": "mobile 390x844: literal special characters and two pins",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Sede &lt;Norte&gt; &amp; \"Callao\"</span>",
+          "<span>Empresa &lt;Sur&gt; &amp; 'Arequipa'</span>"
+        ],
+        "labels": [
+          "Sede <Norte> & \"Callao\"",
+          "Empresa <Sur> & 'Arequipa'"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 1,
+        "providerText": "Map: OpenStreetMap · Simulated geometry",
+        "selection": "selectedCandidateId: road-a"
+      }
+    },
+    {
+      "name": "ES change preserves canonical text, selection and geometry",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Sede &lt;Norte&gt; &amp; \"Callao\"</span>",
+          "<span>Empresa &lt;Sur&gt; &amp; 'Arequipa'</span>"
+        ],
+        "labels": [
+          "Sede <Norte> & \"Callao\"",
+          "Empresa <Sur> & 'Arequipa'"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 1,
+        "providerText": "Map: OpenStreetMap · Simulated geometry",
+        "selection": "selectedCandidateId: road-a"
+      }
+    },
+    {
+      "name": "zero candidates on fresh initial load: parent selection null, no route",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Sede de escenario Piura</span>",
+          "<span>Centro de distribución Arequipa</span>"
+        ],
+        "labels": [
+          "Sede de escenario Piura",
+          "Centro de distribución Arequipa"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 0,
+        "providerText": "Mapa: OpenStreetMap · Geometría de ruta no disponible",
+        "selection": "selectedCandidateId: null"
+      }
+    },
+    {
+      "name": "null preview on fresh initial load: parent selects B, no route",
+      "pass": true,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Planta Callao Norte</span>",
+          "<span>Centro de distribución Arequipa</span>"
+        ],
+        "labels": [
+          "Planta Callao Norte",
+          "Centro de distribución Arequipa"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 0,
+        "providerText": "Mapa: OpenStreetMap · Geometría de ruta no disponible",
+        "selection": "selectedCandidateId: road-b"
+      }
+    }
+  ],
+  "observationNotes": [
+    {
+      "reason": "First assertion ran before Leaflet fade removal completed. Waited for the third tooltip to detach and retried; no code change.",
+      "name": "keyboard selection B: null preview removes route, literal endpoint labels preserved",
+      "pass": false,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>Sede &lt;Norte&gt; &amp; \"Callao\"</span>",
+          "<span>Empresa &lt;Sur&gt; &amp; 'Arequipa'</span>",
+          "<span>Sede &lt;Norte&gt; &amp; \"Callao\"</span>",
+          "<span>Empresa &lt;Sur&gt; &amp; 'Arequipa'</span>"
+        ],
+        "labels": [
+          "Sede <Norte> & \"Callao\"",
+          "Empresa <Sur> & 'Arequipa'",
+          "Sede <Norte> & \"Callao\"",
+          "Empresa <Sur> & 'Arequipa'"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 0,
+        "providerText": "Map: OpenStreetMap · Route geometry unavailable",
+        "selection": "selectedCandidateId: road-b"
+      }
+    },
+    {
+      "reason": "Test expectation used normal labels after reloading ?scenario=label-markup. Corrected navigation to each explicit scenario URL; no product change.",
+      "name": "normal labels on fresh initial load",
+      "pass": false,
+      "dom": {
+        "executed": null,
+        "handlerElements": 0,
+        "htmlImages": 0,
+        "htmlLabels": [
+          "<span>&lt;img src=\"/hac15-missing-image\" onerror=\"document.documentElement.setAttribute('data-hac15xss','executed')\"&gt;</span>",
+          "<span>&lt;img src=\"/hac15-missing-image\" onerror=\"document.documentElement.setAttribute('data-hac15xss','executed')\"&gt;</span>"
+        ],
+        "labels": [
+          "<img src=\"/hac15-missing-image\" onerror=\"document.documentElement.setAttribute('data-hac15xss','executed')\">",
+          "<img src=\"/hac15-missing-image\" onerror=\"document.documentElement.setAttribute('data-hac15xss','executed')\">"
+        ],
+        "markers": 2,
+        "overflow": false,
+        "paths": 1,
+        "providerText": "Map: OpenStreetMap · Simulated geometry",
+        "selection": "selectedCandidateId: road-a"
+      }
+    }
+  ],
+  "summary": {
+    "passed": 18,
+    "failed": 0,
+    "initialCases": [
+      "markup",
+      "special characters",
+      "normal"
+    ],
+    "provider": "Leaflet 1.9.4 / OpenStreetMap",
+    "googleRerun": false,
+    "backendRuntime": false
+  }
+}

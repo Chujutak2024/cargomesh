@@ -1,0 +1,19 @@
+{
+  "surface": "3093 local Next dev",
+  "notes": "Provider authorization error belongs to this test port; no Cloud settings changed. No server API/DB smoke claimed.",
+  "logs": [
+    {
+      "level": "error",
+      "message": "Google Maps JavaScript API error: RefererNotAllowedMapError\nhttps://developers.google.com/maps/documentation/javascript/error-messages#referer-not-allowed-map-error\nYour site URL to be authorized: http://127.0.0.1:3093/hac15-preview"
+    },
+    {
+      "level": "error",
+      "message": "Google Maps JavaScript API error: RefererNotAllowedMapError\nhttps://developers.google.com/maps/documentation/javascript/error-messages#referer-not-allowed-map-error\nYour site URL to be authorized: http://127.0.0.1:3093/v2-workspace"
+    },
+    {
+      "level": "warn",
+      "message": "As of February 21st, 2024, google.maps.Marker is deprecated. Please use google.maps.marker.AdvancedMarkerElement instead. At this time, google.maps.Marker is not scheduled to be discontinued, but google.maps.marker.AdvancedMarkerElement is recommended over google.maps.Marker. While google.maps.Marker will continue to receive bug fixes for any major regressions, existing bugs in google.maps.Marker will not be addressed. At least 12 months notice will be given before support is discontinued. Please see https://developers.google.com/maps/deprecations for additional details and https://developers.google.com/maps/documentation/javascript/advanced-markers/migration for the migration guide."
+    }
+  ],
+  "capturedEntries": 6
+}

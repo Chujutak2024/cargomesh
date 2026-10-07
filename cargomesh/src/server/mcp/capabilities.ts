@@ -1,0 +1,106 @@
+export const MCP_CAPABILITY_PROFILES = ["V1_REGRESSION", "V2"] as const;
+export type McpCapabilityProfile = (typeof MCP_CAPABILITY_PROFILES)[number];
+
+export type McpCapabilityStatus = "IMPLEMENTED" | "BLOCKED" | "V1_REGRESSION";
+
+export type McpCapabilityDescriptor = {
+  toolName: "get_cargomesh_capabilities" | "create_freight_request" | "submit_freight_request" | "find_freight_options" | "get_freight_options" |
+    "get_v2_intake_options" | "create_v2_freight_request" | "get_v2_freight_request" | "evaluate_v2_road";
+  profile: McpCapabilityProfile;
+  status: McpCapabilityStatus;
+  blockedBy: "NONE" | "V2_FREIGHT_REQUEST_SERVICE";
+  source: "CARGOMESH_SHARED_SERVICE" | "V1_WEBMCP_RESULT_BRIDGE";
+  legacyDependency: "NONE" | "V1_WEBMCP" | "BALANCED_V1" | "V1_WEBMCP_AND_BALANCED_V1";
+  businessSemantics: string;
+};
+
+export const MCP_CAPABILITY_CATALOG: readonly McpCapabilityDescriptor[] = [
+  {
+    toolName: "get_cargomesh_capabilities",
+    profile: "V2",
+    status: "IMPLEMENTED",
+    blockedBy: "NONE",
+    source: "CARGOMESH_SHARED_SERVICE",
+    legacyDependency: "NONE",
+    businessSemantics: "Reports the versioned MCP capability boundary and blocked V2 contracts without reading tenant data.",
+  },
+  {
+    toolName: "get_v2_intake_options", profile: "V2", status: "IMPLEMENTED", blockedBy: "NONE",
+    source: "CARGOMESH_SHARED_SERVICE", legacyDependency: "NONE",
+    businessSemantics: "Reads only linked-organization V2 facilities and capture vocabulary through the HAC-12 application service; it does not imply carrier coverage.",
+  },
+  {
+    toolName: "create_v2_freight_request", profile: "V2", status: "IMPLEMENTED", blockedBy: "NONE",
+    source: "CARGOMESH_SHARED_SERVICE", legacyDependency: "NONE",
+    businessSemantics: "Creates a complete V2 ROAD draft through the HAC-12 application service with idempotency.",
+  },
+  {
+    toolName: "get_v2_freight_request", profile: "V2", status: "IMPLEMENTED", blockedBy: "NONE",
+    source: "CARGOMESH_SHARED_SERVICE", legacyDependency: "NONE",
+    businessSemantics: "Reads an authorized V2 draft through the HAC-12 application service.",
+  },
+  {
+    toolName: "evaluate_v2_road", profile: "V2", status: "IMPLEMENTED", blockedBy: "NONE",
+    source: "CARGOMESH_SHARED_SERVICE", legacyDependency: "NONE",
+    businessSemantics: "Evaluates ROAD eligibility with HAC-12 evidence; never quotes or books.",
+  },
+  {
+    toolName: "create_freight_request",
+    profile: "V1_REGRESSION",
+    status: "V1_REGRESSION",
+    blockedBy: "NONE",
+    source: "CARGOMESH_SHARED_SERVICE",
+    legacyDependency: "NONE",
+    businessSemantics: "Creates the current ROAD/FTL/BALANCED scheduled-pallet draft contract.",
+  },
+  {
+    toolName: "submit_freight_request",
+    profile: "V1_REGRESSION",
+    status: "V1_REGRESSION",
+    blockedBy: "NONE",
+    source: "CARGOMESH_SHARED_SERVICE",
+    legacyDependency: "NONE",
+    businessSemantics: "Submits the current versioned V1 draft contract.",
+  },
+  {
+    toolName: "find_freight_options",
+    profile: "V1_REGRESSION",
+    status: "V1_REGRESSION",
+    blockedBy: "NONE",
+    source: "V1_WEBMCP_RESULT_BRIDGE",
+    legacyDependency: "V1_WEBMCP",
+    businessSemantics: "Starts legacy provider-page orchestration; it is not V2 serviceability or discovery.",
+  },
+  {
+    toolName: "get_freight_options",
+    profile: "V1_REGRESSION",
+    status: "V1_REGRESSION",
+    blockedBy: "NONE",
+    source: "V1_WEBMCP_RESULT_BRIDGE",
+    legacyDependency: "V1_WEBMCP_AND_BALANCED_V1",
+    businessSemantics: "Reads legacy Result Bridge offers and BALANCED_V1 ranking.",
+  },
+] as const;
+
+export function implementedCapabilities(profile: McpCapabilityProfile): readonly McpCapabilityDescriptor[] {
+  return MCP_CAPABILITY_CATALOG.filter((capability) =>
+    capability.profile === profile && capability.status !== "BLOCKED");
+}
+
+export function capabilityReport(profile: McpCapabilityProfile) {
+  return {
+    profile,
+    source: "CARGOMESH_CAPABILITY_CATALOG" as const,
+    status: profile === "V2" ? "PARTIAL" as const : "V1_REGRESSION" as const,
+    blockedBy: profile === "V2"
+      ? ["V2_OFFER_SERVICE", "V2_BOOKING_SERVICE", "HAC33_LOCATION_RESOLUTION"] as const
+      : [] as const,
+    capabilities: MCP_CAPABILITY_CATALOG.filter((capability) => capability.profile === profile),
+  };
+}
+
+export function parseMcpCapabilityProfile(value: string | undefined): McpCapabilityProfile | null {
+  return MCP_CAPABILITY_PROFILES.includes(value as McpCapabilityProfile)
+    ? value as McpCapabilityProfile
+    : null;
+}

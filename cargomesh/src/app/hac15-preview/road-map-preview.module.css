@@ -1,0 +1,13 @@
+.page { --road-ink: #173431; display: grid; gap: 1.5rem; min-height: 100vh; width: 100%; max-width: var(--page-max-wide); margin: 0 auto; padding: clamp(1rem, 3vw, 2.5rem); background: #f6f9f7; color: var(--road-ink); font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+.header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.header > div:first-child { max-width: 42rem; }
+.header span { color: #39786f; font-size: 0.72rem; font-weight: 700; }
+.header h1 { margin: 0.2rem 0; font-size: clamp(1.65rem, 3vw, 2.2rem); letter-spacing: -0.04em; }
+.header p { margin: 0; color: #61736f; font-size: 0.79rem; line-height: 1.5; }
+.switcher { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.switcher button { min-height: 2.55rem; border: 1px solid #d2dfda; border-radius: 0.55rem; padding: 0.45rem 0.7rem; background: #fff; color: #34544e; font: inherit; font-size: 0.7rem; font-weight: 700; cursor: pointer; }
+.switcher button[aria-pressed="true"] { border-color: #087f8a; background: #e5f3f1; color: #075d66; }
+.switcher button:focus-visible { outline: 3px solid #087f8a; outline-offset: 2px; }
+.sharedSelection { display: grid; gap: 0.5rem; padding: 0.8rem; border: 1px dashed #c1d5cd; border-radius: 0.65rem; }
+.sharedSelection p { margin: 0; color: #526a62; font-size: 0.75rem; line-height: 1.5; }
+.sharedSelection output { font-size: 0.75rem; }

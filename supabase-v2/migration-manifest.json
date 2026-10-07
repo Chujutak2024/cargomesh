@@ -1,0 +1,374 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "e289801f209902ebfe8e54b39c50ce62a16c4b6f",
+  "hashEncoding": "UTF-8, LF normalized (Git content)",
+  "sources": [
+    {
+      "type": "mixed: schema + reference + V1 demo",
+      "sha256": "0084024f7c86096826a91881d1125399344830ea00f29ee262714958abcb7687",
+      "source_lines": 284,
+      "schema_lines": 186,
+      "path": "supabase/migrations/20260828200000_baseline_legacy_schema.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "f435f93c1fea5a51ca62438b88a8826505d5eb0cd3d1f69a154a193f61099be2",
+      "source_lines": 102,
+      "schema_lines": 102,
+      "path": "supabase/migrations/20260828233233_add_cargomesh_identity_and_intent_contract.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "d1209b8a897d8defc26104fdf4501b0d1eae21b81ea52a8baf8f9c6cf368c053",
+      "source_lines": 99,
+      "schema_lines": 99,
+      "path": "supabase/migrations/20260828233302_add_cargomesh_observability_and_booking_events.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "a007dbc51bf137dc052ab23a79d518069596cdbefbe50854718a1d1adf2f6a76",
+      "source_lines": 135,
+      "schema_lines": 135,
+      "path": "supabase/migrations/20260828233343_add_cargomesh_runtime_contract.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "44bd3d461ade51747820bea3513f261cb0953a35b0cf9efb9ae20dff1ad8e046",
+      "source_lines": 47,
+      "schema_lines": 47,
+      "path": "supabase/migrations/20260828233435_add_cargomesh_domain_constraints.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "c6e9ea2c2335294517dd5aed822326a5ce0e2a53c929c584b31067a7f4b0bc6c",
+      "source_lines": 1,
+      "schema_lines": 1,
+      "path": "supabase/migrations/20260828233524_add_carrier_offers_carrier_fk_index.sql"
+    },
+    {
+      "type": "mixed: schema + V1 demo alignment",
+      "sha256": "cad1fca7c8ce9682ca865b53393436b38d643dcfbfae78d62c7219a99dff7646",
+      "source_lines": 128,
+      "schema_lines": 19,
+      "path": "supabase/migrations/20260829003215_align_golden_flow_and_reset_runtime.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "40fcd939c18856669ee2780bc9da35842e98591c10e89b93c2b5a4463eeaafa0",
+      "source_lines": 268,
+      "schema_lines": 268,
+      "path": "supabase/migrations/20260829003327_secure_cargomesh_data_api_with_rls.sql"
+    },
+    {
+      "type": "mixed: schema + V1 demo cargo profile",
+      "sha256": "30f3364007f95dabb708a79d3c11994743c89b279a31ddbb48a50d21583ed194",
+      "source_lines": 242,
+      "schema_lines": 165,
+      "path": "supabase/migrations/20260829005625_add_organization_cargo_profiles_and_unitized_intake.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "f30e41be92413e2b1bb26a1437050f9ea0dc75fe671386c3b47fa764e7caaf5e",
+      "source_lines": 3,
+      "schema_lines": 3,
+      "path": "supabase/migrations/20260829010551_add_freight_request_org_cargo_profile_fk_index.sql"
+    },
+    {
+      "type": "mixed: schema + reference guidance",
+      "sha256": "f664d4cf51017ca4581ed33d01caa67a994b8050d2ec28e42421de8abad99c9b",
+      "source_lines": 63,
+      "schema_lines": 17,
+      "path": "supabase/migrations/20260829011002_add_cargo_category_intake_guidance.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "0ad94074c45cf87a64d7ebbe86cd4a2b078393d1140d0a4aa8c527c51cc44bbc",
+      "source_lines": 607,
+      "schema_lines": 607,
+      "path": "supabase/migrations/20260830040348_c02_result_bridge_idempotency.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "5d88e4ca457c31fbca116b4292706a987385bb3583a44c523832adaf5ad25879",
+      "source_lines": 375,
+      "schema_lines": 375,
+      "path": "supabase/migrations/20260830182517_int02a_generalize_result_bridge.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "c7a4238bbebc5978ac65efef58058b6b96941fa7596d1ac98cb992f6f8190903",
+      "source_lines": 339,
+      "schema_lines": 339,
+      "path": "supabase/migrations/20260830210000_int02a_orchestration_run_api.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "0bcd62a8bcf872f42e787b0316ce66cf49ceccaf478435fef46276844b805b90",
+      "source_lines": 676,
+      "schema_lines": 676,
+      "path": "supabase/migrations/20260831062736_c03_booking_bridge.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "59fd4d858e88967c59a267cc766c5a6d387b41922d9d4e802059b2c716aafecf",
+      "source_lines": 22,
+      "schema_lines": 22,
+      "path": "supabase/migrations/20260901045832_c_release_service_role_base_grants.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "f19441fce3d00c4aa89b85f828e3a62fdcf9b0856821e62bc6e2a879e7cca1be",
+      "source_lines": 15,
+      "schema_lines": 15,
+      "path": "supabase/migrations/20260902065645_c_d1_recommendation_draft_writer.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "ba0c3b980f3af5b4e85c5e2f259e21ed566bf61d6d8aa77e781cc963615656ca",
+      "source_lines": 14,
+      "schema_lines": 14,
+      "path": "supabase/migrations/20260902170000_c_manual_intake_writer.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "71d99234079d7542ba35eec994a24477d9032dc941f4398381ebb31a740cf3e1",
+      "source_lines": 24,
+      "schema_lines": 24,
+      "path": "supabase/migrations/20260902213000_c_restrict_freight_request_writes.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "71ba64cbfa9b827217f982bd1b42a83b8f5d3aee790335fd711db11c035cdbca",
+      "source_lines": 49,
+      "schema_lines": 49,
+      "path": "supabase/migrations/20260918120000_c_draft_creation_idempotency.sql"
+    },
+    {
+      "type": "schema",
+      "sha256": "7f79a3e87075762bfae4c9c7e9ad040a44863b44b03d37540a5b43fa67f4cd05",
+      "source_lines": 230,
+      "schema_lines": 230,
+      "path": "supabase/migrations/20260922053512_v2_road_facilities_services.sql"
+    }
+  ],
+  "migrations": [
+    {
+      "issue": "HAC-29",
+      "path": "supabase-v2/supabase/migrations/20260927042808_v2_schema_baseline.sql",
+      "version": "20260927042808",
+      "sha256": "a47c146fb5008a454fccbae3c70245c80022156cc7e78d929121f4e5e4d75920",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": []
+    },
+    {
+      "issue": "HAC-29",
+      "path": "supabase-v2/supabase/migrations/20260927042811_v2_cargo_reference.sql",
+      "version": "20260927042811",
+      "sha256": "135be301f6b3dad110a05fd335573dd90f264d58956a7416cfe8af90dcf2e477",
+      "type": "reference",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20260927042808"
+      ]
+    },
+    {
+      "issue": "HAC-12",
+      "path": "supabase-v2/supabase/migrations/20260927064713_hac12_road_vertical.sql",
+      "version": "20260927064713",
+      "sha256": "151687abdc233eb66aa5718873b750851154649d1c212cfa1cb1aebdd445089f",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20260927042811"
+      ]
+    },
+    {
+      "issue": "HAC-12",
+      "path": "supabase-v2/supabase/migrations/20260928190000_hac12_temporal_evidence.sql",
+      "version": "20260928190000",
+      "sha256": "5deebf452f37ec07107919954548150ac5806ad13fdb6cf88e63b7f7cb300b07",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20260927064713"
+      ]
+    },
+    {
+      "issue": "HAC-12",
+      "path": "supabase-v2/supabase/migrations/20261001201251_hac12_review_guards.sql",
+      "version": "20261001201251",
+      "sha256": "9251975cb6afc47bdf46e4aaf305321e47e30737ff4aa4128d4a47bb3862c81a",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20260928190000"
+      ]
+    },
+    {
+      "issue": "HAC-12",
+      "path": "supabase-v2/supabase/migrations/20261002073853_hac12_insert_contract_and_reservation_guards.sql",
+      "version": "20261002073853",
+      "sha256": "413008ad5b9e9346c5cd3a2aaa4941dcb1d56d5f9986d22457c6590b2bfda5d6",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261001201251"
+      ]
+    },
+    {
+      "issue": "HAC-11",
+      "path": "supabase-v2/supabase/migrations/20261002160000_hac11_mcp_account_links.sql",
+      "version": "20261002160000",
+      "sha256": "0927b25172be4f81aa62a68caf8a52fcfbe81a88f25e11d4680317d1bde3a034",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261002073853"
+      ]
+    },
+    {
+      "issue": "HAC-12",
+      "path": "supabase-v2/supabase/migrations/20261003035802_hac12_receipt_hash_and_service_role_guards.sql",
+      "version": "20261003035802",
+      "sha256": "aef93fe317167c9039d88d80306612fd5da0378f21791280780e76d619900822",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261002073853"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004012929_hac40_facility_commands.sql",
+      "version": "20261004012929",
+      "sha256": "8f104d4a3cf03dcc1111174af5e7bba73aa29d619edf64f8a336e7fcc5e5bee4",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261003035802"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004014340_hac40_request_lifecycle.sql",
+      "version": "20261004014340",
+      "sha256": "7657f72904893519f4c3e1e32f9c26cd086f545a41a971c9fa14100093524a41",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004012929"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004022650_hac40_organization_commands.sql",
+      "version": "20261004022650",
+      "sha256": "b6cf93ef75b4a2acb6aae46dfc770b10c0f7762f5a791f3874842e8362e09cea",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004014340"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004025720_hac40_full_request_contract.sql",
+      "version": "20261004025720",
+      "sha256": "17dc43d4769e76ff0ab8f7df10a8f9e184a20f59299463627eeab5f7a74f49ee",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004022650"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004032151_hac40_catalog.sql",
+      "version": "20261004032151",
+      "sha256": "d311c5e359374a984772b14ef95930cf737425f8b55a1d7a7971130de0c5a8d2",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004025720"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004042259_hac40_fleet.sql",
+      "version": "20261004042259",
+      "sha256": "c684de8919545f5e9325eb44f844ab3b47676ce09a40a9a388d5417e9661678f",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004032151"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004080506_hac40_crew_assignments.sql",
+      "version": "20261004080506",
+      "sha256": "ae221ac9a6d96a0ec5ea358c8f43dc8f852f3e25b2b730fa9996abc453cdf5ec",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004042259"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+      "version": "20261004154048",
+      "sha256": "919c61c1208b82567f5f98aebb2fe7c82d82f82cf6e42bfe6ba0b60790b1e684",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004080506"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261004232244_hac40_ltl_shared_operations.sql",
+      "version": "20261004232244",
+      "sha256": "6c81f7e6963b65b2bac98298fc3ad1c1e81ba598e43610f7d8e604fd9c06acce",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004154048"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261005181940_hac40_cp1_contract_reconciliation.sql",
+      "version": "20261005181940",
+      "sha256": "6fcccf9626cd55966a63552581df14347a7df251362a1981d3cf89f68dd9c4a3",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004232244"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261005192012_hac40_uml_cardinalities.sql",
+      "version": "20261005192012",
+      "sha256": "729a880ee0c3a4ff9a2693bf242fa4d039d65a90b1e1b59fc9efb2740e7ca979",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261005181940"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql",
+      "version": "20261006161533",
+      "sha256": "53092b95bedde265369720bb29278215e4e07ab28be61a7f358c249c82722096",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261005192012"
+      ]
+    }
+  ]
+}

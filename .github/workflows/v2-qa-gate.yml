@@ -1,0 +1,100 @@
+name: V2 QA Gate
+
+on:
+  pull_request:
+    branches:
+      - codex/v2-amazon-contracts
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v2-qa-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application-gate:
+    name: TypeScript, release tests, and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: cargomesh
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 11.19.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24.20.0
+          cache: pnpm
+          cache-dependency-path: cargomesh/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm typecheck
+
+      - name: Run release test chain
+        run: pnpm test:release
+
+      - name: Validate full UML inventory and architecture
+        run: |
+          python3 ../scripts/check-v2-full-model.py
+          python3 ../scripts/build-v2-full-der.py --check
+          pnpm check:architecture
+
+      - name: Build production bundle
+        run: pnpm build
+
+  pgtap-v1:
+    name: V1 historical replay and pgTAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24.20.0
+          package-manager-cache: false
+
+      - name: Run V1 local profile (Supabase CLI 2.117.0 via npx)
+        run: python3 supabase-v2/gate.py v1 --evidence-dir "$RUNNER_TEMP/hac29-v1"
+
+  pgtap-v2:
+    name: V2 clean bootstrap, drift and pgTAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24.20.0
+          package-manager-cache: false
+
+      - name: Run V2 local profile (Supabase CLI 2.117.0 via npx)
+        run: python3 supabase-v2/gate.py v2 --evidence-dir "$RUNNER_TEMP/hac29-v2"
+
+      - name: Set up pnpm for authenticated HTTP
+        uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 11.19.0
+
+      - name: Install HTTP smoke dependencies
+        run: pnpm --dir cargomesh install --frozen-lockfile
+
+      - name: Verify authenticated local HTTP workflow
+        run: python3 scripts/check-hac40-workflow-http-ci.py

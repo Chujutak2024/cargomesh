@@ -1,0 +1,25 @@
+# Alexa+ MCP connection runbook — development only
+
+Status at 2026-10-04: CargoMesh has MCP 2025-11-25 Streamable HTTP and the V2 `get_v2_intake_options`, `create_v2_freight_request`, `get_v2_freight_request`, and `evaluate_v2_road` tools. A controlled MCP client passes locally. No Alexa+ invocation, public V2 preview, user OAuth authorization-code exchange, hosted account link, or Bedrock model invocation has been observed. Do not advertise carrier prices or booking.
+
+## The customer experience
+
+Alexa+ handles spoken turns and invokes CargoMesh MCP tools. The first data call should read the linked organization's intake choices; Alexa can then ask one missing detail at a time and use only returned facility IDs. CargoMesh's shared V2 services validate the complete draft and return persisted ROAD evidence. Browser dictation on the Web widget is a separate channel, not Alexa+ account linking or an Alexa+ voice test. Bedrock is optional server-side interpretation/narration; Alexa+ does not require the Web widget's deterministic parser to speak.
+
+## Operator tasks (Axel; use test accounts and no production changes)
+
+1. In an Ubuntu/macOS environment, prepare Node.js 24+ and the Alexa AI CLI. Amazon's published CLI setup lists Ubuntu/macOS, not native Windows; WSL2 Ubuntu is the Windows path to validate. Sign in with an Alexa developer account using `alexa-ai configure`. Do not paste LWA or AWS credentials into the repository. The CLI is not installed in the currently inspected Windows shell.
+2. Provide an isolated public HTTPS V2 preview URL serving the actual `cargomesh/` Next.js root, hosted Supabase V2 test project, and `/mcp`. The current Vercel PR preview failed; changing the existing production root is a separate deployment decision. Configure remote MCP mode, canonical origin/resource and allowed origins for this preview only.
+3. Enable Supabase OAuth Server in the test project and register a confidential Alexa OAuth client. Verify authorization code + PKCE S256, refresh rotation, HTTP Basic client authentication, all Alexa redirect URIs, `resource=https://<preview>/mcp` on authorization and token exchange, and the scope Alexa requests. Supabase custom scope/resource compatibility is **unverified**; do not advertise `mcp:tools`, S256 or `authorization_code` in CargoMesh metadata until the hosted exchange works. The current CargoMesh metadata honestly advertises only `client_credentials` and `mcp:service`.
+4. During consent, authenticate a test user, explicitly select one active CargoMesh organization, and persist the exact user/client/organization `mcp_account_links` binding. Test missing, revoked, expired, wrong-client and wrong-tenant links. Never grant business tools to the service principal or use `service_role` in their path.
+5. Run a controlled remote MCP client first: initialize, tools/list, authorized options/create/read/ROAD, then unauthorized and revoked calls. Record protocol version, HTTP status, tool result, latency and sanitized request correlation. Only then run `alexa-ai new mcp --name "CargoMesh" --locale en-US --mcp-server-url "https://<preview>/mcp"`, configure account linking, register **all** redirect URIs printed by the CLI, and deploy to the Alexa+ development stage. Test in the Alexa+ Web Simulator or a compatible physical device. Record an actual tool invocation before claiming Alexa+ works.
+6. For Bedrock, use a temporary IAM role and a specific Converse-compatible model/region in the test environment. Grant least-privilege `bedrock:InvokeModel` for that model; verify model access and one bounded sandbox call. Set `CARGOMESH_BEDROCK_CONVERSATION_ENABLED=true` only after the call succeeds. The available IAM identity was denied `bedrock:ListFoundationModels`; promotional credits do not prove model access. Bedrock may propose intent/fields or natural wording, but it never decides ROAD, tenant, price or booking.
+
+## Acceptance gates
+
+- Public preview serves `/mcp`, protected-resource metadata and authorization-server metadata over HTTPS; no production alias/root is changed.
+- Alexa+ account linking completes with S256, exact resource and refresh token; a revoked link fails on the next MCP request.
+- A real Alexa+ utterance invokes one V2 tool under the test user's linked organization. Options come from the shared application service; the draft and ROAD result correlate to its saved version.
+- No offer/price/booking claim appears without V2 carrier offer and booking services. A controlled MCP client, a Web microphone and a Bedrock test invocation are distinct evidence categories.
+
+Official references: [Alexa+ MCP QuickStart](https://www.developer.amazon.com/docs/alexaplus/add-ons/mcp-toolkit-quickstart.html), [account linking](https://www.developer.amazon.com/docs/alexaplus/add-ons/mcp-toolkit-account-linking.html), [CLI environment](https://www.developer.amazon.com/docs/alexaplus/add-ons/set-up-your-development-environment.html), [Bedrock Converse](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html).

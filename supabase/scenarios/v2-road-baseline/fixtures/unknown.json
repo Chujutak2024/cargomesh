@@ -1,0 +1,178 @@
+{
+  "case": "unknown",
+  "status": "BLOCKED",
+  "owner": "HAC-12",
+  "requestBody": {
+    "schemaVersion": "2.0",
+    "organizationId": "c2300000-0000-4000-8000-000000000001",
+    "origin": {
+      "facilityId": "c2330000-0000-4000-8000-000000000001",
+      "label": "[SYNTHETIC] A pickup on covered lane",
+      "countryCode": "PE",
+      "city": "Lima",
+      "lat": null,
+      "lng": null
+    },
+    "destination": {
+      "facilityId": "c2330000-0000-4000-8000-000000000002",
+      "label": "[SYNTHETIC] B delivery on covered lane",
+      "countryCode": "PE",
+      "city": "Arequipa",
+      "lat": null,
+      "lng": null
+    },
+    "pickupWindow": {
+      "startsAt": "2026-10-05T08:00:00Z",
+      "endsAt": "2026-10-05T18:00:00Z"
+    },
+    "deliveryWindow": {
+      "startsAt": "2026-10-07T08:00:00Z",
+      "endsAt": "2026-10-07T20:00:00Z"
+    },
+    "acceptedModes": [
+      "ROAD"
+    ],
+    "requiredEquipment": "REEFER_TRUCK",
+    "cargoSpecification": {
+      "categoryCode": "PHARMA",
+      "description": "Vacunas termolábiles en pallets controlados",
+      "packaging": "PALLET",
+      "totalWeightKg": 4800,
+      "totalVolumeM3": 19.2,
+      "divisible": false,
+      "requirements": [
+        "TEMP_CONTROLLED",
+        "SECURITY_SEAL"
+      ],
+      "temperatureRange": {
+        "minCelsius": 2,
+        "maxCelsius": 8
+      },
+      "units": [
+        {
+          "packageType": "PALLET",
+          "quantity": 8,
+          "weightPerUnitKg": 600,
+          "volumePerUnitM3": 2.4,
+          "dimensionsCm": {
+            "length": 120,
+            "width": 100,
+            "height": 200
+          },
+          "indivisible": true,
+          "stackable": false
+        }
+      ]
+    },
+    "contacts": {
+      "pickup": {
+        "name": "Elena Vargas",
+        "phoneE164": "+51987654321",
+        "email": "despachos.callao@shipper-v2.example"
+      },
+      "recipient": {
+        "name": "Carlos Medina",
+        "phoneE164": "+51912345678",
+        "email": "recepcion.aqp@shipper-v2.example"
+      }
+    },
+    "budget": {
+      "amount": 3200.0,
+      "currency": "USD"
+    }
+  },
+  "expectedHttpStatus": 200,
+  "responseMatch": "recursive subset; bind $createdRequestId from the actual POST result; candidates matched by service.id",
+  "expectedResponse": {
+    "schemaVersion": "2.0",
+    "data": {
+      "freightRequestId": "$createdRequestId",
+      "evaluatedDraftVersion": 1,
+      "overallStatus": "eligible",
+      "summaryCounts": {
+        "totalEvaluated": 2,
+        "eligibleCount": 1,
+        "unknownCount": 1,
+        "ineligibleCount": 0
+      },
+      "commercialNotice": "EVALUATION_ONLY_NO_OFFER_OR_BOOKING",
+      "candidates": [
+        {
+          "candidateId": "cand-road-02",
+          "status": "unknown",
+          "carrier": {
+            "id": "c2390000-0000-4000-8000-000000000001",
+            "code": "QA_V2_UNKNOWN",
+            "commercialName": "[SYNTHETIC] QA unknown capacity carrier"
+          },
+          "service": {
+            "id": "c23a0000-0000-4000-8000-000000000001",
+            "code": "QA-V2-ROAD-UNKNOWN",
+            "mode": "ROAD",
+            "serviceClass": "FTL_DEDICATED",
+            "responseChannels": [
+              "MANUAL"
+            ]
+          },
+          "checks": {
+            "coverage": {
+              "status": "eligible",
+              "exclusionTriggered": false,
+              "reasonCode": "PICKUP_AND_DELIVERY_INCLUDED"
+            },
+            "lane": {
+              "status": "eligible",
+              "laneId": "c23c0000-0000-4000-8000-000000000001",
+              "kind": "DIRECT",
+              "borderReviewRequired": false,
+              "reasonCode": "DIRECTED_LANE_ACTIVE"
+            },
+            "cargoAndEquipment": {
+              "status": "eligible",
+              "matchedCategory": "PHARMA",
+              "requiredEquipment": "REEFER_TRUCK",
+              "indivisibleUnitsFit": true,
+              "reasonCode": "CARGO_AND_TEMP_COMPATIBLE"
+            },
+            "capacityWindow": {
+              "status": "unknown",
+              "sourceType": "CAPACITY_POOL",
+              "sourceId": "c23e0000-0000-4000-8000-000000000001",
+              "calendarId": null,
+              "availableWeightKg": null,
+              "availableVolumeM3": null,
+              "windowChecked": {
+                "startsAt": "2026-10-05T08:00:00Z",
+                "endsAt": "2026-10-07T20:00:00Z"
+              },
+              "provenance": {
+                "dataSource": "MISSING_CALENDAR_WINDOW",
+                "provenanceStatus": "UNKNOWN",
+                "observedAt": "2026-09-26T14:01:10Z",
+                "validUntil": null
+              },
+              "reasonCode": "CALENDAR_DATA_MISSING_OR_EXPIRED"
+            }
+          },
+          "routePreview": {
+            "corridorCode": null,
+            "distanceKm": null,
+            "estimatedTransitHours": null,
+            "geometrySource": "NONE_UNVERIFIED",
+            "provenanceStatus": "UNKNOWN",
+            "legs": []
+          }
+        }
+      ]
+    }
+  },
+  "notes": [
+    "Expected contract after HAC-12 supplies verified capacity; no present-day API PASS.",
+    "PHARMA, windows, equipment, cargo, contacts and budget are verbatim HAC-27 values.",
+    "Canonical scenario facilities have no coordinates or region_code. Do not reuse Callao geometry.",
+    "Area codes and reasons are omitted from this projection: HAC-27 supplies no Lima-specific codes or wording.",
+    "responseChannels, equipment and capacity checks remain contract expectations, not seeded capabilities.",
+    "Assert the unknown candidate within the same two-candidate evaluation; do not change the global counts or invent an all-unknown response."
+  ],
+  "controlCase": "positive"
+}
