@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { recognitionEndMessage, recognitionErrorMessage } from "./voice-status";
 import { resolveBrowserSpeechSupport } from "./browser-speech-support";
 import { createSpeechTurnDetector } from "./speech-turn";
+import { chosenSpeechVoice, voicesForLanguage } from "./speech-voices";
 
 type RecognitionResult = { results: ArrayLike<ArrayLike<{ transcript: string; confidence?: number }> & { isFinal?: boolean }> };
 type RecognitionError = { error?: string };
@@ -47,14 +48,22 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
   const onSilenceRef = useRef(onSilence);
   const onTranscriptRef = useRef(onTranscript);
   const [speaking, setSpeaking] = useState(false);
-  const audio = useRef<HTMLAudioElement | null>(null);
-  const audioUrl = useRef<string | null>(null);
-  const speechRequest = useRef<AbortController | null>(null);
-  const playbackId = useRef(0);
+  const activeUtterance = useRef<SpeechSynthesisUtterance | null>(null);
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState("");
   const mode = useRef<"remote" | "local" | "unsupported">("unsupported");
 
   onSilenceRef.current = onSilence;
   onTranscriptRef.current = onTranscript;
+
+  useEffect(() => {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    const refresh = () => setAvailableVoices(synth.getVoices());
+    refresh();
+    synth.addEventListener("voiceschanged", refresh);
+    return () => synth.removeEventListener("voiceschanged", refresh);
+  }, []);
 
   function finishTurn(instance: Recognition, transcript: string) {
     if (stopped.current || recognition.current !== instance) return;
@@ -90,10 +99,8 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
       active = false;
       turnDetector.current?.cancel();
       recognition.current?.stop();
+      activeUtterance.current = null;
       window.speechSynthesis?.cancel();
-      speechRequest.current?.abort();
-      audio.current?.pause();
-      if (audioUrl.current) URL.revokeObjectURL(audioUrl.current);
     };
   }, [language]);
 
@@ -175,67 +182,25 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
     }
   }
 
-  function readBrowserResponse(text: string) {
-    if (!window.speechSynthesis) { setSpeaking(false); return; }
+  function readResponse(text = responseText) {
+    if (!text || !window.speechSynthesis) return;
+    activeUtterance.current = null;
     window.speechSynthesis.cancel();
+    setSpeaking(true);
     const utterance = new SpeechSynthesisUtterance(text);
+    activeUtterance.current = utterance;
     utterance.lang = language;
-    const voices = window.speechSynthesis.getVoices();
-    utterance.voice = voices.find((voice) => voice.lang === language && /natural|neural|enhanced|premium/i.test(voice.name))
-      ?? voices.find((voice) => voice.lang === language)
-      ?? voices.find((voice) => voice.lang.startsWith(language.slice(0, 2))) ?? null;
+    utterance.voice = chosenSpeechVoice(window.speechSynthesis.getVoices(), language, selectedVoiceURI);
     utterance.rate = 0.96;
-    utterance.onstart = () => { setSpeaking(true); setMessage("CargoMesh is speaking. Press Stop audio before starting another voice turn."); };
-    utterance.onend = () => { setSpeaking(false); setState("available"); setMessage(""); };
-    utterance.onerror = () => { setSpeaking(false); setState("available"); setMessage("Audio playback stopped. You can continue by voice or text."); };
+    utterance.onstart = () => { if (activeUtterance.current === utterance) { setSpeaking(true); setMessage("CargoMesh is speaking. Press Stop audio before starting another voice turn."); } };
+    utterance.onend = () => { if (activeUtterance.current === utterance) { activeUtterance.current = null; setSpeaking(false); setState("available"); setMessage(""); } };
+    utterance.onerror = () => { if (activeUtterance.current === utterance) { activeUtterance.current = null; setSpeaking(false); setState("available"); setMessage("Audio playback stopped. You can continue by voice or text."); } };
     window.speechSynthesis.speak(utterance);
   }
 
-  function clearAudio() {
-    speechRequest.current?.abort();
-    speechRequest.current = null;
-    audio.current?.pause();
-    audio.current = null;
-    if (audioUrl.current) URL.revokeObjectURL(audioUrl.current);
-    audioUrl.current = null;
-    window.speechSynthesis?.cancel();
-  }
-
-  function readResponse(text = responseText) {
-    if (!text) return;
-    clearAudio();
-    const id = ++playbackId.current;
-    const controller = new AbortController();
-    speechRequest.current = controller;
-    setSpeaking(true);
-    void (async () => {
-      try {
-        const response = await fetch("/api/v2/conversation/speech", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, language }), signal: controller.signal,
-        });
-        if (!response.ok) throw new Error("Speech service unavailable");
-        const blob = await response.blob();
-        if (id !== playbackId.current) return;
-        const url = URL.createObjectURL(blob);
-        audioUrl.current = url;
-        const player = new Audio(url);
-        audio.current = player;
-        player.onended = () => { if (id === playbackId.current) { clearAudio(); setSpeaking(false); setState("available"); setMessage(""); } };
-        player.onerror = () => { if (id === playbackId.current) { clearAudio(); readBrowserResponse(text); } };
-        await player.play();
-        setMessage("CargoMesh is speaking. Press Stop audio to interrupt.");
-      } catch {
-        if (id !== playbackId.current || controller.signal.aborted) return;
-        clearAudio();
-        readBrowserResponse(text);
-      }
-    })();
-  }
-
   function stopResponse() {
-    playbackId.current += 1;
-    clearAudio();
+    activeUtterance.current = null;
+    window.speechSynthesis?.cancel();
     setSpeaking(false);
     setState("available");
     setMessage("Audio stopped. You can speak again or type.");
@@ -246,5 +211,6 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
     setMessage("");
   }
 
-  return { state, message, speaking, start, stop, readResponse, stopResponse, finishProcessing, canRead: Boolean(responseText) };
+  return { state, message, speaking, start, stop, readResponse, stopResponse, finishProcessing, canRead: Boolean(responseText),
+    availableVoices: voicesForLanguage(availableVoices, language), selectedVoiceURI, setSelectedVoiceURI };
 }
