@@ -99,6 +99,9 @@ export const WorkflowInputsV2 = {
   "incidents.create": z.object({ ...Base, kind: Text, severity: z.enum(["INFO", "WARNING", "CRITICAL"]),
     occurredAt: Instant, location: Location.nullable(), description: Text, evidence: z.array(Evidence).min(1).max(100) }).strict(),
   "incidents.update": z.object({ ...Base, ...Audit, action: z.enum(["NOTE", "RESOLVE", "REOPEN"]) }).strict(),
+  "incidents.conditions": z.object({ ...Base, ...Audit, conditionIds: z.array(Id).max(100)
+    .refine(v => new Set(v).size === v.length, "Duplicate conditions.") }).strict(),
+  "plans.partner": z.object({ ...Base, ...Audit, partnerId: Id.nullable() }).strict(),
   "asset-events.create": z.object({ ...Base, ...Audit, next: z.enum(["AVAILABLE", "IN_SERVICE", "MAINTENANCE", "OUT_OF_SERVICE"]), reason: Text }).strict(),
 } as const;
 export type WorkflowActionV2 = keyof typeof WorkflowInputsV2;
@@ -133,6 +136,7 @@ const Assignment = z.object({ id: Id, legAssignmentId: Id, resourceId: Id, servi
   availability: Verification, capacityNeeded: Capacity, evidence: z.array(Evidence), resource: Resource,
   allocations: z.array(Allocation) }).strict();
 const LegAssignment = z.object({ id: Id, serviceId: Id, carrierId: Id, sequence: z.number().int().positive(),
+  fulfilmentPartnerId: Id.nullable().default(null),
   window: TimeWindowV2Schema, responsibility: z.object({ carrierId: Id, serviceId: Id }).strict(), coverage: Verification,
   availability: Verification, capacityNeeded: Capacity, evidence: z.array(Evidence),
   resources: z.array(z.object({ bindingId: Id, resourceId: Id, resource: Resource, allocations: z.array(Allocation) }).strict()).min(1),
@@ -160,6 +164,13 @@ export const WorkflowRecordV2Schema = z.discriminatedUnion("kind", [
     copiedFromRouteId: Id.optional(), corridorIds: z.array(Id), policyId: Id, policyVersion: z.number().int().positive(), estimatedDistanceKm: z.number().nullable(),
     estimatedDurationSeconds: z.number().nullable(), geographicSource: z.object({ kind: z.literal("PUBLISHED_CORRIDORS"), references: z.array(Id) }).strict(),
     planner: z.object({ algorithmVersion: z.literal("PUBLISHED_ITINERARY_VALIDATOR_V1"),
+      search: z.object({ algorithmVersion: z.literal("BOUNDED_SIMPLE_PATHS_V1"),
+        graphVersion: z.string().regex(/^[0-9a-f]{64}$/), policyId: Id, policyVersion: z.number().int().positive(),
+        scope: z.literal("ACTIVE_PUBLISHED_DIRECTED_NETWORK"), maxLegs: z.number().int().min(1).max(8),
+        corridorVersions: z.array(z.object({ id: Id, version: z.number().int().positive(),
+          originNodeVersion: z.number().int().positive(), destinationNodeVersion: z.number().int().positive() }).strict()).max(64),
+        conditionVersions: z.array(z.object({ id: Id, version: z.number().int().positive(), status: Text,
+          source: Evidence }).strict()) }).strict().optional(),
       graphVersion: z.string().regex(/^[0-9a-f]{64}$/),
       source: z.object({ kind: z.literal("PUBLISHED_CORRIDORS"), scope: z.literal("SELECTED_ITINERARY_SNAPSHOT"),
         references: z.array(Id) }).strict() }).strict(),
@@ -186,6 +197,7 @@ export const WorkflowRecordV2Schema = z.discriminatedUnion("kind", [
   z.object({ ...Metadata, kind: z.literal("executions"), data: Stored({ createdBy: Id, bookingId: Id, serviceId: Id,
     consolidationId: Id.nullable().optional(), plannedWindow: TimeWindowV2Schema, actualStartedAt: Instant.nullable(), actualCompletedAt: Instant.nullable(), lastKnownPosition: Location.nullable() }) }).strict(),
   z.object({ ...Metadata, kind: z.literal("incidents"), data: Stored({ ...WorkflowInputsV2["incidents.create"].shape,
+    routeConditionIds: z.array(Id).default([]),
     reportedBy: Id, status: z.enum(["OPEN", "RESOLVED"]) }) }).strict(),
   z.object({ ...Metadata, kind: z.literal("incident-updates"), data: Stored({ ...WorkflowInputsV2["incidents.update"].shape, at: Instant, actorId: Id }) }).strict(),
   z.object({ ...Metadata, kind: z.literal("execution-events"), data: Stored({ ...Base, ...Audit,
