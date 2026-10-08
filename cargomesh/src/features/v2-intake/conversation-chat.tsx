@@ -14,9 +14,14 @@ import styles from "./conversation-chat.module.css";
 
 type Message = { speaker: "assistant" | "user"; text: string };
 type Choice = { value: string; label: string; field: ConversationField };
-const GREETING = "¡Hola! Soy CargoMesh. Cuéntame qué necesitas transportar y te ayudaré a preparar la solicitud y revisar alternativas ROAD.";
 const GREETING_EN = "Hi, I'm CargoMesh. Tell me what you need to ship, and I'll help you prepare a request and review preliminary ROAD options.";
-const unavailable = "Aún no puedo cotizar ni reservar transporte. La evaluación ROAD es preliminar; no es una oferta ni una reserva.";
+const unavailable = "I cannot quote or book transportation here yet. The ROAD check is preliminary; it is neither an offer nor a reservation.";
+function englishAcknowledgment(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  return /\b(?:claro|puedo|ayudarte|dime|necesito|solicitud|borrador|carga|recoger|entrega|origen|servicios|todav[ií]a)\b/i.test(value)
+    ? undefined : value;
+}
+
 const positive = /^(yes|yes,? create (?:the )?draft|create (?:the )?draft|confirm|go ahead|s[ií]|s[ií],? crea(?:r)? (?:el )?borrador|crea(?:r)? (?:el )?borrador|confirmo|confirmar|adelante)$/i;
 
 function missingField(draft: V2IntakePrototypeDraft, filled: Set<ConversationField> = new Set()): GuidedConversationField | null {
@@ -30,7 +35,7 @@ function locationName(id: string, options: IntakeOptionsData) {
 }
 
 function draftSummary(draft: V2IntakePrototypeDraft, options: IntakeOptionsData) {
-  return `Revisa el borrador: ${locationName(draft.originFacilityId, options)} → ${locationName(draft.destinationFacilityId, options)}; ${draft.unitQuantity} unidad(es) de carga ${draft.categoryCode.toLowerCase()}, ${draft.unitWeightPerUnitKg} kg y ${draft.unitVolumePerUnitM3} m³ por unidad; recojo ${draft.pickupWindowStartsAt}–${draft.pickupWindowEndsAt}; entrega ${draft.deliveryWindowStartsAt}–${draft.deliveryWindowEndsAt}. Se guardará para la organización autorizada actual. Responde “sí, crea el borrador” para guardarlo o indícame qué cambiar.`;
+  return `Review the draft: ${locationName(draft.originFacilityId, options)} → ${locationName(draft.destinationFacilityId, options)}; ${draft.unitQuantity} unit(s) of ${draft.categoryCode.toLowerCase()}, ${draft.unitWeightPerUnitKg} kg and ${draft.unitVolumePerUnitM3} m³ per unit; pickup ${draft.pickupWindowStartsAt}–${draft.pickupWindowEndsAt}; delivery ${draft.deliveryWindowStartsAt}–${draft.deliveryWindowEndsAt}. It will be saved for your current authorized organization. Say “yes, create the draft” to save it, or tell me what to change.`;
 }
 
 export function ConversationChat({ draft, options, optionsSource = "api", request, evaluation, error = null, draftDirty = false, busy, onField, onCreate, onRead, onEvaluate, onStartOver }: {
@@ -50,11 +55,11 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
 }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
-  const [history, setHistory] = useState<Message[]>([{ speaker: "assistant", text: GREETING }]);
+  const [history, setHistory] = useState<Message[]>([{ speaker: "assistant", text: GREETING_EN }]);
   const [announcement, setAnnouncement] = useState("");
   const [interpretationBusy, setInterpretationBusy] = useState(false);
   const [audioReplies, setAudioReplies] = useState(true);
-  const [voiceLanguage, setVoiceLanguage] = useState<"es-PE" | "en-US">("es-PE");
+  const voiceLanguage = "en-US" as const;
   const [voiceRate, setVoiceRate] = useState(0.96);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [choices, setChoices] = useState<Choice[]>([]);
@@ -78,10 +83,6 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const syntheticCatalog = optionsSource === "fixture" || options.facilities.some((facility) => facility.label.includes("[SYNTHETIC]"));
   const ask = (field: GuidedConversationField) => questionForField(field, voiceLanguage);
 
-  useEffect(() => {
-    setHistory((current) => current.length === 1 && (current[0]?.text === GREETING || current[0]?.text === GREETING_EN)
-      ? [{ speaker: "assistant", text: voiceLanguage === "en-US" ? GREETING_EN : GREETING }] : current);
-  }, [voiceLanguage]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [history, choices]);
   useEffect(() => {
@@ -116,8 +117,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     if (!request) return;
     if (announcedDraftRef.current === request.id) return;
     announcedDraftRef.current = request.id;
-    const message = `Guardé el borrador ${request.referenceCode}, versión ${request.draftVersion}. Puedes decir “muestra el borrador” o “revisa ROAD”.`;
-    setHistory((current) => current.length === 1 && current[0]?.text === GREETING ? [{ speaker: "assistant", text: message }] : [...current, { speaker: "assistant", text: message }]);
+    const message = `I saved draft ${request.referenceCode}, version ${request.draftVersion}. You can say “show the draft” or “check ROAD”.`;
+    setHistory((current) => current.length === 1 && current[0]?.text === GREETING_EN ? [{ speaker: "assistant", text: message }] : [...current, { speaker: "assistant", text: message }]);
     setAnnouncement(message);
     setAwaitingConfirmation(false);
   }, [request]);
@@ -125,15 +126,15 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     if (!evaluation) return;
     const result = serviceabilityReply(evaluation, voiceLanguage);
     setHistory((current) => [...current, { speaker: "assistant", text: result }]);
-    setAnnouncement(`Resultado ROAD ${evaluation.overallStatus}. El último mensaje incluye razones y procedencia.`);
+    setAnnouncement(`ROAD result: ${evaluation.overallStatus}. The latest message explains the reasons and data sources.`);
   }, [evaluation]);
   useEffect(() => {
     if (!error) return;
     const reply = error.code === "STALE_DRAFT" ? "This draft version changed. Reload the authorized draft before evaluating it."
-      : error.code === "FORBIDDEN_TENANT" || error.status === 403 ? "Esta solicitud no está disponible para tu organización."
-      : error.status === 401 ? "Tu sesión venció. Inicia sesión nuevamente para continuar."
-      : error.code === "IDEMPOTENCY_CONFLICT" ? "Esta clave de reintento corresponde a otros detalles. Revisa el borrador antes de intentarlo otra vez."
-      : "No pude completar ese paso. Tus datos provisionales permanecen aquí; inténtalo nuevamente.";
+      : error.code === "FORBIDDEN_TENANT" || error.status === 403 ? "This request is not available to your organization."
+      : error.status === 401 ? "Your session expired. Sign in again to continue."
+      : error.code === "IDEMPOTENCY_CONFLICT" ? "This retry key belongs to different details. Review the draft before retrying."
+      : "I could not complete that step. Your provisional details remain here; please retry.";
     setHistory((current) => [...current, { speaker: "assistant", text: reply }]);
     setAnnouncement(reply);
   }, [error]);
@@ -175,7 +176,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     if (awaitingConfirmation && positive.test(value)) {
       if (optionsSource === "fixture") {
         setAwaitingConfirmation(false);
-        add(value, "Esta vista solo prueba la conversación. Para guardar la solicitud, inicia sesión en la página de carga V2.");
+        add(value, "This preview only tests the conversation. Sign in on the V2 freight page to save a request.");
         return;
       }
       if (request || !validatePrototypeReview(draft).valid) {
@@ -190,41 +191,41 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     }
     if (awaitingConfirmation && /^(no|not yet|cancel|no todav[ií]a|cancelar)$/i.test(value)) {
       setAwaitingConfirmation(false);
-      add(value, "No guardé nada. Dime qué deseas corregir, por ejemplo: “cambia el origen a Lima”.");
+      add(value, "Nothing was saved. Tell me what to correct, for example: “change the pickup to Lima.”");
       return;
     }
     setInterpretationBusy(true);
     try {
       const { interpretation: proposal, mode } = await interpret(value);
       if (proposal.intent === "PRICE" || proposal.intent === "BOOKING") { add(value, unavailable); return; }
-      if (proposal.intent === "HELP") { if (!isHelpFollowUp(value)) previousHelpTopic.current = helpTopic(value); add(value, proposal.acknowledgment ?? "Dime el lugar de recojo y entrega, la carga y las fechas. Te pediré solo los datos que falten y podrás corregirlos antes de guardar."); return; }
+      if (proposal.intent === "HELP") { if (!isHelpFollowUp(value)) previousHelpTopic.current = helpTopic(value); add(value, englishAcknowledgment(proposal.acknowledgment) ?? "Tell me the pickup and delivery locations, cargo and dates. I will ask only for missing details, and you can correct them before saving."); return; }
       if (proposal.intent === "START_OVER") {
         onStartOver?.();
         failedAttempts.current = 0;
         previousHelpTopic.current = null;
         setAwaitingConfirmation(false);
-        add(value, "Empecemos una solicitud provisional nueva. ¿Dónde se recogerá la carga?");
+        add(value, "Let’s start a new provisional request. Where should the cargo be picked up?");
         return;
       }
       if (proposal.intent === "READ") {
-        if (!request) add(value, "Todavía no hay un borrador guardado. Cuéntame primero sobre el envío.");
-        else { add(value, `Leyendo el borrador ${request.referenceCode} con tu autorización actual…`); onRead(); }
+        if (!request) add(value, "There is no saved draft yet. Tell me about the shipment first.");
+        else { add(value, `Reading draft ${request.referenceCode} with your current authorization…`); onRead(); }
         return;
       }
       if (proposal.intent === "EVALUATE") {
-        if (!request) add(value, "Necesito un borrador guardado antes de revisar ROAD.");
-        else if (draftDirty) add(value, "Tus cambios son solo locales y no se guardaron. Aún no puedo reevaluarlos; inicia una solicitud nueva con los datos corregidos.");
+        if (!request) add(value, "I need a saved draft before checking ROAD.");
+        else if (draftDirty) add(value, "Your changes are local and have not been saved. Start a new request with the corrected details before checking ROAD again.");
         else if (evaluation) add(value, serviceabilityReply(evaluation, voiceLanguage));
-        else { add(value, "Revisando ROAD para la versión guardada del borrador…"); onEvaluate(); }
+        else { add(value, "Checking ROAD for the saved draft version…"); onEvaluate(); }
         return;
       }
       if (request) {
-        add(value, "Aún no puedo modificar este borrador guardado desde el chat. Puedes empezar una solicitud nueva, mostrar el borrador o revisar ROAD.");
+        add(value, "I cannot edit this saved draft in chat yet. You can start a new request, show the draft, or check ROAD.");
         return;
       }
       if (proposal.intent === "CREATE" && !proposal.fields.length) {
-        if (optionsSource === "fixture") { add(value, "Podemos preparar los datos aquí, pero esta vista de prueba no guarda solicitudes."); return; }
-        if (!validatePrototypeReview(draft).valid) add(value, `${voiceLanguage === "en-US" ? "I still need one detail before saving." : "Necesito un dato más antes de guardar."} ${ask(missingField(draft) ?? "originFacilityId")}`);
+        if (optionsSource === "fixture") { add(value, "We can prepare the details here, but this preview does not save requests."); return; }
+        if (!validatePrototypeReview(draft).valid) add(value, `I still need one detail before saving. ${ask(missingField(draft) ?? "originFacilityId")}`);
         else { setAwaitingConfirmation(true); add(value, draftSummary(draft, options)); }
         return;
       }
@@ -270,22 +271,22 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       if (!accepted.size) {
         failedAttempts.current = Math.min(3, failedAttempts.current + 1);
         if (mode === "DETERMINISTIC" && optionsSource !== "fixture") {
-          add(value, "La conversación automática no está disponible ahora. Conservé tus datos provisionales; puedes indicar un dato concreto o continuar en el formulario.");
+          add(value, "The conversation service is unavailable right now. Your provisional details remain here; you can provide a specific detail or continue in the form.");
           return;
         }
-        if (mode === "BEDROCK" && proposal.acknowledgment) {
-          add(value, proposal.acknowledgment);
+        if (mode === "BEDROCK" && englishAcknowledgment(proposal.acknowledgment)) {
+          add(value, englishAcknowledgment(proposal.acknowledgment)!);
           return;
         }
         add(value, failedAttempts.current >= 2
           ? "I still could not identify that detail. You can type a specific value or enter it in the request form."
-          : `${voiceLanguage === "en-US" ? "I did not catch a freight detail." : "No identifiqué un dato de transporte."} ${ask(nextField ?? "originFacilityId")}`);
+          : `I did not catch a freight detail. ${ask(nextField ?? "originFacilityId")}`);
         return;
       }
       failedAttempts.current = 0;
       setAwaitingConfirmation(false);
       const remaining = missingField(draft, accepted);
-      const preface = proposal.acknowledgment ?? "Got it.";
+      const preface = englishAcknowledgment(proposal.acknowledgment) ?? "Got it.";
       const changed = proposal.intent === "CORRECT" ? ` Updated ${[...accepted].map((field) => field === "originFacilityId" ? "pickup" : field === "destinationFacilityId" ? "delivery" : field).join(", ")}.` : "";
       if (remaining) add(value, `${preface}${changed} ${ask(remaining)}`);
       else { setAwaitingConfirmation(true); add(value, draftSummary({ ...draft, ...applied }, options)); }
@@ -301,7 +302,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M4 5.5h16v11H9l-5 3v-14Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M8 10h8M8 13h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>Ask CargoMesh</span>
     </button>
     {open && <section id="v2-chat-panel" className={styles.panel} aria-label="ROAD freight conversation">
-      <header className={styles.header}><span className={styles.headerIcon} aria-hidden="true">CM</span><div className={styles.headerCopy}><strong>CargoMesh assistant</strong><span>{syntheticCatalog ? "V2 demo · instalaciones sintéticas" : "Carga ROAD"}</span></div><label className={styles.languagePicker}><span className={styles.srOnly}>Idioma de voz</span><select value={voiceLanguage} onChange={(event) => setVoiceLanguage(event.target.value as "es-PE" | "en-US")} aria-label="Idioma de voz"><option value="es-PE">ES</option><option value="en-US">EN</option></select></label><button type="button" className={styles.close} aria-label="Cerrar asistente CargoMesh" onClick={closePanel}>×</button></header>
+      <header className={styles.header}><span className={styles.headerIcon} aria-hidden="true">CM</span><div className={styles.headerCopy}><strong>CargoMesh assistant</strong><span>{syntheticCatalog ? "V2 demo · synthetic facilities" : "ROAD freight"}</span></div><button type="button" className={styles.close} aria-label="Close CargoMesh assistant" onClick={closePanel}>×</button></header>
       <div className={styles.scrollArea}>
         <div className={styles.history} role="log" aria-live="off" aria-label="Conversation messages">
           {history.map((message, index) => <div key={index} className={message.speaker === "user" ? styles.userRow : styles.assistantRow}><p className={message.speaker === "user" ? styles.user : styles.assistant}><span className={styles.speaker}>{message.speaker === "user" ? "You" : "CargoMesh"}</span>{message.text}</p></div>)}
@@ -324,7 +325,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
             : <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing" || voice.speaking || busy || interpretationBusy} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>}
           <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || voice.speaking}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
-        <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button><label>Voice <select aria-label="Voice for spoken replies" value={voice.selectedVoiceURI} onChange={(event) => voice.setSelectedVoiceURI(event.target.value)}><option value="">Automatic</option>{voice.availableVoices.map((option) => <option key={option.voiceURI} value={option.voiceURI}>{option.name} ({option.lang}){option.localService ? " · device" : ""}</option>)}</select></label><label>Ritmo <select aria-label="Ritmo de voz" value={voiceRate} onChange={(event) => setVoiceRate(Number(event.target.value))}><option value={0.88}>Pausado</option><option value={0.96}>Natural</option><option value={1.06}>Ágil</option></select></label><button type="button" onClick={() => voice.readResponse(voiceLanguage === "es-PE" ? "Hola, soy CargoMesh. Cuéntame qué necesitas transportar y te ayudaré paso a paso." : "Hello, I'm CargoMesh. Tell me what you need to ship, and I'll help you step by step.")} disabled={voice.speaking}>Probar voz</button></div>
+        <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button><label>Voice <select aria-label="Voice for spoken replies" value={voice.selectedVoiceURI} onChange={(event) => voice.setSelectedVoiceURI(event.target.value)}><option value="">Automatic</option>{voice.availableVoices.map((option) => <option key={option.voiceURI} value={option.voiceURI}>{option.name} ({option.lang}){option.localService ? " · device" : ""}</option>)}</select></label><label>Pace <select aria-label="Voice pace" value={voiceRate} onChange={(event) => setVoiceRate(Number(event.target.value))}><option value={0.88}>Relaxed</option><option value={0.96}>Natural</option><option value={1.06}>Brisk</option></select></label><button type="button" onClick={() => voice.readResponse("Hello, I'm CargoMesh. Tell me what you need to ship, and I'll help you step by step.")} disabled={voice.speaking}>Test voice</button></div>
       </div>
     </section>}
   </aside>;

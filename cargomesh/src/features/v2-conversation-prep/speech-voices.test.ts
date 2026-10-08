@@ -17,3 +17,11 @@ test("an explicit supported voice choice wins over the default", () => {
   assert.equal(chosenSpeechVoice(voices, "es-PE", "remote-us")?.voiceURI, "remote-us");
   assert.equal(chosenSpeechVoice([], "en-US", "") , null);
 });
+
+test("Google UK English Female is preferred for English replies when available", () => {
+  const englishVoices = [
+    { voiceURI: "device-en", name: "Microsoft English", lang: "en-US", localService: true },
+    { voiceURI: "google-female", name: "Google UK English Female", lang: "en-GB", localService: false },
+  ];
+  assert.equal(chosenSpeechVoice(englishVoices, "en-US", "")?.voiceURI, "google-female");
+});

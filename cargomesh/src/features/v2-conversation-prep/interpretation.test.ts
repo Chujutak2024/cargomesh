@@ -38,14 +38,14 @@ test("price and booking never become create or evaluation effects", () => {
 test("product questions receive grounded guidance even without Bedrock", () => {
   const purpose = interpretDeterministically({ schemaVersion: "2.0", text: "¿Para qué sirve CargoMesh?", currentField: "originFacilityId" });
   assert.equal(purpose.intent, "HELP");
-  assert.match(purpose.acknowledgment ?? "", /solicitud de transporte/);
+  assert.match(purpose.acknowledgment ?? "", /freight request/);
   const choice = interpretDeterministically({ schemaVersion: "2.0", text: "¿Y cómo me ayuda a escoger?", currentField: "originFacilityId" });
   assert.equal(choice.intent, "HELP");
-  assert.match(choice.acknowledgment ?? "", /ofertas emitidas por carriers/);
-  assert.doesNotMatch(choice.acknowledgment ?? "", /precio confirmado/);
+  assert.match(choice.acknowledgment ?? "", /carrier-authored offers/);
+  assert.doesNotMatch(choice.acknowledgment ?? "", /confirmed price/);
   const followUp = interpretDeterministically({ schemaVersion: "2.0", text: "¿Y eso?", currentField: "originFacilityId", context: { knownFields: [], lastAskedField: "originFacilityId", failedAttempts: 0, previousHelpTopic: "SELECTION" } });
   assert.equal(followUp.intent, "HELP");
-  assert.match(followUp.acknowledgment ?? "", /ofertas emitidas/);
+  assert.match(followUp.acknowledgment ?? "", /carrier-authored offers/);
 });
 
 test("a noisy dictated greeting is not treated as a saved pickup location", () => {
@@ -64,8 +64,8 @@ test("a bare facility answer still works but a conversational question is not a 
 test("service questions distinguish current ROAD from future modes", () => {
   const turn = interpretDeterministically({ schemaVersion: "2.0", text: "¿Qué servicios ofrecen?", currentField: "originFacilityId" });
   assert.equal(turn.intent, "HELP");
-  assert.match(turn.acknowledgment ?? "", /solicitud ROAD/);
-  assert.match(turn.acknowledgment ?? "", /aún no operan/);
+  assert.match(turn.acknowledgment ?? "", /ROAD freight request/);
+  assert.match(turn.acknowledgment ?? "", /not operational/);
 });
 
 test("Spanish freight turns keep their explicit values and never imply a booking", () => {

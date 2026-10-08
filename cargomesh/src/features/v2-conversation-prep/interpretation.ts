@@ -68,27 +68,18 @@ export function isHelpFollowUp(text: string): boolean {
 }
 
 export function productHelpFallback(text: string): string {
-  const english = /\b(?:what|how|help|choose|compare)\b/i.test(text) && !/\b(?:qu[eé]|c[oó]mo|para|ayuda|escoger|elegir|comparar)\b/i.test(text);
   const compare = /\b(?:escoger|elegir|comparar|choose|compare)\b/i.test(text);
-  const services = helpTopic(text) === "SERVICES";
-  if (services) return english
-    ? "Today this chat can prepare a ROAD freight request and review preliminary ROAD eligibility with backend data; it cannot guarantee carrier coverage. SEA, RAIL and AIR are modeled for future work, not operational services here. What cargo and route do you have?"
-    : "Hoy este chat puede preparar una solicitud ROAD y revisar su elegibilidad preliminar con datos del backend; no garantiza cobertura de un carrier. SEA, RAIL y AIR están contemplados para el futuro, pero aún no operan aquí. ¿Qué carga y ruta tienes?";
-  if (english) return compare
+  if (helpTopic(text) === "SERVICES") return "Today this chat can prepare a ROAD freight request and review preliminary ROAD eligibility with backend data; it cannot guarantee carrier coverage. SEA, RAIL and AIR are modeled for future work, not operational services here. What cargo and route do you have?";
+  return compare
     ? "I can help you prepare a freight request and review preliminary ROAD eligibility. When carrier-authored offers exist, you can compare their evidence and terms; I cannot confirm a price or booking here. What cargo and route do you have in mind?"
     : "CargoMesh helps you prepare a freight request and review preliminary ROAD eligibility using authorized backend data. Tell me what you need to ship and where it should go; I will ask for missing details before you save a draft.";
-  return compare
-    ? "Puedo ayudarte a preparar una solicitud y revisar la elegibilidad ROAD preliminar. Si existen ofertas emitidas por carriers, podrás comparar sus condiciones y evidencia; aquí no confirmo precios ni reservas. ¿Qué carga y ruta tienes en mente?"
-    : "CargoMesh te ayuda a preparar una solicitud de transporte y revisar la elegibilidad ROAD preliminar con datos autorizados del backend. Cuéntame qué necesitas transportar y a dónde; te pediré los datos faltantes antes de guardar un borrador.";
 }
 
 /** A bounded, local fallback. It extracts only explicit statements and never infers domain facts. */
 export function interpretDeterministically(input: InterpretationRequest): Interpretation {
   const text = input.text.trim();
   const lower = text.toLowerCase();
-  if (isNoisyTranscript(text)) return { intent: "HELP", fields: [], acknowledgment: /\bhello\b/i.test(text)
-    ? "I heard your voice, but the transcript is unclear. I can help you prepare a ROAD freight request. What would you like to ship?"
-    : "Te escuché, pero el dictado quedó poco claro. Puedo ayudarte a preparar una solicitud ROAD. ¿Qué necesitas transportar?" };
+  if (isNoisyTranscript(text)) return { intent: "HELP", fields: [], acknowledgment: "I heard your voice, but the transcript is unclear. I can help you prepare a ROAD freight request. What would you like to ship?" };
   if (isProductHelpQuestion(text)) return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(text) };
   if (input.context?.previousHelpTopic && isHelpFollowUp(text)) {
     return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(input.context.previousHelpTopic === "SELECTION" ? "¿Cómo me ayuda a escoger?" : input.context.previousHelpTopic === "SERVICES" ? "¿Qué servicios ofrecen?" : "¿Para qué sirve CargoMesh?") };
