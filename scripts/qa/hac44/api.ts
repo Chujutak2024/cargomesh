@@ -104,7 +104,7 @@ async function main() {
       for await (const chunk of req) chunks.push(chunk);
       const body = Buffer.concat(chunks);
       const r = await app.fetch(
-        new Request("http://127.0.0.1:42350" + req.url, {
+        new Request("http://127.0.0.1:62040" + req.url, {
           method: req.method,
           headers: req.headers as any,
           ...(body.length ? { body, duplex: "half" } : {}),
@@ -117,7 +117,7 @@ async function main() {
       res.end(JSON.stringify({ error: "QA_TRANSPORT_ERROR" }));
     }
   });
-  await new Promise<void>((resolve) => server.listen(42350, "127.0.0.1", resolve));
+  await new Promise<void>((resolve) => server.listen(62040, "127.0.0.1", resolve));
   const results: any[] = [];
   const roundtrips: any[] = [];
   async function call(
@@ -129,7 +129,7 @@ async function main() {
     expected?: number | number[],
   ) {
     const method = body === undefined ? "GET" : "POST";
-    const response = await fetch("http://127.0.0.1:42350/api/v2" + path, {
+    const response = await fetch("http://127.0.0.1:62040/api/v2" + path, {
       method,
       headers: {
         ...(TOKENS[actor] ? { Authorization: "Bearer " + TOKENS[actor] } : {}),

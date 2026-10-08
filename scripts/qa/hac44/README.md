@@ -14,7 +14,7 @@ python scripts/qa/hac44/run.py all
 
 Use a fresh external directory for each source SHA. `HAC44_ROOT` may identify the selected checkout when these QA scripts are run from another directory; `HAC44_SOURCE_SHA` accepts the selected full commit hash (default: HEAD). The checkout's product/model/migration inputs must match that SHA. The selected revision must contain the V2 UML/model, dictionary, manifest and native profile inputs expected by this model version. There are no machine-specific absolute paths in committed scripts. Output paths are derived from the environment.
 
-Three dedicated banks use projects `hac44-full-flow-v2`, `hac44-full-flow-v1` and `hac44-full-flow-baseline`, ports 423xx/433xx/443xx and inspector ports 9043/9143/9243. Native preflight verifies conflicts. HTTP tests use loopback port 42350. The normal CargoMesh local bank is untouched. `gates.py` preserves native algorithms and checks, adapting only workdirs, ports, project/container addresses and Python helper import context. No `gate.py`, `test-profiles.json` or workflow change is required. Historical V1 replay is a separate regression bank, never a V2 fixture source.
+Three dedicated banks use projects `hac44-full-flow-v2`, `hac44-full-flow-v1` and `hac44-full-flow-baseline`, ports 620xx and inspector ports 62043/62073/62093. Native preflight verifies conflicts. HTTP tests use loopback port 62040. The normal CargoMesh local bank is untouched. `gates.py` preserves native algorithms and checks, adapting only workdirs, ports, project/container addresses and Python helper import context. `gate.py`, `test-profiles.json` and application CI remain unchanged. Historical V1 replay is a separate regression bank, never a V2 fixture source.
 
 `run.py all` verifies dependencies, runs the native reconstruction/gates and both pgTAP profiles, starts local HTTP services while preserving the volume, inventories the sources/catalog, executes two sequential dataset cycles, regenerates CSVs and runs `pnpm typecheck`/`pnpm test:release`. `runtime.py stop` stops only the three verified HAC44 projects and preserves their local volumes.
 
@@ -33,7 +33,7 @@ python scripts/qa/hac44/api_runner.py contract
 python scripts/qa/hac44/contract_verdict.py
 python scripts/qa/hac44/rls.py
 python scripts/qa/hac44/races.py
-python scripts/qa/hac44/fk_complete.py
+python scripts/qa/hac44/fk_coverage.py
 python scripts/qa/hac44/persistence.py
 python scripts/qa/hac44/generate.py
 python scripts/qa/hac44/lifecycle.py cleanup
@@ -41,9 +41,75 @@ python scripts/qa/hac44/lifecycle.py cleanup
 
 Keep these commands sequential. `pending.py` prepares independent FTL/LTL native fixtures for valid mutation states; `pending` exercises each formerly partial route with a functional positive and anonymous/revoked/foreign/version controls where relevant. Shared catalog reads allow B; foreign writes require a denied carrier/admin context. Scoped lists must have a nonempty positive and cannot expose A's IDs to B. Empty results alone do not certify authorization.
 
-`rls.py` uses `set local role authenticated` and actual synthetic JWT claims, paired A/B/revoked controls. `races.py` runs independent native concurrency controls. `fk_complete.py` creates compatible optional metadata only inside rollback and tests the exact FK; see the scenario README for domain-trigger suspension and negative-probe deferral.
+`rls.py` uses `set local role authenticated` and actual synthetic JWT claims, paired A/B/revoked controls. `races.py` runs independent native concurrency controls.
 
-`contract_verdict.py` intentionally exits 1 when a real product counterexample remains. The two-cycle orchestrator accepts only the three explicitly enumerated preexisting counterexamples and records them as FAIL; unexpected failures stop the run. It never calls those contract tests green. `guards.py` pairs each local-only denial with a valid connection/count control. `complete_recipe.py --check` verifies the committed completed-operation recipe against native crew inputs.
+`fk_coverage.py` validates the committed `fk_inventory.json` against the reconstructed
+catalog: 263 FK discovered on 776b5da = 178 existing measurements + 45 V2 additions + 40 excluded V1 FK.
+Selection uses explicit schema/table/constraint identities. The 45 additions comprise
+20 model, 11 auxiliary and 14 internal receipt/grant FK. V1 exclusions retain their
+individual reasons and never become measured V2 cases.
+
+`fk_complete.py` restores the original 776b5da baseline method. Its only source
+changes import the explicit `fk_baseline_scope.py` identities and exclude those
+identities from selection, preventing a duplicate partner-assignment measurement.
+The original method suspends non-internal triggers on the tested table inside the
+rolled-back case, then defers sibling FKs during the exact-constraint orphan check.
+`fk_coverage.py` verifies its source against `git show 776b5da`, executes it separately,
+and reconciles the measured identities with the baseline inventory. A failure in
+this original method stops the run after mandatory cleanup; no second cycle follows.
+
+The 45 additions use `fk_strict.py` with an authenticated invoker, real local
+JWT claims and temporary SECURITY DEFINER physical-write helpers (direct client
+writes are revoked in production). All positive triggers remain enabled; queued
+constraints are evaluated after the helper returns, under authenticated through
+`SET CONSTRAINTS ALL IMMEDIATE`. Both boundary roles are recorded and required.
+These are physical FK probes, not certification of a native command or RLS.
+Every positive must affect one row with its intended non-null reference. A failed positive is `BLOQUEADO`.
+A negative requires SQLSTATE `23503` and the exact expected constraint name; another
+constraint or trigger is `FAIL`. The strict method never changes FK deferrability. It first
+uses an absent sentinel tuple when sibling FK references remain valid; otherwise it
+selects an absent composite tuple from existing parent component values. Extra
+columns are set to NULL only when the actual catalog
+marks them nullable and the sibling FK permits it. The CSV records each orphan
+strategy and whether all sibling references were verified in the fixture snapshot;
+CHECKs and guards remain runtime controls, and a masked orphan still fails its case.
+It attempts the orphan with ordinary guards enabled, and suspends only an explicitly
+reviewed guard demonstrated to block that probe. Each suspension records its reason,
+observed blocker and attempt, and rolls back in the negative subtransaction.
+
+Receipts use isolated compatible inserts. Catalog grants retain their real
+`auth_user_id`/`carrier_id` columns and partial UNIQUE indexes, use an id-only local
+Auth fixture, and locate the inserted grant by `ctid` within the same transaction.
+All fixtures and metadata changes roll back. Counts include every permanent table
+in non-system schemas, including Auth and the QA registry; the complete measured
+public/private catalog must be identical before/after.
+
+Output names derive their counts from reconciled records; at this cut they are
+`HAC-44_fk_223.csv`, `HAC-44_fk_45_V2.csv`,
+`HAC-44_fk_40_V1_excluded.csv`, and detailed diagnostic/cleanliness JSON logs in the
+external evidence directory. FK pairs alone do not certify the complete semantics
+of relationship 70; that classification also requires its current dedicated proof.
+`strict_controls.py` pairs a live deferred invoker trigger with wrong-role and
+failed-positive controls using temporary tables/functions and full rollback.
+`tests.py` discovers the Python harness suites and runs its HTTP unit suites.
+Run `python scripts/qa/hac44/tests.py` from the repository root; alternatively run
+`python -m unittest discover -s scripts/qa/hac44 -p "test_*.py"` and
+`node --conditions=react-server --import tsx --test ../scripts/qa/hac44/http_contract.test.ts ../scripts/qa/hac44/http_pending.test.ts`
+from `cargomesh` for the HTTP controls. The PR records these local commands;
+no workflow changes are part of this harness delivery.
+
+Run `python scripts/qa/hac44/test_fk_inventory.py` and
+`python scripts/qa/hac44/test_fk_complete.py` for independent paired regressions.
+Run `python scripts/qa/hac44/test_fk_orphans.py` for paired absent-tuple, sibling-FK,
+nullable-column and incomplete-snapshot controls.
+
+`contract_verdict.py` intentionally exits 1 when a real product counterexample remains.
+The two-cycle orchestrator retains every current FAIL/BLOQUEADO verdict, continues
+the remaining measurements when their prerequisites are available, cleans up each
+attempted cycle, and runs the final checks. It returns the aggregate verdict without
+exceptions for preexisting counterexamples. `guards.py` pairs each local-only denial
+with a valid connection/count control. `complete_recipe.py --check` verifies the
+committed completed-operation recipe against native crew inputs.
 
 `sql_layout.py` keeps the generated native recipe readable using only Python's standard
 library. SQL uses LF, four-space levels, no blank lines within a statement and a maximum
@@ -51,6 +117,13 @@ of 120 columns. JSON literals are expanded without changing their parsed value; 
 standard SQL strings use PostgreSQL's newline concatenation without changing their
 contents. The formatter neither changes the clock nor executes SQL. No formatter is
 required as an installed repository dependency.
+
+Endpoint inventory reconciles documented and runtime route shapes, recording
+parameter aliases separately (for example assignmentId/parentId). A runtime
+route still requires measured functional positive and anonymous negative HTTP
+controls. Current model reconciliation targets and RoutePlanner snapshots are
+resolved from the selected source/catalog and typed output; no row identity
+assigns a fixed verdict.
 
 ## Matrix generation and comparison
 

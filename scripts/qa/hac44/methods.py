@@ -10,6 +10,7 @@ from local import HEAD
 from matrix import CAT, SOURCES, SRC, csvwrite, jsonstr
 
 GROUPS_METHODS = [
+    ("RoutePlanner", "command_v2_route_planner", "32_v2_hac40_uml_cardinalities.test.sql"),
     (
         "Organization OrganizationMember",
         "workflow_member",
@@ -48,8 +49,7 @@ GROUPS_METHODS = [
     (
         (
             "RoutePlan RouteLeg RouteCondition RouteWaypoint RoutePlanningPolicy "
-            "LogisticsNode RouteCorridor RouteSimulationScenario "
-            "RoutePlanner"
+            "LogisticsNode RouteCorridor RouteSimulationScenario"
         ),
         "workflow_route",
         "22_v2_hac40_workflow.test.sql",

@@ -13,7 +13,7 @@ from local import CLI, HARNESS, PROJECT
 def start():
     """Start loopback HTTP services while preserving the dedicated database volume."""
     config = tomllib.loads((HARNESS / "supabase/config.toml").read_text(encoding="utf-8-sig"))
-    assert config["project_id"] == PROJECT and config["api"]["port"] == 42321
+    assert config["project_id"] == PROJECT and config["api"]["port"] == 62021
     # CLI start regards an existing database-only bank as already started.
     assert run("http-stop-preserve", CLI + ["stop", "--workdir", HARNESS]).returncode == 0
     assert (
@@ -28,7 +28,7 @@ def start():
         text=True,
         encoding="utf-8",
     )
-    assert p.returncode == 0 and json.loads(p.stdout)["API_URL"] == "http://127.0.0.1:42321"
+    assert p.returncode == 0 and json.loads(p.stdout)["API_URL"] == "http://127.0.0.1:62021"
     print("PASS dedicated local HTTP stack; volume preserved")
 
 

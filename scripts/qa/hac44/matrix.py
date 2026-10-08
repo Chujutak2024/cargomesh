@@ -45,6 +45,7 @@ CATKINDS = dict(
 WFKINDS = dict(
     AssetStatusEvent="asset-events",
     RoutePlan="routes",
+    RoutePlanner="routes",
     RouteLeg="routes",
     RouteWaypoint="routes",
     RouteCondition="conditions",
@@ -160,6 +161,7 @@ OVERRIDE = {
 }
 WFSPECIAL = {
     "RouteLeg": "legs[]",
+    "RoutePlanner": "planner",
     "RouteWaypoint": "legs[].waypoints[]",
     "PlanResource": "assignments[].resource",
     "PlanLegAssignment": "legAssignments[]",
@@ -344,9 +346,10 @@ def schema_paths(name, attr):
 def storage(name, a, op):
     """Resolve the physical storage or projection for a UML attribute."""
     tab = CLASS[name]["storage"].split(".")[0]
-    target = CLASS[name]["attributes"][
-        next(i for i, x in enumerate(CLASS[name]["attributes"]) if x["name"] == a)
-    ]["target"]
+    attribute = next(x for x in CLASS[name]["attributes"] if x["name"] == a)
+    target = attribute.get("currentTreatment", {}).get("target", attribute["target"])
+    if attribute.get("currentTreatment"):
+        return [target], "json" if len(target.split(".")) > 2 else "column"
     if (name, a) in OVERRIDE:
         target = OVERRIDE[name, a]
     if "{" in target:
@@ -532,6 +535,8 @@ def operation_paths(name):
         }
     routes = json.loads((LOGS / "routes-runtime.json").read_text(encoding="utf-8"))
     prefixes = [prefix] if prefix else []
+    if name == "RoutePlanner":
+        prefixes = ["/freight/requests/:requestId/route-alternatives", "/routes/:id/replans", "/routes/:id/explanation"]
     if name in WFKINDS:
         kind = WFKINDS[name]
         prefixes += {
@@ -813,7 +818,6 @@ REL_OVERRIDE = {
         "asset_cargo_capabilities.definition_id + transport_asset_id; no "
         "transport_assets.cargo_capability_definition_id"
     ),
-    81: "NO planner_algorithm_version/planner_graph_version/planner_source snapshot",
     84: "v2_bookings.decision_id",
     85: "selection_decisions.selected_by",
     86: "selection_offers.decision_id + offer_id",
@@ -903,9 +907,20 @@ def relationships():
     rows = []
     fkp = json.loads((LOGS / "independent-fk-pairs.json").read_text(encoding="utf-8"))
     fkstates = {c["constraint"]: c for c in fkp["cases"]}
+    current = {(r["source"], r["target"]): r for r in DES.get("currentRelationReconciliation", {}).get("relations", [])}
     for n, r in enumerate(DES["relations"], 1):
-        treatment = REL_OVERRIDE.get(n, r["physicalTreatment"])
+        reconciliation = current.get((r["source"], r["target"]))
+        treatment = reconciliation["treatment"] if reconciliation else REL_OVERRIDE.get(n, r["physicalTreatment"])
+        if r["source"] == "RoutePlanner" and any(f["proname"] == "command_v2_route_planner" for f in CAT["functions"]):
+            treatment = "route_plans.data.planner snapshot and planner.search network/policy/condition revisions; command_v2_route_planner"
         tokens = re.findall(r"\b([a-z][a-z0-9_]+)\.([a-z][a-z0-9_]+)\b", treatment)
+        if reconciliation:
+            bridge_tables = re.findall(r"\b([a-z][a-z0-9_]+)\s*\(", treatment)
+            for constraint in CAT["constraints"]:
+                table = constraint["relation"].split(".")[-1]
+                if constraint["contype"] == "f" and table in bridge_tables:
+                    columns = re.search(r"FOREIGN KEY \(([^)]+)\)", constraint["definition"])[1].split(", ")
+                    tokens.extend((table, column) for column in columns)
         tables = {t for t, col in tokens}
         constraints = []
         for c in CAT["constraints"]:
@@ -1026,7 +1041,9 @@ def classes(attrs):
             {
                 "clase": name,
                 "representacion": c["representation"],
-                "destino": c["storage"],
+                "destino": "; ".join(sorted({a["currentTreatment"]["target"].rsplit(".", 1)[0]
+                    for a in c["attributes"] if a.get("currentTreatment")}))
+                    if any(a.get("currentTreatment") for a in c["attributes"]) else c["storage"],
                 "estado": status,
                 "atributos": len(ar),
                 "estados_atributos": counts,
@@ -1082,8 +1099,11 @@ def endpoints():
     declared = [
         {"method": m[1], "path": m[2]} for m in re.finditer(r"\| (GET|POST) \| `([^`]+)` \|", doc)
     ]
-    assert len(declared) == 204
-    actual = {(r["method"], r["path"]) for r in routes}
+    assert declared and len({(r["method"], r["path"]) for r in declared}) == len(declared), "Missing or duplicate documented endpoint"
+    route_key = lambda r: (r["method"], re.sub(r":[A-Za-z][A-Za-z0-9_]*", ":parameter", r["path"]))
+    actual = {route_key(r) for r in routes}
+    assert len(actual) == len(routes), "Duplicate runtime route shape"
+    assert len({route_key(r) for r in declared}) == len(declared), "Duplicate documented route shape"
     records = []
     for f in (
         "first-api-results.json",
@@ -1120,7 +1140,7 @@ def endpoints():
         ]
         probe = [r for r in matches if r.get("label") == "inventory-probe"]
         anon = [r for r in matches if r.get("actor") == 0 and r.get("http") == 401]
-        exists = (d["method"], d["path"]) in actual
+        exists = route_key(d) in actual
         status = (
             "IMPLEMENTADO" if exists and positive and anon else "PARCIAL" if exists else "FALTANTE"
         )
@@ -1130,6 +1150,7 @@ def endpoints():
                 "path": d["path"],
                 "estado": status,
                 "ruta_codigo": exists,
+                "ruta_runtime": jsonstr([r["path"] for r in routes if route_key(r) == route_key(d)]),
                 "llamadas": len(matches),
                 "positivos": len(positive),
                 "anon_401": len(anon),
@@ -1160,8 +1181,10 @@ def endpoints():
         {
             "documented": len(declared),
             "runtime": len(routes),
-            "missingFromCode": [r for r in declared if (r["method"], r["path"]) not in actual],
-            "undocumented": [r for r in routes if r not in declared],
+            "missingFromCode": [r for r in declared if route_key(r) not in actual],
+            "undocumented": [r for r in routes if route_key(r) not in {route_key(d) for d in declared}],
+            "parameterAliases": [{"method": d["method"], "documentedPath": d["path"], "runtimePath": r["path"]}
+                for d in declared for r in routes if route_key(d) == route_key(r) and d["path"] != r["path"]],
         },
     )
     return rows

@@ -56,6 +56,21 @@ class AttributeRulesTests(unittest.TestCase):
         m["TREES"]["workflow.ts:WorkflowRecordV2Schema"]["options"][0]["fields"]["data"]["fields"].pop("planResourceId")
         self.assertIsNone(m["schema_paths"]("CapacityReservation","planResourceId")[1])
 
+    def test_current_planner_snapshot_resolves_from_model_and_typed_output(self):
+        m = mappings()
+        m["CLASS"] = {"RoutePlanner": {"storage": "|route_planner_port", "attributes": [
+            {"name": "graphVersion", "target": "|route_planner_port.graphVersion",
+             "currentTreatment": {"target": "route_plans.data.planner.graphVersion"}}]}}
+        m["TREES"] = {"workflow.ts:WorkflowRecordV2Schema": {"options": [
+            obj(kind={"value": "routes"}, data=obj(planner=obj(graphVersion=FIELD)))]}}
+        _, output, _, path, _ = m["schema_paths"]("RoutePlanner", "graphVersion")
+        self.assertEqual(path, "data.planner.graphVersion")
+        self.assertEqual(output, FIELD)
+        self.assertEqual(m["storage"]("RoutePlanner", "graphVersion", path),
+                         (["route_plans.data.planner.graphVersion"], "json"))
+        m["TREES"]["workflow.ts:WorkflowRecordV2Schema"]["options"][0]["fields"]["data"]["fields"].pop("planner")
+        self.assertIsNone(m["schema_paths"]("RoutePlanner", "graphVersion")[1])
+
     def test_category_domain_version_does_not_select_integer_envelope(self):
         m=mappings();m["TREES"]={"catalog.ts:CatalogInputsV2:cargo-categories":obj(code=FIELD),
             "catalog.ts:CargoCategoryValueV2Schema":obj(code=FIELD,version=FIELD),
