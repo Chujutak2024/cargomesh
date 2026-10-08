@@ -54,6 +54,35 @@ export const FIELD_QUESTION: Record<ConversationField, string> = {
   recipientContactPhoneE164: "¿Teléfono de quien recibe en formato E.164?", recipientContactEmail: "¿Correo de quien recibe?",
 };
 
+const ENGLISH_QUESTION: Record<GuidedConversationField, string> = {
+  originFacilityId: "Where should the cargo be picked up?",
+  destinationFacilityId: "Where should the cargo be delivered?",
+  categoryCode: "What type of cargo is it?",
+  packaging: "How is the cargo packaged?",
+  cargoDescription: "Please describe the cargo.",
+  unitQuantity: "How many units are there?",
+  unitWeightPerUnitKg: "What is the weight per unit in kg?",
+  unitVolumePerUnitM3: "What is the volume per unit in m³?",
+  unitLengthCm: "What is each unit's length in cm?",
+  unitWidthCm: "What is each unit's width in cm?",
+  unitHeightCm: "What is each unit's height in cm?",
+  pickupWindowStartsAt: "When does the pickup window start? Use YYYY-MM-DDTHH:mm.",
+  pickupWindowEndsAt: "When does the pickup window end? Use YYYY-MM-DDTHH:mm.",
+  deliveryWindowStartsAt: "When does the delivery window start? Use YYYY-MM-DDTHH:mm.",
+  deliveryWindowEndsAt: "When does the delivery window end? Use YYYY-MM-DDTHH:mm.",
+  requiredEquipment: "What truck or equipment do you need?",
+  pickupContactName: "What is the pickup contact's name?",
+  pickupContactPhoneE164: "What is the pickup phone number in E.164 format?",
+  pickupContactEmail: "What is the pickup contact's email?",
+  recipientContactName: "What is the recipient's name?",
+  recipientContactPhoneE164: "What is the recipient's phone number in E.164 format?",
+  recipientContactEmail: "What is the recipient's email?",
+};
+
+export function questionForField(field: GuidedConversationField, language: "es-PE" | "en-US"): string {
+  return language === "en-US" ? ENGLISH_QUESTION[field] : FIELD_QUESTION[field];
+}
+
 export function choicesForField(field: ConversationField, options: IntakeOptionsData): Array<{ value: string; label: string }> {
   if (field === "originFacilityId" || field === "destinationFacilityId") {
     return options.facilities.map((facility) => ({ value: facility.facilityId, label: facility.label }));

@@ -23,7 +23,7 @@ export const ConversationContextSchema = z.object({
   }).strict()).max(16),
   lastAskedField: ConversationFieldNameSchema.nullable(),
   failedAttempts: z.number().int().min(0).max(3),
-  previousHelpTopic: z.enum(["PURPOSE", "SELECTION"]).nullable().optional(),
+  previousHelpTopic: z.enum(["PURPOSE", "SELECTION", "SERVICES"]).nullable().optional(),
 }).strict();
 
 export const InterpretationRequestSchema = z.object({
@@ -50,11 +50,16 @@ export type InterpretationRequest = z.infer<typeof InterpretationRequestSchema>;
 export type Interpretation = z.infer<typeof InterpretationSchema>;
 
 export function isProductHelpQuestion(text: string): boolean {
-  return /\b(?:para qu[eé] sirve|qu[eé] es cargomesh|c[oó]mo funciona|c[oó]mo (?:me )?ayuda|qu[eé] puedes hacer|escoger|elegir|comparar|what is cargomesh|what can you do|how (?:does it|can you) help|how does it work|choose|compare)\b/i.test(text);
+  return /\b(?:para qu[eé] sirve|qu[eé] es cargomesh|c[oó]mo funciona|c[oó]mo (?:me )?ayuda|qu[eé] puedes hacer|escoger|elegir|comparar|servicios|qu[eé] ofrecen|what is cargomesh|what can you do|how (?:does it|can you) help|how does it work|choose|compare|services|what do you offer)\b/i.test(text);
 }
 
-export function helpTopic(text: string): "PURPOSE" | "SELECTION" {
+export function helpTopic(text: string): "PURPOSE" | "SELECTION" | "SERVICES" {
+  if (/\b(?:servicios|qu[eé] ofrecen|services|what do you offer)\b/i.test(text)) return "SERVICES";
   return /\b(?:escoger|elegir|comparar|choose|compare)\b/i.test(text) ? "SELECTION" : "PURPOSE";
+}
+
+export function isNoisyTranscript(text: string): boolean {
+  return /\b(?:hello|hola)(?:[\s,]+(?:hello|hola)){2,}\b/i.test(text);
 }
 
 export function isHelpFollowUp(text: string): boolean {
@@ -65,6 +70,10 @@ export function isHelpFollowUp(text: string): boolean {
 export function productHelpFallback(text: string): string {
   const english = /\b(?:what|how|help|choose|compare)\b/i.test(text) && !/\b(?:qu[eé]|c[oó]mo|para|ayuda|escoger|elegir|comparar)\b/i.test(text);
   const compare = /\b(?:escoger|elegir|comparar|choose|compare)\b/i.test(text);
+  const services = helpTopic(text) === "SERVICES";
+  if (services) return english
+    ? "Today this chat can prepare a ROAD freight request and review preliminary ROAD eligibility with backend data; it cannot guarantee carrier coverage. SEA, RAIL and AIR are modeled for future work, not operational services here. What cargo and route do you have?"
+    : "Hoy este chat puede preparar una solicitud ROAD y revisar su elegibilidad preliminar con datos del backend; no garantiza cobertura de un carrier. SEA, RAIL y AIR están contemplados para el futuro, pero aún no operan aquí. ¿Qué carga y ruta tienes?";
   if (english) return compare
     ? "I can help you prepare a freight request and review preliminary ROAD eligibility. When carrier-authored offers exist, you can compare their evidence and terms; I cannot confirm a price or booking here. What cargo and route do you have in mind?"
     : "CargoMesh helps you prepare a freight request and review preliminary ROAD eligibility using authorized backend data. Tell me what you need to ship and where it should go; I will ask for missing details before you save a draft.";
@@ -77,15 +86,18 @@ export function productHelpFallback(text: string): string {
 export function interpretDeterministically(input: InterpretationRequest): Interpretation {
   const text = input.text.trim();
   const lower = text.toLowerCase();
+  if (isNoisyTranscript(text)) return { intent: "HELP", fields: [], acknowledgment: /\bhello\b/i.test(text)
+    ? "I heard your voice, but the transcript is unclear. I can help you prepare a ROAD freight request. What would you like to ship?"
+    : "Te escuché, pero el dictado quedó poco claro. Puedo ayudarte a preparar una solicitud ROAD. ¿Qué necesitas transportar?" };
   if (isProductHelpQuestion(text)) return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(text) };
   if (input.context?.previousHelpTopic && isHelpFollowUp(text)) {
-    return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(input.context.previousHelpTopic === "SELECTION" ? "¿Cómo me ayuda a escoger?" : "¿Para qué sirve CargoMesh?") };
+    return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(input.context.previousHelpTopic === "SELECTION" ? "¿Cómo me ayuda a escoger?" : input.context.previousHelpTopic === "SERVICES" ? "¿Qué servicios ofrecen?" : "¿Para qué sirve CargoMesh?") };
   }
   if (/\b(price|quote|cost|rate|precio|cotizaci[oó]n|costo|tarifa)\b/.test(lower)) return { intent: "PRICE", fields: [] };
   if (/\b(book|booking|reserve|reservation|reservar|reserva|contratar)\b/.test(lower)) return { intent: "BOOKING", fields: [] };
   if (/^(start over|reset|new request|empezar de nuevo|reiniciar|nueva solicitud)$/i.test(text)) return { intent: "START_OVER", fields: [] };
   if (/^(help|what can you do|ayuda|qu[eé] puedes hacer)\??$/i.test(text)) return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(text) };
-  if (/\b(evaluate|eligib|road options|road result|check road|evaluar|elegibilidad|opciones road|revisar road)\b/.test(lower)) return { intent: "EVALUATE", fields: [] };
+  if (/\b(evaluate|eligib|road options|road result|check road|availability|available|evaluar|elegibilidad|opciones road|revisar road|disponibilidad|disponible)\b/.test(lower)) return { intent: "EVALUATE", fields: [] };
   if (/\b(read|show|retrieve|leer|mostrar|ver)\b.*\b(draft|request|borrador|solicitud)\b/.test(lower)) return { intent: "READ", fields: [] };
   if (/\b(create|save|submit|crear|guardar|enviar)\b.*\b(draft|request|borrador|solicitud)\b/.test(lower)) return { intent: "CREATE", fields: [] };
   const correcting = /^(?:correct|change|update|corregir|cambiar|actualizar)\b/i.test(text);
@@ -122,7 +134,10 @@ export function interpretDeterministically(input: InterpretationRequest): Interp
   if (dimensions) fields.push({ field: "unitLengthCm", value: dimensions[1] }, { field: "unitWidthCm", value: dimensions[2] }, { field: "unitHeightCm", value: dimensions[3] });
   if (!fields.length && input.currentField) {
     const cleaned = text.replace(/^(?:i need|it is|it's|the (?:answer|value) is|please use|change (?:it )?to|necesito|es|la (?:respuesta|cantidad) es|usa|cambia(?:lo)? a)\s+/i, "").trim().replace(",", ".");
-    fields.push({ field: input.currentField, value: cleaned });
+    const location = input.currentField === "originFacilityId" || input.currentField === "destinationFacilityId";
+    const plausibleLocation = !/[¿?]/.test(cleaned) && cleaned.split(/\s+/).length <= 6
+      && !/\b(?:hello|hola|how|what|why|can|could|tell|feel|help|c[oó]mo|qu[eé]|puedes|dime|ayuda)\b/i.test(cleaned);
+    if (!location || plausibleLocation) fields.push({ field: input.currentField, value: cleaned });
   }
   return { intent: "PROVIDE", fields };
 }

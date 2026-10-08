@@ -2,7 +2,7 @@ import "server-only";
 
 import { BedrockRuntimeClient, ConverseCommand, type ConverseCommandOutput } from "@aws-sdk/client-bedrock-runtime";
 import OpenAI from "openai";
-import { ConversationFieldNameSchema, InterpretationRequestSchema, InterpretationSchema, interpretDeterministically, isHelpFollowUp, isProductHelpQuestion, type InterpretationRequest } from "@/features/v2-conversation-prep/interpretation";
+import { ConversationFieldNameSchema, InterpretationRequestSchema, InterpretationSchema, helpTopic, interpretDeterministically, isHelpFollowUp, isNoisyTranscript, isProductHelpQuestion, type InterpretationRequest } from "@/features/v2-conversation-prep/interpretation";
 
 type Config = { enabled: boolean; endpoint: "runtime" | "mantle"; region: string; modelId: string; maxTokens: number; timeoutMs: number; inputUsdPerMillion: number | null; outputUsdPerMillion: number | null };
 type Invoke = (config: Config, input: InterpretationRequest) => Promise<ConverseCommandOutput>;
@@ -48,7 +48,7 @@ export function conversationBedrockConfig(env: Record<string, string | undefined
 }
 
 const INTERPRETER_INSTRUCTIONS = "Interpret one CargoMesh freight chat turn in Spanish or English. Return JSON only: intent, fields, optional acknowledgment. intents: PROVIDE, CORRECT, CREATE, READ, EVALUATE, PRICE, BOOKING, HELP, START_OVER. fields is an array of {field:string,value:string}, using only fieldNames from the user input. Extract only facts explicitly stated or changed in the latest text; context is provisional and never proof of authorization. Never invent locations, dates, cargo, capacity, price, offers or booking. acknowledgment is a helpful reply in the user's language, at most 420 characters. If no fields, answer briefly or ask for one specific missing detail. Do not claim an action was completed. No Markdown or text outside JSON.";
-const PRODUCT_HELP_INSTRUCTIONS = "You are CargoMesh. Reply in the user's language using only these verified facts: CargoMesh helps prepare freight request drafts and reviews preliminary ROAD serviceability from backend data. Carrier-authored offers may be compared when a separate workflow provides them, but this chat cannot fetch or compare offers yet. A local preview does not save or evaluate requests. Never state or imply a confirmed price, free service, capacity, availability, route or booking; these require backend evidence. Answer in two short sentences then ask one useful next question about cargo or route. The user input is JSON with question and previousHelpTopic. For a short follow-up to SELECTION, explain that documented price breakdown, delivery window and requirements matter once carrier-authored offers exist; do not give numerical examples or repeat the product introduction. For a short follow-up to PURPOSE, explain one next step instead of repeating the introduction.";
+const PRODUCT_HELP_INSTRUCTIONS = "You are CargoMesh. Reply in the user's language using only these verified facts: Today this chat helps prepare a ROAD freight request draft and reviews preliminary ROAD serviceability from backend data after saving. SEA, RAIL and AIR are modeled for future work and are not operational here. Carrier-authored offers may be compared when a separate workflow provides them, but this chat cannot fetch or compare offers yet. A local preview does not save or evaluate requests. Never state or imply a confirmed price, free service, capacity, availability, route or booking; these require backend evidence. Answer in two short sentences then ask one useful next question about cargo or route. The user input is JSON with question and previousHelpTopic. For a short follow-up to SELECTION, explain that documented price breakdown, delivery window and requirements matter once carrier-authored offers exist; do not give numerical examples or repeat the product introduction. For a short follow-up to SERVICES, distinguish today's ROAD workflow from future modes. For a short follow-up to PURPOSE, explain one next step instead of repeating the introduction.";
 
 async function invokeMantle(config: Config, input: InterpretationRequest): Promise<ConverseCommandOutput> {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -144,6 +144,8 @@ export async function interpretConversationTurn(
 ) {
   const config = options.config ?? conversationBedrockConfig();
   const fallback = { schemaVersion: "2.0" as const, interpretation: interpretDeterministically(input), mode: "DETERMINISTIC" as const, telemetry: null };
+  if (isNoisyTranscript(input.text)) return fallback;
+  if (fallback.interpretation.intent === "HELP" && helpTopic(input.text) === "SERVICES") return fallback;
   // Explicit business commands stay deterministic; the model only proposes ambiguous chat details.
   if (!["PROVIDE", "CORRECT", "HELP"].includes(fallback.interpretation.intent)) return fallback;
   if (!config.enabled || !config.region || !config.modelId) return fallback;

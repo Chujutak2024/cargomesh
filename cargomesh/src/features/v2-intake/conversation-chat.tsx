@@ -4,16 +4,18 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { FreightRequestV2Data, IntakeOptionsData, RoadServiceabilityEvaluationV2Data } from "./contracts";
 import type { V2IntakePrototypeDraft } from "./prototype-model";
 import { validatePrototypeReview } from "./prototype-model";
-import { CONVERSATION_FIELDS, FIELD_QUESTION, choicesForField, matchingConversationChoices, resolveConversationSuggestions, type ConversationField, type GuidedConversationField } from "./conversation-fields";
+import { CONVERSATION_FIELDS, choicesForField, matchingConversationChoices, questionForField, resolveConversationSuggestions, type ConversationField, type GuidedConversationField } from "./conversation-fields";
 import { useConversationVoice } from "@/features/v2-conversation-prep/voice-controls";
 import { InterpretationResponseSchema, helpTopic, isHelpFollowUp, type Interpretation } from "@/features/v2-conversation-prep/interpretation";
 import { conversationContext } from "./conversation-context";
+import { serviceabilityReply } from "./serviceability-reply";
 import type { V2IntakeApiError } from "./v2-intake-client";
 import styles from "./conversation-chat.module.css";
 
 type Message = { speaker: "assistant" | "user"; text: string };
 type Choice = { value: string; label: string; field: ConversationField };
 const GREETING = "¡Hola! Soy CargoMesh. Cuéntame qué necesitas transportar y te ayudaré a preparar la solicitud y revisar alternativas ROAD.";
+const GREETING_EN = "Hi, I'm CargoMesh. Tell me what you need to ship, and I'll help you prepare a request and review preliminary ROAD options.";
 const unavailable = "Aún no puedo cotizar ni reservar transporte. La evaluación ROAD es preliminar; no es una oferta ni una reserva.";
 const positive = /^(yes|yes,? create (?:the )?draft|create (?:the )?draft|confirm|go ahead|s[ií]|s[ií],? crea(?:r)? (?:el )?borrador|crea(?:r)? (?:el )?borrador|confirmo|confirmar|adelante)$/i;
 
@@ -63,7 +65,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const announcedDraftRef = useRef<string | null>(null);
   const lastSpokenMessage = useRef(0);
   const failedAttempts = useRef(0);
-  const previousHelpTopic = useRef<"PURPOSE" | "SELECTION" | null>(null);
+  const previousHelpTopic = useRef<"PURPOSE" | "SELECTION" | "SERVICES" | null>(null);
   const latestAssistant = history.findLast((message) => message.speaker === "assistant")?.text ?? "";
   const voice = useConversationVoice({
     onTranscript: (recognized) => { setText(recognized); inputRef.current?.focus(); },
@@ -74,6 +76,12 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   });
   const nextField = request ? null : missingField(draft);
   const syntheticCatalog = optionsSource === "fixture" || options.facilities.some((facility) => facility.label.includes("[SYNTHETIC]"));
+  const ask = (field: GuidedConversationField) => questionForField(field, voiceLanguage);
+
+  useEffect(() => {
+    setHistory((current) => current.length === 1 && (current[0]?.text === GREETING || current[0]?.text === GREETING_EN)
+      ? [{ speaker: "assistant", text: voiceLanguage === "en-US" ? GREETING_EN : GREETING }] : current);
+  }, [voiceLanguage]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [history, choices]);
   useEffect(() => {
@@ -115,10 +123,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   }, [request]);
   useEffect(() => {
     if (!evaluation) return;
-    const details = evaluation.candidates.length ? evaluation.candidates.map((candidate) =>
-      `${candidate.carrier.commercialName}: ${candidate.status}; reasons ${candidate.reasons.join(", ") || "none"}; capacity source ${candidate.checks.capacityWindow.provenance.dataSource}; observed ${candidate.checks.capacityWindow.provenance.observedAt ?? "unknown"}`).join(". ")
-      : "El servicio no devolvió candidatos de carrier ni códigos de razón específicos.";
-    const result = `El resultado ROAD es ${evaluation.overallStatus}. ${details} Se evaluó ${evaluation.evaluatedAt} contra la versión ${evaluation.evaluatedDraftVersion} del borrador. No es una cotización ni una reserva.`;
+    const result = serviceabilityReply(evaluation, voiceLanguage);
     setHistory((current) => [...current, { speaker: "assistant", text: result }]);
     setAnnouncement(`Resultado ROAD ${evaluation.overallStatus}. El último mensaje incluye razones y procedencia.`);
   }, [evaluation]);
@@ -209,6 +214,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       if (proposal.intent === "EVALUATE") {
         if (!request) add(value, "Necesito un borrador guardado antes de revisar ROAD.");
         else if (draftDirty) add(value, "Tus cambios son solo locales y no se guardaron. Aún no puedo reevaluarlos; inicia una solicitud nueva con los datos corregidos.");
+        else if (evaluation) add(value, serviceabilityReply(evaluation, voiceLanguage));
         else { add(value, "Revisando ROAD para la versión guardada del borrador…"); onEvaluate(); }
         return;
       }
@@ -218,7 +224,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       }
       if (proposal.intent === "CREATE" && !proposal.fields.length) {
         if (optionsSource === "fixture") { add(value, "Podemos preparar los datos aquí, pero esta vista de prueba no guarda solicitudes."); return; }
-        if (!validatePrototypeReview(draft).valid) add(value, `I still need one detail before saving. ${FIELD_QUESTION[missingField(draft) ?? "originFacilityId"]}`);
+        if (!validatePrototypeReview(draft).valid) add(value, `${voiceLanguage === "en-US" ? "I still need one detail before saving." : "Necesito un dato más antes de guardar."} ${ask(missingField(draft) ?? "originFacilityId")}`);
         else { setAwaitingConfirmation(true); add(value, draftSummary(draft, options)); }
         return;
       }
@@ -236,7 +242,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
             const categories = choicesForField("categoryCode", options);
             const examples = [categories.find((choice) => choice.value === "MACHINERY"), categories.find((choice) => choice.value === "GENERAL")]
               .filter((choice): choice is { value: string; label: string } => Boolean(choice)).map((choice) => choice.label).join(" or ");
-            clarification ??= `I noted “${suggestion.value}” as the cargo description. ${FIELD_QUESTION.categoryCode}${examples ? ` For example, ${examples}.` : ""}`;
+            clarification ??= `I noted “${suggestion.value}” as the cargo description. ${ask("categoryCode")}${examples ? ` For example, ${examples}.` : ""}`;
             continue;
           }
           const matches = matchingConversationChoices(field, suggestion.value, options);
@@ -247,7 +253,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
             }
           } else if (field === "originFacilityId" || field === "destinationFacilityId") {
             clarification ??= "I could not match that place to one of your organization's saved facilities. Searching and confirming other places is not available yet. Please name a saved facility or use the request form.";
-          } else clarification ??= `I could not validate that detail. ${FIELD_QUESTION[field]}`;
+          } else clarification ??= `I could not validate that detail. ${ask(field)}`;
           continue;
         }
         onField(field, parsed);
@@ -273,7 +279,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         }
         add(value, failedAttempts.current >= 2
           ? "I still could not identify that detail. You can type a specific value or enter it in the request form."
-          : `I did not catch a freight detail. ${FIELD_QUESTION[nextField ?? "originFacilityId"]}`);
+          : `${voiceLanguage === "en-US" ? "I did not catch a freight detail." : "No identifiqué un dato de transporte."} ${ask(nextField ?? "originFacilityId")}`);
         return;
       }
       failedAttempts.current = 0;
@@ -281,7 +287,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       const remaining = missingField(draft, accepted);
       const preface = proposal.acknowledgment ?? "Got it.";
       const changed = proposal.intent === "CORRECT" ? ` Updated ${[...accepted].map((field) => field === "originFacilityId" ? "pickup" : field === "destinationFacilityId" ? "delivery" : field).join(", ")}.` : "";
-      if (remaining) add(value, `${preface}${changed} ${FIELD_QUESTION[remaining]}`);
+      if (remaining) add(value, `${preface}${changed} ${ask(remaining)}`);
       else { setAwaitingConfirmation(true); add(value, draftSummary({ ...draft, ...applied }, options)); }
     } catch (error) {
       add(value, error instanceof Error ? error.message : "I could not process that message. Please retry.");
@@ -301,8 +307,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
           {history.map((message, index) => <div key={index} className={message.speaker === "user" ? styles.userRow : styles.assistantRow}><p className={message.speaker === "user" ? styles.user : styles.assistant}><span className={styles.speaker}>{message.speaker === "user" ? "You" : "CargoMesh"}</span>{message.text}</p></div>)}
         </div>
         <div className={styles.srOnly} role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
-        {!request && !awaitingConfirmation && !interpretationBusy && nextField && !history.at(-1)?.text.includes(FIELD_QUESTION[nextField]) && <p className={styles.nextQuestion}>{FIELD_QUESTION[nextField]}</p>}
-        {choices.length > 0 && <div className={styles.choiceList} aria-label="Confirm a location">{choices.map((choice) => <button key={choice.value} type="button" onClick={() => { onField(choice.field, choice.value); setChoices([]); add(null, `Confirmed ${choice.label}. ${FIELD_QUESTION[missingField(draft, new Set([choice.field])) ?? "categoryCode"]}`); }}>{choice.label}</button>)}</div>}
+        {!request && !awaitingConfirmation && !interpretationBusy && nextField && !history.at(-1)?.text.includes(ask(nextField)) && !/[?？]\s*$/.test(history.at(-1)?.text ?? "") && <p className={styles.nextQuestion}>{ask(nextField)}</p>}
+        {choices.length > 0 && <div className={styles.choiceList} aria-label="Confirm a location">{choices.map((choice) => <button key={choice.value} type="button" onClick={() => { onField(choice.field, choice.value); setChoices([]); add(null, `Confirmed ${choice.label}. ${ask(missingField(draft, new Set([choice.field])) ?? "categoryCode")}`); }}>{choice.label}</button>)}</div>}
         {optionsSource !== "fixture" && !request && !nextField && !awaitingConfirmation && !busy && <button type="button" className={styles.suggestion} onClick={() => { setAwaitingConfirmation(true); add(null, draftSummary(draft, options)); }}>Review draft before saving</button>}
         {draftDirty && <p className={styles.notice} role="status">Local edits are not saved. ROAD cannot be reevaluated for them yet.</p>}
         {busy && <p className={styles.loading} role="status">Working on your saved request…</p>}

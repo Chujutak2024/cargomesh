@@ -48,6 +48,26 @@ test("product questions receive grounded guidance even without Bedrock", () => {
   assert.match(followUp.acknowledgment ?? "", /ofertas emitidas/);
 });
 
+test("a noisy dictated greeting is not treated as a saved pickup location", () => {
+  const turn = interpretDeterministically({ schemaVersion: "2.0", text: "Hello Hello Hello Hello Can You Feel a water you do a How can you Tell me", currentField: "originFacilityId" });
+  assert.equal(turn.intent, "HELP");
+  assert.deepEqual(turn.fields, []);
+  assert.match(turn.acknowledgment ?? "", /transcript is unclear/);
+});
+
+test("a bare facility answer still works but a conversational question is not a facility", () => {
+  const base = { schemaVersion: "2.0" as const, currentField: "originFacilityId" as const };
+  assert.deepEqual(interpretDeterministically({ ...base, text: "Lima" }).fields, [{ field: "originFacilityId", value: "Lima" }]);
+  assert.deepEqual(interpretDeterministically({ ...base, text: "Can you tell me what this service does?" }).fields, []);
+});
+
+test("service questions distinguish current ROAD from future modes", () => {
+  const turn = interpretDeterministically({ schemaVersion: "2.0", text: "¿Qué servicios ofrecen?", currentField: "originFacilityId" });
+  assert.equal(turn.intent, "HELP");
+  assert.match(turn.acknowledgment ?? "", /solicitud ROAD/);
+  assert.match(turn.acknowledgment ?? "", /aún no operan/);
+});
+
 test("Spanish freight turns keep their explicit values and never imply a booking", () => {
   const turn = interpretDeterministically({ schemaVersion: "2.0", text: "Quiero 2 pallets de Lima a Piura", currentField: "originFacilityId" });
   assert.deepEqual(turn, {

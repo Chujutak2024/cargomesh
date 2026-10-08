@@ -6,6 +6,8 @@ La rama `codex/v2-chat-natural-voice-bedrock` incorpora `main`. El chat del ship
 
 La voz actual usa Web Speech del navegador. El usuario elige idioma ES/EN y la voz disponible en su dispositivo. Se añadieron ritmos pausado (0.88), natural (0.96) y ágil (1.06), además de «Probar voz». El dictado queda editable antes de enviar porque el reconocimiento del navegador puede transcribir mal nombres de lugares y carga.
 
+Tras una transcripción incoherente como «Hello Hello Hello Hello ...», el chat no la registra como instalación de origen: pide aclaración y retoma la solicitud. La guía cambia con ES/EN. Para disponibilidad usa únicamente el estado devuelto por la evaluación ROAD: `eligible` es preliminar, `unknown` significa falta de datos, e `ineligible` invita a preparar otra solicitud con diferente fecha o sede guardada. Ninguno equivale a una oferta o reserva. La respuesta de servicios presenta ROAD como flujo actual de solicitud/evaluación, sin prometer cobertura de carrier, y SEA/RAIL/AIR como capacidades futuras no operativas.
+
 ## Alternativas investigadas
 
 | Opción | Ventaja | Límite antes de adoptarla |
