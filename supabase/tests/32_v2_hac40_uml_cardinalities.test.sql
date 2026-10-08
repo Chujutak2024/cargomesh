@@ -249,6 +249,10 @@ select throws_ok($$select pg_temp.empty_assignment()$$,'23514','ASSIGNMENT_REQUI
 set constraints all immediate;
 select pass('F05: valid grouped assignment satisfies deferred constraints');
 
+-- QA B01/B02: restore the caller after privileged physical-schema assertions above.
+set local role authenticated;
+set local "request.jwt.claims"='{"sub":"c2310000-0000-4000-8000-000000000001","role":"authenticated"}';
+select is(current_user::text,'authenticated','T01: B01/B02 starts under the real caller role');
 -- QA B01/B02: authenticated commands reach real deferred constraint evaluation.
 insert into refs values('limited',public.command_v2_route_planner('c2300000-0000-4000-8000-000000000001',
  'c2320000-0000-4000-8000-000000000001','find',pg_temp.id('request'),gen_random_uuid(),
@@ -275,6 +279,7 @@ select pg_temp.save('payload-unknown','corridors.publish',jsonb_build_object('ex
 select pg_temp.save('unknown-route','routes.create',jsonb_build_object('schemaVersion','2.0','corridorIds',jsonb_build_array(pg_temp.id('payload-corridor')),'policyId',pg_temp.id('policy')),pg_temp.ctx(pg_temp.id('request')));
 select ok((select value#>'{data,reasons}' ? 'ROUTE_PAYLOAD_LIMIT_UNKNOWN' and value->>'status'<>'eligible' from refs where name='unknown-route'),'B02: missing limit cannot become eligible');
 set constraints all immediate;
+select is(current_user::text,'authenticated','T01: deferred B01/B02 verification retains authenticated');
 select pass('B01/B02: constraints evaluated as authenticated without reset role');
 
 select * from finish();rollback;

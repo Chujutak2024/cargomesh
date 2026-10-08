@@ -30,3 +30,11 @@ Comandos: `pnpm --dir cargomesh release:verify`, `pnpm --dir cargomesh test:hac4
 Solicitar reprueba independiente HAC-44 sobre el nuevo SHA de #111, con actualización del body de búsqueda a `expectedDraftVersion`. Revisar B01 con más caminos que alternativas, retención de snapshots e idempotencia; B02 en BD/HTTP con controles positivos, límites ausentes/vencidos y tenants. El lint independiente reportado por QA necesita su comando y diagnóstico exactos: el build local pasó su fase de lint/tipos, lo que no sustituye otro gate.
 
 CI se verifica por SHA en el PR. Supabase alojado, merge, main y despliegue no forman parte de esta corrección. El paquete alojado necesita manifiesto actualizado a 23 migraciones y SHA aprobado después de QA.
+
+## Reprueba independiente y corrección T01
+
+HAC-44 publicó backend PASS sobre `393e130`: B01/B02, versión, UML 48/66, replan y DER 89. Se detectó T01: el bloque final había conservado postgres después de las inspecciones físicas. Este incremento cambia exclusivamente la prueba: restaura `set local role authenticated` y claims del actor A antes de B01/B02, y exige `current_user=authenticated` al inicio y después de `set constraints all immediate`. Test 32: 71/71 PASS local. Cadena SQL y hashes intactos: 23 migraciones.
+
+El lint de BD independiente sigue rojo. Jean verificó tres falsos positivos SQLSTATE 55000 por records de SQL dinámico, con páginas pobladas y vacías mediante authenticated/HTTP. Su aceptación requiere decisión explícita del Tech Lead; no se desactiva el gate ni se aceptan automáticamente las 43 advertencias restantes. No se modifica backend para satisfacer el linter en este incremento.
+
+La aprobación de backend de `393e130` se conserva por ese SHA; T01 y CI del nuevo commit requieren su verificación propia. La aplicación alojada exige actualizar SHA final integrado, aunque no haya delta de migraciones.
