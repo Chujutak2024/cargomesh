@@ -113,3 +113,7 @@ Supabase alojado requiere autorización específica después del gate completo d
 
 
 Actualización LTL del 4-oct: el workflow ahora coordina una operación física compartida con ventana/crew comunes, eventos correlacionados y cancelaciones aisladas. Véase [contrato](./HAC40_WORKFLOW_API.md). Esto no certifica todavía la matriz completa ni discovery/adaptadores live.
+
+## Incremento del 7-oct: huecos UML operativos
+
+[Socio por tramo, incidente-condición y RoutePlanner](./HAC40_MODEL_CLOSURE_API.md): cinco operaciones nuevas, dos migraciones aditivas y evidencia local. Búsqueda/replan/explicación implementadas con límites y fuentes/versiones; evaluación de capacidades sigue en los comandos de plan. Los pendientes de secciones anteriores describen sus cortes históricos. La reprueba de HAC-44 y el DoD integral no se cierran por este incremento.

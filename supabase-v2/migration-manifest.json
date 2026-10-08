@@ -369,6 +369,39 @@
       "dependencies": [
         "20261005192012"
       ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261007083000_hac40_model_associations.sql",
+      "version": "20261007083000",
+      "sha256": "eb9b408081808ed4b49c3fc4108e372daa917af11cc411bf0f04133151398b92",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261006161533"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261007084000_hac40_route_planner.sql",
+      "version": "20261007084000",
+      "sha256": "0cd7ea31dcd7e709f5f974768e4a4c87d7eb60acf8189df1778bc423a85dd6bf",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261007083000"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261007170000_hac40_planner_qa_fixes.sql",
+      "version": "20261007170000",
+      "sha256": "1aec3bd682f1b0dcb914e144fa33d8c744b985dc6e2d99df5b95d254ed1b6082",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261007084000"
+      ]
     }
   ]
 }
