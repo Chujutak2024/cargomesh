@@ -1,7 +1,7 @@
 {
   "sourceCommit": "c686aeae7d17a6b641447c15dcf86cd9edd7dfa4",
-  "scope": "F-02 relations 34/55/69/89; source reconciliation only, not full-model or hosted certification",
-  "qaEvidence": "User-provided HAC-44 report for #104 @ 1e241b3: F-05 BD 10/10, HTTP 10/10. F-02 remains partial pending independent documentary review.",
+  "scope": "F-02 34/55/69/89 and HAC-40 implemented associations 48/66; independent QA pending, not hosted certification",
+  "qaEvidence": "HAC-44 independent review of #106 @ e06d0c0: relations 34, 55 and 69 conform; relation 89 has a low documentary finding. Its FK and UML multiplicity conform. The statement below is corrected against the local catalog at fe12d41; relation 89 awaits independent documentary recheck. F-05 BD/HTTP 10/10 at #104 @ 1e241b3 is separate evidence, not full-model certification.",
   "relations": [
     {
       "number": 34,
@@ -52,7 +52,7 @@
       "number": 89,
       "source": "PlanResource",
       "target": "CapacityReservation",
-      "treatment": "capacity_reservations.plan_resource_id -> plan_resources.id; plan_leg_assignment_id -> plan_leg_assignments.id; plan_assignment_id -> plan_resource_bindings.id retained for compatibility; a_reservation_resource validates coherence; NULL is allowed only for a pre-plan hold",
+      "treatment": "capacity_reservations.plan_resource_id -> plan_resources.id; plan_leg_assignment_id -> plan_leg_assignments.id; plan_assignment_id -> plan_resource_bindings.id retained for compatibility; a_reservation_resource rejects resource/leg IDs without a binding and derives or validates both IDs when a binding is present. All three IDs may be NULL regardless of reservation/booking state at the table level. Native workflow commands require the canonical assignment; the trigger does not enforce a pre-plan-only NULL rule",
       "api": "POST capacity/holds: assignmentId canonical header plus planResourceId for multiple resources; GET hold: data.planResourceId",
       "status": "DOCUMENTED_PENDING_F02_REVIEW",
       "evidence": [
@@ -61,6 +61,34 @@
         "supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql",
         "cargomesh/src/shared/schemas/v2/workflow.ts",
         "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql"
+      ]
+    },
+    {
+      "number": 48,
+      "source": "OperationalIncident",
+      "target": "RouteCondition",
+      "treatment": "incident_route_conditions(incident_id,condition_id), composite PK and two indexed FKs; native command validates the execution service route, active condition and incident time; 0..N both directions preserved",
+      "api": "POST /carriers/:carrierId/incidents/:id/conditions; GET /carriers/:carrierId/executions/:executionId/incidents/:id -> data.routeConditionIds",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261007083000_hac40_model_associations.sql",
+        "cargomesh/src/shared/schemas/v2/workflow.ts",
+        "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql",
+        "cargomesh/scripts/hac40-model-closure-http-smoke.mjs"
+      ]
+    },
+    {
+      "number": 66,
+      "source": "FulfilmentPartner",
+      "target": "PlanLegAssignment",
+      "treatment": "plan_leg_assignments.fulfilment_partner_id nullable indexed FK; carrier/service match and agreement covers whole leg window; native commercial transitions revalidate the current agreement",
+      "api": "POST /plans/:id/assignments/:assignmentId/partner; GET /plans/:id -> data.legAssignments[].fulfilmentPartnerId",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261007083000_hac40_model_associations.sql",
+        "cargomesh/src/shared/schemas/v2/workflow.ts",
+        "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql",
+        "cargomesh/scripts/hac40-model-closure-http-smoke.mjs"
       ]
     }
   ]

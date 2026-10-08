@@ -34,7 +34,7 @@ def prepare():
 
 def cleanup(state):
  refs=state['refs'];q=refs['request']['id'];ids=','.join(literal(v['id']) for v in refs.values())
- workflow=['execution_events','incident_updates','operational_incidents','v2_bookings','selection_decisions','v2_rankings','v2_carrier_offers','carrier_opportunities','transport_plan_candidates','route_plans','route_resource_limits','route_corridors','logistics_nodes','route_planning_policies','scoring_policies']
+ workflow=['execution_events','incident_updates','operational_incidents','v2_bookings','selection_decisions','v2_rankings','v2_carrier_offers','carrier_opportunities','transport_plan_candidates','route_plans','route_conditions','route_resource_limits','route_corridors','logistics_nodes','route_planning_policies','scoring_policies']
  statements=['begin;']
  for table in workflow:statements.append(f'alter table public.{table} disable trigger workflow_guard;')
  for table in ['driver_assignments','vehicle_assignments','drivers']:statements.append(f'alter table public.{table} disable trigger crew_command_guard;')
@@ -43,6 +43,7 @@ def cleanup(state):
  f"delete from public.capacity_reservations where freight_request_id='{q}';",
  f"delete from public.execution_events where freight_request_id='{q}';",
  f"delete from public.incident_updates where freight_request_id='{q}';",
+ f"delete from public.incident_route_conditions where incident_id in(select id from public.operational_incidents where freight_request_id='{q}');",
  f"delete from public.operational_incidents where freight_request_id='{q}';",
  f"delete from public.transport_executions where freight_request_id='{q}';",
  f"delete from public.v2_bookings where freight_request_id='{q}';",
@@ -60,13 +61,13 @@ def cleanup(state):
  f"delete from public.route_waypoints where route_leg_id in(select id from public.route_legs where route_plan_id in(select id from public.route_plans where freight_request_id='{q}'));",
  f"delete from public.route_legs where route_plan_id in(select id from public.route_plans where freight_request_id='{q}');",
  f"delete from public.route_plans where freight_request_id='{q}';"])
- for table in ['route_resource_limits','route_corridors','logistics_nodes','route_planning_policies','scoring_policies']:statements.append(f'delete from public.{table} where id in({ids});')
+ for table in ['route_conditions','route_resource_limits','route_corridors','logistics_nodes','route_planning_policies','scoring_policies']:statements.append(f'delete from public.{table} where id in({ids});')
  for table in workflow:statements.append(f'alter table public.{table} enable trigger workflow_guard;')
  for table in ['driver_assignments','vehicle_assignments','drivers']:statements.append(f'alter table public.{table} enable trigger crew_command_guard;')
- for table in ['capacity_calendars','asset_cargo_capabilities','transport_assets','cargo_capability_definitions']:statements.append(f'delete from public.{table} where id in({ids});')
+ for table in ['capacity_calendars','asset_cargo_capabilities','transport_assets','cargo_capability_definitions','fulfilment_partners']:statements.append(f'delete from public.{table} where id in({ids});')
  statements.extend([f"delete from private.v2_request_command_receipts where request_id='{q}';",f"delete from public.freight_requests where id='{q}';",
  f"delete from private.v2_catalog_receipts where result->>'id' in({ids});",
- f"delete from private.v2_workflow_receipts where (result->>'requestId'='{q}' or result->>'id' in({ids})) and organization_id='{ORG}' and member_id='{MEMBER}';",
+ f"delete from private.v2_workflow_receipts where (result->>'requestId'='{q}' or result#>>'{{search,requestId}}'='{q}' or result->>'id' in({ids})) and organization_id='{ORG}' and member_id='{MEMBER}';",
  f"delete from private.v2_catalog_grants where auth_user_id='{USER}' and permission='CATALOG_ADMIN';"])
  for table,rows in state['previous'].items():
   if table=='categoryLink':continue
