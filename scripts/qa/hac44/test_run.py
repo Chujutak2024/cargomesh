@@ -39,6 +39,7 @@ class RunnerTests(unittest.TestCase):
                     (out / "logs" / name).write_text(json.dumps(payload), encoding="utf-8")
                 if defect == "command" and key == ("persistence.py",): code = 1
                 if defect == "setup" and key == ("gates.py",): code = 1
+                if defect == "baseline" and key == ("fk_coverage.py",): code = 3
                 return SimpleNamespace(returncode=code)
             result = runner.Runner(out, execute)
             with contextlib.redirect_stdout(io.StringIO()):
@@ -108,6 +109,17 @@ class RunnerTests(unittest.TestCase):
         code, data, _ = self.exercise("setup")
         self.assertEqual(code, 1)
         self.assertTrue(all(c["exit"] is None for c in data["commands"] if c["script"] == "lifecycle.py"))
+
+    def test_failed_original_baseline_stops_after_cleanup(self):
+        self.positive()
+        code, data, cycles = self.exercise("baseline")
+        self.assertEqual(code, 1)
+        self.assertEqual(len(cycles), 1)
+        self.assertEqual(cycles[0]["cleanup"]["status"], "PASS")
+        self.assertEqual(data["commands"][-1]["script"], "lifecycle.py")
+        self.assertEqual(data["commands"][-1]["args"], ["cleanup"])
+        self.assertFalse(any(c["script"] in ("persistence.py", "matrix.py", "generate.py", "checks.py")
+                             for c in data["commands"]))
 
     def test_stale_success_is_not_reused(self):
         self.positive()

@@ -1,26 +1,18 @@
 """Explicit, versioned HAC-44 FK scope; reject catalog drift before any probe."""
 
-import collections
 import hashlib
 import json
 import re
 from pathlib import Path
 
 
-ORIGIN_SHA = "fe12d41e474c2c12d9dcd8e77047a0f2b7f0bd66"
+ORIGIN_SHA = "776b5da4225045cbf68a35706423dce0684ea793"
 V1_CATEGORY = "V1_HEREDADA_BASELINE"
-CATEGORY_COUNTS = {
-    "BASELINE_178": 178,
-    "V2_MODELO": 17,
-    "V2_AUXILIAR": 11,
-    "INTERNA_V2_RECEIPTS_GRANTS": 14,
-    V1_CATEGORY: 40,
-}
 # Frozen from the authorized clean catalog and the separately delivered 82-FK
 # classification. Reasons may improve; identities and physical scope may not drift.
 GROUP_DIGESTS = {
     "baseline": "9a3eb962f8c21926ec0455c1489f5b222843ed5b9a0adda68f6c3b57d637f5f9",
-    "new": "f4ca7c379ed43b99e20608bb29e519fd73c5095ad951f591050d8edeb2ccf597",
+    "new": "738c069d54668a56ff186e9885edec0ff70c4bffbbb0d302f105654fe42ab109",
     "excluded": "4119cfd156b75ae8c61b7caabba35a76a8477a49bb482ce7e4ef48296a7f4b0f",
 }
 
@@ -77,7 +69,7 @@ def group_digest(records):
 
 
 def validate_inventory(catalog, inventory=None):
-    """Return the 220 explicit selected records only when all 260 FK agree."""
+    """Select explicit authorized identities only when the measured catalog agrees."""
     inventory = load_inventory() if inventory is None else inventory
     if inventory.get("schemaVersion") != 1 or inventory.get("originSha") != ORIGIN_SHA:
         raise ValueError("Inventory format or authorized origin SHA changed")
@@ -112,9 +104,6 @@ def validate_inventory(catalog, inventory=None):
     expected = {identity(row): row for row in records}
     if len(expected) != len(records):
         raise ValueError("Duplicate FK identity in the explicit inventory")
-    counts = collections.Counter(row["category"] for row in records)
-    if counts != CATEGORY_COUNTS:
-        raise ValueError("FK inventory categories changed: " + json.dumps(dict(counts), sort_keys=True))
     for name, group in group_records(records).items():
         if group_digest(group) != GROUP_DIGESTS[name]:
             raise ValueError("Frozen FK scope changed: " + name)

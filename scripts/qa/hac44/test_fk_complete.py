@@ -6,7 +6,7 @@ import io
 import json
 import unittest
 
-from fk_complete import (CASE_FUNCTION, FIXTURE_USER, ORPHAN, build_case, csv_text,
+from fk_strict import (STRICT_FUNCTION as CASE_FUNCTION, FIXTURE_USER, ORPHAN, build_case, csv_text,
                          guard_candidates, merge_results, probe_sql, status, verdict)
 
 
@@ -39,6 +39,7 @@ def fixtures():
 def measured(case, **changes):
     result = {"positive": True, "positiveAffectedRows": 1, "negative": True,
               "positiveReferenceVerified": True,
+              "positiveRoleBeforeConstraints": "authenticated", "positiveRoleAfterConstraints": "authenticated",
               "observedSqlstate": "23503", "observedConstraint": case["constraint"],
               "guardsEnabledAfterCase": True, "attempts": [{"number": 1}], "suspensions": []}
     result.update(changes)
@@ -214,7 +215,7 @@ class BoundaryTests(unittest.TestCase):
         self.assertTrue(sql.startswith("begin;"))
         self.assertTrue(sql.endswith("rollback;\n"))
         self.assertLess(CASE_FUNCTION.index("set constraints all immediate"), CASE_FUNCTION.index("positive := affected=1"))
-        self.assertIn("positive_row->expected.key is distinct from expected.value", sql)
+        self.assertIn("row_value->e.key is distinct from e.value", sql)
         self.assertIn("tgconstraint=0", sql)
         self.assertIn("not tgdeferrable and not tginitdeferred", sql)
         self.assertIn("demonstratedbyattempt", sql)

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "originSha": "fe12d41e474c2c12d9dcd8e77047a0f2b7f0bd66",
-  "classificationSource": "HAC-44 excluded-FK classification delivered at 50c12d115dd9b2171d9375acd215593de29e8f34; reconfirmed against the clean authorized 20-migration catalog.",
+  "originSha": "776b5da4225045cbf68a35706423dce0684ea793",
+  "classificationSource": "HAC-44 excluded-FK classification delivered at 50c12d115dd9b2171d9375acd215593de29e8f34; reconfirmed against the clean authorized 20-migration catalog. Expanded against the reconstructed 776b5da catalog with the three explicitly authorized #111 associations; existing and V1 identity groups unchanged.",
   "records": [
     {
       "table": "private.v2_catalog_grants",
@@ -1714,6 +1714,34 @@
       "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: partner_carrier_ref -> public.carriers(id)."
     },
     {
+      "table": "public.incident_route_conditions",
+      "constraint": "incident_route_conditions_condition_id_fkey",
+      "childColumns": [
+        "condition_id"
+      ],
+      "referenceTable": "public.route_conditions",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (condition_id) REFERENCES route_conditions(id)",
+      "category": "V2_MODELO",
+      "reason": "Canonical V2 model association introduced by HAC-40 #111; authorized strict FK coverage on 776b5da."
+    },
+    {
+      "table": "public.incident_route_conditions",
+      "constraint": "incident_route_conditions_incident_id_fkey",
+      "childColumns": [
+        "incident_id"
+      ],
+      "referenceTable": "public.operational_incidents",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (incident_id) REFERENCES operational_incidents(id)",
+      "category": "V2_MODELO",
+      "reason": "Canonical V2 model association introduced by HAC-40 #111; authorized strict FK coverage on 776b5da."
+    },
+    {
       "table": "public.incident_updates",
       "constraint": "incident_update_incident_fk",
       "childColumns": [
@@ -2136,6 +2164,20 @@
       "definition": "FOREIGN KEY (carrier_service_id) REFERENCES carrier_services(id)",
       "category": "BASELINE_178",
       "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id -> public.carrier_services(id)."
+    },
+    {
+      "table": "public.plan_leg_assignments",
+      "constraint": "plan_leg_assignments_fulfilment_partner_id_fkey",
+      "childColumns": [
+        "fulfilment_partner_id"
+      ],
+      "referenceTable": "public.fulfilment_partners",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (fulfilment_partner_id) REFERENCES fulfilment_partners(id)",
+      "category": "V2_MODELO",
+      "reason": "Canonical V2 model association introduced by HAC-40 #111; authorized strict FK coverage on 776b5da."
     },
     {
       "table": "public.plan_leg_assignments",

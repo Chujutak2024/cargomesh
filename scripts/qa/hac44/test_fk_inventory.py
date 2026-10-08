@@ -1,4 +1,4 @@
-"""Paired regressions for the authorized 178 + 42 selected / 40 excluded scope."""
+"""Paired regressions for the authorized 178 + 45 selected / 40 excluded scope."""
 
 import copy
 import hashlib
@@ -14,11 +14,13 @@ from fk_inventory import load_inventory, validate_inventory
 # classification, not recalculated from a changed inventory at test startup.
 EXPECTED_DIGESTS = {
     "baseline": "9a3eb962f8c21926ec0455c1489f5b222843ed5b9a0adda68f6c3b57d637f5f9",
-    "new": "f4ca7c379ed43b99e20608bb29e519fd73c5095ad951f591050d8edeb2ccf597",
+    "new": "738c069d54668a56ff186e9885edec0ff70c4bffbbb0d302f105654fe42ab109",
     "excluded": "4119cfd156b75ae8c61b7caabba35a76a8477a49bb482ce7e4ef48296a7f4b0f",
 }
 NEW_TABLE_COUNTS = {
     "public.asset_cargo_capabilities": 7,
+    "public.incident_route_conditions": 2,
+    "public.plan_leg_assignments": 1,
     "public.plan_resource_bindings": 6,
     "public.v2_rankings": 4,
     "public.capacity_consolidations": 6,
@@ -60,10 +62,10 @@ class FKInventoryTests(unittest.TestCase):
         records = inventory["records"]
         catalog = fixture_catalog(records)
         selected = validate_inventory(catalog, inventory)
-        self.assertEqual(inventory["originSha"], "fe12d41e474c2c12d9dcd8e77047a0f2b7f0bd66")
-        self.assertEqual(len(records), 260)
-        self.assertEqual(len({(row["table"], row["constraint"]) for row in records}), 260)
-        self.assertEqual(len(selected), 220)
+        self.assertEqual(inventory["originSha"], "776b5da4225045cbf68a35706423dce0684ea793")
+        self.assertEqual(len(records), 263)
+        self.assertEqual(len({(row["table"], row["constraint"]) for row in records}), 263)
+        self.assertEqual(len(selected), 223)
         groups = {
             "baseline": [row for row in records if row["category"] == "BASELINE_178"],
             "new": [row for row in records if row["category"] in (
@@ -72,11 +74,11 @@ class FKInventoryTests(unittest.TestCase):
             "excluded": [row for row in records if row["category"] == "V1_HEREDADA_BASELINE"],
         }
         self.assertEqual({name: len(rows) for name, rows in groups.items()},
-                         {"baseline": 178, "new": 42, "excluded": 40})
+                         {"baseline": 178, "new": 45, "excluded": 40})
         self.assertEqual({name: frozen_digest(rows) for name, rows in groups.items()}, EXPECTED_DIGESTS)
         self.assertEqual(Counter(row["table"] for row in groups["new"]), NEW_TABLE_COUNTS)
         self.assertEqual(Counter(row["category"] for row in groups["new"]), {
-            "V2_MODELO": 17, "V2_AUXILIAR": 11, "INTERNA_V2_RECEIPTS_GRANTS": 14,
+            "V2_MODELO": 20, "V2_AUXILIAR": 11, "INTERNA_V2_RECEIPTS_GRANTS": 14,
         })
         self.assertTrue(all(row["reason"] for row in groups["excluded"]))
         excluded = {(row["table"], row["constraint"]) for row in groups["excluded"]}

@@ -14,6 +14,13 @@ export async function extend(c: any) {
     evidence,
   } = c;
   const schemas = modules["workflow.ts"].WorkflowInputsV2;
+  const audit = (version = 1) => ({
+    schemaVersion: "2.0",
+    expectedVersion: version,
+    note: "HAC44 transition",
+    evidence,
+  });
+
   function clean(value: any, s: any): any {
     while (
       s?._def &&
@@ -211,6 +218,18 @@ export async function extend(c: any) {
     ],
   });
   if (!plan) return;
+  const partner = await create("partners", carrier + "/partners", {
+    schemaVersion: "2.0", registeredName: "HAC44 model partner", partnerCarrierRef: null,
+    agreementValidFrom: "2020-01-01T00:00:00Z", agreementValidUntil: "2035-01-01T00:00:00Z",
+    status: "ACTIVE", coverageEvidence: "fixture:hac44-model-agreement",
+  });
+  if (partner) {
+    const path = `/plans/${plan.id}/assignments/${plan.data.legAssignments[0].id}/partner`;
+    await call("model-partner-positive", path, { ...audit(), partnerId: partner.id }, undefined, 1, 200);
+    await call("model-partner-anonymous", path, { ...audit(2), partnerId: partner.id }, undefined, 0, 401);
+    await call("model-partner-foreign", path, { ...audit(2), partnerId: partner.id }, undefined, 2, 404);
+    await call("model-partner-stale", path, { ...audit(), partnerId: partner.id }, undefined, 1, 409);
+  }
   const assignment = plan.data.assignments[0].id;
   const opportunity = await create("opportunities", q + "/opportunities", {
     schemaVersion: "2.0",
@@ -301,12 +320,6 @@ export async function extend(c: any) {
     evidence,
   });
   if (!hold) return;
-  const audit = (version = 1) => ({
-    schemaVersion: "2.0",
-    expectedVersion: version,
-    note: "HAC44 transition",
-    evidence,
-  });
   await call(
     "extended-confirm-hold",
     carrier + "/capacity/holds/" + hold.id + "/confirmations",
@@ -400,10 +413,22 @@ export async function extend(c: any) {
     },
   );
   if (incident) {
+    const condition = await create("model-condition", "/routing/conditions", {
+      schemaVersion: "2.0", active: true, corridorId: corridor.id, kind: "DELAY",
+      location: refs.origin.data.location, observedAt: new Date(Date.now() - 60000).toISOString(),
+      validUntil: new Date(Date.now() + 3600000).toISOString(), source: evidence, confidence: "SIMULATED",
+    });
+    if (condition) {
+      const path = carrier + "/incidents/" + incident.id + "/conditions";
+      await call("model-incident-positive", path, { ...audit(), conditionIds: [condition.id] }, undefined, 1, 200);
+      await call("model-incident-anonymous", path, { ...audit(2), conditionIds: [condition.id] }, undefined, 0, 401);
+      await call("model-incident-foreign", path, { ...audit(2), conditionIds: [condition.id] }, undefined, 2, 403);
+      await call("model-incident-stale", path, { ...audit(), conditionIds: [condition.id] }, undefined, 1, 409);
+    }
     await call(
       "incident-update",
       carrier + "/incidents/" + incident.id + "/updates",
-      { ...audit(), action: "RESOLVE" },
+      { ...audit(2), action: "RESOLVE" },
       undefined,
       1,
       200,
@@ -511,6 +536,34 @@ export async function extend(c: any) {
       1,
       201,
     );
+  }
+  const currentRequest = await call("planner-request-control", "/freight/requests/" + refs.request.id, undefined, undefined, 1, 200);
+  const searchPath = `/freight/requests/${refs.request.id}/route-alternatives`;
+  const searchBody = { schemaVersion: "2.0", policyId: refs.policy.id,
+    expectedDraftVersion: currentRequest.response.data.draftVersion, maxLegs: 3, maxAlternatives: 10 };
+  const search = await call("planner-find-positive", searchPath, searchBody, undefined, 1, 201);
+  await call("planner-find-anonymous", searchPath, searchBody, undefined, 0, 401);
+  await call("planner-find-foreign", searchPath, searchBody, undefined, 2, 404);
+  await call("planner-find-stale", searchPath, { ...searchBody, expectedDraftVersion: 999999 }, undefined, 1, 409);
+  if (search.http === 201 && search.response.data.alternatives.length) {
+    const found = search.response.data.alternatives[0];
+    const explanation = `/routes/${found.id}/explanation`;
+    await call("planner-explain-positive", explanation, undefined, undefined, 1, 200);
+    await call("planner-explain-anonymous", explanation, undefined, undefined, 0, 401);
+    await call("planner-explain-foreign", explanation, undefined, undefined, 2, 404);
+    const currentCondition = await create("planner-condition", "/routing/conditions", {
+      schemaVersion: "2.0", active: true, corridorId: found.data.corridorIds[0], kind: "DELAY",
+      location: refs.origin.data.location, observedAt: new Date(Date.now() - 60000).toISOString(),
+      validUntil: new Date(Date.now() + 3600000).toISOString(), source: evidence, confidence: "SIMULATED",
+    });
+    if (currentCondition) {
+      const path = `/routes/${found.id}/replans`;
+      const body = { schemaVersion: "2.0", expectedVersion: found.version,
+        conditionId: currentCondition.id, maxLegs: 3, maxAlternatives: 10 };
+      await call("planner-replan-positive", path, body, undefined, 1, 201);
+      await call("planner-replan-anonymous", path, body, undefined, 0, 401);
+      await call("planner-replan-foreign", path, body, undefined, 2, 404);
+    }
   }
   output("extended-records.json", created);
   records.extended = created;

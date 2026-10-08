@@ -29,7 +29,7 @@ if __name__ == "__main__":
         )
         assert p.returncode == 0
         cfg = json.loads(p.stdout)
-        assert cfg["API_URL"] == "http://127.0.0.1:42321"
+        assert cfg["API_URL"] == "http://127.0.0.1:62021"
         env.update(
             {
                 "NEXT_PUBLIC_SUPABASE_URL": cfg["API_URL"],

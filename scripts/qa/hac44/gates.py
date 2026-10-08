@@ -34,8 +34,8 @@ def prepare():
         .read_text(encoding="utf-8-sig")
         .replace('project_id = "cargomesh-v2-local"', 'project_id = "' + PROJECT + '"')
     )
-    config = re.sub(r"5832([0-9])", r"4232\1", config).replace(
-        "inspector_port = 8183", "inspector_port = 9043"
+    config = re.sub(r"5832([0-9])", r"6202\1", config).replace(
+        "inspector_port = 8183", "inspector_port = 62043"
     )
     write(HARNESS / "supabase/config.toml", config)
     records = json.loads(
@@ -62,12 +62,12 @@ def full():
     g.EVIDENCE.mkdir(exist_ok=True)
     g.ARGS = SimpleNamespace(
         action="v2",
-        v1_replay_port_base=43300,
-        v1_replay_inspector_port=9143,
-        v1_replay_analytics_port=43327,
-        baseline_replay_port_base=44300,
-        baseline_replay_inspector_port=9243,
-        baseline_replay_analytics_port=44327,
+        v1_replay_port_base=62030,
+        v1_replay_inspector_port=62073,
+        v1_replay_analytics_port=62057,
+        baseline_replay_port_base=62060,
+        baseline_replay_inspector_port=62093,
+        baseline_replay_analytics_port=62087,
     )
     native_reference = g.reference_config
 
