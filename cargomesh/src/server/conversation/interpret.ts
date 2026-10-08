@@ -2,7 +2,7 @@ import "server-only";
 
 import { BedrockRuntimeClient, ConverseCommand, type ConverseCommandOutput } from "@aws-sdk/client-bedrock-runtime";
 import OpenAI from "openai";
-import { ConversationFieldNameSchema, InterpretationRequestSchema, InterpretationSchema, interpretDeterministically, isProductHelpQuestion, type InterpretationRequest } from "@/features/v2-conversation-prep/interpretation";
+import { ConversationFieldNameSchema, InterpretationRequestSchema, InterpretationSchema, interpretDeterministically, isHelpFollowUp, isProductHelpQuestion, type InterpretationRequest } from "@/features/v2-conversation-prep/interpretation";
 
 type Config = { enabled: boolean; endpoint: "runtime" | "mantle"; region: string; modelId: string; maxTokens: number; timeoutMs: number; inputUsdPerMillion: number | null; outputUsdPerMillion: number | null };
 type Invoke = (config: Config, input: InterpretationRequest) => Promise<ConverseCommandOutput>;
@@ -55,12 +55,12 @@ async function invokeMantle(config: Config, input: InterpretationRequest): Promi
   if (!apiKey?.startsWith("bedrock-api-key-")) throw new Error("A Bedrock API key is required for Bedrock Mantle.");
   // Force AWS's endpoint. A Bedrock key must never be sent to api.openai.com.
   const client = new OpenAI({ apiKey, baseURL: `https://bedrock-mantle.${config.region}.api.aws/v1`, timeout: config.timeoutMs, maxRetries: 0 });
-  if (isProductHelpQuestion(input.text)) {
+  if (isProductHelpQuestion(input.text) || (input.context?.previousHelpTopic && isHelpFollowUp(input.text))) {
     const response = await client.responses.create({
       model: config.modelId,
       input: [
         { role: "system", content: PRODUCT_HELP_INSTRUCTIONS },
-        { role: "user", content: input.text },
+        { role: "user", content: JSON.stringify({ question: input.text, previousHelpTopic: input.context?.previousHelpTopic ?? null }) },
       ],
       reasoning: { effort: "low" },
       max_output_tokens: Math.min(config.maxTokens, 220),

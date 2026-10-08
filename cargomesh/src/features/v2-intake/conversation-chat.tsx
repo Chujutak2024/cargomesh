@@ -6,7 +6,7 @@ import type { V2IntakePrototypeDraft } from "./prototype-model";
 import { validatePrototypeReview } from "./prototype-model";
 import { CONVERSATION_FIELDS, FIELD_QUESTION, choicesForField, matchingConversationChoices, resolveConversationSuggestions, type ConversationField, type GuidedConversationField } from "./conversation-fields";
 import { useConversationVoice } from "@/features/v2-conversation-prep/voice-controls";
-import { InterpretationResponseSchema, type Interpretation } from "@/features/v2-conversation-prep/interpretation";
+import { InterpretationResponseSchema, helpTopic, isHelpFollowUp, type Interpretation } from "@/features/v2-conversation-prep/interpretation";
 import { conversationContext } from "./conversation-context";
 import type { V2IntakeApiError } from "./v2-intake-client";
 import styles from "./conversation-chat.module.css";
@@ -53,6 +53,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const [interpretationBusy, setInterpretationBusy] = useState(false);
   const [audioReplies, setAudioReplies] = useState(true);
   const [voiceLanguage, setVoiceLanguage] = useState<"es-PE" | "en-US">("es-PE");
+  const [voiceRate, setVoiceRate] = useState(0.96);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [choices, setChoices] = useState<Choice[]>([]);
   const [viewport, setViewport] = useState<{ height: number; keyboardInset: number } | null>(null);
@@ -60,15 +61,16 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const inputRef = useRef<HTMLInputElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const announcedDraftRef = useRef<string | null>(null);
-  const voiceTurnActive = useRef(false);
   const lastSpokenMessage = useRef(0);
   const failedAttempts = useRef(0);
+  const previousHelpTopic = useRef<"PURPOSE" | "SELECTION" | null>(null);
   const latestAssistant = history.findLast((message) => message.speaker === "assistant")?.text ?? "";
   const voice = useConversationVoice({
     onTranscript: (recognized) => { setText(recognized); inputRef.current?.focus(); },
-    onSilence: (recognized) => { void send(recognized, true); },
+    onSilence: (recognized) => { setText(recognized); inputRef.current?.focus(); },
     responseText: latestAssistant,
     language: voiceLanguage,
+    rate: voiceRate,
   });
   const nextField = request ? null : missingField(draft);
   const syntheticCatalog = optionsSource === "fixture" || options.facilities.some((facility) => facility.label.includes("[SYNTHETIC]"));
@@ -137,7 +139,6 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   }
 
   function closePanel() {
-    voiceTurnActive.current = false;
     if (voice.state === "listening" || voice.state === "requesting_permission") voice.stop();
     voice.stopResponse();
     setOpen(false);
@@ -146,7 +147,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
 
   async function interpret(value: string): Promise<{ interpretation: Interpretation; mode: "BEDROCK" | "DETERMINISTIC" }> {
     const input = { schemaVersion: "2.0" as const, text: value, currentField: nextField,
-      context: conversationContext(draft, nextField, failedAttempts.current) };
+      context: { ...conversationContext(draft, nextField, failedAttempts.current), previousHelpTopic: previousHelpTopic.current } };
     const endpoint = optionsSource === "fixture" ? "/api/v2/conversation/preview" : "/api/v2/conversation/interpret";
     const response = await fetch(endpoint, {
       method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
@@ -158,14 +159,12 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     return { interpretation: parsed.data.interpretation, mode: parsed.data.mode };
   }
 
-  async function send(override?: string, fromVoice = false) {
-    const value = (override ?? text).trim();
+  async function send() {
+    const value = text.trim();
     if (!value || busy || interpretationBusy || voice.speaking) {
-      if (fromVoice) voice.finishProcessing();
       return;
     }
-    if (!fromVoice && (voice.state === "listening" || voice.state === "requesting_permission")) voice.stop();
-    voiceTurnActive.current = fromVoice;
+    if (voice.state === "listening" || voice.state === "requesting_permission") voice.stop();
     setText("");
     setChoices([]);
     if (awaitingConfirmation && positive.test(value)) {
@@ -193,10 +192,11 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     try {
       const { interpretation: proposal, mode } = await interpret(value);
       if (proposal.intent === "PRICE" || proposal.intent === "BOOKING") { add(value, unavailable); return; }
-      if (proposal.intent === "HELP") { add(value, proposal.acknowledgment ?? "Dime el lugar de recojo y entrega, la carga y las fechas. Te pediré solo los datos que falten y podrás corregirlos antes de guardar."); return; }
+      if (proposal.intent === "HELP") { if (!isHelpFollowUp(value)) previousHelpTopic.current = helpTopic(value); add(value, proposal.acknowledgment ?? "Dime el lugar de recojo y entrega, la carga y las fechas. Te pediré solo los datos que falten y podrás corregirlos antes de guardar."); return; }
       if (proposal.intent === "START_OVER") {
         onStartOver?.();
         failedAttempts.current = 0;
+        previousHelpTopic.current = null;
         setAwaitingConfirmation(false);
         add(value, "Empecemos una solicitud provisional nueva. ¿Dónde se recogerá la carga?");
         return;
@@ -318,7 +318,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
             : <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing" || voice.speaking || busy || interpretationBusy} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>}
           <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || voice.speaking}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
-        <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button><label>Voice <select aria-label="Voice for spoken replies" value={voice.selectedVoiceURI} onChange={(event) => voice.setSelectedVoiceURI(event.target.value)}><option value="">Automatic</option>{voice.availableVoices.map((option) => <option key={option.voiceURI} value={option.voiceURI}>{option.name}{option.localService ? " (device)" : ""}</option>)}</select></label></div>
+        <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button><label>Voice <select aria-label="Voice for spoken replies" value={voice.selectedVoiceURI} onChange={(event) => voice.setSelectedVoiceURI(event.target.value)}><option value="">Automatic</option>{voice.availableVoices.map((option) => <option key={option.voiceURI} value={option.voiceURI}>{option.name} ({option.lang}){option.localService ? " · device" : ""}</option>)}</select></label><label>Ritmo <select aria-label="Ritmo de voz" value={voiceRate} onChange={(event) => setVoiceRate(Number(event.target.value))}><option value={0.88}>Pausado</option><option value={0.96}>Natural</option><option value={1.06}>Ágil</option></select></label><button type="button" onClick={() => voice.readResponse(voiceLanguage === "es-PE" ? "Hola, soy CargoMesh. Cuéntame qué necesitas transportar y te ayudaré paso a paso." : "Hello, I'm CargoMesh. Tell me what you need to ship, and I'll help you step by step.")} disabled={voice.speaking}>Probar voz</button></div>
       </div>
     </section>}
   </aside>;

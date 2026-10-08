@@ -23,6 +23,7 @@ export const ConversationContextSchema = z.object({
   }).strict()).max(16),
   lastAskedField: ConversationFieldNameSchema.nullable(),
   failedAttempts: z.number().int().min(0).max(3),
+  previousHelpTopic: z.enum(["PURPOSE", "SELECTION"]).nullable().optional(),
 }).strict();
 
 export const InterpretationRequestSchema = z.object({
@@ -52,15 +53,38 @@ export function isProductHelpQuestion(text: string): boolean {
   return /\b(?:para qu[eé] sirve|qu[eé] es cargomesh|c[oó]mo funciona|c[oó]mo (?:me )?ayuda|qu[eé] puedes hacer|escoger|elegir|comparar|what is cargomesh|what can you do|how (?:does it|can you) help|how does it work|choose|compare)\b/i.test(text);
 }
 
+export function helpTopic(text: string): "PURPOSE" | "SELECTION" {
+  return /\b(?:escoger|elegir|comparar|choose|compare)\b/i.test(text) ? "SELECTION" : "PURPOSE";
+}
+
+export function isHelpFollowUp(text: string): boolean {
+  return /^(?:y eso|y entonces|por qu[eé]|expl[ií]came m[aá]s|tell me more|why|and how)$/i
+    .test(text.trim().replace(/^[¿¡\s]+|[?.!\s]+$/g, ""));
+}
+
+export function productHelpFallback(text: string): string {
+  const english = /\b(?:what|how|help|choose|compare)\b/i.test(text) && !/\b(?:qu[eé]|c[oó]mo|para|ayuda|escoger|elegir|comparar)\b/i.test(text);
+  const compare = /\b(?:escoger|elegir|comparar|choose|compare)\b/i.test(text);
+  if (english) return compare
+    ? "I can help you prepare a freight request and review preliminary ROAD eligibility. When carrier-authored offers exist, you can compare their evidence and terms; I cannot confirm a price or booking here. What cargo and route do you have in mind?"
+    : "CargoMesh helps you prepare a freight request and review preliminary ROAD eligibility using authorized backend data. Tell me what you need to ship and where it should go; I will ask for missing details before you save a draft.";
+  return compare
+    ? "Puedo ayudarte a preparar una solicitud y revisar la elegibilidad ROAD preliminar. Si existen ofertas emitidas por carriers, podrás comparar sus condiciones y evidencia; aquí no confirmo precios ni reservas. ¿Qué carga y ruta tienes en mente?"
+    : "CargoMesh te ayuda a preparar una solicitud de transporte y revisar la elegibilidad ROAD preliminar con datos autorizados del backend. Cuéntame qué necesitas transportar y a dónde; te pediré los datos faltantes antes de guardar un borrador.";
+}
+
 /** A bounded, local fallback. It extracts only explicit statements and never infers domain facts. */
 export function interpretDeterministically(input: InterpretationRequest): Interpretation {
   const text = input.text.trim();
   const lower = text.toLowerCase();
-  if (isProductHelpQuestion(text)) return { intent: "HELP", fields: [] };
+  if (isProductHelpQuestion(text)) return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(text) };
+  if (input.context?.previousHelpTopic && isHelpFollowUp(text)) {
+    return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(input.context.previousHelpTopic === "SELECTION" ? "¿Cómo me ayuda a escoger?" : "¿Para qué sirve CargoMesh?") };
+  }
   if (/\b(price|quote|cost|rate|precio|cotizaci[oó]n|costo|tarifa)\b/.test(lower)) return { intent: "PRICE", fields: [] };
   if (/\b(book|booking|reserve|reservation|reservar|reserva|contratar)\b/.test(lower)) return { intent: "BOOKING", fields: [] };
   if (/^(start over|reset|new request|empezar de nuevo|reiniciar|nueva solicitud)$/i.test(text)) return { intent: "START_OVER", fields: [] };
-  if (/^(help|what can you do|ayuda|qu[eé] puedes hacer)\??$/i.test(text)) return { intent: "HELP", fields: [] };
+  if (/^(help|what can you do|ayuda|qu[eé] puedes hacer)\??$/i.test(text)) return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(text) };
   if (/\b(evaluate|eligib|road options|road result|check road|evaluar|elegibilidad|opciones road|revisar road)\b/.test(lower)) return { intent: "EVALUATE", fields: [] };
   if (/\b(read|show|retrieve|leer|mostrar|ver)\b.*\b(draft|request|borrador|solicitud)\b/.test(lower)) return { intent: "READ", fields: [] };
   if (/\b(create|save|submit|crear|guardar|enviar)\b.*\b(draft|request|borrador|solicitud)\b/.test(lower)) return { intent: "CREATE", fields: [] };

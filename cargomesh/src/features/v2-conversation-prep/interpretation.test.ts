@@ -35,6 +35,19 @@ test("price and booking never become create or evaluation effects", () => {
   assert.equal(interpretDeterministically({ schemaVersion: "2.0", text: "book this now", currentField: null }).intent, "BOOKING");
 });
 
+test("product questions receive grounded guidance even without Bedrock", () => {
+  const purpose = interpretDeterministically({ schemaVersion: "2.0", text: "¿Para qué sirve CargoMesh?", currentField: "originFacilityId" });
+  assert.equal(purpose.intent, "HELP");
+  assert.match(purpose.acknowledgment ?? "", /solicitud de transporte/);
+  const choice = interpretDeterministically({ schemaVersion: "2.0", text: "¿Y cómo me ayuda a escoger?", currentField: "originFacilityId" });
+  assert.equal(choice.intent, "HELP");
+  assert.match(choice.acknowledgment ?? "", /ofertas emitidas por carriers/);
+  assert.doesNotMatch(choice.acknowledgment ?? "", /precio confirmado/);
+  const followUp = interpretDeterministically({ schemaVersion: "2.0", text: "¿Y eso?", currentField: "originFacilityId", context: { knownFields: [], lastAskedField: "originFacilityId", failedAttempts: 0, previousHelpTopic: "SELECTION" } });
+  assert.equal(followUp.intent, "HELP");
+  assert.match(followUp.acknowledgment ?? "", /ofertas emitidas/);
+});
+
 test("Spanish freight turns keep their explicit values and never imply a booking", () => {
   const turn = interpretDeterministically({ schemaVersion: "2.0", text: "Quiero 2 pallets de Lima a Piura", currentField: "originFacilityId" });
   assert.deepEqual(turn, {

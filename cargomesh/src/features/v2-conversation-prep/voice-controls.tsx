@@ -32,12 +32,13 @@ type BraveNavigator = Navigator & { brave?: { isBrave?: () => Promise<boolean> }
 export type VoiceState = "checking" | "available" | "requesting_permission" | "listening" | "processing" | "error" | "unsupported";
 
 /** Browser-only capture and playback. The parent decides how to handle a completed turn. */
-export function useConversationVoice({ onTranscript, onSilence, responseText, language }: {
+export function useConversationVoice({ onTranscript, onSilence, responseText, language, rate = 0.96 }: {
   onTranscript: (text: string) => void;
   onSilence: (text: string) => void;
   responseText: string;
   /** Web Speech has no dependable automatic language detection. The user picks the recognition locale. */
   language: "es-PE" | "en-US";
+  rate?: number;
 }) {
   const [state, setState] = useState<VoiceState>("checking");
   const [message, setMessage] = useState("");
@@ -70,8 +71,8 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
     stopped.current = true;
     recognition.current = null;
     try { instance.stop(); } catch { /* The browser may have already ended recognition. */ }
-    setState("processing");
-    setMessage("Speech ended. Preparing your response…");
+    setState("available");
+    setMessage("Dictation finished. Review the transcript before sending.");
     onSilenceRef.current(transcript);
   }
 
@@ -150,7 +151,7 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
         }
       }
       setState("listening");
-      setMessage(final ? "Listening… Pause after speaking to send, or press Stop to edit first." : "Listening… Waiting for a confirmed transcript. Press Stop to edit first.");
+      setMessage(final ? "Listening… Pause after speaking, then review and send." : "Listening… Waiting for a confirmed transcript. Review it before sending.");
     };
     instance.onerror = (event) => {
       if (stopped.current || recognition.current !== instance) return;
@@ -192,7 +193,7 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
     activeUtterance.current = utterance;
     utterance.lang = language;
     utterance.voice = chosenSpeechVoice(window.speechSynthesis.getVoices(), language, selectedVoiceURI);
-    utterance.rate = 0.96;
+    utterance.rate = rate;
     utterance.onstart = () => { if (activeUtterance.current === utterance) { setSpeaking(true); setMessage("CargoMesh is speaking. Press Stop audio before starting another voice turn."); } };
     utterance.onend = () => { if (activeUtterance.current === utterance) { activeUtterance.current = null; setSpeaking(false); setState("available"); setMessage(""); } };
     utterance.onerror = () => { if (activeUtterance.current === utterance) { activeUtterance.current = null; setSpeaking(false); setState("available"); setMessage("Audio playback stopped. You can continue by voice or text."); } };
@@ -207,9 +208,9 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
     setMessage("Audio stopped. You can speak again or type.");
   }
 
-  function finishProcessing() {
+  function finishProcessing(message = "") {
     setState("available");
-    setMessage("");
+    setMessage(message);
   }
 
   return { state, message, speaking, start, stop, readResponse, stopResponse, finishProcessing, canRead: Boolean(responseText),
