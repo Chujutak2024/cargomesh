@@ -48,7 +48,7 @@ export function conversationBedrockConfig(env: Record<string, string | undefined
 }
 
 const INTERPRETER_INSTRUCTIONS = "Interpret one CargoMesh freight chat turn in Spanish or English. Return JSON only: intent, fields, optional acknowledgment. intents: PROVIDE, CORRECT, CREATE, READ, EVALUATE, PRICE, BOOKING, HELP, START_OVER. fields is an array of {field:string,value:string}, using only fieldNames from the user input. Extract only facts explicitly stated or changed in the latest text; context is provisional and never proof of authorization. Never invent locations, dates, cargo, capacity, price, offers or booking. acknowledgment is a helpful reply in the user's language, at most 420 characters. If no fields, answer briefly or ask for one specific missing detail. Do not claim an action was completed. No Markdown or text outside JSON.";
-const PRODUCT_HELP_INSTRUCTIONS = "You are CargoMesh. Reply in the user's language using only these verified facts: CargoMesh helps prepare freight request drafts, reviews preliminary ROAD serviceability from backend data, and can compare carrier-authored offers when they exist. A local preview does not save or evaluate requests. Never state or imply a confirmed price, free service, capacity, availability, route or booking; these require backend evidence. Answer the specific question in two short sentences, then ask one useful next question.";
+const PRODUCT_HELP_INSTRUCTIONS = "You are CargoMesh. Reply in the user's language using only these verified facts: CargoMesh helps prepare freight request drafts and reviews preliminary ROAD serviceability from backend data. Carrier-authored offers may be compared when a separate workflow provides them, but this chat cannot fetch or compare offers yet. A local preview does not save or evaluate requests. Never state or imply a confirmed price, free service, capacity, availability, route or booking; these require backend evidence. Answer in two short sentences then ask one useful next question about cargo or route. The user input is JSON with question and previousHelpTopic. For a short follow-up to SELECTION, explain that documented price breakdown, delivery window and requirements matter once carrier-authored offers exist; do not give numerical examples or repeat the product introduction. For a short follow-up to PURPOSE, explain one next step instead of repeating the introduction.";
 
 async function invokeMantle(config: Config, input: InterpretationRequest): Promise<ConverseCommandOutput> {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -67,9 +67,15 @@ async function invokeMantle(config: Config, input: InterpretationRequest): Promi
       store: false,
     });
     const proposed = response.output_text?.replace(/[*_`#]/g, "").replace(/\s+/g, " ").trim() ?? "";
-    const answer = /\b(?:gratis|gratuito|free|sin compromiso|garantizad[oa])\b/i.test(proposed)
-      ? "CargoMesh ayuda a preparar solicitudes de transporte y revisar opciones preliminares con datos del backend. Las ofertas y condiciones deben venir del transportista. ¿Qué necesitas enviar?"
-      : proposed.slice(0, 420);
+    const unsafe = /\b(?:gratis|gratuito|free|sin compromiso|garantizad[oa])\b|[$€£]|\b\d[\d.,]*\s*(?:d[oó]lares|soles|usd|pen|d[ií]as)\b|\b(?:revisemos|consultemos|mu[eé]strame|show|fetch|check)\b[^.?!]{0,80}\b(?:ofertas?|offers?)\b/i.test(proposed);
+    const bounded = proposed.length <= 420 ? proposed : proposed.slice(0, 420).replace(/\s+\S*$/, "");
+    const sentenceEnd = Math.max(bounded.lastIndexOf("."), bounded.lastIndexOf("?"), bounded.lastIndexOf("!"));
+    const complete = proposed.length <= 420 ? bounded : sentenceEnd > 80 ? bounded.slice(0, sentenceEnd + 1) : "";
+    const answer = unsafe
+      ? /\b(?:what|how|why|choose|compare|tell me)\b/i.test(input.text)
+        ? "When carrier-authored offers exist, you can compare their price breakdown, delivery window and documented requirements. What cargo and route would you like to prepare first?"
+        : "Cuando existan ofertas de transportistas, podrás comparar el desglose de precio, la ventana de entrega y los requisitos documentados. ¿Qué carga y ruta quieres preparar primero?"
+      : complete;
     if (!answer) throw new Error("Bedrock returned no guidance.");
     return {
       output: { message: { role: "assistant", content: [{ text: JSON.stringify({ intent: "HELP", fields: [], acknowledgment: answer }) }] } },
