@@ -25,6 +25,8 @@ El [índice general de `docs/`](../README.md) explica qué material fuera de V1/
 
 ## Trazabilidad Sprint 2
 
+La [revisión vigente UML → BD/API del 9 de octubre](./delivery/uml-bd-api-2026-10-09/README.md) clasifica el corte d3a80eb, actualiza identidad HAC-41 y documenta las correcciones de lectura integradas. Comenzar por ella al interpretar pendientes del backend; conserva los límites de certificación y despliegue.
+
 El [contrato HAC-27](./delivery/SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md) y su [diccionario de 57 clases / 397 atributos](./delivery/HAC27_UML_ATTRIBUTE_DICTIONARY_2026-10-02.md) acompañan el [UML 07 original](./diagrams/review-2026-09-24/07-complete-classes-sprint2-reviewed.drawio). Identifican representación física, alias y ausencias; la revisión/aceptación del PR no se presume. La [evidencia HAC-12](./delivery/HAC12_ROAD_VERTICAL_LOCAL_EVIDENCE.md) distingue esquema local de aplicación al Supabase V2 alojado.
 
 ## Estado
@@ -45,6 +47,7 @@ El [contrato HAC-27](./delivery/SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md) y su [di
 - Separación entre candidate discovery, oferta comercial, ranking y booking.
 - Políticas versionadas y explicables.
 - Alexa+ como canal MCP sobre servicios compartidos.
+- [Identidad y flujo completo MCP HAC-41](./delivery/HAC41_IDENTITY_MCP.md): linking/revocación, principal carrier y confirmaciones compartidas; su prueba local no acredita aplicación de las migraciones al alojado ni Alexa+ live.
 - V1 preservada como regresión, no como catálogo V2.
 
 ## Local V2 database bootstrap

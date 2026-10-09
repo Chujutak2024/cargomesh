@@ -8,6 +8,7 @@ test("only V2 is selectable as runtime profile", () => {
 test("V2 capabilities are truthful and lack legacy dependencies", () => {
   const report = capabilityReport("V2");
   assert.equal(report.status, "PARTIAL");
-  assert.ok(report.blockedBy.includes("V2_COMMERCIAL_MCP_TOOLS"));
+  assert.ok(report.blockedBy.includes("ALEXA_PLUS_LIVE_ACCESS"));
+  assert.ok(report.capabilities.some(tool => tool.toolName === "confirm_v2_commercial_action" && tool.status === "IMPLEMENTED"));
   assert.ok(implementedCapabilities("V2").every(tool => tool.profile === "V2" && tool.legacyDependency === "NONE"));
 });

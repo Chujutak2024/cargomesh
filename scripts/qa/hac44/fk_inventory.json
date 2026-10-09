@@ -1,0 +1,3785 @@
+{
+  "schemaVersion": 1,
+  "originSha": "776b5da4225045cbf68a35706423dce0684ea793",
+  "classificationSource": "HAC-44 excluded-FK classification delivered at 50c12d115dd9b2171d9375acd215593de29e8f34; reconfirmed against the clean authorized 20-migration catalog. Expanded against the reconstructed 776b5da catalog with the three explicitly authorized #111 associations; existing and V1 identity groups unchanged.",
+  "records": [
+    {
+      "table": "private.v2_catalog_grants",
+      "constraint": "v2_catalog_grants_auth_user_id_fkey",
+      "childColumns": [
+        "auth_user_id"
+      ],
+      "referenceTable": "auth.users",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+      "category": "INTERNA_V2_RECEIPTS_GRANTS",
+      "reason": "Internal V2 catalog ACL integrity; no primary key or client DML grant is introduced. Physical reference: auth_user_id -> auth.users(id)."
+    },
+    {
+      "table": "private.v2_catalog_grants",
+      "constraint": "v2_catalog_grants_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id) ON DELETE CASCADE",
+      "category": "INTERNA_V2_RECEIPTS_GRANTS",
+      "reason": "Internal V2 catalog ACL integrity; no primary key or client DML grant is introduced. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "private.v2_catalog_receipts",
+      "constraint": "v2_catalog_receipts_member_id_fkey",
+      "childColumns": [
+        "member_id"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (member_id) REFERENCES organization_members(id)",
+      "category": "INTERNA_V2_RECEIPTS_GRANTS",
+      "reason": "Internal V2 atomic-command receipt identity and organization membership integrity. Physical reference: member_id -> public.organization_members(id)."
+    },
+    {
+      "table": "private.v2_catalog_receipts",
+      "constraint": "v2_catalog_receipts_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "INTERNA_V2_RECEIPTS_GRANTS",
+      "reason": "Internal V2 atomic-command receipt identity and organization membership integrity. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "private.v2_facility_command_receipts",
+      "constraint": "v2_facility_command_receipts_facility_id_organization_id_fkey",
+      "childColumns": [
+        "facility_id",
+        "organization_id"
+      ],
+      "referenceTable": "public.facilities",
+      "referenceColumns": [
+        "id",
+        "organization_id"
+      ],
+      "definition": "FOREIGN KEY (facility_id, organization_id) REFERENCES facilities(id, organization_id)",
+      "category": "INTERNA_V2_RECEIPTS_GRANTS",
+      "reason": "Internal V2 atomic-command receipt identity and organization membership integrity. Physical reference: facility_id, organization_id -> public.facilities(id, organization_id)."
+    },
+    {
+      "table": "private.v2_facility_command_receipts",
+      "constraint": "v2_facility_command_receipts_member_id_fkey",
+      "childColumns": [
+        "member_id"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (member_id) REFERENCES organization_members(id)",
+      "category": "INTERNA_V2_RECEIPTS_GRANTS",
+      "reason": "Internal V2 atomic-command receipt identity and organization membership integrity. Physical reference: member_id -> public.organization_members(id)."
+    },
+    {
+      "table": "private.v2_facility_command_receipts",
+      "constraint": "v2_facility_command_receipts_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "INTERNA_V2_RECEIPTS_GRANTS",
+      "reason": "Internal V2 atomic-command receipt identity and organization membership integrity. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "private.v2_organization_command_receipts",
+      "constraint": "v2_organization_command_receipts_member_id_fkey",
+      "childColumns": [
+        "member_id"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (member_id) REFERENCES organization_members(id)",
+      "category": "INTERNA_V2_RECEIPTS_GRANTS",
+      "reason": "Internal V2 atomic-command receipt identity and organization membership integrity. Physical reference: member_id -> public.organization_members(id)."
+    },
+    {
+      "table": "private.v2_organization_command_receipts",
+      "constraint": "v2_organization_command_receipts_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "INTERNA_V2_RECEIPTS_GRANTS",
+      "reason": "Internal V2 atomic-command receipt identity and organization membership integrity. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "private.v2_request_command_receipts",
+      "constraint": "v2_request_command_receipts_member_id_fkey",
+      "childColumns": [
+        "member_id"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (member_id) REFERENCES organization_members(id)",
+      "category": "INTERNA_V2_RECEIPTS_GRANTS",
+      "reason": "Internal V2 atomic-command receipt identity and organization membership integrity. Physical reference: member_id -> public.organization_members(id)."
+    },
+    {
+      "table": "private.v2_request_command_receipts",
+      "constraint": "v2_request_command_receipts_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "INTERNA_V2_RECEIPTS_GRANTS",
+      "reason": "Internal V2 atomic-command receipt identity and organization membership integrity. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "private.v2_request_command_receipts",
+      "constraint": "v2_request_command_receipts_request_id_fkey",
+      "childColumns": [
+        "request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (request_id) REFERENCES freight_requests(id)",
+      "category": "INTERNA_V2_RECEIPTS_GRANTS",
+      "reason": "Internal V2 atomic-command receipt identity and organization membership integrity. Physical reference: request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "private.v2_workflow_receipts",
+      "constraint": "v2_workflow_receipts_member_id_fkey",
+      "childColumns": [
+        "member_id"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (member_id) REFERENCES organization_members(id)",
+      "category": "INTERNA_V2_RECEIPTS_GRANTS",
+      "reason": "Internal V2 atomic-command receipt identity and organization membership integrity. Physical reference: member_id -> public.organization_members(id)."
+    },
+    {
+      "table": "private.v2_workflow_receipts",
+      "constraint": "v2_workflow_receipts_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "INTERNA_V2_RECEIPTS_GRANTS",
+      "reason": "Internal V2 atomic-command receipt identity and organization membership integrity. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.asset_cargo_capabilities",
+      "constraint": "asset_cargo_capabilities_cargo_category_id_fkey",
+      "childColumns": [
+        "cargo_category_id"
+      ],
+      "referenceTable": "public.cargo_categories",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (cargo_category_id) REFERENCES cargo_categories(id)",
+      "category": "V2_MODELO",
+      "reason": "Documented V2 asset-to-cargo capability model integrity. Physical reference: cargo_category_id -> public.cargo_categories(id)."
+    },
+    {
+      "table": "public.asset_cargo_capabilities",
+      "constraint": "asset_cargo_capabilities_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "V2_MODELO",
+      "reason": "Documented V2 asset-to-cargo capability model integrity. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.asset_cargo_capabilities",
+      "constraint": "asset_cargo_capabilities_carrier_service_id_fkey",
+      "childColumns": [
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id) REFERENCES carrier_services(id)",
+      "category": "V2_MODELO",
+      "reason": "Documented V2 asset-to-cargo capability model integrity. Physical reference: carrier_service_id -> public.carrier_services(id)."
+    },
+    {
+      "table": "public.asset_cargo_capabilities",
+      "constraint": "asset_cargo_capabilities_definition_id_fkey",
+      "childColumns": [
+        "definition_id"
+      ],
+      "referenceTable": "public.cargo_capability_definitions",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (definition_id) REFERENCES cargo_capability_definitions(id)",
+      "category": "V2_MODELO",
+      "reason": "Documented V2 asset-to-cargo capability model integrity. Physical reference: definition_id -> public.cargo_capability_definitions(id)."
+    },
+    {
+      "table": "public.asset_cargo_capabilities",
+      "constraint": "asset_cargo_capabilities_fleet_service",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "V2_MODELO",
+      "reason": "Documented V2 asset-to-cargo capability model integrity. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.asset_cargo_capabilities",
+      "constraint": "asset_cargo_capabilities_transport_asset_id_fkey",
+      "childColumns": [
+        "transport_asset_id"
+      ],
+      "referenceTable": "public.transport_assets",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (transport_asset_id) REFERENCES transport_assets(id) ON DELETE CASCADE",
+      "category": "V2_MODELO",
+      "reason": "Documented V2 asset-to-cargo capability model integrity. Physical reference: transport_asset_id -> public.transport_assets(id)."
+    },
+    {
+      "table": "public.asset_cargo_capabilities",
+      "constraint": "fleet_definition_asset_scope",
+      "childColumns": [
+        "definition_id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.cargo_capability_definitions",
+      "referenceColumns": [
+        "id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "definition": "FOREIGN KEY (definition_id, carrier_id, carrier_service_id) REFERENCES cargo_capability_definitions(id, carrier_id, carrier_service_id)",
+      "category": "V2_MODELO",
+      "reason": "Documented V2 asset-to-cargo capability model integrity. Physical reference: definition_id, carrier_id, carrier_service_id -> public.cargo_capability_definitions(id, carrier_id, carrier_service_id)."
+    },
+    {
+      "table": "public.asset_status_events",
+      "constraint": "asset_event_asset_fk",
+      "childColumns": [
+        "parent_id"
+      ],
+      "referenceTable": "public.transport_assets",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (parent_id) REFERENCES transport_assets(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: parent_id -> public.transport_assets(id)."
+    },
+    {
+      "table": "public.asset_status_events",
+      "constraint": "asset_status_events_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.asset_status_events",
+      "constraint": "asset_status_events_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.asset_status_events",
+      "constraint": "asset_status_events_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.booking_authorizations",
+      "constraint": "booking_authorizations_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id) ON DELETE RESTRICT",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking-bridge authorizations; V2 authority uses selection_decisions and v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.booking_authorizations",
+      "constraint": "booking_authorizations_carrier_service_id_fkey",
+      "childColumns": [
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id) REFERENCES carrier_services(id) ON DELETE RESTRICT",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking-bridge authorizations; V2 authority uses selection_decisions and v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: carrier_service_id -> public.carrier_services(id)."
+    },
+    {
+      "table": "public.booking_authorizations",
+      "constraint": "booking_authorizations_consumed_booking_id_fkey",
+      "childColumns": [
+        "consumed_booking_id"
+      ],
+      "referenceTable": "public.bookings",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (consumed_booking_id) REFERENCES bookings(id) ON DELETE SET NULL",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking-bridge authorizations; V2 authority uses selection_decisions and v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: consumed_booking_id -> public.bookings(id)."
+    },
+    {
+      "table": "public.booking_authorizations",
+      "constraint": "booking_authorizations_freight_decision_id_fkey",
+      "childColumns": [
+        "freight_decision_id"
+      ],
+      "referenceTable": "public.freight_decisions",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_decision_id) REFERENCES freight_decisions(id) ON DELETE RESTRICT",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking-bridge authorizations; V2 authority uses selection_decisions and v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: freight_decision_id -> public.freight_decisions(id)."
+    },
+    {
+      "table": "public.booking_authorizations",
+      "constraint": "booking_authorizations_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking-bridge authorizations; V2 authority uses selection_decisions and v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.booking_authorizations",
+      "constraint": "booking_authorizations_offer_id_fkey",
+      "childColumns": [
+        "offer_id"
+      ],
+      "referenceTable": "public.carrier_offers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (offer_id) REFERENCES carrier_offers(id) ON DELETE RESTRICT",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking-bridge authorizations; V2 authority uses selection_decisions and v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: offer_id -> public.carrier_offers(id)."
+    },
+    {
+      "table": "public.booking_authorizations",
+      "constraint": "booking_authorizations_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking-bridge authorizations; V2 authority uses selection_decisions and v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.booking_authorizations",
+      "constraint": "booking_authorizations_replaces_booking_id_fkey",
+      "childColumns": [
+        "replaces_booking_id"
+      ],
+      "referenceTable": "public.bookings",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (replaces_booking_id) REFERENCES bookings(id) ON DELETE RESTRICT",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking-bridge authorizations; V2 authority uses selection_decisions and v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: replaces_booking_id -> public.bookings(id)."
+    },
+    {
+      "table": "public.booking_authorizations",
+      "constraint": "booking_authorizations_selected_by_member_id_fkey",
+      "childColumns": [
+        "selected_by_member_id"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (selected_by_member_id) REFERENCES organization_members(id) ON DELETE RESTRICT",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking-bridge authorizations; V2 authority uses selection_decisions and v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: selected_by_member_id -> public.organization_members(id)."
+    },
+    {
+      "table": "public.booking_bridge_calls",
+      "constraint": "booking_bridge_calls_authorization_id_fkey",
+      "childColumns": [
+        "authorization_id"
+      ],
+      "referenceTable": "public.booking_authorizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (authorization_id) REFERENCES booking_authorizations(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking-bridge traces attached to V1 booking_authorizations; these are not V2 receipts. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: authorization_id -> public.booking_authorizations(id)."
+    },
+    {
+      "table": "public.booking_bridge_calls",
+      "constraint": "booking_bridge_calls_booking_id_fkey",
+      "childColumns": [
+        "booking_id"
+      ],
+      "referenceTable": "public.bookings",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking-bridge traces attached to V1 booking_authorizations; these are not V2 receipts. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: booking_id -> public.bookings(id)."
+    },
+    {
+      "table": "public.booking_events",
+      "constraint": "booking_events_booking_id_fkey",
+      "childColumns": [
+        "booking_id"
+      ],
+      "referenceTable": "public.bookings",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking events; V2 workflow uses execution_events. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: booking_id -> public.bookings(id)."
+    },
+    {
+      "table": "public.bookings",
+      "constraint": "bookings_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking model; V2 uses v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.bookings",
+      "constraint": "bookings_freight_decision_id_fkey",
+      "childColumns": [
+        "freight_decision_id"
+      ],
+      "referenceTable": "public.freight_decisions",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_decision_id) REFERENCES freight_decisions(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking model; V2 uses v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: freight_decision_id -> public.freight_decisions(id)."
+    },
+    {
+      "table": "public.bookings",
+      "constraint": "bookings_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking model; V2 uses v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.bookings",
+      "constraint": "bookings_offer_id_fkey",
+      "childColumns": [
+        "offer_id"
+      ],
+      "referenceTable": "public.carrier_offers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (offer_id) REFERENCES carrier_offers(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking model; V2 uses v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: offer_id -> public.carrier_offers(id)."
+    },
+    {
+      "table": "public.bookings",
+      "constraint": "bookings_replaces_booking_id_fkey",
+      "childColumns": [
+        "replaces_booking_id"
+      ],
+      "referenceTable": "public.bookings",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (replaces_booking_id) REFERENCES bookings(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking model; V2 uses v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: replaces_booking_id -> public.bookings(id)."
+    },
+    {
+      "table": "public.bookings",
+      "constraint": "bookings_selected_by_member_id_fkey",
+      "childColumns": [
+        "selected_by_member_id"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (selected_by_member_id) REFERENCES organization_members(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy booking model; V2 uses v2_bookings. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: selected_by_member_id -> public.organization_members(id)."
+    },
+    {
+      "table": "public.capacity_calendars",
+      "constraint": "capacity_calendars_capacity_pool_id_carrier_service_id_fkey",
+      "childColumns": [
+        "capacity_pool_id",
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.capacity_pools",
+      "referenceColumns": [
+        "id",
+        "carrier_service_id"
+      ],
+      "definition": "FOREIGN KEY (capacity_pool_id, carrier_service_id) REFERENCES capacity_pools(id, carrier_service_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: capacity_pool_id, carrier_service_id -> public.capacity_pools(id, carrier_service_id)."
+    },
+    {
+      "table": "public.capacity_calendars",
+      "constraint": "capacity_calendars_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.capacity_calendars",
+      "constraint": "capacity_calendars_carrier_service_id_fkey",
+      "childColumns": [
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id) REFERENCES carrier_services(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id -> public.carrier_services(id)."
+    },
+    {
+      "table": "public.capacity_calendars",
+      "constraint": "capacity_calendars_fleet_service",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.capacity_calendars",
+      "constraint": "capacity_calendars_ready_pickup_same_service",
+      "childColumns": [
+        "ready_pickup_area_id",
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.service_areas",
+      "referenceColumns": [
+        "id",
+        "carrier_service_id"
+      ],
+      "definition": "FOREIGN KEY (ready_pickup_area_id, carrier_service_id) REFERENCES service_areas(id, carrier_service_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: ready_pickup_area_id, carrier_service_id -> public.service_areas(id, carrier_service_id)."
+    },
+    {
+      "table": "public.capacity_calendars",
+      "constraint": "capacity_calendars_transport_asset_id_carrier_service_id_fkey",
+      "childColumns": [
+        "transport_asset_id",
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.transport_assets",
+      "referenceColumns": [
+        "id",
+        "carrier_service_id"
+      ],
+      "definition": "FOREIGN KEY (transport_asset_id, carrier_service_id) REFERENCES transport_assets(id, carrier_service_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: transport_asset_id, carrier_service_id -> public.transport_assets(id, carrier_service_id)."
+    },
+    {
+      "table": "public.capacity_consolidations",
+      "constraint": "capacity_consolidations_calendar_id_fkey",
+      "childColumns": [
+        "calendar_id"
+      ],
+      "referenceTable": "public.capacity_calendars",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (calendar_id) REFERENCES capacity_calendars(id)",
+      "category": "V2_AUXILIAR",
+      "reason": "Auxiliary V2 workflow consolidation integrity. Physical reference: calendar_id -> public.capacity_calendars(id)."
+    },
+    {
+      "table": "public.capacity_consolidations",
+      "constraint": "capacity_consolidations_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "V2_AUXILIAR",
+      "reason": "Auxiliary V2 workflow consolidation integrity. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.capacity_consolidations",
+      "constraint": "capacity_consolidations_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "V2_AUXILIAR",
+      "reason": "Auxiliary V2 workflow consolidation integrity. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.capacity_consolidations",
+      "constraint": "capacity_consolidations_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "V2_AUXILIAR",
+      "reason": "Auxiliary V2 workflow consolidation integrity. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.capacity_consolidations",
+      "constraint": "capacity_consolidations_route_id_fkey",
+      "childColumns": [
+        "route_id"
+      ],
+      "referenceTable": "public.route_plans",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (route_id) REFERENCES route_plans(id)",
+      "category": "V2_AUXILIAR",
+      "reason": "Auxiliary V2 workflow consolidation integrity. Physical reference: route_id -> public.route_plans(id)."
+    },
+    {
+      "table": "public.capacity_consolidations",
+      "constraint": "consolidation_service_fk",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "V2_AUXILIAR",
+      "reason": "Auxiliary V2 workflow consolidation integrity. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.capacity_pools",
+      "constraint": "capacity_pools_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.capacity_pools",
+      "constraint": "capacity_pools_carrier_service_id_carrier_id_fkey",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.capacity_pools",
+      "constraint": "capacity_pools_fleet_service",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.capacity_pools",
+      "constraint": "capacity_pools_fulfilment_partner_id_fkey",
+      "childColumns": [
+        "fulfilment_partner_id"
+      ],
+      "referenceTable": "public.fulfilment_partners",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (fulfilment_partner_id) REFERENCES fulfilment_partners(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: fulfilment_partner_id -> public.fulfilment_partners(id)."
+    },
+    {
+      "table": "public.capacity_reservations",
+      "constraint": "capacity_reservations_booking_id_fkey",
+      "childColumns": [
+        "booking_id"
+      ],
+      "referenceTable": "public.v2_bookings",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (booking_id) REFERENCES v2_bookings(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: booking_id -> public.v2_bookings(id)."
+    },
+    {
+      "table": "public.capacity_reservations",
+      "constraint": "capacity_reservations_capacity_calendar_id_fkey",
+      "childColumns": [
+        "capacity_calendar_id"
+      ],
+      "referenceTable": "public.capacity_calendars",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (capacity_calendar_id) REFERENCES capacity_calendars(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: capacity_calendar_id -> public.capacity_calendars(id)."
+    },
+    {
+      "table": "public.capacity_reservations",
+      "constraint": "capacity_reservations_consolidation_id_fkey",
+      "childColumns": [
+        "consolidation_id"
+      ],
+      "referenceTable": "public.capacity_consolidations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (consolidation_id) REFERENCES capacity_consolidations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: consolidation_id -> public.capacity_consolidations(id)."
+    },
+    {
+      "table": "public.capacity_reservations",
+      "constraint": "capacity_reservations_execution_id_fkey",
+      "childColumns": [
+        "execution_id"
+      ],
+      "referenceTable": "public.transport_executions",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (execution_id) REFERENCES transport_executions(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: execution_id -> public.transport_executions(id)."
+    },
+    {
+      "table": "public.capacity_reservations",
+      "constraint": "capacity_reservations_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.capacity_reservations",
+      "constraint": "capacity_reservations_parent_reservation_id_fkey",
+      "childColumns": [
+        "parent_reservation_id"
+      ],
+      "referenceTable": "public.capacity_reservations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (parent_reservation_id) REFERENCES capacity_reservations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: parent_reservation_id -> public.capacity_reservations(id)."
+    },
+    {
+      "table": "public.capacity_reservations",
+      "constraint": "capacity_reservations_plan_leg_assignment_id_fkey",
+      "childColumns": [
+        "plan_leg_assignment_id"
+      ],
+      "referenceTable": "public.plan_leg_assignments",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (plan_leg_assignment_id) REFERENCES plan_leg_assignments(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: plan_leg_assignment_id -> public.plan_leg_assignments(id)."
+    },
+    {
+      "table": "public.capacity_reservations",
+      "constraint": "capacity_reservations_plan_resource_id_fkey",
+      "childColumns": [
+        "plan_resource_id"
+      ],
+      "referenceTable": "public.plan_resources",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (plan_resource_id) REFERENCES plan_resources(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: plan_resource_id -> public.plan_resources(id)."
+    },
+    {
+      "table": "public.capacity_reservations",
+      "constraint": "reservation_plan_assignment_fk",
+      "childColumns": [
+        "plan_assignment_id"
+      ],
+      "referenceTable": "public.plan_resource_bindings",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (plan_assignment_id) REFERENCES plan_resource_bindings(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: plan_assignment_id -> public.plan_resource_bindings(id)."
+    },
+    {
+      "table": "public.cargo_capability_definitions",
+      "constraint": "cargo_capability_definitions_cargo_category_id_fkey",
+      "childColumns": [
+        "cargo_category_id"
+      ],
+      "referenceTable": "public.cargo_categories",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (cargo_category_id) REFERENCES cargo_categories(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: cargo_category_id -> public.cargo_categories(id)."
+    },
+    {
+      "table": "public.cargo_capability_definitions",
+      "constraint": "cargo_capability_definitions_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.cargo_capability_definitions",
+      "constraint": "cargo_capability_definitions_carrier_service_id_fkey",
+      "childColumns": [
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id) REFERENCES carrier_services(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id -> public.carrier_services(id)."
+    },
+    {
+      "table": "public.cargo_capability_definitions",
+      "constraint": "cargo_capability_definitions_fleet_service",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.carrier_depots",
+      "constraint": "carrier_depots_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.carrier_metrics",
+      "constraint": "carrier_metrics_cargo_category_id_fkey",
+      "childColumns": [
+        "cargo_category_id"
+      ],
+      "referenceTable": "public.cargo_categories",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (cargo_category_id) REFERENCES cargo_categories(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy metrics table; the V2 CarrierMetric class uses v2_carrier_metrics. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: cargo_category_id -> public.cargo_categories(id)."
+    },
+    {
+      "table": "public.carrier_metrics",
+      "constraint": "carrier_metrics_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy metrics table; the V2 CarrierMetric class uses v2_carrier_metrics. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.carrier_metrics",
+      "constraint": "carrier_metrics_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy metrics table; the V2 CarrierMetric class uses v2_carrier_metrics. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.carrier_offers",
+      "constraint": "carrier_offers_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy offer model; the V2 CarrierOffer class uses v2_carrier_offers. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.carrier_offers",
+      "constraint": "carrier_offers_carrier_service_id_fkey",
+      "childColumns": [
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id) REFERENCES carrier_services(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy offer model; the V2 CarrierOffer class uses v2_carrier_offers. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: carrier_service_id -> public.carrier_services(id)."
+    },
+    {
+      "table": "public.carrier_offers",
+      "constraint": "carrier_offers_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy offer model; the V2 CarrierOffer class uses v2_carrier_offers. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.carrier_offers",
+      "constraint": "carrier_offers_orchestration_run_id_fkey",
+      "childColumns": [
+        "orchestration_run_id"
+      ],
+      "referenceTable": "public.orchestration_runs",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (orchestration_run_id) REFERENCES orchestration_runs(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy offer model; the V2 CarrierOffer class uses v2_carrier_offers. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: orchestration_run_id -> public.orchestration_runs(id)."
+    },
+    {
+      "table": "public.carrier_offers",
+      "constraint": "carrier_offers_supersedes_offer_id_fkey",
+      "childColumns": [
+        "supersedes_offer_id"
+      ],
+      "referenceTable": "public.carrier_offers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (supersedes_offer_id) REFERENCES carrier_offers(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy offer model; the V2 CarrierOffer class uses v2_carrier_offers. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: supersedes_offer_id -> public.carrier_offers(id)."
+    },
+    {
+      "table": "public.carrier_offers",
+      "constraint": "carrier_offers_vehicle_id_fkey",
+      "childColumns": [
+        "vehicle_id"
+      ],
+      "referenceTable": "public.vehicles",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy offer model; the V2 CarrierOffer class uses v2_carrier_offers. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: vehicle_id -> public.vehicles(id)."
+    },
+    {
+      "table": "public.carrier_operators",
+      "constraint": "carrier_operators_auth_user_id_fkey",
+      "childColumns": [
+        "auth_user_id"
+      ],
+      "referenceTable": "auth.users",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: auth_user_id -> auth.users(id)."
+    },
+    {
+      "table": "public.carrier_operators",
+      "constraint": "carrier_operators_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.carrier_opportunities",
+      "constraint": "carrier_opportunities_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.carrier_opportunities",
+      "constraint": "carrier_opportunities_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.carrier_opportunities",
+      "constraint": "carrier_opportunities_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.carrier_opportunities",
+      "constraint": "opportunity_plan_fk",
+      "childColumns": [
+        "parent_id"
+      ],
+      "referenceTable": "public.transport_plan_candidates",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (parent_id) REFERENCES transport_plan_candidates(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: parent_id -> public.transport_plan_candidates(id)."
+    },
+    {
+      "table": "public.carrier_service_cargo_categories",
+      "constraint": "carrier_service_cargo_categories_cargo_category_id_fkey",
+      "childColumns": [
+        "cargo_category_id"
+      ],
+      "referenceTable": "public.cargo_categories",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (cargo_category_id) REFERENCES cargo_categories(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: cargo_category_id -> public.cargo_categories(id)."
+    },
+    {
+      "table": "public.carrier_service_cargo_categories",
+      "constraint": "carrier_service_cargo_categories_carrier_service_id_fkey",
+      "childColumns": [
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id) REFERENCES carrier_services(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id -> public.carrier_services(id)."
+    },
+    {
+      "table": "public.carrier_services",
+      "constraint": "carrier_services_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.driver_assignments",
+      "constraint": "driver_assignments_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.driver_assignments",
+      "constraint": "driver_assignments_carrier_service_id_carrier_id_fkey",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.driver_assignments",
+      "constraint": "driver_assignments_driver_id_carrier_id_carrier_service_id_fkey",
+      "childColumns": [
+        "driver_id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.drivers",
+      "referenceColumns": [
+        "id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "definition": "FOREIGN KEY (driver_id, carrier_id, carrier_service_id) REFERENCES drivers(id, carrier_id, carrier_service_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: driver_id, carrier_id, carrier_service_id -> public.drivers(id, carrier_id, carrier_service_id)."
+    },
+    {
+      "table": "public.driver_assignments",
+      "constraint": "driver_assignments_execution_id_carrier_id_carrier_service_fkey",
+      "childColumns": [
+        "execution_id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.transport_executions",
+      "referenceColumns": [
+        "id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "definition": "FOREIGN KEY (execution_id, carrier_id, carrier_service_id) REFERENCES transport_executions(id, carrier_id, carrier_service_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: execution_id, carrier_id, carrier_service_id -> public.transport_executions(id, carrier_id, carrier_service_id)."
+    },
+    {
+      "table": "public.drivers",
+      "constraint": "drivers_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.drivers",
+      "constraint": "drivers_carrier_operator_id_carrier_id_fkey",
+      "childColumns": [
+        "carrier_operator_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_operators",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_operator_id, carrier_id) REFERENCES carrier_operators(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_operator_id, carrier_id -> public.carrier_operators(id, carrier_id)."
+    },
+    {
+      "table": "public.drivers",
+      "constraint": "drivers_carrier_service_id_carrier_id_fkey",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.execution_events",
+      "constraint": "execution_event_execution_fk",
+      "childColumns": [
+        "parent_id"
+      ],
+      "referenceTable": "public.transport_executions",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (parent_id) REFERENCES transport_executions(id)",
+      "category": "V2_AUXILIAR",
+      "reason": "Auxiliary V2 workflow execution-event integrity. Physical reference: parent_id -> public.transport_executions(id)."
+    },
+    {
+      "table": "public.execution_events",
+      "constraint": "execution_events_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "V2_AUXILIAR",
+      "reason": "Auxiliary V2 workflow execution-event integrity. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.execution_events",
+      "constraint": "execution_events_consolidation_id_fkey",
+      "childColumns": [
+        "consolidation_id"
+      ],
+      "referenceTable": "public.capacity_consolidations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (consolidation_id) REFERENCES capacity_consolidations(id)",
+      "category": "V2_AUXILIAR",
+      "reason": "Auxiliary V2 workflow execution-event integrity. Physical reference: consolidation_id -> public.capacity_consolidations(id)."
+    },
+    {
+      "table": "public.execution_events",
+      "constraint": "execution_events_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "V2_AUXILIAR",
+      "reason": "Auxiliary V2 workflow execution-event integrity. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.execution_events",
+      "constraint": "execution_events_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "V2_AUXILIAR",
+      "reason": "Auxiliary V2 workflow execution-event integrity. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.facilities",
+      "constraint": "facilities_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.freight_decisions",
+      "constraint": "freight_decisions_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy decision engine; the V2 SelectionDecision class uses selection_decisions. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.freight_decisions",
+      "constraint": "freight_decisions_orchestration_run_id_fkey",
+      "childColumns": [
+        "orchestration_run_id"
+      ],
+      "referenceTable": "public.orchestration_runs",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (orchestration_run_id) REFERENCES orchestration_runs(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy decision engine; the V2 SelectionDecision class uses selection_decisions. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: orchestration_run_id -> public.orchestration_runs(id)."
+    },
+    {
+      "table": "public.freight_decisions",
+      "constraint": "freight_decisions_previous_decision_id_fkey",
+      "childColumns": [
+        "previous_decision_id"
+      ],
+      "referenceTable": "public.freight_decisions",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (previous_decision_id) REFERENCES freight_decisions(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy decision engine; the V2 SelectionDecision class uses selection_decisions. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: previous_decision_id -> public.freight_decisions(id)."
+    },
+    {
+      "table": "public.freight_decisions",
+      "constraint": "freight_decisions_recommended_offer_id_fkey",
+      "childColumns": [
+        "recommended_offer_id"
+      ],
+      "referenceTable": "public.carrier_offers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (recommended_offer_id) REFERENCES carrier_offers(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy decision engine; the V2 SelectionDecision class uses selection_decisions. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: recommended_offer_id -> public.carrier_offers(id)."
+    },
+    {
+      "table": "public.freight_decisions",
+      "constraint": "freight_decisions_selected_by_member_id_fkey",
+      "childColumns": [
+        "selected_by_member_id"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (selected_by_member_id) REFERENCES organization_members(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy decision engine; the V2 SelectionDecision class uses selection_decisions. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: selected_by_member_id -> public.organization_members(id)."
+    },
+    {
+      "table": "public.freight_decisions",
+      "constraint": "freight_decisions_selected_offer_id_fkey",
+      "childColumns": [
+        "selected_offer_id"
+      ],
+      "referenceTable": "public.carrier_offers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (selected_offer_id) REFERENCES carrier_offers(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy decision engine; the V2 SelectionDecision class uses selection_decisions. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: selected_offer_id -> public.carrier_offers(id)."
+    },
+    {
+      "table": "public.freight_requests",
+      "constraint": "freight_requests_cargo_category_id_fkey",
+      "childColumns": [
+        "cargo_category_id"
+      ],
+      "referenceTable": "public.cargo_categories",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (cargo_category_id) REFERENCES cargo_categories(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: cargo_category_id -> public.cargo_categories(id)."
+    },
+    {
+      "table": "public.freight_requests",
+      "constraint": "freight_requests_confirmed_by_member_id_fkey",
+      "childColumns": [
+        "confirmed_by_member_id"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (confirmed_by_member_id) REFERENCES organization_members(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: confirmed_by_member_id -> public.organization_members(id)."
+    },
+    {
+      "table": "public.freight_requests",
+      "constraint": "freight_requests_destination_facility_same_org",
+      "childColumns": [
+        "destination_facility_id",
+        "organization_id"
+      ],
+      "referenceTable": "public.facilities",
+      "referenceColumns": [
+        "id",
+        "organization_id"
+      ],
+      "definition": "FOREIGN KEY (destination_facility_id, organization_id) REFERENCES facilities(id, organization_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: destination_facility_id, organization_id -> public.facilities(id, organization_id)."
+    },
+    {
+      "table": "public.freight_requests",
+      "constraint": "freight_requests_organization_cargo_profile_fkey",
+      "childColumns": [
+        "organization_id",
+        "cargo_profile_id"
+      ],
+      "referenceTable": "public.organization_cargo_profiles",
+      "referenceColumns": [
+        "organization_id",
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id, cargo_profile_id) REFERENCES organization_cargo_profiles(organization_id, id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id, cargo_profile_id -> public.organization_cargo_profiles(organization_id, id)."
+    },
+    {
+      "table": "public.freight_requests",
+      "constraint": "freight_requests_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.freight_requests",
+      "constraint": "freight_requests_origin_facility_same_org",
+      "childColumns": [
+        "origin_facility_id",
+        "organization_id"
+      ],
+      "referenceTable": "public.facilities",
+      "referenceColumns": [
+        "id",
+        "organization_id"
+      ],
+      "definition": "FOREIGN KEY (origin_facility_id, organization_id) REFERENCES facilities(id, organization_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: origin_facility_id, organization_id -> public.facilities(id, organization_id)."
+    },
+    {
+      "table": "public.freight_requests",
+      "constraint": "freight_requests_requested_by_member_id_fkey",
+      "childColumns": [
+        "requested_by_member_id"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (requested_by_member_id) REFERENCES organization_members(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: requested_by_member_id -> public.organization_members(id)."
+    },
+    {
+      "table": "public.fulfilment_partners",
+      "constraint": "fulfilment_partners_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.fulfilment_partners",
+      "constraint": "fulfilment_partners_partner_carrier_ref_fkey",
+      "childColumns": [
+        "partner_carrier_ref"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (partner_carrier_ref) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: partner_carrier_ref -> public.carriers(id)."
+    },
+    {
+      "table": "public.incident_route_conditions",
+      "constraint": "incident_route_conditions_condition_id_fkey",
+      "childColumns": [
+        "condition_id"
+      ],
+      "referenceTable": "public.route_conditions",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (condition_id) REFERENCES route_conditions(id)",
+      "category": "V2_MODELO",
+      "reason": "Canonical V2 model association introduced by HAC-40 #111; authorized strict FK coverage on 776b5da."
+    },
+    {
+      "table": "public.incident_route_conditions",
+      "constraint": "incident_route_conditions_incident_id_fkey",
+      "childColumns": [
+        "incident_id"
+      ],
+      "referenceTable": "public.operational_incidents",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (incident_id) REFERENCES operational_incidents(id)",
+      "category": "V2_MODELO",
+      "reason": "Canonical V2 model association introduced by HAC-40 #111; authorized strict FK coverage on 776b5da."
+    },
+    {
+      "table": "public.incident_updates",
+      "constraint": "incident_update_incident_fk",
+      "childColumns": [
+        "parent_id"
+      ],
+      "referenceTable": "public.operational_incidents",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (parent_id) REFERENCES operational_incidents(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: parent_id -> public.operational_incidents(id)."
+    },
+    {
+      "table": "public.incident_updates",
+      "constraint": "incident_updates_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.incident_updates",
+      "constraint": "incident_updates_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.incident_updates",
+      "constraint": "incident_updates_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.load_allocations",
+      "constraint": "load_allocations_assignment_id_fkey",
+      "childColumns": [
+        "assignment_id"
+      ],
+      "referenceTable": "public.plan_resource_bindings",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (assignment_id) REFERENCES plan_resource_bindings(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: assignment_id -> public.plan_resource_bindings(id)."
+    },
+    {
+      "table": "public.logistics_nodes",
+      "constraint": "logistics_nodes_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.logistics_nodes",
+      "constraint": "logistics_nodes_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.logistics_nodes",
+      "constraint": "logistics_nodes_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.mcp_account_links",
+      "constraint": "mcp_account_links_auth_user_id_fkey",
+      "childColumns": [
+        "auth_user_id"
+      ],
+      "referenceTable": "auth.users",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: auth_user_id -> auth.users(id)."
+    },
+    {
+      "table": "public.mcp_account_links",
+      "constraint": "mcp_account_links_linked_by_user_id_fkey",
+      "childColumns": [
+        "linked_by_user_id"
+      ],
+      "referenceTable": "auth.users",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (linked_by_user_id) REFERENCES auth.users(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: linked_by_user_id -> auth.users(id)."
+    },
+    {
+      "table": "public.mcp_account_links",
+      "constraint": "mcp_account_links_member_identity_fk",
+      "childColumns": [
+        "organization_member_id",
+        "organization_id",
+        "auth_user_id"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id",
+        "organization_id",
+        "auth_user_id"
+      ],
+      "definition": "FOREIGN KEY (organization_member_id, organization_id, auth_user_id) REFERENCES organization_members(id, organization_id, auth_user_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_member_id, organization_id, auth_user_id -> public.organization_members(id, organization_id, auth_user_id)."
+    },
+    {
+      "table": "public.mcp_account_links",
+      "constraint": "mcp_account_links_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.mcp_account_links",
+      "constraint": "mcp_account_links_revoked_by_user_id_fkey",
+      "childColumns": [
+        "revoked_by_user_id"
+      ],
+      "referenceTable": "auth.users",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (revoked_by_user_id) REFERENCES auth.users(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: revoked_by_user_id -> auth.users(id)."
+    },
+    {
+      "table": "public.operational_incidents",
+      "constraint": "incident_execution_fk",
+      "childColumns": [
+        "parent_id"
+      ],
+      "referenceTable": "public.transport_executions",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (parent_id) REFERENCES transport_executions(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: parent_id -> public.transport_executions(id)."
+    },
+    {
+      "table": "public.operational_incidents",
+      "constraint": "operational_incidents_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.operational_incidents",
+      "constraint": "operational_incidents_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.operational_incidents",
+      "constraint": "operational_incidents_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.orchestration_events",
+      "constraint": "orchestration_events_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy WebMCP adapter events; these do not represent V2 execution_events. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.orchestration_events",
+      "constraint": "orchestration_events_carrier_service_id_fkey",
+      "childColumns": [
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id) REFERENCES carrier_services(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy WebMCP adapter events; these do not represent V2 execution_events. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: carrier_service_id -> public.carrier_services(id)."
+    },
+    {
+      "table": "public.orchestration_events",
+      "constraint": "orchestration_events_orchestration_run_id_fkey",
+      "childColumns": [
+        "orchestration_run_id"
+      ],
+      "referenceTable": "public.orchestration_runs",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (orchestration_run_id) REFERENCES orchestration_runs(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy WebMCP adapter events; these do not represent V2 execution_events. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: orchestration_run_id -> public.orchestration_runs(id)."
+    },
+    {
+      "table": "public.orchestration_runs",
+      "constraint": "orchestration_runs_created_by_member_id_fkey",
+      "childColumns": [
+        "created_by_member_id"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (created_by_member_id) REFERENCES organization_members(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy WebMCP adapter runs outside the V2 model. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: created_by_member_id -> public.organization_members(id)."
+    },
+    {
+      "table": "public.orchestration_runs",
+      "constraint": "orchestration_runs_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy WebMCP adapter runs outside the V2 model. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.orchestration_runs",
+      "constraint": "orchestration_runs_previous_run_id_fkey",
+      "childColumns": [
+        "previous_run_id"
+      ],
+      "referenceTable": "public.orchestration_runs",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (previous_run_id) REFERENCES orchestration_runs(id)",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy WebMCP adapter runs outside the V2 model. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: previous_run_id -> public.orchestration_runs(id)."
+    },
+    {
+      "table": "public.organization_cargo_profiles",
+      "constraint": "organization_cargo_profiles_cargo_category_id_fkey",
+      "childColumns": [
+        "cargo_category_id"
+      ],
+      "referenceTable": "public.cargo_categories",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (cargo_category_id) REFERENCES cargo_categories(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: cargo_category_id -> public.cargo_categories(id)."
+    },
+    {
+      "table": "public.organization_cargo_profiles",
+      "constraint": "organization_cargo_profiles_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.organization_members",
+      "constraint": "organization_members_auth_user_id_fkey",
+      "childColumns": [
+        "auth_user_id"
+      ],
+      "referenceTable": "auth.users",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: auth_user_id -> auth.users(id)."
+    },
+    {
+      "table": "public.organization_members",
+      "constraint": "organization_members_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.organization_preferences",
+      "constraint": "organization_preferences_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.organization_preferences",
+      "constraint": "organization_preferences_preferred_carrier_id_fkey",
+      "childColumns": [
+        "preferred_carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (preferred_carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: preferred_carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.plan_leg_assignments",
+      "constraint": "plan_leg_assignments_carrier_service_id_fkey1",
+      "childColumns": [
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id) REFERENCES carrier_services(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id -> public.carrier_services(id)."
+    },
+    {
+      "table": "public.plan_leg_assignments",
+      "constraint": "plan_leg_assignments_fulfilment_partner_id_fkey",
+      "childColumns": [
+        "fulfilment_partner_id"
+      ],
+      "referenceTable": "public.fulfilment_partners",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (fulfilment_partner_id) REFERENCES fulfilment_partners(id)",
+      "category": "V2_MODELO",
+      "reason": "Canonical V2 model association introduced by HAC-40 #111; authorized strict FK coverage on 776b5da."
+    },
+    {
+      "table": "public.plan_leg_assignments",
+      "constraint": "plan_leg_assignments_lane_id_fkey1",
+      "childColumns": [
+        "lane_id"
+      ],
+      "referenceTable": "public.service_lanes",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (lane_id) REFERENCES service_lanes(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: lane_id -> public.service_lanes(id)."
+    },
+    {
+      "table": "public.plan_leg_assignments",
+      "constraint": "plan_leg_assignments_plan_id_fkey1",
+      "childColumns": [
+        "plan_id"
+      ],
+      "referenceTable": "public.transport_plan_candidates",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (plan_id) REFERENCES transport_plan_candidates(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: plan_id -> public.transport_plan_candidates(id)."
+    },
+    {
+      "table": "public.plan_leg_assignments",
+      "constraint": "plan_leg_assignments_route_leg_id_fkey1",
+      "childColumns": [
+        "route_leg_id"
+      ],
+      "referenceTable": "public.route_legs",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (route_leg_id) REFERENCES route_legs(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: route_leg_id -> public.route_legs(id)."
+    },
+    {
+      "table": "public.plan_resource_bindings",
+      "constraint": "plan_leg_assignments_carrier_service_id_fkey",
+      "childColumns": [
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id) REFERENCES carrier_services(id)",
+      "category": "V2_MODELO",
+      "reason": "Canonical V2 leg/resource bridge, including QA relation 70 / DER relation 69. Physical reference: carrier_service_id -> public.carrier_services(id)."
+    },
+    {
+      "table": "public.plan_resource_bindings",
+      "constraint": "plan_leg_assignments_lane_id_fkey",
+      "childColumns": [
+        "lane_id"
+      ],
+      "referenceTable": "public.service_lanes",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (lane_id) REFERENCES service_lanes(id)",
+      "category": "V2_MODELO",
+      "reason": "Canonical V2 leg/resource bridge, including QA relation 70 / DER relation 69. Physical reference: lane_id -> public.service_lanes(id)."
+    },
+    {
+      "table": "public.plan_resource_bindings",
+      "constraint": "plan_leg_assignments_plan_id_fkey",
+      "childColumns": [
+        "plan_id"
+      ],
+      "referenceTable": "public.transport_plan_candidates",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (plan_id) REFERENCES transport_plan_candidates(id)",
+      "category": "V2_MODELO",
+      "reason": "Canonical V2 leg/resource bridge, including QA relation 70 / DER relation 69. Physical reference: plan_id -> public.transport_plan_candidates(id)."
+    },
+    {
+      "table": "public.plan_resource_bindings",
+      "constraint": "plan_leg_assignments_resource_id_plan_id_fkey",
+      "childColumns": [
+        "resource_id",
+        "plan_id"
+      ],
+      "referenceTable": "public.plan_resources",
+      "referenceColumns": [
+        "id",
+        "plan_id"
+      ],
+      "definition": "FOREIGN KEY (resource_id, plan_id) REFERENCES plan_resources(id, plan_id)",
+      "category": "V2_MODELO",
+      "reason": "Canonical V2 leg/resource bridge, including QA relation 70 / DER relation 69. Physical reference: resource_id, plan_id -> public.plan_resources(id, plan_id)."
+    },
+    {
+      "table": "public.plan_resource_bindings",
+      "constraint": "plan_leg_assignments_route_leg_id_fkey",
+      "childColumns": [
+        "route_leg_id"
+      ],
+      "referenceTable": "public.route_legs",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (route_leg_id) REFERENCES route_legs(id)",
+      "category": "V2_MODELO",
+      "reason": "Canonical V2 leg/resource bridge, including QA relation 70 / DER relation 69. Physical reference: route_leg_id -> public.route_legs(id)."
+    },
+    {
+      "table": "public.plan_resource_bindings",
+      "constraint": "resource_binding_leg_fk",
+      "childColumns": [
+        "leg_assignment_id",
+        "plan_id"
+      ],
+      "referenceTable": "public.plan_leg_assignments",
+      "referenceColumns": [
+        "id",
+        "plan_id"
+      ],
+      "definition": "FOREIGN KEY (leg_assignment_id, plan_id) REFERENCES plan_leg_assignments(id, plan_id)",
+      "category": "V2_MODELO",
+      "reason": "Canonical V2 leg/resource bridge, including QA relation 70 / DER relation 69. Physical reference: leg_assignment_id, plan_id -> public.plan_leg_assignments(id, plan_id)."
+    },
+    {
+      "table": "public.plan_resources",
+      "constraint": "plan_resources_asset_id_fkey",
+      "childColumns": [
+        "asset_id"
+      ],
+      "referenceTable": "public.transport_assets",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (asset_id) REFERENCES transport_assets(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: asset_id -> public.transport_assets(id)."
+    },
+    {
+      "table": "public.plan_resources",
+      "constraint": "plan_resources_calendar_id_fkey",
+      "childColumns": [
+        "calendar_id"
+      ],
+      "referenceTable": "public.capacity_calendars",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (calendar_id) REFERENCES capacity_calendars(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: calendar_id -> public.capacity_calendars(id)."
+    },
+    {
+      "table": "public.plan_resources",
+      "constraint": "plan_resources_capacity_pool_id_fkey",
+      "childColumns": [
+        "capacity_pool_id"
+      ],
+      "referenceTable": "public.capacity_pools",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (capacity_pool_id) REFERENCES capacity_pools(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: capacity_pool_id -> public.capacity_pools(id)."
+    },
+    {
+      "table": "public.plan_resources",
+      "constraint": "plan_resources_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.plan_resources",
+      "constraint": "plan_resources_carrier_service_id_carrier_id_fkey",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.plan_resources",
+      "constraint": "plan_resources_combination_id_fkey",
+      "childColumns": [
+        "combination_id"
+      ],
+      "referenceTable": "public.vehicle_combinations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (combination_id) REFERENCES vehicle_combinations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: combination_id -> public.vehicle_combinations(id)."
+    },
+    {
+      "table": "public.plan_resources",
+      "constraint": "plan_resources_plan_id_fkey",
+      "childColumns": [
+        "plan_id"
+      ],
+      "referenceTable": "public.transport_plan_candidates",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (plan_id) REFERENCES transport_plan_candidates(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: plan_id -> public.transport_plan_candidates(id)."
+    },
+    {
+      "table": "public.ranked_options",
+      "constraint": "ranked_options_offer_id_fkey",
+      "childColumns": [
+        "offer_id"
+      ],
+      "referenceTable": "public.v2_carrier_offers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (offer_id) REFERENCES v2_carrier_offers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: offer_id -> public.v2_carrier_offers(id)."
+    },
+    {
+      "table": "public.ranked_options",
+      "constraint": "ranked_options_ranking_id_fkey",
+      "childColumns": [
+        "ranking_id"
+      ],
+      "referenceTable": "public.v2_rankings",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (ranking_id) REFERENCES v2_rankings(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: ranking_id -> public.v2_rankings(id)."
+    },
+    {
+      "table": "public.repositioning_blocks",
+      "constraint": "repositioning_blocks_capacity_calendar_id_fkey",
+      "childColumns": [
+        "capacity_calendar_id"
+      ],
+      "referenceTable": "public.capacity_calendars",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (capacity_calendar_id) REFERENCES capacity_calendars(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: capacity_calendar_id -> public.capacity_calendars(id)."
+    },
+    {
+      "table": "public.repositioning_blocks",
+      "constraint": "repositioning_blocks_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.repositioning_blocks",
+      "constraint": "repositioning_blocks_carrier_service_id_fkey",
+      "childColumns": [
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id) REFERENCES carrier_services(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id -> public.carrier_services(id)."
+    },
+    {
+      "table": "public.repositioning_blocks",
+      "constraint": "repositioning_blocks_fleet_service",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.route_conditions",
+      "constraint": "condition_corridor_fk",
+      "childColumns": [
+        "parent_id"
+      ],
+      "referenceTable": "public.route_corridors",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (parent_id) REFERENCES route_corridors(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: parent_id -> public.route_corridors(id)."
+    },
+    {
+      "table": "public.route_conditions",
+      "constraint": "route_conditions_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.route_conditions",
+      "constraint": "route_conditions_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.route_conditions",
+      "constraint": "route_conditions_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.route_corridors",
+      "constraint": "route_corridors_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.route_corridors",
+      "constraint": "route_corridors_destination_node_id_fkey",
+      "childColumns": [
+        "destination_node_id"
+      ],
+      "referenceTable": "public.logistics_nodes",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (destination_node_id) REFERENCES logistics_nodes(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: destination_node_id -> public.logistics_nodes(id)."
+    },
+    {
+      "table": "public.route_corridors",
+      "constraint": "route_corridors_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.route_corridors",
+      "constraint": "route_corridors_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.route_corridors",
+      "constraint": "route_corridors_origin_node_id_fkey",
+      "childColumns": [
+        "origin_node_id"
+      ],
+      "referenceTable": "public.logistics_nodes",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (origin_node_id) REFERENCES logistics_nodes(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: origin_node_id -> public.logistics_nodes(id)."
+    },
+    {
+      "table": "public.route_legs",
+      "constraint": "route_legs_corridor_id_fkey",
+      "childColumns": [
+        "corridor_id"
+      ],
+      "referenceTable": "public.route_corridors",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (corridor_id) REFERENCES route_corridors(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: corridor_id -> public.route_corridors(id)."
+    },
+    {
+      "table": "public.route_legs",
+      "constraint": "route_legs_route_plan_id_fkey",
+      "childColumns": [
+        "route_plan_id"
+      ],
+      "referenceTable": "public.route_plans",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (route_plan_id) REFERENCES route_plans(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: route_plan_id -> public.route_plans(id)."
+    },
+    {
+      "table": "public.route_planning_policies",
+      "constraint": "route_planning_policies_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.route_planning_policies",
+      "constraint": "route_planning_policies_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.route_planning_policies",
+      "constraint": "route_planning_policies_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.route_plans",
+      "constraint": "route_plans_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.route_plans",
+      "constraint": "route_plans_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.route_plans",
+      "constraint": "route_plans_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.route_plans",
+      "constraint": "route_plans_policy_id_fkey",
+      "childColumns": [
+        "policy_id"
+      ],
+      "referenceTable": "public.route_planning_policies",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (policy_id) REFERENCES route_planning_policies(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: policy_id -> public.route_planning_policies(id)."
+    },
+    {
+      "table": "public.route_resource_limits",
+      "constraint": "resource_limit_service_fk",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.route_resource_limits",
+      "constraint": "route_resource_limits_asset_id_fkey",
+      "childColumns": [
+        "asset_id"
+      ],
+      "referenceTable": "public.transport_assets",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (asset_id) REFERENCES transport_assets(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: asset_id -> public.transport_assets(id)."
+    },
+    {
+      "table": "public.route_resource_limits",
+      "constraint": "route_resource_limits_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.route_resource_limits",
+      "constraint": "route_resource_limits_combination_id_fkey",
+      "childColumns": [
+        "combination_id"
+      ],
+      "referenceTable": "public.vehicle_combinations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (combination_id) REFERENCES vehicle_combinations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: combination_id -> public.vehicle_combinations(id)."
+    },
+    {
+      "table": "public.route_resource_limits",
+      "constraint": "route_resource_limits_corridor_id_fkey",
+      "childColumns": [
+        "corridor_id"
+      ],
+      "referenceTable": "public.route_corridors",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (corridor_id) REFERENCES route_corridors(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: corridor_id -> public.route_corridors(id)."
+    },
+    {
+      "table": "public.route_resource_limits",
+      "constraint": "route_resource_limits_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.route_resource_limits",
+      "constraint": "route_resource_limits_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.route_waypoints",
+      "constraint": "route_waypoints_route_leg_id_fkey",
+      "childColumns": [
+        "route_leg_id"
+      ],
+      "referenceTable": "public.route_legs",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (route_leg_id) REFERENCES route_legs(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: route_leg_id -> public.route_legs(id)."
+    },
+    {
+      "table": "public.scheduled_maintenances",
+      "constraint": "scheduled_maintenances_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.scheduled_maintenances",
+      "constraint": "scheduled_maintenances_carrier_service_id_fkey",
+      "childColumns": [
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id) REFERENCES carrier_services(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id -> public.carrier_services(id)."
+    },
+    {
+      "table": "public.scheduled_maintenances",
+      "constraint": "scheduled_maintenances_fleet_service",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.scheduled_maintenances",
+      "constraint": "scheduled_maintenances_transport_asset_id_fkey",
+      "childColumns": [
+        "transport_asset_id"
+      ],
+      "referenceTable": "public.transport_assets",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (transport_asset_id) REFERENCES transport_assets(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: transport_asset_id -> public.transport_assets(id)."
+    },
+    {
+      "table": "public.scoring_policies",
+      "constraint": "scoring_policies_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.scoring_policies",
+      "constraint": "scoring_policies_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.scoring_policies",
+      "constraint": "scoring_policies_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.selection_decisions",
+      "constraint": "selection_decisions_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.selection_decisions",
+      "constraint": "selection_decisions_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.selection_decisions",
+      "constraint": "selection_decisions_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.selection_decisions",
+      "constraint": "selection_decisions_plan_id_fkey",
+      "childColumns": [
+        "plan_id"
+      ],
+      "referenceTable": "public.transport_plan_candidates",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (plan_id) REFERENCES transport_plan_candidates(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: plan_id -> public.transport_plan_candidates(id)."
+    },
+    {
+      "table": "public.selection_decisions",
+      "constraint": "selection_decisions_selected_by_fkey",
+      "childColumns": [
+        "selected_by"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (selected_by) REFERENCES organization_members(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: selected_by -> public.organization_members(id)."
+    },
+    {
+      "table": "public.selection_offers",
+      "constraint": "selection_offers_decision_id_fkey",
+      "childColumns": [
+        "decision_id"
+      ],
+      "referenceTable": "public.selection_decisions",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (decision_id) REFERENCES selection_decisions(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: decision_id -> public.selection_decisions(id)."
+    },
+    {
+      "table": "public.selection_offers",
+      "constraint": "selection_offers_offer_id_fkey",
+      "childColumns": [
+        "offer_id"
+      ],
+      "referenceTable": "public.v2_carrier_offers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (offer_id) REFERENCES v2_carrier_offers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: offer_id -> public.v2_carrier_offers(id)."
+    },
+    {
+      "table": "public.service_areas",
+      "constraint": "service_areas_carrier_service_id_fkey",
+      "childColumns": [
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id) REFERENCES carrier_services(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id -> public.carrier_services(id)."
+    },
+    {
+      "table": "public.service_areas",
+      "constraint": "service_areas_fulfilment_partner_id_fkey",
+      "childColumns": [
+        "fulfilment_partner_id"
+      ],
+      "referenceTable": "public.fulfilment_partners",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (fulfilment_partner_id) REFERENCES fulfilment_partners(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: fulfilment_partner_id -> public.fulfilment_partners(id)."
+    },
+    {
+      "table": "public.service_lanes",
+      "constraint": "service_lanes_carrier_service_id_fkey",
+      "childColumns": [
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id) REFERENCES carrier_services(id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id -> public.carrier_services(id)."
+    },
+    {
+      "table": "public.service_lanes",
+      "constraint": "service_lanes_delivery_same_service",
+      "childColumns": [
+        "delivery_area_id",
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.service_areas",
+      "referenceColumns": [
+        "id",
+        "carrier_service_id"
+      ],
+      "definition": "FOREIGN KEY (delivery_area_id, carrier_service_id) REFERENCES service_areas(id, carrier_service_id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: delivery_area_id, carrier_service_id -> public.service_areas(id, carrier_service_id)."
+    },
+    {
+      "table": "public.service_lanes",
+      "constraint": "service_lanes_pickup_same_service",
+      "childColumns": [
+        "pickup_area_id",
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.service_areas",
+      "referenceColumns": [
+        "id",
+        "carrier_service_id"
+      ],
+      "definition": "FOREIGN KEY (pickup_area_id, carrier_service_id) REFERENCES service_areas(id, carrier_service_id) ON DELETE CASCADE",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: pickup_area_id, carrier_service_id -> public.service_areas(id, carrier_service_id)."
+    },
+    {
+      "table": "public.transport_assets",
+      "constraint": "fleet_home_depot",
+      "childColumns": [
+        "home_depot_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_depots",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (home_depot_id, carrier_id) REFERENCES carrier_depots(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: home_depot_id, carrier_id -> public.carrier_depots(id, carrier_id)."
+    },
+    {
+      "table": "public.transport_assets",
+      "constraint": "transport_assets_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.transport_assets",
+      "constraint": "transport_assets_carrier_service_id_carrier_id_fkey",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.transport_assets",
+      "constraint": "transport_assets_fleet_service",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.transport_assets",
+      "constraint": "transport_assets_fulfilment_partner_id_fkey",
+      "childColumns": [
+        "fulfilment_partner_id"
+      ],
+      "referenceTable": "public.fulfilment_partners",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (fulfilment_partner_id) REFERENCES fulfilment_partners(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: fulfilment_partner_id -> public.fulfilment_partners(id)."
+    },
+    {
+      "table": "public.transport_executions",
+      "constraint": "transport_executions_booking_id_fkey",
+      "childColumns": [
+        "booking_id"
+      ],
+      "referenceTable": "public.v2_bookings",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (booking_id) REFERENCES v2_bookings(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: booking_id -> public.v2_bookings(id)."
+    },
+    {
+      "table": "public.transport_executions",
+      "constraint": "transport_executions_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.transport_executions",
+      "constraint": "transport_executions_carrier_service_id_carrier_id_fkey",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.transport_executions",
+      "constraint": "transport_executions_consolidation_id_fkey",
+      "childColumns": [
+        "consolidation_id"
+      ],
+      "referenceTable": "public.capacity_consolidations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (consolidation_id) REFERENCES capacity_consolidations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: consolidation_id -> public.capacity_consolidations(id)."
+    },
+    {
+      "table": "public.transport_executions",
+      "constraint": "transport_executions_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.transport_executions",
+      "constraint": "transport_executions_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.transport_plan_candidates",
+      "constraint": "transport_plan_candidates_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.transport_plan_candidates",
+      "constraint": "transport_plan_candidates_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.transport_plan_candidates",
+      "constraint": "transport_plan_candidates_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.transport_plan_candidates",
+      "constraint": "transport_plan_candidates_route_plan_id_fkey",
+      "childColumns": [
+        "route_plan_id"
+      ],
+      "referenceTable": "public.route_plans",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (route_plan_id) REFERENCES route_plans(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: route_plan_id -> public.route_plans(id)."
+    },
+    {
+      "table": "public.v2_bookings",
+      "constraint": "v2_bookings_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.v2_bookings",
+      "constraint": "v2_bookings_decision_id_fkey",
+      "childColumns": [
+        "decision_id"
+      ],
+      "referenceTable": "public.selection_decisions",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (decision_id) REFERENCES selection_decisions(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: decision_id -> public.selection_decisions(id)."
+    },
+    {
+      "table": "public.v2_bookings",
+      "constraint": "v2_bookings_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.v2_bookings",
+      "constraint": "v2_bookings_offer_id_fkey",
+      "childColumns": [
+        "offer_id"
+      ],
+      "referenceTable": "public.v2_carrier_offers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (offer_id) REFERENCES v2_carrier_offers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: offer_id -> public.v2_carrier_offers(id)."
+    },
+    {
+      "table": "public.v2_bookings",
+      "constraint": "v2_bookings_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.v2_carrier_metrics",
+      "constraint": "v2_carrier_metrics_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.v2_carrier_metrics",
+      "constraint": "v2_carrier_metrics_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.v2_carrier_metrics",
+      "constraint": "v2_carrier_metrics_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.v2_carrier_offers",
+      "constraint": "offer_opportunity_fk",
+      "childColumns": [
+        "parent_id"
+      ],
+      "referenceTable": "public.carrier_opportunities",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (parent_id) REFERENCES carrier_opportunities(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: parent_id -> public.carrier_opportunities(id)."
+    },
+    {
+      "table": "public.v2_carrier_offers",
+      "constraint": "v2_carrier_offers_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.v2_carrier_offers",
+      "constraint": "v2_carrier_offers_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.v2_carrier_offers",
+      "constraint": "v2_carrier_offers_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.v2_carrier_offers",
+      "constraint": "v2_carrier_offers_plan_id_fkey",
+      "childColumns": [
+        "plan_id"
+      ],
+      "referenceTable": "public.transport_plan_candidates",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (plan_id) REFERENCES transport_plan_candidates(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: plan_id -> public.transport_plan_candidates(id)."
+    },
+    {
+      "table": "public.v2_carrier_offers",
+      "constraint": "v2_carrier_offers_supersedes_offer_id_fkey",
+      "childColumns": [
+        "supersedes_offer_id"
+      ],
+      "referenceTable": "public.v2_carrier_offers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (supersedes_offer_id) REFERENCES v2_carrier_offers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: supersedes_offer_id -> public.v2_carrier_offers(id)."
+    },
+    {
+      "table": "public.v2_rankings",
+      "constraint": "v2_rankings_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "V2_MODELO",
+      "reason": "Documented V2 ScoringPolicy-to-RankedOption workflow integrity. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.v2_rankings",
+      "constraint": "v2_rankings_freight_request_id_fkey",
+      "childColumns": [
+        "freight_request_id"
+      ],
+      "referenceTable": "public.freight_requests",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (freight_request_id) REFERENCES freight_requests(id)",
+      "category": "V2_MODELO",
+      "reason": "Documented V2 ScoringPolicy-to-RankedOption workflow integrity. Physical reference: freight_request_id -> public.freight_requests(id)."
+    },
+    {
+      "table": "public.v2_rankings",
+      "constraint": "v2_rankings_organization_id_fkey",
+      "childColumns": [
+        "organization_id"
+      ],
+      "referenceTable": "public.organizations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      "category": "V2_MODELO",
+      "reason": "Documented V2 ScoringPolicy-to-RankedOption workflow integrity. Physical reference: organization_id -> public.organizations(id)."
+    },
+    {
+      "table": "public.v2_rankings",
+      "constraint": "v2_rankings_policy_id_fkey",
+      "childColumns": [
+        "policy_id"
+      ],
+      "referenceTable": "public.scoring_policies",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (policy_id) REFERENCES scoring_policies(id)",
+      "category": "V2_MODELO",
+      "reason": "Documented V2 ScoringPolicy-to-RankedOption workflow integrity. Physical reference: policy_id -> public.scoring_policies(id)."
+    },
+    {
+      "table": "public.vehicle_assignments",
+      "constraint": "vehicle_assignments_capacity_reservation_id_fkey",
+      "childColumns": [
+        "capacity_reservation_id"
+      ],
+      "referenceTable": "public.capacity_reservations",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (capacity_reservation_id) REFERENCES capacity_reservations(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: capacity_reservation_id -> public.capacity_reservations(id)."
+    },
+    {
+      "table": "public.vehicle_assignments",
+      "constraint": "vehicle_assignments_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.vehicle_assignments",
+      "constraint": "vehicle_assignments_carrier_service_id_carrier_id_fkey",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.vehicle_assignments",
+      "constraint": "vehicle_assignments_execution_id_carrier_id_carrier_servic_fkey",
+      "childColumns": [
+        "execution_id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.transport_executions",
+      "referenceColumns": [
+        "id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "definition": "FOREIGN KEY (execution_id, carrier_id, carrier_service_id) REFERENCES transport_executions(id, carrier_id, carrier_service_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: execution_id, carrier_id, carrier_service_id -> public.transport_executions(id, carrier_id, carrier_service_id)."
+    },
+    {
+      "table": "public.vehicle_assignments",
+      "constraint": "vehicle_assignments_transport_asset_id_carrier_id_carrier__fkey",
+      "childColumns": [
+        "transport_asset_id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.transport_assets",
+      "referenceColumns": [
+        "id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "definition": "FOREIGN KEY (transport_asset_id, carrier_id, carrier_service_id) REFERENCES transport_assets(id, carrier_id, carrier_service_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: transport_asset_id, carrier_id, carrier_service_id -> public.transport_assets(id, carrier_id, carrier_service_id)."
+    },
+    {
+      "table": "public.vehicle_assignments",
+      "constraint": "vehicle_assignments_vehicle_combination_id_carrier_id_carr_fkey",
+      "childColumns": [
+        "vehicle_combination_id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.vehicle_combinations",
+      "referenceColumns": [
+        "id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "definition": "FOREIGN KEY (vehicle_combination_id, carrier_id, carrier_service_id) REFERENCES vehicle_combinations(id, carrier_id, carrier_service_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: vehicle_combination_id, carrier_id, carrier_service_id -> public.vehicle_combinations(id, carrier_id, carrier_service_id)."
+    },
+    {
+      "table": "public.vehicle_combination_assets",
+      "constraint": "vehicle_combination_assets_combination_id_carrier_id_carri_fkey",
+      "childColumns": [
+        "combination_id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.vehicle_combinations",
+      "referenceColumns": [
+        "id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "definition": "FOREIGN KEY (combination_id, carrier_id, carrier_service_id) REFERENCES vehicle_combinations(id, carrier_id, carrier_service_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: combination_id, carrier_id, carrier_service_id -> public.vehicle_combinations(id, carrier_id, carrier_service_id)."
+    },
+    {
+      "table": "public.vehicle_combination_assets",
+      "constraint": "vehicle_combination_assets_transport_asset_id_carrier_id_c_fkey",
+      "childColumns": [
+        "transport_asset_id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "referenceTable": "public.transport_assets",
+      "referenceColumns": [
+        "id",
+        "carrier_id",
+        "carrier_service_id"
+      ],
+      "definition": "FOREIGN KEY (transport_asset_id, carrier_id, carrier_service_id) REFERENCES transport_assets(id, carrier_id, carrier_service_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: transport_asset_id, carrier_id, carrier_service_id -> public.transport_assets(id, carrier_id, carrier_service_id)."
+    },
+    {
+      "table": "public.vehicle_combinations",
+      "constraint": "vehicle_combinations_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_id -> public.carriers(id)."
+    },
+    {
+      "table": "public.vehicle_combinations",
+      "constraint": "vehicle_combinations_carrier_service_id_carrier_id_fkey",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "BASELINE_178",
+      "reason": "Previously selected physical FK retained unchanged from the 178-FK HAC-44 scope. Physical reference: carrier_service_id, carrier_id -> public.carrier_services(id, carrier_id)."
+    },
+    {
+      "table": "public.vehicles",
+      "constraint": "vehicles_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id) ON DELETE CASCADE",
+      "category": "V1_HEREDADA_BASELINE",
+      "reason": "Legacy vehicle compatibility table; the V2 RoadVehicle class uses transport_assets. Excluded from this V2 measurement; retain separate V1 regression. Physical reference: carrier_id -> public.carriers(id)."
+    }
+  ]
+}

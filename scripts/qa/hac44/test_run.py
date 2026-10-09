@@ -14,11 +14,18 @@ class RunnerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="hac44-run-unit-") as folder:
             out = Path(folder)
             number = 0
+            generation, catalog_generation = 0, None
             def execute(_label, args, **_kwargs):
-                nonlocal number
+                nonlocal number, generation, catalog_generation
                 number += 1
                 key = (Path(args[3]).name, *args[4:])
                 code = 0
+                if key[0] in ("pkce_smoke.py", "authentication.py", "identity.py"):
+                    generation += 1
+                if key[0] == "catalog.py":
+                    catalog_generation = generation
+                if key[0] == "fk_coverage.py" and (catalog_generation != generation or defect == "stale-catalog"):
+                    code = 1  # Reset recreated internal trigger IDs; current catalog is required.
                 for name in runner.ARTIFACTS.get(key, []):
                     rows = [{"case": case, "status": "PASS"} for case in sorted(runner.CONTRACT_CASES)] if name == "contract-verdict.json" else [{"label": "valid-positive", "status": "PASS"}]
                     if defect == "contract" and name == "contract-verdict.json":
@@ -39,6 +46,7 @@ class RunnerTests(unittest.TestCase):
                     (out / "logs" / name).write_text(json.dumps(payload), encoding="utf-8")
                 if defect == "command" and key == ("persistence.py",): code = 1
                 if defect == "setup" and key == ("gates.py",): code = 1
+                if defect == "baseline" and key == ("fk_coverage.py",): code = 3
                 return SimpleNamespace(returncode=code)
             result = runner.Runner(out, execute)
             with contextlib.redirect_stdout(io.StringIO()):
@@ -58,6 +66,13 @@ class RunnerTests(unittest.TestCase):
 
     def test_current_all_pass_needs_no_historical_failures(self):
         self.positive()
+
+    def test_auth_reset_requires_fresh_catalog_before_fk_measurement(self):
+        self.positive()
+        code, data, cycles = self.exercise("stale-catalog")
+        self.assertEqual(code, 1)
+        self.assertEqual(data["status"], "FAIL")
+        self.assertTrue(all(c["cleanup"]["status"] == "PASS" for c in cycles))
 
     def test_contract_fail_keeps_nonzero_exit_and_completes(self):
         self.positive()
@@ -108,6 +123,17 @@ class RunnerTests(unittest.TestCase):
         code, data, _ = self.exercise("setup")
         self.assertEqual(code, 1)
         self.assertTrue(all(c["exit"] is None for c in data["commands"] if c["script"] == "lifecycle.py"))
+
+    def test_failed_original_baseline_stops_after_cleanup(self):
+        self.positive()
+        code, data, cycles = self.exercise("baseline")
+        self.assertEqual(code, 1)
+        self.assertEqual(len(cycles), 1)
+        self.assertEqual(cycles[0]["cleanup"]["status"], "PASS")
+        self.assertEqual(data["commands"][-1]["script"], "lifecycle.py")
+        self.assertEqual(data["commands"][-1]["args"], ["cleanup"])
+        self.assertFalse(any(c["script"] in ("persistence.py", "matrix.py", "generate.py", "checks.py")
+                             for c in data["commands"]))
 
     def test_stale_success_is_not_reused(self):
         self.positive()
