@@ -4,6 +4,23 @@ import {createRequire} from 'node:module';
 import {randomBytes, randomUUID, createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
+import {existsSync, realpathSync} from 'node:fs';
+import path from 'node:path';
+
+// Windows cannot spawn a .cmd without a shell. Execute npm's JS entrypoint
+// directly instead; arguments (including bank paths) never become shell code.
+export function cliInvocation(cmd) {
+  if (process.platform !== 'win32' || !/\.cmd$/i.test(cmd[0])) return cmd;
+  if (path.basename(cmd[0]).toLowerCase() !== 'npx.cmd') throw new Error('Invalid local CLI launcher');
+  const candidates = path.isAbsolute(cmd[0]) || cmd[0].includes('\\') || cmd[0].includes('/')
+    ? [path.resolve(cmd[0])]
+    : (process.env.PATH ?? '').split(path.delimiter).filter(Boolean).map(dir => path.join(dir, cmd[0]));
+  const launcher = candidates.find(candidate => existsSync(candidate));
+  if (!launcher) throw new Error('Local npx launcher unavailable');
+  const entry = path.join(path.dirname(realpathSync(launcher)), 'node_modules', 'npm', 'bin', 'npx-cli.js');
+  if (!existsSync(entry)) throw new Error('Local npx entrypoint unavailable');
+  return [process.execPath, entry, ...cmd.slice(1)];
+}
 
 // Keep status (including local keys) in memory; never include child output in errors.
 export function readCliStatus(cliJSON, bankFolder) {
@@ -12,7 +29,8 @@ export function readCliStatus(cliJSON, bankFolder) {
   if (!Array.isArray(cmd) || !cmd.length || cmd.some(arg => typeof arg !== 'string' || !arg.length)) {
     throw new Error('Invalid local CLI command');
   }
-  const response = spawnSync(cmd[0], [...cmd.slice(1), 'status', '--workdir', bankFolder, '-o', 'json'],
+  const invocation = cliInvocation(cmd);
+  const response = spawnSync(invocation[0], [...invocation.slice(1), 'status', '--workdir', bankFolder, '-o', 'json'],
     {encoding:'utf8', shell:false});
   if (response.error || response.status !== 0) throw new Error('Local status failed');
   try { return JSON.parse(response.stdout); } catch { throw new Error('Invalid local status response'); }

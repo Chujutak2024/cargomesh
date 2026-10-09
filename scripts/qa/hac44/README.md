@@ -1,5 +1,16 @@
 # HAC-44 reproducible local QA
 
+## Windows CLI transport
+
+The PKCE status reader preserves the complete JSON argv. On Windows, `npx.cmd`
+is resolved through its installed npm `npx-cli.js` and launched by Node with
+`shell:false`; no bank path or argument is interpreted as shell text. A missing
+entrypoint aborts without trying a shell. CLI output (including local keys) stays
+in memory and is omitted from failures. Tests cover the installed Windows launcher
+with `--version` (no download) and a disposable npm layout with spaces, exact argv,
+PATH lookup and missing-entrypoint rejection. These transport tests do not certify
+OAuth or hosted database access.
+
 This directory owns the QA harness beside existing repository scripts, keeping synthetic data outside migrations and leaving product services, profiles and CI unchanged. Documentation and scenario sources are committed; logs, catalogs, CSVs, UUID registries, backups and replay workdirs live in an external evidence directory.
 
 ## Setup and complete run

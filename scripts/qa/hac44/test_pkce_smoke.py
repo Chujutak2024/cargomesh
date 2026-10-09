@@ -126,6 +126,45 @@ console.log('PASS CLI transport');
         self.execute_stub()
         self.execute_stub(mode='failure', error='Local status failed')
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows .cmd launcher regression')
+    def test_windows_cmd_uses_js_entrypoint_without_shell_or_downloads(self):
+        self.execute_stub()
+        install = self.directory / 'npm with spaces'
+        entry = install / 'node_modules/npm/bin/npx-cli.js'
+        entry.parent.mkdir(parents=True, exist_ok=True)
+        launcher = install / 'npx.cmd'
+        launcher.write_text('@echo THIS_CMD_MUST_NOT_EXECUTE\n@exit /b 99\n')
+        entry.write_text('''const fs = require('node:fs');
+fs.writeFileSync(process.env.HAC44_STUB_ARGV, process.argv.slice(2).join('\\n')+'\\n');
+console.log(JSON.stringify({API_URL:'http://127.0.0.1:64001',SERVICE_ROLE_KEY:'FAKE_SERVICE_KEY_DO_NOT_LOG',ANON_KEY:'FAKE_ANON_KEY_DO_NOT_LOG'}));
+''', encoding='utf-8')
+        command = [str(launcher), '--yes', 'supabase@2.117.0']
+        received = self.execute_stub(command=command)
+        self.assertEqual(received, [*command[1:], 'status', '--workdir', str(self.directory / 'owned bank'), '-o', 'json'])
+        with patch.dict(os.environ, {'PATH': str(install) + os.pathsep + os.environ['PATH']}):
+            self.assertEqual(self.execute_stub(command=['npx.cmd', *command[1:]]), received)
+        entry.unlink()
+        self.assertEqual(self.execute_stub(command=command, error='Local npx entrypoint unavailable'), [])
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows installed npx launcher regression')
+    def test_installed_windows_npx_version_runs_without_shell(self):
+        launcher = shutil.which('npx.cmd')
+        self.assertIsNotNone(launcher, 'Installed npm launcher required; no downloads')
+        code = '''import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
+const {cliInvocation} = await import(process.env.HAC44_TEST_MODULE);
+const cmd = cliInvocation([process.env.HAC44_TEST_NPX, '--version']);
+assert.equal(cmd[0], process.execPath);
+assert.ok(cmd[1].endsWith('npx-cli.js'));
+const result = spawnSync(cmd[0],cmd.slice(1),{encoding:'utf8',shell:false});
+assert.equal(result.status,0);
+assert.match(result.stdout.trim(), /^\\d+\\.\\d+\\.\\d+/);
+console.log('PASS installed npx launcher');'''
+        env = dict(os.environ, HAC44_TEST_MODULE=(HERE / 'pkce_smoke.mjs').as_uri(), HAC44_TEST_NPX=launcher)
+        result = subprocess.run(['node', '--input-type=module', '-e', code], env=env, capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), 'PASS installed npx launcher')
+
     def test_malformed_status_does_not_leak_parser_input(self):
         self.execute_stub()
         self.execute_stub(mode='malformed', error='Invalid local status response')
