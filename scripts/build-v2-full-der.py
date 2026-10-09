@@ -288,6 +288,17 @@ def build():
         indexed[key]['currentTreatment'] = update
     for path in current_attrs['evidence']:
         assert (ROOT / path).is_file(), f'Missing attribute evidence: {path}'
+    identity = json.loads((OUT / 'FULL_MODEL_CURRENT_IDENTITY.json').read_text(encoding='utf-8'))
+    identity_keys = set()
+    for update in identity['attributes']:
+        key = (update['class'], update['name'])
+        assert key in indexed and key not in seen_attrs and key not in identity_keys, f'Invalid identity attribute: {key}'
+        identity_keys.add(key)
+        indexed[key]['currentTreatment'] = update
+    identity_classes = {'ResponseIntegration', 'OrganizationMember', 'McpAccountLink', 'CarrierOperator'}
+    assert identity_keys == {key for key in indexed if key[0] in identity_classes}, 'Incomplete identity UML reconciliation'
+    for path in identity['evidence']:
+        assert (ROOT / path).is_file(), f'Missing identity evidence: {path}'
     current = json.loads((OUT / 'FULL_MODEL_CURRENT_RELATIONS.json').read_text(encoding='utf-8'))
     seen = set()
     for update in current['relations']:
@@ -302,6 +313,7 @@ def build():
     return {'schemaVersion': '2.0', 'sourceSha256': model['sourceSha256'],
         'currentRelationReconciliation': current,
         'currentAttributeReconciliation': current_attrs,
+        'currentIdentityReconciliation': identity,
         'status': 'QA_BASELINE_RECONCILED_NOT_CURRENT_MIGRATION_CERTIFICATION',
         'observedCommit': baseline['sourceCommit'],
         'counts': model['counts'], 'classes': classes, 'relations': relations}
@@ -341,7 +353,7 @@ def render(model):
         lines.append(f"| {index} | {relation['source']} → {relation['target']} ({relation['label']}) | "
             f"{' / '.join(relation['endLabels']) or 'herencia/realización'} | {relation['physicalTreatment'].replace('|', '/')} | {relation['designTreatment']} | {relation['qaStatus']} |")
     lines += ['', '## Reconciliación vigente: F-02 y asociaciones HAC-40', '',
-        f"Base integrada: `{model['currentRelationReconciliation']['sourceCommit']}` (base de 20 migraciones; incremento local de 2 migraciones pendiente de integrar). El baseline anterior permanece intacto.", '',
+        f"Corte documental HAC-40: `{model['currentRelationReconciliation']['sourceCommit']}`. Cada tratamiento declara su evidencia; los conteos históricos no describen la cadena HAC-41. El baseline anterior permanece intacto.", '',
         model['currentRelationReconciliation']['qaEvidence'], '',
         '| Nº | Tratamiento actual en el código | Consumo API | Estado documental | Evidencia |', '|---|---|---|---|---|']
     for update in model['currentRelationReconciliation']['relations']:
@@ -353,6 +365,12 @@ def render(model):
     for update in model['currentAttributeReconciliation']['attributes']:
         lines.append(f"| {update['name']} | `{update['target']}` | `{update['api']}` | {update['type']} |")
     lines += ['', model['currentAttributeReconciliation']['limits'], '',
+        '## Reconciliación vigente de identidad HAC-41', '',
+        f"Base: `{model['currentIdentityReconciliation']['baseCommit']}`; rama `{model['currentIdentityReconciliation']['implementationBranch']}`. Los estados QA históricos se conservan; HAC-44 debe reobservar F-03/F-06 sobre el SHA del PR.", '',
+        '| Clase.atributo | Persistencia actual | Operación/servicio/canal | Dueño y estado |', '|---|---|---|---|']
+    for update in model['currentIdentityReconciliation']['attributes']:
+        lines.append(f"| {update['class']}.{update['name']} | `{update['target']}` | {update['api']} | {update['owner']}; {update['status']} |")
+    lines += ['', model['currentIdentityReconciliation']['limits'], '',
         'El enlace indirecto de LoadAllocation al recurso es deliberado y explícito; no se promete una columna directa inexistente. En reservas, el trigger garantiza coherencia cuando hay un binding, pero permite los tres IDs NULL sin comprobar fase o booking. La exigencia de asignación del comando nativo es una garantía distinta del catálogo físico. Esta sección no reobserva los 397 atributos ni certifica las 93 relaciones o Supabase alojado.', '', '## Gate antes de aplicar el esquema', '',
         'El inventario y este diseño deben coincidir exactamente con el UML. Después se comprobará cada destino contra pg_catalog, constraints, RLS y comandos reales; '
         'los 397 destinos y 93 tratamientos no pasan a IMPLEMENTADO por aparecer aquí. '

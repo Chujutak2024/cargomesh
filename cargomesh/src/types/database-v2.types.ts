@@ -1,5 +1,4 @@
-// Generated from the local native V2 schema. Nullable catalog/facility RPC args
-// retain explicit contract overrides: pg-meta does not infer accepted SQL NULL.
+// Generated from the local V2 schema; explicit nullable RPC contracts retained.
 export type Json =
   | string
   | number
@@ -9,6 +8,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       asset_cargo_capabilities: {
@@ -1423,6 +1447,7 @@ export type Database = {
           status: string
           updated_at: string
           verified_at: string | null
+          version: number
         }
         Insert: {
           auth_user_id?: string | null
@@ -1436,6 +1461,7 @@ export type Database = {
           status: string
           updated_at?: string
           verified_at?: string | null
+          version?: number
         }
         Update: {
           auth_user_id?: string | null
@@ -1449,6 +1475,7 @@ export type Database = {
           status?: string
           updated_at?: string
           verified_at?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -2709,52 +2736,64 @@ export type Database = {
           auth_user_id: string
           created_at: string
           expires_at: string
+          external_subject_ref: string | null
           id: string
           linked_at: string
           linked_by_user_id: string
           oauth_client_id: string
           organization_id: string
           organization_member_id: string
+          provider: string | null
           revocation_reason: string | null
           revoked_at: string | null
           revoked_by_user_id: string | null
           scopes: string[]
           status: string
           updated_at: string
+          verified_at: string | null
+          version: number
         }
         Insert: {
           auth_user_id: string
           created_at?: string
           expires_at: string
+          external_subject_ref?: string | null
           id?: string
           linked_at?: string
           linked_by_user_id: string
           oauth_client_id: string
           organization_id: string
           organization_member_id: string
+          provider?: string | null
           revocation_reason?: string | null
           revoked_at?: string | null
           revoked_by_user_id?: string | null
           scopes: string[]
           status?: string
           updated_at?: string
+          verified_at?: string | null
+          version?: number
         }
         Update: {
           auth_user_id?: string
           created_at?: string
           expires_at?: string
+          external_subject_ref?: string | null
           id?: string
           linked_at?: string
           linked_by_user_id?: string
           oauth_client_id?: string
           organization_id?: string
           organization_member_id?: string
+          provider?: string | null
           revocation_reason?: string | null
           revoked_at?: string | null
           revoked_by_user_id?: string | null
           scopes?: string[]
           status?: string
           updated_at?: string
+          verified_at?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -3119,6 +3158,8 @@ export type Database = {
           role: string
           status: string
           updated_at: string
+          verified_at: string | null
+          version: number
         }
         Insert: {
           auth_user_id: string
@@ -3130,6 +3171,8 @@ export type Database = {
           role: string
           status?: string
           updated_at?: string
+          verified_at?: string | null
+          version?: number
         }
         Update: {
           auth_user_id?: string
@@ -3141,6 +3184,8 @@ export type Database = {
           role?: string
           status?: string
           updated_at?: string
+          verified_at?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -3669,6 +3714,63 @@ export type Database = {
           },
           {
             foreignKeyName: "repositioning_blocks_fleet_service"
+            columns: ["carrier_service_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id", "carrier_id"]
+          },
+        ]
+      }
+      response_integrations: {
+        Row: {
+          carrier_id: string
+          carrier_service_id: string
+          channel: string
+          created_at: string
+          endpoint_ref: string | null
+          evidence: string | null
+          id: string
+          status: string
+          updated_at: string
+          verified_at: string | null
+          version: number
+        }
+        Insert: {
+          carrier_id: string
+          carrier_service_id: string
+          channel: string
+          created_at?: string
+          endpoint_ref?: string | null
+          evidence?: string | null
+          id?: string
+          status: string
+          updated_at?: string
+          verified_at?: string | null
+          version?: number
+        }
+        Update: {
+          carrier_id?: string
+          carrier_service_id?: string
+          channel?: string
+          created_at?: string
+          endpoint_ref?: string | null
+          evidence?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "response_integrations_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "response_integrations_carrier_service_id_carrier_id_fkey"
             columns: ["carrier_service_id", "carrier_id"]
             isOneToOne: false
             referencedRelation: "carrier_services"
@@ -5047,6 +5149,9 @@ export type Database = {
           data: Json
           freight_request_id: string | null
           id: string
+          issuer_auth_user_id: string | null
+          issuer_member_id: string | null
+          issuer_operator_id: string | null
           kind: string
           organization_id: string | null
           parent_id: string | null
@@ -5062,6 +5167,9 @@ export type Database = {
           data: Json
           freight_request_id?: string | null
           id?: string
+          issuer_auth_user_id?: string | null
+          issuer_member_id?: string | null
+          issuer_operator_id?: string | null
           kind?: string
           organization_id?: string | null
           parent_id?: string | null
@@ -5077,6 +5185,9 @@ export type Database = {
           data?: Json
           freight_request_id?: string | null
           id?: string
+          issuer_auth_user_id?: string | null
+          issuer_member_id?: string | null
+          issuer_operator_id?: string | null
           kind?: string
           organization_id?: string | null
           parent_id?: string | null
@@ -5107,6 +5218,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "freight_requests"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_carrier_offers_issuer_member_id_fkey"
+            columns: ["issuer_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_carrier_offers_issuer_operator_id_carrier_id_fkey"
+            columns: ["issuer_operator_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_operators"
+            referencedColumns: ["id", "carrier_id"]
           },
           {
             foreignKeyName: "v2_carrier_offers_organization_id_fkey"
@@ -5498,6 +5623,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      check_v2_mcp_actor: {
+        Args: { p_member_id: string; p_organization_id: string }
+        Returns: boolean
+      }
+      command_v2_carrier_workflow: {
+        Args: {
+          p_action: string
+          p_context: Json
+          p_key: string
+          p_operator_id: string
+          p_value: Json
+        }
+        Returns: Json
+      }
       command_v2_catalog: {
         Args: {
           p_carrier_id: string | null
@@ -5535,6 +5674,28 @@ export type Database = {
         }
         Returns: Json
       }
+      command_v2_identity_directory: {
+        Args: {
+          p_action: string
+          p_carrier_id: string | null
+          p_id: string | null
+          p_key: string
+          p_kind: string
+          p_organization_id: string | null
+          p_value: Json
+        }
+        Returns: Json
+      }
+      command_v2_mcp_link: {
+        Args: {
+          p_action: string
+          p_id: string | null
+          p_key: string
+          p_organization_id: string | null
+          p_value: Json
+        }
+        Returns: Json
+      }
       command_v2_organization: {
         Args: {
           p_expected_version: number
@@ -5543,6 +5704,10 @@ export type Database = {
           p_organization_id: string
           p_value: Json
         }
+        Returns: Json
+      }
+      command_v2_response_integration: {
+        Args: { p_carrier_id: string; p_key: string; p_value: Json }
         Returns: Json
       }
       command_v2_route_planner: {
@@ -5567,6 +5732,15 @@ export type Database = {
         }
         Returns: Json
       }
+      confirm_v2_mcp_workflow: {
+        Args: {
+          p_confirmed: boolean
+          p_id: string
+          p_member_id: string
+          p_organization_id: string
+        }
+        Returns: Json
+      }
       create_v2_freight_request: {
         Args: {
           p_idempotency_key: string
@@ -5577,6 +5751,11 @@ export type Database = {
         }
         Returns: Json
       }
+      diagnose_v2_response_integration: {
+        Args: { p_carrier_id: string; p_id: string }
+        Returns: Json
+      }
+      get_v2_carrier_identity: { Args: { p_carrier_id: string }; Returns: Json }
       persist_balanced_decision: {
         Args: {
           p_anomaly_evidence: Json
@@ -5641,6 +5820,27 @@ export type Database = {
           selection_mode: string
         }[]
       }
+      prepare_v2_mcp_workflow: {
+        Args: {
+          p_action: string
+          p_context: Json
+          p_key: string
+          p_member_id: string
+          p_organization_id: string
+          p_value: Json
+        }
+        Returns: Json
+      }
+      read_v2_carrier_workflow: {
+        Args: {
+          p_context: Json
+          p_kind: string
+          p_limit: number
+          p_offset: number
+          p_operator_id: string
+        }
+        Returns: Json
+      }
       read_v2_catalog: {
         Args: {
           p_carrier_id: string | null
@@ -5652,6 +5852,20 @@ export type Database = {
           p_organization_id: string
           p_service_id: string | null
         }
+        Returns: Json
+      }
+      read_v2_identity: {
+        Args: {
+          p_carrier_id: string | null
+          p_kind: string
+          p_limit: number
+          p_offset: number
+          p_organization_id: string | null
+        }
+        Returns: Json
+      }
+      read_v2_location_candidates: {
+        Args: { p_member_id: string; p_organization_id: string; p_query: Json }
         Returns: Json
       }
       read_v2_workflow: {
@@ -5903,6 +6117,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

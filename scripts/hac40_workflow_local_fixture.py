@@ -68,6 +68,7 @@ def cleanup(state):
  statements.extend([f"delete from private.v2_request_command_receipts where request_id='{q}';",f"delete from public.freight_requests where id='{q}';",
  f"delete from private.v2_catalog_receipts where result->>'id' in({ids});",
  f"delete from private.v2_workflow_receipts where (result->>'requestId'='{q}' or result#>>'{{search,requestId}}'='{q}' or result->>'id' in({ids})) and organization_id='{ORG}' and member_id='{MEMBER}';",
+ f"delete from private.v2_carrier_workflow_receipts where carrier_id='{CARRIER}' and operator_id in(select id from public.carrier_operators where auth_user_id='{USER}') and (result->>'requestId'='{q}' or result->>'id' in({ids}));",
  f"delete from private.v2_catalog_grants where auth_user_id='{USER}' and permission='CATALOG_ADMIN';"])
  for table,rows in state['previous'].items():
   if table=='categoryLink':continue

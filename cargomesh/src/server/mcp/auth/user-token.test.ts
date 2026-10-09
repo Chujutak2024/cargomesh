@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { authenticateMcpUserBearer, requireSupabaseOAuthClaims, type McpAccountLink } from "./user-token";
 
-const identity = { userId: "user-a", userEmail: "a@example.invalid", oauthClientId: "alexa-client" };
+const identity = { userId: "user-a", userEmail: "a@example.invalid", emailConfirmedAt: "2026-01-01T00:00:00Z", oauthClientId: "alexa-client" };
 const link: McpAccountLink = {
   authUserId: "user-a", oauthClientId: "alexa-client", organizationId: "org-a", organizationMemberId: "member-a",
   status: "ACTIVE", scopes: ["mcp:tools"],
   expiresAt: "2999-01-01T00:00:00.000Z", revokedAt: null,
+  provider: "OTHER", externalSubjectRef: "user-a", verifiedAt: "2026-01-01T00:00:00Z",
 };
 const membership = {
   memberId: "member-a", organizationId: "org-a", role: "SUPERVISOR" as const, status: "ACTIVE",
@@ -40,12 +41,30 @@ test("account linking fails closed for missing, revoked, expired, wrong-client a
     { ...link, expiresAt: "invalid" },
     { ...link, oauthClientId: "other-client" },
     { ...link, scopes: [] },
+    { ...link, provider: null }, { ...link, externalSubjectRef: "another-user" },
+    { ...link, verifiedAt: null }, { ...link, verifiedAt: "invalid" },
+    { ...link, verifiedAt: "2999-01-01T00:00:00Z" },
   ];
   for (const candidate of rejected) {
     await assert.rejects(authenticateMcpUserBearer("user-token", dependencies({
       accountLinks: { findByUserAndClient: async () => candidate },
     })), /FORBIDDEN/);
   }
+});
+
+test("each call requires current Auth email confirmation even with the same valid link and token", async () => {
+  let currentIdentity: typeof identity | (Omit<typeof identity, "emailConfirmedAt"> & { emailConfirmedAt: null }) = identity;
+  const deps = dependencies({ verifyIdentity: async () => currentIdentity });
+  assert.equal((await authenticateMcpUserBearer("same-token", deps)).principal.kind, "user");
+  for (const candidate of [
+    { ...identity, emailConfirmedAt: null }, { ...identity, emailConfirmedAt: "invalid" },
+    { ...identity, emailConfirmedAt: "2999-01-01T00:00:00Z" }, { ...identity, userEmail: "" },
+  ]) {
+    currentIdentity = candidate;
+    await assert.rejects(authenticateMcpUserBearer("same-token", deps), /FORBIDDEN: A currently confirmed email/);
+  }
+  currentIdentity = identity;
+  assert.equal((await authenticateMcpUserBearer("same-token", deps)).principal.kind, "user");
 });
 
 test("the link fixes organization A and cannot be replaced by organization B membership", async () => {
