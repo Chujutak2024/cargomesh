@@ -5,6 +5,8 @@ import { readFileSync, writeFileSync, existsSync, unlinkSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { WorkflowRecordV2Schema } from "../src/shared/schemas/v2/workflow.ts";
+import { readRequestWorkflow } from "../src/features/v2-intake/workflow-chat-client.ts";
+import { summarizeWorkflow } from "../src/features/v2-intake/workflow-chat-summary.ts";
 const root = resolve(import.meta.dirname, "../..");
 const app = process.env.HAC40_APP_URL ?? "http://127.0.0.1:3172";
 const api = process.env.NEXT_PUBLIC_SUPABASE_URL, anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -26,6 +28,21 @@ async function call(path, body, key = crypto.randomUUID(), access = token) {
   ...(body ? { body: JSON.stringify(body) } : {}) });
  return { status: response.status, body: await response.json() };
 }
+// Exercise the actual chat reader/formatter over real HTTP; no mock responses.
+function chatFetcher(access = token) {
+ return (path, init) => {
+  assert.equal(init?.credentials, "same-origin");
+  assert.equal(init?.cache, "no-store");
+  assert.ok(String(path).startsWith("/api/v2/"));
+  return fetch(new URL(String(path), app), { ...init, headers: access ? { Authorization: `Bearer ${access}` } : {} });
+ };
+}
+async function chatRecord(requestId, kind, expected) {
+ const rows = await readRequestWorkflow(requestId, kind, chatFetcher());
+ assert.ok(rows.every(row => row.requestId === requestId && row.kind === kind));
+ assert.deepEqual(rows.find(row => row.id === expected.id), expected, `chat ${kind} must match the persisted HTTP projection`);
+ return rows;
+}
 let state;
 try {
  fixture("prepare");state=JSON.parse(readFileSync(statePath, "utf8"));const refs=state.refs;
@@ -41,6 +58,24 @@ try {
  }
  assert.equal((await call("/bookings/"+refs.booking.id,undefined,undefined,other.data.session.access_token)).status,404);
  assert.equal((await call("/routing/nodes",undefined,undefined,null)).status,401);
+ for (const kind of ["offers", "bookings", "executions"]) {
+  const name = {offers:"offer", bookings:"booking", executions:"execution"}[kind];
+  const persisted = await call(paths[name] + "/" + refs[name].id);
+  const rows = await chatRecord(refs.request.id, kind, persisted.body.data);
+  const summary = summarizeWorkflow(kind, rows);
+  assert.ok(summary.length);
+  if (kind === "bookings") assert.match(summary, /Shipper authorization is not carrier confirmation/);
+  if (kind === "executions") assert.match(summary, /persisted status, not live GPS/);
+  await assert.rejects(readRequestWorkflow(refs.request.id, kind, chatFetcher(null)), /sign in again/);
+ }
+ const foreignOffers = readRequestWorkflow(refs.request.id, "offers", async (path, init) => {
+  const response = await chatFetcher(other.data.session.access_token)(path, init);
+  assert.equal(response.status, 404, "foreign request must be hidden rather than fail with an unrelated error");
+  return response;
+ });
+ await assert.rejects(foreignOffers, /could not load the current workflow/);
+ for (const kind of ["bookings", "executions"])
+  assert.deepEqual(await readRequestWorkflow(refs.request.id, kind, chatFetcher(other.data.session.access_token)), []);
  const oldAssignment=refs.plan.data.assignments[0];
  const resource={calendarId:oldAssignment.resource.verificationSource.calendarId,assetId:refs.asset.id,
   capacityPoolId:null,combinationId:null,role:"LOAD_BEARING",allocations:oldAssignment.allocations.map(({unitIndex,quantity})=>({unitIndex,quantity}))};
@@ -67,9 +102,13 @@ try {
  const confirmed=await call(`/carriers/${carrier}/capacity/holds/${hold.body.data.id}/confirmations`,audit);assert.equal(confirmed.status,200,JSON.stringify(confirmed.body));
  const booked=await call(`/carriers/${carrier}/bookings/${refs.booking.id}/confirmations`,{...audit,carrierReference:"QA-HTTP-BOOK",confirmation:"CONFIRMED"});
  assert.equal(booked.status,200,JSON.stringify(booked.body));assert.equal(booked.body.data.data.capacityEvidence.length,1);
+ const confirmedChat = await chatRecord(refs.request.id, "bookings", booked.body.data);
+ assert.match(summarizeWorkflow("bookings", confirmedChat), /carrier confirmed/i);
  const release=await call(`/capacity/holds/${hold.body.data.id}/releases`,{...audit,expectedVersion:2});assert.equal(release.status,409);
  const cancel=await call(`/bookings/${refs.booking.id}/cancellations`,{...audit,expectedVersion:2});assert.equal(cancel.status,200,JSON.stringify(cancel.body));
  const after=await call(`/capacity/holds/${hold.body.data.id}`);assert.equal(after.body.data.status,"RELEASED");
+ await chatRecord(refs.request.id, "bookings", cancel.body.data);
+ console.log("PASS: chat/API integration: persisted offers/bookings/executions, confirmation and cancellation readback, anonymous denial and tenant isolation; no live GPS or booking mutation claim.");
  console.log("PASS: 14 workflow collections/details; typed native outputs; actor isolation; POST/replay/hash conflict/revision/stale; hold→confirm→booking→atomic cancellation over authenticated HTTP.");
 } finally {
  if (state) { fixture("cleanup"); unlinkSync(statePath); }

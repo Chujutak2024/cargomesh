@@ -1,4 +1,4 @@
-Ramón — HAC-44: DTO R01/R02 desplegados en el preview QA V2, producto 29c385fe0ee501eb4b8b989b0a247c8fdeda62ad; 27/27 migraciones. Actualiza desde origin/codex/v2-amazon-contracts: el commit posterior contiene solo harness/documentación y conserva el runtime/migraciones de ese SHA.
+Ramón — HAC-44: DTO R01/R02 desplegados en el preview QA V2, producto 29c385fe0ee501eb4b8b989b0a247c8fdeda62ad; 27/27 migraciones. Actualiza desde origin/main: main incorpora además el chatbot de #115/#116 y la transición de gobernanza/CI. Registra el SHA exacto; las 27 migraciones y el dominio de ese corte se conservan. Reprueba también la lectura del chat contra la API: ofertas, reservas y ejecuciones, anonimato y tenant ajeno; no atribuir al chat selección o booking por voz que aún no expone.
 
 Lee docs/v2-amazon/delivery/uml-bd-api-2026-10-09/DEPLOY_Y_REPRUEBA_29c385f.md. Reprueba independientemente RouteWaypoint.sequence y Booking.data.decisionId en BD/HTTP bajo authenticated, claims reales y COMMIT o ALL IMMEDIATE sin RESET ROLE. Cada negativo tiene positivo válido. Verifica propio 200, ajeno 404, anónimo 401; orden 1,2 y decisionId igual a la FK.
 

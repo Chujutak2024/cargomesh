@@ -9,6 +9,10 @@ CargoMesh captura solicitudes y expone operaciones persistentes de transporte me
 - [Backend](cargomesh/src/server/README.md).
 - [Flujo de entrega](docs/v2-amazon/delivery/CURRENT_DELIVERY_STATE.md).
 
+## Base de trabajo
+
+`main` es la base activa V2. Actualiza desde `origin/main`, trabaja en una rama registrada y entrega PR a `main`; consulta [AGENTS.md](AGENTS.md). La rama anterior de contratos se conserva como historia.
+
 ## Desarrollo local
 
 La aplicación está en `cargomesh/`. Usa la versión de pnpm declarada por el gate y Node 24.

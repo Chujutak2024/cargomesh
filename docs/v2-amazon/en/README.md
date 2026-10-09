@@ -14,7 +14,7 @@ CargoMesh V2 helps a business shipper describe a freight need, discover feasible
 
 ## Current evidence boundary — September 23, 2026
 
-- The shared V2 contract baseline is `codex/v2-amazon-contracts`; `main` is not the V2 deployment branch. Code and tests must be checked at the submitted commit, not inferred from this document.
+- The shared V2 baseline is `main`, authorized on 9 October 2026. Work uses registered branches and reviewed pull requests to `main`; an existing automatic deployment does not prove hosted functionality. Code and tests must be checked at the submitted commit, not inferred from this document.
 - The draft-idempotency and ROAD facilities/service-area/service-lane structural migrations have been applied to the linked Supabase project. The four new ROAD tables have RLS and policies, but contain no V2 catalog rows in that remote project. Schema readiness is not product readiness.
 - The Alexa MCP security/transport skeleton is integrated into the V2 base. Account linking and V2 commercial tools are not yet complete; a local MCP test is not an Alexa+ invocation. Do not advertise Alexa+ user access as live until the account-linking flow is implemented and verified end to end.
 - V1 WebMCP fixtures and the three legacy carriers remain regression material. They do not demonstrate V2 coverage, availability, offers, or multimodal operation.

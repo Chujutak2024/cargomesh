@@ -6,10 +6,10 @@ Actualizado el 9 de octubre de 2026. Este documento organiza la lectura; los con
 
 1. Leer [AGENTS.md](../../../AGENTS.md) y [contratos V2](../contracts/README.md).
 2. Consultar la issue vigente en Linear: dueño, alcance, dependencias, rama registrada y DoD. Usar la [plantilla](./LINEAR_ISSUE_TEMPLATE.md).
-3. Trabajar en la rama del responsable desde `codex/v2-amazon-contracts`; entregar PR directamente a esa base. La decisión del 4 de octubre sustituye el flujo por ramas de ciclo.
+3. Trabajar en la rama del responsable desde `origin/main`; entregar PR a `main`. La decisión autorizada del 9 de octubre sustituye la base anterior y el flujo por ramas de ciclo.
 4. Ejecutar las comprobaciones pertinentes y entregar evidencia por SHA, entorno y dataset. Los defectos funcionales medios/altos regresan al dueño.
 5. Revisar y obtener autorización antes del merge. El gate verifica un SHA de la base; cada incremento integrado puede dejar pendientes del DoD.
-6. Aplicación alojada y despliegue requieren autorizaciones separadas. `main` permanece congelada.
+6. Aplicación alojada y cambios de infraestructura requieren autorizaciones separadas. Un merge a `main` puede activar el despliegue automático configurado. Véase el [acta vigente](./MAIN_V2_INTEGRATION_2026-10-09.md).
 
 ## Lectura del backend y los modelos
 
@@ -26,7 +26,7 @@ La [revisión única de d3a80eb y su integración](./uml-bd-api-2026-10-09/READM
 
 El incremento agrega una migración de lectura: RouteWaypoint.sequence y Booking.data.decisionId. La cadena del repositorio pasa de 26 a 27; los hashes de las 26 anteriores se conservan. Los gates locales del incremento pasan. La actualización alojada ya pasó: 27/27 migraciones, cuatro respaldos restaurados y smoke 21/21 hasta IN_PROGRESS. Véase el [resultado vigente](./uml-bd-api-2026-10-09/DEPLOY_Y_REPRUEBA_29c385f.md). La reprueba independiente de QA sigue separada.
 
-F-02 permanece parcial: la medición actual certifica 225 endpoints y 297 atributos; quedan 97 atributos parciales, tres divergencias documentales legacy, 42 relaciones y semántica de 146 métodos por probar. Los CSV enlazados son la clasificación del corte original con mappings corregidos, no estados posteriores fijados a mano. Axel puede continuar MCP desde la base compartida; los fallos nuevos requieren reproducción antes de cambiar dominio.
+F-02 permanece parcial: la medición actual certifica 225 endpoints y 297 atributos; quedan 97 atributos parciales, tres divergencias documentales legacy, 42 relaciones y semántica de 146 métodos por probar. La clasificación vigente está en `uml-bd-api-2026-10-09/29c385f/`; los CSV del nivel superior conservan el corte original d3a80eb y no sustituyen los resultados posteriores. Axel puede continuar MCP desde la base compartida; los fallos nuevos requieren reproducción antes de cambiar dominio.
 
 ## Antecedente del corte de limpieza — 7 octubre
 

@@ -1,5 +1,7 @@
 # Entrega, coordinación y calidad V2
 
+La base activa desde el 9-oct-2026 es `main`. Consulta el [acta de transición y prueba chat/API](./MAIN_V2_INTEGRATION_2026-10-09.md) y el [flujo vigente](./CURRENT_DELIVERY_STATE.md); los targets de las actas anteriores son historia.
+
 Comienza por el [flujo vigente](./CURRENT_DELIVERY_STATE.md). Esta carpeta contiene contratos de entrega, plantillas y evidencia; el dominio se define en [contracts/](../contracts/README.md).
 
 ## Trabajo actual
