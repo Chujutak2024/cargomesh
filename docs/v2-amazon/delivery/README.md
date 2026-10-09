@@ -9,6 +9,7 @@ Comienza por el [flujo vigente](./CURRENT_DELIVERY_STATE.md). Esta carpeta conti
 - [Backend completo HAC-40 y límites](./HAC40_FULL_API_AND_CLOSURE.md), [endpoints](./HAC40_API_ENDPOINTS.md) y [workflow persistente](./HAC40_WORKFLOW_API.md).
 - [Trazabilidad UML → BD → API](./SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md) y [diccionario UML fechado](./HAC27_UML_ATTRIBUTE_DICTIONARY_2026-10-02.md): contrastar con el DER actual y la matriz del SHA revisado.
 - [Bootstrap local V2](./HAC29_CLEAN_BOOTSTRAP.md).
+- [Identidad y flujo completo MCP HAC-41](./HAC41_IDENTITY_MCP.md): rutas, tools, tres migraciones aditivas y evidencia local; conexión alojada y revisión independiente por separado.
 
 ## Evidencia fechada e historia
 

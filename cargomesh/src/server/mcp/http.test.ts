@@ -18,7 +18,7 @@ test("MCP V2 lists only implemented V2 tools", async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.deepEqual(body.result.tools.map((tool: { name: string }) => tool.name).sort(),
-    ["get_cargomesh_capabilities", "get_v2_intake_options", "create_v2_freight_request", "get_v2_freight_request", "evaluate_v2_road"].sort());
+    implementedCapabilities("V2").map(tool => tool.toolName).sort());
 });
 test("legacy MCP profile fails closed", async () => {
   assert.equal((await handler({ profile: "V1_REGRESSION" })(rpc("tools/list"))).status, 503);
@@ -38,5 +38,8 @@ test("MCP rejects non-POST and oversized requests", async () => {
 test("MCP rejects unauthenticated caller", async () => {
   const run = createMcpHttpHandler({ authenticate: async () => { throw new Error("UNAUTHENTICATED: no session"); },
     configuration: () => ({ mode: "local", environment: "test", localEnabled: true, remoteEnabled: false, canonicalOrigin: undefined, allowedOrigins: undefined }) });
-  assert.equal((await run(rpc("tools/list"))).status, 401);
+  const response = await run(rpc("tools/list"));
+  assert.equal(response.status, 401);
+  assert.equal(response.headers.get("WWW-Authenticate"), 'Bearer resource_metadata="http://localhost:3000/.well-known/oauth-protected-resource"');
 });
+import { implementedCapabilities } from "./capabilities";
