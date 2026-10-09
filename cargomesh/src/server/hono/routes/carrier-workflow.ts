@@ -11,10 +11,10 @@ async function authorized(c: Context, operation: (actor: WorkflowActorV2, servic
   const header = c.req.header("Authorization");
   const token = header?.match(/^Bearer ([^\s]+)$/i)?.[1];
   if (header !== undefined && !token) return v2Error(c, new V2DraftError("UNAUTHORIZED", "Authentication required.", 401));
+  if (!token && !c.req.header("Cookie")) return v2Error(c, new V2DraftError("UNAUTHORIZED", "Authentication required.", 401));
   if (!token && c.req.method === "POST" && !hasSessionOrigin(c.req.raw)) {
     return v2Error(c, new V2DraftError("FORBIDDEN_ORIGIN", "Same-origin session request required.", 403));
   }
-  if (!token && !c.req.header("Cookie")) return v2Error(c, new V2DraftError("UNAUTHORIZED", "Authentication required.", 401));
   const run = async () => {
     try {
       const { requireAuthenticatedCarrier } = await import("@/server/auth/carrier");

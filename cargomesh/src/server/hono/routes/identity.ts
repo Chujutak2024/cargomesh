@@ -26,10 +26,10 @@ async function identityToken(c: Parameters<typeof v2Error>[0], next: () => Promi
   const header = c.req.header("Authorization");
   const token = header?.match(/^Bearer ([^\s]+)$/i)?.[1];
   if (header !== undefined && !token) return v2Error(c, new V2DraftError("UNAUTHORIZED", "Authentication required.", 401));
+  if (!token && !c.req.header("Cookie")) return v2Error(c, new V2DraftError("UNAUTHORIZED", "Authentication required.", 401));
   if (!token && !["GET", "HEAD", "OPTIONS"].includes(c.req.method) && !hasSessionOrigin(c.req.raw)) {
     return v2Error(c, new V2DraftError("FORBIDDEN_ORIGIN", "Same-origin session request required.", 403));
   }
-  if (!token && !c.req.header("Cookie")) return v2Error(c, new V2DraftError("UNAUTHORIZED", "Authentication required.", 401));
   const run = async () => {
     try {
       const { createV2ServerSupabaseClient } = await import("@/server/db/supabase/v2");

@@ -6,7 +6,7 @@
   "migrations": 26,
   "manifestSha256": "1da2fd78fd66e263e84952efc26c4be11555016329135e85f4cbf61185d121fc",
   "pgtap": {
-    "pass": 976,
+    "pass": 979,
     "fail": 0,
     "files": [
       {
@@ -86,7 +86,7 @@
       },
       {
         "file": "supabase/tests/22_v2_hac40_workflow.test.sql",
-        "pass": 34,
+        "pass": 37,
         "fail": 0
       },
       {
@@ -154,13 +154,14 @@
       "clientEntrypoints": 23
     },
     "release": {
-      "pass": 298,
+      "pass": 299,
       "fail": 0
     },
     "productionBuild": "PASS"
   },
   "channels": {
-    "checks": 21,
+    "checks": 22,
+    "currentAuthEmailConfirmation": "LOSS_DENIED_AND_RECOVERY_ALLOWED_WITH_SAME_OAUTH_TOKEN",
     "oauth": "REAL_LOCAL_SUPABASE_PKCE",
     "concurrentBookingConfirmations": "ONE_WRITE_ONE_REPLAY",
     "alexaPlusLive": false,

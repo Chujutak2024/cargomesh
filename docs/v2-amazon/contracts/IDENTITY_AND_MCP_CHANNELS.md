@@ -25,7 +25,7 @@ El cliente Auth se registra y se habilita explícitamente en `private.mcp_oauth_
 
 Los scopes OAuth `openid/email/profile` pertenecen al proveedor. `mcp:tools` es el permiso de negocio persistido en el link CargoMesh; el cliente no puede ampliar scopes, elegir otro sujeto o verificar su propio proveedor. La UI de autorización OAuth debe describir el acceso CargoMesh, permitir aprobar/denegar y ofrecer revocación. Su publicación y configuración en el entorno alojado son tareas de conexión del canal; la prueba backend local usa el consentimiento real de Supabase por SDK.
 
-Todo acceso a datos de tools revalida membresía y vínculo vigente. El principal carrier HTTP funciona sin OrganizationMember. El MCP actual usa un link organizacional; una acción carrier desde MCP exige además su propio CarrierOperator y grant. No se inventa una organización para un usuario exclusivamente carrier.
+Todo acceso a datos de tools revalida membresía, vínculo vigente y correo actualmente confirmado por Supabase Auth mediante `getUser`. Un usuario autenticado con correo no confirmado recibe 403, aunque el link esté activo; recuperar la confirmación permite reutilizar el vínculo vigente. No se usa la confirmación antigua del link, un JWT previo ni metadata editable como sustituto del estado actual. El principal carrier HTTP funciona sin OrganizationMember. El MCP actual usa un link organizacional; una acción carrier desde MCP exige además su propio CarrierOperator y grant. No se inventa una organización para un usuario exclusivamente carrier.
 
 ## Confirmación comercial y reintentos
 
@@ -51,7 +51,7 @@ No se fabrica geocodificación externa. Confirmar devuelve un DTO canónico; no 
 
 ## Persistencia y límites
 
-Las operaciones usan cliente Supabase con token del usuario y RPC cerrados. Helpers privados y recibos no son accesibles por anon/authenticated/service_role. Las funciones definer tienen `search_path=''` y comprueban actor y alcance antes de acceder a datos o entregar un replay. Las mutaciones HTTP de identidad/carrier mediante cookies exigen origen propio.
+Las operaciones usan cliente Supabase con token del usuario y RPC cerrados. Helpers privados y recibos no son accesibles por anon/authenticated/service_role. Las funciones definer tienen `search_path=''` y comprueban actor y alcance antes de acceder a datos o entregar un replay. Las mutaciones HTTP de identidad/carrier mediante cookies exigen origen propio. Sin credenciales se responde 401 antes de comprobar origen; Bearer inválido también devuelve 401 y no cae a la cookie. Una mutación con cookie desde origen ajeno devuelve 403 `FORBIDDEN_ORIGIN`.
 
 La aceptación de este incremento requiere revisión por SHA, pruebas locales y CI. Desplegar migraciones, habilitar OAuth alojado, conectar clientes reales, UI Web y Alexa+ requiere su propia autorización y prueba. El [contrato Alexa/MCP/AWS](./ALEXA_MCP_AWS.md) mantiene los límites de integración y benchmark.
 

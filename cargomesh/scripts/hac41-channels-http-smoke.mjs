@@ -111,6 +111,11 @@ try {
   assert.equal((await app.request('http://127.0.0.1/api/v2/identity/mcp/links')).status,401);
   const crossSite={method:'POST',headers:{Origin:'https://foreign.invalid',Cookie:'synthetic=untrusted','Content-Type':'application/json'},body:'{}'};
   for (const endpoint of ['/identity/mcp/links',`/carriers/${CARRIER}/bookings/${randomUUID()}/confirmations`]) {
+    const anonymous=await app.request('http://127.0.0.1/api/v2'+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    assert.equal(anonymous.status,401);assert.equal((await anonymous.json()).error.code,'UNAUTHORIZED');
+    const invalid=await app.request('http://127.0.0.1/api/v2'+endpoint,{...crossSite,
+      headers:{...crossSite.headers,Authorization:'Bearer invalid-token'}});
+    assert.equal(invalid.status,401);
     assert.equal((await app.request('http://127.0.0.1/api/v2'+endpoint,crossSite)).status,403);
   }
   pass('identity rejects unauthenticated reads and cross-origin cookie mutations');
@@ -141,6 +146,14 @@ try {
   await web(bt,'POST','/identity/mcp/links',{oauthClientId:clientId,expectedVersion:0,consent:true},randomUUID(),201);
   pass('explicit CargoMesh consent binds real user, client and organization');
   const listed=await rpc(at,'tools/list',{});assert.equal(listed.status,200);assert.equal(listed.body.result.tools.length,18);pass('HTTP MCP advertises 18 implemented tools');
+  sql(`update auth.users set email_confirmed_at=null where id='${A}';`);
+  try {
+    assert.equal((await rpc(at,'tools/list',{})).status,403);
+    assert.equal((await rpc(at,'tools/call',{name:'list_v2_freight_requests',arguments:{}})).status,403);
+    assert.equal(sql(`select status from public.mcp_account_links where id='${linkA.data.id}';`).trim(),'ACTIVE');
+  } finally { sql(`update auth.users set email_confirmed_at=now() where id='${A}';`); }
+  assert.equal((await rpc(at,'tools/list',{})).status,200);
+  pass('current Auth email confirmation is required on every MCP call; same token and active link recover');
   assert.equal((await rpc(a.token,'tools/list',{})).status,401);pass('ordinary password session cannot impersonate an OAuth MCP bearer');
   await web(c.token,'GET',`/carriers/${CARRIER}/operators`);await web(c.token,'GET',`/carriers/${CARRIER}/offers`);pass('carrier HTTP works without shipper membership');
   await web(b.token,'GET',`/carriers/${CARRIER}/offers`,undefined,randomUUID(),403);pass('foreign actor cannot read carrier workflow');

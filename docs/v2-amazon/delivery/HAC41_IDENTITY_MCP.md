@@ -57,11 +57,11 @@ Entorno aislado: proyecto Docker `hac41-identity-mcp`, API loopback 64321, Postg
 | Gate | Resultado local |
 |---|---|
 | Cadena de migraciones | 26/26; las 23 originales sin modificación. |
-| pgTAP V2 | 976/976; test nuevo 33: 34/34. Cada archivo revierte sus datos; controles críticos evalúan constraints bajo authenticated. |
-| Release TypeScript | 298/298. |
+| pgTAP V2 | 979/979; test 22: 37/37 con boundary authenticated; test 33: 34/34. Los claims literales de pgTAP son regresión, no prueba OAuth. |
+| Release TypeScript | 299/299. |
 | Arquitectura y tipos | PASS; 174 módulos y 23 entradas client verificadas. |
 | Bundle producción | PASS. |
-| OAuth/HTTP/MCP | 21 grupos de controles; OAuth Supabase PKCE real local, sin JWT confeccionado ni service_role para dominio. |
+| OAuth/HTTP/MCP | 22 grupos de controles; OAuth Supabase PKCE real local, sin JWT confeccionado ni service_role para dominio. |
 | Drift | Comparación de 26 migraciones frente a catálogo público/privado: 0. |
 
 Estos resultados y los conteos por archivo están en [HAC41_LOCAL_VALIDATION.json](./HAC41_LOCAL_VALIDATION.json); el PR/CI identifica el SHA final. El test local usa las mismas funciones Hono/MCP mediante Request/Response y conexiones HTTP reales a Auth/PostgREST. La prueba de CI previa HAC-40 también sirve la app Next por TCP; el nuevo smoke no acredita por sí solo un despliegue externo.

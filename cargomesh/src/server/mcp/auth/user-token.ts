@@ -34,6 +34,7 @@ export type McpMembershipRepository = {
 export type VerifiedSupabaseIdentity = {
   userId: string;
   userEmail: string;
+  emailConfirmedAt: string | null;
   oauthClientId: string;
 };
 
@@ -98,7 +99,7 @@ async function verifySupabaseIdentity(accessToken: string): Promise<VerifiedSupa
   }
   const oauthClientId = configuredOAuthClientId();
   requireSupabaseOAuthClaims(claims, user.id, oauthClientId, process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
-  return { userId: user.id, userEmail: user.email ?? "", oauthClientId };
+  return { userId: user.id, userEmail: user.email ?? "", emailConfirmedAt: user.email_confirmed_at ?? null, oauthClientId };
 }
 
 const supabaseAccountLinks: McpAccountLinkRepository = {
@@ -157,6 +158,11 @@ export async function authenticateMcpUserBearer(
   dependencies: Dependencies = defaults,
 ): Promise<AuthenticatedMcpUserBearer> {
   const identity = await dependencies.verifyIdentity(accessToken);
+  // Recheck Auth's current user record: a link or JWT reflects earlier consent.
+  if (!identity.userEmail || !identity.emailConfirmedAt ||
+      !Number.isFinite(Date.parse(identity.emailConfirmedAt)) || Date.parse(identity.emailConfirmedAt) > Date.now()) {
+    throw new Error("FORBIDDEN: A currently confirmed email is required for MCP access.");
+  }
   const link = await dependencies.accountLinks.findByUserAndClient(identity.userId, identity.oauthClientId, accessToken);
   if (
     !link || link.status !== "ACTIVE" || link.authUserId !== identity.userId ||

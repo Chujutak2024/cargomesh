@@ -85,6 +85,10 @@ select throws_ok($$select private.workflow_release_booking(pg_temp.id('booking')
 select lives_ok($$select pg_temp.w('holds.confirm',jsonb_build_object('schemaVersion','2.0','expectedVersion',1,'note','QA confirm','evidence',pg_temp.ev()),pg_temp.ctx(null,'c2340000-0000-4000-8000-000000000001',null,pg_temp.id('hold')))$$,'carrier confirms hold');
 select lives_ok($$select pg_temp.w('bookings.confirm',jsonb_build_object('schemaVersion','2.0','expectedVersion',1,'note','QA confirm','evidence',pg_temp.ev(),'carrierReference','QA-BOOK','confirmation','CONFIRMED'),pg_temp.ctx(null,'c2340000-0000-4000-8000-000000000001',null,pg_temp.id('booking')))$$,'carrier confirms only with every covered assignment committed');
 select lives_ok($$select pg_temp.w('bookings.cancel',jsonb_build_object('schemaVersion','2.0','expectedVersion',2,'note','QA cancel','evidence',pg_temp.ev()),pg_temp.ctx(null,null,null,pg_temp.id('booking')))$$,'cancellation releases execution and capacity in one transaction');
+select is(current_user::text,'authenticated','deferred boundary runs under the authenticated role');
+select is(auth.uid(),'c2310000-0000-4000-8000-000000000001'::uuid,'deferred boundary retains the actor claims');
+set constraints all immediate;
+select is(current_user::text,'authenticated','deferred constraints completed without resetting role');
 reset role;
 select is((select status from public.capacity_reservations where id=pg_temp.id('hold')),'RELEASED','cancelled booking leaves no hold');
 select is((select status from public.transport_executions where id=pg_temp.id('execution')),'CANCELLED','cancelled booking cancels planned execution');
