@@ -1,4 +1,4 @@
-# FL-08 — Modelo visible en catálogo sin acceso de cuenta; chat degradado a fallback
+# FL-09 — Modelo visible en catálogo sin acceso de cuenta; chat degradado a fallback
 
 - **Fecha:** 7 octubre 2026 (America/Lima).
 - **Estado:** mitigación local; rediseño conversacional pendiente.
