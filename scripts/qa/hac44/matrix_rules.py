@@ -12,7 +12,8 @@ def attribute_state(exists, mode, optional, output, evidence, nullable=False, um
         return "PARCIAL", "Physical representation exists; no corresponding typed output"
     compatible = {"string":{"ZodString","ZodEnum","ZodLiteral"}, "UUID":{"ZodString"},
                   "boolean":{"ZodBoolean"}, "number":{"ZodNumber"}, "integer":{"ZodNumber"}}
-    expected = {"ZodArray"} if uml_type and uml_type.endswith("[]") else compatible.get(uml_type)
+    # A fixed-length tuple is a JSON array with a narrower cardinality contract.
+    expected = {"ZodArray", "ZodTuple"} if uml_type and uml_type.endswith("[]") else compatible.get(uml_type)
     if expected and output.get("type") not in expected:
         return "DIVERGENTE", "Current output type contradicts the UML scalar/array type"
     if not optional and (output.get("nullable") or output.get("optional")):

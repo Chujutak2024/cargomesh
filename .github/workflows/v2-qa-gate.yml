@@ -98,3 +98,7 @@ jobs:
 
       - name: Verify authenticated local HTTP workflow
         run: python3 scripts/check-hac40-workflow-http-ci.py
+
+      - name: Verify identity and full MCP workflow with real local OAuth PKCE
+        working-directory: cargomesh
+        run: node --conditions=react-server --import tsx scripts/hac41-channels-http-smoke.mjs

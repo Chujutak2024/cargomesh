@@ -49,6 +49,13 @@ insert into cleanup_ids values
 ('public.organizations'::regclass, 'c2300000-0000-4000-8000-000000000001'::uuid),
 ('public.organizations'::regclass, 'c2300000-0000-4000-8000-000000000002'::uuid);
 
+do $$begin
+ if to_regclass('public.carrier_operators') is not null then
+  insert into cleanup_ids values('public.carrier_operators'::regclass,'c23d0000-0000-4000-8000-000000000001'),
+   ('public.carrier_operators'::regclass,'c23d0000-0000-4000-8000-000000000002');
+ end if;
+end;$$;
+
 do $$
 declare r record; joins text; outside text; found boolean;
 begin
@@ -82,6 +89,11 @@ end $$;
 
 
 -- Exact IDs only. Never delete by city, date, organization code, or UUID prefix.
+do $$begin
+ if to_regclass('public.carrier_operators') is not null then
+  delete from public.carrier_operators where id in('c23d0000-0000-4000-8000-000000000001','c23d0000-0000-4000-8000-000000000002');
+ end if;
+end;$$;
 delete from public.service_lanes
 where id in ('c2380000-0000-4000-8000-000000000001', 'c23c0000-0000-4000-8000-000000000001');
 

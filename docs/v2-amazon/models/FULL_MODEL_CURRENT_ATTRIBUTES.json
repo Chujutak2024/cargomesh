@@ -1,0 +1,38 @@
+{
+  "sourceCommit": "fe12d41e474c2c12d9dcd8e77047a0f2b7f0bd66",
+  "scope": "Current RoutePlanner metadata and automatic search increment; historical QA classifications remain unchanged",
+  "status": "LOCAL_NATIVE_COMMAND_VERIFIED_PENDING_INDEPENDENT_QA",
+  "attributes": [
+    {
+      "class": "RoutePlanner",
+      "name": "algorithmVersion",
+      "target": "route_plans.data.planner.algorithmVersion",
+      "api": "GET /api/v2/routes/:id -> data.data.planner.algorithmVersion",
+      "type": "PUBLISHED_ITINERARY_VALIDATOR_V1; planner.search.algorithmVersion=BOUNDED_SIMPLE_PATHS_V1 for automatic searches"
+    },
+    {
+      "class": "RoutePlanner",
+      "name": "graphVersion",
+      "target": "route_plans.data.planner.graphVersion",
+      "api": "GET /api/v2/routes/:id -> data.data.planner.graphVersion",
+      "type": "SHA-256 of selected itinerary; planner.search.graphVersion hashes evaluated network/policy/condition revisions"
+    },
+    {
+      "class": "RoutePlanner",
+      "name": "source",
+      "target": "route_plans.data.planner.source",
+      "api": "GET /api/v2/routes/:id -> data.data.planner.source",
+      "type": "PUBLISHED_CORRIDORS / SELECTED_ITINERARY_SNAPSHOT; planner.search additionally preserves evaluated corridor/node revisions and condition sources/versions"
+    }
+  ],
+  "evidence": [
+    "supabase-v2/supabase/migrations/20261005181940_hac40_cp1_contract_reconciliation.sql",
+    "cargomesh/src/shared/schemas/v2/workflow.ts",
+    "cargomesh/src/server/modules/workflow/application/workflow-service.ts",
+    "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql",
+    "supabase-v2/supabase/migrations/20261007084000_hac40_route_planner.sql",
+    "cargomesh/src/server/modules/workflow/application/route-planner-service.ts",
+    "cargomesh/scripts/hac40-model-closure-http-smoke.mjs"
+  ],
+  "limits": "Explicit itineraries retain PUBLISHED_ITINERARY_VALIDATOR_V1. Automatic search additionally persists planner.search: BOUNDED_SIMPLE_PATHS_V1, graph fingerprint, policy, corridor/node versions and condition sources/versions. findAlternatives/replan/explain are implemented and tested locally. Search is exhaustive only within maxLegs <= 8, active published accepted-mode network <= 64 edges and <= 1000 simple walks; overflow rejects instead of silently truncating. Alternatives require independent plan/resource/capacity verification and user selection. No hosted, carrier-live or full-UML QA certification."
+}

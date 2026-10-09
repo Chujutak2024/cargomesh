@@ -35,3 +35,11 @@ test("manual stop prevents auto-send; silence without speech sends nothing", () 
   detector.finish();
   assert.deepEqual(sent, []);
 });
+
+test("the default browser clock can schedule and cancel a voice turn", async () => {
+  const sent: string[] = [];
+  const detector = createSpeechTurnDetector((text) => sent.push(text), 1);
+  detector.update("English voice transcript");
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.deepEqual(sent, ["English voice transcript"]);
+});

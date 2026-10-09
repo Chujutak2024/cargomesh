@@ -3,8 +3,8 @@
   "sourceSha256": "104b126cc17565b57064fca0c6a8efd5cf43a076c1cb041355e5174cbe68dc88",
   "currentRelationReconciliation": {
     "sourceCommit": "c686aeae7d17a6b641447c15dcf86cd9edd7dfa4",
-    "scope": "F-02 relations 34/55/69/89; source reconciliation only, not full-model or hosted certification",
-    "qaEvidence": "User-provided HAC-44 report for #104 @ 1e241b3: F-05 BD 10/10, HTTP 10/10. F-02 remains partial pending independent documentary review.",
+    "scope": "F-02 34/55/69/89, HAC-40 associations 48/66, HAC-41 identity 74; each increment declares evidence. Independent QA pending, not hosted certification",
+    "qaEvidence": "HAC-44 independent review of #106 @ e06d0c0: relations 34, 55 and 69 conform; relation 89 has a low documentary finding. Its FK and UML multiplicity conform. The statement below is corrected against the local catalog at fe12d41; relation 89 awaits independent documentary recheck. F-05 BD/HTTP 10/10 at #104 @ 1e241b3 is separate evidence, not full-model certification.",
     "relations": [
       {
         "number": 34,
@@ -55,7 +55,7 @@
         "number": 89,
         "source": "PlanResource",
         "target": "CapacityReservation",
-        "treatment": "capacity_reservations.plan_resource_id -> plan_resources.id; plan_leg_assignment_id -> plan_leg_assignments.id; plan_assignment_id -> plan_resource_bindings.id retained for compatibility; a_reservation_resource validates coherence; NULL is allowed only for a pre-plan hold",
+        "treatment": "capacity_reservations.plan_resource_id -> plan_resources.id; plan_leg_assignment_id -> plan_leg_assignments.id; plan_assignment_id -> plan_resource_bindings.id retained for compatibility; a_reservation_resource rejects resource/leg IDs without a binding and derives or validates both IDs when a binding is present. All three IDs may be NULL regardless of reservation/booking state at the table level. Native workflow commands require the canonical assignment; the trigger does not enforce a pre-plan-only NULL rule",
         "api": "POST capacity/holds: assignmentId canonical header plus planResourceId for multiple resources; GET hold: data.planResourceId",
         "status": "DOCUMENTED_PENDING_F02_REVIEW",
         "evidence": [
@@ -65,8 +65,332 @@
           "cargomesh/src/shared/schemas/v2/workflow.ts",
           "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql"
         ]
+      },
+      {
+        "number": 48,
+        "source": "OperationalIncident",
+        "target": "RouteCondition",
+        "treatment": "incident_route_conditions(incident_id,condition_id), composite PK and two indexed FKs; native command validates the execution service route, active condition and incident time; 0..N both directions preserved",
+        "api": "POST /carriers/:carrierId/incidents/:id/conditions; GET /carriers/:carrierId/executions/:executionId/incidents/:id -> data.routeConditionIds",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA",
+        "evidence": [
+          "supabase-v2/supabase/migrations/20261007083000_hac40_model_associations.sql",
+          "cargomesh/src/shared/schemas/v2/workflow.ts",
+          "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql",
+          "cargomesh/scripts/hac40-model-closure-http-smoke.mjs"
+        ]
+      },
+      {
+        "number": 66,
+        "source": "FulfilmentPartner",
+        "target": "PlanLegAssignment",
+        "treatment": "plan_leg_assignments.fulfilment_partner_id nullable indexed FK; carrier/service match and agreement covers whole leg window; native commercial transitions revalidate the current agreement",
+        "api": "POST /plans/:id/assignments/:assignmentId/partner; GET /plans/:id -> data.legAssignments[].fulfilmentPartnerId",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA",
+        "evidence": [
+          "supabase-v2/supabase/migrations/20261007083000_hac40_model_associations.sql",
+          "cargomesh/src/shared/schemas/v2/workflow.ts",
+          "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql",
+          "cargomesh/scripts/hac40-model-closure-http-smoke.mjs"
+        ]
+      },
+      {
+        "number": 74,
+        "source": "CarrierOperator",
+        "target": "CarrierOffer",
+        "treatment": "v2_carrier_offers.(issuer_operator_id,carrier_id) -> carrier_operators.(id,carrier_id); issuer_auth_user_id -> auth.users.id; immutable MANUAL issuer derived from verified operator/session. Legacy offers retain nullable proof and are excluded from new commitments until attributable; API/MCP emission requires a verified adapter",
+        "api": "POST /api/v2/carriers/:carrierId/opportunities/:id/offers; GET offer -> data.data.source.issuerId; prepare/confirm_v2_commercial_action",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA",
+        "implementationBranch": "codex/v2-full-identity-mcp",
+        "evidence": [
+          "supabase-v2/supabase/migrations/20261008235540_hac41_carrier_workflow.sql",
+          "cargomesh/src/server/auth/carrier.ts",
+          "cargomesh/src/server/hono/routes/carrier-workflow.ts",
+          "supabase/tests/33_v2_hac41_identity_channels.test.sql",
+          "cargomesh/scripts/hac41-channels-http-smoke.mjs"
+        ]
       }
     ]
+  },
+  "currentAttributeReconciliation": {
+    "sourceCommit": "fe12d41e474c2c12d9dcd8e77047a0f2b7f0bd66",
+    "scope": "Current RoutePlanner metadata and automatic search increment; historical QA classifications remain unchanged",
+    "status": "LOCAL_NATIVE_COMMAND_VERIFIED_PENDING_INDEPENDENT_QA",
+    "attributes": [
+      {
+        "class": "RoutePlanner",
+        "name": "algorithmVersion",
+        "target": "route_plans.data.planner.algorithmVersion",
+        "api": "GET /api/v2/routes/:id -> data.data.planner.algorithmVersion",
+        "type": "PUBLISHED_ITINERARY_VALIDATOR_V1; planner.search.algorithmVersion=BOUNDED_SIMPLE_PATHS_V1 for automatic searches"
+      },
+      {
+        "class": "RoutePlanner",
+        "name": "graphVersion",
+        "target": "route_plans.data.planner.graphVersion",
+        "api": "GET /api/v2/routes/:id -> data.data.planner.graphVersion",
+        "type": "SHA-256 of selected itinerary; planner.search.graphVersion hashes evaluated network/policy/condition revisions"
+      },
+      {
+        "class": "RoutePlanner",
+        "name": "source",
+        "target": "route_plans.data.planner.source",
+        "api": "GET /api/v2/routes/:id -> data.data.planner.source",
+        "type": "PUBLISHED_CORRIDORS / SELECTED_ITINERARY_SNAPSHOT; planner.search additionally preserves evaluated corridor/node revisions and condition sources/versions"
+      }
+    ],
+    "evidence": [
+      "supabase-v2/supabase/migrations/20261005181940_hac40_cp1_contract_reconciliation.sql",
+      "cargomesh/src/shared/schemas/v2/workflow.ts",
+      "cargomesh/src/server/modules/workflow/application/workflow-service.ts",
+      "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql",
+      "supabase-v2/supabase/migrations/20261007084000_hac40_route_planner.sql",
+      "cargomesh/src/server/modules/workflow/application/route-planner-service.ts",
+      "cargomesh/scripts/hac40-model-closure-http-smoke.mjs"
+    ],
+    "limits": "Explicit itineraries retain PUBLISHED_ITINERARY_VALIDATOR_V1. Automatic search additionally persists planner.search: BOUNDED_SIMPLE_PATHS_V1, graph fingerprint, policy, corridor/node versions and condition sources/versions. findAlternatives/replan/explain are implemented and tested locally. Search is exhaustive only within maxLegs <= 8, active published accepted-mode network <= 64 edges and <= 1000 simple walks; overflow rejects instead of silently truncating. Alternatives require independent plan/resource/capacity verification and user selection. No hosted, carrier-live or full-UML QA certification."
+  },
+  "currentIdentityReconciliation": {
+    "baseCommit": "1e9ff995ef9c8fa6789e473263e64873bcb13fba",
+    "implementationBranch": "codex/v2-full-identity-mcp",
+    "scope": "Four HAC-41 identity classes and relation 74; preserves historical F-03/F-06 classifications",
+    "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA",
+    "attributes": [
+      {
+        "class": "ResponseIntegration",
+        "name": "channel",
+        "target": "public.response_integrations.channel",
+        "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "ResponseIntegration",
+        "name": "endpointRef",
+        "target": "public.response_integrations.endpoint_ref",
+        "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "ResponseIntegration",
+        "name": "verifiedAt",
+        "target": "public.response_integrations.verified_at",
+        "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "ResponseIntegration",
+        "name": "status",
+        "target": "public.response_integrations.status",
+        "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "ResponseIntegration",
+        "name": "evidence",
+        "target": "public.response_integrations.evidence",
+        "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "OrganizationMember",
+        "name": "id",
+        "target": "public.organization_members.id",
+        "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "OrganizationMember",
+        "name": "role",
+        "target": "public.organization_members.role",
+        "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "OrganizationMember",
+        "name": "status",
+        "target": "public.organization_members.status",
+        "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "OrganizationMember",
+        "name": "contactRef",
+        "target": "public.organization_members.corporate_email",
+        "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "OrganizationMember",
+        "name": "verifiedAt",
+        "target": "public.organization_members.verified_at",
+        "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "McpAccountLink",
+        "name": "id",
+        "target": "public.mcp_account_links.id",
+        "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "McpAccountLink",
+        "name": "authUserId",
+        "target": "public.mcp_account_links.auth_user_id",
+        "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "McpAccountLink",
+        "name": "oauthClientId",
+        "target": "public.mcp_account_links.oauth_client_id",
+        "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "McpAccountLink",
+        "name": "organizationId",
+        "target": "public.mcp_account_links.organization_id",
+        "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "McpAccountLink",
+        "name": "scopes",
+        "target": "public.mcp_account_links.scopes",
+        "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "McpAccountLink",
+        "name": "provider",
+        "target": "public.mcp_account_links.provider",
+        "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "McpAccountLink",
+        "name": "externalSubjectRef",
+        "target": "public.mcp_account_links.external_subject_ref",
+        "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "McpAccountLink",
+        "name": "status",
+        "target": "public.mcp_account_links.status",
+        "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "McpAccountLink",
+        "name": "verifiedAt",
+        "target": "public.mcp_account_links.verified_at",
+        "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "McpAccountLink",
+        "name": "revokedAt",
+        "target": "public.mcp_account_links.revoked_at",
+        "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "McpAccountLink",
+        "name": "expiresAt",
+        "target": "public.mcp_account_links.expires_at",
+        "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "CarrierOperator",
+        "name": "id",
+        "target": "public.carrier_operators.id",
+        "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "CarrierOperator",
+        "name": "displayName",
+        "target": "public.carrier_operators.display_name",
+        "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "CarrierOperator",
+        "name": "role",
+        "target": "public.carrier_operators.role",
+        "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "CarrierOperator",
+        "name": "email",
+        "target": "public.carrier_operators.email",
+        "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "CarrierOperator",
+        "name": "phone",
+        "target": "public.carrier_operators.phone",
+        "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "CarrierOperator",
+        "name": "status",
+        "target": "public.carrier_operators.status",
+        "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      },
+      {
+        "class": "CarrierOperator",
+        "name": "verifiedAt",
+        "target": "public.carrier_operators.verified_at",
+        "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+        "owner": "HAC-41 / Axel; authorized integrator implementation",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+      }
+    ],
+    "evidence": [
+      "supabase-v2/supabase/migrations/20261008235124_hac41_identity_integrations.sql",
+      "supabase-v2/supabase/migrations/20261008235540_hac41_carrier_workflow.sql",
+      "supabase-v2/supabase/migrations/20261009000410_hac41_mcp_channels.sql",
+      "cargomesh/src/shared/schemas/v2/identity.ts",
+      "supabase/tests/33_v2_hac41_identity_channels.test.sql",
+      "cargomesh/scripts/hac41-channels-http-smoke.mjs",
+      "docs/v2-amazon/delivery/HAC41_IDENTITY_MCP.md"
+    ],
+    "limits": "Metadata and real local Auth proof; legacy member verification remains unknown until self acceptance. API/MCP integration evidence remains pending external verification. No hosted schema, live Alexa or full-model independent QA certification."
   },
   "status": "QA_BASELINE_RECONCILED_NOT_CURRENT_MIGRATION_CERTIFICATION",
   "observedCommit": "abba8056825bb4d7170fe8cdf57bfeefa8b73eb1",
@@ -1102,7 +1426,15 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "N/A",
           "qaStatus": "FALTANTE",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "ResponseIntegration",
+            "name": "channel",
+            "target": "public.response_integrations.channel",
+            "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "endpointRef",
@@ -1114,7 +1446,15 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "N/A",
           "qaStatus": "FALTANTE",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "ResponseIntegration",
+            "name": "endpointRef",
+            "target": "public.response_integrations.endpoint_ref",
+            "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "verifiedAt",
@@ -1126,7 +1466,15 @@
           "designType": "timestamptz",
           "observedNullable": "N/A",
           "qaStatus": "FALTANTE",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "ResponseIntegration",
+            "name": "verifiedAt",
+            "target": "public.response_integrations.verified_at",
+            "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "status",
@@ -1138,7 +1486,15 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "N/A",
           "qaStatus": "FALTANTE",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "ResponseIntegration",
+            "name": "status",
+            "target": "public.response_integrations.status",
+            "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "evidence",
@@ -1150,7 +1506,15 @@
           "designType": "structured value; strict shape and referenced IDs validated",
           "observedNullable": "N/A",
           "qaStatus": "FALTANTE",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "ResponseIntegration",
+            "name": "evidence",
+            "target": "public.response_integrations.evidence",
+            "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         }
       ]
     },
@@ -3822,7 +4186,15 @@
           "designType": "uuid / FK when reference",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "OrganizationMember",
+            "name": "id",
+            "target": "public.organization_members.id",
+            "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "role",
@@ -3834,7 +4206,15 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "OrganizationMember",
+            "name": "role",
+            "target": "public.organization_members.role",
+            "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "status",
@@ -3846,7 +4226,15 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "OrganizationMember",
+            "name": "status",
+            "target": "public.organization_members.status",
+            "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "contactRef",
@@ -3858,7 +4246,15 @@
           "designType": "structured value; strict shape and referenced IDs validated",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "OrganizationMember",
+            "name": "contactRef",
+            "target": "public.organization_members.corporate_email",
+            "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "verifiedAt",
@@ -3870,7 +4266,15 @@
           "designType": "timestamptz",
           "observedNullable": "N/A",
           "qaStatus": "FALTANTE",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "OrganizationMember",
+            "name": "verifiedAt",
+            "target": "public.organization_members.verified_at",
+            "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         }
       ]
     },
@@ -3889,7 +4293,15 @@
           "designType": "uuid / FK when reference",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "McpAccountLink",
+            "name": "id",
+            "target": "public.mcp_account_links.id",
+            "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "authUserId",
@@ -3901,7 +4313,15 @@
           "designType": "uuid / FK when reference",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "McpAccountLink",
+            "name": "authUserId",
+            "target": "public.mcp_account_links.auth_user_id",
+            "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "oauthClientId",
@@ -3913,7 +4333,15 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "McpAccountLink",
+            "name": "oauthClientId",
+            "target": "public.mcp_account_links.oauth_client_id",
+            "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "organizationId",
@@ -3925,7 +4353,15 @@
           "designType": "uuid / FK when reference",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "McpAccountLink",
+            "name": "organizationId",
+            "target": "public.mcp_account_links.organization_id",
+            "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "scopes",
@@ -3937,7 +4373,15 @@
           "designType": "structured value; strict shape and referenced IDs validated",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "McpAccountLink",
+            "name": "scopes",
+            "target": "public.mcp_account_links.scopes",
+            "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "provider",
@@ -3949,7 +4393,15 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "N/A",
           "qaStatus": "FALTANTE",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "McpAccountLink",
+            "name": "provider",
+            "target": "public.mcp_account_links.provider",
+            "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "externalSubjectRef",
@@ -3961,7 +4413,15 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "N/A",
           "qaStatus": "FALTANTE",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "McpAccountLink",
+            "name": "externalSubjectRef",
+            "target": "public.mcp_account_links.external_subject_ref",
+            "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "status",
@@ -3973,7 +4433,15 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "McpAccountLink",
+            "name": "status",
+            "target": "public.mcp_account_links.status",
+            "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "verifiedAt",
@@ -3985,7 +4453,15 @@
           "designType": "timestamptz",
           "observedNullable": "N/A",
           "qaStatus": "FALTANTE",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "McpAccountLink",
+            "name": "verifiedAt",
+            "target": "public.mcp_account_links.verified_at",
+            "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "revokedAt",
@@ -3997,7 +4473,15 @@
           "designType": "timestamptz",
           "observedNullable": "YES",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "McpAccountLink",
+            "name": "revokedAt",
+            "target": "public.mcp_account_links.revoked_at",
+            "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "expiresAt",
@@ -4009,7 +4493,15 @@
           "designType": "timestamptz",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "McpAccountLink",
+            "name": "expiresAt",
+            "target": "public.mcp_account_links.expires_at",
+            "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         }
       ]
     },
@@ -4847,7 +5339,15 @@
           "designType": "uuid / FK when reference",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "CarrierOperator",
+            "name": "id",
+            "target": "public.carrier_operators.id",
+            "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "displayName",
@@ -4859,7 +5359,15 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "CarrierOperator",
+            "name": "displayName",
+            "target": "public.carrier_operators.display_name",
+            "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "role",
@@ -4871,7 +5379,15 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "CarrierOperator",
+            "name": "role",
+            "target": "public.carrier_operators.role",
+            "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "email",
@@ -4883,7 +5399,15 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "YES",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "CarrierOperator",
+            "name": "email",
+            "target": "public.carrier_operators.email",
+            "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "phone",
@@ -4895,7 +5419,15 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "YES",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "CarrierOperator",
+            "name": "phone",
+            "target": "public.carrier_operators.phone",
+            "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "status",
@@ -4907,7 +5439,15 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "NO",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "CarrierOperator",
+            "name": "status",
+            "target": "public.carrier_operators.status",
+            "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         },
         {
           "name": "verifiedAt",
@@ -4919,7 +5459,15 @@
           "designType": "timestamptz",
           "observedNullable": "YES",
           "qaStatus": "PARCIAL",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "CarrierOperator",
+            "name": "verifiedAt",
+            "target": "public.carrier_operators.verified_at",
+            "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+            "owner": "HAC-41 / Axel; authorized integrator implementation",
+            "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+          }
         }
       ]
     },
@@ -5096,7 +5644,14 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "N/A",
           "qaStatus": "FALTANTE",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "RoutePlanner",
+            "name": "algorithmVersion",
+            "target": "route_plans.data.planner.algorithmVersion",
+            "api": "GET /api/v2/routes/:id -> data.data.planner.algorithmVersion",
+            "type": "PUBLISHED_ITINERARY_VALIDATOR_V1; planner.search.algorithmVersion=BOUNDED_SIMPLE_PATHS_V1 for automatic searches"
+          }
         },
         {
           "name": "graphVersion",
@@ -5108,7 +5663,14 @@
           "designType": "text; closed vocabulary when UML type is enum",
           "observedNullable": "N/A",
           "qaStatus": "FALTANTE",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "RoutePlanner",
+            "name": "graphVersion",
+            "target": "route_plans.data.planner.graphVersion",
+            "api": "GET /api/v2/routes/:id -> data.data.planner.graphVersion",
+            "type": "SHA-256 of selected itinerary; planner.search.graphVersion hashes evaluated network/policy/condition revisions"
+          }
         },
         {
           "name": "source",
@@ -5120,7 +5682,14 @@
           "designType": "structured value; strict shape and referenced IDs validated",
           "observedNullable": "N/A",
           "qaStatus": "FALTANTE",
-          "migrationVerified": false
+          "migrationVerified": false,
+          "currentTreatment": {
+            "class": "RoutePlanner",
+            "name": "source",
+            "target": "route_plans.data.planner.source",
+            "api": "GET /api/v2/routes/:id -> data.data.planner.source",
+            "type": "PUBLISHED_CORRIDORS / SELECTED_ITINERARY_SNAPSHOT; planner.search additionally preserves evaluated corridor/node revisions and condition sources/versions"
+          }
         }
       ]
     },
@@ -5980,7 +6549,21 @@
       "designTreatment": "incident_route_conditions(incident_id,condition_id); composite primary key; source retained",
       "observedMultiplicity": "; max child count limited only by matching UNIQUE; NULL flags above; minimum 1..* not proven by a FK",
       "qaStatus": "FALTANTE",
-      "migrationVerified": false
+      "migrationVerified": false,
+      "currentTreatment": {
+        "number": 48,
+        "source": "OperationalIncident",
+        "target": "RouteCondition",
+        "treatment": "incident_route_conditions(incident_id,condition_id), composite PK and two indexed FKs; native command validates the execution service route, active condition and incident time; 0..N both directions preserved",
+        "api": "POST /carriers/:carrierId/incidents/:id/conditions; GET /carriers/:carrierId/executions/:executionId/incidents/:id -> data.routeConditionIds",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA",
+        "evidence": [
+          "supabase-v2/supabase/migrations/20261007083000_hac40_model_associations.sql",
+          "cargomesh/src/shared/schemas/v2/workflow.ts",
+          "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql",
+          "cargomesh/scripts/hac40-model-closure-http-smoke.mjs"
+        ]
+      }
     },
     {
       "umlId": "z1P_2RDf_z28FQ--q6sC-9",
@@ -6265,7 +6848,21 @@
       "designTreatment": "plan_leg_assignments.fulfilment_partner_id -> fulfilment_partners.id; nullable; valid during assignment",
       "observedMultiplicity": "; max child count limited only by matching UNIQUE; NULL flags above; minimum 1..* not proven by a FK",
       "qaStatus": "FALTANTE",
-      "migrationVerified": false
+      "migrationVerified": false,
+      "currentTreatment": {
+        "number": 66,
+        "source": "FulfilmentPartner",
+        "target": "PlanLegAssignment",
+        "treatment": "plan_leg_assignments.fulfilment_partner_id nullable indexed FK; carrier/service match and agreement covers whole leg window; native commercial transitions revalidate the current agreement",
+        "api": "POST /plans/:id/assignments/:assignmentId/partner; GET /plans/:id -> data.legAssignments[].fulfilmentPartnerId",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA",
+        "evidence": [
+          "supabase-v2/supabase/migrations/20261007083000_hac40_model_associations.sql",
+          "cargomesh/src/shared/schemas/v2/workflow.ts",
+          "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql",
+          "cargomesh/scripts/hac40-model-closure-http-smoke.mjs"
+        ]
+      }
     },
     {
       "umlId": "Fld38RXTpNTEaqT0KLbX-1",
@@ -6400,7 +6997,23 @@
       "designTreatment": "v2_carrier_offers.issuer_operator_id -> carrier_operators.id; nullable for verified API/MCP issuer",
       "observedMultiplicity": "; max child count limited only by matching UNIQUE; NULL flags above; minimum 1..* not proven by a FK",
       "qaStatus": "DIVERGENTE",
-      "migrationVerified": false
+      "migrationVerified": false,
+      "currentTreatment": {
+        "number": 74,
+        "source": "CarrierOperator",
+        "target": "CarrierOffer",
+        "treatment": "v2_carrier_offers.(issuer_operator_id,carrier_id) -> carrier_operators.(id,carrier_id); issuer_auth_user_id -> auth.users.id; immutable MANUAL issuer derived from verified operator/session. Legacy offers retain nullable proof and are excluded from new commitments until attributable; API/MCP emission requires a verified adapter",
+        "api": "POST /api/v2/carriers/:carrierId/opportunities/:id/offers; GET offer -> data.data.source.issuerId; prepare/confirm_v2_commercial_action",
+        "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA",
+        "implementationBranch": "codex/v2-full-identity-mcp",
+        "evidence": [
+          "supabase-v2/supabase/migrations/20261008235540_hac41_carrier_workflow.sql",
+          "cargomesh/src/server/auth/carrier.ts",
+          "cargomesh/src/server/hono/routes/carrier-workflow.ts",
+          "supabase/tests/33_v2_hac41_identity_channels.test.sql",
+          "cargomesh/scripts/hac41-channels-http-smoke.mjs"
+        ]
+      }
     },
     {
       "umlId": "tmp4_OqPaU6kxuIBONix-1",
@@ -6630,7 +7243,7 @@
         "number": 89,
         "source": "PlanResource",
         "target": "CapacityReservation",
-        "treatment": "capacity_reservations.plan_resource_id -> plan_resources.id; plan_leg_assignment_id -> plan_leg_assignments.id; plan_assignment_id -> plan_resource_bindings.id retained for compatibility; a_reservation_resource validates coherence; NULL is allowed only for a pre-plan hold",
+        "treatment": "capacity_reservations.plan_resource_id -> plan_resources.id; plan_leg_assignment_id -> plan_leg_assignments.id; plan_assignment_id -> plan_resource_bindings.id retained for compatibility; a_reservation_resource rejects resource/leg IDs without a binding and derives or validates both IDs when a binding is present. All three IDs may be NULL regardless of reservation/booking state at the table level. Native workflow commands require the canonical assignment; the trigger does not enforce a pre-plan-only NULL rule",
         "api": "POST capacity/holds: assignmentId canonical header plus planResourceId for multiple resources; GET hold: data.planResourceId",
         "status": "DOCUMENTED_PENDING_F02_REVIEW",
         "evidence": [

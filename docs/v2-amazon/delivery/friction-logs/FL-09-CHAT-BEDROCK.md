@@ -1,0 +1,20 @@
+# FL-09 — Modelo visible en catálogo sin acceso de cuenta; chat degradado a fallback
+
+- **Fecha:** 7 octubre 2026 (America/Lima).
+- **Estado:** mitigación local; rediseño conversacional pendiente.
+- **Superficie:** chat Web V2 y Amazon Bedrock en `us-east-1`.
+
+## Fricción
+
+GPT-6 Luna aparece en el catálogo, pero una invocación con el permiso `bedrock:InvokeModel` ya aplicado devolvió `openai.gpt-6-luna is not available for this account`. No se solicitará acceso adicional al proveedor. Una prueba mínima anterior con `us.amazon.nova-2-lite-v1:0` sí respondió. Al retirarse después la política IAM de Nova, la misma invocación devolvió `AccessDenied` por falta de permiso sobre el perfil de inferencia.
+
+Además, el intérprete del chat solo devuelve intención y campos; la interfaz usa respuestas fijas y un reconocimiento silencioso de fallback. Esta separación explica por qué cambiar de modelo no corregiría por sí solo la experiencia repetitiva.
+
+## Mitigación y siguiente verificación
+
+- Deshabilitar Bedrock en la configuración local mientras no exista una política mínima para el modelo elegido.
+- Mostrar un mensaje explícito cuando el fallback local no logra identificar datos; conservar el formulario y el borrador provisional.
+- Rediseñar interpretación y respuesta usando hechos verificados, con pruebas multivuelta ES/EN y sin mutaciones implícitas.
+- Verificar la disponibilidad real del modelo antes de actualizar una guía o afirmar una integración live.
+
+Referencia: [Acceso a modelos en Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html). La guía de rediseño está en [CHAT_V2_CONVERSATION_RESET_2026-10-07.md](../CHAT_V2_CONVERSATION_RESET_2026-10-07.md).

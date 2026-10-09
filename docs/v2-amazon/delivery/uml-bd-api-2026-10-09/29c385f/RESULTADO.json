@@ -1,0 +1,60 @@
+{
+  "productSha": "29c385fe0ee501eb4b8b989b0a247c8fdeda62ad",
+  "hosted": {
+    "status": "PASS",
+    "migrations": 27,
+    "preview": "https://cargomesh-hac41-qa-anjuje.vercel.app",
+    "productionUnchanged": true,
+    "smokeControls": 21,
+    "realHostedPKCE": true,
+    "alexaPlusLive": false,
+    "carrierData": "SIMULATED",
+    "temporaryAccessRemoved": true,
+    "oldAccessJwtMaxExpiryUTC": "2026-10-09T18:50:21.000Z",
+    "backupRestores": 4,
+    "localRestoreBankStopped": true
+  },
+  "local": {
+    "runnerStatus": "PASS",
+    "runnerCases": {
+      "PASS": 2708
+    },
+    "completeCycles": 2,
+    "identityCases": 56,
+    "identityRoundtrips": 8,
+    "actualIdentityPKCE": true,
+    "authenticatedCommit": true,
+    "matrix": {
+      "classes": {
+        "PARCIAL": 55,
+        "COMPLETO": 1,
+        "DIVERGENTE": 1
+      },
+      "attributes": {
+        "PARCIAL": 97,
+        "COMPLETO": 297,
+        "DIVERGENTE": 3
+      },
+      "relations": {
+        "COMPLETO": 51,
+        "PARCIAL": 42
+      },
+      "endpoints": {
+        "IMPLEMENTADO": 225
+      }
+    },
+    "pendingRows": 198,
+    "categories": {
+      "EVIDENCIA_PENDIENTE": 194,
+      "DOCUMENTACION_DESACTUALIZADA": 4
+    },
+    "methodSemanticsUncertified": 146
+  },
+  "sourceHashes": {
+    "runner-results.json": "a21c974615e333e27e4104a29a5021835e28e966a0f4cc673f8e15bd4cfd5a06",
+    "identity-result.json": "09d296854dccdf35ff5484dbde54ce0973b1cda18810f20895dbb168e401b9b1",
+    "identity-roundtrips.json": "6c3347680c8d345415e9227aeaca12aa63dc17bacc5fe99bbdf7e4bf23396fb1",
+    "matrix-counts.json": "27ce4fedd5ab3e52f5daa24e5e4ed39c9d9e0989a927b70856e4832a4086a28e",
+    "native-gates.json": "c6cbc2df8d5c178dd78554037677ff1f4995ee429b57bfcd80924ce6ad201a91"
+  }
+}

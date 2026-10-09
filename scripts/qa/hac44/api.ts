@@ -1,10 +1,14 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { createHmac, randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
 import { pathToFileURL } from "node:url";
+import { createRequire } from "node:module";
+import { spawnSync } from "node:child_process";
 const root = process.env.HAC44_ROOT!,
   out = process.env.HAC44_OUT!;
+const httpPort = Number(process.env.HAC44_HTTP_PORT);
+const httpOrigin = "http://127.0.0.1:" + httpPort;
 const output = (file: string, x: any) => {
   file = (process.env.HAC44_LOG_PREFIX ?? "") + file;
   const s = JSON.stringify(
@@ -47,6 +51,12 @@ function schemaTree(schema: any, depth = 0): any {
   return n;
 }
 async function main() {
+  const require = createRequire(root + "/cargomesh/package.json");
+  require("next/dist/server/node-environment");
+  const { workAsyncStorage } = require("next/dist/server/app-render/work-async-storage.external");
+  const { workUnitAsyncStorage } = require("next/dist/server/app-render/work-unit-async-storage.external");
+  const { createRequestStoreForAPI } = require("next/dist/server/async-storage/request-store");
+  const { NextRequest } = require("next/server");
   const { createHonoApp } = await load("server/hono/app.ts");
   const app = createHonoApp();
   const routes = [
@@ -98,18 +108,33 @@ async function main() {
     );
   };
   const TOKENS = [null, token(1), token(2), token(3)];
+  const { createClient } = require("@supabase/supabase-js");
+  const client = (actor: number) => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { Authorization: "Bearer " + TOKENS[actor] } } });
+  const countOffers = async (opportunityId: string) => {
+    const measured = spawnSync(process.env.HAC44_PYTHON!, ["-X", "utf8", root + "/scripts/qa/hac44/offer_counts.py", opportunityId],
+      { encoding: "utf8", timeout: 60000 });
+    assert.equal(measured.status, 0, "Owned physical offer count failed");
+    const line = measured.stdout.split(/\r?\n/).find(row => row.startsWith("HAC44_OFFER_COUNT:"));
+    assert.ok(line, "Physical count result is missing");
+    return JSON.parse(line.slice("HAC44_OFFER_COUNT:".length));
+  };
   const server = createServer(async (req, res) => {
     try {
       const chunks = [];
       for await (const chunk of req) chunks.push(chunk);
       const body = Buffer.concat(chunks);
-      const r = await app.fetch(
-        new Request("http://127.0.0.1:42350" + req.url, {
+      const request = new NextRequest(httpOrigin + req.url, {
           method: req.method,
           headers: req.headers as any,
           ...(body.length ? { body, duplex: "half" } : {}),
-        } as any),
-      );
+        } as any);
+      const url = new URL(request.url);
+      const store = createRequestStoreForAPI(request, { pathname: url.pathname, search: url.search },
+        { tags: [], expirationsByCacheHandler: new Map() }, undefined, undefined);
+      const r = await workAsyncStorage.run({ route: url.pathname, isStaticGeneration: false },
+        () => workUnitAsyncStorage.run(store, () => app.fetch(request)));
       res.writeHead(r.status, Object.fromEntries(r.headers));
       res.end(Buffer.from(await r.arrayBuffer()));
     } catch (e) {
@@ -117,7 +142,8 @@ async function main() {
       res.end(JSON.stringify({ error: "QA_TRANSPORT_ERROR" }));
     }
   });
-  await new Promise<void>((resolve) => server.listen(42350, "127.0.0.1", resolve));
+  assert(Number.isInteger(httpPort) && httpPort >= 1024 && httpPort <= 65535);
+  await new Promise<void>((resolve) => server.listen(httpPort, "127.0.0.1", resolve));
   const results: any[] = [];
   const roundtrips: any[] = [];
   async function call(
@@ -127,15 +153,17 @@ async function main() {
     key = randomUUID(),
     actor = 1,
     expected?: number | number[],
+    headers: Record<string, string> = {},
   ) {
     const method = body === undefined ? "GET" : "POST";
-    const response = await fetch("http://127.0.0.1:42350/api/v2" + path, {
+    const response = await fetch(httpOrigin + "/api/v2" + path, {
       method,
       headers: {
         ...(TOKENS[actor] ? { Authorization: "Bearer " + TOKENS[actor] } : {}),
         ...(body !== undefined
           ? { "Content-Type": "application/json", "Idempotency-Key": key }
           : {}),
+        ...headers,
       },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
@@ -162,6 +190,15 @@ async function main() {
       http: response.status,
       request: body ?? null,
       response: value,
+      authMechanism: headers.Authorization ? "explicit-invalid-Bearer" : headers.Cookie ? "actual-issuer-session-cookie" : actor ? "literal-fixture-Bearer" : "anonymous",
+      ...(path.startsWith("/carriers/") ? {
+        fixturePrincipal: headers.Authorization ? "invalid-Bearer" : headers.Cookie ? "CarrierOperator-cookie" : actor === 0 ? "anonymous" : "CarrierOperator",
+        operatorId: headers.Authorization || actor === 0 && !headers.Cookie ? null : "d44b0000-0000-4000-8000-00000000000" + (headers.Cookie ? 1 : actor),
+      } : {}),
+      ...(response.status === 403 && expected === 401 && actor === 0 && !headers.Authorization && !headers.Cookie ? {
+        owner: "HAC-41 / Axel", defect: "credential-before-origin",
+        reason: "Tech Lead contract requires anonymous 401; origin is evaluated before credentials",
+      } : {}),
     };
     results.push(row);
     output("api-results.json", results);
@@ -186,6 +223,36 @@ async function main() {
     evidence,
   });
   try {
+    if (process.argv.includes("--authentication")) {
+      const { authentication } = await import("./http_auth.ts");
+      await authentication({ call, client, TOKENS, output, refs, CARRIER, httpOrigin, require });
+      return;
+    }
+    if (process.argv.includes("--auth-verify")) {
+      const a = await call("carrier-A-own-positive", `/carriers/${CARRIER}/offers`, undefined, undefined, 1, 200);
+      const b = await call("carrier-B-own-positive", "/carriers/d4490000-0000-4000-8000-000000000001/offers", undefined, undefined, 2, 200);
+      const foreign = await call("carrier-B-cannot-read-A", `/carriers/${CARRIER}/offers`, undefined, undefined, 2, 403);
+      const crossTenant = await call("carrier-A-tenant-positive", "/facilities", undefined, undefined, 1, 200);
+      const controls = [a, b, foreign, crossTenant];
+      let principalProof: any = { status: "NOT_PRESENT_IN_CUT", reason: "Carrier identity RPC is not present in the base cut" };
+      if (existsSync(root + "/cargomesh/src/server/auth/carrier.ts")) {
+        const aIdentity = await client(1).rpc("get_v2_carrier_identity", { p_carrier_id: CARRIER });
+        const bCarrier = "d4490000-0000-4000-8000-000000000001";
+        const bIdentity = await client(2).rpc("get_v2_carrier_identity", { p_carrier_id: bCarrier });
+        const crossIdentity = await client(1).rpc("get_v2_carrier_identity", { p_carrier_id: bCarrier });
+        const revokedIdentity = await client(3).rpc("get_v2_carrier_identity", { p_carrier_id: CARRIER });
+        const ownA = !aIdentity.error && aIdentity.data?.operatorId === "d44b0000-0000-4000-8000-000000000001";
+        const ownB = !bIdentity.error && bIdentity.data?.operatorId === "d44b0000-0000-4000-8000-000000000002";
+        principalProof = { status: ownA && ownB && crossIdentity.error?.code === "PT403" && revokedIdentity.error?.code === "PT403" ? "PASS" : "BLOQUEADO",
+          a: aIdentity.data, b: bIdentity.data, crossCarrierError: crossIdentity.error?.code, revokedError: revokedIdentity.error?.code,
+          role: "authenticated", credentials: "Literal fixture claims; not the separate real-cookie smoke" };
+        controls.push({ label: "verified-operator-RPC-pairs", status: principalProof.status });
+        controls.push(await call("carrier-A-cannot-read-B-with-global-catalog-grant", `/carriers/${bCarrier}/offers`, undefined, undefined, 1, 403));
+      }
+      output("carrier-controls.json", { status: controls.every(row => row.status === "PASS") ? "PASS" :
+        controls.some(row => row.status === "FAIL") ? "FAIL" : "BLOQUEADO",
+        cases: controls, principalProof, limit: "Fixtures A/B have explicit organization memberships as well as real verified operators; the RPC proves the distinct carrier identity" });
+    }
     if (process.argv.includes("--pending")) {
       const { pending } = await import("./http_pending.ts");
       await pending({
@@ -265,6 +332,8 @@ async function main() {
         (r: any) => r.label === "inventory-probe",
       );
       const controls: any[] = [];
+      const issuerControl = await client(1).auth.getUser(TOKENS[1]);
+      const issuerVerified = !issuerControl.error && issuerControl.data.user?.id === "d4410000-0000-4000-8000-000000000001";
       for (const p of previous) {
         const active = await call(
           "active-auth-control",
@@ -273,23 +342,25 @@ async function main() {
           undefined,
           1,
         );
-        const revoked = await call(
-          "revoked-auth-negative",
+        const invalid = await call(
+          "invalid-credential-auth-negative",
           p.path,
           p.method === "POST" ? {} : undefined,
           undefined,
-          3,
-          403,
+          0,
+          401,
+          { Authorization: "Bearer invalid.hac44.credential" },
         );
-        const good = ![401, 403, 500].includes(active.http);
+        const good = issuerVerified && ![401, 403, 500].includes(active.http);
         controls.push({
           method: p.method,
           template: p.template,
           active: active.http,
-          revoked: revoked.http,
-          status: good && revoked.http === 403 ? "PASS" : "BLOQUEADO",
+          invalidCredential: invalid.http,
+          issuerVerified,
+          status: !good ? "BLOQUEADO" : invalid.http === 401 && invalid.response.error?.code === "UNAUTHORIZED" ? "PASS" : "FAIL",
           limit:
-            "Authentication boundary only; invalid payload/unknown ID is not business certification",
+            "Credential boundary only, with issuer-verified positive; invalid payload/unknown ID is not business certification. Revoked operator/member authorization is measured with functional payloads in the flow suites; a valid Auth user may still read its own identity records.",
         });
       }
       output("controls.json", controls);
@@ -340,6 +411,8 @@ async function main() {
         clone,
         audit,
         evidence,
+        countOffers,
+        routes,
       });
       console.log(
         JSON.stringify({

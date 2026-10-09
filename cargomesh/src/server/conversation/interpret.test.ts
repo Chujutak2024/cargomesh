@@ -1,8 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { conversationBedrockConfig, interpretConversationTurn } from "./interpret";
+import { buildConversationPrompt, conversationBedrockConfig, interpretConversationTurn } from "./interpret";
 
 const input = { schemaVersion: "2.0" as const, text: "from Lima to Arequipa", currentField: "originFacilityId" as const };
+
+test("Bedrock receives bounded prior facts as context, never as a business action", () => {
+  const prompt = JSON.parse(buildConversationPrompt({ ...input, text: "change it to Piura", context: {
+    knownFields: [{ field: "originFacilityId", value: "Lima" }], lastAskedField: "destinationFacilityId", failedAttempts: 1,
+  } }));
+  assert.equal(prompt.context.knownFields[0].value, "Lima");
+  assert.equal(prompt.context.lastAskedField, "destinationFacilityId");
+  assert.equal(prompt.organizationId, undefined);
+  assert.equal(prompt.confirmed, undefined);
+});
 
 test("disabled Bedrock uses deterministic extraction without an AWS call", async () => {
   const config = conversationBedrockConfig({});
@@ -22,9 +32,16 @@ test("an explicit ROAD command bypasses the model and retains domain intent", as
 
 test("configuration bounds tokens and timeout and never embeds credentials", () => {
   const config = conversationBedrockConfig({ CARGOMESH_BEDROCK_CONVERSATION_ENABLED: "true", CARGOMESH_BEDROCK_REGION: "us-east-1", CARGOMESH_BEDROCK_MODEL_ID: "test-model", CARGOMESH_BEDROCK_CONVERSATION_MAX_TOKENS: "99999", CARGOMESH_BEDROCK_CONVERSATION_TIMEOUT_MS: "99999" });
-  assert.equal(config.maxTokens, 300);
+  assert.equal(config.maxTokens, 400);
   assert.equal(config.timeoutMs, 6000);
   assert.equal("credentials" in config, false);
+});
+
+test("Bedrock Mantle configuration selects the AWS adapter without storing a key", () => {
+  const config = conversationBedrockConfig({ CARGOMESH_BEDROCK_ENDPOINT: "mantle", CARGOMESH_BEDROCK_MODEL_ID: "openai.gpt-oss-120b", OPENAI_API_KEY: "redacted" });
+  assert.equal(config.endpoint, "mantle");
+  assert.equal(config.modelId, "openai.gpt-oss-120b");
+  assert.equal("apiKey" in config, false);
 });
 
 test("valid Bedrock proposal is Zod-validated and records bounded cost evidence", async () => {
@@ -38,6 +55,20 @@ test("valid Bedrock proposal is Zod-validated and records bounded cost evidence"
   });
   assert.equal(result.mode, "BEDROCK");
   assert.equal(result.telemetry?.estimatedCostUsd, 0.00014);
+});
+
+test("a bounded Spanish guidance sentence can be returned without inventing a field", async () => {
+  const config = conversationBedrockConfig({ CARGOMESH_BEDROCK_CONVERSATION_ENABLED: "true", CARGOMESH_BEDROCK_REGION: "us-east-1", CARGOMESH_BEDROCK_MODEL_ID: "test-model" });
+  const result = await interpretConversationTurn({ ...input, text: "No sé qué camión elegir" }, {
+    config,
+    invoke: async () => ({
+      output: { message: { role: "assistant", content: [{ text: JSON.stringify({ intent: "PROVIDE", fields: [], acknowledgment: "Puedo orientarte con el tipo de camión cuando me indiques el peso y las dimensiones de la carga." }) }] } },
+      usage: { inputTokens: 90, outputTokens: 35, totalTokens: 125 }, stopReason: "end_turn", metrics: { latencyMs: 100 }, $metadata: {},
+    }),
+  });
+  assert.equal(result.mode, "BEDROCK");
+  assert.equal(result.interpretation.fields.length, 0);
+  assert.match(result.interpretation.acknowledgment ?? "", /peso y las dimensiones/);
 });
 
 test("Nova fenced JSON with a field map is normalized then strictly validated", async () => {

@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from common import OUT, ROOT, run, write
-from local import CLI, HARNESS
+from local import CLI, HARNESS, LAYOUT, BANK
 
 if __name__ == "__main__":
     schemafiles = [
@@ -18,9 +18,12 @@ if __name__ == "__main__":
         "HAC44_OUT": str(OUT).replace("\\", "/"),
         "HAC44_SCHEMA_FILES": json.dumps(schemafiles),
         "NODE_OPTIONS": "--conditions=react-server",
+        "HAC44_HTTP_PORT": str(LAYOUT.app_port),
+        "HAC44_PYTHON": sys.executable,
     }
     if sys.argv[1] != "inventory":
         # Dedicated local stack only; credentials travel in memory to the child, never to a log or file.
+        BANK.own("http-tests")
         p = subprocess.run(
             CLI + ["status", "--workdir", str(HARNESS), "--output", "json"],
             capture_output=True,
@@ -29,7 +32,7 @@ if __name__ == "__main__":
         )
         assert p.returncode == 0
         cfg = json.loads(p.stdout)
-        assert cfg["API_URL"] == "http://127.0.0.1:42321"
+        assert cfg["API_URL"] == LAYOUT.api_url
         env.update(
             {
                 "NEXT_PUBLIC_SUPABASE_URL": cfg["API_URL"],
@@ -37,6 +40,9 @@ if __name__ == "__main__":
                 "HAC44_JWT_SECRET": cfg["JWT_SECRET"],
             }
         )
+        if sys.argv[1] == "authentication":
+            # Local Auth fixture only; never exposed to business repositories or logs.
+            env["HAC44_AUTH_ADMIN_KEY"] = cfg["SERVICE_ROLE_KEY"]
         fixtures = json.loads(
             (ROOT / "supabase/scenarios/v2-road-baseline/fixtures/hac40-catalog.json").read_text(
                 encoding="utf-8"
@@ -79,6 +85,9 @@ if __name__ == "__main__":
     if sys.argv[1] == "extended":
         args += ["--extended"]
         env["HAC44_LOG_PREFIX"] = "extended-"
+    if sys.argv[1] == "authentication":
+        args += ["--authentication"]
+        env["HAC44_LOG_PREFIX"] = "authentication-"
     if sys.argv[1] == "ltl":
         args += ["--ltl"]
         env["HAC44_LOG_PREFIX"] = "ltl-"

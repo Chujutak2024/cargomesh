@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { recognitionEndMessage, recognitionErrorMessage } from "./voice-status";
 import { resolveBrowserSpeechSupport } from "./browser-speech-support";
 import { createSpeechTurnDetector } from "./speech-turn";
+import { chosenSpeechVoice, voicesForLanguage } from "./speech-voices";
 
 type RecognitionResult = { results: ArrayLike<ArrayLike<{ transcript: string; confidence?: number }> & { isFinal?: boolean }> };
 type RecognitionError = { error?: string };
@@ -31,12 +32,13 @@ type BraveNavigator = Navigator & { brave?: { isBrave?: () => Promise<boolean> }
 export type VoiceState = "checking" | "available" | "requesting_permission" | "listening" | "processing" | "error" | "unsupported";
 
 /** Browser-only capture and playback. The parent decides how to handle a completed turn. */
-export function useConversationVoice({ onTranscript, onSilence, responseText, language }: {
+export function useConversationVoice({ onTranscript, onSilence, responseText, language, rate = 0.96 }: {
   onTranscript: (text: string) => void;
   onSilence: (text: string) => void;
   responseText: string;
   /** Web Speech has no dependable automatic language detection. The user picks the recognition locale. */
   language: "es-PE" | "en-US";
+  rate?: number;
 }) {
   const [state, setState] = useState<VoiceState>("checking");
   const [message, setMessage] = useState("");
@@ -47,18 +49,30 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
   const onSilenceRef = useRef(onSilence);
   const onTranscriptRef = useRef(onTranscript);
   const [speaking, setSpeaking] = useState(false);
+  const activeUtterance = useRef<SpeechSynthesisUtterance | null>(null);
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState("");
   const mode = useRef<"remote" | "local" | "unsupported">("unsupported");
 
   onSilenceRef.current = onSilence;
   onTranscriptRef.current = onTranscript;
+
+  useEffect(() => {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    const refresh = () => setAvailableVoices(synth.getVoices());
+    refresh();
+    synth.addEventListener("voiceschanged", refresh);
+    return () => synth.removeEventListener("voiceschanged", refresh);
+  }, []);
 
   function finishTurn(instance: Recognition, transcript: string) {
     if (stopped.current || recognition.current !== instance) return;
     stopped.current = true;
     recognition.current = null;
     try { instance.stop(); } catch { /* The browser may have already ended recognition. */ }
-    setState("processing");
-    setMessage("Speech ended. Preparing your response…");
+    setState("available");
+    setMessage("Dictation finished. Review the transcript before sending.");
     onSilenceRef.current(transcript);
   }
 
@@ -86,6 +100,7 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
       active = false;
       turnDetector.current?.cancel();
       recognition.current?.stop();
+      activeUtterance.current = null;
       window.speechSynthesis?.cancel();
     };
   }, [language]);
@@ -111,7 +126,8 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
     hasTranscript.current = false;
     const instance = new Constructor();
     recognition.current = instance;
-    const detector = createSpeechTurnDetector((transcript) => finishTurn(instance, transcript));
+    // A short hesitation is common while dictating a route or cargo details.
+    const detector = createSpeechTurnDetector((transcript) => finishTurn(instance, transcript), 2200);
     turnDetector.current = detector;
     instance.lang = language;
     if (mode.current === "local") instance.processLocally = true;
@@ -135,7 +151,7 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
         }
       }
       setState("listening");
-      setMessage(final ? "Listening… Pause after speaking to send, or press Stop to edit first." : "Listening… Waiting for a confirmed transcript. Press Stop to edit first.");
+      setMessage(final ? "Listening… Pause after speaking, then review and send." : "Listening… Waiting for a confirmed transcript. Review it before sending.");
     };
     instance.onerror = (event) => {
       if (stopped.current || recognition.current !== instance) return;
@@ -170,27 +186,33 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
 
   function readResponse(text = responseText) {
     if (!text || !window.speechSynthesis) return;
+    activeUtterance.current = null;
     window.speechSynthesis.cancel();
     setSpeaking(true);
     const utterance = new SpeechSynthesisUtterance(text);
+    activeUtterance.current = utterance;
     utterance.lang = language;
-    utterance.onstart = () => { setSpeaking(true); setMessage("CargoMesh is speaking. Press Stop audio before starting another voice turn."); };
-    utterance.onend = () => { setSpeaking(false); setState("available"); setMessage(""); };
-    utterance.onerror = () => { setSpeaking(false); setState("available"); setMessage("Audio playback stopped. You can continue by voice or text."); };
+    utterance.voice = chosenSpeechVoice(window.speechSynthesis.getVoices(), language, selectedVoiceURI);
+    utterance.rate = rate;
+    utterance.onstart = () => { if (activeUtterance.current === utterance) { setSpeaking(true); setMessage("CargoMesh is speaking. Press Stop audio before starting another voice turn."); } };
+    utterance.onend = () => { if (activeUtterance.current === utterance) { activeUtterance.current = null; setSpeaking(false); setState("available"); setMessage(""); } };
+    utterance.onerror = () => { if (activeUtterance.current === utterance) { activeUtterance.current = null; setSpeaking(false); setState("available"); setMessage("Audio playback stopped. You can continue by voice or text."); } };
     window.speechSynthesis.speak(utterance);
   }
 
   function stopResponse() {
+    activeUtterance.current = null;
     window.speechSynthesis?.cancel();
     setSpeaking(false);
     setState("available");
     setMessage("Audio stopped. You can speak again or type.");
   }
 
-  function finishProcessing() {
+  function finishProcessing(message = "") {
     setState("available");
-    setMessage("");
+    setMessage(message);
   }
 
-  return { state, message, speaking, start, stop, readResponse, stopResponse, finishProcessing, canRead: Boolean(responseText) };
+  return { state, message, speaking, start, stop, readResponse, stopResponse, finishProcessing, canRead: Boolean(responseText),
+    availableVoices: voicesForLanguage(availableVoices, language), selectedVoiceURI, setSelectedVoiceURI };
 }

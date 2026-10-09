@@ -1,0 +1,30 @@
+{
+  "rows": 237,
+  "categories": {
+    "EVIDENCIA_PENDIENTE": 229,
+    "DEFECTO_FUNCIONAL_REAL": 4,
+    "DOCUMENTACION_DESACTUALIZADA": 4
+  },
+  "methods": 146,
+  "distinctFunctionalDefects": 2,
+  "matrix": {
+    "classes": {
+      "PARCIAL": 55,
+      "COMPLETO": 1,
+      "DIVERGENTE": 1
+    },
+    "attributes": {
+      "PARCIAL": 120,
+      "COMPLETO": 274,
+      "DIVERGENTE": 3
+    },
+    "relations": {
+      "COMPLETO": 51,
+      "PARCIAL": 42
+    },
+    "endpoints": {
+      "IMPLEMENTADO": 209,
+      "PARCIAL": 16
+    }
+  }
+}
