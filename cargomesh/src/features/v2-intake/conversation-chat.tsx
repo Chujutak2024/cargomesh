@@ -10,6 +10,8 @@ import { InterpretationResponseSchema, helpTopic, isHelpFollowUp, type Interpret
 import { conversationContext } from "./conversation-context";
 import { serviceabilityReply } from "./serviceability-reply";
 import type { V2IntakeApiError } from "./v2-intake-client";
+import { readRequestWorkflow } from "./workflow-chat-client";
+import { summarizeWorkflow } from "./workflow-chat-summary";
 import styles from "./conversation-chat.module.css";
 
 type Message = { speaker: "assistant" | "user"; text: string };
@@ -58,6 +60,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const [history, setHistory] = useState<Message[]>([{ speaker: "assistant", text: GREETING_EN }]);
   const [announcement, setAnnouncement] = useState("");
   const [interpretationBusy, setInterpretationBusy] = useState(false);
+  const [workflowBusy, setWorkflowBusy] = useState(false);
   const [audioReplies, setAudioReplies] = useState(true);
   const voiceLanguage = "en-US" as const;
   const [voiceRate, setVoiceRate] = useState(0.96);
@@ -167,12 +170,24 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
 
   async function send() {
     const value = text.trim();
-    if (!value || busy || interpretationBusy || voice.speaking) {
+    if (!value || busy || interpretationBusy || workflowBusy || voice.speaking) {
       return;
     }
     if (voice.state === "listening" || voice.state === "requesting_permission") voice.stop();
     setText("");
     setChoices([]);
+    const workflowIntent = /\b(?:offers?|quotes?|prices?|compare|cotizaciones?|ofertas?)\b/i.test(value) ? "offers"
+      : /\b(?:booking|reservation|book|reservas?|confirmaci[oó]n)\b/i.test(value) ? "bookings"
+      : /\b(?:track|tracking|shipment status|execution|seguimiento|rastrear|estado del env[ií]o)\b/i.test(value) ? "executions" : null;
+    if (workflowIntent) {
+      if (optionsSource === "fixture") { add(value, "This preview uses synthetic facilities and cannot read commercial records. Sign in to view an authorized request."); return; }
+      if (!request) { add(value, "First save a freight request. Then I can check its current offers, booking state or recorded execution."); return; }
+      setWorkflowBusy(true);
+      try { add(value, summarizeWorkflow(workflowIntent, await readRequestWorkflow(request.id, workflowIntent))); }
+      catch (error) { add(value, error instanceof Error ? error.message : "I could not load the current workflow. Please retry."); }
+      finally { setWorkflowBusy(false); }
+      return;
+    }
     if (awaitingConfirmation && positive.test(value)) {
       if (optionsSource === "fixture") {
         setAwaitingConfirmation(false);
@@ -319,11 +334,11 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         {(voice.message || voice.state === "unsupported") && <p className={styles.voiceStatus} role="status">{voice.message || "Speech recognition is unavailable here. You can type every step."}</p>}
         <form onSubmit={(event) => { event.preventDefault(); void send(); }} className={styles.composer}>
           <label className={styles.srOnly} htmlFor="v2-chat-text">Your message or editable voice transcript</label>
-          <input ref={inputRef} id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder="Message CargoMesh…" autoComplete="off" disabled={busy || interpretationBusy || voice.speaking} />
+          <input ref={inputRef} id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder="Message CargoMesh…" autoComplete="off" disabled={busy || interpretationBusy || workflowBusy || voice.speaking} />
           {voice.state === "listening" || voice.state === "requesting_permission"
             ? <button type="button" className={styles.micActive} aria-label="Stop listening" title="Stop listening" onClick={voice.stop}>■</button>
-            : <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing" || voice.speaking || busy || interpretationBusy} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>}
-          <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || voice.speaking}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
+            : <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing" || voice.speaking || busy || interpretationBusy || workflowBusy} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>}
+          <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || workflowBusy || voice.speaking}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
         <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button><label>Voice <select aria-label="Voice for spoken replies" value={voice.selectedVoiceURI} onChange={(event) => voice.setSelectedVoiceURI(event.target.value)}><option value="">Automatic</option>{voice.availableVoices.map((option) => <option key={option.voiceURI} value={option.voiceURI}>{option.name} ({option.lang}){option.localService ? " · device" : ""}</option>)}</select></label><label>Pace <select aria-label="Voice pace" value={voiceRate} onChange={(event) => setVoiceRate(Number(event.target.value))}><option value={0.88}>Relaxed</option><option value={0.96}>Natural</option><option value={1.06}>Brisk</option></select></label><button type="button" onClick={() => voice.readResponse("Hello, I'm CargoMesh. Tell me what you need to ship, and I'll help you step by step.")} disabled={voice.speaking}>Test voice</button></div>
       </div>
