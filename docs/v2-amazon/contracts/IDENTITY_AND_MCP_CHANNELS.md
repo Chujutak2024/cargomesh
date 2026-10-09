@@ -15,6 +15,12 @@ Los roles carrier admitidos son ADMIN, OPERATOR y DISPATCHER. DISPATCHER se limi
 
 Las membresías anteriores conservan sus datos; `OrganizationMember.verifiedAt` queda desconocido hasta una aceptación propia verificada. No se fabrica evidencia ni se cambia en masa su autorización histórica. Links antiguos sin proveedor, sujeto y verificación dejan de ser utilizables para MCP hasta nuevo consentimiento. Ofertas antiguas permanecen legibles; no se admite un nuevo compromiso comercial sin emisor verificado.
 
+### Lectura de historia y metadatos verificados
+
+El directorio de links también devuelve vínculos históricos. `provider`, `externalSubjectRef` y `verifiedAt` pueden ser `null` en esos registros previos a HAC-41. Esa ausencia no autoriza MCP: la migración de identidad conserva la historia y la autenticación rechaza metadatos no verificados. Un consentimiento nuevo deriva el proveedor del cliente registrado y el sujeto del usuario Auth, y registra su verificación.
+
+Los campos obligatorios del UML describen el vínculo verificado; su lectura histórica requiere esta distinción. No rellenar metadatos desconocidos ni convertir un registro histórico en evidencia de acceso live. La divergencia entre el UML histórico y el DTO de historia debe mantenerse visible en la reconciliación.
+
 ## OAuth y linking
 
 El recurso remoto es el `/mcp` HTTPS canónico. Los tokens de usuario son verificados con `Supabase Auth.getUser`, issuer del proyecto, audience/role `authenticated`, expiración y `client_id` exacto. Una sesión normal de contraseña no equivale a un bearer OAuth MCP. El bearer suministrado no vuelve silenciosamente a cookies.

@@ -12,7 +12,7 @@ from matrix import CAT, SOURCES, SRC, csvwrite, jsonstr
 GROUPS_METHODS = [
     ("RoutePlanner", "command_v2_route_planner", "32_v2_hac40_uml_cardinalities.test.sql"),
     (
-        "Organization OrganizationMember",
+        "Organization",
         "workflow_member",
         "17_v2_hac40_organization_commands.test.sql",
     ),
@@ -78,7 +78,9 @@ GROUPS_METHODS = [
         "command_v2_workflow",
         "23_v2_hac40_operation.test.sql",
     ),
-    ("McpAccountLink", "resolve_mcp_account_link", "12_hac11_mcp_account_links.test.sql"),
+    ("OrganizationMember CarrierOperator", "command_v2_identity_directory", "33_v2_hac41_identity_channels.test.sql"),
+    ("ResponseIntegration", "command_v2_response_integration", "33_v2_hac41_identity_channels.test.sql"),
+    ("McpAccountLink", "command_v2_mcp_link", "33_v2_hac41_identity_channels.test.sql"),
 ]
 
 
@@ -94,33 +96,7 @@ def main():
             refs = []
             tests = []
             status = "MAPPED_RELATED_OPERATION" if operation else "NO_CANONICAL_WRITER"
-            if name == "McpAccountLink":
-                source = "cargomesh/src/server/mcp/auth/user-token.ts"
-                lines = (ROOT / source).read_text(encoding="utf-8-sig").splitlines()
-                refs = [
-                    source
-                    + ":"
-                    + str(
-                        next(
-                            i + 1
-                            for i, line in enumerate(lines)
-                            if "export async function authenticateMcpUserBearer(" in line
-                        )
-                    )
-                ]
-                tests = [
-                    {
-                        "source": "supabase/tests/12_hac11_mcp_account_links.test.sql",
-                        "execution": "logs/gate-v2-pgtap.log",
-                    },
-                    {
-                        "source": "cargomesh/src/server/mcp/auth/user-token.test.ts",
-                        "execution": "logs/test-release.log",
-                    },
-                ]
-                status = "MAPPED_RELATED_OPERATION"
-                operation = ("authenticateMcpUserBearer", "12_hac11_mcp_account_links.test.sql")
-            elif operation:
+            if operation:
                 fn, test = operation
                 # Some public wrappers have different names; never invent a catalog function.
                 if fn not in functions:

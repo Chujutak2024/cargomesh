@@ -435,6 +435,17 @@
       "dependencies": [
         "20261008235540"
       ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261009190000_hac40_uml_read_projection.sql",
+      "version": "20261009190000",
+      "sha256": "859dfcabeb58f1a5e3874eb254771d983b228f4ed28b4ce51f16f9502fa3a56a",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261009000410"
+      ]
     }
   ]
 }

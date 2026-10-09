@@ -4,6 +4,8 @@ Comienza por el [flujo vigente](./CURRENT_DELIVERY_STATE.md). Esta carpeta conti
 
 ## Trabajo actual
 
+- [Revisión UML → BD/API del 9 de octubre](./uml-bd-api-2026-10-09/README.md): mappings de identidad, clasificación de parciales y dos correcciones de lectura; distinguir integración local de aplicación alojada.
+
 - [Plantilla de Linear](./LINEAR_ISSUE_TEMPLATE.md): alcance, dueño, dependencias, DoD y evidencia.
 - [Calidad y aceptación de PR](./QUALITY_AND_VALIDATION_PLAN.md).
 - [Backend completo HAC-40 y límites](./HAC40_FULL_API_AND_CLOSURE.md), [endpoints](./HAC40_API_ENDPOINTS.md) y [workflow persistente](./HAC40_WORKFLOW_API.md).

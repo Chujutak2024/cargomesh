@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { WorkflowServiceV2, type WorkflowRepositoryV2 } from "./workflow-service";
-import { WorkflowInputsV2, WorkflowRecordV2Schema } from "@/shared/schemas/v2/workflow";
+import { WorkflowInputsV2, WorkflowRecordV2Schema, RouteWaypointV2Schema } from "@/shared/schemas/v2/workflow";
 const id="00000000-0000-4000-8000-000000000001", org="00000000-0000-4000-8000-000000000002";
 const actor={organizationId:org,memberId:id};
 const context={requestId:null,carrierId:null,parentId:null,id:null};
@@ -11,6 +11,24 @@ const record={id,organizationId:null,carrierId:null,requestId:null,kind:"nodes",
  createdAt:"2026-10-04T00:00:00Z",updatedAt:"2026-10-04T00:00:00Z",data:node};
 const repository=():WorkflowRepositoryV2=>({async read(){return [record]},async command(){return {record,replay:false}}});
 describe("HAC-40 persistent workflow boundary",()=>{
+ it("requires the persisted decision in booking output",()=>{
+  const booking={...record,kind:"bookings",data:{decisionId:id,carrierReference:null,confirmedAt:null,
+   authorizedAt:record.createdAt,authorizedBy:id,authorizationStatus:"AUTHORIZED",carrierConfirmationStatus:"PENDING",
+   capacityEvidence:[],authorizationEvidence:evidence}};
+  assert.equal(WorkflowRecordV2Schema.safeParse(booking).success,true);
+  assert.equal(WorkflowRecordV2Schema.safeParse({...booking,data:{...booking.data,decisionId:undefined}}).success,false);
+  assert.equal(WorkflowRecordV2Schema.safeParse({...booking,data:{...booking.data,decisionId:"invalid"}}).success,false);
+ });
+ it("requires positive waypoint sequence in output without making it client-writable",()=>{
+  const waypointSchema=RouteWaypointV2Schema;
+  const waypoint={kind:"REST",location:node.location,source:evidence,verifiedAt:null};
+  assert.equal(waypointSchema.safeParse({...waypoint,sequence:1}).success,true);
+  assert.equal(waypointSchema.safeParse({...waypoint,sequence:0}).success,false);
+  assert.equal(waypointSchema.safeParse(waypoint).success,false);
+  const input=WorkflowInputsV2["corridors.publish"].innerType().shape.waypoints;
+  assert.equal(input.safeParse([waypoint]).success,true);
+  assert.equal(input.safeParse([{...waypoint,sequence:1}]).success,false);
+ });
  it("rejects keys and injected scope before committing a command",async()=>{
   const repo=repository();repo.command=async()=>{throw new Error("UNEXPECTED_DATABASE_ACCESS")};const service=new WorkflowServiceV2(repo);
   await assert.rejects(service.command(actor,"nodes.publish",context,{...node,organizationId:org},id),{name:"ZodError"});

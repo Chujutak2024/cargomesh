@@ -151,6 +151,8 @@ def main():
         "docs/v2-amazon/models/FULL_MODEL_PHYSICAL_DESIGN.json",
         "docs/v2-amazon/models/FULL_MODEL_DER.md",
         "docs/v2-amazon/delivery/HAC40_API_ENDPOINTS.md",
+        "docs/v2-amazon/delivery/HAC41_IDENTITY_MCP.md",
+        "docs/v2-amazon/models/FULL_MODEL_CURRENT_IDENTITY.json",
         "docs/v2-amazon/delivery/HAC40_WORKFLOW_API.md",
         "docs/v2-amazon/delivery/HAC40_FULL_API_AND_CLOSURE.md",
     ]

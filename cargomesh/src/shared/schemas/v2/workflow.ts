@@ -115,10 +115,13 @@ const HoldData = z.object({ bookingId: Id, assignmentId: Id, planResourceId: Id,
   expiresAt: Instant.nullable(), active: z.boolean(), consolidationId: Id.nullable(), parentReservationId: Id.nullable(),
   capacityCommitted: Capacity, evidence: StoredEvidence }).strict();
 const HoldRecord = z.object({ ...Metadata, kind: z.literal("holds"), data: HoldData }).strict();
+export const RouteWaypointV2Schema = WorkflowInputsV2["corridors.publish"].innerType().shape.waypoints.element.extend({
+  sequence: z.number().int().positive(),
+}).strict();
 const Leg = z.object({ id: Id, corridorId: Id, sequence: z.number().int().positive(), mode: TransportModeV2Schema,
   origin: Location, destination: Location, borderRequirements: Rules, estimatedDistanceKm: z.number().nonnegative().nullable(),
   estimatedDurationSeconds: z.number().positive().nullable(), source: Evidence, corridorVersion: z.number().int().positive(),
-  waypoints: WorkflowInputsV2["corridors.publish"].innerType().shape.waypoints,
+  waypoints: z.array(RouteWaypointV2Schema).max(100),
   conditions: z.array(WorkflowInputsV2["conditions.publish"]),
   originNodeVersion: z.number().int().positive(), destinationNodeVersion: z.number().int().positive() }).strict();
 const VerificationSource = z.object({ calendarId: Id, calendarVersion: z.number().int().positive(), limitsId: Id.nullable(),
@@ -190,7 +193,7 @@ export const WorkflowRecordV2Schema = z.discriminatedUnion("kind", [
   z.object({ ...Metadata, kind: z.literal("decisions"), data: Stored({ planId: Id, selectedPlanId: Id, selectedOfferIds: z.array(Id).min(1),
     rationale: Text, policyId: Id.nullable(), policyVersion: Text.nullable(), consideredOfferIds: z.array(Id), evidence: z.array(Evidence),
     selectedAt: Instant, selectedBy: Id, status: z.enum(["SELECTED", "REVOKED"]) }) }).strict(),
-  z.object({ ...Metadata, kind: z.literal("bookings"), data: Stored({ carrierReference: Text.nullable(), confirmedAt: Instant.nullable(),
+  z.object({ ...Metadata, kind: z.literal("bookings"), data: Stored({ decisionId: Id, carrierReference: Text.nullable(), confirmedAt: Instant.nullable(),
     authorizedAt: Instant, authorizedBy: Id, authorizationStatus: z.enum(["AUTHORIZED", "REVOKED"]),
     carrierConfirmationStatus: z.enum(["PENDING", "CONFIRMED", "REJECTED", "CANCELLED"]), capacityEvidence: z.array(HoldRecord), authorizationEvidence: Evidence }) }).strict(),
   HoldRecord,

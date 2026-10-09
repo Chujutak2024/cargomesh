@@ -20,6 +20,12 @@ COL = {
     (c["table_name"], c["column_name"]): c for c in CAT["columns"] if c["table_schema"] == "public"
 }
 CLASS = {c["name"]: c for c in DES["classes"]}
+IDENTITYKINDS = {
+    "OrganizationMember": ("members", "OrganizationMemberV2Schema", "MemberInvitationV2Schema"),
+    "CarrierOperator": ("operators", "CarrierOperatorV2Schema", "OperatorInvitationV2Schema"),
+    "ResponseIntegration": ("integrations", "ResponseIntegrationV2Schema", "IntegrationConfigurationV2Schema"),
+    "McpAccountLink": ("links", "McpAccountLinkV2Schema", "McpConsentV2Schema"),
+}
 CATKINDS = dict(
     OrganizationPreferences="preferences",
     CargoProfile="cargo-profiles",
@@ -100,6 +106,7 @@ ALIASES = {
     "CarrierOffer": {"transitDuration": "transitDurationSeconds"},
     "SelectionDecision": {"consideredOptions": "consideredOfferIds"},
     "ShipmentContact": {"phone": "phoneE164"},
+    "RepositioningBlock": {"estimatedTravel": "estimatedTravelSeconds"},
 }
 GROUPS = {
     ("Facility", "location"): [
@@ -223,6 +230,12 @@ def workflow_output(kind):
 def schema_paths(name, attr):
     """Resolve a UML attribute's input and output paths in the Zod inventory."""
     a = ALIASES.get(name, {}).get(attr, attr)
+    if name in IDENTITYKINDS:
+        _, output, create = IDENTITYKINDS[name]
+        ip = "email" if name == "OrganizationMember" and attr == "contactRef" else a
+        return (node(TREES.get("identity.ts:" + create), ip),
+                node(TREES.get("identity.ts:" + output), a),
+                ip, a, "identity.ts:" + create)
     if name in CATKINDS:
         kind = CATKINDS[name]
         it = TREES["catalog.ts:CatalogInputsV2:" + kind]
@@ -348,6 +361,7 @@ def storage(name, a, op):
     tab = CLASS[name]["storage"].split(".")[0]
     attribute = next(x for x in CLASS[name]["attributes"] if x["name"] == a)
     target = attribute.get("currentTreatment", {}).get("target", attribute["target"])
+    target = target.removeprefix("public.")
     if attribute.get("currentTreatment"):
         return [target], "json" if len(target.split(".")) > 2 else "column"
     if (name, a) in OVERRIDE:
@@ -455,6 +469,8 @@ def dto_line(key, attr):
 
 
 def output_key(name, attr, key):
+    if name in IDENTITYKINDS:
+        return "identity.ts:" + IDENTITYKINDS[name][1]
     if name in CATKINDS:
         kind = CATKINDS[name]
         domain = CAT_OUTPUT_KEYS.get(kind)
@@ -485,7 +501,14 @@ def output_key(name, attr, key):
 @functools.lru_cache(maxsize=None)
 def operation_paths(name):
     # Embedded values/subtypes inherit their aggregate's native operations.
-    if name in CATKINDS:
+    if name in IDENTITYKINDS:
+        prefix = {
+            "OrganizationMember": "/organizations/current/members",
+            "CarrierOperator": "/carriers/:carrierId/operators",
+            "ResponseIntegration": "/carriers/:carrierId/integrations",
+            "McpAccountLink": "/identity/mcp/links",
+        }[name]
+    elif name in CATKINDS:
         kind = CATKINDS[name]
         prefix = (
             "/organizations/current/preferences"
@@ -535,6 +558,8 @@ def operation_paths(name):
         }
     routes = json.loads((LOGS / "routes-runtime.json").read_text(encoding="utf-8"))
     prefixes = [prefix] if prefix else []
+    if name == "OrganizationMember":
+        prefixes.append("/identity/organizations/:organizationId/members")
     if name == "RoutePlanner":
         prefixes = ["/freight/requests/:requestId/route-alternatives", "/routes/:id/replans", "/routes/:id/explanation"]
     if name in WFKINDS:
@@ -570,6 +595,7 @@ def rows_from_evidence():
         "extended-roundtrips.json",
         "ltl-roundtrips.json",
         "contract-roundtrips.json",
+        "identity-roundtrips.json",
     ]
     rows = []
     for f in files:
@@ -585,7 +611,7 @@ RT = rows_from_evidence()
 
 
 def ev_for(name, op, ip):
-    kind = CATKINDS.get(
+    kind = IDENTITYKINDS[name][0] if name in IDENTITYKINDS else CATKINDS.get(
         name,
         WFKINDS.get(
             name,
@@ -735,7 +761,7 @@ def attributes():
                     source_line(p.split(".")[0], p.split(".")[1] if len(p.split(".")) > 1 else None)
                     for p in paths
                 ),
-                "api_servicio": CATKINDS.get(
+                "api_servicio": IDENTITYKINDS[name][0] if name in IDENTITYKINDS else CATKINDS.get(
                     name,
                     WFKINDS.get(
                         name,
@@ -813,7 +839,6 @@ REL_OVERRIDE = {
         "v2_offer_assignments "
         "bridge)"
     ),
-    75: "v2_carrier_offers.data.source.issuerId -> organization_members; no issuer_operator_id FK",
     77: (
         "asset_cargo_capabilities.definition_id + transport_asset_id; no "
         "transport_assets.cargo_capability_definition_id"
@@ -831,6 +856,10 @@ REL_OVERRIDE = {
         "bridge)"
     ),
     93: "capacity_reservations.booking_id",
+}
+IDENTITY_RELATIONS = {
+    ("CarrierOperator", "CarrierOffer"):
+        "v2_carrier_offers.issuer_operator_id + v2_carrier_offers.issuer_auth_user_id + v2_carrier_offers.carrier_id -> carrier_operators.id + carrier_operators.auth_user_id + carrier_operators.carrier_id (validated MANUAL issuer)",
 }
 
 
@@ -910,7 +939,8 @@ def relationships():
     current = {(r["source"], r["target"]): r for r in DES.get("currentRelationReconciliation", {}).get("relations", [])}
     for n, r in enumerate(DES["relations"], 1):
         reconciliation = current.get((r["source"], r["target"]))
-        treatment = reconciliation["treatment"] if reconciliation else REL_OVERRIDE.get(n, r["physicalTreatment"])
+        treatment = reconciliation["treatment"] if reconciliation else IDENTITY_RELATIONS.get(
+            (r["source"], r["target"]), REL_OVERRIDE.get(n, r["physicalTreatment"]))
         if r["source"] == "RoutePlanner" and any(f["proname"] == "command_v2_route_planner" for f in CAT["functions"]):
             treatment = "route_plans.data.planner snapshot and planner.search network/policy/condition revisions; command_v2_route_planner"
         tokens = re.findall(r"\b([a-z][a-z0-9_]+)\.([a-z][a-z0-9_]+)\b", treatment)
@@ -1099,6 +1129,9 @@ def endpoints():
     declared = [
         {"method": m[1], "path": m[2]} for m in re.finditer(r"\| (GET|POST) \| `([^`]+)` \|", doc)
     ]
+    identity_doc = OUT / "repro/sources/HAC41_IDENTITY_MCP.md"
+    if identity_doc.exists():
+        declared.extend(identity_endpoints(identity_doc.read_text(encoding="utf-8")))
     assert declared and len({(r["method"], r["path"]) for r in declared}) == len(declared), "Missing or duplicate documented endpoint"
     route_key = lambda r: (r["method"], re.sub(r":[A-Za-z][A-Za-z0-9_]*", ":parameter", r["path"]))
     actual = {route_key(r) for r in routes}
@@ -1189,6 +1222,20 @@ def endpoints():
                 for d in declared for r in routes if route_key(d) == route_key(r) and d["path"] != r["path"]],
         },
     )
+    return rows
+
+
+def identity_endpoints(doc):
+    """Read the separate HAC-41 route table; never infer documentation from runtime."""
+    table = doc.split("## HTTP canónico", 1)[1].split("## Tools MCP", 1)[0]
+    rows = []
+    for line in table.splitlines():
+        if not line.startswith("| ") or "`/" not in line:
+            continue
+        cell = line.split("|", 2)[1]
+        methods = re.search(r"\b(GET/POST|GET|POST)\b", cell)[1].split("/")
+        for path in re.findall(r"`(/[^`]+)`", cell):
+            rows.extend({"method": method, "path": "/api/v2" + path} for method in methods)
     return rows
 
 
