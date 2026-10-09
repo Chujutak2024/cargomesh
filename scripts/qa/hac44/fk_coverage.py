@@ -4,7 +4,7 @@ import json
 import hashlib
 import sys
 from pathlib import Path
-from fk_inventory import V1_CATEGORY, identity, load_inventory, validate_inventory
+from fk_inventory import V1_CATEGORY, identity, load_inventory, validate_inventory, reconcile_catalog
 from fk_strict import (BASELINE_METHOD, STRICT_METHOD, V2_CATEGORIES, build_case,
                        csv_text, lit, merge_results, probe_sql, table_ident, verdict)
 
@@ -70,6 +70,8 @@ def main():
 
     catalog = read_json("fk-catalog-before", QUERY)
     selected = validate_inventory(catalog)
+    reconciliation = reconcile_catalog(catalog)
+    save("fk-inventory-reconciliation.json", reconciliation)
     baseline_records = [r for r in selected if r["category"] == "BASELINE_178"]
     strict_records = [r for r in selected if r["category"] in V2_CATEGORIES]
     recorded = json.loads((LOGS / "catalog.json").read_text(encoding="utf-8"))
@@ -90,7 +92,7 @@ def main():
     baseline_failed = baseline_run.returncode != 0 or baseline["status"] != "PASS"
     baseline_cases = baseline_evidence(baseline["cases"], baseline_records)
     tables = {record["table"] for record in strict_records} | {record["referenceTable"] for record in strict_records}
-    tables |= {"public.organizations", "public.organization_members", "public.facilities",
+    tables |= {"public.organizations", "public.organization_members", "public.carrier_operators", "public.carrier_services", "public.facilities",
                "public.freight_requests", "public.carriers", "auth.users"}
     source_query = "select jsonb_object_agg(name,rows) from (" + " union all ".join(
         "select " + lit(table) + " name,coalesce(jsonb_agg("
@@ -116,7 +118,7 @@ def main():
     overall = verdict(cases)
     save("independent-fk-pairs.json", {"status": overall,
         "scope": "776b5da baseline code with strict identities excluded: rollback-only non-internal trigger suspension and sibling FK deferral; V2 additions use authenticated invoker with temporary owner writes and ALL IMMEDIATE after return; exact 23503 constraint diagnostics; observed ordinary-guard retries only after valid positive; full rollback; no RLS/business certification",
-        "inventory": {"catalog": len(inventory["records"]), "baseline": sum(case["method"] == BASELINE_METHOD for case in cases), "newV2": sum(case["method"] == STRICT_METHOD for case in cases), "excludedV1": len(excluded)},
+        "inventory": {"catalog": reconciliation["catalog"], "categories": reconciliation["categories"], "hac41": reconciliation["hac41"], "baseline": sum(case["method"] == BASELINE_METHOD for case in cases), "newV2": sum(case["method"] == STRICT_METHOD for case in cases), "excludedV1": len(excluded)},
         "tests": baseline["tests"] + sum(int("positiveAffectedRows" in case) + int(bool(case.get("attempts"))) for case in strict_cases),
         "plannedPairs": len(cases), "cases": cases, "excluded": excluded,
         "countsUnchanged": counts_before == counts_after, "catalogUnchanged": catalog == catalog_after})

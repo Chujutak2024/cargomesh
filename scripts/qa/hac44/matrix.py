@@ -1134,12 +1134,14 @@ def endpoints():
             r
             for r in matches
             if r.get("actor") in (1, 2)
+            and r.get("status") == "PASS"
             and r.get("http") in (200, 201)
             and r.get("label")
-            not in ("inventory-probe", "active-auth-control", "revoked-auth-negative")
+            not in ("inventory-probe", "proposal-route-presence-probe", "active-auth-control", "revoked-auth-negative")
         ]
         probe = [r for r in matches if r.get("label") == "inventory-probe"]
-        anon = [r for r in matches if r.get("actor") == 0 and r.get("http") == 401]
+        anon = [r for r in matches if r.get("actor") == 0 and r.get("http") == 401
+                and r.get("status") == "PASS" and r.get("authMechanism") == "anonymous"]
         exists = route_key(d) in actual
         status = (
             "IMPLEMENTADO" if exists and positive and anon else "PARCIAL" if exists else "FALTANTE"

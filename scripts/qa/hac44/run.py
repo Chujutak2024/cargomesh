@@ -11,10 +11,10 @@ ARTIFACTS = {
     ("tests.py",): ["harness-tests.json"],
     ("strict_controls.py",): ["strict-caller-controls.json"],
     ("api_runner.py", "run"): ["api-results.json"],
-    ("api_runner.py", "extended"): ["extended-api-results.json"],
+    ("api_runner.py", "extended"): ["extended-api-results.json", "extended-manual-offer.json"],
     ("api_runner.py", "ltl"): ["ltl-api-results.json"],
     ("api_runner.py", "pending"): ["pending-cases.json"],
-    ("api_runner.py", "auth-verify"): ["auth-controls.json"],
+    ("api_runner.py", "auth-verify"): ["auth-controls.json", "auth-carrier-controls.json"],
     ("api_runner.py", "contract"): ["contract-api-results.json"],
     ("contract_verdict.py",): ["contract-verdict.json"],
     ("rls.py",): ["independent-rls-result.json"],
@@ -23,6 +23,9 @@ ARTIFACTS = {
     ("persistence.py",): ["contract-persistence-result.json"],
     ("lifecycle.py", "seed"): ["full-flow-seed-result.json"],
     ("lifecycle.py", "cleanup"): ["full-flow-cleanup-result.json"],
+    ("guards.py",): ["local-only-guards.json", "uuid-collision-guard.json"],
+    ("pkce_smoke.py",): ["pkce-smoke.json"],
+    ("authentication.py",): ["authentication-result.json"],
 }
 CONTRACT_CASES = {
     "contract-required-field-result.json", "contract-route-cardinality-result.json",
@@ -86,7 +89,7 @@ class Runner:
                     cases.append({"source": name, "status": "BLOQUEADO", "reason": "Missing or invalid case verdict"})
                     continue
                 cases.append({"source": name, "status": status,
-                    **{k: row[k] for k in ("case", "label", "constraint", "method", "path", "http", "expected", "reason") if k in row}})
+                    **{k: row[k] for k in ("case", "label", "constraint", "method", "path", "http", "expected", "reason", "owner", "defect", "actor") if k in row}})
             if not cases:
                 raise ValueError("No functional verdicts")
             return cases
@@ -143,6 +146,8 @@ class Runner:
                     self.child("matrix.py", blocked=ready)
             finally:
                 cleanup = self.child("lifecycle.py", "cleanup", blocked=None if attempted else ready)
+            if not self.stop_requested:
+                self.child("guards.py", blocked=None if cleanup["status"] == "PASS" else "Cleanup prerequisite did not pass")
             archive = self.out / "cycles" / str(cycle)
             for directory in ("logs", "dataset", "backups"):
                 target = archive / directory
@@ -166,10 +171,18 @@ class Runner:
     def all(self):
         blocked = None
         for name, args in [("provenance.py", []), ("tests.py", []), ("gates.py", []), ("runtime.py", ["start"]),
-                           ("sources.py", []), ("catalog.py", []), ("strict_controls.py", [])]:
+                           ("pkce_smoke.py", []), ("sources.py", [])]:
             result = self.child(name, *args, blocked=blocked)
             if result["status"] != "PASS":
                 blocked = "Setup prerequisite did not pass: " + name
+        # Independent authentication contract suite; its FAIL remains in the verdict.
+        # It reconstructs the owned empty bank before the dataset cycles.
+        self.child("authentication.py", blocked=blocked)
+        # Capture the catalog after the suite's reset, including fresh internal trigger identities.
+        for name in ("catalog.py", "strict_controls.py"):
+            result = self.child(name, blocked=blocked)
+            if result["status"] != "PASS":
+                blocked = "Reconstructed catalog/caller prerequisite did not pass: " + name
         self.cycles(blocked=blocked)
         if self.stop_requested:
             return self.snapshot()["exit"]
@@ -181,7 +194,11 @@ class Runner:
 if __name__ == "__main__":
     runner = Runner()
     if sys.argv[1:] and sys.argv[1] == "all":
-        sys.exit(runner.all())
+        try:
+            code = runner.all()
+        finally:
+            stopped = runner.child("runtime.py", "stop")
+        sys.exit(code if stopped["status"] == "PASS" else 1)
     if sys.argv[1:] and sys.argv[1] == "cycles":
         runner.cycles(seeded="--seeded" in sys.argv)
         sys.exit(runner.snapshot()["exit"])

@@ -10,11 +10,14 @@ import tomllib
 from pathlib import Path
 
 from common import OUT, ROOT, run, safe, save, state, write
+from banks import Bank, Layout
 
 HEAD = state()["head"]
 HARNESS = OUT / "stack-v2"
-PROJECT = "hac44-full-flow-v2"
+LAYOUT = Layout.environment()
+PROJECT = LAYOUT.project("v2")
 DB = "supabase_db_" + PROJECT
+BANK = Bank(HARNESS, PROJECT)
 cli = os.environ.get("HAC44_CLI") or shutil.which("supabase")
 CLI = [cli] if cli else ["npx.cmd" if os.name == "nt" else "npx", "--yes", "supabase@2.117.0"]
 
@@ -29,7 +32,7 @@ def gate():
 
 def sql(label, query, persist=True):
     """Execute SQL only through the dedicated HAC-44 local Docker database."""
-    assert DB == "supabase_db_hac44-full-flow-v2"
+    BANK.own("sql")
     if persist:
         write(OUT / "repro/sql" / (label + ".sql"), safe(query))
     return run(

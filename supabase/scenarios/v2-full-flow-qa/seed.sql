@@ -547,10 +547,21 @@ insert into public.carrier_operators(
     'd4440000-0000-4000-8000-000000000001',
     'd4410000-0000-4000-8000-000000000001',
     'LOCAL_ONLY operator',
-    'LOCAL_ONLY_QA',
+    'ADMIN',
     'ACTIVE',
     now()
 );
+-- Paired carrier identities: B owns another carrier; the revoked actor cannot act.
+insert into public.carrier_operators(id, carrier_id, auth_user_id, display_name, role, status, verified_at)
+values
+('d44b0000-0000-4000-8000-000000000002', 'd4490000-0000-4000-8000-000000000001',
+ 'd4410000-0000-4000-8000-000000000002', 'LOCAL_ONLY carrier B operator', 'ADMIN', 'ACTIVE', now()),
+('d44b0000-0000-4000-8000-000000000003', 'd4440000-0000-4000-8000-000000000001',
+ 'd4410000-0000-4000-8000-000000000003', 'LOCAL_ONLY revoked carrier operator', 'ADMIN', 'INACTIVE', now());
+insert into private.v2_catalog_grants(auth_user_id, carrier_id, permission)
+values
+('d4410000-0000-4000-8000-000000000001', 'd4440000-0000-4000-8000-000000000001', 'CARRIER_EDITOR'),
+('d4410000-0000-4000-8000-000000000003', 'd4440000-0000-4000-8000-000000000001', 'CARRIER_EDITOR');
 insert into public.mcp_account_links(
     id,
     auth_user_id,

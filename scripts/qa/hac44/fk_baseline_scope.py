@@ -1,4 +1,5 @@
 """Explicit strict identities excluded from the unchanged baseline selection."""
+from fk_inventory import hac41_records, identity
 
 STRICT_FK_IDENTITIES = frozenset({
     ('private.v2_catalog_grants', 'v2_catalog_grants_auth_user_id_fkey'),
@@ -47,3 +48,4 @@ STRICT_FK_IDENTITIES = frozenset({
     ('public.v2_rankings', 'v2_rankings_organization_id_fkey'),
     ('public.v2_rankings', 'v2_rankings_policy_id_fkey'),
 })
+STRICT_FK_IDENTITIES = STRICT_FK_IDENTITIES | frozenset(identity(row) for row in hac41_records())

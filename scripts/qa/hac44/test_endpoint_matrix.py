@@ -28,6 +28,7 @@ class EndpointInventoryTests(unittest.TestCase):
     def control(self):
         routes = [{"method": "GET", "path": "/api/v2/example"}]
         calls = [{"method": "GET", "path": "/example", "actor": actor, "http": http,
+                  "status": "PASS", "authMechanism": "literal-fixture-Bearer" if actor else "anonymous",
                   "label": "functional-positive" if actor else "anonymous-negative"}
                  for actor, http in [(1, 200), (0, 401)]]
         rows, _ = self.exercise(routes, routes, calls)
@@ -38,6 +39,7 @@ class EndpointInventoryTests(unittest.TestCase):
         routes, calls = self.control()
         new = {"method": "POST", "path": "/api/v2/example/:id/association"}
         records = calls + [{"method": "POST", "path": "/example/real-id/association",
+                            "status": "PASS", "authMechanism": "literal-fixture-Bearer" if actor else "anonymous",
                             "actor": actor, "http": http, "label": "association-control"}
                            for actor, http in [(1, 200), (0, 401)]]
         rows, delta = self.exercise(routes + [new], routes + [new], records)
@@ -52,6 +54,7 @@ class EndpointInventoryTests(unittest.TestCase):
         documented = {"method": "POST", "path": "/api/v2/example/:assignmentId/link"}
         runtime = {"method": "POST", "path": "/api/v2/example/:parentId/link"}
         records = calls + [{"method": "POST", "path": "/example/real-id/link",
+                            "status": "PASS", "authMechanism": "literal-fixture-Bearer" if actor else "anonymous",
                             "actor": actor, "http": http, "label": "link-control"}
                            for actor, http in [(1, 200), (0, 401)]]
         rows, saved = self.exercise(routes + [documented], routes + [runtime], records)
@@ -63,9 +66,18 @@ class EndpointInventoryTests(unittest.TestCase):
 
     def test_authentication_or_probe_alone_cannot_certify_functionality(self):
         routes, calls = self.control()
-        for records in ([calls[1]], [{**calls[0], "label": "inventory-probe"}, calls[1]]):
+        for records in ([calls[1]], [{**calls[0], "label": "inventory-probe"}, calls[1]],
+                        [{**calls[0], "label": "proposal-route-presence-probe"}, calls[1]],
+                        [{**calls[0], "status": "OBSERVED"}, calls[1]], [{**calls[0], "status": "FAIL"}, calls[1]]):
             rows, _ = self.exercise(routes, routes, records)
             self.assertEqual(rows[0]["estado"], "PARCIAL")
+
+    def test_invalid_bearer_401_cannot_replace_a_failed_anonymous_control(self):
+        routes, calls = self.control()
+        invalid_bearer = {**calls[1], "authMechanism": "explicit-invalid-Bearer", "label": "invalid-credential-auth-negative"}
+        rows, _ = self.exercise(routes, routes, [calls[0], invalid_bearer])
+        self.assertEqual(rows[0]["estado"], "PARCIAL")
+        self.assertEqual(rows[0]["anon_401"], 0)
 
     def test_duplicate_or_empty_documentary_inventory_is_rejected(self):
         routes, calls = self.control()

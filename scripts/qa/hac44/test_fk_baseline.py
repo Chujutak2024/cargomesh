@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fk_baseline_scope import STRICT_FK_IDENTITIES
 from fk_coverage import baseline_evidence, reconcile_baseline, without_strict_exclusion
-from fk_inventory import group_records, identity, load_inventory
+from fk_inventory import group_records, identity, load_inventory, hac41_records
 
 
 class BaselineTests(unittest.TestCase):
@@ -32,7 +32,7 @@ class BaselineTests(unittest.TestCase):
     def test_exclusion_is_exactly_the_explicit_strict_inventory(self):
         self.control()
         groups = group_records(load_inventory()["records"])
-        self.assertEqual(STRICT_FK_IDENTITIES, {identity(r) for r in groups["new"]})
+        self.assertEqual(STRICT_FK_IDENTITIES, {identity(r) for r in groups["new"] + hac41_records()})
         self.assertFalse(STRICT_FK_IDENTITIES & {identity(r) for r in groups["baseline"]})
         self.assertFalse(STRICT_FK_IDENTITIES & {identity(r) for r in groups["excluded"]})
         self.assertIn(("public.plan_leg_assignments", "plan_leg_assignments_fulfilment_partner_id_fkey"),

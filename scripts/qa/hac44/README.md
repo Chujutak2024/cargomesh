@@ -1,5 +1,16 @@
 # HAC-44 reproducible local QA
 
+## Windows CLI transport
+
+The PKCE status reader preserves the complete JSON argv. On Windows, `npx.cmd`
+is resolved through its installed npm `npx-cli.js` and launched by Node with
+`shell:false`; no bank path or argument is interpreted as shell text. A missing
+entrypoint aborts without trying a shell. CLI output (including local keys) stays
+in memory and is omitted from failures. Tests cover the installed Windows launcher
+with `--version` (no download) and a disposable npm layout with spaces, exact argv,
+PATH lookup and missing-entrypoint rejection. These transport tests do not certify
+OAuth or hosted database access.
+
 This directory owns the QA harness beside existing repository scripts, keeping synthetic data outside migrations and leaving product services, profiles and CI unchanged. Documentation and scenario sources are committed; logs, catalogs, CSVs, UUID registries, backups and replay workdirs live in an external evidence directory.
 
 ## Setup and complete run
@@ -9,14 +20,24 @@ Python 3.11+, Docker, Supabase CLI 2.117.0, the project Node engine and lockfile
 ```powershell
 $env:HAC44_EVIDENCE = Join-Path $env:TEMP 'hac44-evidence'
 $env:HAC44_CLI = (Get-Command supabase).Source
+$env:HAC44_PROJECT_PREFIX = 'hac44-my-new-run'
+$env:HAC44_PORT_BASE = '64000'
 python scripts/qa/hac44/run.py all
 ```
 
 Use a fresh external directory for each source SHA. `HAC44_ROOT` may identify the selected checkout when these QA scripts are run from another directory; `HAC44_SOURCE_SHA` accepts the selected full commit hash (default: HEAD). The checkout's product/model/migration inputs must match that SHA. The selected revision must contain the V2 UML/model, dictionary, manifest and native profile inputs expected by this model version. There are no machine-specific absolute paths in committed scripts. Output paths are derived from the environment.
 
-Three dedicated banks use projects `hac44-full-flow-v2`, `hac44-full-flow-v1` and `hac44-full-flow-baseline`, ports 620xx and inspector ports 62043/62073/62093. Native preflight verifies conflicts. HTTP tests use loopback port 62040. The normal CargoMesh local bank is untouched. `gates.py` preserves native algorithms and checks, adapting only workdirs, ports, project/container addresses and Python helper import context. `gate.py`, `test-profiles.json` and application CI remain unchanged. Historical V1 replay is a separate regression bank, never a V2 fixture source.
+Both layout settings are required; there is no fixed project or port fallback. Projects derive from `HAC44_PROJECT_PREFIX` with `-v2`, `-v1`, and `-baseline` suffixes. Their disjoint layouts start at `HAC44_PORT_BASE`, base + 100, and base + 200; the HTTP runner uses base + 90. Every configured port, including disabled services, is checked for overlap, Windows excluded TCP ranges and IPv4/IPv6 occupancy before any bank starts. A fresh run rejects existing container names and project volumes.
+
+Before reset, stop, cleanup, and SQL, `banks.py` requires the expected config.toml project, actual `com.supabase.cli.project` container labels, an external own-run marker, and the matching database marker created after initial start. Missing or foreign evidence aborts before the mutation. Reset preserves an external public/private backup and recreates the marker. Stop preserves volumes. Existing unrelated banks are never adopted. `gate.py`, `test-profiles.json`, migrations and application CI remain unchanged. Historical V1 replay is a separate, newly owned regression bank, never a V2 fixture source.
 
 `run.py all` verifies dependencies, runs the native reconstruction/gates and both pgTAP profiles, starts local HTTP services while preserving the volume, inventories the sources/catalog, executes two sequential dataset cycles, regenerates CSVs and runs `pnpm typecheck`/`pnpm test:release`. `runtime.py stop` stops only the three verified HAC44 projects and preserves their local volumes.
+
+The complete run also executes `pkce_smoke.py` before dataset seeding: two real local OAuth sessions, issuer validation, a wrong-verifier negative with valid controls, and actual claims under authenticated through ALL IMMEDIATE. Credentials remain in memory. It reconstructs the verified empty bank after the smoke, exporting only nonsecret fixture IDs. `guards.py` runs after each successful cycle cleanup. The final stop verifies business roots are zero; any residual own fixtures are backed up and reconstructed with seed disabled before stop. This cleanup is always attempted, including on a failed run, and never adopts an unowned bank.
+
+Historical replay migrations may recreate fixtures even with seed disabled. `teardown.py` then backs up the own bank, persists explicit physical keys, audits incoming FKs including implicit CASCADE, and deletes children before parents by those exact keys. It restores ordinary triggers and verifies every captured key is absent. Reference cargo categories remain; historical migrations are never edited.
+
+If the unchanged base FK gate blocks the integral run, `strict_diagnostic.py` can measure the present strict cohort independently on a separately seeded own bank. It uses the identical strict builder, probe and merger. Its observed results never promote the integral verdict or resume the stopped second cycle; missing positive fixtures remain BLOQUEADO. This separates measurement of the HAC-41 additions from unrelated base-fixture prerequisites.
 
 ## Individual evidence
 
@@ -44,7 +65,7 @@ Keep these commands sequential. `pending.py` prepares independent FTL/LTL native
 `rls.py` uses `set local role authenticated` and actual synthetic JWT claims, paired A/B/revoked controls. `races.py` runs independent native concurrency controls.
 
 `fk_coverage.py` validates the committed `fk_inventory.json` against the reconstructed
-catalog: 263 FK discovered on 776b5da = 178 existing measurements + 45 V2 additions + 40 excluded V1 FK.
+catalog by physical identity and category. The frozen 776b5da scope is preserved: 178 existing measurements, 45 strict V2 additions, and 40 individually excluded V1 FK. `fk_hac41_inventory.json` contains the separately approved HAC-41 cohort. A catalog without that entire cohort reports it as `NOT_PRESENT_IN_CUT`; a catalog containing it requires all physical definitions to agree. Partial cohorts, duplicates and unexpected identities abort. The two authorized cuts therefore reconcile to 263 and 273 physical FK respectively, without using those totals as selection gates.
 Selection uses explicit schema/table/constraint identities. The 45 additions comprise
 20 model, 11 auxiliary and 14 internal receipt/grant FK. V1 exclusions retain their
 individual reasons and never become measured V2 cases.
@@ -58,13 +79,14 @@ rolled-back case, then defers sibling FKs during the exact-constraint orphan che
 and reconciles the measured identities with the baseline inventory. A failure in
 this original method stops the run after mandatory cleanup; no second cycle follows.
 
-The 45 additions use `fk_strict.py` with an authenticated invoker, real local
+The original 45 additions and the present HAC-41 cohort use `fk_strict.py` with an authenticated invoker, literal local
 JWT claims and temporary SECURITY DEFINER physical-write helpers (direct client
 writes are revoked in production). All positive triggers remain enabled; queued
 constraints are evaluated after the helper returns, under authenticated through
 `SET CONSTRAINTS ALL IMMEDIATE`. Both boundary roles are recorded and required.
 These are physical FK probes, not certification of a native command or RLS.
 Every positive must affect one row with its intended non-null reference. A failed positive is `BLOQUEADO`.
+Inventory presence is `PRESENT_UNMEASURED`, never FK coverage. SQL regression and pgTAP results with literal claims are reported separately from real local PKCE smoke evidence. Neither is presented as hosted or live-provider certification.
 A negative requires SQLSTATE `23503` and the exact expected constraint name; another
 constraint or trigger is `FAIL`. The strict method never changes FK deferrability. It first
 uses an absent sentinel tuple when sibling FK references remain valid; otherwise it
@@ -150,3 +172,11 @@ controls proving that real field values, `estado`, counts, headers, row order, c
 whitespace differences remain failures.
 
 The secret filter is active in every captured command. Local CLI credentials are read only in memory and passed to the HTTP subprocess; status output and credential environment values are never logged. All data are LOCAL_ONLY/SIMULATED. Hosted databases and live MCP/provider integrations are outside this certification.
+
+HAC-41 compatibility fixtures include verified active operators for carriers A/B and an inactive operator. The same synthetic users have explicitly seeded, independent organization memberships for the older catalog routes; no membership is inferred from a carrier. Carrier identity RPC controls, both directions of carrier workflow isolation and paired foreign catalog writes are recorded separately from shared reference reads. The original base and strict FK methods remain unchanged; native HTTP writes create the condition, metrics, partner and incident association fixtures before probing them.
+
+`authentication.py` measures an actual issuer-verified local session cookie through Next's native request stores around the unchanged Hono router. Its same-origin functional controls accompany foreign-origin cookie and invalid-Bearer negatives, including a valid cookie alongside the invalid Bearer. Anonymous requests always require 401; the HAC-41 origin-before-credential defect remains FAIL. Session material stays in memory, followed by an owned reset and Auth count 0. The catalog is captured after that reset so the exact drift guard compares current internal trigger identities.
+
+Fresh MANUAL offer creation always requires 201 and `idempotentReplay=false`; replay requires 200, `idempotentReplay=true`, the same ID, and physical counts 0 -> 1 -> 1. `offer_counts.py` obtains read-only physical counts through the ownership-checked Docker SQL path without granting direct commercial-table SELECT. A fresh 200 remains FAIL and its persisted row may only seed independent downstream probes; it never certifies that creation case.
+
+Previously absent directory routes are reconciled against the current runtime registration and remain inventory observations. Endpoint classifications require a passing functional positive and a passing anonymous 401. An invalid-Bearer 401 cannot replace that anonymous control, and neither an observed route nor a failed creation becomes a functional positive.
