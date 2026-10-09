@@ -4,11 +4,11 @@ Esta carpeta es la fuente de verdad documental de CargoMesh V2. V2 transforma el
 
 La [documentación de entrega en inglés](./en/README.md) traduce y consolida los contratos centrales para el concurso. No sustituye la gobernanza interna en español ni implica que todo el repositorio esté traducido.
 
-## Base compartida e integración directa — 4 oct 2026
+## Base compartida e integración — 9 oct 2026
 
-Por decisión expresa de Cristhian, `codex/v2-amazon-contracts` es la base compartida de desarrollo e integración V2. Cada integrante conserva su rama registrada y entrega PR directamente a esa base, con pruebas, revisión y autorización. Se elimina la etapa de ramas `feat/cycle-*-integration` para entregas nuevas; sus commits y actas se conservan como historia. Esta decisión sustituye los targets de ciclo en planes anteriores y skills que describan ese flujo.
+Por decisión expresa de Cristhian, `main` es la única base activa de desarrollo e integración V2. Cada integrante conserva su rama registrada desde `origin/main` y entrega PR a `main`, con pruebas, revisión y autorización. `codex/v2-amazon-contracts` queda como antecedente; los planes de ramas de ciclo son historia. Esta decisión sustituye los targets anteriores.
 
-El gate valida un SHA de la base compartida; no exige rama o PR agregado. Integrar un incremento no acredita el DoD completo, schema alojado, frontend conectado ni Alexa live. El PR #108 promovió V2 a `main` por autorización expresa el 7-oct-2026; futuras promociones siguen requiriendo autorización. Supabase alojado y despliegue mantienen autorizaciones separadas. Véase [AGENTS.md](../../AGENTS.md).
+Los PR #115 y #116 ya reúnen backend y chatbot, con árboles idénticos antes de esta transición. El gate valida un SHA preciso; integrar un incremento no acredita el DoD completo, F-02, experiencia Web completa ni Alexa+ live. Supabase alojado y cambios de configuración de despliegue mantienen autorizaciones separadas. Véase [AGENTS.md](../../AGENTS.md) y el [acta de integración](./delivery/MAIN_V2_INTEGRATION_2026-10-09.md).
 
 ## Dónde empezar
 

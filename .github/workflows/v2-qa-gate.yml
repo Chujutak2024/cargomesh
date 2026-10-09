@@ -3,7 +3,11 @@ name: V2 QA Gate
 on:
   pull_request:
     branches:
-      - codex/v2-amazon-contracts
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -44,6 +48,9 @@ jobs:
 
       - name: Run release test chain
         run: pnpm test:release
+
+      - name: Verify V2 conversation and workflow chat contracts
+        run: pnpm test:v2-conversation && pnpm test:v2-chat-workflow
 
       - name: Validate full UML inventory and architecture
         run: |
