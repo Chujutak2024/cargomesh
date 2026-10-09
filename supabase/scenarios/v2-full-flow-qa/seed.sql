@@ -547,7 +547,7 @@ insert into public.carrier_operators(
     'd4440000-0000-4000-8000-000000000001',
     'd4410000-0000-4000-8000-000000000001',
     'LOCAL_ONLY operator',
-    'LOCAL_ONLY_QA',
+    'ADMIN',
     'ACTIVE',
     now()
 );

@@ -23,6 +23,29 @@ def load_inventory(path=None):
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
+def hac41_records():
+    data = json.loads(Path(__file__).with_name("fk_hac41_inventory.json").read_text(encoding="utf-8"))
+    records = data["records"]
+    if data.get("sourceSha") != "8c686b4c1111c87f8b9c18d666b09150d0ad22b9" or group_digest(records) != "ae4b516bf6c2920ea78c4905a72feed2a3e34a34ecd48cfcc77ce10a3177a2bc":
+        raise ValueError("HAC-41 approved FK identities changed")
+    if len({identity(row) for row in records}) != len(records):
+        raise ValueError("Duplicate HAC-41 FK identity")
+    return records
+
+
+def reconcile_catalog(catalog, inventory=None):
+    """Report categories and absent optional cohort without crediting coverage."""
+    selected = validate_inventory(catalog, inventory)
+    additions = hac41_records()
+    present = {identity(row) for row in selected}
+    return {"catalog": sum(c.get("contype") == "f" for c in catalog["constraints"]),
+            "categories": {category: sum(row["category"] == category for row in selected)
+                           for category in sorted({row["category"] for row in selected})},
+            "hac41": [{**row, "status": "PRESENT_UNMEASURED" if identity(row) in present else "NOT_PRESENT_IN_CUT",
+                       "reason": "Requires executed strict pair" if identity(row) in present else "No presentes en este corte"}
+                      for row in additions]}
+
+
 def qualified(relation, schema="public"):
     """Normalize regclass names without changing their schema or table identity."""
     if not isinstance(relation, str) or not relation:
@@ -107,6 +130,7 @@ def validate_inventory(catalog, inventory=None):
     for name, group in group_records(records).items():
         if group_digest(group) != GROUP_DIGESTS[name]:
             raise ValueError("Frozen FK scope changed: " + name)
+    additions = hac41_records()
     actual = {}
     for constraint in catalog.get("constraints", []):
         if constraint.get("contype") != "f":
@@ -116,6 +140,12 @@ def validate_inventory(catalog, inventory=None):
         if key in actual:
             raise ValueError("Duplicate FK identity in the measured catalog")
         actual[key] = constraint
+    added_keys = {identity(row) for row in additions}
+    present_additions = set(actual) & added_keys
+    if present_additions and present_additions != added_keys:
+        raise ValueError("Partial HAC-41 FK cohort; missing=" + repr(sorted(added_keys - present_additions)))
+    records = records + [row for row in additions if identity(row) in present_additions]
+    expected.update({identity(row): row for row in additions if identity(row) in present_additions})
     if set(actual) != set(expected):
         missing = sorted(set(expected) - set(actual))
         unexpected = sorted(set(actual) - set(expected))

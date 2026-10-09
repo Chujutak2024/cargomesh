@@ -23,6 +23,8 @@ ARTIFACTS = {
     ("persistence.py",): ["contract-persistence-result.json"],
     ("lifecycle.py", "seed"): ["full-flow-seed-result.json"],
     ("lifecycle.py", "cleanup"): ["full-flow-cleanup-result.json"],
+    ("guards.py",): ["local-only-guards.json", "uuid-collision-guard.json"],
+    ("pkce_smoke.py",): ["pkce-smoke.json"],
 }
 CONTRACT_CASES = {
     "contract-required-field-result.json", "contract-route-cardinality-result.json",
@@ -143,6 +145,8 @@ class Runner:
                     self.child("matrix.py", blocked=ready)
             finally:
                 cleanup = self.child("lifecycle.py", "cleanup", blocked=None if attempted else ready)
+            if not self.stop_requested:
+                self.child("guards.py", blocked=None if cleanup["status"] == "PASS" else "Cleanup prerequisite did not pass")
             archive = self.out / "cycles" / str(cycle)
             for directory in ("logs", "dataset", "backups"):
                 target = archive / directory
@@ -166,7 +170,7 @@ class Runner:
     def all(self):
         blocked = None
         for name, args in [("provenance.py", []), ("tests.py", []), ("gates.py", []), ("runtime.py", ["start"]),
-                           ("sources.py", []), ("catalog.py", []), ("strict_controls.py", [])]:
+                           ("pkce_smoke.py", []), ("sources.py", []), ("catalog.py", []), ("strict_controls.py", [])]:
             result = self.child(name, *args, blocked=blocked)
             if result["status"] != "PASS":
                 blocked = "Setup prerequisite did not pass: " + name
@@ -181,7 +185,11 @@ class Runner:
 if __name__ == "__main__":
     runner = Runner()
     if sys.argv[1:] and sys.argv[1] == "all":
-        sys.exit(runner.all())
+        try:
+            code = runner.all()
+        finally:
+            stopped = runner.child("runtime.py", "stop")
+        sys.exit(code if stopped["status"] == "PASS" else 1)
     if sys.argv[1:] and sys.argv[1] == "cycles":
         runner.cycles(seeded="--seeded" in sys.argv)
         sys.exit(runner.snapshot()["exit"])

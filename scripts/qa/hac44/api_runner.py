@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from common import OUT, ROOT, run, write
-from local import CLI, HARNESS
+from local import CLI, HARNESS, LAYOUT, BANK
 
 if __name__ == "__main__":
     schemafiles = [
@@ -18,9 +18,11 @@ if __name__ == "__main__":
         "HAC44_OUT": str(OUT).replace("\\", "/"),
         "HAC44_SCHEMA_FILES": json.dumps(schemafiles),
         "NODE_OPTIONS": "--conditions=react-server",
+        "HAC44_HTTP_PORT": str(LAYOUT.app_port),
     }
     if sys.argv[1] != "inventory":
         # Dedicated local stack only; credentials travel in memory to the child, never to a log or file.
+        BANK.own("http-tests")
         p = subprocess.run(
             CLI + ["status", "--workdir", str(HARNESS), "--output", "json"],
             capture_output=True,
@@ -29,7 +31,7 @@ if __name__ == "__main__":
         )
         assert p.returncode == 0
         cfg = json.loads(p.stdout)
-        assert cfg["API_URL"] == "http://127.0.0.1:62021"
+        assert cfg["API_URL"] == LAYOUT.api_url
         env.update(
             {
                 "NEXT_PUBLIC_SUPABASE_URL": cfg["API_URL"],

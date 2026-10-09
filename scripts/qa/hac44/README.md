@@ -9,14 +9,24 @@ Python 3.11+, Docker, Supabase CLI 2.117.0, the project Node engine and lockfile
 ```powershell
 $env:HAC44_EVIDENCE = Join-Path $env:TEMP 'hac44-evidence'
 $env:HAC44_CLI = (Get-Command supabase).Source
+$env:HAC44_PROJECT_PREFIX = 'hac44-my-new-run'
+$env:HAC44_PORT_BASE = '64000'
 python scripts/qa/hac44/run.py all
 ```
 
 Use a fresh external directory for each source SHA. `HAC44_ROOT` may identify the selected checkout when these QA scripts are run from another directory; `HAC44_SOURCE_SHA` accepts the selected full commit hash (default: HEAD). The checkout's product/model/migration inputs must match that SHA. The selected revision must contain the V2 UML/model, dictionary, manifest and native profile inputs expected by this model version. There are no machine-specific absolute paths in committed scripts. Output paths are derived from the environment.
 
-Three dedicated banks use projects `hac44-full-flow-v2`, `hac44-full-flow-v1` and `hac44-full-flow-baseline`, ports 620xx and inspector ports 62043/62073/62093. Native preflight verifies conflicts. HTTP tests use loopback port 62040. The normal CargoMesh local bank is untouched. `gates.py` preserves native algorithms and checks, adapting only workdirs, ports, project/container addresses and Python helper import context. `gate.py`, `test-profiles.json` and application CI remain unchanged. Historical V1 replay is a separate regression bank, never a V2 fixture source.
+Both layout settings are required; there is no fixed project or port fallback. Projects derive from `HAC44_PROJECT_PREFIX` with `-v2`, `-v1`, and `-baseline` suffixes. Their disjoint layouts start at `HAC44_PORT_BASE`, base + 100, and base + 200; the HTTP runner uses base + 90. Every configured port, including disabled services, is checked for overlap, Windows excluded TCP ranges and IPv4/IPv6 occupancy before any bank starts. A fresh run rejects existing container names and project volumes.
+
+Before reset, stop, cleanup, and SQL, `banks.py` requires the expected config.toml project, actual `com.supabase.cli.project` container labels, an external own-run marker, and the matching database marker created after initial start. Missing or foreign evidence aborts before the mutation. Reset preserves an external public/private backup and recreates the marker. Stop preserves volumes. Existing unrelated banks are never adopted. `gate.py`, `test-profiles.json`, migrations and application CI remain unchanged. Historical V1 replay is a separate, newly owned regression bank, never a V2 fixture source.
 
 `run.py all` verifies dependencies, runs the native reconstruction/gates and both pgTAP profiles, starts local HTTP services while preserving the volume, inventories the sources/catalog, executes two sequential dataset cycles, regenerates CSVs and runs `pnpm typecheck`/`pnpm test:release`. `runtime.py stop` stops only the three verified HAC44 projects and preserves their local volumes.
+
+The complete run also executes `pkce_smoke.py` before dataset seeding: two real local OAuth sessions, issuer validation, a wrong-verifier negative with valid controls, and actual claims under authenticated through ALL IMMEDIATE. Credentials remain in memory. It reconstructs the verified empty bank after the smoke, exporting only nonsecret fixture IDs. `guards.py` runs after each successful cycle cleanup. The final stop verifies business roots are zero; any residual own fixtures are backed up and reconstructed with seed disabled before stop. This cleanup is always attempted, including on a failed run, and never adopts an unowned bank.
+
+Historical replay migrations may recreate fixtures even with seed disabled. `teardown.py` then backs up the own bank, persists explicit physical keys, audits incoming FKs including implicit CASCADE, and deletes children before parents by those exact keys. It restores ordinary triggers and verifies every captured key is absent. Reference cargo categories remain; historical migrations are never edited.
+
+If the unchanged base FK gate blocks the integral run, `strict_diagnostic.py` can measure the present strict cohort independently on a separately seeded own bank. It uses the identical strict builder, probe and merger. Its observed results never promote the integral verdict or resume the stopped second cycle; missing positive fixtures remain BLOQUEADO. This separates measurement of the HAC-41 additions from unrelated base-fixture prerequisites.
 
 ## Individual evidence
 
@@ -44,7 +54,7 @@ Keep these commands sequential. `pending.py` prepares independent FTL/LTL native
 `rls.py` uses `set local role authenticated` and actual synthetic JWT claims, paired A/B/revoked controls. `races.py` runs independent native concurrency controls.
 
 `fk_coverage.py` validates the committed `fk_inventory.json` against the reconstructed
-catalog: 263 FK discovered on 776b5da = 178 existing measurements + 45 V2 additions + 40 excluded V1 FK.
+catalog by physical identity and category. The frozen 776b5da scope is preserved: 178 existing measurements, 45 strict V2 additions, and 40 individually excluded V1 FK. `fk_hac41_inventory.json` contains the separately approved HAC-41 cohort. A catalog without that entire cohort reports it as `NOT_PRESENT_IN_CUT`; a catalog containing it requires all physical definitions to agree. Partial cohorts, duplicates and unexpected identities abort. The two authorized cuts therefore reconcile to 263 and 273 physical FK respectively, without using those totals as selection gates.
 Selection uses explicit schema/table/constraint identities. The 45 additions comprise
 20 model, 11 auxiliary and 14 internal receipt/grant FK. V1 exclusions retain their
 individual reasons and never become measured V2 cases.
@@ -58,13 +68,14 @@ rolled-back case, then defers sibling FKs during the exact-constraint orphan che
 and reconciles the measured identities with the baseline inventory. A failure in
 this original method stops the run after mandatory cleanup; no second cycle follows.
 
-The 45 additions use `fk_strict.py` with an authenticated invoker, real local
+The original 45 additions and the present HAC-41 cohort use `fk_strict.py` with an authenticated invoker, literal local
 JWT claims and temporary SECURITY DEFINER physical-write helpers (direct client
 writes are revoked in production). All positive triggers remain enabled; queued
 constraints are evaluated after the helper returns, under authenticated through
 `SET CONSTRAINTS ALL IMMEDIATE`. Both boundary roles are recorded and required.
 These are physical FK probes, not certification of a native command or RLS.
 Every positive must affect one row with its intended non-null reference. A failed positive is `BLOQUEADO`.
+Inventory presence is `PRESENT_UNMEASURED`, never FK coverage. SQL regression and pgTAP results with literal claims are reported separately from real local PKCE smoke evidence. Neither is presented as hosted or live-provider certification.
 A negative requires SQLSTATE `23503` and the exact expected constraint name; another
 constraint or trigger is `FAIL`. The strict method never changes FK deferrability. It first
 uses an absent sentinel tuple when sibling FK references remain valid; otherwise it

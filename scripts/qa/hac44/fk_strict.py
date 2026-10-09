@@ -135,7 +135,7 @@ from fk_orphans import ORPHAN, orphan_mutation
 FIXTURE_USER = "d44ffffe-ffff-4fff-8fff-ffffffffffff"
 FIXTURE_KEY = "d44ffffd-ffff-4fff-8fff-ffffffffffff"
 FIXTURE_ROW = "d44ffffc-ffff-4fff-8fff-ffffffffffff"
-V2_CATEGORIES = {"V2_MODELO", "V2_AUXILIAR", "INTERNA_V2_RECEIPTS_GRANTS"}
+V2_CATEGORIES = {"V2_MODELO", "V2_AUXILIAR", "INTERNA_V2_RECEIPTS_GRANTS", "HAC41_MODELO", "HAC41_INTERNA"}
 RECEIPTS = {
     "private.v2_catalog_receipts", "private.v2_facility_command_receipts",
     "private.v2_organization_command_receipts", "private.v2_request_command_receipts",
@@ -148,6 +148,12 @@ IDENTITY_TABLES = {
 # Suspension is available only after an exact observed writer-guard failure, or
 # a demonstrated normalization of the requested orphan. Each retry rolls back.
 GUARD_RULES = {
+    "offer_issuer_guard": {
+        "tables": {"v2_carrier_offers"},
+        "errors": [{"state": "PT400", "message": "IMMUTABLE_OFFER_ISSUER"}],
+        "normalizes": [],
+        "reason": "HAC-41 ordinary issuer guard rejects issuer changes before RI; suspension requires its exact observed failure after an active positive.",
+    },
     "incident_condition_guard": {
         "tables": {"incident_route_conditions"},
         "errors": [{"state": "PT400", "message": "INCIDENT_CONDITION_ROUTE_MISMATCH"}],
@@ -320,13 +326,37 @@ def receipt_row(record, data):
     return None
 
 
+def hac41_row(record, data):
+    """Small physical fixtures inside each strict rollback, with native parents."""
+    table = record["table"]
+    user = next((row for row in data["auth.users"] if row["id"] == "d4410000-0000-4000-8000-000000000001"), None)
+    member = next((row for row in data["public.organization_members"] if user and row.get("auth_user_id") == user["id"] and row.get("status") == "ACTIVE"), None)
+    operator = next((row for row in data["public.carrier_operators"] if user and row.get("auth_user_id") == user["id"] and row.get("status") == "ACTIVE"), None)
+    common = {"idempotency_key": FIXTURE_KEY, "payload_hash": "0" * 64, "result": {}}
+    if table == "private.v2_identity_receipts" and user:
+        return {**common, "auth_user_id": user["id"]}
+    if table == "private.v2_carrier_workflow_receipts" and operator:
+        return {**common, "carrier_id": operator["carrier_id"], "operator_id": operator["id"]}
+    if table == "private.v2_mcp_confirmations" and member:
+        return {"id": FIXTURE_ROW, "auth_user_id": member["auth_user_id"],
+                "organization_id": member["organization_id"], "member_id": member["id"],
+                "action": "offers.create", "context": {}, "value": {},
+                "idempotency_key": FIXTURE_KEY, "payload_hash": "0" * 64}
+    if table == "public.response_integrations" and operator:
+        service = next((row for row in data["public.carrier_services"] if row["carrier_id"] == operator["carrier_id"]), None)
+        if service:
+            return {"id": FIXTURE_ROW, "carrier_id": service["carrier_id"], "carrier_service_id": service["id"],
+                    "channel": "MANUAL", "status": "PENDING"}
+    return None
+
+
 def build_case(record, catalog, data):
     """Create one positive and exact-diagnostic orphan recipe without FK DDL."""
     case = {"constraint": record["constraint"], "table": record["table"],
             "definition": record["definition"], "columns": record["childColumns"],
             "reference": record["referenceTable"] + "(" + ", ".join(record["referenceColumns"]) + ")",
             "category": record["category"], "owner": "HAC-44 / Jean Paul (harness)",
-            "domainOwner": "HAC-41 / Axel" if record["table"] in IDENTITY_TABLES else "HAC-40 / Cristhian",
+            "domainOwner": "HAC-41 / Axel" if record["table"] in IDENTITY_TABLES or record["category"].startswith("HAC41_") else "HAC-40 / Cristhian",
             "ownerLimit": "A failed FK probe alone does not establish a product defect; reproduce before domain escalation.",
             "status": "PENDING", "positive": False, "negative": False,
             "positiveBoundary": "SET CONSTRAINTS ALL IMMEDIATE", "role": "postgres",
@@ -338,7 +368,11 @@ def build_case(record, catalog, data):
     table = record["table"]
     column = record["childColumns"][0]
     setup = ""
-    if table in RECEIPTS:
+    if record["category"].startswith("HAC41_") and table != "public.v2_carrier_offers":
+        row = hac41_row(record, data)
+        original = None
+        case["fixture"] = "HAC-41 isolated physical INSERT; real native parents; per-case rollback"
+    elif table in RECEIPTS:
         row = receipt_row(record, data)
         case["fixture"] = "isolated receipt INSERT in the per-case rollback subtransaction"
         original = None
