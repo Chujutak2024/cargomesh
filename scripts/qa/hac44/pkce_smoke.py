@@ -11,7 +11,7 @@ from local import BANK, CLI, HARNESS, LAYOUT
 def main():
     BANK.own("pkce-smoke")
     env = os.environ.copy()
-    env.update(HAC44_ROOT=str(ROOT), HAC44_CLI=CLI[0], HAC44_BANK_FOLDER=str(HARNESS),
+    env.update(HAC44_ROOT=str(ROOT), HAC44_CLI_JSON=json.dumps(CLI), HAC44_BANK_FOLDER=str(HARNESS),
                HAC44_API_URL=LAYOUT.api_url, HAC44_BANK_DB=BANK.db,
                HAC44_CALLBACK_URL="http://127.0.0.1:" + str(LAYOUT.app_port) + "/oauth/callback")
     result = None

@@ -3,13 +3,26 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {randomBytes, randomUUID, createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
+import {pathToFileURL} from 'node:url';
+
+// Keep status (including local keys) in memory; never include child output in errors.
+export function readCliStatus(cliJSON, bankFolder) {
+  let cmd;
+  try { cmd = JSON.parse(cliJSON); } catch { throw new Error('Invalid local CLI command'); }
+  if (!Array.isArray(cmd) || !cmd.length || cmd.some(arg => typeof arg !== 'string' || !arg.length)) {
+    throw new Error('Invalid local CLI command');
+  }
+  const response = spawnSync(cmd[0], [...cmd.slice(1), 'status', '--workdir', bankFolder, '-o', 'json'],
+    {encoding:'utf8', shell:false});
+  if (response.error || response.status !== 0) throw new Error('Local status failed');
+  try { return JSON.parse(response.stdout); } catch { throw new Error('Invalid local status response'); }
+}
+
+async function main() {
 const root = process.env.HAC44_ROOT;
 const require = createRequire(root + '/cargomesh/package.json');
 const {createClient} = require('@supabase/supabase-js');
-const statusProcess = spawnSync(process.env.HAC44_CLI,
-  ['status', '--workdir', process.env.HAC44_BANK_FOLDER, '-o', 'json'], {encoding:'utf8'});
-assert.equal(statusProcess.status, 0, 'Local status failed');
-const status = JSON.parse(statusProcess.stdout);
+const status = readCliStatus(process.env.HAC44_CLI_JSON, process.env.HAC44_BANK_FOLDER);
 assert.equal(status.API_URL, process.env.HAC44_API_URL);
 const options = {auth:{persistSession:false, autoRefreshToken:false}};
 const admin = createClient(status.API_URL, status.SERVICE_ROLE_KEY, options);
@@ -92,3 +105,7 @@ console.log('PKCE_RESULT:' + JSON.stringify({status:'PASS', cases:[
   {case:'Actual PKCE claims through ALL IMMEDIATE',status:'PASS',role:measured.role,subjectVerified:true}],
   scope:'Local OAuth/PKCE smoke only; no HAC-41 business or human consent UI certification',
   authAdminOnly:true, businessServiceRole:false, credentialsPersisted:false}));
+
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main();
