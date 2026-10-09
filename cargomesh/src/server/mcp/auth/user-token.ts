@@ -11,6 +11,9 @@ export type McpAccountLink = {
   scopes: readonly string[];
   expiresAt: string | null;
   revokedAt: string | null;
+  provider: "ALEXA_PLUS" | "OTHER" | null;
+  externalSubjectRef: string | null;
+  verifiedAt: string | null;
 };
 
 export type McpAccountLinkRepository = {
@@ -102,7 +105,7 @@ const supabaseAccountLinks: McpAccountLinkRepository = {
   async findByUserAndClient(authUserId, oauthClientId, accessToken) {
     const client = createUserAccessSupabaseClient(accessToken);
     const { data, error } = await client.from("mcp_account_links")
-      .select("auth_user_id,oauth_client_id,organization_id,organization_member_id,status,scopes,expires_at,revoked_at")
+      .select("auth_user_id,oauth_client_id,organization_id,organization_member_id,status,scopes,expires_at,revoked_at,provider,external_subject_ref,verified_at")
       .eq("auth_user_id", authUserId)
       .eq("oauth_client_id", oauthClientId)
       .maybeSingle();
@@ -117,6 +120,9 @@ const supabaseAccountLinks: McpAccountLinkRepository = {
       scopes: data.scopes,
       expiresAt: data.expires_at,
       revokedAt: data.revoked_at,
+      provider: data.provider as McpAccountLink["provider"],
+      externalSubjectRef: data.external_subject_ref,
+      verifiedAt: data.verified_at,
     };
   },
 };
@@ -156,6 +162,8 @@ export async function authenticateMcpUserBearer(
     !link || link.status !== "ACTIVE" || link.authUserId !== identity.userId ||
     link.oauthClientId !== identity.oauthClientId || !link.scopes.includes("mcp:tools") ||
     link.revokedAt !== null || !link.expiresAt ||
+    !["ALEXA_PLUS", "OTHER"].includes(link.provider ?? "") || link.externalSubjectRef !== identity.userId ||
+    !link.verifiedAt || !Number.isFinite(Date.parse(link.verifiedAt)) || Date.parse(link.verifiedAt) > Date.now() ||
     !Number.isFinite(Date.parse(link.expiresAt)) || Date.parse(link.expiresAt) <= Date.now()
   ) throw new Error("FORBIDDEN: No active MCP account link for this user and client.");
 

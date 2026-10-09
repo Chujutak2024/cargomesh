@@ -1,0 +1,242 @@
+{
+  "baseCommit": "1e9ff995ef9c8fa6789e473263e64873bcb13fba",
+  "implementationBranch": "codex/v2-full-identity-mcp",
+  "scope": "Four HAC-41 identity classes and relation 74; preserves historical F-03/F-06 classifications",
+  "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA",
+  "attributes": [
+    {
+      "class": "ResponseIntegration",
+      "name": "channel",
+      "target": "public.response_integrations.channel",
+      "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "ResponseIntegration",
+      "name": "endpointRef",
+      "target": "public.response_integrations.endpoint_ref",
+      "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "ResponseIntegration",
+      "name": "verifiedAt",
+      "target": "public.response_integrations.verified_at",
+      "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "ResponseIntegration",
+      "name": "status",
+      "target": "public.response_integrations.status",
+      "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "ResponseIntegration",
+      "name": "evidence",
+      "target": "public.response_integrations.evidence",
+      "api": "GET/POST /api/v2/carriers/:carrierId/integrations; GET :id/diagnostics",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "OrganizationMember",
+      "name": "id",
+      "target": "public.organization_members.id",
+      "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "OrganizationMember",
+      "name": "role",
+      "target": "public.organization_members.role",
+      "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "OrganizationMember",
+      "name": "status",
+      "target": "public.organization_members.status",
+      "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "OrganizationMember",
+      "name": "contactRef",
+      "target": "public.organization_members.corporate_email",
+      "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "OrganizationMember",
+      "name": "verifiedAt",
+      "target": "public.organization_members.verified_at",
+      "api": "GET /api/v2/organizations/current/members; invitations/revisions/acceptance",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "McpAccountLink",
+      "name": "id",
+      "target": "public.mcp_account_links.id",
+      "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "McpAccountLink",
+      "name": "authUserId",
+      "target": "public.mcp_account_links.auth_user_id",
+      "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "McpAccountLink",
+      "name": "oauthClientId",
+      "target": "public.mcp_account_links.oauth_client_id",
+      "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "McpAccountLink",
+      "name": "organizationId",
+      "target": "public.mcp_account_links.organization_id",
+      "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "McpAccountLink",
+      "name": "scopes",
+      "target": "public.mcp_account_links.scopes",
+      "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "McpAccountLink",
+      "name": "provider",
+      "target": "public.mcp_account_links.provider",
+      "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "McpAccountLink",
+      "name": "externalSubjectRef",
+      "target": "public.mcp_account_links.external_subject_ref",
+      "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "McpAccountLink",
+      "name": "status",
+      "target": "public.mcp_account_links.status",
+      "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "McpAccountLink",
+      "name": "verifiedAt",
+      "target": "public.mcp_account_links.verified_at",
+      "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "McpAccountLink",
+      "name": "revokedAt",
+      "target": "public.mcp_account_links.revoked_at",
+      "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "McpAccountLink",
+      "name": "expiresAt",
+      "target": "public.mcp_account_links.expires_at",
+      "api": "GET/POST /api/v2/identity/mcp/links; POST :id/revocations; per-tool actor check",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "CarrierOperator",
+      "name": "id",
+      "target": "public.carrier_operators.id",
+      "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "CarrierOperator",
+      "name": "displayName",
+      "target": "public.carrier_operators.display_name",
+      "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "CarrierOperator",
+      "name": "role",
+      "target": "public.carrier_operators.role",
+      "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "CarrierOperator",
+      "name": "email",
+      "target": "public.carrier_operators.email",
+      "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "CarrierOperator",
+      "name": "phone",
+      "target": "public.carrier_operators.phone",
+      "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "CarrierOperator",
+      "name": "status",
+      "target": "public.carrier_operators.status",
+      "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    },
+    {
+      "class": "CarrierOperator",
+      "name": "verifiedAt",
+      "target": "public.carrier_operators.verified_at",
+      "api": "GET /api/v2/carriers/:carrierId/operators; invitations/revisions/acceptance; carrier workflow; offer source.issuerId",
+      "owner": "HAC-41 / Axel; authorized integrator implementation",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA"
+    }
+  ],
+  "evidence": [
+    "supabase-v2/supabase/migrations/20261008235124_hac41_identity_integrations.sql",
+    "supabase-v2/supabase/migrations/20261008235540_hac41_carrier_workflow.sql",
+    "supabase-v2/supabase/migrations/20261009000410_hac41_mcp_channels.sql",
+    "cargomesh/src/shared/schemas/v2/identity.ts",
+    "supabase/tests/33_v2_hac41_identity_channels.test.sql",
+    "cargomesh/scripts/hac41-channels-http-smoke.mjs",
+    "docs/v2-amazon/delivery/HAC41_IDENTITY_MCP.md"
+  ],
+  "limits": "Metadata and real local Auth proof; legacy member verification remains unknown until self acceptance. API/MCP integration evidence remains pending external verification. No hosted schema, live Alexa or full-model independent QA certification."
+}

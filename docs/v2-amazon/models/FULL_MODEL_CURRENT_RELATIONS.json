@@ -1,6 +1,6 @@
 {
   "sourceCommit": "c686aeae7d17a6b641447c15dcf86cd9edd7dfa4",
-  "scope": "F-02 34/55/69/89 and HAC-40 implemented associations 48/66; independent QA pending, not hosted certification",
+  "scope": "F-02 34/55/69/89, HAC-40 associations 48/66, HAC-41 identity 74; each increment declares evidence. Independent QA pending, not hosted certification",
   "qaEvidence": "HAC-44 independent review of #106 @ e06d0c0: relations 34, 55 and 69 conform; relation 89 has a low documentary finding. Its FK and UML multiplicity conform. The statement below is corrected against the local catalog at fe12d41; relation 89 awaits independent documentary recheck. F-05 BD/HTTP 10/10 at #104 @ 1e241b3 is separate evidence, not full-model certification.",
   "relations": [
     {
@@ -89,6 +89,22 @@
         "cargomesh/src/shared/schemas/v2/workflow.ts",
         "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql",
         "cargomesh/scripts/hac40-model-closure-http-smoke.mjs"
+      ]
+    },
+    {
+      "number": 74,
+      "source": "CarrierOperator",
+      "target": "CarrierOffer",
+      "treatment": "v2_carrier_offers.(issuer_operator_id,carrier_id) -> carrier_operators.(id,carrier_id); issuer_auth_user_id -> auth.users.id; immutable MANUAL issuer derived from verified operator/session. Legacy offers retain nullable proof and are excluded from new commitments until attributable; API/MCP emission requires a verified adapter",
+      "api": "POST /api/v2/carriers/:carrierId/opportunities/:id/offers; GET offer -> data.data.source.issuerId; prepare/confirm_v2_commercial_action",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA",
+      "implementationBranch": "codex/v2-full-identity-mcp",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261008235540_hac41_carrier_workflow.sql",
+        "cargomesh/src/server/auth/carrier.ts",
+        "cargomesh/src/server/hono/routes/carrier-workflow.ts",
+        "supabase/tests/33_v2_hac41_identity_channels.test.sql",
+        "cargomesh/scripts/hac41-channels-http-smoke.mjs"
       ]
     }
   ]

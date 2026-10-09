@@ -7,6 +7,9 @@ import { facilitiesRouter } from "./routes/facilities";
 import { organizationsRouter } from "./routes/organizations";
 import { catalogRouter } from "./routes/catalog";
 import { workflowRouter } from "./routes/workflow";
+import { identityRouter } from "./routes/identity";
+import { carrierWorkflowRouter } from "./routes/carrier-workflow";
+import { locationsRouter } from "./routes/locations";
 
 // ---------------------------------------------------------------------------
 // CargoMesh V2 Hono application factory.
@@ -26,6 +29,9 @@ export function createHonoApp() {
 
   // Routes
   app.route("/health", healthRouter);
+  app.route("/", identityRouter);
+  app.route("/", carrierWorkflowRouter);
+  app.route("/locations", locationsRouter);
   app.route("/freight/requests", freightRequestsRouter);
   app.route("/intake/options", intakeOptionsRouter);
   app.route("/facilities", facilitiesRouter);

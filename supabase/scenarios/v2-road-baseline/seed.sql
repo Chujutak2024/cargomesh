@@ -148,4 +148,16 @@ values ('c23c0000-0000-4000-8000-000000000001', 'c23a0000-0000-4000-8000-0000000
 on conflict (id) do nothing;
 -- BLOCKED HAC-12: no asset, pool, calendar or reservation tables are manufactured here.
 
+-- Synthetic identities, not production provisioning. Server-owned grants remain
+-- explicit in each test; an operator row alone grants no carrier access.
+do $$begin
+ if to_regclass('public.carrier_operators') is not null then
+  insert into public.carrier_operators(id,carrier_id,auth_user_id,display_name,role,email,status,verified_at)
+   values('c23d0000-0000-4000-8000-000000000001','c2340000-0000-4000-8000-000000000001',
+    'c2310000-0000-4000-8000-000000000001','[SYNTHETIC] QA carrier administrator','ADMIN','qa-v2-a@example.invalid','ACTIVE',now()),
+   ('c23d0000-0000-4000-8000-000000000002','c2390000-0000-4000-8000-000000000001',
+    'c2310000-0000-4000-8000-000000000001','[SYNTHETIC] QA second carrier administrator','ADMIN','qa-v2-a@example.invalid','ACTIVE',now())
+   on conflict(id) do nothing;
+ end if;
+end;$$;
 commit;

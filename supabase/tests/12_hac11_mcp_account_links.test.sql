@@ -21,6 +21,10 @@ insert into public.mcp_account_links (
 );
 
 -- T1
+-- Synthetic consent metadata for the now verified client/subject contract.
+insert into private.mcp_oauth_clients(client_id,provider,enabled)
+ values('alexa-a','OTHER',true),('alexa-b','OTHER',true);
+update public.mcp_account_links set provider='OTHER',external_subject_ref=auth_user_id::text,verified_at=now();
 select is((select count(*)::integer from public.mcp_account_links), 2,
   'synthetic links are inserted only inside the rolled-back test');
 

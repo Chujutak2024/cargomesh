@@ -402,6 +402,39 @@
       "dependencies": [
         "20261007084000"
       ]
+    },
+    {
+      "issue": "HAC-41",
+      "path": "supabase-v2/supabase/migrations/20261008235124_hac41_identity_integrations.sql",
+      "version": "20261008235124",
+      "sha256": "a89c73550fd2ab621d3ea2dd64569af45d9ac3e914d80e2c912188a65cd52681",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261007170000"
+      ]
+    },
+    {
+      "issue": "HAC-41",
+      "path": "supabase-v2/supabase/migrations/20261008235540_hac41_carrier_workflow.sql",
+      "version": "20261008235540",
+      "sha256": "1f70e1c46391603dc31a3f6a431987ba2d775980d52970622186dae30eff64e0",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261008235124"
+      ]
+    },
+    {
+      "issue": "HAC-41",
+      "path": "supabase-v2/supabase/migrations/20261009000410_hac41_mcp_channels.sql",
+      "version": "20261009000410",
+      "sha256": "a7a23afb7c279e778a08783045ae0cbde225cf350f9768f480de34f76c8440bc",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261008235540"
+      ]
     }
   ]
 }

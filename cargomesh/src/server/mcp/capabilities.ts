@@ -5,7 +5,7 @@ export type McpCapabilityStatus = "IMPLEMENTED" | "BLOCKED";
 
 export type McpCapabilityDescriptor = {
   toolName: "get_cargomesh_capabilities" |
-    "get_v2_intake_options" | "create_v2_freight_request" | "get_v2_freight_request" | "evaluate_v2_road";
+    "get_v2_intake_options" | "create_v2_freight_request" | "get_v2_freight_request" | "evaluate_v2_road" | keyof typeof V2WorkflowToolDescriptions;
   profile: McpCapabilityProfile;
   status: McpCapabilityStatus;
   blockedBy: "NONE" | "V2_FREIGHT_REQUEST_SERVICE";
@@ -45,6 +45,10 @@ export const MCP_CAPABILITY_CATALOG: readonly McpCapabilityDescriptor[] = [
     businessSemantics: "Evaluates ROAD eligibility with HAC-12 evidence; never quotes or books.",
   },
 
+  ...Object.entries(V2WorkflowToolDescriptions).map(([toolName, businessSemantics]) => ({
+    toolName: toolName as keyof typeof V2WorkflowToolDescriptions, businessSemantics, profile: "V2" as const,
+    status: "IMPLEMENTED" as const, blockedBy: "NONE" as const, source: "CARGOMESH_SHARED_SERVICE" as const, legacyDependency: "NONE" as const,
+  })),
 ] as const;
 
 export function implementedCapabilities(profile: McpCapabilityProfile): readonly McpCapabilityDescriptor[] {
@@ -57,7 +61,7 @@ export function capabilityReport(profile: McpCapabilityProfile) {
     profile,
     source: "CARGOMESH_CAPABILITY_CATALOG" as const,
     status: "PARTIAL" as const,
-    blockedBy: ["V2_COMMERCIAL_MCP_TOOLS", "HAC33_LOCATION_RESOLUTION"] as const,
+    blockedBy: ["ALEXA_PLUS_LIVE_ACCESS", "EXTERNAL_GEOCODER"] as const,
     capabilities: MCP_CAPABILITY_CATALOG.filter((capability) => capability.profile === profile),
   };
 }
@@ -67,3 +71,4 @@ export function parseMcpCapabilityProfile(value: string | undefined): McpCapabil
     ? value as McpCapabilityProfile
     : null;
 }
+import { V2WorkflowToolDescriptions } from "@/shared/schemas/v2/mcp-workflow-catalog";

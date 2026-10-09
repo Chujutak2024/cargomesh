@@ -45,6 +45,7 @@ El [contrato HAC-27](./delivery/SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md) y su [di
 - Separación entre candidate discovery, oferta comercial, ranking y booking.
 - Políticas versionadas y explicables.
 - Alexa+ como canal MCP sobre servicios compartidos.
+- [Identidad y flujo completo MCP HAC-41](./delivery/HAC41_IDENTITY_MCP.md): linking/revocación, principal carrier y confirmaciones compartidas; su prueba local no acredita aplicación de las migraciones al alojado ni Alexa+ live.
 - V1 preservada como regresión, no como catálogo V2.
 
 ## Local V2 database bootstrap
