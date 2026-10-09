@@ -15,6 +15,7 @@ Comienza por el [flujo vigente](./CURRENT_DELIVERY_STATE.md). Esta carpeta conti
 
 ## Evidencia fechada e historia
 
+- [Reinicio del diseño conversacional V2](./CHAT_V2_CONVERSATION_RESET_2026-10-07.md): diagnóstico de las respuestas repetitivas, estado real de Bedrock y criterios de la siguiente implementación.
 - [Handoff mapa → intake](./HAC15_HAC14_INTEGRATION_HANDOFF.md): evidencia del corte que declara, no certificación del estado presente.
 - [Acta Gate-1](./SPRINT1_GATE_V2.md) y [friction logs](./friction-logs/FL-01.md): antecedentes.
 - [Planes superados de septiembre](./archive/2026-09-plans/README.md): archivo sin autoridad operativa.

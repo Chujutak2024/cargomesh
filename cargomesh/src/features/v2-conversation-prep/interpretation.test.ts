@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { InterpretationResponseSchema, interpretDeterministically } from "./interpretation";
+import { InterpretationRequestSchema, InterpretationResponseSchema, interpretDeterministically } from "./interpretation";
+
+test("bounded conversation context accepts provisional facts but rejects contacts and extra authority", () => {
+  const request = { schemaVersion: "2.0", text: "Change it to Piura", currentField: "destinationFacilityId", context: {
+    knownFields: [{ field: "originFacilityId", value: "Lima" }], lastAskedField: "destinationFacilityId", failedAttempts: 1,
+  } };
+  assert.equal(InterpretationRequestSchema.safeParse(request).success, true);
+  assert.equal(InterpretationRequestSchema.safeParse({ ...request, context: { ...request.context, knownFields: [{ field: "pickupContactEmail", value: "person@example.com" }] } }).success, false);
+  assert.equal(InterpretationRequestSchema.safeParse({ ...request, context: { ...request.context, organizationId: "forged" } }).success, false);
+  assert.equal(InterpretationRequestSchema.safeParse({ ...request, context: { ...request.context, failedAttempts: 99 } }).success, false);
+});
 
 test("local parser extracts an explicit route and quantity without inventing a facility ID", () => {
   const result = interpretDeterministically({ schemaVersion: "2.0", text: "Ship 2 pallets from Lima to Arequipa", currentField: "originFacilityId" });
@@ -23,6 +33,39 @@ test("per-unit measurements require explicit wording; totals are not silently re
 test("price and booking never become create or evaluation effects", () => {
   assert.equal(interpretDeterministically({ schemaVersion: "2.0", text: "what is the price?", currentField: null }).intent, "PRICE");
   assert.equal(interpretDeterministically({ schemaVersion: "2.0", text: "book this now", currentField: null }).intent, "BOOKING");
+});
+
+test("product questions receive grounded guidance even without Bedrock", () => {
+  const purpose = interpretDeterministically({ schemaVersion: "2.0", text: "¿Para qué sirve CargoMesh?", currentField: "originFacilityId" });
+  assert.equal(purpose.intent, "HELP");
+  assert.match(purpose.acknowledgment ?? "", /freight request/);
+  const choice = interpretDeterministically({ schemaVersion: "2.0", text: "¿Y cómo me ayuda a escoger?", currentField: "originFacilityId" });
+  assert.equal(choice.intent, "HELP");
+  assert.match(choice.acknowledgment ?? "", /carrier-authored offers/);
+  assert.doesNotMatch(choice.acknowledgment ?? "", /confirmed price/);
+  const followUp = interpretDeterministically({ schemaVersion: "2.0", text: "¿Y eso?", currentField: "originFacilityId", context: { knownFields: [], lastAskedField: "originFacilityId", failedAttempts: 0, previousHelpTopic: "SELECTION" } });
+  assert.equal(followUp.intent, "HELP");
+  assert.match(followUp.acknowledgment ?? "", /carrier-authored offers/);
+});
+
+test("a noisy dictated greeting is not treated as a saved pickup location", () => {
+  const turn = interpretDeterministically({ schemaVersion: "2.0", text: "Hello Hello Hello Hello Can You Feel a water you do a How can you Tell me", currentField: "originFacilityId" });
+  assert.equal(turn.intent, "HELP");
+  assert.deepEqual(turn.fields, []);
+  assert.match(turn.acknowledgment ?? "", /transcript is unclear/);
+});
+
+test("a bare facility answer still works but a conversational question is not a facility", () => {
+  const base = { schemaVersion: "2.0" as const, currentField: "originFacilityId" as const };
+  assert.deepEqual(interpretDeterministically({ ...base, text: "Lima" }).fields, [{ field: "originFacilityId", value: "Lima" }]);
+  assert.deepEqual(interpretDeterministically({ ...base, text: "Can you tell me what this service does?" }).fields, []);
+});
+
+test("service questions distinguish current ROAD from future modes", () => {
+  const turn = interpretDeterministically({ schemaVersion: "2.0", text: "¿Qué servicios ofrecen?", currentField: "originFacilityId" });
+  assert.equal(turn.intent, "HELP");
+  assert.match(turn.acknowledgment ?? "", /ROAD freight request/);
+  assert.match(turn.acknowledgment ?? "", /not operational/);
 });
 
 test("Spanish freight turns keep their explicit values and never imply a booking", () => {
