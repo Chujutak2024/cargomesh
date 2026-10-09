@@ -1146,6 +1146,7 @@ def endpoints():
         "auth-api-results.json",
         "contract-api-results.json",
         "pending-api-results.json",
+        "identity-api-results.json",
     ):
         if (LOGS / f).exists():
             records.extend(

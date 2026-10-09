@@ -1,0 +1,9 @@
+Ramón — HAC-44: DTO R01/R02 desplegados en el preview QA V2, producto 29c385fe0ee501eb4b8b989b0a247c8fdeda62ad; 27/27 migraciones. Actualiza desde origin/codex/v2-amazon-contracts: el commit posterior contiene solo harness/documentación y conserva el runtime/migraciones de ese SHA.
+
+Lee docs/v2-amazon/delivery/uml-bd-api-2026-10-09/DEPLOY_Y_REPRUEBA_29c385f.md. Reprueba independientemente RouteWaypoint.sequence y Booking.data.decisionId en BD/HTTP bajo authenticated, claims reales y COMMIT o ALL IMMEDIATE sin RESET ROLE. Cada negativo tiene positivo válido. Verifica propio 200, ajeno 404, anónimo 401; orden 1,2 y decisionId igual a la FK.
+
+Regenera con el harness actualizado: incluye identity.py, 56 controles HTTP/8 roundtrips con Auth/PKCE reales y grant independiente para aceptación carrier. Los dos ciclos previos pasan 2708 controles; matriz actual 225/225 endpoints, atributos 297 completos/97 parciales/3 divergentes, relaciones 51/42. Esto NO certifica F-02 completo ni semántica de 146 métodos. Usa la clasificación vigente de 198 pendientes en 29c385f/, no los CSV del corte original d3a80eb ni estados fijados a mano.
+
+Prioriza pruebas de campo requerido/NULL, cardinalidad/XOR/snapshot y semántica de métodos con controles dedicados. Reproduce antes de declarar defecto funcional; conserva separados evidencia pendiente y discrepancia documental legacy. No reimplementes capacidades por un hueco del harness.
+
+El smoke alojado pasó 21/21 hasta IN_PROGRESS y liberó capacidad; accesos temporales cerrados, cuatro respaldos restaurados. No habilitar cuentas/grants, cambiar contraseñas, ejecutar migraciones ni tocar el alojado sin autorización específica para tu reprueba. Deja bancos locales propios limpios y detenidos. Entrega defectos reales con severidad, archivo/línea, reproducción y dueño. No cerrar HAC-40/F-02 por un verde agregado.

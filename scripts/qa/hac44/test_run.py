@@ -20,7 +20,7 @@ class RunnerTests(unittest.TestCase):
                 number += 1
                 key = (Path(args[3]).name, *args[4:])
                 code = 0
-                if key[0] in ("pkce_smoke.py", "authentication.py"):
+                if key[0] in ("pkce_smoke.py", "authentication.py", "identity.py"):
                     generation += 1
                 if key[0] == "catalog.py":
                     catalog_generation = generation

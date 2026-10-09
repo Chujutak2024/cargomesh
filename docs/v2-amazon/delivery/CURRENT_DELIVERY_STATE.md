@@ -24,9 +24,9 @@ Actualizado el 9 de octubre de 2026. Este documento organiza la lectura; los con
 
 La [revisión única de d3a80eb y su integración](./uml-bd-api-2026-10-09/README.md) incorpora los mappings actuales de HAC-41 y clasifica todas las filas sin certificación. La base auditada incorpora #111, #112, #113 y #114; no usar el corte de 23 migraciones ni el mapping anterior de OrganizationMember como evidencia del emisor CarrierOperator.
 
-El incremento agrega una migración de lectura: RouteWaypoint.sequence y Booking.data.decisionId. La cadena del repositorio pasa de 26 a 27; los hashes de las 26 anteriores se conservan. Los gates locales del incremento pasan. La actualización alojada de esa migración y la reprueba independiente de QA siguen pendientes; esta publicación no las certifica.
+El incremento agrega una migración de lectura: RouteWaypoint.sequence y Booking.data.decisionId. La cadena del repositorio pasa de 26 a 27; los hashes de las 26 anteriores se conservan. Los gates locales del incremento pasan. La actualización alojada ya pasó: 27/27 migraciones, cuatro respaldos restaurados y smoke 21/21 hasta IN_PROGRESS. Véase el [resultado vigente](./uml-bd-api-2026-10-09/DEPLOY_Y_REPRUEBA_29c385f.md). La reprueba independiente de QA sigue separada.
 
-F-02 permanece parcial por evidencia pendiente y límites documentados. Los CSV enlazados son la clasificación del corte original con mappings corregidos, no estados posteriores fijados a mano. Axel puede continuar MCP desde la base compartida; los fallos nuevos requieren reproducción antes de cambiar dominio.
+F-02 permanece parcial: la medición actual certifica 225 endpoints y 297 atributos; quedan 97 atributos parciales, tres divergencias documentales legacy, 42 relaciones y semántica de 146 métodos por probar. Los CSV enlazados son la clasificación del corte original con mappings corregidos, no estados posteriores fijados a mano. Axel puede continuar MCP desde la base compartida; los fallos nuevos requieren reproducción antes de cambiar dominio.
 
 ## Antecedente del corte de limpieza — 7 octubre
 

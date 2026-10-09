@@ -26,6 +26,7 @@ ARTIFACTS = {
     ("guards.py",): ["local-only-guards.json", "uuid-collision-guard.json"],
     ("pkce_smoke.py",): ["pkce-smoke.json"],
     ("authentication.py",): ["authentication-result.json"],
+    ("identity.py",): ["identity-result.json", "identity-cleanup.json"],
 }
 CONTRACT_CASES = {
     "contract-required-field-result.json", "contract-route-cardinality-result.json",
@@ -178,6 +179,7 @@ class Runner:
         # Independent authentication contract suite; its FAIL remains in the verdict.
         # It reconstructs the owned empty bank before the dataset cycles.
         self.child("authentication.py", blocked=blocked)
+        self.child("identity.py", blocked=blocked)
         # Capture the catalog after the suite's reset, including fresh internal trigger identities.
         for name in ("catalog.py", "strict_controls.py"):
             result = self.child(name, blocked=blocked)

@@ -1,6 +1,10 @@
 # Cierre de revisión UML → BD/API — d3a80eb
 
-## Resultado
+## Actualización posterior — despliegue y medición de 29c385f
+
+Los DTO ya están desplegados: 27/27 migraciones y smoke alojado 21/21 PASS. Consultar [resultado vigente](./DEPLOY_Y_REPRUEBA_29c385f.md) y [matrices actuales](./29c385f/RESULTADO.json). El texto siguiente conserva la revisión histórica de d3a80eb; sus pendientes de alojamiento no describen el estado actual. F-02 continúa parcial por la semántica restante.
+
+## Resultado histórico de la revisión
 
 La revisión está terminada y todas las filas sin certificación completa están clasificadas. **Esto no certifica F-02 completo ni que todo el UML esté implementado.** Hay dos defectos funcionales confirmados en la lectura, corregidos y probados localmente. Este paquete acompaña su integración autorizada en `codex/v2-amazon-contracts`; la aplicación alojada de la migración nueva permanece pendiente.
 
