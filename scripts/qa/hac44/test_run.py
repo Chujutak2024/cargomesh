@@ -14,11 +14,18 @@ class RunnerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="hac44-run-unit-") as folder:
             out = Path(folder)
             number = 0
+            generation, catalog_generation = 0, None
             def execute(_label, args, **_kwargs):
-                nonlocal number
+                nonlocal number, generation, catalog_generation
                 number += 1
                 key = (Path(args[3]).name, *args[4:])
                 code = 0
+                if key[0] in ("pkce_smoke.py", "authentication.py"):
+                    generation += 1
+                if key[0] == "catalog.py":
+                    catalog_generation = generation
+                if key[0] == "fk_coverage.py" and (catalog_generation != generation or defect == "stale-catalog"):
+                    code = 1  # Reset recreated internal trigger IDs; current catalog is required.
                 for name in runner.ARTIFACTS.get(key, []):
                     rows = [{"case": case, "status": "PASS"} for case in sorted(runner.CONTRACT_CASES)] if name == "contract-verdict.json" else [{"label": "valid-positive", "status": "PASS"}]
                     if defect == "contract" and name == "contract-verdict.json":
@@ -59,6 +66,13 @@ class RunnerTests(unittest.TestCase):
 
     def test_current_all_pass_needs_no_historical_failures(self):
         self.positive()
+
+    def test_auth_reset_requires_fresh_catalog_before_fk_measurement(self):
+        self.positive()
+        code, data, cycles = self.exercise("stale-catalog")
+        self.assertEqual(code, 1)
+        self.assertEqual(data["status"], "FAIL")
+        self.assertTrue(all(c["cleanup"]["status"] == "PASS" for c in cycles))
 
     def test_contract_fail_keeps_nonzero_exit_and_completes(self):
         self.positive()

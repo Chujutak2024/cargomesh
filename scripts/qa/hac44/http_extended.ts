@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { hasRuntimeRoute, manualOfferStatus, pairedStatus } from "./http_oracles.ts";
 export async function extend(c: any) {
   const {
     call,
@@ -12,6 +13,8 @@ export async function extend(c: any) {
     SERVICE,
     clone,
     evidence,
+    countOffers,
+    routes,
   } = c;
   const schemas = modules["workflow.ts"].WorkflowInputsV2;
   const audit = (version = 1) => ({
@@ -40,10 +43,13 @@ export async function extend(c: any) {
   const created: any = {};
   async function create(name: string, path: string, body: any) {
     const key = randomUUID();
-    const expected = name === "offers" ? 200 : 201;
+    const expected = 201;
+    const before = name === "offers" ? await countOffers(body.opportunityId ?? path.split("/").at(-2)) : null;
     const r = await call("extended-" + name + "-create", path, body, key, 1, expected);
-    if (r.http !== expected) return null;
+    // A wrong HTTP creation status remains FAIL; a persisted row can still seed independent probes.
+    if (r.http !== expected && !(name === "offers" && r.http === 200 && r.response.meta?.idempotentReplay === false && r.response.data?.id)) return null;
     const record = r.response.data;
+    const afterCreate = name === "offers" ? await countOffers(path.split("/").at(-2)) : null;
     created[name] = record;
     output("extended-records.json", created);
     const readpath = name === "offers" ? "/carriers/" + CARRIER + "/offers" : path;
@@ -64,15 +70,32 @@ export async function extend(c: any) {
       read: rd.response.data,
       status: JSON.stringify(record) === JSON.stringify(rd.response.data) ? "PASS" : "FAIL",
     });
-    await call("extended-" + name + "-replay", path, body, key, 1, 200);
-    await call(
+    const replay = await call("extended-" + name + "-replay", path, body, key, 1, 200);
+    if (name === "offers") {
+      const opportunityId = path.split("/").at(-2);
+      const afterReplay = await countOffers(opportunityId);
+      const status = manualOfferStatus(r, replay, before, afterCreate, afterReplay);
+      output("manual-offer.json", { status, owner: "HAC-41 / HAC-40",
+        opportunityId, key, id: record.id, before, afterCreate, afterReplay,
+        creation: { http: r.http, meta: r.response.meta }, replay: { http: replay.http, meta: replay.response.meta, id: replay.response.data?.id },
+        expected: "Fresh MANUAL 201, replay 200; same ID; counts 0 -> 1 -> 1",
+        first200IsFailure: r.http === 200 && r.response.meta?.idempotentReplay === false });
+    }
+    const foreignRead = await call(
       "extended-" + name + "-foreign",
       readpath + "/" + record.id,
       undefined,
       undefined,
       2,
-      [404, 403, 200],
+      readpath.startsWith("/carriers/") && name !== "partners" ? 403 :
+        readpath.startsWith("/freight/") || ["/bookings", "/executions"].includes(readpath) ? 404 : [404, 403, 200],
     );
+    if (name === "partners") foreignRead.limit = "Shared authenticated reference read under fulfilment_partners_member_read; write isolation is paired separately";
+    if (path.startsWith("/carriers/")) {
+      const foreignWrite = await call("extended-" + name + "-foreign-write", path, body, key, 2, 403);
+      foreignWrite.status = pairedStatus(replay, foreignWrite);
+      foreignWrite.controlPositive = replay.label;
+    }
     return record;
   }
   const win = refs.plan.data.proposedWindow;
@@ -494,14 +517,18 @@ export async function extend(c: any) {
     1,
     [201, 409],
   );
-  await call("missing-control-positive", "/organizations/current", undefined, undefined, 1, 200);
+  const presenceControl = await call("missing-control-positive", "/organizations/current", undefined, undefined, 1, 200);
   for (const path of [
     "/carriers/" + CARRIER + "/integrations",
     "/carriers/" + CARRIER + "/operators",
     "/organizations/current/members",
     "/mcp/account-links",
-  ])
-    await call("missing-proposal-probe", path, undefined, undefined, 1, 404);
+  ]) {
+    const present = hasRuntimeRoute(routes, "GET", path);
+    const observed = await call("proposal-route-presence-probe", path, undefined, undefined, 1, present ? undefined : 404);
+    observed.limit = present ? "Registered runtime route: observation only, never functional coverage" : "Absent from this cut; paired with an active organization control";
+    if (!present) observed.status = pairedStatus(presenceControl, observed);
+  }
   const cats = await call(
     "new-category-positive",
     "/cargo-categories",

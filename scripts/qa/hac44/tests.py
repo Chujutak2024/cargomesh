@@ -11,7 +11,8 @@ def main():
                              "scripts/qa/hac44", "-p", "test_*.py"], ROOT),
         ("qa-http-tests", ["node", "--conditions=react-server", "--import", "tsx", "--test",
                            ROOT / "scripts/qa/hac44/http_contract.test.ts",
-                           ROOT / "scripts/qa/hac44/http_pending.test.ts"], ROOT / "cargomesh"),
+                           ROOT / "scripts/qa/hac44/http_pending.test.ts",
+                           ROOT / "scripts/qa/hac44/http_oracles.test.ts"], ROOT / "cargomesh"),
     ]
     cases = []
     for label, args, cwd in commands:

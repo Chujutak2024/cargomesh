@@ -19,6 +19,7 @@ if __name__ == "__main__":
         "HAC44_SCHEMA_FILES": json.dumps(schemafiles),
         "NODE_OPTIONS": "--conditions=react-server",
         "HAC44_HTTP_PORT": str(LAYOUT.app_port),
+        "HAC44_PYTHON": sys.executable,
     }
     if sys.argv[1] != "inventory":
         # Dedicated local stack only; credentials travel in memory to the child, never to a log or file.
@@ -39,6 +40,9 @@ if __name__ == "__main__":
                 "HAC44_JWT_SECRET": cfg["JWT_SECRET"],
             }
         )
+        if sys.argv[1] == "authentication":
+            # Local Auth fixture only; never exposed to business repositories or logs.
+            env["HAC44_AUTH_ADMIN_KEY"] = cfg["SERVICE_ROLE_KEY"]
         fixtures = json.loads(
             (ROOT / "supabase/scenarios/v2-road-baseline/fixtures/hac40-catalog.json").read_text(
                 encoding="utf-8"
@@ -81,6 +85,9 @@ if __name__ == "__main__":
     if sys.argv[1] == "extended":
         args += ["--extended"]
         env["HAC44_LOG_PREFIX"] = "extended-"
+    if sys.argv[1] == "authentication":
+        args += ["--authentication"]
+        env["HAC44_LOG_PREFIX"] = "authentication-"
     if sys.argv[1] == "ltl":
         args += ["--ltl"]
         env["HAC44_LOG_PREFIX"] = "ltl-"
