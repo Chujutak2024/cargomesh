@@ -2,7 +2,7 @@
 
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import type { Database } from "@/types/database.types.ts";
+import type { Database } from "@/types/database-v2.types";
 import { currentMcpSupabaseAccessToken } from "@/server/mcp/auth/request-context";
 import { createUserAccessSupabaseClient } from "./user-access";
 

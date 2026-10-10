@@ -1,3 +1,4 @@
+// Generated from the local V2 schema; explicit nullable RPC contracts retained.
 export type Json =
   | string
   | number
@@ -7,6 +8,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       asset_cargo_capabilities: {
@@ -849,6 +875,8 @@ export type Database = {
           id: string
           parent_reservation_id: string | null
           plan_assignment_id: string | null
+          plan_leg_assignment_id: string | null
+          plan_resource_id: string | null
           reference: string | null
           source: string | null
           starts_at: string
@@ -870,6 +898,8 @@ export type Database = {
           id?: string
           parent_reservation_id?: string | null
           plan_assignment_id?: string | null
+          plan_leg_assignment_id?: string | null
+          plan_resource_id?: string | null
           reference?: string | null
           source?: string | null
           starts_at: string
@@ -891,6 +921,8 @@ export type Database = {
           id?: string
           parent_reservation_id?: string | null
           plan_assignment_id?: string | null
+          plan_leg_assignment_id?: string | null
+          plan_resource_id?: string | null
           reference?: string | null
           source?: string | null
           starts_at?: string
@@ -942,10 +974,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "capacity_reservations_plan_leg_assignment_id_fkey"
+            columns: ["plan_leg_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "plan_leg_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capacity_reservations_plan_resource_id_fkey"
+            columns: ["plan_resource_id"]
+            isOneToOne: false
+            referencedRelation: "plan_resources"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reservation_plan_assignment_fk"
             columns: ["plan_assignment_id"]
             isOneToOne: false
-            referencedRelation: "plan_leg_assignments"
+            referencedRelation: "plan_resource_bindings"
             referencedColumns: ["id"]
           },
         ]
@@ -1401,6 +1447,7 @@ export type Database = {
           status: string
           updated_at: string
           verified_at: string | null
+          version: number
         }
         Insert: {
           auth_user_id?: string | null
@@ -1414,6 +1461,7 @@ export type Database = {
           status: string
           updated_at?: string
           verified_at?: string | null
+          version?: number
         }
         Update: {
           auth_user_id?: string | null
@@ -1427,6 +1475,7 @@ export type Database = {
           status?: string
           updated_at?: string
           verified_at?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -2479,6 +2528,36 @@ export type Database = {
           },
         ]
       }
+      incident_route_conditions: {
+        Row: {
+          condition_id: string
+          incident_id: string
+        }
+        Insert: {
+          condition_id: string
+          incident_id: string
+        }
+        Update: {
+          condition_id?: string
+          incident_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_route_conditions_condition_id_fkey"
+            columns: ["condition_id"]
+            isOneToOne: false
+            referencedRelation: "route_conditions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_route_conditions_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "operational_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incident_updates: {
         Row: {
           carrier_id: string | null
@@ -2583,7 +2662,7 @@ export type Database = {
             foreignKeyName: "load_allocations_assignment_id_fkey"
             columns: ["assignment_id"]
             isOneToOne: false
-            referencedRelation: "plan_leg_assignments"
+            referencedRelation: "plan_resource_bindings"
             referencedColumns: ["id"]
           },
         ]
@@ -2657,52 +2736,64 @@ export type Database = {
           auth_user_id: string
           created_at: string
           expires_at: string
+          external_subject_ref: string | null
           id: string
           linked_at: string
           linked_by_user_id: string
           oauth_client_id: string
           organization_id: string
           organization_member_id: string
+          provider: string | null
           revocation_reason: string | null
           revoked_at: string | null
           revoked_by_user_id: string | null
           scopes: string[]
           status: string
           updated_at: string
+          verified_at: string | null
+          version: number
         }
         Insert: {
           auth_user_id: string
           created_at?: string
           expires_at: string
+          external_subject_ref?: string | null
           id?: string
           linked_at?: string
           linked_by_user_id: string
           oauth_client_id: string
           organization_id: string
           organization_member_id: string
+          provider?: string | null
           revocation_reason?: string | null
           revoked_at?: string | null
           revoked_by_user_id?: string | null
           scopes: string[]
           status?: string
           updated_at?: string
+          verified_at?: string | null
+          version?: number
         }
         Update: {
           auth_user_id?: string
           created_at?: string
           expires_at?: string
+          external_subject_ref?: string | null
           id?: string
           linked_at?: string
           linked_by_user_id?: string
           oauth_client_id?: string
           organization_id?: string
           organization_member_id?: string
+          provider?: string | null
           revocation_reason?: string | null
           revoked_at?: string | null
           revoked_by_user_id?: string | null
           scopes?: string[]
           status?: string
           updated_at?: string
+          verified_at?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -3067,6 +3158,8 @@ export type Database = {
           role: string
           status: string
           updated_at: string
+          verified_at: string | null
+          version: number
         }
         Insert: {
           auth_user_id: string
@@ -3078,6 +3171,8 @@ export type Database = {
           role: string
           status?: string
           updated_at?: string
+          verified_at?: string | null
+          version?: number
         }
         Update: {
           auth_user_id?: string
@@ -3089,6 +3184,8 @@ export type Database = {
           role?: string
           status?: string
           updated_at?: string
+          verified_at?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -3252,8 +3349,84 @@ export type Database = {
           carrier_service_id: string
           data: Json
           ends_at: string
+          fulfilment_partner_id: string | null
           id: string
           lane_id: string
+          plan_id: string
+          route_leg_id: string
+          sequence: number
+          starts_at: string
+        }
+        Insert: {
+          carrier_service_id: string
+          data?: Json
+          ends_at: string
+          fulfilment_partner_id?: string | null
+          id: string
+          lane_id: string
+          plan_id: string
+          route_leg_id: string
+          sequence: number
+          starts_at: string
+        }
+        Update: {
+          carrier_service_id?: string
+          data?: Json
+          ends_at?: string
+          fulfilment_partner_id?: string | null
+          id?: string
+          lane_id?: string
+          plan_id?: string
+          route_leg_id?: string
+          sequence?: number
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_leg_assignments_carrier_service_id_fkey1"
+            columns: ["carrier_service_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_leg_assignments_fulfilment_partner_id_fkey"
+            columns: ["fulfilment_partner_id"]
+            isOneToOne: false
+            referencedRelation: "fulfilment_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_leg_assignments_lane_id_fkey1"
+            columns: ["lane_id"]
+            isOneToOne: false
+            referencedRelation: "service_lanes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_leg_assignments_plan_id_fkey1"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "transport_plan_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_leg_assignments_route_leg_id_fkey1"
+            columns: ["route_leg_id"]
+            isOneToOne: false
+            referencedRelation: "route_legs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_resource_bindings: {
+        Row: {
+          carrier_service_id: string
+          data: Json
+          ends_at: string
+          id: string
+          lane_id: string
+          leg_assignment_id: string
           plan_id: string
           resource_id: string
           route_leg_id: string
@@ -3266,6 +3439,7 @@ export type Database = {
           ends_at: string
           id?: string
           lane_id: string
+          leg_assignment_id: string
           plan_id: string
           resource_id: string
           route_leg_id: string
@@ -3278,6 +3452,7 @@ export type Database = {
           ends_at?: string
           id?: string
           lane_id?: string
+          leg_assignment_id?: string
           plan_id?: string
           resource_id?: string
           route_leg_id?: string
@@ -3319,6 +3494,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "route_legs"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_binding_leg_fk"
+            columns: ["leg_assignment_id", "plan_id"]
+            isOneToOne: false
+            referencedRelation: "plan_leg_assignments"
+            referencedColumns: ["id", "plan_id"]
           },
         ]
       }
@@ -3532,6 +3714,63 @@ export type Database = {
           },
           {
             foreignKeyName: "repositioning_blocks_fleet_service"
+            columns: ["carrier_service_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_services"
+            referencedColumns: ["id", "carrier_id"]
+          },
+        ]
+      }
+      response_integrations: {
+        Row: {
+          carrier_id: string
+          carrier_service_id: string
+          channel: string
+          created_at: string
+          endpoint_ref: string | null
+          evidence: string | null
+          id: string
+          status: string
+          updated_at: string
+          verified_at: string | null
+          version: number
+        }
+        Insert: {
+          carrier_id: string
+          carrier_service_id: string
+          channel: string
+          created_at?: string
+          endpoint_ref?: string | null
+          evidence?: string | null
+          id?: string
+          status: string
+          updated_at?: string
+          verified_at?: string | null
+          version?: number
+        }
+        Update: {
+          carrier_id?: string
+          carrier_service_id?: string
+          channel?: string
+          created_at?: string
+          endpoint_ref?: string | null
+          evidence?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "response_integrations_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "response_integrations_carrier_service_id_carrier_id_fkey"
             columns: ["carrier_service_id", "carrier_id"]
             isOneToOne: false
             referencedRelation: "carrier_services"
@@ -4749,7 +4988,7 @@ export type Database = {
           {
             foreignKeyName: "transport_plan_candidates_route_plan_id_fkey"
             columns: ["route_plan_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "route_plans"
             referencedColumns: ["id"]
           },
@@ -4910,6 +5149,9 @@ export type Database = {
           data: Json
           freight_request_id: string | null
           id: string
+          issuer_auth_user_id: string | null
+          issuer_member_id: string | null
+          issuer_operator_id: string | null
           kind: string
           organization_id: string | null
           parent_id: string | null
@@ -4925,6 +5167,9 @@ export type Database = {
           data: Json
           freight_request_id?: string | null
           id?: string
+          issuer_auth_user_id?: string | null
+          issuer_member_id?: string | null
+          issuer_operator_id?: string | null
           kind?: string
           organization_id?: string | null
           parent_id?: string | null
@@ -4940,6 +5185,9 @@ export type Database = {
           data?: Json
           freight_request_id?: string | null
           id?: string
+          issuer_auth_user_id?: string | null
+          issuer_member_id?: string | null
+          issuer_operator_id?: string | null
           kind?: string
           organization_id?: string | null
           parent_id?: string | null
@@ -4970,6 +5218,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "freight_requests"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_carrier_offers_issuer_member_id_fkey"
+            columns: ["issuer_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_carrier_offers_issuer_operator_id_carrier_id_fkey"
+            columns: ["issuer_operator_id", "carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_operators"
+            referencedColumns: ["id", "carrier_id"]
           },
           {
             foreignKeyName: "v2_carrier_offers_organization_id_fkey"
@@ -5353,15 +5615,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      command_v2_workflow: {
-        Args: { p_organization_id: string; p_member_id: string; p_action: string; p_context: Json; p_key: string; p_value: Json };
-        Returns: Json;
-      };
-      read_v2_workflow: {
-        Args: { p_organization_id: string; p_member_id: string; p_kind: string; p_context: Json; p_limit: number; p_offset: number };
-        Returns: Json;
-      };
-
       assert_booking_bridge_identity: {
         Args: {
           p_authorization: Database["public"]["Tables"]["booking_authorizations"]["Row"]
@@ -5369,6 +5622,20 @@ export type Database = {
           p_tool_name: string
         }
         Returns: undefined
+      }
+      check_v2_mcp_actor: {
+        Args: { p_member_id: string; p_organization_id: string }
+        Returns: boolean
+      }
+      command_v2_carrier_workflow: {
+        Args: {
+          p_action: string
+          p_context: Json
+          p_key: string
+          p_operator_id: string
+          p_value: Json
+        }
+        Returns: Json
       }
       command_v2_catalog: {
         Args: {
@@ -5407,6 +5674,28 @@ export type Database = {
         }
         Returns: Json
       }
+      command_v2_identity_directory: {
+        Args: {
+          p_action: string
+          p_carrier_id: string | null
+          p_id: string | null
+          p_key: string
+          p_kind: string
+          p_organization_id: string | null
+          p_value: Json
+        }
+        Returns: Json
+      }
+      command_v2_mcp_link: {
+        Args: {
+          p_action: string
+          p_id: string | null
+          p_key: string
+          p_organization_id: string | null
+          p_value: Json
+        }
+        Returns: Json
+      }
       command_v2_organization: {
         Args: {
           p_expected_version: number
@@ -5414,6 +5703,41 @@ export type Database = {
           p_member_id: string
           p_organization_id: string
           p_value: Json
+        }
+        Returns: Json
+      }
+      command_v2_response_integration: {
+        Args: { p_carrier_id: string; p_key: string; p_value: Json }
+        Returns: Json
+      }
+      command_v2_route_planner: {
+        Args: {
+          p_action: string
+          p_key: string
+          p_member_id: string
+          p_organization_id: string
+          p_target_id: string
+          p_value: Json
+        }
+        Returns: Json
+      }
+      command_v2_workflow: {
+        Args: {
+          p_action: string
+          p_context: Json
+          p_key: string
+          p_member_id: string
+          p_organization_id: string
+          p_value: Json
+        }
+        Returns: Json
+      }
+      confirm_v2_mcp_workflow: {
+        Args: {
+          p_confirmed: boolean
+          p_id: string
+          p_member_id: string
+          p_organization_id: string
         }
         Returns: Json
       }
@@ -5427,6 +5751,11 @@ export type Database = {
         }
         Returns: Json
       }
+      diagnose_v2_response_integration: {
+        Args: { p_carrier_id: string; p_id: string }
+        Returns: Json
+      }
+      get_v2_carrier_identity: { Args: { p_carrier_id: string }; Returns: Json }
       persist_balanced_decision: {
         Args: {
           p_anomaly_evidence: Json
@@ -5491,6 +5820,27 @@ export type Database = {
           selection_mode: string
         }[]
       }
+      prepare_v2_mcp_workflow: {
+        Args: {
+          p_action: string
+          p_context: Json
+          p_key: string
+          p_member_id: string
+          p_organization_id: string
+          p_value: Json
+        }
+        Returns: Json
+      }
+      read_v2_carrier_workflow: {
+        Args: {
+          p_context: Json
+          p_kind: string
+          p_limit: number
+          p_offset: number
+          p_operator_id: string
+        }
+        Returns: Json
+      }
       read_v2_catalog: {
         Args: {
           p_carrier_id: string | null
@@ -5501,6 +5851,31 @@ export type Database = {
           p_offset: number
           p_organization_id: string
           p_service_id: string | null
+        }
+        Returns: Json
+      }
+      read_v2_identity: {
+        Args: {
+          p_carrier_id: string | null
+          p_kind: string
+          p_limit: number
+          p_offset: number
+          p_organization_id: string | null
+        }
+        Returns: Json
+      }
+      read_v2_location_candidates: {
+        Args: { p_member_id: string; p_organization_id: string; p_query: Json }
+        Returns: Json
+      }
+      read_v2_workflow: {
+        Args: {
+          p_context: Json
+          p_kind: string
+          p_limit: number
+          p_member_id: string
+          p_offset: number
+          p_organization_id: string
         }
         Returns: Json
       }
@@ -5742,6 +6117,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

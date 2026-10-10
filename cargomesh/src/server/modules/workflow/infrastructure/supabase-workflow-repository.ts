@@ -17,13 +17,19 @@ export async function workflowRepositoryV2(): Promise<WorkflowRepositoryV2> {
   const db = await createV2ServerSupabaseClient();
   return {
     async read(actor, kind, context, page) {
-      const { data, error } = await db.rpc("read_v2_workflow", { p_organization_id: actor.organizationId,
+      const { data, error } = "kind" in actor
+        ? await db.rpc("read_v2_carrier_workflow", { p_operator_id: actor.operatorId, p_kind: kind,
+          p_context: context, p_limit: page.limit, p_offset: page.offset })
+        : await db.rpc("read_v2_workflow", { p_organization_id: actor.organizationId,
         p_member_id: actor.memberId, p_kind: kind, p_context: context, p_limit: page.limit, p_offset: page.offset });
       if (error) fail(error);
       return z.array(z.unknown()).parse(data);
     },
     async command(actor, action, context, key, value) {
-      const { data, error } = await db.rpc("command_v2_workflow", { p_organization_id: actor.organizationId,
+      const { data, error } = "kind" in actor
+        ? await db.rpc("command_v2_carrier_workflow", { p_operator_id: actor.operatorId, p_action: action,
+          p_context: context, p_key: key, p_value: value })
+        : await db.rpc("command_v2_workflow", { p_organization_id: actor.organizationId,
         p_member_id: actor.memberId, p_action: action, p_context: context, p_key: key, p_value: value });
       if (error) fail(error);
       const result = z.object({ record: z.unknown(), replay: z.boolean() }).parse(data);

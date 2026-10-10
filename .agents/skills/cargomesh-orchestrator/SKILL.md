@@ -20,9 +20,9 @@ description: >-
 
 ## Ejecución
 
-- Respeta la base `codex/v2-amazon-contracts` y preserva trabajo ajeno.
+- Respeta la base `main` autorizada el 9-oct-2026; usa ramas registradas y PR a `main`, sin push directo y preserva trabajo ajeno.
 - No eleves fixtures, seeds o resultados de V1 a contrato V2.
-- Un bloque V1 heredado en `AGENTS.md` o un PR ya mergeado no sustituye los contratos vigentes ni autoriza `main`/producción. Distingue transporte MCP local de experiencia Alexa+ real.
+- Un bloque V1 heredado en `AGENTS.md` o un PR ya mergeado no sustituye los contratos vigentes ni sustituye la autorización de merge ni autoriza cambios de infraestructura/producción. Distingue transporte MCP local de experiencia Alexa+ real.
 - Verifica afirmaciones live con implementación, datos, pruebas y evidencia.
 - Compara el entregable final con los criterios y checklist de la issue.
 - Registra un Friction Log cuando exista un fallo material, workaround relevante o riesgo reproducible; evita ruido por incidentes triviales.

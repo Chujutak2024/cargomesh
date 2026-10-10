@@ -1,6 +1,6 @@
 # HAC-40 — inventario de endpoints implementados
 
-204 operaciones únicas GET/POST de negocio, extraídas de `createHonoApp().routes`; excluye health y middleware duplicado. 111 pertenecen al router nuevo de workflow; las 93 anteriores permanecen. Presencia de una ruta no acredita dato alojado, consumo frontend/MCP ni proveedor live.
+209 operaciones únicas GET/POST de negocio, extraídas de `createHonoApp().routes`; excluye health y middleware duplicado. 111 pertenecen al router nuevo de workflow; las 93 anteriores permanecen. Presencia de una ruta no acredita dato alojado, consumo frontend/MCP ni proveedor live.
 
 [Contrato y límites de workflow](./HAC40_WORKFLOW_API.md). Prefijo incluido; parámetros son UUID. Listados paginados; la identidad se resuelve en servidor. POST requiere Idempotency-Key y schemaVersion; acciones/revisiones requieren versión esperada.
 
@@ -210,3 +210,15 @@
 | POST | `/api/v2/scoring/policies` |
 | GET | `/api/v2/scoring/policies/:id` |
 | POST | `/api/v2/scoring/policies/:id/revisions` |
+
+## Incremento HAC-40 del 7-oct: asociaciones y RoutePlanner
+
+Cinco operaciones nuevas. [Payloads, permisos y límites](./HAC40_MODEL_CLOSURE_API.md). Las lecturas de plan e incidente existentes incorporan las asociaciones.
+
+| Método | Ruta |
+|---|---|
+| POST | `/api/v2/plans/:id/assignments/:assignmentId/partner` |
+| POST | `/api/v2/carriers/:carrierId/incidents/:id/conditions` |
+| POST | `/api/v2/freight/requests/:requestId/route-alternatives` |
+| POST | `/api/v2/routes/:id/replans` |
+| GET | `/api/v2/routes/:id/explanation` |

@@ -4,11 +4,11 @@ Esta carpeta es la fuente de verdad documental de CargoMesh V2. V2 transforma el
 
 La [documentación de entrega en inglés](./en/README.md) traduce y consolida los contratos centrales para el concurso. No sustituye la gobernanza interna en español ni implica que todo el repositorio esté traducido.
 
-## Base compartida e integración directa — 4 oct 2026
+## Base compartida e integración — 9 oct 2026
 
-Por decisión expresa de Cristhian, `codex/v2-amazon-contracts` es la base compartida de desarrollo e integración V2. Cada integrante conserva su rama registrada y entrega PR directamente a esa base, con pruebas, revisión y autorización. Se elimina la etapa de ramas `feat/cycle-*-integration` para entregas nuevas; sus commits y actas se conservan como historia. Esta decisión sustituye los targets de ciclo en planes anteriores y skills que describan ese flujo.
+Por decisión expresa de Cristhian, `main` es la única base activa de desarrollo e integración V2. Cada integrante conserva su rama registrada desde `origin/main` y entrega PR a `main`, con pruebas, revisión y autorización. `codex/v2-amazon-contracts` queda como antecedente; los planes de ramas de ciclo son historia. Esta decisión sustituye los targets anteriores.
 
-El gate valida un SHA de la base compartida; no exige rama o PR agregado. Integrar un incremento no acredita el DoD completo, schema alojado, frontend conectado ni Alexa live. `main` conserva la versión estable existente y permanece congelada para V2. Las autorizaciones de Supabase alojado y despliegue se mantienen separadas. Véase [AGENTS.md](../../AGENTS.md).
+Los PR #115 y #116 ya reúnen backend y chatbot, con árboles idénticos antes de esta transición. El gate valida un SHA preciso; integrar un incremento no acredita el DoD completo, F-02, experiencia Web completa ni Alexa+ live. Supabase alojado y cambios de configuración de despliegue mantienen autorizaciones separadas. Véase [AGENTS.md](../../AGENTS.md) y el [acta de integración](./delivery/MAIN_V2_INTEGRATION_2026-10-09.md).
 
 ## Dónde empezar
 
@@ -25,13 +25,15 @@ El [índice general de `docs/`](../README.md) explica qué material fuera de V1/
 
 ## Trazabilidad Sprint 2
 
+La [revisión vigente UML → BD/API del 9 de octubre](./delivery/uml-bd-api-2026-10-09/README.md) clasifica el corte d3a80eb, actualiza identidad HAC-41 y documenta las correcciones de lectura integradas. Comenzar por ella al interpretar pendientes del backend; conserva los límites de certificación y despliegue.
+
 El [contrato HAC-27](./delivery/SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md) y su [diccionario de 57 clases / 397 atributos](./delivery/HAC27_UML_ATTRIBUTE_DICTIONARY_2026-10-02.md) acompañan el [UML 07 original](./diagrams/review-2026-09-24/07-complete-classes-sprint2-reviewed.drawio). Identifican representación física, alias y ausencias; la revisión/aceptación del PR no se presume. La [evidencia HAC-12](./delivery/HAC12_ROAD_VERTICAL_LOCAL_EVIDENCE.md) distingue esquema local de aplicación al Supabase V2 alojado.
 
 ## Estado
 
 - **Approved baseline:** `contracts/` reemplaza como gobernanza activa a `docs/v1-webmcp/`.
 - **Review input:** las propuestas del equipo se consolidaron en los contratos superiores. Los borradores de revisión no forman parte de esta rama base pública.
-- **Material transicional mergeado:** `docs/architecture-v2/` y el código de PR #80 son inventario de reutilización, no contrato vigente ni prueba de Alexa+ live. Esa carpeta también contiene un fixture JSON consumido por pruebas; no se mueve sin actualizar esos consumidores.
+- **Material transicional retirado:** el runtime WebMCP V1 y `docs/architecture-v2/` fueron retirados del árbol activo por autorización de Cristhian. El corte histórico `feef2419fa5f786c9a6063f85aeee452dd9eb84b` conserva código, fixtures y evidencia; las pruebas V2 ya no consumen esa carpeta. Las cadenas SQL de regresión permanecen separadas.
 - La implementación existente se migra incrementalmente. Una capacidad documentada no se considera live hasta tener código, datos, pruebas y evidencia.
 - El [flujo vigente y corte documentado](./delivery/CURRENT_DELIVERY_STATE.md) identifica las integraciones recientes y los pendientes. Los estados de septiembre se conservan como evidencia histórica; no describen el estado alojado actual.
 
@@ -45,6 +47,7 @@ El [contrato HAC-27](./delivery/SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md) y su [di
 - Separación entre candidate discovery, oferta comercial, ranking y booking.
 - Políticas versionadas y explicables.
 - Alexa+ como canal MCP sobre servicios compartidos.
+- [Identidad y flujo completo MCP HAC-41](./delivery/HAC41_IDENTITY_MCP.md): linking/revocación, principal carrier y confirmaciones compartidas; su prueba local no acredita aplicación de las migraciones al alojado ni Alexa+ live.
 - V1 preservada como regresión, no como catálogo V2.
 
 ## Local V2 database bootstrap

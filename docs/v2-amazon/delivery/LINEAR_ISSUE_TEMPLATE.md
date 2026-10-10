@@ -61,7 +61,7 @@ Antecedente HAC/PR y decisión explícita: `reutilizar`, `reemplazar`, `archivar
 
 ### Flujo de aceptación y escala de hallazgos
 
-**Culmina → validamos → aprobamos → mergeamos a `codex/v2-amazon-contracts`.** El dueño entrega PR/evidencia, comandos y límites; el revisor coteja DoD y pruebas; el Tech Lead decide aceptación; el integrador autorizado hace el merge. Si un PR ya entró antes de cerrar la trazabilidad, se audita el merge existente y se registra la aceptación o el follow-up, sin recrearlo.
+**Culmina → validamos → aprobamos → mergeamos a `main`.** El dueño entrega PR/evidencia, comandos y límites; el revisor coteja DoD y pruebas; el Tech Lead decide aceptación; el integrador autorizado hace el merge. Si un PR ya entró antes de cerrar la trazabilidad, se audita el merge existente y se registra la aceptación o el follow-up, sin recrearlo.
 
 | Escala | Criterio y respuesta |
 |---|---|
@@ -73,7 +73,7 @@ La escala describe **impacto**, no esfuerzo. Una edición de una línea puede se
 
 ## Bloque C — Gobernanza y cierre
 
-- **Rama / PR target para código:** usar **solo la rama predeclarada** por esta issue en el manifiesto del sprint, desde `codex/v2-amazon-contracts`; PR a esa base, nunca a `main`. Para enabler sin código: `No aplica`, con enlace o captura como evidencia. Una emergente con código requiere issue y rama aprobadas antes de abrirse.
+- **Rama / PR target para código:** usar **solo la rama predeclarada** por esta issue en el manifiesto del sprint, desde `main`; PR a `main`, sin push directo. Para enabler sin código: `No aplica`, con enlace o captura como evidencia. Una emergente con código requiere issue y rama aprobadas antes de abrirse.
 - **Despliegue:** un preview no autoriza cambiar Vercel producción ni su directorio raíz. Cualquier cambio de infraestructura externa requiere plan y autorización separados.
 - **Resumen de lo elaborado:** commits/archivos afectados o acciones externas, pruebas y resultados observados, limitaciones honestas.
 - **Friction log:** registrar un incidente material en `docs/v2-amazon/delivery/friction-logs/` y en la carpeta Drive acordada cuando aplique; no crear logs por cada error trivial corregido.

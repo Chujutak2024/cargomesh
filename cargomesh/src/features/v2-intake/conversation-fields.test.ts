@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { getIntakeOptionsFixture } from "./intake-options";
-import { choicesForField, matchingConversationChoices, parseConversationField } from "./conversation-fields";
+import { choicesForField, matchingConversationChoices, parseConversationField, resolveConversationSuggestions } from "./conversation-fields";
+
+test("an invalid first suggestion does not prevent later valid details from resolving", () => {
+  const result = resolveConversationSuggestions([
+    { field: "originFacilityId", value: "unknown place" },
+    { field: "unitQuantity", value: "4" },
+    { field: "packaging", value: "pallets" },
+  ], options);
+  assert.deepEqual(result.map(({ parsed }) => parsed), [null, "4", "PALLET"]);
+});
 
 const options = getIntakeOptionsFixture().data;
 

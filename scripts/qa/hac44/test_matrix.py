@@ -8,12 +8,12 @@ SOURCE = Path(__file__).with_name("matrix.py").read_text(encoding="utf-8")
 
 
 def mappings():
-    names = {"ALIASES","OVERRIDE","GROUPS","WFSPECIAL","CATKINDS","WFKINDS","CAT_OUTPUT_KEYS"}
-    functions = {"node","workflow_output","schema_paths","storage","output_key"}
+    names = {"ALIASES","OVERRIDE","GROUPS","WFSPECIAL","CATKINDS","WFKINDS","CAT_OUTPUT_KEYS","IDENTITYKINDS","IDENTITY_RELATIONS"}
+    functions = {"node","workflow_output","schema_paths","storage","output_key","identity_endpoints"}
     tree = ast.parse(SOURCE)
     subset = [x for x in tree.body if isinstance(x,ast.FunctionDef) and x.name in functions
         or isinstance(x,ast.Assign) and any(isinstance(t,ast.Name) and t.id in names for t in x.targets)]
-    context = {"READ_PROJECTIONS":{},"TREES":{},"COL":{},"CLASS":{}}
+    context = {"READ_PROJECTIONS":{},"TREES":{},"COL":{},"CLASS":{},"re":__import__("re")}
     exec(compile(ast.Module(body=subset,type_ignores=[]),"matrix-mappings","exec"),context)
     return context
 
@@ -27,6 +27,45 @@ EV = [{"state":"VALUE","value":"concrete"}]
 
 
 class AttributeRulesTests(unittest.TestCase):
+    def test_manual_issuer_is_the_composite_carrier_operator_identity(self):
+        treatment=mappings()["IDENTITY_RELATIONS"]["CarrierOperator","CarrierOffer"]
+        self.assertIn("v2_carrier_offers.issuer_operator_id",treatment)
+        self.assertIn("v2_carrier_offers.issuer_auth_user_id",treatment)
+        self.assertIn("carrier_operators.carrier_id",treatment)
+        self.assertNotIn("organization_members",treatment)
+    def test_identity_routes_expand_methods_and_each_documented_location_path(self):
+        parse=mappings()["identity_endpoints"]
+        doc="## HTTP canónico\n| GET/POST `/identity/mcp/links` | consent |\n| POST `/locations/resolutions` y `/locations/confirmations` | locations |\n## Tools MCP"
+        self.assertEqual(parse(doc),[{"method":"GET","path":"/api/v2/identity/mcp/links"},{"method":"POST","path":"/api/v2/identity/mcp/links"},{"method":"POST","path":"/api/v2/locations/resolutions"},{"method":"POST","path":"/api/v2/locations/confirmations"}])
+    def test_fixed_scope_tuple_is_an_array_but_an_object_is_not(self):
+        for kind in ("ZodTuple", "ZodArray"):
+            self.assertEqual(attribute_state(True,"column",False,{**FIELD,"type":kind},EV,uml_type="string[]")[0],"COMPLETO")
+        self.assertEqual(attribute_state(True,"column",False,{**FIELD,"type":"ZodObject"},EV,uml_type="string[]")[0],"DIVERGENTE")
+    def test_identity_schema_and_schema_qualified_storage_are_resolved(self):
+        m=mappings()
+        for name,(kind,output,create) in m["IDENTITYKINDS"].items():
+            m["CLASS"]={name:{"storage":"identity_table","attributes":[{"name":"id","target":"identity_table.id", "currentTreatment":{"target":"public.identity_table.id"}}]}}
+            m["TREES"]={"identity.ts:"+output:obj(id=FIELD),"identity.ts:"+create:obj()}
+            inp,out,ip,op,key=m["schema_paths"](name,"id")
+            self.assertIsNone(inp)  # generated identities are not caller-writable
+            self.assertEqual((out,op),(FIELD,"id"))
+            self.assertEqual(m["output_key"](name,"id",key),"identity.ts:"+output)
+            self.assertEqual(m["storage"](name,"id",op),(["identity_table.id"],"column"))
+            m["TREES"]["identity.ts:"+output]["fields"].clear()
+            self.assertIsNone(m["schema_paths"](name,"id")[1])
+
+    def test_member_contact_is_invited_by_email_and_read_as_contact_ref(self):
+        m=mappings();m["TREES"]={"identity.ts:MemberInvitationV2Schema":obj(email=FIELD),"identity.ts:OrganizationMemberV2Schema":obj(contactRef={**FIELD,"nullable":True})}
+        inp,out,ip,op,key=m["schema_paths"]("OrganizationMember","contactRef")
+        self.assertEqual((ip,op),("email","contactRef"));self.assertEqual(inp,FIELD)
+        self.assertTrue(out["nullable"])
+
+    def test_repositioning_duration_uses_the_seconds_contract(self):
+        m=mappings();m["TREES"]={"catalog.ts:CatalogInputsV2:repositioning-blocks":obj(estimatedTravelSeconds={**FIELD,"type":"ZodNumber"})}
+        inp,out,ip,op,_=m["schema_paths"]("RepositioningBlock","estimatedTravel")
+        self.assertEqual((ip,op),("estimatedTravelSeconds","value.estimatedTravelSeconds"))
+        self.assertEqual(out["type"],"ZodNumber")
+
     def positive(self):
         self.assertEqual(attribute_state(True,"column",False,FIELD,EV)[0],"COMPLETO")
 
@@ -55,6 +94,21 @@ class AttributeRulesTests(unittest.TestCase):
         self.assertEqual(m["storage"]("CapacityReservation","planResourceId",path)[0],["capacity_reservations.plan_resource_id"])
         m["TREES"]["workflow.ts:WorkflowRecordV2Schema"]["options"][0]["fields"]["data"]["fields"].pop("planResourceId")
         self.assertIsNone(m["schema_paths"]("CapacityReservation","planResourceId")[1])
+
+    def test_current_planner_snapshot_resolves_from_model_and_typed_output(self):
+        m = mappings()
+        m["CLASS"] = {"RoutePlanner": {"storage": "|route_planner_port", "attributes": [
+            {"name": "graphVersion", "target": "|route_planner_port.graphVersion",
+             "currentTreatment": {"target": "route_plans.data.planner.graphVersion"}}]}}
+        m["TREES"] = {"workflow.ts:WorkflowRecordV2Schema": {"options": [
+            obj(kind={"value": "routes"}, data=obj(planner=obj(graphVersion=FIELD)))]}}
+        _, output, _, path, _ = m["schema_paths"]("RoutePlanner", "graphVersion")
+        self.assertEqual(path, "data.planner.graphVersion")
+        self.assertEqual(output, FIELD)
+        self.assertEqual(m["storage"]("RoutePlanner", "graphVersion", path),
+                         (["route_plans.data.planner.graphVersion"], "json"))
+        m["TREES"]["workflow.ts:WorkflowRecordV2Schema"]["options"][0]["fields"]["data"]["fields"].pop("planner")
+        self.assertIsNone(m["schema_paths"]("RoutePlanner", "graphVersion")[1])
 
     def test_category_domain_version_does_not_select_integer_envelope(self):
         m=mappings();m["TREES"]={"catalog.ts:CatalogInputsV2:cargo-categories":obj(code=FIELD),

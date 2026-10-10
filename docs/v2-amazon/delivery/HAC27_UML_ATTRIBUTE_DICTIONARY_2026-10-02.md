@@ -1,5 +1,7 @@
 # HAC-27 — Diccionario UML → BD/API: alcance completo, corte QA 5 oct 2026
 
+> Revisión posterior identificada: [McpAccountLink 2026-10-09](../models/MCP_ACCOUNT_LINK_UML_DICTIONARY_REV_2026-10-09.md). Este corte QA histórico permanece intacto: sus estados y la obligatoriedad UML de `verifiedAt` no describen la lectura nullable de links anteriores a HAC-41.
+
 Sustituye el tratamiento operativo del corte del 2 de octubre. Las **57 clases, 397 atributos y 93 relaciones** están en alcance desde el plan aprobado del 3 de octubre; **ningún atributo se considera diferido por una decisión antigua**.
 
 ## Evidencia y límites

@@ -3,8 +3,8 @@ export function createSpeechTurnDetector(
   onTurn: (transcript: string) => void,
   delayMs = 1400,
   clock: { schedule: (callback: () => void, ms: number) => ReturnType<typeof setTimeout>; clear: (timer: ReturnType<typeof setTimeout>) => void } = {
-    schedule: setTimeout,
-    clear: clearTimeout,
+    schedule: (callback, ms) => setTimeout(callback, ms),
+    clear: (timer) => clearTimeout(timer),
   },
 ) {
   let timer: ReturnType<typeof setTimeout> | null = null;

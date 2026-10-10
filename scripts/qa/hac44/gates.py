@@ -11,11 +11,13 @@ import json
 import re
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 from types import SimpleNamespace
 
 from common import OUT, ROOT, run, save, write
-from local import CLI, DB, HARNESS, HEAD, PROJECT, gate, sql
+from local import CLI, DB, HARNESS, HEAD, PROJECT, gate, sql, LAYOUT, BANK
+from banks import Bank, configure, preflight
 
 EXCLUDED = (
     "realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,"
@@ -29,14 +31,11 @@ def prepare():
     g = gate()
     g.manifest()
     assert run("cli-version", CLI + ["--version"]).stdout.strip() == "2.117.0"
-    config = (
-        (ROOT / "supabase-v2/supabase/config.toml")
-        .read_text(encoding="utf-8-sig")
-        .replace('project_id = "cargomesh-v2-local"', 'project_id = "' + PROJECT + '"')
-    )
-    config = re.sub(r"5832([0-9])", r"4232\1", config).replace(
-        "inspector_port = 8183", "inspector_port = 9043"
-    )
+    config = configure((ROOT / "supabase-v2/supabase/config.toml").read_text(encoding="utf-8-sig"), PROJECT, LAYOUT.base("v2"))
+    # Local-only OAuth smoke; native source config and product code are unchanged.
+    config = re.sub(r"(\[auth.oauth_server\][^\[]*?\benabled\s*=\s*)false", r"\1true", config)
+    if BANK.marker.exists():
+        BANK.own("prepare")
     write(HARNESS / "supabase/config.toml", config)
     records = json.loads(
         (ROOT / "supabase-v2/migration-manifest.json").read_text(encoding="utf-8")
@@ -62,33 +61,46 @@ def full():
     g.EVIDENCE.mkdir(exist_ok=True)
     g.ARGS = SimpleNamespace(
         action="v2",
-        v1_replay_port_base=43300,
-        v1_replay_inspector_port=9143,
-        v1_replay_analytics_port=43327,
-        baseline_replay_port_base=44300,
-        baseline_replay_inspector_port=9243,
-        baseline_replay_analytics_port=44327,
+        v1_replay_port_base=LAYOUT.base("v1"),
+        v1_replay_inspector_port=LAYOUT.base("v1") + 10,
+        v1_replay_analytics_port=LAYOUT.base("v1") + 7,
+        baseline_replay_port_base=LAYOUT.base("baseline"),
+        baseline_replay_inspector_port=LAYOUT.base("baseline") + 10,
+        baseline_replay_analytics_port=LAYOUT.base("baseline") + 7,
     )
-    native_reference = g.reference_config
-
     def reference(kind):
-        return (
-            native_reference(kind)
-            .replace("hac29-v1-reference", "hac44-full-flow-v1")
-            .replace("hac29-baseline-reference", "hac44-full-flow-baseline")
-        )
+        return configure((ROOT / "supabase/config.toml").read_text(encoding="utf-8-sig"), LAYOUT.project(kind), LAYOUT.base(kind))
 
     g.reference_config = reference
-    g.V1 = "supabase_db_hac44-full-flow-v1"
+    g.V1 = "supabase_db_" + LAYOUT.project("v1")
     g.V2 = DB
-    g.BASELINE = "supabase_db_hac44-full-flow-baseline"
+    g.BASELINE = "supabase_db_" + LAYOUT.project("baseline")
     g.PROFILE = HARNESS
-    preflight = (
-        inspect.getsource(g.replay_port_preflight)
-        .replace("hac29-v1-reference", "hac44-full-flow-v1")
-        .replace("hac29-baseline-reference", "hac44-full-flow-baseline")
-    )
-    exec(compile(preflight, "<native gate port adapter>", "exec"), g.__dict__)
+    configs = [tomllib.loads((HARNESS / "supabase/config.toml").read_text(encoding="utf-8"))]
+    configs += [tomllib.loads(reference(kind)) for kind in ("v1", "baseline")]
+    g.replay_port_preflight = lambda: save("bank-preflight.json", preflight(configs, LAYOUT.app_port))
+
+    banks = {DB: BANK, g.V1: Bank(OUT / "gate/workdir-v1", LAYOUT.project("v1")),
+             g.BASELINE: Bank(OUT / "gate/workdir-baseline", LAYOUT.project("baseline"))}
+    native_prepare_reference = g.prepare_reference
+
+    def prepare_reference(kind):
+        bank = banks[g.V1 if kind == "v1" else g.BASELINE]
+        if (bank.folder / "supabase/config.toml").exists():
+            bank.config()
+            if bank.marker.exists():
+                bank.own("prepare-reference")
+        return native_prepare_reference(kind)
+
+    g.prepare_reference = prepare_reference
+
+    def reset(label, folder):
+        bank = next(bank for bank in banks.values() if bank.folder == Path(folder).resolve())
+        if not bank.marker.exists():
+            bank.start_new(CLI)
+        bank.reset(CLI)
+
+    g.reset = reset
     write(
         HARNESS / "test-profiles.json",
         (ROOT / "supabase-v2/test-profiles.json").read_text(encoding="utf-8"),
@@ -104,11 +116,20 @@ def full():
     g.manifest = lambda: print("PASS original native manifest already verified")
 
     def native_run(label, args, data=None):
+        if "test" in args and "db" in args and "--workdir" in args:
+            folder = Path(args[args.index("--workdir") + 1]).resolve()
+            next(bank for bank in banks.values() if bank.folder == folder).own("pgtap")
+        if len(args) > 3 and args[0:2] == ["docker", "exec"]:
+            container = args[3] if args[2] == "-i" else args[2]
+            if container not in banks:
+                raise RuntimeError("Native runner attempted an unowned container")
+            banks[container].own("native-" + label)
         if (
             len(args) > 1
             and Path(str(args[1])).name.startswith("check-hac40-")
             and str(args[1]).endswith("-race.py")
         ):
+            BANK.own("native-race-" + label)
             # Preserve the native race logic; redirect only its dedicated local container.
             p = Path(args[1])
             source = p.read_text(encoding="utf-8").replace("supabase_db_cargomesh-v2-local", DB)
@@ -193,6 +214,7 @@ def full():
             "productFilesChanged": 0,
         },
     )
+    BANK.own("enable-http")
     assert (
         run(
             "start-http-stack",

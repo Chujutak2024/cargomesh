@@ -4,7 +4,7 @@ import json
 import sys
 
 from common import OUT, ROOT, run, save, write
-from local import DB, HEAD, script, sql
+from local import DB, HEAD, script, sql, BANK
 
 SCENARIO = ROOT / "supabase/scenarios/v2-full-flow-qa"
 DATASET = OUT / "dataset"
@@ -61,6 +61,7 @@ def verify():
 
 def cleanup():
     """Back up the dataset and remove only its registered exact identifiers."""
+    BANK.own("cleanup")
     assert script("counts-before-cleanup", SCENARIO / "counts.sql").returncode == 0
     # Back up scenario rows without Auth credentials; incoming FK audit lives in cleanup.sql.
     backup = run(

@@ -1,0 +1,28 @@
+[
+  {
+    "id": "UML-R01",
+    "entity": "RouteWaypoint.sequence",
+    "severity": "media",
+    "owner": "HAC-40 / Cristhian",
+    "source": "cargomesh/src/shared/schemas/v2/workflow.ts:121",
+    "reproduction": "Publicar corredor con dos waypoints y crear ruta autenticada. BD conserva sequence=1,2; POST y GET omiten data.legs[].waypoints[].sequence.",
+    "evidence": "logs/uml-before-fix.log: cinco asserts rojos corresponden a R01 y R02; controles de permisos y boundary authenticated pasan.",
+    "correction": "Proyección de orden 1-based del snapshot persistido; DTO de salida exige sequence positivo. No se admite sequence en la entrada del corredor.",
+    "retest": "POST/GET devuelven 1,2 en el mismo orden; metadata y fuentes conservadas; otro tenant 404 y anon 401; constraints bajo authenticated.",
+    "localStatus": "CORREGIDO_LOCAL",
+    "baselineStatus": "DEFECTO_CONFIRMADO"
+  },
+  {
+    "id": "UML-R02",
+    "entity": "Booking.selectionDecisionId",
+    "severity": "media",
+    "owner": "HAC-40 / Cristhian",
+    "source": "cargomesh/src/shared/schemas/v2/workflow.ts:193",
+    "reproduction": "Crear decisión y booking autenticados. v2_bookings.decision_id existe, pero POST/GET omiten data.decisionId.",
+    "evidence": "logs/uml-before-fix.log; mediciones-originales/extended-roundtrips.json conserva input.decisionId y muestra omisión en written/read.",
+    "correction": "Proyección de decision_id en data.decisionId y campo UUID obligatorio en salida compartida HTTP/MCP.",
+    "retest": "POST/GET conservan el UUID de la decisión; otro tenant 404 y anon 401; helper privado sigue denegado; constraints bajo authenticated.",
+    "localStatus": "CORREGIDO_LOCAL",
+    "baselineStatus": "DEFECTO_CONFIRMADO"
+  }
+]

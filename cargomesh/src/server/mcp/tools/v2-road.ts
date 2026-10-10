@@ -7,6 +7,7 @@ import { createV2Draft, getV2Draft, V2DraftError } from "@/server/modules/freigh
 import { evaluateV2RoadByRequestId } from "@/server/modules/road-serviceability/application/evaluate-v2-road";
 import { getIntakeOptions } from "@/server/modules/intake/application/get-intake-options";
 import type { McpPrincipal } from "../auth/principal";
+import { requireCurrentMcpActor } from "../auth/domain-actor";
 
 const CreateInput = z.object({ idempotencyKey: z.string().uuid(), request: CreateFreightRequestV2InputSchema }).strict();
 const ReadInput = z.object({ requestId: z.string().uuid() }).strict();
@@ -25,18 +26,22 @@ export type V2RoadToolServices = {
 
 export const persistedV2RoadToolServices: V2RoadToolServices = {
   async options(actor) {
+    await requireCurrentMcpActor(actor);
     const { v2IntakeOptionsRepository } = await import("@/server/modules/intake/infrastructure/supabase-intake-options-repository");
     return getIntakeOptions(actor, await v2IntakeOptionsRepository());
   },
   async create(input, actor) {
+    await requireCurrentMcpActor(actor);
     const { v2DraftRepository } = await import("@/server/modules/freight-requests/infrastructure/supabase-draft-repository");
     return createV2Draft(input.request, input.idempotencyKey, actor, await v2DraftRepository());
   },
   async read(input, actor) {
+    await requireCurrentMcpActor(actor);
     const { v2DraftRepository } = await import("@/server/modules/freight-requests/infrastructure/supabase-draft-repository");
     return getV2Draft(input.requestId, actor, await v2DraftRepository());
   },
   async evaluate(input, actor) {
+    await requireCurrentMcpActor(actor);
     const [{ v2DraftRepository }, { createV2ServerSupabaseClient }, { loadRoadServices }] = await Promise.all([
       import("@/server/modules/freight-requests/infrastructure/supabase-draft-repository"),
       import("@/server/db/supabase/v2"),

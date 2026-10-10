@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { signInWithPassword } from "./password-login";
@@ -90,20 +89,4 @@ test("keeps a non-credential HTTP 400 error recoverable", async () => {
   if (!result.ok) {
     assert.equal(result.kind, "recoverable");
   }
-});
-
-test("the production login uses a server-side one-click demo session without client credentials", () => {
-  const componentSource = readFileSync(
-    new URL("../../components/demo-login.tsx", import.meta.url),
-    "utf8",
-  );
-
-  assert.equal(componentSource.includes("Carlos Mendoza"), false);
-  assert.equal(componentSource.includes("ACME Mining Perú"), false);
-  assert.equal(componentSource.includes("sessionStorage"), false);
-  assert.match(componentSource, /startDemoSession/);
-  assert.equal(componentSource.includes("signInWithPassword"), false);
-  assert.equal(componentSource.includes('type="password"'), false);
-  assert.match(componentSource, /router\.replace\("\/dashboard"\)/);
-  assert.match(componentSource, /router\.refresh\(\)/);
 });

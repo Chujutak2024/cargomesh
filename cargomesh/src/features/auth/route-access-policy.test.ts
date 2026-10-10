@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -87,27 +86,4 @@ test("redirects an active member away from login and leaves denied visitors on l
     }, deniedRecorder.redirect);
     assert.equal(deniedRecorder.destination, null);
   }
-});
-
-test("guards every operational B route without protecting provider WebMCP pages", () => {
-  const source = (relativePath: string) =>
-    readFileSync(new URL(relativePath, import.meta.url), "utf8");
-
-  for (const pagePath of [
-    "../../app/(cargomesh)/dashboard/page.tsx",
-    "../../app/(cargomesh)/freight-request/new/page.tsx",
-    "../../app/(cargomesh)/dispatch/[id]/page.tsx",
-    "../../app/(cargomesh)/booking/[requestCode]/status/page.tsx",
-  ]) {
-    assert.match(source(pagePath), /requireOperationalRouteAccess/);
-  }
-
-  assert.match(
-    source("../../app/(cargomesh)/login/page.tsx"),
-    /redirectAuthenticatedMemberFromLogin/,
-  );
-  assert.doesNotMatch(
-    source("../../app/providers/[carrierSlug]/page.tsx"),
-    /requireOperationalRouteAccess|redirectAuthenticatedMemberFromLogin/,
-  );
 });

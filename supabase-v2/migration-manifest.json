@@ -369,6 +369,83 @@
       "dependencies": [
         "20261005192012"
       ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261007083000_hac40_model_associations.sql",
+      "version": "20261007083000",
+      "sha256": "eb9b408081808ed4b49c3fc4108e372daa917af11cc411bf0f04133151398b92",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261006161533"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261007084000_hac40_route_planner.sql",
+      "version": "20261007084000",
+      "sha256": "0cd7ea31dcd7e709f5f974768e4a4c87d7eb60acf8189df1778bc423a85dd6bf",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261007083000"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261007170000_hac40_planner_qa_fixes.sql",
+      "version": "20261007170000",
+      "sha256": "1aec3bd682f1b0dcb914e144fa33d8c744b985dc6e2d99df5b95d254ed1b6082",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261007084000"
+      ]
+    },
+    {
+      "issue": "HAC-41",
+      "path": "supabase-v2/supabase/migrations/20261008235124_hac41_identity_integrations.sql",
+      "version": "20261008235124",
+      "sha256": "a89c73550fd2ab621d3ea2dd64569af45d9ac3e914d80e2c912188a65cd52681",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261007170000"
+      ]
+    },
+    {
+      "issue": "HAC-41",
+      "path": "supabase-v2/supabase/migrations/20261008235540_hac41_carrier_workflow.sql",
+      "version": "20261008235540",
+      "sha256": "1f70e1c46391603dc31a3f6a431987ba2d775980d52970622186dae30eff64e0",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261008235124"
+      ]
+    },
+    {
+      "issue": "HAC-41",
+      "path": "supabase-v2/supabase/migrations/20261009000410_hac41_mcp_channels.sql",
+      "version": "20261009000410",
+      "sha256": "a7a23afb7c279e778a08783045ae0cbde225cf350f9768f480de34f76c8440bc",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261008235540"
+      ]
+    },
+    {
+      "issue": "HAC-40",
+      "path": "supabase-v2/supabase/migrations/20261009190000_hac40_uml_read_projection.sql",
+      "version": "20261009190000",
+      "sha256": "859dfcabeb58f1a5e3874eb254771d983b228f4ed28b4ce51f16f9502fa3a56a",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261009000410"
+      ]
     }
   ]
 }

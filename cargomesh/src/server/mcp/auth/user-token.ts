@@ -11,6 +11,9 @@ export type McpAccountLink = {
   scopes: readonly string[];
   expiresAt: string | null;
   revokedAt: string | null;
+  provider: "ALEXA_PLUS" | "OTHER" | null;
+  externalSubjectRef: string | null;
+  verifiedAt: string | null;
 };
 
 export type McpAccountLinkRepository = {
@@ -31,6 +34,7 @@ export type McpMembershipRepository = {
 export type VerifiedSupabaseIdentity = {
   userId: string;
   userEmail: string;
+  emailConfirmedAt: string | null;
   oauthClientId: string;
 };
 
@@ -95,14 +99,14 @@ async function verifySupabaseIdentity(accessToken: string): Promise<VerifiedSupa
   }
   const oauthClientId = configuredOAuthClientId();
   requireSupabaseOAuthClaims(claims, user.id, oauthClientId, process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
-  return { userId: user.id, userEmail: user.email ?? "", oauthClientId };
+  return { userId: user.id, userEmail: user.email ?? "", emailConfirmedAt: user.email_confirmed_at ?? null, oauthClientId };
 }
 
 const supabaseAccountLinks: McpAccountLinkRepository = {
   async findByUserAndClient(authUserId, oauthClientId, accessToken) {
     const client = createUserAccessSupabaseClient(accessToken);
     const { data, error } = await client.from("mcp_account_links")
-      .select("auth_user_id,oauth_client_id,organization_id,organization_member_id,status,scopes,expires_at,revoked_at")
+      .select("auth_user_id,oauth_client_id,organization_id,organization_member_id,status,scopes,expires_at,revoked_at,provider,external_subject_ref,verified_at")
       .eq("auth_user_id", authUserId)
       .eq("oauth_client_id", oauthClientId)
       .maybeSingle();
@@ -117,6 +121,9 @@ const supabaseAccountLinks: McpAccountLinkRepository = {
       scopes: data.scopes,
       expiresAt: data.expires_at,
       revokedAt: data.revoked_at,
+      provider: data.provider as McpAccountLink["provider"],
+      externalSubjectRef: data.external_subject_ref,
+      verifiedAt: data.verified_at,
     };
   },
 };
@@ -151,11 +158,18 @@ export async function authenticateMcpUserBearer(
   dependencies: Dependencies = defaults,
 ): Promise<AuthenticatedMcpUserBearer> {
   const identity = await dependencies.verifyIdentity(accessToken);
+  // Recheck Auth's current user record: a link or JWT reflects earlier consent.
+  if (!identity.userEmail || !identity.emailConfirmedAt ||
+      !Number.isFinite(Date.parse(identity.emailConfirmedAt)) || Date.parse(identity.emailConfirmedAt) > Date.now()) {
+    throw new Error("FORBIDDEN: A currently confirmed email is required for MCP access.");
+  }
   const link = await dependencies.accountLinks.findByUserAndClient(identity.userId, identity.oauthClientId, accessToken);
   if (
     !link || link.status !== "ACTIVE" || link.authUserId !== identity.userId ||
     link.oauthClientId !== identity.oauthClientId || !link.scopes.includes("mcp:tools") ||
     link.revokedAt !== null || !link.expiresAt ||
+    !["ALEXA_PLUS", "OTHER"].includes(link.provider ?? "") || link.externalSubjectRef !== identity.userId ||
+    !link.verifiedAt || !Number.isFinite(Date.parse(link.verifiedAt)) || Date.parse(link.verifiedAt) > Date.now() ||
     !Number.isFinite(Date.parse(link.expiresAt)) || Date.parse(link.expiresAt) <= Date.now()
   ) throw new Error("FORBIDDEN: No active MCP account link for this user and client.");
 

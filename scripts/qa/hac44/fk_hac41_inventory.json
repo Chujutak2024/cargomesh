@@ -1,0 +1,155 @@
+{
+  "sourceSha": "8c686b4c1111c87f8b9c18d666b09150d0ad22b9",
+  "records": [
+    {
+      "table": "private.v2_carrier_workflow_receipts",
+      "constraint": "v2_carrier_workflow_receipts_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "HAC41_INTERNA",
+      "reason": "HAC-41 physical FK; requires an independent strict positive and exact 23503 negative."
+    },
+    {
+      "table": "private.v2_carrier_workflow_receipts",
+      "constraint": "v2_carrier_workflow_receipts_operator_id_carrier_id_fkey",
+      "childColumns": [
+        "operator_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_operators",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (operator_id, carrier_id) REFERENCES carrier_operators(id, carrier_id)",
+      "category": "HAC41_INTERNA",
+      "reason": "HAC-41 physical FK; requires an independent strict positive and exact 23503 negative."
+    },
+    {
+      "table": "private.v2_identity_receipts",
+      "constraint": "v2_identity_receipts_auth_user_id_fkey",
+      "childColumns": [
+        "auth_user_id"
+      ],
+      "referenceTable": "auth.users",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id)",
+      "category": "HAC41_INTERNA",
+      "reason": "HAC-41 physical FK; requires an independent strict positive and exact 23503 negative."
+    },
+    {
+      "table": "private.v2_mcp_confirmations",
+      "constraint": "v2_mcp_confirmations_auth_user_id_fkey",
+      "childColumns": [
+        "auth_user_id"
+      ],
+      "referenceTable": "auth.users",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id)",
+      "category": "HAC41_INTERNA",
+      "reason": "HAC-41 physical FK; requires an independent strict positive and exact 23503 negative."
+    },
+    {
+      "table": "private.v2_mcp_confirmations",
+      "constraint": "v2_mcp_confirmations_member_id_organization_id_auth_user_i_fkey",
+      "childColumns": [
+        "member_id",
+        "organization_id",
+        "auth_user_id"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id",
+        "organization_id",
+        "auth_user_id"
+      ],
+      "definition": "FOREIGN KEY (member_id, organization_id, auth_user_id) REFERENCES organization_members(id, organization_id, auth_user_id)",
+      "category": "HAC41_INTERNA",
+      "reason": "HAC-41 physical FK; requires an independent strict positive and exact 23503 negative."
+    },
+    {
+      "table": "public.response_integrations",
+      "constraint": "response_integrations_carrier_id_fkey",
+      "childColumns": [
+        "carrier_id"
+      ],
+      "referenceTable": "public.carriers",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (carrier_id) REFERENCES carriers(id)",
+      "category": "HAC41_MODELO",
+      "reason": "HAC-41 physical FK; requires an independent strict positive and exact 23503 negative."
+    },
+    {
+      "table": "public.response_integrations",
+      "constraint": "response_integrations_carrier_service_id_carrier_id_fkey",
+      "childColumns": [
+        "carrier_service_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_services",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (carrier_service_id, carrier_id) REFERENCES carrier_services(id, carrier_id)",
+      "category": "HAC41_MODELO",
+      "reason": "HAC-41 physical FK; requires an independent strict positive and exact 23503 negative."
+    },
+    {
+      "table": "public.v2_carrier_offers",
+      "constraint": "v2_carrier_offers_issuer_auth_user_id_fkey",
+      "childColumns": [
+        "issuer_auth_user_id"
+      ],
+      "referenceTable": "auth.users",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (issuer_auth_user_id) REFERENCES auth.users(id)",
+      "category": "HAC41_MODELO",
+      "reason": "HAC-41 physical FK; requires an independent strict positive and exact 23503 negative."
+    },
+    {
+      "table": "public.v2_carrier_offers",
+      "constraint": "v2_carrier_offers_issuer_member_id_fkey",
+      "childColumns": [
+        "issuer_member_id"
+      ],
+      "referenceTable": "public.organization_members",
+      "referenceColumns": [
+        "id"
+      ],
+      "definition": "FOREIGN KEY (issuer_member_id) REFERENCES organization_members(id)",
+      "category": "HAC41_MODELO",
+      "reason": "HAC-41 physical FK; requires an independent strict positive and exact 23503 negative."
+    },
+    {
+      "table": "public.v2_carrier_offers",
+      "constraint": "v2_carrier_offers_issuer_operator_id_carrier_id_fkey",
+      "childColumns": [
+        "issuer_operator_id",
+        "carrier_id"
+      ],
+      "referenceTable": "public.carrier_operators",
+      "referenceColumns": [
+        "id",
+        "carrier_id"
+      ],
+      "definition": "FOREIGN KEY (issuer_operator_id, carrier_id) REFERENCES carrier_operators(id, carrier_id)",
+      "category": "HAC41_MODELO",
+      "reason": "HAC-41 physical FK; requires an independent strict positive and exact 23503 negative."
+    }
+  ]
+}

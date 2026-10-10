@@ -1,0 +1,181 @@
+{
+  "baseCommit": "1e9ff995ef9c8fa6789e473263e64873bcb13fba",
+  "implementationBranch": "codex/v2-full-identity-mcp",
+  "environment": "LOCAL_DOCKER_ONLY",
+  "result": "PASS",
+  "migrations": 26,
+  "manifestSha256": "1da2fd78fd66e263e84952efc26c4be11555016329135e85f4cbf61185d121fc",
+  "pgtap": {
+    "pass": 979,
+    "fail": 0,
+    "files": [
+      {
+        "file": "supabase/tests/06_release_service_role_grants.test.sql",
+        "pass": 16,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/09_v2_clean_road_network.test.sql",
+        "pass": 34,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/10_v2_qa_negative_cases.test.sql",
+        "pass": 16,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/11_v2_scenario_data.test.sql",
+        "pass": 7,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/12_v2_hac12_road_vertical.test.sql",
+        "pass": 43,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/13_v2_hac12_rereview.test.sql",
+        "pass": 54,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/14_v2_hac12_receipt_hash.test.sql",
+        "pass": 21,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/12_hac11_mcp_account_links.test.sql",
+        "pass": 14,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/15_v2_hac40_facility_commands.test.sql",
+        "pass": 21,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/16_v2_hac40_request_lifecycle.test.sql",
+        "pass": 19,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/17_v2_hac40_organization_commands.test.sql",
+        "pass": 17,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/18_v2_hac40_full_request_contract.test.sql",
+        "pass": 20,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/19_v2_hac40_catalog.test.sql",
+        "pass": 91,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/20_v2_hac40_fleet.test.sql",
+        "pass": 77,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/21_v2_hac40_crew.test.sql",
+        "pass": 69,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/22_v2_hac40_workflow.test.sql",
+        "pass": 37,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/23_v2_hac40_operation.test.sql",
+        "pass": 43,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/24_v2_hac40_consolidation.test.sql",
+        "pass": 33,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/25_v2_hac40_combination.test.sql",
+        "pass": 41,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/26_v2_hac40_workflow_constraints.test.sql",
+        "pass": 17,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/27_v2_hac40_multileg.test.sql",
+        "pass": 15,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/28_v2_hac40_execution_cancel.test.sql",
+        "pass": 32,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/29_v2_hac40_ltl_operations.test.sql",
+        "pass": 52,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/30_v2_hac40_ltl_cancellation.test.sql",
+        "pass": 51,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/31_v2_hac40_ltl_predeparture.test.sql",
+        "pass": 34,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql",
+        "pass": 71,
+        "fail": 0
+      },
+      {
+        "file": "supabase/tests/33_v2_hac41_identity_channels.test.sql",
+        "pass": 34,
+        "fail": 0
+      }
+    ]
+  },
+  "application": {
+    "typecheck": "PASS",
+    "architecture": {
+      "result": "PASS",
+      "modules": 174,
+      "clientEntrypoints": 23
+    },
+    "release": {
+      "pass": 299,
+      "fail": 0
+    },
+    "productionBuild": "PASS"
+  },
+  "channels": {
+    "checks": 22,
+    "currentAuthEmailConfirmation": "LOSS_DENIED_AND_RECOVERY_ALLOWED_WITH_SAME_OAUTH_TOKEN",
+    "oauth": "REAL_LOCAL_SUPABASE_PKCE",
+    "concurrentBookingConfirmations": "ONE_WRITE_ONE_REPLAY",
+    "alexaPlusLive": false,
+    "businessServiceRole": false
+  },
+  "drift": {
+    "differences": 0,
+    "schemas": [
+      "public",
+      "private"
+    ],
+    "engine": "pg-delta"
+  },
+  "independentQa": "PENDING_HAC44",
+  "hostedApplication": "NOT_EXECUTED",
+  "ci": "RESULT_RECORDED_BY_HEAD_SHA_IN_PR_AND_LINEAR"
+}

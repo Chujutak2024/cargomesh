@@ -1,0 +1,15 @@
+export const V2WorkflowToolDescriptions = {
+  list_v2_freight_requests: "List the linked organization's persisted requests with pagination.",
+  revise_v2_freight_request: "Revise a draft with its expected version and a UUID retry key. Reload after STALE_DRAFT.",
+  submit_v2_freight_request: "Submit a complete request only after explicit user confirmation; no offer or booking is created.",
+  find_v2_route_alternatives: "Search the current published directed network for the expected draft version. Return exclusions, bounds, sources and versions; no price or capacity guarantee.",
+  replan_v2_route: "Propose alternatives after a persisted condition. The user must select any replacement; existing commitments stay unchanged.",
+  explain_v2_route: "Explain the saved route snapshot, sources, conditions and versions. Current availability is not confirmed.",
+  build_v2_transport_plan: "Build a plan with compatible carrier/service/resources for each leg and window using shared domain validation.",
+  rank_v2_offers: "Rank persisted offers with a versioned scoring policy. Never invent a carrier quote or select on the customer's behalf.",
+  read_v2_workflow: "Read plans, opportunities, offers, rankings, bookings, reservations or tracking. Carrier scope requires a verified carrier operator and server-owned grant.",
+  prepare_v2_commercial_action: "Prepare a commercial or destructive action without executing it. Show the complete proposed value, affected resources and expiry to the user and ask for confirmation. Keep the returned confirmation ID and retry key.",
+  confirm_v2_commercial_action: "Execute only the stored proposal after the user explicitly confirms it. Never invent consent. Use the same confirmation ID for an identical retry. Revocation, roles, expected versions and current commitments are rechecked.",
+  resolve_v2_location: "Match text or coordinates against authorized saved facilities and published nodes. No external geocoder is used. Ask the user to choose a candidate; NO_MATCH does not invent a place.",
+  confirm_v2_location: "Confirm the user's chosen location and expected source version. Ambiguous results require a specific selection; stale and foreign candidates are rejected.",
+} as const;

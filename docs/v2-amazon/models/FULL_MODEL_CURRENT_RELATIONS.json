@@ -1,7 +1,7 @@
 {
-  "sourceCommit": "c686aeae7d17a6b641447c15dcf86cd9edd7dfa4",
-  "scope": "F-02 relations 34/55/69/89; source reconciliation only, not full-model or hosted certification",
-  "qaEvidence": "User-provided HAC-44 report for #104 @ 1e241b3: F-05 BD 10/10, HTTP 10/10. F-02 remains partial pending independent documentary review.",
+  "sourceCommit": "42a4fde4ac2e9242d8f0ed46029101a4e44d90ed",
+  "scope": "F-02 34/55/69/89, HAC-40 associations 48/66, HAC-41 identity 74; each increment declares evidence. Independent QA pending, not hosted certification; 35/40/73/83/90 reconciled in derived UML 08 against main @ 42a4fde; historical QA statuses unchanged",
+  "qaEvidence": "HAC-44 independent review of #106 @ e06d0c0: relations 34, 55 and 69 conform; relation 89 has a low documentary finding. Its FK and UML multiplicity conform. The statement below is corrected against the local catalog at fe12d41; relation 89 awaits independent documentary recheck. F-05 BD/HTTP 10/10 at #104 @ 1e241b3 is separate evidence, not full-model certification. HAC-44 independent review of main @ 42a4fde (9 Oct, comment 40b0d7b6-12f3-4ddd-a4c0-453463fd9d60): five documentary differences, no confirmed new functional backend defect. The derived diagram needs independent documentary recheck; F-02 remains partial.",
   "relations": [
     {
       "number": 34,
@@ -52,7 +52,7 @@
       "number": 89,
       "source": "PlanResource",
       "target": "CapacityReservation",
-      "treatment": "capacity_reservations.plan_resource_id -> plan_resources.id; plan_leg_assignment_id -> plan_leg_assignments.id; plan_assignment_id -> plan_resource_bindings.id retained for compatibility; a_reservation_resource validates coherence; NULL is allowed only for a pre-plan hold",
+      "treatment": "capacity_reservations.plan_resource_id -> plan_resources.id; plan_leg_assignment_id -> plan_leg_assignments.id; plan_assignment_id -> plan_resource_bindings.id retained for compatibility; a_reservation_resource rejects resource/leg IDs without a binding and derives or validates both IDs when a binding is present. All three IDs may be NULL regardless of reservation/booking state at the table level. Native workflow commands require the canonical assignment; the trigger does not enforce a pre-plan-only NULL rule",
       "api": "POST capacity/holds: assignmentId canonical header plus planResourceId for multiple resources; GET hold: data.planResourceId",
       "status": "DOCUMENTED_PENDING_F02_REVIEW",
       "evidence": [
@@ -61,6 +61,149 @@
         "supabase-v2/supabase/migrations/20261006161533_hac40_deferred_resource_guard.sql",
         "cargomesh/src/shared/schemas/v2/workflow.ts",
         "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql"
+      ]
+    },
+    {
+      "number": 48,
+      "source": "OperationalIncident",
+      "target": "RouteCondition",
+      "treatment": "incident_route_conditions(incident_id,condition_id), composite PK and two indexed FKs; native command validates the execution service route, active condition and incident time; 0..N both directions preserved",
+      "api": "POST /carriers/:carrierId/incidents/:id/conditions; GET /carriers/:carrierId/executions/:executionId/incidents/:id -> data.routeConditionIds",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261007083000_hac40_model_associations.sql",
+        "cargomesh/src/shared/schemas/v2/workflow.ts",
+        "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql",
+        "cargomesh/scripts/hac40-model-closure-http-smoke.mjs"
+      ]
+    },
+    {
+      "number": 66,
+      "source": "FulfilmentPartner",
+      "target": "PlanLegAssignment",
+      "treatment": "plan_leg_assignments.fulfilment_partner_id nullable indexed FK; carrier/service match and agreement covers whole leg window; native commercial transitions revalidate the current agreement",
+      "api": "POST /plans/:id/assignments/:assignmentId/partner; GET /plans/:id -> data.legAssignments[].fulfilmentPartnerId",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261007083000_hac40_model_associations.sql",
+        "cargomesh/src/shared/schemas/v2/workflow.ts",
+        "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql",
+        "cargomesh/scripts/hac40-model-closure-http-smoke.mjs"
+      ]
+    },
+    {
+      "number": 74,
+      "source": "CarrierOperator",
+      "target": "CarrierOffer",
+      "treatment": "v2_carrier_offers.(issuer_operator_id,carrier_id) -> carrier_operators.(id,carrier_id); issuer_auth_user_id -> auth.users.id; immutable MANUAL issuer derived from verified operator/session. Legacy offers retain nullable proof and are excluded from new commitments until attributable; API/MCP emission requires a verified adapter",
+      "api": "POST /api/v2/carriers/:carrierId/opportunities/:id/offers; GET offer -> data.data.source.issuerId; prepare/confirm_v2_commercial_action",
+      "status": "IMPLEMENTED_LOCAL_VERIFIED_PENDING_INDEPENDENT_QA",
+      "implementationBranch": "codex/v2-full-identity-mcp",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261008235540_hac41_carrier_workflow.sql",
+        "cargomesh/src/server/auth/carrier.ts",
+        "cargomesh/src/server/hono/routes/carrier-workflow.ts",
+        "supabase/tests/33_v2_hac41_identity_channels.test.sql",
+        "cargomesh/scripts/hac41-channels-http-smoke.mjs"
+      ]
+    },
+    {
+      "number": 35,
+      "source": "PlanResource",
+      "target": "CapacitySource",
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-248",
+      "currentEndLabels": [
+        "0..*",
+        "1"
+      ],
+      "treatment": "A persisted plan_resources row has exactly one source: asset_id XOR capacity_pool_id, enforced by CHECK; UNKNOWN availability does not permit both IDs NULL. CapacitySource is a discriminated ASSET/POOL projection, not another writable table.",
+      "api": "POST plans: assignments[].resources[] requires exactly one assetId/capacityPoolId; GET plans exposes that binding",
+      "status": "DOCUMENTED_DERIVED_UML_PENDING_INDEPENDENT_RECHECK",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+        "cargomesh/src/shared/schemas/v2/workflow.ts",
+        "supabase/tests/22_v2_hac40_workflow.test.sql",
+        "docs/v2-amazon/contracts/PRODUCT_SCOPE.md"
+      ]
+    },
+    {
+      "number": 40,
+      "source": "CarrierOffer",
+      "target": "RankedOption",
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-263",
+      "currentEndLabels": [
+        "1..*",
+        "0..*"
+      ],
+      "treatment": "ranked_options.offer_id retains the representative offer; data.offerIds contains 1..* attributable offers covering every plan assignment exactly once. DISJOINT_COVER_V1 ranks complete bundles within the persisted known universe; an offer may occur in multiple ranking snapshots.",
+      "api": "POST ranking and GET rankings: data.options[].offerId plus offerIds; 1..* offers per option",
+      "status": "DOCUMENTED_DERIVED_UML_PENDING_INDEPENDENT_RECHECK",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+        "cargomesh/src/shared/schemas/v2/workflow.ts",
+        "supabase/tests/22_v2_hac40_workflow.test.sql",
+        "docs/v2-amazon/contracts/PRODUCT_SCOPE.md"
+      ]
+    },
+    {
+      "number": 73,
+      "source": "FreightRequest",
+      "target": "ShipmentContact",
+      "umlId": "rg1mzH5NKyUcr1gneQok-1",
+      "currentEndLabels": [
+        "1",
+        "1"
+      ],
+      "treatment": "freight_requests.v2_snapshot.contacts.recipient is one mandatory validated RECIPIENT value per native V2 request. It is embedded in the aggregate; no independent contact CRUD or claim about legacy V1 rows.",
+      "api": "POST/GET requests: contacts.recipient in input, data.contacts.recipient in read projection",
+      "status": "DOCUMENTED_DERIVED_UML_PENDING_INDEPENDENT_RECHECK",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+        "cargomesh/src/shared/schemas/v2/workflow.ts",
+        "supabase/tests/22_v2_hac40_workflow.test.sql",
+        "docs/v2-amazon/contracts/PRODUCT_SCOPE.md",
+        "cargomesh/src/shared/schemas/v2/freight-request.ts",
+        "supabase-v2/supabase/migrations/20261004025720_hac40_full_request_contract.sql"
+      ]
+    },
+    {
+      "number": 83,
+      "source": "SelectionDecision",
+      "target": "Booking",
+      "umlId": "TTPNMglXCn0O7Q35afVn-1",
+      "currentEndLabels": [
+        "1",
+        "0..*"
+      ],
+      "treatment": "A selection decision authorizes 1..* selected offers; v2_bookings.decision_id binds each booking to one decision, and UNIQUE(decision_id,offer_id) prevents duplicates within it. A decision can have 0..* bookings, one per selected offer/emitter. Authorization does not imply carrier confirmation or distributed atomicity.",
+      "api": "POST bookings: decisionId and selected offerId; GET bookings: data.decisionId",
+      "status": "DOCUMENTED_DERIVED_UML_PENDING_INDEPENDENT_RECHECK",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+        "cargomesh/src/shared/schemas/v2/workflow.ts",
+        "supabase/tests/22_v2_hac40_workflow.test.sql",
+        "docs/v2-amazon/contracts/PRODUCT_SCOPE.md"
+      ]
+    },
+    {
+      "number": 90,
+      "source": "FreightRequest",
+      "target": "ShipmentContact",
+      "umlId": "cm-v2fix-3",
+      "currentEndLabels": [
+        "1",
+        "1"
+      ],
+      "treatment": "freight_requests.v2_snapshot.contacts.pickup is one mandatory validated PICKUP value per native V2 request, embedded in the aggregate. Legacy nullable snapshots are not rewritten by this documentary reconciliation.",
+      "api": "POST/GET requests: contacts.pickup in input, data.contacts.pickup in read projection",
+      "status": "DOCUMENTED_DERIVED_UML_PENDING_INDEPENDENT_RECHECK",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+        "cargomesh/src/shared/schemas/v2/workflow.ts",
+        "supabase/tests/22_v2_hac40_workflow.test.sql",
+        "docs/v2-amazon/contracts/PRODUCT_SCOPE.md",
+        "cargomesh/src/shared/schemas/v2/freight-request.ts",
+        "supabase-v2/supabase/migrations/20261004025720_hac40_full_request_contract.sql"
       ]
     }
   ]

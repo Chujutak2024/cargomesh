@@ -48,6 +48,8 @@ if __name__ == '__main__':
         else: raise RuntimeError('Local Next readiness timeout')
         result = run(['pnpm','--dir','cargomesh','exec','tsx','scripts/hac40-workflow-http-smoke.mjs'],env=env,timeout=240)
         print(result.strip())
+        result = run(['pnpm','--dir','cargomesh','exec','tsx','scripts/hac40-model-closure-http-smoke.mjs'],env=env,timeout=240)
+        print(result.strip())
     finally:
         server.terminate()
         try: server.wait(timeout=15)

@@ -13,7 +13,7 @@ export function ConversationPreview() {
     <p>Simulated selector data. This page does not create a draft or evaluate ROAD.</p>
     <p>The authenticated <code>/freight-request/new</code> page connects this same chat to the V2 APIs.</p>
     <ConversationChat draft={draft} options={getIntakeOptionsFixture().data} optionsSource="fixture" request={null} evaluation={null}
-      busy={true} onField={(field, value) => setDraft((current) => ({ ...current, [field]: value }))}
+      busy={false} onField={(field, value) => setDraft((current) => ({ ...current, [field]: value }))}
       onCreate={() => {}} onRead={() => {}} onEvaluate={() => {}} />
   </main>;
 }

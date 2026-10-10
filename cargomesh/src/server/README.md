@@ -1,42 +1,17 @@
-# CargoMesh backend
+# Backend CargoMesh V2
 
-This is the active TypeScript backend. Next.js hosts it in the same deployment
-as the web UI; `cargomesh/` is the application directory.
+El backend TypeScript vive en la aplicación Next.js `cargomesh/`.
 
-| Directory | Responsibility |
-| --- | --- |
-| `services/<domain>/` | Authenticated use cases, persistence and injectable server policies |
-| `auth/` | Session/member resolution and server page access guards |
-| `db/supabase/` | Session and administrative database clients; server-only |
-| `hono/` | REST transport: parsing, dispatch and HTTP responses |
-| `mcp/` | MCP transport, tool registration and safe result projection |
-| `i18n/` | Locale resolution using server request context |
+| Directorio | Función |
+|---|---|
+| modules/ | Servicios de dominio, repositorios y contratos persistentes V2 |
+| services/v2-workspace/ | Lectores V2 para dashboard, solicitudes, reservas y ejecuciones |
+| auth/ | Sesión, membresía activa y autorización |
+| db/supabase/ | Clientes autenticados tipados contra el esquema V2 |
+| hono/ | API REST /api/v2 |
+| mcp/ | Transporte y herramientas MCP V2 implementadas |
+| conversation/ | Interpretación acotada, con Bedrock opcional |
 
-Next.js route entry points remain in `../app/api/` and `../app/mcp/`; server
-pages may call services directly. Both Hono and MCP call the same services
-without internal HTTP. Services must not import transport handlers or UI.
+La UI y los canales llaman servicios compartidos. Los datos sintéticos se cargan únicamente mediante escenarios locales identificados. El runtime no registra rutas ni herramientas del demo WebMCP V1.
 
-`../features/` contains domain contracts, pure calculations, client workflows
-and feature presentation. `../shared/` holds cross-cutting schemas.
-The browser Supabase client remains in `../lib/supabase/client.ts` and never
-uses the administrative client.
-
-Production service entry points retain `import "server-only"`. Injectable
-policies can be tested in Node without Next.js; their server directory still
-excludes them from browser dependencies through `pnpm check:architecture`.
-Tests live beside the code they exercise; functional/browser regression tests
-remain with their feature.
-
-From `cargomesh/`, run:
-
-```sh
-pnpm check:architecture
-pnpm typecheck
-pnpm test:release
-pnpm build
-```
-
-The architecture check follows static and literal dynamic runtime imports from
-every `use client` entry, rejects dependencies on `server/`, `server-only` and
-Node built-ins, and checks service-to-transport and shared-to-server boundaries.
-Type-only imports are permitted. Next.js build remains the final bundling check.
+Consulta [el inventario API](../../../docs/v2-amazon/delivery/HAC40_API_ENDPOINTS.md) y [los límites actuales](../../../docs/v2-amazon/delivery/HAC40_FULL_API_AND_CLOSURE.md). Las migraciones históricas de importación/regresión permanecen separadas de la cadena nativa supabase-v2.

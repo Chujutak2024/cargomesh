@@ -10,6 +10,7 @@ import sys
 
 from common import LOGS, OUT, save
 from local import sql
+from fk_baseline_scope import STRICT_FK_IDENTITIES
 
 
 def lit(s):
@@ -36,7 +37,7 @@ def main():
     constraints = []
     for c in cat["constraints"]:
         tab = c["relation"] if "." in c["relation"] else "public." + c["relation"]
-        if c["contype"] == "f" and tab.split(".")[-1] in wanted and tab in keys:
+        if c["contype"] == "f" and tab.split(".")[-1] in wanted and tab in keys and (tab, c["conname"]) not in STRICT_FK_IDENTITIES:
             m = re.search(
                 r"FOREIGN KEY \(([^)]+)\) REFERENCES ([\w.]+)\(([^)]+)\)", c["definition"]
             )
