@@ -32,6 +32,10 @@ El incremento agrega una migración de lectura: RouteWaypoint.sequence y Booking
 
 F-02 permanece parcial: la medición actual certifica 225 endpoints y 297 atributos; quedan 97 atributos parciales, tres divergencias documentales legacy, 42 relaciones y semántica de 146 métodos por probar. La clasificación vigente está en `uml-bd-api-2026-10-09/29c385f/`; los CSV del nivel superior conservan el corte original d3a80eb y no sustituyen los resultados posteriores. Axel puede continuar MCP desde la base compartida; los fallos nuevos requieren reproducción antes de cambiar dominio.
 
+## Contratos e integraciones externas — revisión posterior a main @ 3ba9b95
+
+Los contratos de dominio/arquitectura y sus traducciones se alinean con selección persistente de `1..*` ofertas y bookings separados. La [certificación de integraciones](./INTEGRATION_CERTIFICATION_2026-10-09.md) distingue el smoke OAuth alojado previo del acceso actual, el adaptador Bedrock de una respuesta real de AWS y la operación manual de un carrier externo. F-02 y el alcance del chat conservan sus responsables y pendientes.
+
 ## Antecedente del corte de limpieza — 7 octubre
 
 La base de esta limpieza es `50c12d115dd9b2171d9375acd215593de29e8f34`: incorpora #104 (correcciones F-05/calendars), #105 (harness QA), #106 (reconciliación documental DER F-02) y #107 (retiro de planes superados). El PR #108 promovió ese árbol a `main` con autorización expresa (merge `feef2419fa5f786c9a6063f85aeee452dd9eb84b`). La limpieza del runtime V1 y su prueba local se documentan en [esta evidencia](./V1_RUNTIME_RETIREMENT_LOCAL_EVIDENCE_2026-10-07.md); no se presumen integradas por estar documentadas.

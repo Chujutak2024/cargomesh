@@ -2,7 +2,7 @@
 
 ## Alcance integral vigente — recuperación HAC-27/HAC-40
 
-El [contrato integral y catálogo de ejecución](../delivery/HAC40_FULL_API_AND_CLOSURE.md) incorpora las 57 clases y reemplaza las exclusiones del corte ROAD descrito debajo. La separación modular y los límites de identidad/atomicidad se conservan. Las reglas de selección multi-oferta están implementadas como políticas de dominio; su persistencia, coordinación de bookings y endpoints siguen pendientes y no se declaran live.
+El [contrato integral y catálogo de ejecución](../delivery/HAC40_FULL_API_AND_CLOSURE.md) incorpora las 57 clases y reemplaza las exclusiones del corte ROAD descrito debajo. La separación modular y los límites de identidad/atomicidad se conservan. La selección multi-oferta, su persistencia, bookings separados y endpoints están implementados en el workflow V2. La coordinación con carriers externos no queda certificada por esos resultados; consultar el [estado de integraciones](../delivery/INTEGRATION_CERTIFICATION_2026-10-09.md).
 
 ## Capas
 
@@ -25,7 +25,7 @@ Intake Web/Alexa
   -> manual/automatic CarrierOffers
   -> normalized offer set
   -> deterministic ScoringPolicy
-  -> shipper SelectionDecision (plan + attributable offer)
+  -> shipper SelectionDecision (plan + 1..* attributable offers, exact coverage)
   -> per-offer Booking authorization and adapter execution
   -> capacity reservation or verified external carrier commitment
   -> tracking and evidence
@@ -38,7 +38,7 @@ Intake Web/Alexa
 - La planificación puede combinar recursos propios y socios documentados, pero no inventa una oferta unificada de varios carriers ni autorizaciones de ruta/frontera.
 - Web y Alexa+ reciben el mismo resultado del servicio de aplicación; el stepper no necesita WebMCP.
 - Una oferta siempre pertenece a un carrier/service y request concretos.
-- La identidad de oferta, oportunidad, plan y asignaciones debe coincidir; una selección de varias ofertas no se convierte automáticamente en un contrato/booking único. El corte ROAD valida exactamente una oferta por decisión.
+- La identidad de oferta, oportunidad, plan y asignaciones debe coincidir; una selección de varias ofertas no se convierte automáticamente en un contrato/booking único. El workflow ROAD admite `1..*` ofertas vigentes por decisión, con cobertura exacta de las asignaciones y bookings separados por oferta/emisor.
 - El ranking opera sobre ofertas normalizadas y elegibles.
 - La ejecución externa ocurre detrás de adapters; el dominio no importa browser, SDKs de voz ni clientes de terceros.
 - Todo resultado remoto conserva correlation ID, fuente, timestamps y estado técnico/comercial separado.
