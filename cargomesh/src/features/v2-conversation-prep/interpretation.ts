@@ -85,7 +85,7 @@ export function interpretDeterministically(input: InterpretationRequest): Interp
     return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(input.context.previousHelpTopic === "SELECTION" ? "¿Cómo me ayuda a escoger?" : input.context.previousHelpTopic === "SERVICES" ? "¿Qué servicios ofrecen?" : "¿Para qué sirve CargoMesh?") };
   }
   if (/\b(price|quote|cost|rate|precio|cotizaci[oó]n|costo|tarifa)\b/.test(lower)) return { intent: "PRICE", fields: [] };
-  if (/\b(book|booking|reserve|reservation|reservar|reserva|contratar)\b/.test(lower)) return { intent: "BOOKING", fields: [] };
+  if (/\b(book(?:ed|ing)?|reserv(?:e|ed|ation|ations|ar|a|as)|contratar)\b/.test(lower)) return { intent: "BOOKING", fields: [] };
   if (/^(start over|reset|new request|empezar de nuevo|reiniciar|nueva solicitud)$/i.test(text)) return { intent: "START_OVER", fields: [] };
   if (/^(help|what can you do|ayuda|qu[eé] puedes hacer)\??$/i.test(text)) return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(text) };
   if (/\b(evaluate|eligib|road options|road result|check road|availability|available|evaluar|elegibilidad|opciones road|revisar road|disponibilidad|disponible)\b/.test(lower)) return { intent: "EVALUATE", fields: [] };

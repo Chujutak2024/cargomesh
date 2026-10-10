@@ -26,7 +26,7 @@
     "test:mcp": "node --conditions=react-server --import tsx --test src/server/mcp/capabilities.test.ts src/server/mcp/http.test.ts src/server/mcp/auth/*.test.ts src/server/mcp/tools/v2-workflow.test.ts",
     "test:hac40:model-closure-http": "tsx scripts/hac40-model-closure-http-smoke.mjs",
     "test:hac41": "node --conditions=react-server --import tsx --test src/server/modules/identity/application/identity-service.test.ts src/server/modules/locations/application/location-service.test.ts src/server/modules/workflow/application/confirmed-workflow-service.test.ts src/server/mcp/tools/v2-workflow.test.ts",
-    "test:v2-chat-workflow": "node --conditions=react-server --import tsx --test src/features/v2-intake/conversation-context.test.ts src/features/v2-intake/workflow-chat-client.test.ts src/features/v2-intake/workflow-chat-summary.test.ts"
+    "test:v2-chat-workflow": "node --conditions=react-server --import tsx --test src/features/v2-intake/conversation-context.test.ts src/features/v2-intake/workflow-chat-client.test.ts src/features/v2-intake/workflow-chat-summary.test.ts src/features/v2-intake/workflow-chat-intent.test.ts src/features/v2-intake/chat-send-gate.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1137.0",

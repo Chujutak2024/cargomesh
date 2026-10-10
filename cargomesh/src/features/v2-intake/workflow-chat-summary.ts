@@ -16,7 +16,17 @@ export function summarizeWorkflow(kind: "offers" | "bookings" | "executions", re
   if (kind === "bookings") {
     const bookings = records.filter((record) => record.kind === "bookings");
     if (!bookings.length) return "No booking is recorded for this request. A shipper must select a current offer and explicitly authorize a booking; the carrier must confirm it separately.";
-    return `I found ${bookings.length} booking record${bookings.length === 1 ? "" : "s"}: ${bookings.slice(0, 3).map((booking) => `${booking.id.slice(0, 8)}: shipper ${booking.data.authorizationStatus.toLowerCase()}, carrier ${booking.data.carrierConfirmationStatus.toLowerCase()}`).join("; ")}. Shipper authorization is not carrier confirmation.`;
+    const statuses = bookings.slice(0, 3).map((booking) => {
+      const carrier = booking.data.carrierConfirmationStatus;
+      const shipper = booking.data.authorizationStatus;
+      const detail = carrier === "CONFIRMED" ? "the carrier confirmed this booking"
+        : carrier === "CANCELLED" ? "this booking was cancelled"
+        : carrier === "REJECTED" ? "the carrier rejected this booking"
+        : "carrier confirmation is pending";
+      return `${booking.id.slice(0, 8)}: shipper ${shipper.toLowerCase()}, carrier ${carrier.toLowerCase()} (${detail})`;
+    }).join("; ");
+    const hasPending = bookings.some((booking) => booking.data.carrierConfirmationStatus === "PENDING");
+    return `I found ${bookings.length} booking record${bookings.length === 1 ? "" : "s"}: ${statuses}.${hasPending ? " Shipper authorization is not carrier confirmation." : ""}`;
   }
   const executions = records.filter((record) => record.kind === "executions");
   if (!executions.length) return "There is no recorded execution for this request yet. I cannot infer a live location or delivery status.";
