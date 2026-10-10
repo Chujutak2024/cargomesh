@@ -63,3 +63,4 @@ a {
 code {
   font-family: "IBM Plex Mono", "Cascadia Code", Consolas, monospace;
 }
+@tailwind utilities;

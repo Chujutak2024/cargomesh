@@ -108,10 +108,11 @@ export async function computeRoadPreview({ origin, destination, apiKey, fetcher 
 }
 
 /** Local workspace adapter, separate from HAC-12 serviceability and HAC-14. */
-export function createLocalRoadPreviewHandler({ enabled, apiKey, fetcher = fetch }: {
+export function createLocalRoadPreviewHandler({ enabled, apiKey, fetcher = fetch, localOrigin = "http://127.0.0.1:8080" }: {
   enabled: boolean;
   apiKey?: string;
   fetcher?: typeof fetch;
+  localOrigin?: "http://127.0.0.1:8080" | "http://127.0.0.1:8083";
 }) {
   const pending = new Map<string, Promise<RouteResult>>();
   let requestTimes: number[] = [];
@@ -120,8 +121,7 @@ export function createLocalRoadPreviewHandler({ enabled, apiKey, fetcher = fetch
     const url = new URL(request.url);
     // Next may reconstruct request.url with an internal host. Validate the
     // actual HTTP Host and browser Origin instead of that internal URL origin.
-    const localOrigin = "http://127.0.0.1:8080";
-    if (!enabled || url.protocol !== "http:" || request.headers.get("host") !== "127.0.0.1:8080") return json({ error: "NOT_AVAILABLE" }, 404);
+    if (!enabled || url.protocol !== "http:" || request.headers.get("host") !== new URL(localOrigin).host) return json({ error: "NOT_AVAILABLE" }, 404);
     if (request.headers.get("origin") !== localOrigin) return json({ error: "FORBIDDEN" }, 403);
     if (request.method !== "POST" || !request.headers.get("content-type")?.startsWith("application/json")) return json({ error: "INVALID_REQUEST" }, 400);
     const text = await request.text();

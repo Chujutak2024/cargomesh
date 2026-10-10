@@ -9,6 +9,7 @@ import { useConversationVoice } from "@/features/v2-conversation-prep/voice-cont
 import { InterpretationResponseSchema, interpretDeterministically, type Interpretation } from "@/features/v2-conversation-prep/interpretation";
 import type { V2IntakeApiError } from "./v2-intake-client";
 import styles from "./conversation-chat.module.css";
+import { useLocale } from "@/features/i18n/locale-provider";
 
 type Message = { speaker: "assistant" | "user"; text: string };
 type Choice = { value: string; label: string; field: ConversationField };
@@ -45,6 +46,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   onEvaluate: () => void;
   onStartOver?: () => void;
 }) {
+  const { t } = useLocale();
+  const launcherLabel = t("Preguntar a CargoMesh", "Ask CargoMesh");
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [history, setHistory] = useState<Message[]>([{ speaker: "assistant", text: GREETING }]);
@@ -252,8 +255,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   }
 
   return <aside className={styles.shell} aria-label="CargoMesh ROAD assistant" style={viewport ? { "--chat-visual-height": `${viewport.height}px`, "--chat-keyboard-inset": `${viewport.keyboardInset}px` } as CSSProperties : undefined}>
-    <button ref={launcherRef} type="button" className={styles.launcher} onClick={() => open ? closePanel() : setOpen(true)} aria-label={open ? "Close CargoMesh assistant" : "Open CargoMesh assistant"} aria-expanded={open} aria-controls="v2-chat-panel">
-      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M4 5.5h16v11H9l-5 3v-14Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M8 10h8M8 13h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>Ask CargoMesh</span>
+    <button ref={launcherRef} type="button" className={styles.launcher} onClick={() => open ? closePanel() : setOpen(true)} aria-label={launcherLabel + " — " + (open ? t("cerrar asistente", "close assistant") : t("abrir asistente", "open assistant"))} aria-expanded={open} aria-controls="v2-chat-panel">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M4 5.5h16v11H9l-5 3v-14Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M8 10h8M8 13h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>{launcherLabel}</span>
     </button>
     {open && <section id="v2-chat-panel" className={styles.panel} aria-label="ROAD freight conversation">
       <header className={styles.header}><span className={styles.headerIcon} aria-hidden="true">CM</span><div className={styles.headerCopy}><strong>CargoMesh assistant</strong><span>{syntheticCatalog ? "V2 demo · instalaciones sintéticas" : "Carga ROAD"}</span></div><label className={styles.languagePicker}><span className={styles.srOnly}>Idioma de voz</span><select value={voiceLanguage} onChange={(event) => setVoiceLanguage(event.target.value as "es-PE" | "en-US")} aria-label="Idioma de voz"><option value="es-PE">ES</option><option value="en-US">EN</option></select></label><button type="button" className={styles.close} aria-label="Cerrar asistente CargoMesh" onClick={closePanel}>×</button></header>

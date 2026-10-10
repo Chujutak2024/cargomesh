@@ -1,0 +1,14 @@
+{
+  "author": "CargoMesh local project",
+  "source": "src/features/logistics-3d/truck-model.ts",
+  "license": "Original project asset; no external model",
+  "format": "glTF 2 binary",
+  "bytes": 2275376,
+  "triangles": 45706,
+  "vertices": 49592,
+  "materials": 11,
+  "meshes": 11,
+  "componentCount": 1067,
+  "textures": 0,
+  "animatedWheels": false
+}

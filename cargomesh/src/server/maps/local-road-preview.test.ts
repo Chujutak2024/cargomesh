@@ -165,3 +165,17 @@ test("routing call budget permits browsing pairs but limits calls to twenty per 
   assert.equal((await handler(localRequest())).status, 429);
   assert.equal(calls, 20);
 });
+
+test("current workspace port requires its exact Host and Origin, while other origins remain forbidden", async () => {
+  let calls = 0;
+  const handler = createLocalRoadPreviewHandler({ enabled: true, apiKey: "test", localOrigin: "http://127.0.0.1:8083",
+    fetcher: async () => { calls++; return Response.json(providerBody); } });
+  const request = (host: string, origin: string) => new Request("http://localhost:8083/api/local/road-preview", {
+    method: "POST", headers: { Host: host, Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({ originId: "callao", destinationId: "piura" }),
+  });
+  assert.equal((await handler(request("127.0.0.1:8083", "http://127.0.0.1:8083"))).status, 200);
+  assert.equal((await handler(request("127.0.0.1:8080", "http://127.0.0.1:8080"))).status, 404);
+  assert.equal((await handler(request("127.0.0.1:8083", "https://foreign.example"))).status, 403);
+  assert.equal(calls, 1);
+});
