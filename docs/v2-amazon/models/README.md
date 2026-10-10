@@ -7,7 +7,7 @@
 - [DER integral](./FULL_MODEL_DER.md), [diseño físico](./FULL_MODEL_PHYSICAL_DESIGN.json) y [reconciliación de relaciones](./FULL_MODEL_CURRENT_RELATIONS.json): distinguen baseline histórico y decisiones posteriores. #106 es reconciliación documental, no cierre de F-02 ni certificado alojado.
 - [Reconciliación actual de atributos](./FULL_MODEL_CURRENT_ATTRIBUTES.json) y [corte del 7-oct](../delivery/HAC40_RECONCILIATION_2026-10-07.md): metadata RoutePlanner y corrección documental de reservas; el [incremento de asociaciones/búsqueda](../delivery/HAC40_MODEL_CLOSURE_API.md) implementa los tres huecos locales, pendientes de QA; no certifican el modelo completo.
 - [Flujo de entrega vigente](../delivery/CURRENT_DELIVERY_STATE.md): revisión e integración.
-- [Reconciliación de identidad HAC-41](./FULL_MODEL_CURRENT_IDENTITY.json): cuatro clases, 28 atributos y emisor CarrierOperator de la relación 74; implementación local y evidencia, pendientes de QA independiente.
+- [Reconciliación de identidad HAC-41](./FULL_MODEL_CURRENT_IDENTITY.json): cuatro clases, 28 atributos y emisor CarrierOperator de la relación 74; implementación local y evidencia, pendientes de QA independiente. La [revisión UML/diccionario de McpAccountLink del 9-oct](./MCP_ACCOUNT_LINK_UML_DICTIONARY_REV_2026-10-09.md) separa vínculos históricos y verificados sin alterar el UML original.
 
 ## Antecedentes de diseño
 
