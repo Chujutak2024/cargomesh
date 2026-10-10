@@ -1,7 +1,7 @@
 {
-  "sourceCommit": "c686aeae7d17a6b641447c15dcf86cd9edd7dfa4",
-  "scope": "F-02 34/55/69/89, HAC-40 associations 48/66, HAC-41 identity 74; each increment declares evidence. Independent QA pending, not hosted certification",
-  "qaEvidence": "HAC-44 independent review of #106 @ e06d0c0: relations 34, 55 and 69 conform; relation 89 has a low documentary finding. Its FK and UML multiplicity conform. The statement below is corrected against the local catalog at fe12d41; relation 89 awaits independent documentary recheck. F-05 BD/HTTP 10/10 at #104 @ 1e241b3 is separate evidence, not full-model certification.",
+  "sourceCommit": "42a4fde4ac2e9242d8f0ed46029101a4e44d90ed",
+  "scope": "F-02 34/55/69/89, HAC-40 associations 48/66, HAC-41 identity 74; each increment declares evidence. Independent QA pending, not hosted certification; 35/40/73/83/90 reconciled in derived UML 08 against main @ 42a4fde; historical QA statuses unchanged",
+  "qaEvidence": "HAC-44 independent review of #106 @ e06d0c0: relations 34, 55 and 69 conform; relation 89 has a low documentary finding. Its FK and UML multiplicity conform. The statement below is corrected against the local catalog at fe12d41; relation 89 awaits independent documentary recheck. F-05 BD/HTTP 10/10 at #104 @ 1e241b3 is separate evidence, not full-model certification. HAC-44 independent review of main @ 42a4fde (9 Oct, comment 40b0d7b6-12f3-4ddd-a4c0-453463fd9d60): five documentary differences, no confirmed new functional backend defect. The derived diagram needs independent documentary recheck; F-02 remains partial.",
   "relations": [
     {
       "number": 34,
@@ -105,6 +105,105 @@
         "cargomesh/src/server/hono/routes/carrier-workflow.ts",
         "supabase/tests/33_v2_hac41_identity_channels.test.sql",
         "cargomesh/scripts/hac41-channels-http-smoke.mjs"
+      ]
+    },
+    {
+      "number": 35,
+      "source": "PlanResource",
+      "target": "CapacitySource",
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-248",
+      "currentEndLabels": [
+        "0..*",
+        "1"
+      ],
+      "treatment": "A persisted plan_resources row has exactly one source: asset_id XOR capacity_pool_id, enforced by CHECK; UNKNOWN availability does not permit both IDs NULL. CapacitySource is a discriminated ASSET/POOL projection, not another writable table.",
+      "api": "POST plans: assignments[].resources[] requires exactly one assetId/capacityPoolId; GET plans exposes that binding",
+      "status": "DOCUMENTED_DERIVED_UML_PENDING_INDEPENDENT_RECHECK",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+        "cargomesh/src/shared/schemas/v2/workflow.ts",
+        "supabase/tests/22_v2_hac40_workflow.test.sql",
+        "docs/v2-amazon/contracts/PRODUCT_SCOPE.md"
+      ]
+    },
+    {
+      "number": 40,
+      "source": "CarrierOffer",
+      "target": "RankedOption",
+      "umlId": "O3AsrRVXhiO8iDlZrkKS-263",
+      "currentEndLabels": [
+        "1..*",
+        "0..*"
+      ],
+      "treatment": "ranked_options.offer_id retains the representative offer; data.offerIds contains 1..* attributable offers covering every plan assignment exactly once. DISJOINT_COVER_V1 ranks complete bundles within the persisted known universe; an offer may occur in multiple ranking snapshots.",
+      "api": "POST ranking and GET rankings: data.options[].offerId plus offerIds; 1..* offers per option",
+      "status": "DOCUMENTED_DERIVED_UML_PENDING_INDEPENDENT_RECHECK",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+        "cargomesh/src/shared/schemas/v2/workflow.ts",
+        "supabase/tests/22_v2_hac40_workflow.test.sql",
+        "docs/v2-amazon/contracts/PRODUCT_SCOPE.md"
+      ]
+    },
+    {
+      "number": 73,
+      "source": "FreightRequest",
+      "target": "ShipmentContact",
+      "umlId": "rg1mzH5NKyUcr1gneQok-1",
+      "currentEndLabels": [
+        "1",
+        "1"
+      ],
+      "treatment": "freight_requests.v2_snapshot.contacts.recipient is one mandatory validated RECIPIENT value per native V2 request. It is embedded in the aggregate; no independent contact CRUD or claim about legacy V1 rows.",
+      "api": "POST/GET requests: contacts.recipient in input, data.contacts.recipient in read projection",
+      "status": "DOCUMENTED_DERIVED_UML_PENDING_INDEPENDENT_RECHECK",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+        "cargomesh/src/shared/schemas/v2/workflow.ts",
+        "supabase/tests/22_v2_hac40_workflow.test.sql",
+        "docs/v2-amazon/contracts/PRODUCT_SCOPE.md",
+        "cargomesh/src/shared/schemas/v2/freight-request.ts",
+        "supabase-v2/supabase/migrations/20261004025720_hac40_full_request_contract.sql"
+      ]
+    },
+    {
+      "number": 83,
+      "source": "SelectionDecision",
+      "target": "Booking",
+      "umlId": "TTPNMglXCn0O7Q35afVn-1",
+      "currentEndLabels": [
+        "1",
+        "0..*"
+      ],
+      "treatment": "A selection decision authorizes 1..* selected offers; v2_bookings.decision_id binds each booking to one decision, and UNIQUE(decision_id,offer_id) prevents duplicates within it. A decision can have 0..* bookings, one per selected offer/emitter. Authorization does not imply carrier confirmation or distributed atomicity.",
+      "api": "POST bookings: decisionId and selected offerId; GET bookings: data.decisionId",
+      "status": "DOCUMENTED_DERIVED_UML_PENDING_INDEPENDENT_RECHECK",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+        "cargomesh/src/shared/schemas/v2/workflow.ts",
+        "supabase/tests/22_v2_hac40_workflow.test.sql",
+        "docs/v2-amazon/contracts/PRODUCT_SCOPE.md"
+      ]
+    },
+    {
+      "number": 90,
+      "source": "FreightRequest",
+      "target": "ShipmentContact",
+      "umlId": "cm-v2fix-3",
+      "currentEndLabels": [
+        "1",
+        "1"
+      ],
+      "treatment": "freight_requests.v2_snapshot.contacts.pickup is one mandatory validated PICKUP value per native V2 request, embedded in the aggregate. Legacy nullable snapshots are not rewritten by this documentary reconciliation.",
+      "api": "POST/GET requests: contacts.pickup in input, data.contacts.pickup in read projection",
+      "status": "DOCUMENTED_DERIVED_UML_PENDING_INDEPENDENT_RECHECK",
+      "evidence": [
+        "supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql",
+        "cargomesh/src/shared/schemas/v2/workflow.ts",
+        "supabase/tests/22_v2_hac40_workflow.test.sql",
+        "docs/v2-amazon/contracts/PRODUCT_SCOPE.md",
+        "cargomesh/src/shared/schemas/v2/freight-request.ts",
+        "supabase-v2/supabase/migrations/20261004025720_hac40_full_request_contract.sql"
       ]
     }
   ]

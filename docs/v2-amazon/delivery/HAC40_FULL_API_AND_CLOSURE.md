@@ -10,6 +10,10 @@ El [DER físico integral](../models/FULL_MODEL_DER.md) fija un destino objetivo 
 
 Principal: HAC-40, Cristhian. Habilitador: HAC-27 en esta misma entrega. Rama `codex/v2-full-backend`, desde `codex/v2-amazon-contracts`; target de entregas nuevas `codex/v2-amazon-contracts` por decisión del 4 oct. El PR #99 ya se integró en el ciclo anterior; ese corte se traslada una sola vez a la base y no se repite su merge. No se cambia la raíz `cargomesh/` ni se añade un servidor backend separado. Hono y MCP consumen los mismos servicios de aplicación.
 
+### Incremento documental vigente del 9 de octubre
+
+Base `main @ 42a4fde`; rama `codex/v2-model-qa-closure`, PR a `main`, registrada en HAC-40. Sustituye el manifiesto histórico anterior para este incremento. [UML derivado, DER y boundary autenticado](./HAC40_MODEL_QA_CLOSURE_2026-10-09.md). No agrega endpoints ni migraciones y no cierra F-02.
+
 ## Contrato de transporte común
 
 - Prefijo `/api/v2`; DTO `schemaVersion: "2.0"`. Entradas y salidas estrictas, diferentes de filas PostgreSQL.
