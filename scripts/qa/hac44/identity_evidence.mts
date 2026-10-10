@@ -40,6 +40,10 @@ try{
 sql(`update public.organization_members set role='OWNER' where id='d4420000-0000-4000-8000-000000000001';`);
 const emails=JSON.parse(sql("select jsonb_agg(jsonb_build_object('id',id,'email',email) order by id) from auth.users;"));
 const a=await login(emails[0].id,emails[0].email),b=await login(emails[1].id,emails[1].email);
+const history=await call('historical links read',a.token,'/identity/mcp/links');
+const legacy=history.filter((r:any)=>r.provider===null&&r.externalSubjectRef===null&&r.verifiedAt===null);
+assert.ok(legacy.length,'Historical unverified link control required');
+output('identity-history.json',{status:'PASS',legacy,ordinarySessionCannotCertifyConsent:true});
 const invitees=[];for(let n=0;n<2;n++){const email='identity-evidence-'+randomUUID()+'@cargomesh.test',u=await admin.auth.admin.createUser({email,email_confirm:true});assert.equal(u.error,null);invitees.push(await login(u.data.user.id,email));}
 const memberEmail=(await invitees[0].client.auth.getUser()).data.user.email;
 const mi={email:memberEmail,role:'REQUESTER'},mp='/organizations/current/members';

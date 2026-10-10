@@ -20,6 +20,9 @@ if __name__ == "__main__":
         "NODE_OPTIONS": "--conditions=react-server",
         "HAC44_HTTP_PORT": str(LAYOUT.app_port),
         "HAC44_PYTHON": sys.executable,
+        "HAC44_EVIDENCE": str(OUT),
+        "HAC44_CLI_JSON": json.dumps(CLI),
+        "HAC44_API_URL": LAYOUT.api_url,
     }
     if sys.argv[1] != "inventory":
         # Dedicated local stack only; credentials travel in memory to the child, never to a log or file.
@@ -37,7 +40,6 @@ if __name__ == "__main__":
             {
                 "NEXT_PUBLIC_SUPABASE_URL": cfg["API_URL"],
                 "NEXT_PUBLIC_SUPABASE_ANON_KEY": cfg["ANON_KEY"],
-                "HAC44_JWT_SECRET": cfg["JWT_SECRET"],
             }
         )
         if sys.argv[1] == "authentication":

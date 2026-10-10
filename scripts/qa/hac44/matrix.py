@@ -934,7 +934,8 @@ def semantic_for(tokens):
 def relationships():
     """Generate relationship classifications with exact referential evidence."""
     rows = []
-    fkp = json.loads((LOGS / "independent-fk-pairs.json").read_text(encoding="utf-8"))
+    fk_path = LOGS / "independent-fk-pairs.json"
+    fkp = json.loads(fk_path.read_text(encoding="utf-8")) if fk_path.exists() else {"cases": []}
     fkstates = {c["constraint"]: c for c in fkp["cases"]}
     current = {(r["source"], r["target"]): r for r in DES.get("currentRelationReconciliation", {}).get("relations", [])}
     for n, r in enumerate(DES["relations"], 1):
@@ -964,6 +965,11 @@ def relationships():
                 constraints.append(c)
         cols = [COL[(t, col)] for t, col in tokens if (t, col) in COL]
         evidence = [fkstates[c["conname"]] for c in constraints if c["conname"] in fkstates]
+        if not fk_path.exists():
+            evidence.extend({"constraint": c["conname"], "status": "BLOQUEADO",
+                "positive": False, "negative": False,
+                "reason": "No completed independent FK artifact in this execution; inspect runner-fk_pairs.py-.log"}
+                for c in constraints)
         indexes = [x["indexdef"] for x in CAT["indexes"] if x["tablename"] in tables]
         checks = [
             c["definition"]

@@ -35,6 +35,7 @@ def main():
         ("api_runner.py", ["inventory"]),
         ("matrix.py", []),
         ("methods.py", []),
+        ("f02_matrix.py", []),
     ]:
         p = run(
             "generate-" + name,

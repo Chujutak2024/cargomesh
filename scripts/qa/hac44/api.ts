@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
-import { createHmac, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
 import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
@@ -90,24 +90,10 @@ async function main() {
     MEMBER = "d4420000-0000-4000-8000-000000000001",
     CARRIER = "d4440000-0000-4000-8000-000000000001",
     SERVICE = "d4460000-0000-4000-8000-000000000001";
-  const token = (n: number) => {
-    const enc = (x: any) => Buffer.from(JSON.stringify(x)).toString("base64url");
-    const s =
-      enc({ alg: "HS256", typ: "JWT" }) +
-      "." +
-      enc({
-        sub: "d4410000-0000-4000-8000-00000000000" + n,
-        role: "authenticated",
-        aud: "authenticated",
-        email: "qa-hac44-" + (n === 1 ? "a" : n === 2 ? "b" : "revoked") + "@cargomesh.test",
-        iat: Math.floor(Date.now() / 1000) - 10,
-        exp: Math.floor(Date.now() / 1000) + 3600,
-      });
-    return (
-      s + "." + createHmac("sha256", process.env.HAC44_JWT_SECRET!).update(s).digest("base64url")
-    );
-  };
-  const TOKENS = [null, token(1), token(2), token(3)];
+  const sessions = [];
+  const { fixtureSession } = await import(pathToFileURL(root + "/scripts/qa/hac44/real_auth.mjs").href);
+  for (const n of [1,2,3]) sessions.push(await fixtureSession("d4410000-0000-4000-8000-00000000000" + n));
+  const TOKENS = [null, ...sessions.map(s => s.token)];
   const { createClient } = require("@supabase/supabase-js");
   const client = (actor: number) => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false, autoRefreshToken: false },
@@ -190,7 +176,7 @@ async function main() {
       http: response.status,
       request: body ?? null,
       response: value,
-      authMechanism: headers.Authorization ? "explicit-invalid-Bearer" : headers.Cookie ? "actual-issuer-session-cookie" : actor ? "literal-fixture-Bearer" : "anonymous",
+      authMechanism: headers.Authorization ? "explicit-invalid-Bearer" : headers.Cookie ? "actual-issuer-session-cookie" : actor ? "issuer-verified-session" : "anonymous",
       ...(path.startsWith("/carriers/") ? {
         fixturePrincipal: headers.Authorization ? "invalid-Bearer" : headers.Cookie ? "CarrierOperator-cookie" : actor === 0 ? "anonymous" : "CarrierOperator",
         operatorId: headers.Authorization || actor === 0 && !headers.Cookie ? null : "d44b0000-0000-4000-8000-00000000000" + (headers.Cookie ? 1 : actor),
@@ -878,6 +864,7 @@ async function main() {
       }),
     );
   } finally {
+    for (const s of sessions) await s.client.auth.signOut({scope:"local"});
     await new Promise<void>((resolve) => server.close(() => resolve()));
     output("api-results.json", results);
     output("roundtrips.json", roundtrips);

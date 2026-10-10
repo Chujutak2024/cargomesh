@@ -350,7 +350,7 @@ def hac41_row(record, data):
     return None
 
 
-def build_case(record, catalog, data):
+def build_case(record, catalog, data, association=False):
     """Create one positive and exact-diagnostic orphan recipe without FK DDL."""
     case = {"constraint": record["constraint"], "table": record["table"],
             "definition": record["definition"], "columns": record["childColumns"],
@@ -361,7 +361,7 @@ def build_case(record, catalog, data):
             "status": "PENDING", "positive": False, "negative": False,
             "positiveBoundary": "SET CONSTRAINTS ALL IMMEDIATE", "role": "postgres",
             "reason": "", "suspensions": [], "attempts": []}
-    if record["category"] not in V2_CATEGORIES:
+    if record["category"] not in V2_CATEGORIES and not (association and record['category']=='BASELINE_178'):
         raise ValueError("The strict module cannot measure a baseline or V1 identity")
     case["method"] = STRICT_METHOD
     case["role"] = "authenticated"

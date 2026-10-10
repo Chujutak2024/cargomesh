@@ -164,7 +164,7 @@ class Bank:
         return [json.loads(line) for line in result.stdout.splitlines() if line.startswith("{")]
 
     def raw_sql(self, label, query):
-        return self.execute(label, ["docker", "exec", "-i", self.db, "psql", "-X", "-A", "-t",
+        return self.execute(label, ["docker", "exec", "-i", self.db, "psql", "-X", "-q", "-A", "-t",
             "-v", "ON_ERROR_STOP=1", "-v", "local_only=1", "-U", "postgres", "-d", "postgres"], data=query)
 
     def own(self, operation):
@@ -237,3 +237,15 @@ class Bank:
         result = self.execute("bank-stop-" + self.project, cli + ["stop", "--workdir", self.folder], timeout=900)
         if result.returncode or self.resources():
             raise BankAbort("Own bank did not stop cleanly")
+
+    def prove_stopped_volume(self):
+        """Verify a preserved owned volume before starting it; never forge a DB marker."""
+        self.config()
+        marker=json.loads(self.marker.read_text(encoding='utf-8'))
+        if marker.get('project')!=self.project or marker.get('folder')!=str(self.folder) or not marker.get('id'):
+            raise BankAbort('Foreign stopped bank marker')
+        if self.resources():raise BankAbort('Stopped restart requires no existing containers')
+        result=self.execute('bank-preserved-volume-'+self.project,['docker','volume','inspect','--format','{{json (index .Labels "com.supabase.cli.project")}}',self.db])
+        if result.returncode or json.loads(result.stdout)!=self.project:
+            raise BankAbort('Preserved volume ownership mismatch')
+        save('preserved-volume-'+self.project+'.json',{'status':'PASS','project':self.project,'volume':self.db,'marker':marker['id'],'databaseMarkerMustMatchAfterStart':True})

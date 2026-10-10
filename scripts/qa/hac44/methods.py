@@ -8,6 +8,7 @@ import re
 from common import ROOT, save
 from local import HEAD
 from matrix import CAT, SOURCES, SRC, csvwrite, jsonstr
+from f02_rules import contract_verdict
 
 GROUPS_METHODS = [
     ("RoutePlanner", "command_v2_route_planner", "32_v2_hac40_uml_cardinalities.test.sql"),
@@ -155,6 +156,20 @@ def main():
                     "productSha": HEAD,
                 }
             )
+    import json
+    from pathlib import Path
+    from f02_matrix import load_evidence
+    descriptors=json.loads(Path(__file__).with_name('f02_descriptors.json').read_text(encoding='utf-8'))['methods']
+    evidence=load_evidence()
+    for row in rows:
+        d=next((d for d in descriptors if d['clase']==row['class'] and d['metodo_uml']==row['umlMethod']),None)
+        row['relatedOperationStatus']=row['status']
+        if d:
+            row['status'],row['certification']=contract_verdict(d['requiredProbes'],evidence)
+            row['descriptor']=d
+            row['exactExecution']=[r['source'] for r in evidence if r['probe'] in d['requiredProbes']]
+        else:
+            row['descriptor']=None;row['exactExecution']=[]
     save("method-map.json", rows)
     csvwrite(
         "HAC-44_mapa_metodos.csv",
