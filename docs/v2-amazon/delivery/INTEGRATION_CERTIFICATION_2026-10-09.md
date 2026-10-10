@@ -30,7 +30,7 @@ The earlier hosted execution, its cleanup and exact product SHA are preserved in
 From the application's `cargomesh/` directory, with an ignored, private `.env.local` containing the approved server configuration:
 
 ```powershell
-node --env-file=.env.local --conditions=react-server --import tsx scripts/certify-bedrock.mts
+node --env-file=.env.local --conditions=react-server --import tsx scripts/certify-bedrock.ts
 ```
 
 Use the variable names in [`.env.example`](../../../cargomesh/.env.example). Runtime uses the existing temporary IAM credential chain; Mantle uses the existing server-only Bedrock key configuration. Do not paste credentials into the command, source, issue or chat. No key or endpoint change is required by this script.

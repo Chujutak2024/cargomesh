@@ -9,6 +9,7 @@ function finish(status: "PASS" | "FAIL" | "BLOCKED", reason: string, telemetry: 
   console.log(JSON.stringify({ ...base, status, reason, telemetry }));
   process.exitCode = status === "PASS" ? 0 : status === "BLOCKED" ? 2 : 1;
 }
+async function main() {
 if (!config.enabled || !config.modelId || !config.region) {
   finish("BLOCKED", "BEDROCK_CONFIGURATION_MISSING_OR_DISABLED");
 } else if (!/^[a-z]{2}(?:-[a-z]+)+-\d+$/.test(config.region)) {
@@ -34,3 +35,6 @@ if (!config.enabled || !config.modelId || !config.region) {
     finish("FAIL", "INTEGRATION_CHECK_FAILED_NO_PROVIDER_DETAILS_LOGGED");
   }
 }
+
+}
+void main();
