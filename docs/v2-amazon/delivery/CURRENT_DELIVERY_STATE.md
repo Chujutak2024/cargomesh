@@ -20,6 +20,10 @@ Actualizado el 9 de octubre de 2026. Este documento organiza la lectura; los con
 - [Reconstrucción V2 local](./HAC29_CLEAN_BOOTSTRAP.md).
 - [Calidad, revisión y aceptación](./QUALITY_AND_VALIDATION_PLAN.md).
 
+## Reconciliación documental posterior a main @ 42a4fde
+
+HAC-40 actualiza cinco relaciones en un UML derivado y en el DER reproducible; conserva el original y los estados QA históricos. La suite 22 añade un boundary autenticado de creaciones antes de la inspección privilegiada; el boundary final ya estaba autenticado en este corte. Véase el [acta del incremento](./HAC40_MODEL_QA_CLOSURE_2026-10-09.md). F-02 sigue parcial; la medición restante pertenece a HAC-44 y la actualización de identidad a HAC-41.
+
 ## Revisión vigente UML → BD/API e identidad
 
 La [revisión única de d3a80eb y su integración](./uml-bd-api-2026-10-09/README.md) incorpora los mappings actuales de HAC-41 y clasifica todas las filas sin certificación. La base auditada incorpora #111, #112, #113 y #114; no usar el corte de 23 migraciones ni el mapping anterior de OrganizationMember como evidencia del emisor CarrierOperator.
