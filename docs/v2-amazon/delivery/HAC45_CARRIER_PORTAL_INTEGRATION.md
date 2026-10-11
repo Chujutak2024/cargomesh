@@ -76,3 +76,15 @@ La preparación inicial del smoke usó un code con guiones, que el DTO de catál
 ## Revisión visual final del catálogo
 
 La sede sintética del escenario v2-road-baseline usaba QA-PIURA y no tenía address_line. El lector rechazaba la colección con CATALOG_DATA_INCOMPLETE, de acuerdo con el DTO vigente. Se corrige exclusivamente ese fixture a QA_PIURA y un label sintético explícito; las coordenadas siguen desconocidas y la sede no concede cobertura. El smoke de cookies incluye ahora GET de sedes para los tres roles.
+
+## Proveedor cartográfico del portal
+
+Google Maps continúa siendo el proveedor cuando NEXT_PUBLIC_GOOGLE_MAPS_JS_API_KEY está configurada y autoriza el dominio. Sin esa clave, o si falla su carga/autorización, el portal utiliza Leaflet 1.9.4 y las teselas estándar de OpenStreetMap por HTTPS. No requiere una clave Google para esta vista.
+
+Las teselas se solicitan directamente desde el navegador, con atribución visible, caché HTTP normal y sin descarga anticipada/offline. Su disponibilidad es best-effort; si fallan, permanece la lista con procedencia. Política: https://operations.osmfoundation.org/policies/tiles/. No se envían registros de operación al proveedor: los overlays se dibujan localmente con las coordenadas/áreas publicadas que entrega la API autorizada. La región cartográfica solicitada es observable por el proveedor.
+
+Las referencias sin coordenadas permanecen solo en la lista; no se inventan posiciones, GPS, geometría de rutas o disponibilidad. Se conserva la distinción de capas y áreas de exclusión. Las etiquetas de registros se insertan como texto, nunca como HTML.
+
+La revisión visual detectó que el reset global de transform bajo prefers-reduced-motion anulaba la ubicación de teselas. Se conserva la reducción de animaciones y transiciones, sin resetear transformaciones estructurales del mapa. Leaflet desactiva sus animaciones cuando el usuario solicita movimiento reducido.
+
+Verificación del cambio: typecheck y arquitectura PASS; release 317/317, logistics 120/120 y build PASS. El proveedor tiene dependencias ya fijadas en el lockfile, sin agregar paquetes. La certificación alojada se registra por SHA y deployment en la evidencia HAC-45; este cambio no cierra F-02 ni certifica integraciones de carriers/Alexa/Bedrock.
