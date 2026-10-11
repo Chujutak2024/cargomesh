@@ -1,0 +1,158 @@
+{
+  "schemaVersion": "2.0",
+  "package": "HAC-44-V2-CARRIER-PORTAL-QA",
+  "provenance": "LOCAL_ONLY / SIMULATED",
+  "baseSHA": "9d0c3ee32179f00242a6961b90116293a1bc6d0e",
+  "branch": "codex/v2-qa-carrier-portal-seeds",
+  "uuidRange": "e4400000-e44f0000 bootstrap; native UUIDs recorded by exact PK in hac44_qa.ids",
+  "bootstrap": {
+    "shipperOrganization": "e4400000-0000-4000-8000-000000000001",
+    "shipperOwner": "e4420000-0000-4000-8000-000000000001",
+    "authUsers": "e4410000-0000-4000-8000-000000000001 through e4410000-0000-4000-8000-000000000012",
+    "initialCarrierAdmins": [
+      "e44b0000-0000-4000-8000-000000000002",
+      "e44b0000-0000-4000-8000-000000000005"
+    ],
+    "invalidUnverifiedAnchor": "e44b0000-0000-4000-8000-000000000009",
+    "setupOrganization": "e4400000-0000-4000-8000-000000000012",
+    "setupOwner": "e4420000-0000-4000-8000-000000000012"
+  },
+  "actors": [
+    {
+      "ordinal": 1,
+      "name": "shipper",
+      "role": "OWNER",
+      "organizationMember": true,
+      "grant": "NONE"
+    },
+    {
+      "ordinal": 2,
+      "name": "c1-admin",
+      "carrier": "C1",
+      "role": "ADMIN",
+      "grant": "VALID"
+    },
+    {
+      "ordinal": 3,
+      "name": "c1-operator",
+      "carrier": "C1",
+      "role": "OPERATOR",
+      "grant": "VALID"
+    },
+    {
+      "ordinal": 4,
+      "name": "c1-dispatcher",
+      "carrier": "C1",
+      "role": "DISPATCHER",
+      "grant": "VALID"
+    },
+    {
+      "ordinal": 5,
+      "name": "c2-admin",
+      "carrier": "C2",
+      "role": "ADMIN",
+      "grant": "VALID"
+    },
+    {
+      "ordinal": 6,
+      "name": "c2-operator",
+      "carrier": "C2",
+      "role": "OPERATOR",
+      "grant": "VALID"
+    },
+    {
+      "ordinal": 7,
+      "name": "inactive",
+      "carrier": "C1",
+      "role": "OPERATOR",
+      "status": "INACTIVE",
+      "verified": true,
+      "grant": "VALID"
+    },
+    {
+      "ordinal": 8,
+      "name": "invited",
+      "carrier": "C1",
+      "role": "OPERATOR",
+      "status": "INVITED",
+      "verified": false,
+      "grant": "VALID"
+    },
+    {
+      "ordinal": 9,
+      "name": "unverified",
+      "carrier": "C1",
+      "role": "OPERATOR",
+      "status": "ACTIVE",
+      "verified": false,
+      "grant": "VALID"
+    },
+    {
+      "ordinal": 10,
+      "name": "expired",
+      "carrier": "C1",
+      "role": "OPERATOR",
+      "status": "ACTIVE",
+      "verified": true,
+      "grant": "EXPIRED"
+    },
+    {
+      "ordinal": 11,
+      "name": "revoked",
+      "carrier": "C1",
+      "role": "OPERATOR",
+      "status": "ACTIVE",
+      "verified": true,
+      "grant": "REVOKED"
+    },
+    {
+      "ordinal": 12,
+      "name": "setup",
+      "role": "OWNER",
+      "organizationMember": true,
+      "organization": "independent setup",
+      "grant": "CATALOG_ADMIN; endpoint controls only"
+    }
+  ],
+  "auth": "LOCAL_ONLY_AUTH_PLACEHOLDER; seed has no credential, Auth identity or session; random manual credentials are external only",
+  "writers": {
+    "anchors": [
+      "organizations separate initial setup/shipper tenants",
+      "organization_members separate initial setup/shipper OWNERs",
+      "auth.users placeholders",
+      "carrier_operators initial admins and deliberately invalid ACTIVE/unverified fixture",
+      "private.v2_catalog_grants server-owned provisioning seam"
+    ],
+    "native": [
+      "command_v2_catalog",
+      "command_v2_identity_directory",
+      "create_v2_freight_request",
+      "command_v2_freight_request",
+      "command_v2_workflow",
+      "command_v2_carrier_workflow"
+    ]
+  },
+  "reuse": [
+    "../v2-full-flow-qa/control.sql",
+    "../v2-road-baseline/fixtures/hac40-catalog.json",
+    "../v2-road-baseline/fixtures/hac40-fleet.json",
+    "../v2-road-baseline/fixtures/hac40-crew.json",
+    "../v2-full-flow-qa/cleanup.sql exact-PK child-first pattern"
+  ],
+  "initialWorkflow": "Two requests, three SENT opportunities, eligible native plans; no offer, decision, booking, reservation, execution or incident preexecuted",
+  "guardSuspension": {
+    "seed": [],
+    "verify": [],
+    "functionalHTTPAndRPC": [],
+    "cleanup": "Explicit user authorization in this task; one local transaction, affected noninternal triggers only, original O/A/R/D restored and checked; FK/CHECK remain active"
+  },
+  "cleanup": "Exact registered business/Auth PKs, prior external credential-free backup, incoming FK audit including CASCADE, child-first deletion; external child/cycle aborts",
+  "certificationLimit": "Synthetic local API/RPC evidence. Future correction-SHA portal retest and full shared LTL trip are outside this task. Known carrier catalog defects retain FAIL. Shipper discovery observations do not certify a stricter catalog-read policy absent an explicit contract.",
+  "nativeAuthorizationFixtures": {
+    "phase": "functional HTTP using actual local Auth",
+    "metrics": "metrics.publish; ADMIN; 1 row per carrier; OPERATOR/DISPATCHER denied",
+    "consolidations": "consolidations.create; separate ROAD LTL service/physical calendar; OPEN authorization fixture only; DISPATCHER/OPERATOR",
+    "assetEvents": "asset-events.create; spare LTL asset after primary booking completion; DISPATCHER/OPERATOR",
+    "readControls": "exact native IDs under ADMIN/OPERATOR/DISPATCHER; paired foreign-carrier/shipper denials"
+  }
+}
