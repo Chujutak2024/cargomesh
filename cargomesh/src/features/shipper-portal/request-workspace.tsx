@@ -2,8 +2,8 @@
 
 import { AlertTriangle, CalendarClock, CheckCircle2, Edit3, FileCheck2, Loader2, MapPin, PackageCheck, RefreshCw, Send, ShieldCheck, Truck } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { Badge, Button, Dialog, Input, Select, Textarea } from "@/components/ui";
+import { useRef, useState } from "react";
+import { Button, Dialog, Input, Select, Textarea } from "@/components/ui";
 import { EquipmentCodeV2Schema } from "@/shared/schemas/v2/freight-request";
 import { useLocale } from "@/features/i18n/locale-provider";
 import { CandidateResults } from "@/features/v2-intake/components/candidate-results";
@@ -15,6 +15,9 @@ import { authorizeBooking, reviseFreightRequest, selectCommercialOption, Shipper
 import { formatDateTime, formatMass, latestRecord, requestStatusLabel, requestStatusTone, requestToRevisionInput, type WorkflowRecordV2 } from "./shipper-model";
 import styles from "./shipper-portal.module.css";
 import { LocationResolver } from "./location-resolver";
+import { CommercialPanel } from "./commercial-panel";
+import { bookingsStillNeeded, optionAvailability } from "./commercial-view";
+import { OutcomePanel } from "./outcome-panel";
 
 type Workflow = Record<string, WorkflowRecordV2[]>;
 type EditState = {
@@ -37,6 +40,9 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
   const [editOpen, setEditOpen] = useState(false);
   const [decisionOpen, setDecisionOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [bookingConsent, setBookingConsent] = useState(false);
+  const bookingInFlight = useRef(false);
+  const bookingKeys = useRef(new Map<string, string>());
   const [placeConfirmed, setPlaceConfirmed] = useState(false);
   const [resolvedOrigin, setResolvedOrigin] = useState<FreightLocationV2 | null>(null);
   const [resolvedDestination, setResolvedDestination] = useState<FreightLocationV2 | null>(null);
@@ -48,6 +54,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
   const selectedOption = ranking?.data.options[selectedOptionIndex] ?? null;
   const [decision, setDecision] = useState(existingDecision);
   const activeBookings = (workflow.bookings ?? []).filter((item): item is Extract<WorkflowRecordV2, { kind: "bookings" }> => item.kind === "bookings");
+  const incidents = (workflow.incidents ?? []).filter((item): item is Extract<WorkflowRecordV2, { kind: "incidents" }> => item.kind === "incidents");
 
   async function evaluate(next = request) {
     setPhase("evaluating"); setError(null); setEvaluation(null); setSelectedCandidateId(null);
@@ -97,27 +104,43 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
   }
 
   async function chooseOption() {
-    if (!selectedOption || !ranking) return;
+    if (!selectedOption || !ranking || phase !== "idle") return;
+    if (!optionAvailability(selectedOption, offers).available) {
+      setError(new ShipperApiError("OFFER_UNAVAILABLE", t("Una oferta de esta alternativa caducó, fue retirada o ya no está disponible. Recarga para revisar alternativas actuales.", "An offer in this option expired, was withdrawn or is no longer available. Reload to review current alternatives."), 409, false));
+      return;
+    }
     setPhase("deciding"); setError(null);
     try {
       const saved = await selectCommercialOption({ requestId: request.id, planId: selectedOption.planId,
         offerIds: selectedOption.offerIds, consideredOfferIds: offers.filter((offer) => offer.data.status === "RECEIVED").map((offer) => offer.id),
         policyId: ranking.data.policyId, rationale: t("Alternativa seleccionada explícitamente por el shipper en CargoMesh Web.", "Alternative explicitly selected by the shipper in CargoMesh Web.") });
       if (saved.kind !== "decisions") throw new ShipperApiError("CONTRACT_MISMATCH", "Decision endpoint returned another record kind.", 502, false);
-      setDecision(saved); setWorkflow((current) => ({ ...current, decisions: [...(current.decisions ?? []), saved] })); setDecisionOpen(false); setBookingOpen(true);
+      setDecision(saved); setWorkflow((current) => ({ ...current, decisions: [...(current.decisions ?? []), saved] })); setDecisionOpen(false); setBookingConsent(false); setBookingOpen(true);
     } catch (caught) { setError(toShipperError(caught)); }
     finally { setPhase("idle"); }
   }
 
   async function book() {
-    if (!decision) return;
+    if (!decision || !bookingConsent || bookingInFlight.current) return;
+    const pending = bookingsStillNeeded(decision.data.selectedOfferIds, activeBookings, decision.id);
+    if (!pending.length) { setBookingOpen(false); return; }
+    if (!pending.every((id) => { const offer = offers.find((item) => item.id === id); return offer && optionAvailability({ offerIds: [id] } as NonNullable<typeof selectedOption>, offers).available; })) {
+      setError(new ShipperApiError("OFFER_UNAVAILABLE", t("La oferta seleccionada ya no está vigente. Recarga antes de autorizar.", "The selected offer is no longer valid. Reload before authorizing."), 409, false));
+      return;
+    }
+    bookingInFlight.current = true;
     setPhase("booking"); setError(null);
     try {
-      const saved: WorkflowRecordV2[] = [];
-      for (const offerId of decision.data.selectedOfferIds) saved.push(await authorizeBooking({ decisionId: decision.id, offerId }));
-      setWorkflow((current) => ({ ...current, bookings: [...(current.bookings ?? []), ...saved] })); setBookingOpen(false);
+      for (const offerId of pending) {
+        const actionKey = `${decision.id}:${offerId}`;
+        const key = bookingKeys.current.get(actionKey) ?? crypto.randomUUID();
+        bookingKeys.current.set(actionKey, key);
+        const saved = await authorizeBooking({ decisionId: decision.id, offerId, idempotencyKey: key });
+        setWorkflow((current) => ({ ...current, bookings: [...(current.bookings ?? []).filter((item) => item.id !== saved.id), saved] }));
+      }
+      setBookingConsent(false); setBookingOpen(false);
     } catch (caught) { setError(toShipperError(caught)); }
-    finally { setPhase("idle"); }
+    finally { bookingInFlight.current = false; setPhase("idle"); }
   }
 
   const mapProps = evaluation ? mapServiceabilityToMapViewProps(request, evaluation, selectedCandidateId, setSelectedCandidateId) : null;
@@ -141,7 +164,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
           : <div className={styles.empty}><span className={styles.emptyIcon}><MapPin size={22}/></span><strong>{t("Evaluación aún no cargada", "Evaluation not loaded yet")}</strong><p>{t("Reevaluar consulta el servicio V2; no usa una ruta anterior mientras carga.", "Reevaluate queries the V2 service; it does not keep an old route while loading.")}</p><Button onClick={() => void evaluate()}>{t("Evaluar ahora", "Evaluate now")}</Button></div>}
       </section>
       <CommercialPanel offers={offers} ranking={ranking} selectedOptionIndex={selectedOptionIndex} setSelectedOptionIndex={setSelectedOptionIndex}
-        decision={decision} bookings={activeBookings} onDecide={() => setDecisionOpen(true)} onBook={() => setBookingOpen(true)} t={t} localeTag={localeTag}/>
+        decision={decision} bookings={activeBookings} onDecide={() => setDecisionOpen(true)} onBook={() => { setBookingConsent(false); setBookingOpen(true); }} t={t} localeTag={localeTag}/>
     </div>
       <aside className={styles.page}><section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Siguiente acción", "Next action")}</h2><p>{t("El estado del servidor manda", "Server state is authoritative")}</p></div><Send size={18}/></header><div className={styles.section}>
         {request.status === "FAILED" ? <p className={styles.notice} data-tone="danger"><AlertTriangle size={17}/>{t("La solicitud falló. Revisa la trazabilidad y los datos persistidos; corrige mediante una revisión permitida o crea una nueva solicitud. No se reintenta en silencio.", "The request failed. Review traceability and persisted data; correct it through an allowed revision or create a new request. It is never retried silently.")}</p> : null}
@@ -149,7 +172,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
         {request.status === "DRAFT" ? <><p className={styles.notice} data-tone="warning"><AlertTriangle size={17}/>{t("Enviar bloquea la versión esperada. Un conflicto 409 debe recargarse, no ocultarse.", "Submit uses the expected version. A 409 conflict must be reloaded, not hidden.")}</p><Button isLoading={phase === "submitting"} onClick={() => void submit()}><Send size={16}/>{t("Enviar solicitud", "Submit request")}</Button></> : null}
         {request.status !== "DRAFT" && !ranking ? <p className={styles.notice}><CalendarClock size={17}/>{t("La solicitud está enviada. Las alternativas y ofertas aparecerán cuando el backend las persista.", "The request is submitted. Alternatives and offers appear when the backend persists them.")}</p> : null}
         {ranking && !decision ? <Button onClick={() => setDecisionOpen(true)}><FileCheck2 size={16}/>{t("Revisar selección", "Review selection")}</Button> : null}
-        {decision && !activeBookings.length ? <Button onClick={() => setBookingOpen(true)}><PackageCheck size={16}/>{t("Autorizar booking", "Authorize booking")}</Button> : null}
+        {decision && bookingsStillNeeded(decision.data.selectedOfferIds, activeBookings, decision.id).length ? <Button onClick={() => { setBookingConsent(false); setBookingOpen(true); }}><PackageCheck size={16}/>{t("Autorizar booking", "Authorize booking")}</Button> : null}
         {activeBookings.length ? <Link className={styles.primary} href="/bookings"><Truck size={16}/>{t("Ver reservas", "View bookings")}</Link> : null}
         <Link className={styles.secondary} href="/freight-request/new?assistant=open">{t("Abrir asistente", "Open assistant")}</Link>
       </div></section>
@@ -159,7 +182,8 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
         <Timeline label={t("Ofertas recibidas", "Offers received")} value={String(offers.length)} />
         <Timeline label={t("Decisión", "Decision")} value={decision?.status ?? t("Pendiente", "Pending")} />
         <Timeline label={t("Bookings", "Bookings")} value={String(activeBookings.length)} />
-      </div></section></aside>
+      </div></section>
+      <OutcomePanel requests={[request]} offers={offers} bookings={activeBookings} incidents={incidents} t={t} localeTag={localeTag}/></aside>
     </div>
 
     <EditDialog open={editOpen} edit={edit} setEdit={setEdit} request={request} confirmed={placeConfirmed} setConfirmed={setPlaceConfirmed}
@@ -167,29 +191,17 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
       onResolveDestination={(location) => { setResolvedDestination(location); setEdit((current) => ({ ...current, destinationLabel: location.label, destinationCity: location.city })); setPlaceConfirmed(true); }}
       busy={phase === "saving"} onClose={() => setEditOpen(false)} onSave={() => void saveRevision()} t={t}/>
     <Dialog open={decisionOpen} title={t("Confirmar alternativa", "Confirm alternative")} description={t("Esta decisión queda auditada y no crea una reserva por sí sola.", "This decision is audited and does not create a booking by itself.")} closeLabel={t("Cerrar", "Close")} onClose={() => setDecisionOpen(false)}>
-      <div className={styles.dialogCopy}><p>{selectedOption ? `${t("Plan", "Plan")}: ${selectedOption.planId} · ${selectedOption.offerIds.length} ${t("oferta(s)", "offer(s)")}` : t("No hay opción seleccionada.", "No option selected.")}</p><p>{t("Confirma que revisaste el costo, vigencia, datos faltantes y explicación del ranking.", "Confirm that you reviewed price, validity, missing data, and the ranking explanation.")}</p><Button disabled={!selectedOption} isLoading={phase === "deciding"} onClick={() => void chooseOption()}><CheckCircle2 size={16}/>{t("Confirmar selección", "Confirm selection")}</Button></div>
+      <div className={styles.dialogCopy}><p>{selectedOption ? `${t("Plan", "Plan")}: ${selectedOption.planId} · ${selectedOption.offerIds.length} ${t("oferta(s)", "offer(s)")}` : t("No hay opción seleccionada.", "No option selected.")}</p><p>{t("La comparación es una instantánea: el servidor volverá a validar vigencia, permisos y elegibilidad.", "The comparison is a snapshot: the server will revalidate validity, permissions and eligibility.")}</p><Button disabled={!optionAvailability(selectedOption, offers).available || phase !== "idle"} isLoading={phase === "deciding"} onClick={() => void chooseOption()}><CheckCircle2 size={16}/>{t("Confirmar selección", "Confirm selection")}</Button></div>
     </Dialog>
     <Dialog open={bookingOpen} title={t("Autorizar booking", "Authorize booking")} description={t("Acción comercial explícita. No puede inferirse del ranking ni del chat.", "Explicit commercial action. It cannot be inferred from ranking or chat.")} closeLabel={t("Cancelar", "Cancel")} onClose={() => setBookingOpen(false)}>
-      <div className={styles.dialogCopy}><p>{decision ? `${decision.data.selectedOfferIds.length} ${t("oferta(s) serán autorizadas", "offer(s) will be authorized")}.` : t("Primero confirma una decisión.", "Confirm a decision first.")}</p><p>{t("El carrier aún puede confirmar o rechazar. La autorización no se muestra como transporte confirmado.", "The carrier may still confirm or reject. Authorization is not displayed as confirmed transport.")}</p><Button disabled={!decision} isLoading={phase === "booking"} onClick={() => void book()}><ShieldCheck size={16}/>{t("Sí, autorizo el booking", "Yes, authorize booking")}</Button></div>
+      <div className={styles.dialogCopy}><p>{decision ? `${bookingsStillNeeded(decision.data.selectedOfferIds, activeBookings, decision.id).length} ${t("oferta(s) pendientes de autorización", "offer(s) awaiting authorization")}.` : t("Primero confirma una decisión.", "Confirm a decision first.")}</p>
+        {decision && activeBookings.some((item) => item.data.decisionId === decision.id && typeof item.data.offerId !== "string") ? <p className={styles.notice} data-tone="warning"><AlertTriangle size={16}/>{t("Ya existe una autorización. El DTO de booking no identifica la oferta vinculada; no reintentamos otra automáticamente para evitar duplicados. Revisa Reservas o consulta al equipo operativo.", "An authorization already exists. The booking DTO does not identify its offer; we will not automatically retry another to avoid duplicates. Review Bookings or contact operations.")}</p> : null}
+        {decision?.data.selectedOfferIds.map((id) => { const offer = offers.find((item) => item.id === id); return <div className={styles.consentOffer} key={id}><strong>{offer?.data.carrierReference ?? t("Oferta no disponible", "Offer unavailable")}</strong><span>{offer ? `${offer.data.price.currency} ${offer.data.price.amount.toLocaleString(localeTag, { minimumFractionDigits: 2 })} · ${t("vigente hasta", "valid until")} ${formatDateTime(offer.data.validity.endsAt, localeTag)}` : id}</span>{offer?.data.commercialTerms.length ? <ul>{offer.data.commercialTerms.map((term, index) => <li key={`${term.code}-${index}`}>{term.code}: {term.description}</li>)}</ul> : <span>{t("Sin condiciones adicionales declaradas", "No additional terms declared")}</span>}</div>; })}
+        <p>{t("El carrier aún puede confirmar o rechazar. Esta autorización no garantiza transporte ni sustituye sus condiciones comerciales.", "The carrier may still confirm or reject. This authorization does not guarantee transport or replace its commercial terms.")}</p>
+        <label className={styles.confirm}><input type="checkbox" checked={bookingConsent} onChange={(event) => setBookingConsent(event.target.checked)}/><span>{t("He revisado transportista, precio, vigencia y condiciones de las ofertas indicadas. Autorizo explícitamente solicitar estas reservas.", "I have reviewed the carrier, price, validity and terms of the listed offers. I explicitly authorize requesting these bookings.")}</span></label>
+        <Button disabled={!decision || !bookingConsent || phase !== "idle" || !bookingsStillNeeded(decision.data.selectedOfferIds, activeBookings, decision.id).length} isLoading={phase === "booking"} onClick={() => void book()}><ShieldCheck size={16}/>{t("Autorizar ofertas pendientes", "Authorize pending offers")}</Button></div>
     </Dialog>
   </div>;
-}
-
-function CommercialPanel({ offers, ranking, selectedOptionIndex, setSelectedOptionIndex, decision, bookings, onDecide, onBook, t, localeTag }: {
-  offers: Extract<WorkflowRecordV2, { kind: "offers" }>[]; ranking: Extract<WorkflowRecordV2, { kind: "ranking" }> | null;
-  selectedOptionIndex: number; setSelectedOptionIndex: (index: number) => void; decision: Extract<WorkflowRecordV2, { kind: "decisions" }> | null;
-  bookings: Extract<WorkflowRecordV2, { kind: "bookings" }>[]; onDecide: () => void; onBook: () => void; t: (es: string, en: string) => string; localeTag: string;
-}) {
-  const unavailableOffers = offers.filter((offer) => offer.data.status !== "RECEIVED" || Date.parse(offer.data.validity.endsAt) <= Date.now());
-  return <section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Ofertas y ranking", "Offers and ranking")}</h2><p>{t("Precio y score sólo desde recursos V2 persistidos", "Price and score only from persisted V2 resources")}</p></div><FileCheck2 size={18}/></header>
-    {!offers.length ? <div className={styles.empty}><span className={styles.emptyIcon}><FileCheck2 size={22}/></span><strong>{t("Todavía no hay ofertas", "No offers yet")}</strong><p>{t("No se muestra precio, carrier o ETA de ejemplo.", "No sample price, carrier, or ETA is shown.")}</p></div>
-      : <div className={styles.section}>{unavailableOffers.length ? <p className={styles.notice} data-tone="warning"><AlertTriangle size={17}/>{t(`${unavailableOffers.length} oferta(s) ya no están disponibles. Revisa vigencia y selecciona únicamente una alternativa actual.`, `${unavailableOffers.length} offer(s) are no longer available. Review validity and select only a current alternative.`)}</p> : null}<div className={styles.cards}>{offers.map((offer) => <article className={styles.offer} key={offer.id}><div className={styles.offerHead}><div><h3>{offer.data.carrierReference}</h3><p>{offer.data.source.channel} · {offer.data.status} · v{offer.data.offerVersion}</p></div><strong className={styles.price}>{offer.data.price.currency} {offer.data.price.amount.toLocaleString(localeTag, { minimumFractionDigits: 2 })}</strong></div>
-        <dl className={styles.breakdown}>{offer.data.breakdown.map((item, index) => <div key={`${item.kind}-${index}`}><dt>{item.kind} · {item.treatment}</dt><dd>{item.amount ? `${item.amount.currency} ${item.amount.amount.toLocaleString(localeTag)}` : t("Desconocido", "Unknown")}</dd></div>)}</dl><p>{t("Válida hasta", "Valid until")}: {formatDateTime(offer.data.validity.endsAt, localeTag)}</p></article>)}</div>
-        {ranking ? <div className={styles.cards}>{ranking.data.options.map((option, index) => <button type="button" className={styles.offer} data-selected={selectedOptionIndex === index} onClick={() => setSelectedOptionIndex(index)} key={`${option.planId}-${index}`}><div className={styles.offerHead}><div><h3>#{option.position} · {t("Plan", "Plan")} {option.planId.slice(0, 8)}</h3><p>{t("Score", "Score")}: {option.score.toFixed(3)} · {option.missingData.length ? `${t("Faltan", "Missing")}: ${option.missingData.join(", ")}` : t("Datos completos del ranking", "Complete ranking data")}</p></div><Badge tone={index === selectedOptionIndex ? "confirmed" : "neutral"}>{option.offerIds.length} {t("oferta(s)", "offer(s)")}</Badge></div></button>)}</div> : <p className={styles.notice} data-tone="warning"><AlertTriangle size={17}/>{t("Hay ofertas, pero el backend aún no publicó un ranking explicable.", "Offers exist, but the backend has not published an explainable ranking yet.")}</p>}
-        {ranking && !decision ? <Button onClick={onDecide}>{t("Revisar y seleccionar", "Review and select")}</Button> : null}
-        {decision && !bookings.length ? <Button onClick={onBook}>{t("Continuar a consentimiento de booking", "Continue to booking consent")}</Button> : null}
-      </div>}
-  </section>;
 }
 
 function EditDialog({ open, edit, setEdit, request, confirmed, setConfirmed, onResolveOrigin, onResolveDestination, busy, onClose, onSave, t }: {

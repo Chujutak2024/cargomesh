@@ -77,10 +77,10 @@ export async function selectCommercialOption(input: {
   return WorkflowResponseSchema.parse(body).data;
 }
 
-export async function authorizeBooking(input: { decisionId: string; offerId: string }, fetcher: FetchLike = fetch) {
+export async function authorizeBooking(input: { decisionId: string; offerId: string; idempotencyKey?: string }, fetcher: FetchLike = fetch) {
   const now = new Date().toISOString();
   const body = await requestJson("/api/v2/bookings", {
-    method: "POST", headers: idempotencyHeaders(), body: JSON.stringify({
+    method: "POST", headers: { "Idempotency-Key": input.idempotencyKey ?? crypto.randomUUID() }, body: JSON.stringify({
       schemaVersion: "2.0", decisionId: input.decisionId, offerId: input.offerId, authorization: "AUTHORIZE",
       evidence: { reference: "SHIPPER_WEB_EXPLICIT_BOOKING_CONSENT", provider: "CargoMesh Web", observedAt: now,
         validUntil: null, provenanceStatus: "VERIFIED" },

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { requestStatusLabel, requestToRevisionInput } from "./shipper-model";
+import { bookingStatusPresentation, executionActionLabel, requestStatusLabel, requestToRevisionInput } from "./shipper-model";
 import type { FreightRequestV2Data } from "@/features/v2-intake/contracts";
 
 const request = {
@@ -31,4 +31,17 @@ test("revision input preserves business fields and removes persisted metadata", 
 test("status labels are localized", () => {
   assert.equal(requestStatusLabel("AWAITING_SELECTION", "es"), "Esperando selección");
   assert.equal(requestStatusLabel("BOOKED", "en"), "Booked");
+});
+
+test("booking outcomes distinguish pending, confirmed, rejected and cancelled without auto-rebooking", () => {
+  assert.equal(bookingStatusPresentation("PENDING", "es").tone, "pending");
+  assert.equal(bookingStatusPresentation("CONFIRMED", "en").label, "Carrier confirmed");
+  assert.equal(bookingStatusPresentation("REJECTED", "es").label, "Rechazada por carrier");
+  assert.match(bookingStatusPresentation("REJECTED", "en").consequence, /new decision and authorization/);
+  assert.match(bookingStatusPresentation("CANCELLED", "en").consequence, /No replacement booking/);
+});
+
+test("physical event action has a comprehensible bilingual label", () => {
+  assert.equal(executionActionLabel("executions.position", "es"), "Posición reportada");
+  assert.equal(executionActionLabel("executions.cancel", "en"), "Execution cancelled");
 });

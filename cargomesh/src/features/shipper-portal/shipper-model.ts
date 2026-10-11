@@ -6,6 +6,28 @@ import type { z } from "zod";
 
 export type WorkflowRecordV2 = z.infer<typeof WorkflowRecordV2Schema>;
 
+export function bookingStatusPresentation(status: Extract<WorkflowRecordV2, { kind: "bookings" }>["data"]["carrierConfirmationStatus"], locale: "es" | "en") {
+  const index = locale === "es" ? 0 : 1;
+  const content = {
+    PENDING: { label: ["Pendiente del carrier", "Awaiting carrier"], tone: "pending", consequence: ["Autorización registrada; aún no es transporte confirmado.", "Authorization recorded; not yet confirmed transport."] },
+    CONFIRMED: { label: ["Confirmada por carrier", "Carrier confirmed"], tone: "positive", consequence: ["Confirmación del carrier registrada.", "Carrier confirmation recorded."] },
+    REJECTED: { label: ["Rechazada por carrier", "Carrier rejected"], tone: "danger", consequence: ["Esta reserva no se ejecutará. Otra alternativa requiere una decisión y autorización nuevas.", "This booking will not proceed. Another option requires a new decision and authorization."] },
+    CANCELLED: { label: ["Cancelada", "Cancelled"], tone: "danger", consequence: ["No se crea otra reserva automáticamente.", "No replacement booking is created automatically."] },
+  } as const;
+  const item = content[status];
+  return { label: item.label[index], tone: item.tone, consequence: item.consequence[index] };
+}
+
+export function executionActionLabel(action: Extract<WorkflowRecordV2, { kind: "execution-events" }>["data"]["action"], locale: "es" | "en") {
+  const labels = {
+    "executions.start": ["Transporte iniciado", "Transport started"],
+    "executions.position": ["Posición reportada", "Position reported"],
+    "executions.complete": ["Entrega completada", "Delivery completed"],
+    "executions.cancel": ["Ejecución cancelada", "Execution cancelled"],
+  } as const;
+  return labels[action][locale === "es" ? 0 : 1];
+}
+
 export const REQUEST_STATUS_ORDER: FreightRequestV2Data["status"][] = [
   "DRAFT", "PENDING", "ORCHESTRATING", "AWAITING_SELECTION", "BOOKING", "BOOKED", "FAILED", "CANCELLED",
 ];

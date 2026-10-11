@@ -16,17 +16,21 @@ export function RequestList({ requests, initialQuery = "" }: { requests: Freight
   const [query, setQuery] = useState(initialQuery);
   const [filter, setFilter] = useState<Filter>("ALL");
   const [sort, setSort] = useState<Sort>("UPDATED_DESC");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const visible = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase(localeTag);
     return requests.filter((request) => (filter === "ALL" || request.status === filter)
+      && (!dateFrom || request.updatedAt.slice(0, 10) >= dateFrom)
+      && (!dateTo || request.updatedAt.slice(0, 10) <= dateTo)
       && (!needle || [request.referenceCode, request.origin.label, request.destination.label,
         request.origin.city, request.destination.city, request.cargoSpecification.description, request.status,
         request.updatedAt, formatDateTime(request.updatedAt, localeTag)].some((value) => value.toLocaleLowerCase(localeTag).includes(needle))))
       .sort((left, right) => sort === "UPDATED_DESC" ? Date.parse(right.updatedAt) - Date.parse(left.updatedAt)
         : sort === "UPDATED_ASC" ? Date.parse(left.updatedAt) - Date.parse(right.updatedAt)
         : Date.parse(left.pickupWindow.startsAt) - Date.parse(right.pickupWindow.startsAt));
-  }, [filter, localeTag, query, requests, sort]);
-  const filters: Filter[] = ["ALL", "DRAFT", "AWAITING_SELECTION", "BOOKING", "BOOKED", "FAILED", "CANCELLED"];
+  }, [dateFrom, dateTo, filter, localeTag, query, requests, sort]);
+  const filters: Filter[] = ["ALL", "DRAFT", "PENDING", "ORCHESTRATING", "AWAITING_SELECTION", "BOOKING", "BOOKED", "FAILED", "CANCELLED"];
 
   return <section className={styles.panel} aria-labelledby="request-list-title">
     <header className={styles.panelHeader}><div><h2 id="request-list-title">{t("Solicitudes de tu organización", "Your organization requests")}</h2>
@@ -55,9 +59,10 @@ export function RequestList({ requests, initialQuery = "" }: { requests: Freight
   >
           <option value="UPDATED_DESC">{t("Más recientes", "Newest first")}</option><option value="UPDATED_ASC">{t("Más antiguas", "Oldest first")}</option><option value="PICKUP_ASC">{t("Próximo recojo", "Next pickup")}</option>
         </select></label></div>
+      <div className={styles.dateFilters}><label>{t("Actualizada desde", "Updated from")}<input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)}/></label><label>{t("Hasta", "To")}<input type="date" min={dateFrom || undefined} value={dateTo} onChange={(event) => setDateTo(event.target.value)}/></label><span role="status">{visible.length} {t("solicitudes visibles", "visible requests")}</span></div>
     </div>
     {visible.length ? <div className={styles.list}>{visible.map((request) => <Link className={styles.row} href={`/requests/${request.id}`} key={request.id}>
-      <span className={styles.stack}><strong>{request.referenceCode}</strong><small>{formatDateTime(request.updatedAt, localeTag)}</small></span>
+      <span className={styles.stack}><strong>{request.referenceCode}</strong><small>{t("Actualizada", "Updated")} {formatDateTime(request.updatedAt, localeTag)} · v{request.draftVersion}</small><small>{t("Creada", "Created")} {formatDateTime(request.createdAt, localeTag)}</small></span>
       <span className={styles.stack}><strong>{request.origin.city} → {request.destination.city}</strong><span>{request.origin.label} → {request.destination.label}</span></span>
       <span className={styles.stack}><strong>{formatMass(request.cargoSpecification.totalWeightKg, localeTag)} · {request.cargoSpecification.totalVolumeM3.toLocaleString(localeTag)} m³</strong><small>{request.cargoSpecification.description}</small></span>
       <span className={styles.status} data-tone={requestStatusTone(request.status)}>{requestStatusLabel(request.status, locale)}</span>
