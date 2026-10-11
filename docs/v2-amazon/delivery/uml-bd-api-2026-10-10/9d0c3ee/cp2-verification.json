@@ -1,0 +1,34 @@
+{
+  "head": "d7440aa39ac84926efc9addc08137164f93eeeb0",
+  "pnpm": "11.25.0",
+  "harness": {
+    "command": "python -X utf8 scripts/qa/hac44/tests.py",
+    "exit": 0
+  },
+  "release": {
+    "command": "pnpm release:verify",
+    "cwd": "cargomesh",
+    "exit": 0
+  },
+  "pythonTests": {
+    "passed": 144,
+    "failed": 0
+  },
+  "httpTests": {
+    "passed": 23,
+    "failed": 0
+  },
+  "releaseSuites": {
+    "test:release": 312,
+    "test:v2-conversation": 58,
+    "test:v2-chat-workflow": 12,
+    "test:logistics": 117
+  },
+  "releaseSeconds": 72.72,
+  "externalOutputSha256": {
+    "qa-python-tests.log": "0fff7eb6712556514bf6ae3f388958571f6c670cb55ff4b16a9aa69419cd9e4f",
+    "qa-http-tests.log": "306fc08dd24969805d7c0c2df13762601055b5b120e2321807b3105cfa5a788d",
+    "release-verify.log": "d5aa33b9081ab78b655dd1f5021ef619da76a83d0e4516e32cde9130a3f8dd80",
+    "cp2-delivery-results.json": "bbebea6765fe1cbb8c41f53155499d19141428442e0f269cd824158513d13c5f"
+  }
+}
