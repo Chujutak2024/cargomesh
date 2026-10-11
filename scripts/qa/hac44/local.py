@@ -33,9 +33,21 @@ def gate():
 def sql(label, query, persist=True):
     """Execute SQL only through the dedicated HAC-44 local Docker database."""
     BANK.own("sql")
+    from real_auth import replace_claims, issued_claims
+    query = replace_claims(query, issued_claims)
+    rolled_back = bool(re.search(r'\brollback\s*;', query, re.I))
+    count_query = """create temporary table qa_counts(name text,n bigint);
+do $$declare r record;n bigint;begin for r in select n.nspname,c.relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where c.relkind in('r','p') and n.nspname not like 'pg_%' and n.nspname<>'information_schema' order by 1,2 loop execute format('select count(*) from %I.%I',r.nspname,r.relname) into n;insert into qa_counts values(r.nspname||'.'||r.relname,n);end loop;end$$;
+select jsonb_object_agg(name,n) from qa_counts;"""
+    if rolled_back:
+        import json
+        before = BANK.raw_sql(label + '-counts-before', count_query)
+        if before.returncode:
+            raise RuntimeError('Rollback count prerequisite failed')
+        before = json.loads(next(line for line in before.stdout.splitlines() if line.startswith('{')))
     if persist:
         write(OUT / "repro/sql" / (label + ".sql"), safe(query))
-    return run(
+    result = run(
         label,
         [
             "docker",
@@ -58,6 +70,16 @@ def sql(label, query, persist=True):
         ROOT,
         query,
     )
+    if rolled_back:
+        after = BANK.raw_sql(label + '-counts-after', count_query)
+        if after.returncode:
+            raise RuntimeError('Rollback count verification failed')
+        after = json.loads(next(line for line in after.stdout.splitlines() if line.startswith('{')))
+        save(label + '-rollback-counts.json', {'status':'PASS' if before == after else 'FAIL',
+             'before':before,'after':after,'delta':{k:after.get(k,0)-before.get(k,0) for k in before.keys()|after.keys() if after.get(k,0)!=before.get(k,0)}})
+        if before != after:
+            raise RuntimeError('Rollback changed owned bank counts')
+    return result
 
 
 def script(label, path, backup=False):

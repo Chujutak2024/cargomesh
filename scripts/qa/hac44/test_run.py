@@ -10,7 +10,7 @@ import run as runner
 
 
 class RunnerTests(unittest.TestCase):
-    def exercise(self, defect=None):
+    def exercise(self, defect=None, count=2):
         with tempfile.TemporaryDirectory(prefix="hac44-run-unit-") as folder:
             out = Path(folder)
             number = 0
@@ -48,7 +48,7 @@ class RunnerTests(unittest.TestCase):
                 if defect == "setup" and key == ("gates.py",): code = 1
                 if defect == "baseline" and key == ("fk_coverage.py",): code = 3
                 return SimpleNamespace(returncode=code)
-            result = runner.Runner(out, execute)
+            result = runner.Runner(out, execute, count=count)
             with contextlib.redirect_stdout(io.StringIO()):
                 code = result.all()
             measured = json.loads((out / "logs/runner-results.json").read_text(encoding="utf-8"))
@@ -66,6 +66,14 @@ class RunnerTests(unittest.TestCase):
 
     def test_current_all_pass_needs_no_historical_failures(self):
         self.positive()
+
+    def test_cp1_executes_one_cycle_and_retains_complete_cleanup(self):
+        self.positive()
+        code,data,cycles=self.exercise(count=1)
+        self.assertEqual(code,0)
+        self.assertEqual(len(cycles),1)
+        self.assertEqual(cycles[0]['cleanup']['status'],'PASS')
+        self.assertTrue(any(c['script']=='f02.py' for c in data['commands']))
 
     def test_auth_reset_requires_fresh_catalog_before_fk_measurement(self):
         self.positive()

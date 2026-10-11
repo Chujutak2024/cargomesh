@@ -84,6 +84,9 @@ def main():
     capture = sql("fk-register-explicit-ids", "select hac44_qa.capture_ids();")
     if capture.returncode:
         raise RuntimeError("Cannot capture the explicit cleanup registry")
+    # Auth issuance is a precondition, not a row change caused by FK rollback.
+    from real_auth import issued_claims
+    issued_claims(['d4410000-0000-4000-8000-000000000001'])
     counts_before = read_json("fk-counts-before", counts_query)
     baseline_run = run("fk-baseline", [sys.executable, "-X", "utf8", Path(__file__).with_name("fk_complete.py")])
     baseline = json.loads((LOGS / "independent-fk-pairs.json").read_text(encoding="utf-8"))

@@ -1,6 +1,7 @@
 """Complete local verification and return the current cut's actual verdict."""
 
 import json
+import os
 import shutil
 import sys
 from collections import Counter
@@ -20,6 +21,7 @@ ARTIFACTS = {
     ("rls.py",): ["independent-rls-result.json"],
     ("races.py",): ["independent-races.json"],
     ("fk_coverage.py",): ["independent-fk-pairs.json", "baseline-fk-pairs.json"],
+    ("strict_diagnostic.py",): ["strict-diagnostic-pairs.json"],
     ("persistence.py",): ["contract-persistence-result.json"],
     ("lifecycle.py", "seed"): ["full-flow-seed-result.json"],
     ("lifecycle.py", "cleanup"): ["full-flow-cleanup-result.json"],
@@ -27,6 +29,8 @@ ARTIFACTS = {
     ("pkce_smoke.py",): ["pkce-smoke.json"],
     ("authentication.py",): ["authentication-result.json"],
     ("identity.py",): ["identity-result.json", "identity-cleanup.json"],
+    ("f02.py",): ["f02-results.json"],
+    ("cp1c_suite22.py",): ["cp1c-suite22.json"],
 }
 CONTRACT_CASES = {
     "contract-required-field-result.json", "contract-route-cardinality-result.json",
@@ -46,12 +50,15 @@ def stamp(path):
 
 
 class Runner:
-    def __init__(self, out=OUT, execute=None):
+    def __init__(self, out=OUT, execute=None, count=2):
         self.out, self.logs = Path(out), Path(out) / "logs"
         self.logs.mkdir(parents=True, exist_ok=True)
         self.execute = execute or run
         self.commands, self.cases, self.completed = [], [], []
         self.stop_requested = False
+        if count not in (1,2):
+            raise ValueError('Cycle count must be 1 (checkpoint) or 2 (repeatability)')
+        self.cycle_count = count
 
     def write(self, name, data):
         text = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
@@ -118,8 +125,11 @@ class Runner:
         self.snapshot()
         return record
 
-    def cycles(self, blocked=None, seeded=False):
-        for cycle in (1, 2):
+    def cycles(self, blocked=None, seeded=False, count=None):
+        count = self.cycle_count if count is None else count
+        if count not in (1,2):
+            raise ValueError('HAC44_CYCLES must be 1 (checkpoint) or 2 (repeatability)')
+        for cycle in range(1,count+1):
             first_command, first_case = len(self.commands), len(self.cases)
             ready = blocked
             attempted = not ready
@@ -131,6 +141,7 @@ class Runner:
             if result["status"] != "PASS":
                 ready = "Dataset verification prerequisite did not pass"
             try:
+                self.child('strict_controls.py', blocked=ready)
                 for mode in ("run", "extended", "ltl"):
                     self.child("api_runner.py", mode, blocked=ready)
                 self.child("pending.py", blocked=ready)
@@ -140,9 +151,15 @@ class Runner:
                 for name in ("rls.py", "races.py", "fk_coverage.py", "persistence.py"):
                     result = self.child(name, blocked=ready)
                     if name == "fk_coverage.py" and result["exit"] == 3:
+                        if os.environ.get('HAC44_CP1B')=='1':
+                            # CP-1b explicitly requests fresh independent suites.
+                            # Preserve the base FAIL; this diagnostic never promotes it.
+                            self.child('strict_diagnostic.py', blocked=ready)
+                            continue
                         self.stop_requested = True
                         break
                 if not self.stop_requested:
+                    self.child('f02.py', blocked=ready)
                     self.child("lifecycle.py", "verify", blocked=ready)
                     self.child("matrix.py", blocked=ready)
             finally:
@@ -176,12 +193,14 @@ class Runner:
             result = self.child(name, *args, blocked=blocked)
             if result["status"] != "PASS":
                 blocked = "Setup prerequisite did not pass: " + name
+            if name=='runtime.py' and os.environ.get('HAC44_CP1C')=='1':
+                self.child('cp1c_suite22.py',blocked=blocked)
         # Independent authentication contract suite; its FAIL remains in the verdict.
         # It reconstructs the owned empty bank before the dataset cycles.
         self.child("authentication.py", blocked=blocked)
         self.child("identity.py", blocked=blocked)
         # Capture the catalog after the suite's reset, including fresh internal trigger identities.
-        for name in ("catalog.py", "strict_controls.py"):
+        for name in ("catalog.py",):
             result = self.child(name, blocked=blocked)
             if result["status"] != "PASS":
                 blocked = "Reconstructed catalog/caller prerequisite did not pass: " + name
@@ -194,7 +213,7 @@ class Runner:
 
 
 if __name__ == "__main__":
-    runner = Runner()
+    runner = Runner(count=int(os.environ.get('HAC44_CYCLES','2')))
     if sys.argv[1:] and sys.argv[1] == "all":
         try:
             code = runner.all()

@@ -1,0 +1,795 @@
+{
+  "schemaVersion": 2,
+  "productSha": "9d0c3ee32179f00242a6961b90116293a1bc6d0e",
+  "normalization": {
+    "rule": "Replace CRLF with LF; preserve every other byte except the explicitly authorized single final LF removal in scripts/qa/hac44/f02_native.mts.",
+    "measuredManifest": "CP_1C_9d0c3ee/ENTREGA/INTEGRAL_RESULT.json#harnessSha256",
+    "measuredSnapshot": "CP_1C_9d0c3ee/ENTREGA/HARNESS_SNAPSHOT/",
+    "explanation": "95/96 committed files exactly match the measured source after LF normalization. Only f02_native.mts removes one additional final LF byte with explicit user approval; its normalized content hashes match when final empty lines are ignored. Original measured hashes and the immutable CP-1c snapshot are retained. No other source content differs.",
+    "filesCompared": 96,
+    "normalizedLfHashesMatched": 95,
+    "measuredFilesWithCrLf": 72,
+    "committedFilesWithCr": 0,
+    "authorizedEofOnlyDifferences": 1,
+    "identityMatchesWithAuthorizedEofException": 96,
+    "eofException": {
+      "file": "scripts/qa/hac44/f02_native.mts",
+      "allowedChange": "Remove exactly one extra final empty line (one LF byte); preserve every other byte.",
+      "comparisonRule": "For this file only, normalize CRLF to LF, remove final empty lines, and retain one terminating LF.",
+      "authorization": "Explicit user approval in the LF correction conversation."
+    }
+  },
+  "files": {
+    "scripts/qa/hac44/.gitignore": {
+      "measuredSha256": "01d8d0360f02a0c00e236a4eb2a1d8bdf83377acf442eaafad7a136bf14d6bb0",
+      "measuredNormalizedLfSha256": "862263fa1f46c20f0d1e4dac5ffcc75abd55c08211b2c3864c5f8764b9d87793",
+      "committedLfSha256": "862263fa1f46c20f0d1e4dac5ffcc75abd55c08211b2c3864c5f8764b9d87793",
+      "measuredCrBytes": 2,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/api.ts": {
+      "measuredSha256": "9c5812dacecaa61a4fad38e6daf212289072a0d462858b0aeb98805e832d0ef0",
+      "measuredNormalizedLfSha256": "9233fc55a81cd659c686219868d339b560effc4d15c76e9a7051d00883027888",
+      "committedLfSha256": "9233fc55a81cd659c686219868d339b560effc4d15c76e9a7051d00883027888",
+      "measuredCrBytes": 877,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/api_runner.py": {
+      "measuredSha256": "2bbee6be9766209fda8a9f7a839ba31aaefb6ecd4a64d2cbed42e6ab66143437",
+      "measuredNormalizedLfSha256": "2a98c64daeecd9088467e1d4bac71b5573e5af072bb44b7bdd9ddf03a91930e6",
+      "committedLfSha256": "2a98c64daeecd9088467e1d4bac71b5573e5af072bb44b7bdd9ddf03a91930e6",
+      "measuredCrBytes": 112,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/audit.py": {
+      "measuredSha256": "9a331e8487c049844bd22c1e20322c03acfbcd8143d1d02c6ff742efc8cfb1f1",
+      "measuredNormalizedLfSha256": "6dcd11c859a7b501f915d352fab8d496a3ea16d1d790546cf7c385b69ccb23ea",
+      "committedLfSha256": "6dcd11c859a7b501f915d352fab8d496a3ea16d1d790546cf7c385b69ccb23ea",
+      "measuredCrBytes": 114,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/authentication.py": {
+      "measuredSha256": "737efa95f5c76f9ae248ac4b96d88cb6df1db962f620c5e62b434aa0b20a72a1",
+      "measuredNormalizedLfSha256": "1e35c09507359c82f4972b2624c836f9f70a39c895a1235fd19ec26cd1c7a0bf",
+      "committedLfSha256": "1e35c09507359c82f4972b2624c836f9f70a39c895a1235fd19ec26cd1c7a0bf",
+      "measuredCrBytes": 36,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/auth_cleanup.py": {
+      "measuredSha256": "bdc838163137d19a97e57db89c8c7d08d4154e765fcf55ea190e1416c1e8e0fe",
+      "measuredNormalizedLfSha256": "bdc838163137d19a97e57db89c8c7d08d4154e765fcf55ea190e1416c1e8e0fe",
+      "committedLfSha256": "bdc838163137d19a97e57db89c8c7d08d4154e765fcf55ea190e1416c1e8e0fe",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/banks.py": {
+      "measuredSha256": "17ff3457468f14461b123fc7faa417d85cbb443da7785efe8cabb1fedcec60b4",
+      "measuredNormalizedLfSha256": "f3822f2c7c7c6da0162cbf4a024b4695eac78efab4819ba08ddc920013b2ab29",
+      "committedLfSha256": "f3822f2c7c7c6da0162cbf4a024b4695eac78efab4819ba08ddc920013b2ab29",
+      "measuredCrBytes": 251,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/catalog.py": {
+      "measuredSha256": "2c7ec9bc528f72d12e101036c56ccefbc012be1524cea93579270c6c2210f786",
+      "measuredNormalizedLfSha256": "52c1592ce1421cc0db64bb0321a2c44bb7ddb8d0ca8bdb777af9c81407f18c2d",
+      "committedLfSha256": "52c1592ce1421cc0db64bb0321a2c44bb7ddb8d0ca8bdb777af9c81407f18c2d",
+      "measuredCrBytes": 55,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/checks.py": {
+      "measuredSha256": "a0f4f6d10de6c90c33a5c8a028bc2e8ab027f5a57af6d48f34cffc698e9d34b2",
+      "measuredNormalizedLfSha256": "0944801ce8a0e75987c46e8ffdd75011af9753d3d829a0b02e832a1e11b4c993",
+      "committedLfSha256": "0944801ce8a0e75987c46e8ffdd75011af9753d3d829a0b02e832a1e11b4c993",
+      "measuredCrBytes": 29,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/common.py": {
+      "measuredSha256": "d5ce3b5ecb1d980be78a793ccdfc34b809cd2e99d6d0f2001a516193bfc37c4e",
+      "measuredNormalizedLfSha256": "058abb9216c58d95d030490eb459520e4c065a6aa3da32cded1e4ea42c8c2b94",
+      "committedLfSha256": "058abb9216c58d95d030490eb459520e4c065a6aa3da32cded1e4ea42c8c2b94",
+      "measuredCrBytes": 133,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/compare.py": {
+      "measuredSha256": "c7032ea5bee2eb992d4f6a4a48fe9fcc84bcdb5c574e6d01d6d3a8b99cc46982",
+      "measuredNormalizedLfSha256": "50789f34bf4aeef64c2141a53214c1b00d84a39e10001d16fba4f2ce0fb28322",
+      "committedLfSha256": "50789f34bf4aeef64c2141a53214c1b00d84a39e10001d16fba4f2ce0fb28322",
+      "measuredCrBytes": 98,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/complete_recipe.py": {
+      "measuredSha256": "3d211b2c49e48d2de7068b232dc566b2b63e4e41836506f2113a2233fd09a357",
+      "measuredNormalizedLfSha256": "a1047eab117fc536d842d1ecfb617c8a738805bf2f2fac1b5188a0478bc3c996",
+      "committedLfSha256": "a1047eab117fc536d842d1ecfb617c8a738805bf2f2fac1b5188a0478bc3c996",
+      "measuredCrBytes": 126,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/contract_verdict.py": {
+      "measuredSha256": "40e2efe9f5c082c7d7e6e0fa15bc792d66898b6a0bdd4c143f525e9105643c58",
+      "measuredNormalizedLfSha256": "845dc10ea2d5887fa3dd3a813c528df479974d4f4b8e6e15b87e9b7369349a0d",
+      "committedLfSha256": "845dc10ea2d5887fa3dd3a813c528df479974d4f4b8e6e15b87e9b7369349a0d",
+      "measuredCrBytes": 40,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/coverage_transport.mts": {
+      "measuredSha256": "ff7f2b1718b66a0a68535f65855c5545e3107b7792025e37161c2c0ac4e190d9",
+      "measuredNormalizedLfSha256": "ff7f2b1718b66a0a68535f65855c5545e3107b7792025e37161c2c0ac4e190d9",
+      "committedLfSha256": "ff7f2b1718b66a0a68535f65855c5545e3107b7792025e37161c2c0ac4e190d9",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/cp1c_mapping.py": {
+      "measuredSha256": "b54a009a14533a3b7940aabd23fc1f563eb550d53a5319ccf5a900af75cc5832",
+      "measuredNormalizedLfSha256": "b54a009a14533a3b7940aabd23fc1f563eb550d53a5319ccf5a900af75cc5832",
+      "committedLfSha256": "b54a009a14533a3b7940aabd23fc1f563eb550d53a5319ccf5a900af75cc5832",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/cp1c_reconciliation.py": {
+      "measuredSha256": "78fc09c8a9f94f7f3980ca122b8c911467d660688f1585fe59c6bbbd2d5d5b2a",
+      "measuredNormalizedLfSha256": "78fc09c8a9f94f7f3980ca122b8c911467d660688f1585fe59c6bbbd2d5d5b2a",
+      "committedLfSha256": "78fc09c8a9f94f7f3980ca122b8c911467d660688f1585fe59c6bbbd2d5d5b2a",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/cp1c_sources.py": {
+      "measuredSha256": "6908a68e53927b222dcd1754fb64aab36274cdd08124d8d4c296be0d2b1d689f",
+      "measuredNormalizedLfSha256": "6908a68e53927b222dcd1754fb64aab36274cdd08124d8d4c296be0d2b1d689f",
+      "committedLfSha256": "6908a68e53927b222dcd1754fb64aab36274cdd08124d8d4c296be0d2b1d689f",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/cp1c_suite22.py": {
+      "measuredSha256": "171490a9aadde6dc17b13a2d77b187670977771d039a510b0d0e3f4f8df7a2c0",
+      "measuredNormalizedLfSha256": "171490a9aadde6dc17b13a2d77b187670977771d039a510b0d0e3f4f8df7a2c0",
+      "committedLfSha256": "171490a9aadde6dc17b13a2d77b187670977771d039a510b0d0e3f4f8df7a2c0",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/f02.py": {
+      "measuredSha256": "2d75fc3833366d8e184b7697d712ab30f7d68396729ea63d22a07e64275a746c",
+      "measuredNormalizedLfSha256": "2d75fc3833366d8e184b7697d712ab30f7d68396729ea63d22a07e64275a746c",
+      "committedLfSha256": "2d75fc3833366d8e184b7697d712ab30f7d68396729ea63d22a07e64275a746c",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/f02_audit.mts": {
+      "measuredSha256": "62c7a912a6cd1a22296e8e836d393294439496781cc5c2def5e7063fc38fbf85",
+      "measuredNormalizedLfSha256": "62c7a912a6cd1a22296e8e836d393294439496781cc5c2def5e7063fc38fbf85",
+      "committedLfSha256": "62c7a912a6cd1a22296e8e836d393294439496781cc5c2def5e7063fc38fbf85",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/f02_audit.py": {
+      "measuredSha256": "806c45f680469d2689aa2f5d2445853fe3a3b856bb0fb971883c9882a383e6da",
+      "measuredNormalizedLfSha256": "806c45f680469d2689aa2f5d2445853fe3a3b856bb0fb971883c9882a383e6da",
+      "committedLfSha256": "806c45f680469d2689aa2f5d2445853fe3a3b856bb0fb971883c9882a383e6da",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/f02_descriptors.json": {
+      "measuredSha256": "42329107f2fd80c0be180cc2fce9f4a0303fbf553005f1214a541d1ec76d752b",
+      "measuredNormalizedLfSha256": "42329107f2fd80c0be180cc2fce9f4a0303fbf553005f1214a541d1ec76d752b",
+      "committedLfSha256": "42329107f2fd80c0be180cc2fce9f4a0303fbf553005f1214a541d1ec76d752b",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/f02_focal.mts": {
+      "measuredSha256": "cdc01a85c25953f0a42995dbe7df686fa98bd5e6ce84ff5f2d833c3ec2e11c5a",
+      "measuredNormalizedLfSha256": "cdc01a85c25953f0a42995dbe7df686fa98bd5e6ce84ff5f2d833c3ec2e11c5a",
+      "committedLfSha256": "cdc01a85c25953f0a42995dbe7df686fa98bd5e6ce84ff5f2d833c3ec2e11c5a",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/f02_matrix.py": {
+      "measuredSha256": "cfa21b71c3ce1151c500919df57bb052c86895a28d93d54606d91bae57c359a3",
+      "measuredNormalizedLfSha256": "cfa21b71c3ce1151c500919df57bb052c86895a28d93d54606d91bae57c359a3",
+      "committedLfSha256": "cfa21b71c3ce1151c500919df57bb052c86895a28d93d54606d91bae57c359a3",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/f02_native.mts": {
+      "measuredSha256": "801361575424f28ce695b1c074eaedeb5bc4ea08adcf070029b801a7d300821a",
+      "measuredNormalizedLfSha256": "801361575424f28ce695b1c074eaedeb5bc4ea08adcf070029b801a7d300821a",
+      "committedLfSha256": "80e1e811a3227a1707c2d63a82a30b09dfa4e3e0ee0a6ca68d389b01f5267aaf",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "AUTHORIZED_SINGLE_FINAL_EMPTY_LINE_REMOVAL",
+      "measuredLfIgnoringTrailingEmptyLinesSha256": "80e1e811a3227a1707c2d63a82a30b09dfa4e3e0ee0a6ca68d389b01f5267aaf",
+      "committedLfIgnoringTrailingEmptyLinesSha256": "80e1e811a3227a1707c2d63a82a30b09dfa4e3e0ee0a6ca68d389b01f5267aaf",
+      "removedFinalLfBytes": 1
+    },
+    "scripts/qa/hac44/f02_probes.mts": {
+      "measuredSha256": "f6004533cc2e91d57adc93f603867976525ea51a71bdaf017dd7cfb21c53b22d",
+      "measuredNormalizedLfSha256": "f6004533cc2e91d57adc93f603867976525ea51a71bdaf017dd7cfb21c53b22d",
+      "committedLfSha256": "f6004533cc2e91d57adc93f603867976525ea51a71bdaf017dd7cfb21c53b22d",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/f02_relations.py": {
+      "measuredSha256": "831c27ecca1cffb0c1db3a4d348a40779661153ae4cacca85d998687ab4f845d",
+      "measuredNormalizedLfSha256": "831c27ecca1cffb0c1db3a4d348a40779661153ae4cacca85d998687ab4f845d",
+      "committedLfSha256": "831c27ecca1cffb0c1db3a4d348a40779661153ae4cacca85d998687ab4f845d",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/f02_rules.py": {
+      "measuredSha256": "9389e9fff3d29df6d04243a3b5dcbf35b4f14534bd36926ab8ebf821cfd5da49",
+      "measuredNormalizedLfSha256": "9389e9fff3d29df6d04243a3b5dcbf35b4f14534bd36926ab8ebf821cfd5da49",
+      "committedLfSha256": "9389e9fff3d29df6d04243a3b5dcbf35b4f14534bd36926ab8ebf821cfd5da49",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/f02_source_audit.py": {
+      "measuredSha256": "7fcb26821a64beebf604deb076dd87ce1788de7aed5848fe34e0623a2ba4809f",
+      "measuredNormalizedLfSha256": "7fcb26821a64beebf604deb076dd87ce1788de7aed5848fe34e0623a2ba4809f",
+      "committedLfSha256": "7fcb26821a64beebf604deb076dd87ce1788de7aed5848fe34e0623a2ba4809f",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/fixture_subjects.mjs": {
+      "measuredSha256": "c5a4398fc9bd2ca29e32bee8f2045c757cea06c7df6afd6b7163bb5efc2621cf",
+      "measuredNormalizedLfSha256": "c5a4398fc9bd2ca29e32bee8f2045c757cea06c7df6afd6b7163bb5efc2621cf",
+      "committedLfSha256": "c5a4398fc9bd2ca29e32bee8f2045c757cea06c7df6afd6b7163bb5efc2621cf",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/fk_baseline_scope.py": {
+      "measuredSha256": "57a4f2e43a8dc8a211a3c2b71be6b964cf7fd7078bfd84f48a6f56c889634013",
+      "measuredNormalizedLfSha256": "d2de660c606bd71d6a092f7e8187eba7c7c0f32ad9b4efdaacd20e85bc0d5461",
+      "committedLfSha256": "d2de660c606bd71d6a092f7e8187eba7c7c0f32ad9b4efdaacd20e85bc0d5461",
+      "measuredCrBytes": 51,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/fk_complete.py": {
+      "measuredSha256": "3faa047c7da780d8ca69c1b061657fbc786a164bfc16165765ca32096abac190",
+      "measuredNormalizedLfSha256": "1e2172b35d8eee72f39f7b628bd738c7560d9a814dea0ee2da7e18a55fcbe02d",
+      "committedLfSha256": "1e2172b35d8eee72f39f7b628bd738c7560d9a814dea0ee2da7e18a55fcbe02d",
+      "measuredCrBytes": 270,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/fk_coverage.py": {
+      "measuredSha256": "715a5de7239f7235c07745977e9428d1d81a136876c50a995f66ef241d1d3e91",
+      "measuredNormalizedLfSha256": "782f4773cafc2600c3569ac876c6d395077e28db1037fc9b87abcbd5efa985ac",
+      "committedLfSha256": "782f4773cafc2600c3569ac876c6d395077e28db1037fc9b87abcbd5efa985ac",
+      "measuredCrBytes": 143,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/fk_hac41_inventory.json": {
+      "measuredSha256": "a6cea05492214c8b8c3a7d5445a0d4535d109807ccb626fe25c2697f43dffaf8",
+      "measuredNormalizedLfSha256": "c1426ff855900539df160a728cd5fb6c5bfb2e9263e06940bfcf011ce7e044fc",
+      "committedLfSha256": "c1426ff855900539df160a728cd5fb6c5bfb2e9263e06940bfcf011ce7e044fc",
+      "measuredCrBytes": 155,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/fk_inventory.json": {
+      "measuredSha256": "eb14a7fa8618b66c61cac940c73ef453c357d6c2bc576e6ab7ae7968533c3ce3",
+      "measuredNormalizedLfSha256": "fc0076d77f14aa586afdb32c51055b8dd280e64e0cf1578d73e2ee5084160d2f",
+      "committedLfSha256": "fc0076d77f14aa586afdb32c51055b8dd280e64e0cf1578d73e2ee5084160d2f",
+      "measuredCrBytes": 3785,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/fk_inventory.py": {
+      "measuredSha256": "a5a78ba5400d2d52da971866f0f09996f9abdea958b41680112e22bbc2cf4a0d",
+      "measuredNormalizedLfSha256": "7c24e0e6ffee1ebb3a589acda2c78f1b27ce9885d81b644945b6993796afdc18",
+      "committedLfSha256": "7c24e0e6ffee1ebb3a589acda2c78f1b27ce9885d81b644945b6993796afdc18",
+      "measuredCrBytes": 164,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/fk_orphans.py": {
+      "measuredSha256": "c518368e185ca84d8f208aa9fab0ec2cc5e7a2e0cfdbcaca8d0fb994bd6d24b3",
+      "measuredNormalizedLfSha256": "46e0ee1eaee847323a7f6c194789669df7228ff04a622d771e57d056fe868aba",
+      "committedLfSha256": "46e0ee1eaee847323a7f6c194789669df7228ff04a622d771e57d056fe868aba",
+      "measuredCrBytes": 156,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/fk_probes.py": {
+      "measuredSha256": "eb44740df5ce7294b9593de67cb219f558e0e96e1d2867ade0a0e1f3f898ec57",
+      "measuredNormalizedLfSha256": "ebdfb63c0369fce4f3bb4429a9fbb3cbadfb56ee9567a017c3698940a346a68f",
+      "committedLfSha256": "ebdfb63c0369fce4f3bb4429a9fbb3cbadfb56ee9567a017c3698940a346a68f",
+      "measuredCrBytes": 6,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/fk_strict.py": {
+      "measuredSha256": "1779be025686cea1a837494149da9c2e0fd40d4a6fcbd26cdc7015fc67aae69b",
+      "measuredNormalizedLfSha256": "69e857747862b93090b282d32133cda8fb51d53461261fa806a62036dd45635f",
+      "committedLfSha256": "69e857747862b93090b282d32133cda8fb51d53461261fa806a62036dd45635f",
+      "measuredCrBytes": 520,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/gates.py": {
+      "measuredSha256": "c669ac9512b703fe74954b491a188189e05fd30a13464dcc9993873559ef428b",
+      "measuredNormalizedLfSha256": "6c6480f716d0a0e202a79b6a17c43776b7cd2c98cad334b1c2463bdbca44fa1b",
+      "committedLfSha256": "6c6480f716d0a0e202a79b6a17c43776b7cd2c98cad334b1c2463bdbca44fa1b",
+      "measuredCrBytes": 236,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/generate.py": {
+      "measuredSha256": "b6f493256df89ed2b312ae59345cd6a9aded573ecf79b6432c589dc39a4f9828",
+      "measuredNormalizedLfSha256": "28edf1037fc78ed0d5da109f8bb1552b2f15eeafa66c2ca96eac6e642ebc7a0d",
+      "committedLfSha256": "28edf1037fc78ed0d5da109f8bb1552b2f15eeafa66c2ca96eac6e642ebc7a0d",
+      "measuredCrBytes": 50,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/guards.py": {
+      "measuredSha256": "3b9b6aacc8665c1c6efd6996f19ae8c24e35050c4de09c7ff1fab5f4142f024f",
+      "measuredNormalizedLfSha256": "dbd090a05bfd240a04db0e7d5a235b9be8ef3c7f0d9cc6a1db072ae62f7740e4",
+      "committedLfSha256": "dbd090a05bfd240a04db0e7d5a235b9be8ef3c7f0d9cc6a1db072ae62f7740e4",
+      "measuredCrBytes": 58,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/http_auth.ts": {
+      "measuredSha256": "5e74e1c5732c86e1c36651409e8f1cb94a1d0eb7a19657e69829f1138a675150",
+      "measuredNormalizedLfSha256": "1b6e6164eed9d3b0789e285f0c0c365abb47cbc68aa4a8192e5fa334489ad02e",
+      "committedLfSha256": "1b6e6164eed9d3b0789e285f0c0c365abb47cbc68aa4a8192e5fa334489ad02e",
+      "measuredCrBytes": 66,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/http_contract.test.ts": {
+      "measuredSha256": "81b76eca6af25dddd9bc57cd617d4fc6c5e7595e050e0d4814ca5e34073426d9",
+      "measuredNormalizedLfSha256": "d75c7801f6e7c435975af0f7a74f73cd3bdb14cafafd6de98b1e9527a9c0319e",
+      "committedLfSha256": "d75c7801f6e7c435975af0f7a74f73cd3bdb14cafafd6de98b1e9527a9c0319e",
+      "measuredCrBytes": 121,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/http_contract.ts": {
+      "measuredSha256": "5d01616a2cab83aa1b0b7fd648a5fb82947b3d1d21c81c1b40d20de707cdd32e",
+      "measuredNormalizedLfSha256": "11426d3636bf4c928dcc279b80f291aac05c8b4dad8fa97ad040d48ac86e46da",
+      "committedLfSha256": "11426d3636bf4c928dcc279b80f291aac05c8b4dad8fa97ad040d48ac86e46da",
+      "measuredCrBytes": 190,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/http_extended.ts": {
+      "measuredSha256": "69e2a33b839573113f896a60f534f2e6722cd2baab11fe43881e8fe635876911",
+      "measuredNormalizedLfSha256": "c9b072610f56b7f85cd7f5f278b763d14f9b193fc2944b67271eb32a1c675f74",
+      "committedLfSha256": "c9b072610f56b7f85cd7f5f278b763d14f9b193fc2944b67271eb32a1c675f74",
+      "measuredCrBytes": 597,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/http_ltl.ts": {
+      "measuredSha256": "6ecf60e253c5ac37023b1eaa260d63d85351f1e32db1290c2ab12d61cbcd6155",
+      "measuredNormalizedLfSha256": "daae6a5b71888738ea903ab6554c244ad1874dafdd1883d9b34def7e98fffaaf",
+      "committedLfSha256": "daae6a5b71888738ea903ab6554c244ad1874dafdd1883d9b34def7e98fffaaf",
+      "measuredCrBytes": 200,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/http_oracles.test.ts": {
+      "measuredSha256": "b2ea0d9101d38653d27c641693bf45f99dd87f23364163b9bc495bd257ab86af",
+      "measuredNormalizedLfSha256": "226392d749598c4156aff102f1f114a4648e8933351485d25cb01b5426894073",
+      "committedLfSha256": "226392d749598c4156aff102f1f114a4648e8933351485d25cb01b5426894073",
+      "measuredCrBytes": 47,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/http_oracles.ts": {
+      "measuredSha256": "a2ee42306f8fcf1b02b6e210dd5c526ea85a2e0d248ef87a35d1aad14346026a",
+      "measuredNormalizedLfSha256": "a11fe65b7310ecbefa78282b1c6254c4e51ea4a5bbb90d1804e000f794a90686",
+      "committedLfSha256": "a11fe65b7310ecbefa78282b1c6254c4e51ea4a5bbb90d1804e000f794a90686",
+      "measuredCrBytes": 21,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/http_pending.test.ts": {
+      "measuredSha256": "723c7185c2335f7b0a69d9a8e2a87529853c5079f57d0b73e59376dd95465d95",
+      "measuredNormalizedLfSha256": "384d4dc9473cb8f0763eb6183f1f426f5fb983dc9945afe4dfd37a91eb12613b",
+      "committedLfSha256": "384d4dc9473cb8f0763eb6183f1f426f5fb983dc9945afe4dfd37a91eb12613b",
+      "measuredCrBytes": 104,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/http_pending.ts": {
+      "measuredSha256": "e86ff19da8fc9af61ffacaa8689ced50afe218f9fde9444033668f844d26d450",
+      "measuredNormalizedLfSha256": "1321399b490bc9dbfa5dcb80800b8842597e0717470adc85646be80fd8db9e5b",
+      "committedLfSha256": "1321399b490bc9dbfa5dcb80800b8842597e0717470adc85646be80fd8db9e5b",
+      "measuredCrBytes": 314,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/identity.py": {
+      "measuredSha256": "d03ba48fe37b7909fe623536f3a9063b47cc08153b409e959afb019b6774bb5f",
+      "measuredNormalizedLfSha256": "50c0257654a5affb7c8093c1e448b63bbb0efdf4fd359ccfd1a31aa61ec4bde3",
+      "committedLfSha256": "50c0257654a5affb7c8093c1e448b63bbb0efdf4fd359ccfd1a31aa61ec4bde3",
+      "measuredCrBytes": 23,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/identity_evidence.mts": {
+      "measuredSha256": "d7f47df7c6446789a1078c318d2b9c4952ae524558f37995c201c098d7e455ca",
+      "measuredNormalizedLfSha256": "757be639edd27931fc7fafa3ba9a59d9d55a1880fba13389c4916034a35819c5",
+      "committedLfSha256": "757be639edd27931fc7fafa3ba9a59d9d55a1880fba13389c4916034a35819c5",
+      "measuredCrBytes": 104,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/lifecycle.py": {
+      "measuredSha256": "71e87bab9ea4fa2b4ee061093db8ccc7b11c50a8125c61a783683e8bbabddaa1",
+      "measuredNormalizedLfSha256": "f766a7c72e89d7eba44d737cd8b864f222e0f157219721e38cf9270c2dcf6692",
+      "committedLfSha256": "f766a7c72e89d7eba44d737cd8b864f222e0f157219721e38cf9270c2dcf6692",
+      "measuredCrBytes": 144,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/local.py": {
+      "measuredSha256": "2ea1633fc2f6c96c96a4d5051e07a470f1712367e221576ab4a04925940d5ec4",
+      "measuredNormalizedLfSha256": "c856c158310e84538865acc8405eaa7da6fcc01698fc7c9cfcdb6d15dd6289df",
+      "committedLfSha256": "c856c158310e84538865acc8405eaa7da6fcc01698fc7c9cfcdb6d15dd6289df",
+      "measuredCrBytes": 108,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/matrix.py": {
+      "measuredSha256": "2974d99ead4425c5f527137af459362d3ca013e26cab88ff836db080f109c1bc",
+      "measuredNormalizedLfSha256": "a580064e3e9e77db8af5663dba5926f43b7821d4ae5a1329207047142f0ad23d",
+      "committedLfSha256": "a580064e3e9e77db8af5663dba5926f43b7821d4ae5a1329207047142f0ad23d",
+      "measuredCrBytes": 1261,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/matrix_rules.py": {
+      "measuredSha256": "2bb813e64f55771716bc5e76aefa36fa82f4aecd16197ac09e827b70437f9aa0",
+      "measuredNormalizedLfSha256": "3097973e1a6a036aea87665118c4c4ba92e317200918a2dcc4b7ee691cee6198",
+      "committedLfSha256": "3097973e1a6a036aea87665118c4c4ba92e317200918a2dcc4b7ee691cee6198",
+      "measuredCrBytes": 77,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/methods.py": {
+      "measuredSha256": "956f201f148790eac6de40f45f5bffbf7bb795e1e91d7dd8dff5926dd424fc8c",
+      "measuredNormalizedLfSha256": "07e1c20927fc57a107393e23d1a9be0a3d9c101886abb330a5619d2e0508b475",
+      "committedLfSha256": "07e1c20927fc57a107393e23d1a9be0a3d9c101886abb330a5619d2e0508b475",
+      "measuredCrBytes": 186,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/normalized_compare.py": {
+      "measuredSha256": "8966210aa29832492376d384f5570680854a46a1756f671c6469427931b50467",
+      "measuredNormalizedLfSha256": "85c365c3ff1ff2a90dbdf06ecae2e2ee13ee082646e6d19d90f4a435e2fbcac1",
+      "committedLfSha256": "85c365c3ff1ff2a90dbdf06ecae2e2ee13ee082646e6d19d90f4a435e2fbcac1",
+      "measuredCrBytes": 99,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/offer_counts.py": {
+      "measuredSha256": "4bb33574bdced3cec464751226b22c9c864db3f0e328eafbbe786d98ba2656ad",
+      "measuredNormalizedLfSha256": "3f63ebe8e56bb0d70d0b8c06010b042a09c651511cc5160b8f1750f6414b53c6",
+      "committedLfSha256": "3f63ebe8e56bb0d70d0b8c06010b042a09c651511cc5160b8f1750f6414b53c6",
+      "measuredCrBytes": 16,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/pending.py": {
+      "measuredSha256": "36ad2cb73e8686c9032d0ed22a46698588f0d453a1428e7db1e4adfe15432b42",
+      "measuredNormalizedLfSha256": "8e358df604e439e0ded2e612ad0ac00b733289ca8c75cf5ff1c88e8c1ecb5d7a",
+      "committedLfSha256": "8e358df604e439e0ded2e612ad0ac00b733289ca8c75cf5ff1c88e8c1ecb5d7a",
+      "measuredCrBytes": 54,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/persistence.py": {
+      "measuredSha256": "cc0f58a4d7f5a123db580b9368d1cbfa7968faaeb42f020df58968677b8b6cc4",
+      "measuredNormalizedLfSha256": "8873f4fb81f5c1338f4bdd7a26579b6479fed63c7defa004f442f2bfddd0cfb1",
+      "committedLfSha256": "8873f4fb81f5c1338f4bdd7a26579b6479fed63c7defa004f442f2bfddd0cfb1",
+      "measuredCrBytes": 56,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/pkce_smoke.mjs": {
+      "measuredSha256": "29a72384a6f1cf788bd13aa9de8161c25f5fb65142d955965203094872df3a0b",
+      "measuredNormalizedLfSha256": "a2f325403a1880dac69cbab3e04e935764b0b43b6a85ac84aa7feabc72b67f72",
+      "committedLfSha256": "a2f325403a1880dac69cbab3e04e935764b0b43b6a85ac84aa7feabc72b67f72",
+      "measuredCrBytes": 129,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/pkce_smoke.py": {
+      "measuredSha256": "c9614a82cc4727b40608104e73bc6b4a9dbb16e10594fe017f27f88dc78d999d",
+      "measuredNormalizedLfSha256": "bb468e7de54a17821d7134bc4da6734bbff030cdc096de56ecea2db6ba248bfd",
+      "committedLfSha256": "bb468e7de54a17821d7134bc4da6734bbff030cdc096de56ecea2db6ba248bfd",
+      "measuredCrBytes": 41,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/provenance.py": {
+      "measuredSha256": "71e8b5b71f798871571bdec7008dbc45d857011b2faf2ec564aadb63b279ae24",
+      "measuredNormalizedLfSha256": "c482ab2d5226c81b2395783add780c61e52d978177c59dfabf7dc49ba37591b0",
+      "committedLfSha256": "c482ab2d5226c81b2395783add780c61e52d978177c59dfabf7dc49ba37591b0",
+      "measuredCrBytes": 43,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/races.py": {
+      "measuredSha256": "47c8f0bd3be82838bec443ec1656da47342adc34f0c2ee52e17323a55a4d1c95",
+      "measuredNormalizedLfSha256": "fdf13db80f69929f500bc1bfdde7f969a186063076b3989403fd22d95e6ec7ba",
+      "committedLfSha256": "fdf13db80f69929f500bc1bfdde7f969a186063076b3989403fd22d95e6ec7ba",
+      "measuredCrBytes": 217,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/README.md": {
+      "measuredSha256": "63aaa2de505247c2633fa89a0456bbe2a5d75b7fc089f266c9a9e48ee1a2c88d",
+      "measuredNormalizedLfSha256": "6f024dfc809c00b9fb38313947504b198a29932abf134c414dc6913e95d38eeb",
+      "committedLfSha256": "6f024dfc809c00b9fb38313947504b198a29932abf134c414dc6913e95d38eeb",
+      "measuredCrBytes": 238,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/real_auth.mjs": {
+      "measuredSha256": "d50dd673b598831fbd3b5b5a0ab0e3a7d624b4af601a76f32267bce8e939f573",
+      "measuredNormalizedLfSha256": "d50dd673b598831fbd3b5b5a0ab0e3a7d624b4af601a76f32267bce8e939f573",
+      "committedLfSha256": "d50dd673b598831fbd3b5b5a0ab0e3a7d624b4af601a76f32267bce8e939f573",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/real_auth.py": {
+      "measuredSha256": "566504e938626938bf0864c003f68c24d8ec5866be185107471409a6e218a307",
+      "measuredNormalizedLfSha256": "566504e938626938bf0864c003f68c24d8ec5866be185107471409a6e218a307",
+      "committedLfSha256": "566504e938626938bf0864c003f68c24d8ec5866be185107471409a6e218a307",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/rls.py": {
+      "measuredSha256": "4112aa0f1882098b1b1afe3fab6681a5baa26b19922403c3ce4511879d8fba26",
+      "measuredNormalizedLfSha256": "178ce993e7fd68ff7b55f4b36fdf9adae110a8ef23c368b8a16bf89184026ff3",
+      "committedLfSha256": "178ce993e7fd68ff7b55f4b36fdf9adae110a8ef23c368b8a16bf89184026ff3",
+      "measuredCrBytes": 77,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/run.py": {
+      "measuredSha256": "c6016f230695df308674c9c9c36366bc29cdc66a7044ce92e0d8925c8effe80a",
+      "measuredNormalizedLfSha256": "eca71579c578153e12f3637221fb4f5e3368beab4cdf5f63da58843d57a3c430",
+      "committedLfSha256": "eca71579c578153e12f3637221fb4f5e3368beab4cdf5f63da58843d57a3c430",
+      "measuredCrBytes": 226,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/runtime.py": {
+      "measuredSha256": "d208b74b269f2c7057c4ce542f07eadb4251283a518977309599f8c752ac74c6",
+      "measuredNormalizedLfSha256": "aff06e63fe7073ee37cd218b04f1badb9bee3bb48ea4769d032c61e3facb4537",
+      "committedLfSha256": "aff06e63fe7073ee37cd218b04f1badb9bee3bb48ea4769d032c61e3facb4537",
+      "measuredCrBytes": 105,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/sources.py": {
+      "measuredSha256": "1f224cf7d03760a055c6f0a4ae5395dc7c7a4f6025fa10261c0781d44940dd3b",
+      "measuredNormalizedLfSha256": "3f8060ea1b2bf5ce9ba82583f0c3235a10d17470ec8ecfebcb6a99106418b015",
+      "committedLfSha256": "3f8060ea1b2bf5ce9ba82583f0c3235a10d17470ec8ecfebcb6a99106418b015",
+      "measuredCrBytes": 224,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/sql_layout.py": {
+      "measuredSha256": "07d2a31f26c8443f103e0aa5ea22c0cd1863fbe51805990bf494730e84d9dff5",
+      "measuredNormalizedLfSha256": "58b3ad897d3d407dd06bd843ab86d69b8c353851b62e24a0d1a8ce968e16412a",
+      "committedLfSha256": "58b3ad897d3d407dd06bd843ab86d69b8c353851b62e24a0d1a8ce968e16412a",
+      "measuredCrBytes": 230,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/strict_controls.py": {
+      "measuredSha256": "2d4cb0f379806ac52e1693e685dda2e687b4b904c2cb784794565550cedffecd",
+      "measuredNormalizedLfSha256": "57668c4f3c93119a78e428ce70f67097f4b031db77eaa8b348cf6ef5e2a317a4",
+      "committedLfSha256": "57668c4f3c93119a78e428ce70f67097f4b031db77eaa8b348cf6ef5e2a317a4",
+      "measuredCrBytes": 65,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/strict_diagnostic.py": {
+      "measuredSha256": "d00b13fbeb2f28e5880026b70b62830f0ab138307815447824e6ef41532a3a77",
+      "measuredNormalizedLfSha256": "d7f208fa9896fb91ac1ad07b24b83f05fc6a3bcd5c75719fd0a7d6a159adad16",
+      "committedLfSha256": "d7f208fa9896fb91ac1ad07b24b83f05fc6a3bcd5c75719fd0a7d6a159adad16",
+      "measuredCrBytes": 55,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/teardown.py": {
+      "measuredSha256": "75258071d2b50206dcc7fc9ccacc4a9cecf851998799bbe417a0b0239569d203",
+      "measuredNormalizedLfSha256": "78ebf8fdfcd0baad11dd3b962398f3dedaa09063fc9e081a50f84538bb89d3d8",
+      "committedLfSha256": "78ebf8fdfcd0baad11dd3b962398f3dedaa09063fc9e081a50f84538bb89d3d8",
+      "measuredCrBytes": 113,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/tests.py": {
+      "measuredSha256": "7bc096970f0da52fade744f4541b1e08d136ba1666bc9a10c5940001a978de5b",
+      "measuredNormalizedLfSha256": "2c7edf4ca058da11e1fd297d4c8743924e4c1ee3c3c4419261a9e2033c253fb4",
+      "committedLfSha256": "2c7edf4ca058da11e1fd297d4c8743924e4c1ee3c3c4419261a9e2033c253fb4",
+      "measuredCrBytes": 28,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/test_auth_cleanup.py": {
+      "measuredSha256": "41c9bc6c815af3f89831303c9ff6add7c93f0b6e1fe01b31fa3eb8cb4ef9f3ca",
+      "measuredNormalizedLfSha256": "41c9bc6c815af3f89831303c9ff6add7c93f0b6e1fe01b31fa3eb8cb4ef9f3ca",
+      "committedLfSha256": "41c9bc6c815af3f89831303c9ff6add7c93f0b6e1fe01b31fa3eb8cb4ef9f3ca",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/test_banks.py": {
+      "measuredSha256": "500d10f25ce871e1b604982c4b37811c68d796297b3bd8c4e3e96a251f1bc5fe",
+      "measuredNormalizedLfSha256": "cacd9bee06d6ff823490864ae577b39a16ba030d0ab66ca710e6b4131fa7c525",
+      "committedLfSha256": "cacd9bee06d6ff823490864ae577b39a16ba030d0ab66ca710e6b4131fa7c525",
+      "measuredCrBytes": 144,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/test_cp1c.py": {
+      "measuredSha256": "19046a047bdf5c5d83458a96f825405835fb60e2a4705773e6b2c7d9dc12700c",
+      "measuredNormalizedLfSha256": "19046a047bdf5c5d83458a96f825405835fb60e2a4705773e6b2c7d9dc12700c",
+      "committedLfSha256": "19046a047bdf5c5d83458a96f825405835fb60e2a4705773e6b2c7d9dc12700c",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/test_endpoint_matrix.py": {
+      "measuredSha256": "3936d0753372113cff560dc1eb25aaa034b4fdcf74c8c572d0e290942fe9c4b6",
+      "measuredNormalizedLfSha256": "af5c94642fd9f81362a9f4baa93365474e23dda6825c4b9af36564255f576d59",
+      "committedLfSha256": "af5c94642fd9f81362a9f4baa93365474e23dda6825c4b9af36564255f576d59",
+      "measuredCrBytes": 90,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/test_f02.py": {
+      "measuredSha256": "8e4a020ba26535ced132b40bc4da4716de7d8007ce028430a017ac64b7999255",
+      "measuredNormalizedLfSha256": "8e4a020ba26535ced132b40bc4da4716de7d8007ce028430a017ac64b7999255",
+      "committedLfSha256": "8e4a020ba26535ced132b40bc4da4716de7d8007ce028430a017ac64b7999255",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/test_fk_baseline.py": {
+      "measuredSha256": "56a528e8e7e7589db1c4f60538be57c3b3378191db22f82a19f00b43ff8b6009",
+      "measuredNormalizedLfSha256": "eeb07a7eb785a040403ec7f82d9ef32fd236d8137fd78216bd9883d7306a3400",
+      "committedLfSha256": "eeb07a7eb785a040403ec7f82d9ef32fd236d8137fd78216bd9883d7306a3400",
+      "measuredCrBytes": 59,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/test_fk_complete.py": {
+      "measuredSha256": "6cc2eebd5c5059f22494fe350bbc82c75e792d497e812f17d8703230d5acb51a",
+      "measuredNormalizedLfSha256": "5bff28abc2df0c02639861b09ac8a3a4aded849d687d88a0e0d06eed6bf28b11",
+      "committedLfSha256": "5bff28abc2df0c02639861b09ac8a3a4aded849d687d88a0e0d06eed6bf28b11",
+      "measuredCrBytes": 244,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/test_fk_hac41.py": {
+      "measuredSha256": "2f4942de880e4101b7e3b20a7ad0c0452abd960711ae7b263f198b60556b2c02",
+      "measuredNormalizedLfSha256": "5f4c484710b819c522bc979c5e81fedd0e1d02e4889be52c91c0a9b47170978c",
+      "committedLfSha256": "5f4c484710b819c522bc979c5e81fedd0e1d02e4889be52c91c0a9b47170978c",
+      "measuredCrBytes": 60,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/test_fk_inventory.py": {
+      "measuredSha256": "62f6e231ec77683a40eb29e2896abf5dc1b06bd7ec1b338a43545c551d7ebbbc",
+      "measuredNormalizedLfSha256": "0f96b39839a69b8e112fd3e5a5a073bd2c63916272a7d03b058d636db814b8ad",
+      "committedLfSha256": "0f96b39839a69b8e112fd3e5a5a073bd2c63916272a7d03b058d636db814b8ad",
+      "measuredCrBytes": 204,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/test_fk_orphans.py": {
+      "measuredSha256": "87aed71f2546a4931f555937876bddc4143c239e86044a3f5ae4ee1a90de7d74",
+      "measuredNormalizedLfSha256": "c81ee0bf6de9172c224483ad760ca8a5addfbb08d928548b507741471803f36c",
+      "committedLfSha256": "c81ee0bf6de9172c224483ad760ca8a5addfbb08d928548b507741471803f36c",
+      "measuredCrBytes": 178,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/test_fk_strict.py": {
+      "measuredSha256": "576a82bfc12c71aa19103ad36fde1e065f57584dc41f8b795bfaeb953ca08394",
+      "measuredNormalizedLfSha256": "c760601abd4ecb35423375ca4b8ce66ab3db2cef0ad781f97be645ac7594632c",
+      "committedLfSha256": "c760601abd4ecb35423375ca4b8ce66ab3db2cef0ad781f97be645ac7594632c",
+      "measuredCrBytes": 41,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/test_matrix.py": {
+      "measuredSha256": "9a5418f659f1cd0c6ccc4d5ad69ebbdcae095e545673a16579842c548912279f",
+      "measuredNormalizedLfSha256": "301802706cc1666cd17f51a884f9ad4ebf6a9357f5766c58f38cfb96bcf8c2c2",
+      "committedLfSha256": "301802706cc1666cd17f51a884f9ad4ebf6a9357f5766c58f38cfb96bcf8c2c2",
+      "measuredCrBytes": 188,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/test_normalized_compare.py": {
+      "measuredSha256": "c8c06c36c98d19a7dc1dd16618f28272943e0328f84c947e83c6a091b50c7ee4",
+      "measuredNormalizedLfSha256": "2524f2e439233cc5cba1aa155e6176a352e4d13db097ac3b39c542ef8814a0f0",
+      "committedLfSha256": "2524f2e439233cc5cba1aa155e6176a352e4d13db097ac3b39c542ef8814a0f0",
+      "measuredCrBytes": 108,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/test_persistence.py": {
+      "measuredSha256": "61dffae2920b6541d7c7d299eddaaf30bcf442ec30026ee2469f8fb61361c952",
+      "measuredNormalizedLfSha256": "949fbf5368e9beef3120413648a968d4ee6c247556b1135bfb4ed95a7168e7a6",
+      "committedLfSha256": "949fbf5368e9beef3120413648a968d4ee6c247556b1135bfb4ed95a7168e7a6",
+      "measuredCrBytes": 54,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/test_pkce_smoke.py": {
+      "measuredSha256": "4c80fec1bf821bc6ff099103a5044bad7d77d6009bc4f2fc1b9540df3b3c32da",
+      "measuredNormalizedLfSha256": "92a6aaa7ed55b04c6d97bcef65ba919bf99effd6f3807d67b30985feef0aa536",
+      "committedLfSha256": "92a6aaa7ed55b04c6d97bcef65ba919bf99effd6f3807d67b30985feef0aa536",
+      "measuredCrBytes": 215,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/test_real_auth.py": {
+      "measuredSha256": "d57fd43555fc03af9fd4ba17c63f9c648637f4341be6b2e2843a107d6da96d8e",
+      "measuredNormalizedLfSha256": "d57fd43555fc03af9fd4ba17c63f9c648637f4341be6b2e2843a107d6da96d8e",
+      "committedLfSha256": "d57fd43555fc03af9fd4ba17c63f9c648637f4341be6b2e2843a107d6da96d8e",
+      "measuredCrBytes": 0,
+      "committedCrBytes": 0,
+      "difference": "IDENTICAL"
+    },
+    "scripts/qa/hac44/test_run.py": {
+      "measuredSha256": "ce7ad4ca44ef19f59bb65118051f246118d8eb501b70cb9d923b04897f05468b",
+      "measuredNormalizedLfSha256": "e843ab0f096d31145ef377ea827114e56fab9ab32e5e8056f84d01dd6450061e",
+      "committedLfSha256": "e843ab0f096d31145ef377ea827114e56fab9ab32e5e8056f84d01dd6450061e",
+      "measuredCrBytes": 159,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    },
+    "scripts/qa/hac44/test_sources.py": {
+      "measuredSha256": "e92d117bb225f7ce5937079dbfdfddfa6ffe613c314fd1d171011ab45f0ca452",
+      "measuredNormalizedLfSha256": "2b1572604162c3a6b9bb116bfd97bf23d63c795f35f818d4ce4ce7c0762b65ef",
+      "committedLfSha256": "2b1572604162c3a6b9bb116bfd97bf23d63c795f35f818d4ce4ce7c0762b65ef",
+      "measuredCrBytes": 56,
+      "committedCrBytes": 0,
+      "difference": "CRLF_TO_LF_ONLY"
+    }
+  }
+}

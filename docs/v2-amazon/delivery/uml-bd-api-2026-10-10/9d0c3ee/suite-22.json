@@ -1,0 +1,66 @@
+{
+  "status": "PASS",
+  "productSha": "9d0c3ee32179f00242a6961b90116293a1bc6d0e",
+  "cases": [
+    {
+      "case": "suite22 original",
+      "status": "PASS",
+      "exit": 0,
+      "sourceSha": "42a4fde4ac2e9242d8f0ed46029101a4e44d90ed",
+      "sourceSha256": "9e8a6bbe6313fa713843756143f4f2025ef9a64cd74c8c23d9398e9d647b5685",
+      "nativeExplicitBoundaries": [
+        {
+          "role": "authenticated",
+          "subject": "c2310000-0000-4000-8000-000000000001",
+          "actualSession": true
+        }
+      ],
+      "tapFailures": [],
+      "initialNativeCoverage": false,
+      "adaptations": [
+        "Issuer/getUser-verified claims substituted in memory",
+        "Mandatory ALL IMMEDIATE before RESET ROLE by local SQL transport",
+        "Read-only boundary trace before native flush"
+      ],
+      "limit": "Original initial native assertion absent; transport safety flush is instrumentation, not evidence of its original coverage",
+      "tapPassed": 43,
+      "tapFailed": 0,
+      "tapPlan": [
+        "1..43"
+      ]
+    },
+    {
+      "case": "suite22 reinforced",
+      "status": "PASS",
+      "exit": 0,
+      "sourceSha": "9d0c3ee32179f00242a6961b90116293a1bc6d0e",
+      "sourceSha256": "eef313d57211001094e0d4c80c142f332dc6a17fc2531ad9215eac564700c17e",
+      "nativeExplicitBoundaries": [
+        {
+          "role": "authenticated",
+          "subject": "c2310000-0000-4000-8000-000000000001",
+          "actualSession": true
+        },
+        {
+          "role": "authenticated",
+          "subject": "c2310000-0000-4000-8000-000000000001",
+          "actualSession": true
+        }
+      ],
+      "tapFailures": [],
+      "initialNativeCoverage": true,
+      "adaptations": [
+        "Issuer/getUser-verified claims substituted in memory",
+        "Mandatory ALL IMMEDIATE before RESET ROLE by local SQL transport",
+        "Read-only boundary trace before native flush"
+      ],
+      "limit": "Original initial native assertion absent; transport safety flush is instrumentation, not evidence of its original coverage",
+      "tapPassed": 46,
+      "tapFailed": 0,
+      "tapPlan": [
+        "1..46"
+      ]
+    }
+  ],
+  "D04": "Not reproduced at the original final boundary; initial native coverage added in reinforced source"
+}

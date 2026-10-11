@@ -103,6 +103,15 @@ class BankTests(unittest.TestCase):
             bank.start_new(["supabase"])
         self.assertFalse(any(args[0] == "supabase" for args in calls))
 
+    def test_stopped_volume_requires_exact_label_with_valid_control(self):
+        bank, marker, calls = self.control()
+        with patch.object(bank,'resources',return_value=[]),patch('banks.save'):
+            bank.execute=lambda label,args,**kwargs:CompletedProcess(args,0,'"own-test"\n','')
+            bank.prove_stopped_volume()
+            bank.execute=lambda label,args,**kwargs:CompletedProcess(args,0,'"foreign"\n','')
+            with self.assertRaisesRegex(BankAbort,'ownership mismatch'):
+                bank.prove_stopped_volume()
+
     def test_concurrent_ownership_checks_have_distinct_evidence_files(self):
         bank, marker, _ = self.control()
         original, labels, saved = bank.execute, [], []

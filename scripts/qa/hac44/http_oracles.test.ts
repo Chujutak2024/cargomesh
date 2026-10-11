@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { hasRuntimeRoute, manualOfferStatus, pairedStatus } from "./http_oracles.ts";
+import { syntheticFixtureSubjectAllowed } from "./fixture_subjects.mjs";
+
+test("real sessions only admit exact actors from the two approved native scenarios", () => {
+  for (const id of ["d4410000-0000-4000-8000-000000000001", "d4410000-0000-4000-8000-000000000003",
+    "c2310000-0000-4000-8000-000000000001", "c2310000-0000-4000-8000-000000000002"])
+    assert.equal(syntheticFixtureSubjectAllowed(id), true);
+  for (const id of ["c2310000-0000-4000-8000-000000000003", "d4410000-0000-4000-8000-000000000004",
+    "d4410000-0000-4000-8000-000000000001-extra", "00000000-0000-4000-8000-000000000001", ""])
+    assert.equal(syntheticFixtureSubjectAllowed(id), false);
+});
 
 test("route absence follows the selected runtime cut and cannot count as functional coverage", () => {
   const path = "/carriers/real-carrier/operators";

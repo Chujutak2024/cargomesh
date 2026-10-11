@@ -24,6 +24,8 @@ BASE = "abba8056825bb4d7170fe8cdf57bfeefa8b73eb1"
 
 def safe(s):
     """Redact credentials before returning or persisting captured output."""
+    s = re.sub(r'(set local\s+"request\.jwt\.claims"\s*=\s*)\'(?:[^\']|\'\')*\'',
+               r"\1'[ISSUER_CLAIMS_MEMORY_ONLY]'", s, flags=re.I)
     s = re.sub(
         (
             "(?im)^.*(?:jwt[ _-]?secret|secret key|service[ _-]?role key|anon "

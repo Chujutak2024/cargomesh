@@ -1,0 +1,343 @@
+type,id,run5,run6,identical
+attribute,AssetCargoCapability.requirements,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,AssetCargoCapability.temperatureRange,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,AssetStatusEvent.at,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,AssetStatusEvent.evidence,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,AssetStatusEvent.next,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,AssetStatusEvent.previous,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,AssetStatusEvent.reason,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Booking.capacityEvidence,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Booking.carrierReference,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Booking.confirmedAt,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CapacityCalendar.freshness,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CapacityCalendar.source,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CapacityCalendar.timezone,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CapacityPool.evidence,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CapacityPool.mode,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CapacityPool.partner,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CapacityReservation.committedCapacity,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CapacityReservation.reference,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CapacityReservation.source,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CapacitySource.provenance,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CapacitySource.sourceId,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CargoUnit.unitsPerPackage,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Carrier.verifiedContact,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CarrierOffer.carrierId,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CarrierOffer.commercialTerms,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CarrierOffer.estimatedDeliveryAt,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CarrierOffer.estimatedPickupAt,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CarrierOffer.opportunityId,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CarrierOffer.requestId,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CarrierOffer.supersedesOfferId,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CarrierOperator.phone,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,CarrierService.temperatureRange,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Driver.portalAccount,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,FreightRequest.acceptedModes,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,FreightRequest.destination,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,FreightRequest.origin,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,FreightRequest.pickupWindow,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,FreightRequest.preferredEquipment,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,FreightRequest.selectionObjective,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,FulfilmentPartner.partnerCarrierRef,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,IncidentUpdate.action,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,IncidentUpdate.actor,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,IncidentUpdate.at,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,IncidentUpdate.evidence,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,IncidentUpdate.note,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,LoadAllocation.handlingRequirements,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,McpAccountLink.revokedAt,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,OfferCostComponent.details,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Organization.code,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Organization.commercialName,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Organization.corporateEmail,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Organization.corporatePhone,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Organization.countryCode,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Organization.defaultCurrency,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Organization.id,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Organization.legalName,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Organization.status,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Organization.taxIdType,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,Organization.taxIdValue,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,OrganizationPreferences.validUntil,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,PlanLegAssignment.evidence,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RankedOption.missingData,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RankedOption.position,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RepositioningBlock.estimatedTravel,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RepositioningBlock.nextPickup,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RepositioningBlock.origin,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RepositioningBlock.source,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,ResponseIntegration.evidence,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,ResponseIntegration.verifiedAt,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RoadVehicle.bodyType,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RoadVehicle.conditionReason,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RoadVehicle.plate,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RoadVehicle.variant,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RouteCorridor.restrictions,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RouteLeg.borderRequirements,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RoutePlan.borderCostEstimate,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RoutePlan.estimatedTolls,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RoutePlanningPolicy.constraints,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,RouteSimulationScenario.clock,OUTDATED_DOCUMENTATION,OUTDATED_DOCUMENTATION,True
+attribute,RouteSimulationScenario.expectedOutcome,OUTDATED_DOCUMENTATION,OUTDATED_DOCUMENTATION,True
+attribute,RouteSimulationScenario.id,OUTDATED_DOCUMENTATION,OUTDATED_DOCUMENTATION,True
+attribute,RouteSimulationScenario.label,OUTDATED_DOCUMENTATION,OUTDATED_DOCUMENTATION,True
+attribute,RouteSimulationScenario.networkVersion,OUTDATED_DOCUMENTATION,OUTDATED_DOCUMENTATION,True
+attribute,RouteSimulationScenario.seed,OUTDATED_DOCUMENTATION,OUTDATED_DOCUMENTATION,True
+attribute,RouteSimulationScenario.source,OUTDATED_DOCUMENTATION,OUTDATED_DOCUMENTATION,True
+attribute,ScheduledMaintenance.kind,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,ScheduledMaintenance.source,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,ShipmentContact.addressDetail,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,ShipmentContact.company,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,ShipmentContact.handlingInstructions,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,ShipmentContact.role,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,TransportAsset.usefulCapacityKg,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,TransportExecution.actualCompletedAt,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,TransportExecution.actualStartedAt,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,TransportExecution.lastKnownPosition,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,TransportPlanCandidate.exclusionReasons,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,TransportPlanCandidate.pendingRequirements,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+class,AssetCargoCapability,PARTIAL,PARTIAL,True
+class,AssetStatusEvent,PARTIAL,PARTIAL,True
+class,Booking,PARTIAL,PARTIAL,True
+class,CapacityCalendar,PARTIAL,PARTIAL,True
+class,CapacityPool,PARTIAL,PARTIAL,True
+class,CapacityReservation,PARTIAL,PARTIAL,True
+class,CapacitySource,PARTIAL,PARTIAL,True
+class,CargoCategory,PARTIAL,PARTIAL,True
+class,CargoProfile,PARTIAL,PARTIAL,True
+class,CargoSpecification,PARTIAL,PARTIAL,True
+class,CargoUnit,PARTIAL,PARTIAL,True
+class,Carrier,PARTIAL,PARTIAL,True
+class,CarrierDepot,PARTIAL,PARTIAL,True
+class,CarrierMetric,PARTIAL,PARTIAL,True
+class,CarrierOffer,PARTIAL,PARTIAL,True
+class,CarrierOperator,PARTIAL,PARTIAL,True
+class,CarrierOpportunity,PARTIAL,PARTIAL,True
+class,CarrierService,PARTIAL,PARTIAL,True
+class,Driver,PARTIAL,PARTIAL,True
+class,Facility,PARTIAL,PARTIAL,True
+class,FreightRequest,PARTIAL,PARTIAL,True
+class,FulfilmentPartner,PARTIAL,PARTIAL,True
+class,IncidentUpdate,PARTIAL,PARTIAL,True
+class,LoadAllocation,PARTIAL,PARTIAL,True
+class,LogisticsNode,PARTIAL,PARTIAL,True
+class,OfferCostComponent,PARTIAL,PARTIAL,True
+class,OperationalIncident,PARTIAL,PARTIAL,True
+class,Organization,PARTIAL,PARTIAL,True
+class,OrganizationMember,PARTIAL,PARTIAL,True
+class,OrganizationPreferences,PARTIAL,PARTIAL,True
+class,PlanLegAssignment,PARTIAL,PARTIAL,True
+class,PlanResource,PARTIAL,PARTIAL,True
+class,RankedOption,PARTIAL,PARTIAL,True
+class,RepositioningBlock,PARTIAL,PARTIAL,True
+class,ResponseIntegration,PARTIAL,PARTIAL,True
+class,RoadVehicle,PARTIAL,PARTIAL,True
+class,RouteCondition,PARTIAL,PARTIAL,True
+class,RouteCorridor,PARTIAL,PARTIAL,True
+class,RouteLeg,PARTIAL,PARTIAL,True
+class,RoutePlan,PARTIAL,PARTIAL,True
+class,RoutePlanner,PARTIAL,PARTIAL,True
+class,RoutePlanningPolicy,PARTIAL,PARTIAL,True
+class,RouteSimulationScenario,PARTIAL,PARTIAL,True
+class,RouteWaypoint,PARTIAL,PARTIAL,True
+class,ScheduledMaintenance,PARTIAL,PARTIAL,True
+class,ScoringPolicy,PARTIAL,PARTIAL,True
+class,SelectionDecision,PARTIAL,PARTIAL,True
+class,ServiceArea,PARTIAL,PARTIAL,True
+class,ServiceLane,PARTIAL,PARTIAL,True
+class,ShipmentContact,PARTIAL,PARTIAL,True
+class,TransportAsset,PARTIAL,PARTIAL,True
+class,TransportExecution,PARTIAL,PARTIAL,True
+class,TransportPlanCandidate,PARTIAL,PARTIAL,True
+class,VehicleAssignment,PARTIAL,PARTIAL,True
+class,VehicleCombination,PARTIAL,PARTIAL,True
+relationship,2hVugEQixPLE8ubNQINt-1 RouteCorridor → RouteLeg,PARTIAL,PARTIAL,True
+relationship,6Ioss1hAN_-tinRlzXcZ-1 AssetCargoCapability → TransportAsset,PARTIAL,PARTIAL,True
+relationship,72KwxI-JqKkcPOP_kNa3-1 CarrierOffer → OfferCostComponent,PARTIAL,PARTIAL,True
+relationship,DK0aJlq7bGL-fGDcFSUt-1 CarrierOffer → PlanLegAssignment,PARTIAL,PARTIAL,True
+relationship,Ftk5fUhrMQUH-lgMXdC8-1 CarrierOffer → SelectionDecision,PARTIAL,PARTIAL,True
+relationship,O3AsrRVXhiO8iDlZrkKS-152 Organization → FreightRequest,BLOCKED,BLOCKED,True
+relationship,O3AsrRVXhiO8iDlZrkKS-161 FreightRequest → CargoSpecification,PARTIAL,PARTIAL,True
+relationship,O3AsrRVXhiO8iDlZrkKS-164 CargoSpecification → CargoUnit,PARTIAL,PARTIAL,True
+relationship,O3AsrRVXhiO8iDlZrkKS-176 CarrierService → ServiceLane,BLOCKED,BLOCKED,True
+relationship,O3AsrRVXhiO8iDlZrkKS-188 Carrier → TransportAsset,BLOCKED,BLOCKED,True
+relationship,O3AsrRVXhiO8iDlZrkKS-194 RoadVehicle → TransportAsset,BLOCKED,BLOCKED,True
+relationship,O3AsrRVXhiO8iDlZrkKS-195 TransportAsset → CapacitySource,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+relationship,O3AsrRVXhiO8iDlZrkKS-196 CapacityPool → CapacitySource,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+relationship,O3AsrRVXhiO8iDlZrkKS-197 CarrierService → CapacityPool,PARTIAL,PARTIAL,True
+relationship,O3AsrRVXhiO8iDlZrkKS-200 CapacitySource → CapacityCalendar,PARTIAL,PARTIAL,True
+relationship,O3AsrRVXhiO8iDlZrkKS-209 TransportAsset → AssetStatusEvent,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+relationship,O3AsrRVXhiO8iDlZrkKS-212 Carrier → Driver,BLOCKED,BLOCKED,True
+relationship,O3AsrRVXhiO8iDlZrkKS-227 RoutePlan → RouteLeg,PARTIAL,PARTIAL,True
+relationship,O3AsrRVXhiO8iDlZrkKS-233 RouteLeg → RouteCondition,PARTIAL,PARTIAL,True
+relationship,O3AsrRVXhiO8iDlZrkKS-239 TransportPlanCandidate → PlanResource,PARTIAL,PARTIAL,True
+relationship,O3AsrRVXhiO8iDlZrkKS-242 TransportPlanCandidate → CarrierService,PARTIAL,PARTIAL,True
+relationship,O3AsrRVXhiO8iDlZrkKS-251 TransportPlanCandidate → CarrierOpportunity,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+relationship,O3AsrRVXhiO8iDlZrkKS-260 Carrier → CarrierOffer,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+relationship,O3AsrRVXhiO8iDlZrkKS-266 ScoringPolicy → RankedOption,BLOCKED,BLOCKED,True
+relationship,O3AsrRVXhiO8iDlZrkKS-287 OperationalIncident → RouteCondition,BLOCKED,BLOCKED,True
+relationship,RGhOuhwsT8ZYOMnHYwK_-1 TransportPlanCandidate → PlanLegAssignment,PARTIAL,PARTIAL,True
+relationship,WNCIiRomMXHDXtrxWMq--1 RoutePlanner → RoutePlan,PARTIAL,PARTIAL,True
+relationship,bR8ZHdLwjZc_sJT4jZ76-1 VehicleCombination → TransportAsset,BLOCKED,BLOCKED,True
+relationship,cm-v2fix-8 CarrierOffer → CarrierService,PARTIAL,PARTIAL,True
+relationship,fk9bowG78kA6Nmof4bi--1 PlanLegAssignment → PlanResource,PARTIAL,PARTIAL,True
+relationship,g8S2DPwqzsmnHs3VKEzF-1 OrganizationMember → Organization,BLOCKED,BLOCKED,True
+relationship,h7SgiR5XgM2d8XkbtD6E-1 RoutePlanner → RouteCorridor,PARTIAL,PARTIAL,True
+relationship,iFQi1_XGm5au44xV3qrT-1 RoutePlanner → RoutePlanningPolicy,PARTIAL,PARTIAL,True
+relationship,jSKYVkFkDFWJeImlZA73-5 RouteSimulationScenario → RouteCorridor,BLOCKED,BLOCKED,True
+relationship,jSKYVkFkDFWJeImlZA73-8 RouteSimulationScenario → RouteCondition,BLOCKED,BLOCKED,True
+relationship,u-VsSdGcmUxEkryfOKhH-1 CargoUnit → LoadAllocation,PARTIAL,PARTIAL,True
+relationship,zAdGsDxVq7Eb_sLkxGRV-1 CarrierOperator → CarrierOffer,PARTIAL,PARTIAL,True
+method,AssetCargoCapability.currentAt,BLOCKED,BLOCKED,True
+method,AssetCargoCapability.supports,BLOCKED,BLOCKED,True
+method,AssetStatusEvent.isOperationalBlock,BLOCKED,BLOCKED,True
+method,AssetStatusEvent.validateTransition,BLOCKED,BLOCKED,True
+method,Booking.authorize,BLOCKED,BLOCKED,True
+method,Booking.cancel,BLOCKED,BLOCKED,True
+method,Booking.recordResponse,BLOCKED,BLOCKED,True
+method,Booking.validateCapacityCommitment,BLOCKED,BLOCKED,True
+method,CapacityCalendar.availableAt,PARTIAL,PARTIAL,True
+method,CapacityCalendar.blocks,PARTIAL,PARTIAL,True
+method,CapacityCalendar.nextAvailable,BLOCKED,BLOCKED,True
+method,CapacityPool.availabilityFor,PARTIAL,PARTIAL,True
+method,CapacityPool.capacityFor,BLOCKED,BLOCKED,True
+method,CapacityPool.effectiveCapacity,BLOCKED,BLOCKED,True
+method,CapacityPool.supports,BLOCKED,BLOCKED,True
+method,CapacityReservation.consumes,BLOCKED,BLOCKED,True
+method,CapacityReservation.overlaps,BLOCKED,BLOCKED,True
+method,CapacityReservation.release,BLOCKED,BLOCKED,True
+method,CapacitySource.availabilityFor,PARTIAL,PARTIAL,True
+method,CapacitySource.effectiveCapacity,BLOCKED,BLOCKED,True
+method,CargoCategory.isCurrent,BLOCKED,BLOCKED,True
+method,CargoCategory.suggestRequirements,BLOCKED,BLOCKED,True
+method,CargoProfile.prefillRequest,BLOCKED,BLOCKED,True
+method,CargoProfile.requiresRevalidation,BLOCKED,BLOCKED,True
+method,CargoSpecification.fits,BLOCKED,BLOCKED,True
+method,CargoSpecification.requiresPermit,BLOCKED,BLOCKED,True
+method,CargoSpecification.validate,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+method,CargoUnit.totalVolumeM3,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+method,CargoUnit.totalWeightKg,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+method,CargoUnit.validatesIndivisibility,BLOCKED,BLOCKED,True
+method,Carrier.isActiveAt,BLOCKED,BLOCKED,True
+method,Carrier.issued,BLOCKED,BLOCKED,True
+method,Carrier.mayRespond,BLOCKED,BLOCKED,True
+method,Carrier.publishes,BLOCKED,BLOCKED,True
+method,CarrierDepot.activeAt,BLOCKED,BLOCKED,True
+method,CarrierDepot.supports,BLOCKED,BLOCKED,True
+method,CarrierMetric.comparableTo,BLOCKED,BLOCKED,True
+method,CarrierMetric.isRepresentative,BLOCKED,BLOCKED,True
+method,CarrierOffer.bookableAt,BLOCKED,BLOCKED,True
+method,CarrierOffer.covers,BLOCKED,BLOCKED,True
+method,CarrierOffer.isComparableTo,BLOCKED,BLOCKED,True
+method,CarrierOffer.isValidAt,BLOCKED,BLOCKED,True
+method,CarrierOffer.validatesAttribution,BLOCKED,BLOCKED,True
+method,CarrierOffer.validatesBreakdownCurrency,BLOCKED,BLOCKED,True
+method,CarrierOperator.mayIssueOffer,BLOCKED,BLOCKED,True
+method,CarrierOperator.mayUpdateCapacity,BLOCKED,BLOCKED,True
+method,CarrierOpportunity.accepts,BLOCKED,BLOCKED,True
+method,CarrierOpportunity.invite,BLOCKED,BLOCKED,True
+method,CarrierService.accepts,BLOCKED,BLOCKED,True
+method,CarrierService.covers,BLOCKED,BLOCKED,True
+method,CarrierService.supportsRequirements,BLOCKED,BLOCKED,True
+method,CarrierService.validAt,BLOCKED,BLOCKED,True
+method,Driver.availableFor,PARTIAL,PARTIAL,True
+method,Driver.qualifiedFor,PARTIAL,PARTIAL,True
+method,Facility.accessibleAt,BLOCKED,BLOCKED,True
+method,Facility.belongsTo,BLOCKED,BLOCKED,True
+method,Facility.canHandle,BLOCKED,BLOCKED,True
+method,FreightRequest.revise,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+method,FreightRequest.submit,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+method,FreightRequest.validateCompleteness,BLOCKED,BLOCKED,True
+method,FulfilmentPartner.isAuthorizedAt,BLOCKED,BLOCKED,True
+method,FulfilmentPartner.supports,BLOCKED,BLOCKED,True
+method,IncidentUpdate.auditRecord,BLOCKED,BLOCKED,True
+method,IncidentUpdate.isAuthorized,BLOCKED,BLOCKED,True
+method,LoadAllocation.fits,BLOCKED,BLOCKED,True
+method,LoadAllocation.respectsIndivisibility,BLOCKED,BLOCKED,True
+method,LogisticsNode.activeAt,BLOCKED,BLOCKED,True
+method,LogisticsNode.supports,BLOCKED,BLOCKED,True
+method,McpAccountLink.hasScope,BLOCKED,BLOCKED,True
+method,McpAccountLink.resolvesTo,BLOCKED,BLOCKED,True
+method,McpAccountLink.validAt,BLOCKED,BLOCKED,True
+method,OfferCostComponent.contributesToQuotedTotal,BLOCKED,BLOCKED,True
+method,OfferCostComponent.isComparable,BLOCKED,BLOCKED,True
+method,OperationalIncident.classify,BLOCKED,BLOCKED,True
+method,OperationalIncident.escalate,BLOCKED,BLOCKED,True
+method,OperationalIncident.resolve,BLOCKED,BLOCKED,True
+method,Organization.maySubmit,BLOCKED,BLOCKED,True
+method,Organization.owns,BLOCKED,BLOCKED,True
+method,OrganizationMember.canAuthorizeBooking,BLOCKED,BLOCKED,True
+method,OrganizationMember.canSubmit,BLOCKED,BLOCKED,True
+method,OrganizationPreferences.suggestDefaults,BLOCKED,BLOCKED,True
+method,OrganizationPreferences.validFor,BLOCKED,BLOCKED,True
+method,PlanLegAssignment.carrierForLeg,BLOCKED,BLOCKED,True
+method,PlanLegAssignment.isQuotable,BLOCKED,BLOCKED,True
+method,PlanLegAssignment.validateEligibility,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+method,PlanResource.contributesCargoCapacity,BLOCKED,BLOCKED,True
+method,PlanResource.coversEntireWindow,BLOCKED,BLOCKED,True
+method,PlanResource.validateWithCalendar,BLOCKED,BLOCKED,True
+method,RankedOption.isComparable,BLOCKED,BLOCKED,True
+method,RankedOption.provenance,BLOCKED,BLOCKED,True
+method,RepositioningBlock.blocks,BLOCKED,BLOCKED,True
+method,RepositioningBlock.freshnessAt,BLOCKED,BLOCKED,True
+method,ResponseIntegration.canRespond,BLOCKED,BLOCKED,True
+method,ResponseIntegration.validateContract,BLOCKED,BLOCKED,True
+method,RoadVehicle.isRoadworthy,BLOCKED,BLOCKED,True
+method,RoadVehicle.legalCapacityFor,BLOCKED,BLOCKED,True
+method,RoadVehicle.recordOdometer,BLOCKED,BLOCKED,True
+method,RouteCondition.affects,BLOCKED,BLOCKED,True
+method,RouteCondition.requiresReplan,BLOCKED,BLOCKED,True
+method,RouteCorridor.connects,BLOCKED,BLOCKED,True
+method,RouteCorridor.usableAt,BLOCKED,BLOCKED,True
+method,RouteLeg.connects,BLOCKED,BLOCKED,True
+method,RouteLeg.requiresPermit,BLOCKED,BLOCKED,True
+method,RouteLeg.validatesBorderRequirements,BLOCKED,BLOCKED,True
+method,RoutePlan.compareWith,BLOCKED,BLOCKED,True
+method,RoutePlan.evaluateConditions,BLOCKED,BLOCKED,True
+method,RoutePlan.orderedLegs,BLOCKED,BLOCKED,True
+method,RoutePlan.validatesContinuity,BLOCKED,BLOCKED,True
+method,RoutePlanner.explain,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+method,RoutePlanner.findAlternatives,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+method,RoutePlanner.replan,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+method,RoutePlanningPolicy.evaluate,BLOCKED,BLOCKED,True
+method,RoutePlanningPolicy.explain,BLOCKED,BLOCKED,True
+method,RouteSimulationScenario.inject,BLOCKED,BLOCKED,True
+method,RouteSimulationScenario.replay,BLOCKED,BLOCKED,True
+method,RouteWaypoint.addsDelay,BLOCKED,BLOCKED,True
+method,RouteWaypoint.isUsableAt,BLOCKED,BLOCKED,True
+method,ScheduledMaintenance.belongsTo,BLOCKED,BLOCKED,True
+method,ScheduledMaintenance.blocks,BLOCKED,BLOCKED,True
+method,ScoringPolicy.explain,BLOCKED,BLOCKED,True
+method,ScoringPolicy.rank,BLOCKED,BLOCKED,True
+method,SelectionDecision.auditRecord,BLOCKED,BLOCKED,True
+method,SelectionDecision.validatePlanAndOffers,BLOCKED,BLOCKED,True
+method,SelectionDecision.validatesSelectedOffer,BLOCKED,BLOCKED,True
+method,ServiceArea.covers,BLOCKED,BLOCKED,True
+method,ServiceArea.validAt,BLOCKED,BLOCKED,True
+method,ServiceLane.connects,BLOCKED,BLOCKED,True
+method,ServiceLane.validAt,BLOCKED,BLOCKED,True
+method,ShipmentContact.canNotify,BLOCKED,BLOCKED,True
+method,ShipmentContact.matches,BLOCKED,BLOCKED,True
+method,TransportAsset.availabilityFor,PARTIAL,PARTIAL,True
+method,TransportAsset.canCarry,BLOCKED,BLOCKED,True
+method,TransportAsset.capacityOn,BLOCKED,BLOCKED,True
+method,TransportAsset.effectiveCapacity,BLOCKED,BLOCKED,True
+method,TransportExecution.complete,BLOCKED,BLOCKED,True
+method,TransportExecution.requestReplan,BLOCKED,BLOCKED,True
+method,TransportExecution.start,BLOCKED,BLOCKED,True
+method,TransportPlanCandidate.assessEligibility,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+method,TransportPlanCandidate.isQuotable,BLOCKED,BLOCKED,True
+method,TransportPlanCandidate.require,BLOCKED,BLOCKED,True
+method,VehicleAssignment.isAvailable,BLOCKED,BLOCKED,True
+method,VehicleAssignment.release,BLOCKED,BLOCKED,True
+method,VehicleCombination.effectiveCapacityOn,PARTIAL,PARTIAL,True
+method,VehicleCombination.validateCompatibility,PARTIAL,PARTIAL,True
+attribute,McpAccountLink.externalSubjectRef,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,McpAccountLink.provider,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+attribute,McpAccountLink.verifiedAt,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+class,McpAccountLink,PARTIAL,PARTIAL,True
+relationship,O3AsrRVXhiO8iDlZrkKS-248 PlanResource → CapacitySource,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+relationship,O3AsrRVXhiO8iDlZrkKS-263 CarrierOffer → RankedOption,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+relationship,TTPNMglXCn0O7Q35afVn-1 SelectionDecision → Booking,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+relationship,cm-v2fix-3 FreightRequest → ShipmentContact,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True
+relationship,rg1mzH5NKyUcr1gneQok-1 FreightRequest → ShipmentContact,MEASURED_EVIDENCE,MEASURED_EVIDENCE,True

@@ -12,12 +12,25 @@ DATASET = OUT / "dataset"
 
 def seed():
     """Create the synthetic dataset and record its explicit identifiers."""
-    p = script("full-flow-seed", SCENARIO / "seed.sql")
+    # Commit fixture roots before asking Auth to issue sessions for their users.
+    # Business scenarios are then executed with verified claims in memory.
+    root_source = (SCENARIO / 'seed.sql').read_text(encoding='utf-8-sig')
+    root_source = root_source.split('\\ir workflow-seed.sql')[0]
+    root_source = root_source.replace('\\ir control.sql', (SCENARIO / 'control.sql').read_text(encoding='utf-8-sig'))
+    p = sql('full-flow-seed-roots', root_source, persist=False)
     assert p.returncode == 0
+    output = p.stdout
+    for source in ('workflow-seed.sql','ltl-seed.sql','complete-seed.sql'):
+        p = script('full-flow-seed-' + source, SCENARIO / source)
+        assert p.returncode == 0
+        output += p.stdout
     for marker, name in [("HAC44_REFS:", "refs.json"), ("HAC44_LTL_REFS:", "ltl-refs.json")]:
-        rows = [line[len(marker) :] for line in p.stdout.splitlines() if line.startswith(marker)]
+        rows = [line[len(marker) :] for line in output.splitlines() if line.startswith(marker)]
         assert len(rows) == 1, (marker, len(rows))
         write(DATASET / name, json.dumps(json.loads(rows[0]), ensure_ascii=False, indent=2) + "\n")
+    complete=[line.split(':',1)[1] for line in output.splitlines() if line.startswith('HAC44_COMPLETE_REFS:')]
+    assert len(complete)==1,'Native complete-operation IDs were not emitted'
+    write(DATASET/'complete-refs.json',json.dumps(json.loads(complete[0]),ensure_ascii=False,indent=2)+'\n')
     write(
         DATASET / "workflow-seed.sql",
         (SCENARIO / "workflow-seed.sql").read_text(encoding="utf-8-sig"),
@@ -94,6 +107,8 @@ def cleanup():
     )
     assert auth.returncode == 0
     write(OUT / "backups/auth-local-placeholder-allowlist.json", auth.stdout)
+    from auth_cleanup import clean_auth_ids
+    clean_auth_ids(BANK)
     p = script("full-flow-cleanup", SCENARIO / "cleanup.sql", backup=True)
     assert p.returncode == 0
 

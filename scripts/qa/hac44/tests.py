@@ -16,7 +16,7 @@ def main():
     ]
     cases = []
     for label, args, cwd in commands:
-        result = run(label, args, cwd=cwd)
+        result = run(label, args, cwd=cwd, env_extra={'HAC44_CP1B':'0'})
         cases.append({"case": label, "status": "PASS" if result.returncode == 0 else "FAIL",
                       "exit": result.returncode, "log": label + ".log"})
     status = "PASS" if all(c["status"] == "PASS" for c in cases) else "FAIL"

@@ -15,6 +15,36 @@ This directory owns the QA harness beside existing repository scripts, keeping s
 
 ## Setup and complete run
 
+For the F-02 CP-1 checkpoint, set `HAC44_CYCLES=1` before `run.py all`.
+The default remains two clean cycles for explicitly authorized repeatability work.
+`f02_descriptors.json` retains the approved 189-row cohort, nine documentary
+antecedents and 144 individual UML method descriptors. Historical metadata selects
+contracts; historical outcomes never supply a current verdict. `f02.py` executes
+the incorporated probes through the unchanged native commands and Hono router.
+`f02_matrix.py` derives row states, method states and the comparison table from
+fresh per-case evidence. A missing exact observable or failed positive remains
+explicitly blocked. Capacity and scenario projections do not add product CRUD.
+For the authorized CP-1b diagnostic checkpoint, also set `HAC44_CP1B=1`.
+The original FK baseline failure remains FAIL. Independent strict FK diagnostics,
+F-02 probes, matrix generation and cleanup still execute in that one cycle; none
+of them can promote the failed integral gate. `f02_source_audit.py` records exact
+method searches and both UML association ends. Verified exported native rules
+are called by `f02_native.mts`; remaining semantic mappings and isolated fixtures
+stay QA-owned per signature, rather than being reported as product defects.
+The seven scenario fields are candidate documentary mismatches in the actual
+manifest root and SQL loader, never successful CRUD measurements.
+Verbatim historical metadata is retained with its input hashes; its Spanish
+retest notes are source quotations, not current execution results.
+`auth_cleanup.py` backs up nonsecret physical Auth keys, audits every incoming
+FK including CASCADE, and removes child rows by exact keys before native user
+cleanup. No secret session/token column is exported.
+
+SQL scenario claims are issued and verified by the owned local Auth server in
+memory. Every role reset follows `SET CONSTRAINTS ALL IMMEDIATE`; rollback
+measurements preserve full table counts before and after. HTTP fixture bearers
+also come from actual Auth sessions. No JWT, credential or claim payload is
+written to evidence files.
+
 Python 3.11+, Docker, Supabase CLI 2.117.0, the project Node engine and lockfile-matching Node dependencies are required. Dependency provisioning is external to this harness; it never changes SSL validation or installs implicitly. `provenance.py` checks all direct dependency versions against `pnpm-lock.yaml`. The pnpm 11 environment setting prevents its implicit install before scripts; it does not waive dependency verification or any suite.
 
 ```powershell
@@ -62,7 +92,7 @@ python scripts/qa/hac44/lifecycle.py cleanup
 
 Keep these commands sequential. `pending.py` prepares independent FTL/LTL native fixtures for valid mutation states; `pending` exercises each formerly partial route with a functional positive and anonymous/revoked/foreign/version controls where relevant. Shared catalog reads allow B; foreign writes require a denied carrier/admin context. Scoped lists must have a nonempty positive and cannot expose A's IDs to B. Empty results alone do not certify authorization.
 
-`rls.py` uses `set local role authenticated` and actual synthetic JWT claims, paired A/B/revoked controls. `races.py` runs independent native concurrency controls.
+`rls.py` uses `set local role authenticated` and issuer-verified claims for synthetic local users, paired A/B/revoked controls. `races.py` runs independent native concurrency controls.
 
 `fk_coverage.py` validates the committed `fk_inventory.json` against the reconstructed
 catalog by physical identity and category. The frozen 776b5da scope is preserved: 178 existing measurements, 45 strict V2 additions, and 40 individually excluded V1 FK. `fk_hac41_inventory.json` contains the separately approved HAC-41 cohort. A catalog without that entire cohort reports it as `NOT_PRESENT_IN_CUT`; a catalog containing it requires all physical definitions to agree. Partial cohorts, duplicates and unexpected identities abort. The two authorized cuts therefore reconcile to 263 and 273 physical FK respectively, without using those totals as selection gates.
@@ -79,8 +109,8 @@ rolled-back case, then defers sibling FKs during the exact-constraint orphan che
 and reconciles the measured identities with the baseline inventory. A failure in
 this original method stops the run after mandatory cleanup; no second cycle follows.
 
-The original 45 additions and the present HAC-41 cohort use `fk_strict.py` with an authenticated invoker, literal local
-JWT claims and temporary SECURITY DEFINER physical-write helpers (direct client
+The original 45 additions and the present HAC-41 cohort use `fk_strict.py` with an authenticated invoker, local
+issuer-verified claims injected by the SQL transport and temporary SECURITY DEFINER physical-write helpers (direct client
 writes are revoked in production). All positive triggers remain enabled; queued
 constraints are evaluated after the helper returns, under authenticated through
 `SET CONSTRAINTS ALL IMMEDIATE`. Both boundary roles are recorded and required.
@@ -180,3 +210,29 @@ HAC-41 compatibility fixtures include verified active operators for carriers A/B
 Fresh MANUAL offer creation always requires 201 and `idempotentReplay=false`; replay requires 200, `idempotentReplay=true`, the same ID, and physical counts 0 -> 1 -> 1. `offer_counts.py` obtains read-only physical counts through the ownership-checked Docker SQL path without granting direct commercial-table SELECT. A fresh 200 remains FAIL and its persisted row may only seed independent downstream probes; it never certifies that creation case.
 
 Previously absent directory routes are reconciled against the current runtime registration and remain inventory observations. Endpoint classifications require a passing functional positive and a passing anonymous 401. An invalid-Bearer 401 cannot replace that anonymous control, and neither an observed route nor a failed creation becomes a functional positive.
+
+## F-02 checkpoint measurements
+
+`f02_descriptors.json` retains the approved historical inventory as metadata. `f02.py`
+executes new native HTTP, SQL and exported-rule probes; `f02_matrix.py` derives row
+states from their current artifacts. Literal method-name searches never prove that
+an implementation is absent: SQL aliases and aggregate handlers require semantic
+mapping. Every pending signature retains its own search, declaration candidates,
+missing isolated input/frontier, QA owner and retest criterion. A related operation
+does not certify that signature. Both UML association ends are required; exact FK
+evidence cannot replace zero/many or deferred nonempty child controls.
+
+DB claims are issued and verified by the owned local Auth service. Concurrent
+queries serialize issuance and reuse only live verified claims in memory. FK
+campaign counts begin after this Auth prerequisite. Every rollback compares all
+permanent table counts; deferred invariants reach `ALL IMMEDIATE` before leaving
+`authenticated`. Audit reads use the native workflow RPC rather than new SELECT
+grants. Exported domain rules are called directly with a valid native input and
+an isolated changed input; no product rule is reimplemented.
+
+Set `HAC44_CYCLES=1` for the authorized single integral checkpoint run. Preserve its
+result and file hashes before any directed repair/rerun. Directed suites never
+upgrade that integral verdict or establish CP-2 repeatability. A stopped bank can
+restart only after its disk marker, exact volume label and free port layout are
+verified; after startup its original database marker must match. Stop/reset/cleanup
+always require the independent container and database ownership proofs.
