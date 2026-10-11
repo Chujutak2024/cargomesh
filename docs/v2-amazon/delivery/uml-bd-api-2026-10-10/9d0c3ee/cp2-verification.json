@@ -30,5 +30,43 @@
     "qa-http-tests.log": "306fc08dd24969805d7c0c2df13762601055b5b120e2321807b3105cfa5a788d",
     "release-verify.log": "d5aa33b9081ab78b655dd1f5021ef619da76a83d0e4516e32cde9130a3f8dd80",
     "cp2-delivery-results.json": "bbebea6765fe1cbb8c41f53155499d19141428442e0f269cd824158513d13c5f"
+  },
+  "lfCorrection": {
+    "preCorrectionHead": "c8c9a7a845be4777226c11a950f6352439309cae",
+    "measuredProductSha": "9d0c3ee32179f00242a6961b90116293a1bc6d0e",
+    "currentTargetMainSha": "e8a04cb19dd0df9d859a15db1b4948b0384308ce",
+    "mainAdvanceMerged": false,
+    "normalizedLfHarnessHashesMatched": 95,
+    "indexHarnessFilesWithCr": 0,
+    "harness": {
+      "command": "python -X utf8 scripts/qa/hac44/tests.py",
+      "exit": 0,
+      "measuredProductSha": "9d0c3ee32179f00242a6961b90116293a1bc6d0e"
+    },
+    "pythonTestsPassed": 144,
+    "httpTestsPassed": 23,
+    "externalOutputSha256": {
+      "qa-python-tests.log": "da96178ed3ff0ea21ac6924fd8c761be680bcdcd7fcefcb3ae82dcfdd5201275",
+      "qa-http-tests.log": "3fa886995e8ee9f7f23c4fb07287302f067b3d4261a7050f706a247c8ea18a20",
+      "lf-correction-harness-result.json": "771f627e1e153e87cb8ffe20e635df98838d099caa09706301da5606b89cb93f"
+    },
+    "authorizedEofOnlyDifferences": 1,
+    "identityMatchesWithAuthorizedEofException": 96,
+    "otherSourceDifferences": 0,
+    "eofException": {
+      "file": "scripts/qa/hac44/f02_native.mts",
+      "allowedChange": "Remove exactly one extra final empty line (one LF byte); preserve every other byte.",
+      "comparisonRule": "For this file only, normalize CRLF to LF, remove final empty lines, and retain one terminating LF.",
+      "authorization": "Explicit user approval in the LF correction conversation.",
+      "removedFinalLfBytes": 1,
+      "measuredLfIgnoringTrailingEmptyLinesSha256": "80e1e811a3227a1707c2d63a82a30b09dfa4e3e0ee0a6ca68d389b01f5267aaf",
+      "committedLfIgnoringTrailingEmptyLinesSha256": "80e1e811a3227a1707c2d63a82a30b09dfa4e3e0ee0a6ca68d389b01f5267aaf"
+    },
+    "testsExecutedAfterAuthorizedEofRemoval": true,
+    "precommitWhitespaceCheck": {
+      "command": "git diff --cached --check 9d0c3ee32179f00242a6961b90116293a1bc6d0e",
+      "exit": 0,
+      "output": ""
+    }
   }
 }

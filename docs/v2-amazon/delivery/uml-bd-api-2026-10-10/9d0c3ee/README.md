@@ -1,16 +1,16 @@
 # HAC-44 F-02 coverage delivery — CP-2
 
-This delivery preserves the exact harness measured in CP-1c and publishes its reviewed evidence. F-02 remains partial. No production behavior changes are included.
+This delivery preserves the source content measured in CP-1c, with repository line endings normalized to LF, and publishes its reviewed evidence. F-02 remains partial. No production behavior changes are included.
 
 ## Provenance and execution
 
-- Product/base SHA: `9d0c3ee32179f00242a6961b90116293a1bc6d0e`.
+- Measured product/base SHA: `9d0c3ee32179f00242a6961b90116293a1bc6d0e`.
 - Pre-delivery branch HEAD: `68f8b797de0199bc5af9b753063aca648cd706b5`, the local merge of `origin/main` over CP-1b `1d9ab9920f25d004d199762054f1523c61d0fdb2`.
 - Branch: `codex/v2-qa-f02-coverage`; PR target: `main`.
-- CP-2 preflight: expected branch/HEAD and 18 changed paths, all under `scripts/qa/hac44/`; all 96/96 current harness source hashes match `INTEGRAL_RESULT.json`.
-- All 96/96 staged harness blobs also match those SHA-256 values byte for byte. Preserving the measured Windows line endings adds 69 line-ending-only paths to the Git diff; the logical CP-1c delta remains exactly 18 paths. Per-command Git settings preserve these bytes without changing repository/global configuration or the measured working files.
-- Supplemental `git diff --cached --check` returned exit 2: all 14,846 diagnostics were carriage returns from the preserved CRLF lines, with zero other trailing-space/tab diagnostics. This result is retained as a delivery friction; no whitespace policy or release gate was relaxed, and the measured harness was not edited.
-- `git fetch origin` confirmed the same main SHA; no new synchronization merge was needed.
+- Original CP-2 preflight: expected branch/HEAD and 18 logical changed paths, all under `scripts/qa/hac44/`; all 96/96 original working source hashes matched `INTEGRAL_RESULT.json`.
+- Repository blobs use LF. Exactly 95/96 committed SHA-256 values equal the corresponding CP-1c HARNESS_SNAPSHOT hashes after LF normalization. The only exception is `scripts/qa/hac44/f02_native.mts`: explicit user approval permits removing exactly one extra final empty line (one LF byte) to satisfy the whitespace gate. Its measured and committed hashes match when final empty lines are ignored and one terminating LF is retained: `80e1e811a3227a1707c2d63a82a30b09dfa4e3e0ee0a6ca68d389b01f5267aaf`. `harness-sha256.json` records the original, normalized and EOF-equivalence hashes. The 72 measured CRLF files differ only by CR removal; the immutable measured snapshot is unchanged. No other source content differs.
+- The initial delivery incorrectly stored those 72 files as CRLF and accepted 14,846 whitespace diagnostics. The correction restores LF in the index, with the single authorized EOF exception and without relaxing whitespace policy; verification is recorded in `CP2_VERIFICATION.md`.
+- The initial CP-2 fetch found main at the measured SHA. During LF correction, `origin/main` is `e8a04cb19dd0df9d859a15db1b4948b0384308ce` (#123/HAC-45). No merge of that advance is performed: this F-02 evidence remains tied to `9d0c3ee`, and does not certify migration 28 or the new carrier-portal/catalog/workflow changes. PR CI against the current target is a separate integration check.
 - UML07 inventory Git/hash baseline: `104b126cc17565b57064fca0c6a8efd5cf43a076c1cb041355e5174cbe68dc88`.
 
 Each measured integral used Python 3.12: `python -X utf8 scripts/qa/hac44/run.py all`, with `HAC44_SOURCE_SHA=9d0c3ee32179f00242a6961b90116293a1bc6d0e`, `HAC44_PORT_BASE=62000`, `HAC44_CYCLES=1`, `HAC44_CP1C=1`, and an independent owned project prefix/evidence directory per attempt. pnpm was 11.25.0; 29 direct dependencies matched the frozen lock. Installation used a temporary external npmrc and Node + Norton CA bundle with strict SSL enabled; global configuration was unchanged.

@@ -24,4 +24,3 @@ const specification=capture.captured.requestPayload.cargoSpecification;
 pair('CargoSpecification.validate','CargoSpecificationV2Schema.safeParse',()=>cargo.CargoSpecificationV2Schema.safeParse(specification),()=>cargo.CargoSpecificationV2Schema.safeParse({...specification,totalWeightKg:specification.totalWeightKg+1}),p=>p.success,n=>!n.success&&n.error.issues.some((i:any)=>i.path.includes('totalWeightKg')),{frontier:'Only totalWeightKg +1, unchanged units'});
 const text=JSON.stringify({sha,evidence,complete:true},null,2)+'\n';fs.writeFileSync(out+'/PROBES/CP1B_NATIVE.json',text);assert.equal(fs.readFileSync(out+'/PROBES/CP1B_NATIVE.json','utf8'),text);
 console.log(JSON.stringify({nativeCases:evidence.length,states:evidence.reduce((a:any,r:any)=>(a[r.status]=(a[r.status]??0)+1,a),{})}));
-

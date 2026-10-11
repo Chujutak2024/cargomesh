@@ -5,7 +5,6 @@
   "originMainAfterFetch": "9d0c3ee32179f00242a6961b90116293a1bc6d0e",
   "mainAdvanced": false,
   "newSynchronizationMerge": false,
-  "harnessHashesMatched": 96,
   "matrixRows": {
     "class-matrix.csv": 57,
     "attribute-matrix.csv": 397,
@@ -70,7 +69,14 @@
     "RUN_6/logs/suite22-reinforced.log": "bd0d2eae68d951c9a0741d2237d961751d0684d0eaa6e7c9fdb50d36532bf734"
   },
   "publication": "English compact projections of CP-1c RUN_6 regenerated matrices, not a new database execution; full immutable evidence retained externally",
-  "stagedHarnessHashesMatched": 96,
   "logicalCp1cChangedPaths": 18,
-  "measuredLineEndingOnlyPaths": 69
+  "initialCp2WorkingByteHashesMatched": 96,
+  "normalizedLfHarnessHashesMatched": 95,
+  "measuredFilesWithCrLf": 72,
+  "indexHarnessFilesWithCr": 0,
+  "currentTargetMainSha": "e8a04cb19dd0df9d859a15db1b4948b0384308ce",
+  "mainAdvanceMerged": false,
+  "authorizedEofOnlyDifferences": 1,
+  "identityMatchesWithAuthorizedEofException": 96,
+  "authorizedEofException": "scripts/qa/hac44/f02_native.mts"
 }
