@@ -39,8 +39,7 @@ export function FacilityPicker({
   return <section className={styles.picker} aria-labelledby={`${listId}-title`}>
     <header className={styles.header}>
       <span className={styles.kindIcon} data-kind={kind}><MapPin size={18} aria-hidden="true" /></span>
-      <div><span>{origin ? t("Punto de retiro", "Pickup point") : t("Punto de entrega", "Delivery point")}</span>
-        <h3 id={`${listId}-title`}>{origin ? t("¿Dónde recogemos?", "Where do we pick up?") : t("¿Dónde entregamos?", "Where do we deliver?")}</h3></div>
+      <div><h3 id={`${listId}-title`}>{origin ? t("Origen", "Origin") : t("Destino", "Destination")}</h3></div>
       {selected ? <Badge tone="confirmed"><Check size={12} aria-hidden="true" />{t("Elegida", "Selected")}</Badge> : null}
     </header>
 
@@ -66,6 +65,7 @@ export function FacilityPicker({
       {visible.map((facility) => {
         const active = facility.facilityId === value;
         const area = [facility.city, facility.region, facility.countryCode].filter(Boolean).join(" · ");
+        const displayLabel = facility.label.replace(/\s*\[SYNTHETIC\].*$/i, "").trim() || facility.city;
         return <button
           className={styles.option}
           data-selected={active ? "true" : "false"}
@@ -76,13 +76,12 @@ export function FacilityPicker({
           onClick={() => onChange(facility.facilityId)}
         >
           <span className={styles.facilityIcon}><Building2 size={18} aria-hidden="true" /></span>
-          <span className={styles.optionCopy}><span className={styles.code}>{facility.code}</span><strong>{facility.label}</strong><small>{area}</small></span>
+          <span className={styles.optionCopy}><span className={styles.code}>{facility.code}</span><strong>{displayLabel}</strong><small>{area}</small></span>
           <span className={styles.geo} data-known={facility.lat != null ? "true" : "false"}><LocateFixed size={13} aria-hidden="true" />{facility.lat == null ? "UNKNOWN" : t("Canónica", "Canonical")}</span>
           <span className={styles.check} aria-hidden="true"><Check size={15} /></span>
         </button>;
       })}
       {!visible.length ? <div className={styles.empty} role="status"><Search size={20} aria-hidden="true" /><strong>{t("No encontramos coincidencias", "No matching facilities")}</strong><span>{t("Prueba con el código, nombre, ciudad o región del catálogo autorizado.", "Try the code, name, city, or region from the authorized catalog.")}</span></div> : null}
     </div>
-    <p className={styles.contractHint}>{t("El catálogo identifica la sede y su área canónica; no entrega dirección postal ni contacto de sede.", "The catalog identifies the facility and its canonical area; it does not provide a postal address or facility contact.")}</p>
   </section>;
 }

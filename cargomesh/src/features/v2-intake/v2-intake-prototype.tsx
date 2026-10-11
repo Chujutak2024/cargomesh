@@ -3,7 +3,6 @@
 import {
   ArrowLeft,
   ArrowRight,
-  ArrowUpDown,
   Bot,
   CalendarDays,
   Check,
@@ -321,42 +320,28 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
           <div className={styles.heroMain}>
             {!embedded ? <span className={styles.heroIcon} aria-hidden="true"><Package size={24} /></span> : null}
             <div className={styles.heroCopy}>
-              {!embedded?<span className={styles.eyebrow}>{t("Nuevo transporte · ROAD", "New shipment · ROAD")}</span>:null}
               {embedded?<h2>{t("Datos de la solicitud", "Request details")}</h2>:<h1>{t("Crea tu solicitud de transporte", "Create your freight request")}</h1>}
-              <p>{embedded ? t("Prepara el borrador y comprueba sus datos antes de enviarlo.", "Prepare the draft and check its details before saving it.") : t(
-                "Elige sedes, describe la carga y confirma las ventanas. CargoMesh conserva todo localmente hasta que autorices crear el DRAFT.",
-                "Choose facilities, describe the cargo, and confirm the windows. CargoMesh keeps everything local until you authorize DRAFT creation.",
-              )}</p>
-              {!embedded ? <div className={styles.heroFacts}>
-                <span><Route size={14} aria-hidden="true" />{t("4 etapas guiadas", "4 guided stages")}</span>
-                <span><ShieldAlert size={14} aria-hidden="true" />{t("Sin precio ni booking ficticio", "No fictitious price or booking")}</span>
-                <span><Bot size={14} aria-hidden="true" />{t("Asistente sobre el mismo borrador", "Assistant on the same draft")}</span>
-              </div> : null}
+              {embedded ? <p>{t("Prepara el borrador y comprueba sus datos antes de enviarlo.", "Prepare the draft and check its details before saving it.")}</p> : null}
             </div>
           </div>
-          <div className={styles.heroActions}>
-            <Badge tone={optionsSource === "api" ? "confirmed" : optionsSource === "error" ? "unknown" : "preliminary"}>
-              {optionsSource === "loading"
-                ? t("Consultando opciones", "Loading options")
-                : optionsSource === "api"
-                  ? embedded ? t("Catálogo consultado", "Catalog loaded") : t("Opciones API V2", "V2 API options")
-                  : optionsSource === "fixture"
-                    ? t("Fixture dev explícito", "Explicit dev fixture")
-                    : t("Error de opciones", "Options error")}
-            </Badge>
-            {!embedded?<Button variant="secondary" type="button" disabled={!options || options.facilities.length < 2 || !optionCoverage.complete} onClick={loadExample}><Sparkles size={16} aria-hidden="true" />{t("Cargar ejemplo V2", "Load V2 example")}</Button>:null}
-          </div>
+          {(!embedded || optionsSource !== "api") ? <div className={styles.heroActions}>
+            {optionsSource !== "api" ? <Badge tone={optionsSource === "error" ? "unknown" : "preliminary"}>
+              {optionsSource === "loading" ? t("Consultando opciones", "Loading options")
+                : optionsSource === "fixture" ? t("Fixture dev explícito", "Explicit dev fixture")
+                : t("Error de opciones", "Options error")}
+            </Badge> : null}
+            {!embedded ? <>
+              <Button variant="secondary" type="button" disabled={!options || options.facilities.length < 2 || !optionCoverage.complete} onClick={loadExample}><Sparkles size={16} aria-hidden="true" />{t("Cargar ejemplo V2", "Load V2 example")}</Button>
+              <Button variant="secondary" type="button" onClick={() => window.dispatchEvent(new Event("cargomesh:open-assistant"))}><Bot size={16} aria-hidden="true" />{t("Abrir asistente", "Open assistant")}</Button>
+            </> : null}
+          </div> : null}
         </header>
 
-        <div className={`${styles.notice} ${optionsSource === "fixture" ? styles.fixtureNotice : ""}`} role="note">
+        {optionsSource === "fixture" ? <div className={`${styles.notice} ${styles.fixtureNotice}`} role="note">
           <Info size={18} aria-hidden="true" />
-          <div>
-            <strong>{optionsSource === "fixture" ? t("Fixture de desarrollo activado explícitamente", "Explicit development fixture enabled") : t("Tu edición permanece local", "Your editing stays local")}</strong>
-            <span>{optionsSource === "fixture"
-              ? t("NEXT_PUBLIC_V2_INTAKE_OPTIONS_SOURCE=fixture omite el GET sólo en desarrollo. El JSON está rotulado SIMULATED y crear todavía requiere el POST real.", "NEXT_PUBLIC_V2_INTAKE_OPTIONS_SOURCE=fixture skips GET only in development. The JSON is labelled SIMULATED and creation still requires the real POST.")
-              : t("Avanzar entre pasos conserva la edición en esta pantalla. Los datos se envían cuando confirmas la creación del borrador.", "Moving between steps retains editing on this screen. Data is sent when you confirm draft creation.")}</span>
-          </div>
-        </div>
+          <div><strong>{t("Fixture de desarrollo activado explícitamente", "Explicit development fixture enabled")}</strong>
+          <span>{t("NEXT_PUBLIC_V2_INTAKE_OPTIONS_SOURCE=fixture omite el GET sólo en desarrollo. El JSON está rotulado SIMULATED y crear todavía requiere el POST real.", "NEXT_PUBLIC_V2_INTAKE_OPTIONS_SOURCE=fixture skips GET only in development. The JSON is labelled SIMULATED and creation still requires the real POST.")}</span></div>
+        </div> : null}
 
         {optionsSource === "loading" ? <OptionsLoadingState t={t} embedded={embedded} /> : null}
         {optionsSource === "error" && optionsError ? (
@@ -371,7 +356,6 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
         ) : null}
 
         {options && !optionCoverage.emptyFacilities && optionCoverage.complete ? <>
-        {!embedded ? <div className={styles.assistantBridge}><span className={styles.assistantBridgeIcon} aria-hidden="true"><Bot size={19} /></span><div><strong>{t("¿Prefieres contarlo con tus palabras?", "Prefer to describe it in your own words?")}</strong><span>{t("El asistente y este formulario editan el mismo borrador local; no crean una segunda solicitud.", "The assistant and this form edit the same local draft; they do not create a second request.")}</span></div><Button variant="secondary" type="button" onClick={() => window.dispatchEvent(new Event("cargomesh:open-assistant"))}>{t("Abrir asistente", "Open assistant")}</Button></div> : null}
         <nav className={styles.stepper} aria-label={t("Pasos del intake V2", "V2 intake steps")}>{stepLabels.map((label, index) => {
           const number = (index + 1) as PrototypeStep;
           const Icon = STEP_ICONS[index];
@@ -401,7 +385,7 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
           <ContentMotion identity={step} focusOnChange className={styles.stepMotion}><section className={styles.card} aria-labelledby={`prototype-step-${step}`}>
             <header className={styles.cardHeader}>
               <span className={styles.stepHeaderIcon} aria-hidden="true"><ActiveStepIcon size={20} /></span>
-              <div><span className={styles.eyebrow}>{t(`Paso ${step} de 4`, `Step ${step} of 4`)}</span><h2 tabIndex={-1} id={`prototype-step-${step}`}>{stepLabels[step - 1]}</h2><p>{stepDescription(step, t)}</p></div>
+              <div><span className={styles.eyebrow}>{t(`Paso ${step} de 4`, `Step ${step} of 4`)}</span><h2 tabIndex={-1} id={`prototype-step-${step}`}>{stepLabels[step - 1]}</h2></div>
               <Badge tone={step === 4 ? "confirmed" : "preliminary"}>{step === 4 ? t("Listo para crear", "Ready to create") : t("Edición local", "Local editing")}</Badge>
             </header>
             <div className={styles.cardBody}>
@@ -474,25 +458,10 @@ function EmptyFacilitiesState({ t }: { t: Translate }) {
 }
 
 function FacilityStep({ draft, options, update, errorFor, t }: FieldHelpers) {
-  const origin = findIntakeFacility(options, draft.originFacilityId);
-  const destination = findIntakeFacility(options, draft.destinationFacilityId);
-  return <>
-    <div className={styles.facilityIntro}><div><h3 className={styles.sectionTitle}><MapPinned size={17} aria-hidden="true" />{t("Construye el corredor desde tus sedes", "Build the lane from your facilities")}</h3><p>{t("Busca por nombre, código o área. Sólo aparecen sedes del catálogo autenticado de tu organización.", "Search by name, code, or area. Only facilities from your authenticated organization catalog are shown.")}</p></div>
-      {origin && destination ? <Button variant="secondary" type="button" onClick={() => { update("originFacilityId", destination.facilityId); update("destinationFacilityId", origin.facilityId); }}><ArrowUpDown size={15} aria-hidden="true" />{t("Invertir ruta", "Swap route")}</Button> : null}
-    </div>
-    <div className={styles.facilityGrid}>
-      <FacilityPicker kind="origin" facilities={options.facilities} value={draft.originFacilityId} excludedFacilityId={draft.destinationFacilityId} error={errorFor("originFacilityId")} onChange={(value) => update("originFacilityId", value)} t={t} />
-      <FacilityPicker kind="destination" facilities={options.facilities} value={draft.destinationFacilityId} excludedFacilityId={draft.originFacilityId} error={errorFor("destinationFacilityId")} onChange={(value) => update("destinationFacilityId", value)} t={t} />
-    </div>
-    <div className={styles.routeStatus} data-complete={origin && destination ? "true" : "false"}>
-      <span className={styles.routeNode}><MapPinned size={15} aria-hidden="true" /></span>
-      <div><strong>{origin?.city ?? t("Origen pendiente", "Origin pending")}</strong><small>{origin?.label ?? t("Selecciona una sede autorizada", "Select an authorized facility")}</small></div>
-      <span className={styles.routeConnector}><Route size={16} aria-hidden="true" /></span>
-      <div><strong>{destination?.city ?? t("Destino pendiente", "Destination pending")}</strong><small>{destination?.label ?? t("Selecciona una sede distinta", "Select a different facility")}</small></div>
-      <Badge tone={origin && destination ? "preliminary" : "neutral"}>{origin && destination ? t("Corredor local", "Local lane") : t("Incompleto", "Incomplete")}</Badge>
-    </div>
-    <div className={styles.boundaryNotice} role="note"><Info size={16} aria-hidden="true" /><span>{t("Seleccionar sedes no confirma ruta, cobertura, capacidad, precio ni persistencia. La dirección postal y el contacto de sede no forman parte del contrato actual; no se inventan.", "Selecting facilities does not confirm route, coverage, capacity, price, or persistence. Postal address and facility contact are not part of the current contract and are not invented.")}</span></div>
-  </>;
+  return <div className={styles.facilityGrid}>
+    <FacilityPicker kind="origin" facilities={options.facilities} value={draft.originFacilityId} excludedFacilityId={draft.destinationFacilityId} error={errorFor("originFacilityId")} onChange={(value) => update("originFacilityId", value)} t={t} />
+    <FacilityPicker kind="destination" facilities={options.facilities} value={draft.destinationFacilityId} excludedFacilityId={draft.originFacilityId} error={errorFor("destinationFacilityId")} onChange={(value) => update("destinationFacilityId", value)} t={t} />
+  </div>;
 }
 
 function CargoStep({ draft, options, update, errorFor, t }: FieldHelpers) {
@@ -510,7 +479,7 @@ function CargoStep({ draft, options, update, errorFor, t }: FieldHelpers) {
 
   return <>
     <section className={styles.formSection}>
-      <header className={styles.formSectionHeader}><div><span className={styles.sectionKicker}>{t("Primero lo esencial", "Start with the essentials")}</span><h3 className={styles.sectionTitle}><Package size={17} aria-hidden="true" />{t("¿Qué necesitas transportar?", "What are you shipping?")}</h3><p>{t("La categoría activa la guía contractual; el embalaje define cómo capturamos la unidad.", "The category activates contract guidance; packaging defines how the unit is captured.")}</p></div></header>
+      <header className={styles.formSectionHeader}><div><h3 className={styles.sectionTitle}><Package size={17} aria-hidden="true" />{t("¿Qué necesitas transportar?", "What are you shipping?")}</h3></div></header>
       <div className={styles.formGrid}>
         <OptionSelect label={t("Categoría de carga", "Cargo category")} placeholder={t("Seleccionar categoría", "Select category")} options={options.cargoCategories} value={draft.categoryCode} error={errorFor("categoryCode")} onChange={(value) => update("categoryCode", value)} t={t} />
         <OptionSelect label={t("Embalaje principal", "Primary packaging")} placeholder={t("Seleccionar embalaje", "Select packaging")} options={options.packagingOptions} value={draft.packaging} error={errorFor("packaging")} onChange={(value) => { update("packaging", value); if (!draft.unitPackageType) update("unitPackageType", value); }} t={t} />
@@ -536,7 +505,7 @@ function CargoStep({ draft, options, update, errorFor, t }: FieldHelpers) {
       <div className={styles.computedTotals} aria-live="polite"><div><span>{t("Peso total calculado", "Calculated total weight")}</span><strong>{draft.totalWeightKg ? `${draft.totalWeightKg} kg` : "—"}</strong>{errorFor("totalWeightKg") ? <small>{errorFor("totalWeightKg")}</small> : null}</div><div><span>{t("Volumen total calculado", "Calculated total volume")}</span><strong>{draft.totalVolumeM3 ? `${draft.totalVolumeM3} m³` : "—"}</strong>{errorFor("totalVolumeM3") ? <small>{errorFor("totalVolumeM3")}</small> : null}</div></div>
       {unitPackaging?.verification ? <OptionEvidence label="verification" value={`${unitPackaging.verification} · ${t("Dato de captura; no prueba compatibilidad del carrier.", "Capture data; it does not prove carrier compatibility.")}`} /> : null}
       <details className={styles.advancedDisclosure} open={unitDetailsOpen} onToggle={(event) => setUnitDetailsOpen(event.currentTarget.open)}><summary><span><strong>{t("Dimensiones y manipulación", "Dimensions and handling")}</strong><small>{t("Campos contractuales obligatorios", "Required contract fields")}</small></span><ChevronDown size={17} aria-hidden="true" /></summary><div className={styles.formGrid}><Input label={t("Largo (cm)", "Length (cm)")} type="number" min="0" step="0.1" value={draft.unitLengthCm} error={errorFor("unitLengthCm")} onChange={(event) => update("unitLengthCm", event.target.value)} /><Input label={t("Ancho (cm)", "Width (cm)")} type="number" min="0" step="0.1" value={draft.unitWidthCm} error={errorFor("unitWidthCm")} onChange={(event) => update("unitWidthCm", event.target.value)} /><Input label={t("Alto (cm)", "Height (cm)")} type="number" min="0" step="0.1" value={draft.unitHeightCm} error={errorFor("unitHeightCm")} onChange={(event) => update("unitHeightCm", event.target.value)} /><div className={styles.handlingGrid}><Checkbox label={t("Unidad indivisible", "Indivisible unit")} checked={draft.unitIndivisible} onChange={(event) => update("unitIndivisible", event.target.checked)} /><Checkbox label={t("Apilable", "Stackable")} checked={draft.unitStackable} onChange={(event) => update("unitStackable", event.target.checked)} /></div></div></details>
-    </section> : <div className={styles.disclosurePrompt}><Package size={20} aria-hidden="true" /><div><strong>{t("Selecciona el embalaje para continuar", "Select packaging to continue")}</strong><span>{t("Después mostraremos únicamente la captura de unidad necesaria.", "Then we will show only the unit capture that is needed.")}</span></div></div>}
+    </section> : null}
   </>;
 }
 
@@ -550,7 +519,7 @@ function ScheduleAndContactsStep({ draft, options, update, errorFor, t }: FieldH
   };
   return <>
     <section className={styles.formSection}>
-      <header className={styles.formSectionHeader}><div><span className={styles.sectionKicker}>{t("Ventanas operativas", "Operational windows")}</span><h3 className={styles.sectionTitle}><CalendarDays size={17} aria-hidden="true" />{t("¿Cuándo debe moverse?", "When should it move?")}</h3><p>{t("Las ventanas se validan en orden retiro → entrega y se envían como instantes ISO.", "Windows are validated in pickup → delivery order and sent as ISO instants.")}</p></div></header>
+      <header className={styles.formSectionHeader}><div><h3 className={styles.sectionTitle}><CalendarDays size={17} aria-hidden="true" />{t("¿Cuándo debe moverse?", "When should it move?")}</h3></div></header>
       <div className={styles.windowGrid}>
         <fieldset className={styles.windowCard}><legend>{t("Retiro", "Pickup")}</legend><Input label={t("Desde", "Starts")} type="datetime-local" value={draft.pickupWindowStartsAt} error={errorFor("pickupWindowStartsAt")} onChange={(event) => update("pickupWindowStartsAt", event.target.value)} /><Input label={t("Hasta", "Ends")} type="datetime-local" value={draft.pickupWindowEndsAt} error={errorFor("pickupWindowEndsAt")} onChange={(event) => update("pickupWindowEndsAt", event.target.value)} /></fieldset>
         <span className={styles.windowArrow} aria-hidden="true"><ArrowRight size={18} /></span>
@@ -558,12 +527,12 @@ function ScheduleAndContactsStep({ draft, options, update, errorFor, t }: FieldH
       </div>
     </section>
 
-    <fieldset className={styles.choiceFieldset}><legend>{t("Equipo ROAD requerido", "Required ROAD equipment")}</legend><div className={styles.choiceHeading}><p>{t("Se envía exactamente el code recibido del backend. Una recomendación no confirma disponibilidad.", "The exact backend code is sent. A recommendation does not confirm availability.")}</p></div><div className={styles.equipmentGrid} role="radiogroup" aria-label={t("Equipo ROAD", "ROAD equipment")}>
+    <fieldset className={styles.choiceFieldset}><legend>{t("Equipo ROAD requerido", "Required ROAD equipment")}</legend><div className={styles.equipmentGrid} role="radiogroup" aria-label={t("Equipo ROAD", "ROAD equipment")}>
       {options.equipmentOptions.map((option) => { const active = option.code === draft.requiredEquipment; const suggested = recommended.has(option.code); return <button className={styles.equipmentCard} data-selected={active ? "true" : "false"} type="button" role="radio" aria-checked={active} key={option.code} onClick={() => update("requiredEquipment", option.code)}><span className={styles.equipmentIcon}><Truck size={20} aria-hidden="true" /></span><span><strong>{t(option.labelEs, option.labelEn)}</strong><small>{option.code}</small></span>{suggested ? <Badge tone="preliminary">{t("Sugerido", "Suggested")}</Badge> : null}<span className={styles.equipmentCheck}><Check size={14} aria-hidden="true" /></span></button>; })}
     </div>{errorFor("requiredEquipment") ? <p className={styles.fieldError} role="alert">{errorFor("requiredEquipment")}</p> : null}</fieldset>
 
     <section className={styles.formSection}>
-      <header className={styles.formSectionHeader}><div><span className={styles.sectionKicker}>{t("Coordinación humana", "Human coordination")}</span><h3 className={styles.sectionTitle}><ContactRound size={17} aria-hidden="true" />{t("Contactos operativos", "Operational contacts")}</h3><p>{t("El catálogo de sedes no contiene contactos. Confirma quién entrega y quién recibe.", "The facility catalog has no contacts. Confirm who hands over and who receives.")}</p></div>{draft.pickupContactName || draft.pickupContactPhoneE164 || draft.pickupContactEmail ? <Button variant="ghost" type="button" onClick={copyPickupContact}><Copy size={14} aria-hidden="true" />{t("Copiar al destinatario", "Copy to recipient")}</Button> : null}</header>
+      <header className={styles.formSectionHeader}><div><h3 className={styles.sectionTitle}><ContactRound size={17} aria-hidden="true" />{t("Contactos operativos", "Operational contacts")}</h3></div>{draft.pickupContactName || draft.pickupContactPhoneE164 || draft.pickupContactEmail ? <Button variant="ghost" type="button" onClick={copyPickupContact}><Copy size={14} aria-hidden="true" />{t("Copiar al destinatario", "Copy to recipient")}</Button> : null}</header>
       <div className={styles.contactGrid}><ContactFields kind="pickup" draft={draft} update={update} errorFor={errorFor} t={t} /><ContactFields kind="recipient" draft={draft} update={update} errorFor={errorFor} t={t} /></div>
     </section>
   </>;
@@ -581,7 +550,6 @@ function ReviewStep({ draft, options, request, dirtyAfterCreate, t, locale, onEd
   const origin = findIntakeFacility(options, draft.originFacilityId);
   const destination = findIntakeFacility(options, draft.destinationFacilityId);
   return <div className={styles.reviewGrid}>
-    <div className={styles.reviewLead}><span className={styles.reviewLeadIcon}><ClipboardCheck size={22} aria-hidden="true" /></span><div><strong>{t("Revisa antes de crear", "Review before creation")}</strong><p>{t("Todavía puedes volver a cualquier etapa. Nada se persiste hasta confirmar el botón final.", "You can still return to any stage. Nothing is persisted until you confirm the final button.")}</p></div></div>
     <ReviewSection title={t("Corredor", "Lane")} editLabel={t("Editar sedes", "Edit facilities")} onEdit={() => onEdit(1)} items={[[t("Origen", "Origin"), origin ? `${origin.label} · ${origin.city}` : "—"], [t("Destino", "Destination"), destination ? `${destination.label} · ${destination.city}` : "—"]]} />
     <ReviewSection title={t("Carga y unidad", "Cargo and unit")} editLabel={t("Editar carga", "Edit cargo")} onEdit={() => onEdit(2)} items={[[t("Categoría", "Category"), draft.categoryCode], [t("Peso / volumen", "Weight / volume"), `${draft.totalWeightKg} kg · ${draft.totalVolumeM3} m³`], [t("Unidad", "Unit"), `${draft.unitQuantity} × ${draft.unitPackageType}`], [t("Requisitos", "Requirements"), draft.requirements.join(", ") || t("Ninguno", "None")]]} />
     <ReviewSection title={t("Agenda y equipo", "Schedule and equipment")} editLabel={t("Editar agenda", "Edit schedule")} onEdit={() => onEdit(3)} items={[[t("Retiro", "Pickup"), formatLocalRange(draft.pickupWindowStartsAt, draft.pickupWindowEndsAt, locale)], [t("Entrega", "Delivery"), formatLocalRange(draft.deliveryWindowStartsAt, draft.deliveryWindowEndsAt, locale)], [t("Equipo", "Equipment"), draft.requiredEquipment]]} />
@@ -597,13 +565,13 @@ function ReviewSection({ title, items, tone = "preliminary", editLabel, onEdit }
 function LiveSummary({ draft, options, request, evaluation, dirtyAfterCreate, t }: { draft: V2IntakePrototypeDraft; options: IntakeOptionsData; request: FreightRequestV2Data | null; evaluation: RoadServiceabilityEvaluationV2Data | null; dirtyAfterCreate: boolean; t: Translate }) {
   const origin = findIntakeFacility(options, draft.originFacilityId);
   const destination = findIntakeFacility(options, draft.destinationFacilityId);
-  return <aside className={`${styles.card} ${styles.summary}`} aria-label={t("Resumen en vivo", "Live summary")}><header className={styles.cardHeader}><span className={styles.stepHeaderIcon} aria-hidden="true"><Route size={19} /></span><div><span className={styles.eyebrow}>{t("Resumen en vivo", "Live summary")}</span><h2>{t("Tu solicitud", "Your request")}</h2><p>{t("Se actualiza con el mismo estado que usa el asistente.", "It updates from the same state used by the assistant.")}</p></div></header><div className={styles.summaryRoute}><span className={styles.routeDot}/><div><small>{t("Origen", "Origin")}</small><strong>{origin?.city ?? "—"}</strong></div><span className={styles.routeDash}/><span className={styles.routeDot}/><div><small>{t("Destino", "Destination")}</small><strong>{destination?.city ?? "—"}</strong></div></div><div className={styles.summaryBody}>
+  return <aside className={`${styles.card} ${styles.summary}`} aria-label={t("Resumen de la solicitud", "Request summary")}><header className={styles.cardHeader}><span className={styles.stepHeaderIcon} aria-hidden="true"><Route size={19} /></span><div><h2>{t("Tu solicitud", "Your request")}</h2></div></header><div className={styles.summaryRoute}><span className={styles.routeDot}/><div><small>{t("Origen", "Origin")}</small><strong>{origin?.city ?? "—"}</strong></div><span className={styles.routeDash}/><span className={styles.routeDot}/><div><small>{t("Destino", "Destination")}</small><strong>{destination?.city ?? "—"}</strong></div></div><div className={styles.summaryBody}>
     <SummaryRow label={t("Origen", "Origin")} value={origin?.label ?? t("Sin seleccionar", "Not selected")} tone={origin ? "preliminary" : "neutral"} status={origin ? t("Local", "Local") : t("Pendiente", "Pending")} />
     <SummaryRow label={t("Destino", "Destination")} value={destination?.label ?? t("Sin seleccionar", "Not selected")} tone={destination ? "preliminary" : "neutral"} status={destination ? t("Local", "Local") : t("Pendiente", "Pending")} />
     <SummaryRow label={t("Carga", "Cargo")} value={draft.cargoDescription || t("Sin describir", "Not described")} tone={draft.cargoDescription ? "preliminary" : "neutral"} status={draft.cargoDescription ? t("Local", "Local") : t("Pendiente", "Pending")} />
     <SummaryRow label={t("Persistencia", "Persistence")} value={request ? `${request.referenceCode} · v${request.draftVersion}` : t("Aún no creada", "Not created yet")} tone={request ? "confirmed" : "unknown"} status={request ? request.status : "UNKNOWN"} hint={dirtyAfterCreate ? t("Cambios locales sin autosave", "Local changes without autosave") : undefined} />
     <SummaryRow label={t("Elegibilidad", "Serviceability")} value={evaluation ? `${evaluation.summaryCounts.totalEvaluated} ${t("evaluados", "evaluated")}` : t("Aún no consultada", "Not queried yet")} tone={evaluation?.overallStatus === "eligible" ? "confirmed" : "unknown"} status={evaluation?.overallStatus.toUpperCase() ?? "UNKNOWN"} />
-  </div><div className={styles.statusLegend}><Legend tone="preliminary" label={t("Local", "Local")} text={t("Editable; no persistido.", "Editable; not persisted.")} /><Legend tone="unknown" label="UNKNOWN" text={t("Sin evidencia suficiente.", "Insufficient evidence.")} /><Legend tone="confirmed" label="DRAFT" text={t("Devuelto por POST y GET V2.", "Returned by V2 POST and GET.")} /></div></aside>;
+  </div></aside>;
 }
 
 function ApiErrorState({ error, requestExists, retry, t, embedded = false }: { error: V2IntakeApiError; requestExists: boolean; retry: () => Promise<void>; t: Translate; embedded?: boolean }) {
@@ -670,10 +638,6 @@ function SummaryRow({ label, value, tone, status, hint }: { label: string; value
   return <div className={styles.summaryRow}><span>{label}</span><div className={styles.summaryValue}><strong>{value}</strong><Badge tone={tone}>{status}</Badge></div>{hint ? <small className={styles.summaryHint}>{hint}</small> : null}</div>;
 }
 
-function Legend({ tone, label, text }: { tone: "preliminary" | "unknown" | "confirmed"; label: string; text: string }) {
-  return <div className={styles.legendItem}><Badge tone={tone}>{label}</Badge><span>{text}</span></div>;
-}
-
 function normalizeApiError(error: unknown) {
   if (error instanceof V2IntakeApiError) return error;
   return new V2IntakeApiError({
@@ -689,15 +653,6 @@ function phaseLabel(phase: SubmitPhase, t: Translate) {
   if (phase === "reading") return t("Leyendo DRAFT…", "Reading DRAFT…");
   if (phase === "evaluating") return t("Evaluando servicio…", "Evaluating serviceability…");
   return t("Procesando…", "Processing…");
-}
-
-function stepDescription(step: PrototypeStep, t: Translate) {
-  return [
-    t("Elige facilityId; el servidor conserva la autoridad sobre tenant y coordenadas.", "Choose facilityId; the server remains authoritative for tenant and coordinates."),
-    t("Captura CargoSpecification y units[] sin calcular capacidad en el navegador.", "Capture CargoSpecification and units[] without computing capacity in the browser."),
-    t("Define ventanas, equipo y ambos ShipmentContact.", "Define windows, equipment, and both ShipmentContact values."),
-    t("Revalida y ejecuta POST → GET → GET serviceability con una clave idempotente.", "Revalidate and run POST → GET → GET serviceability with an idempotency key."),
-  ][step - 1];
 }
 
 function formatLocalRange(start: string, end: string, locale: "es" | "en") {
