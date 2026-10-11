@@ -30,20 +30,28 @@ export const LocalDraftSchema = z.object({
   truckPreference: truck.nullable().optional().transform(value => value ?? null),
 });
 export type LocalDraft = z.infer<typeof LocalDraftSchema>;
+// The origin is provenance for browser data, never an API permission or a
+// postMessage allowlist. Existing 8080/8083 envelopes remain compatible.
+const browserOrigin = z.string().max(300).url().refine(value => {
+  try {
+    const url = new URL(value);
+    return (url.protocol === "http:" || url.protocol === "https:") && url.origin === value;
+  } catch { return false; }
+});
 export const LocalDraftEnvelopeSchema = z.object({
-  version: z.literal(1), sourceOrigin: z.enum([LEGACY_ORIGIN, "http://127.0.0.1:8083"]),
+  version: z.literal(1), sourceOrigin: browserOrigin,
   importedAt: z.string().datetime(), updatedAt: z.string().datetime(),
   originalRaw: z.string().max(420_000), draft: LocalDraftSchema,
 });
 export type LocalDraftEnvelope = z.infer<typeof LocalDraftEnvelopeSchema>;
 
-export function importLocalDraft(raw: string, sourceOrigin: typeof LEGACY_ORIGIN | typeof CURRENT_ORIGIN, now: string): LocalDraftEnvelope {
+export function importLocalDraft(raw: string, sourceOrigin: string, now: string): LocalDraftEnvelope {
   if (raw.length > 420_000) throw new Error("INVALID_LOCAL_DRAFT");
   return LocalDraftEnvelopeSchema.parse({ version: 1, sourceOrigin, importedAt: now, updatedAt: now,
     originalRaw: raw, draft: LocalDraftSchema.parse(JSON.parse(raw)) });
 }
 export function readLocalDraft(raw: string | null): LocalDraftEnvelope | null {
-  if (!raw) return null;
+  if (raw === null) return null;
   return LocalDraftEnvelopeSchema.parse(JSON.parse(raw));
 }
 export function changeLocalDraft(record: LocalDraftEnvelope, change: Partial<LocalDraft>, now: string): LocalDraftEnvelope {

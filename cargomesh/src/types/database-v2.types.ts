@@ -5615,6 +5615,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      read_v2_carrier_portal_access: {Args:Record<PropertyKey,never>;Returns:Json}
+      read_v2_carrier_catalog: {Args:{p_operator_id:string;p_kind:string;p_carrier_id:string;p_service_id:string|null;p_id:string|null;p_limit:number;p_offset:number};Returns:Json}
+      command_v2_carrier_catalog: {Args:{p_operator_id:string;p_kind:string;p_carrier_id:string;p_service_id:string|null;p_id:string|null;p_idempotency_key:string;p_expected_version:number|null;p_value:Json};Returns:Json}
+      read_v2_carrier_portal_routing: {Args:{p_operator_id:string;p_kind:string;p_carrier_id:string;p_limit:number;p_offset:number};Returns:Json}
       assert_booking_bridge_identity: {
         Args: {
           p_authorization: Database["public"]["Tables"]["booking_authorizations"]["Row"]

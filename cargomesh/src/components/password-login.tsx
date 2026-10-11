@@ -1,8 +1,9 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { safeLoginReturnTo } from "@/shared/schemas/v2/carrier-portal";
 import styles from "./password-login.module.css";
-export function PasswordLogin() {
+export function PasswordLogin({returnTo}:{returnTo?:"/carrier-portal"|"/dashboard"|"/v2-workspace"}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -13,9 +14,12 @@ export function PasswordLogin() {
     const fields = new FormData(event.currentTarget);
     try {
       const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: fields.get("email"), password: fields.get("password") }) });
+        body: JSON.stringify({ email: fields.get("email"), password: fields.get("password"), returnTo }) });
       if (!response.ok) { setError(response.status === 401 ? "Correo o contraseña incorrectos." : "No se pudo iniciar sesión. Reintenta."); return; }
-      router.replace("/dashboard"); router.refresh();
+      const result=await response.json();
+      const destination=safeLoginReturnTo(result.destination);
+      if(!destination){setError("No se pudo resolver tu espacio de trabajo.");return;}
+      router.replace(destination); router.refresh();
     } catch { setError("No se pudo conectar. Reintenta."); }
     finally { setBusy(false); }
   }

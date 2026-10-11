@@ -24,6 +24,8 @@ pnpm --dir cargomesh dev
 
 Copia `cargomesh/.env.example` a `cargomesh/.env.local` y configura el Supabase V2 correcto. Para QA local sigue [el bootstrap V2](docs/v2-amazon/delivery/HAC29_CLEAN_BOOTSTRAP.md). Los escenarios sintéticos se cargan explícitamente, fuera de migraciones.
 
+Para ver el panel visual con siete solicitudes, gráficos y camiones 3D, abre **`/v2-workspace#/dashboard`**; la flota está en **`/v2-workspace#/fleet`**. La portada `/` también lleva a ese panel. Funciona en cualquier puerto local y prepara sus datos de presentación solo cuando ese navegador no tiene datos guardados. **`/carrier-portal` es otra pantalla:** el portal operativo del transportista conectado a la API y a sus permisos. Véase [la guía del frontend](LOCAL_FRONTEND.md).
+
 El acceso usa correo/contraseña y exige membresía activa. No hay login automático de demo ni directorio WebMCP de tres carriers. El flujo visible implementado incluye captura/evaluación ROAD, listado/detalle de solicitudes y lectura de reservas/ejecuciones V2; no acredita pantallas completas de oferta, ranking o booking.
 
 ## Verificación

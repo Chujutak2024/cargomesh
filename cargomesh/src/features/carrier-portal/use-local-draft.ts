@@ -1,7 +1,8 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CURRENT_ORIGIN, PREVIOUS_CURRENT_ORIGIN, LEGACY_DRAFT_KEY, LEGACY_ORIGIN, LOCAL_DRAFT_KEY, ORIGINAL_DRAFT_KEY,
-  importLocalDraft, isLocalTransfer, readLocalDraft, type LocalDraftEnvelope } from "./local-draft-model";
+  importLocalDraft, isLocalTransfer, readLocalDraft, LocalDraftEnvelopeSchema, type LocalDraftEnvelope } from "./local-draft-model";
+import { resolveWorkspaceDraft } from "./local-request-demo";
 export type SaveLocalDraft = (next: LocalDraftEnvelope | ((current: LocalDraftEnvelope) => LocalDraftEnvelope)) => boolean;
 
 /** Import once; later edits on this origin always win over the previous workspace. */
@@ -12,19 +13,18 @@ export function useLocalDraft() {
   const [enabled, setEnabled] = useState(false);
   const current = useRef<LocalDraftEnvelope | null>(null);
   const save = useCallback<SaveLocalDraft>((update) => {
-    if (window.location.origin !== CURRENT_ORIGIN) return false;
     try {
       if (typeof update === "function" && !current.current) return false;
-      const next = typeof update === "function" ? update(current.current!) : update;
+      const next = LocalDraftEnvelopeSchema.parse(typeof update === "function" ? update(current.current!) : update);
       // Never remove/overwrite the immutable original or the legacy workspace key.
-      if (!localStorage.getItem(ORIGINAL_DRAFT_KEY)) localStorage.setItem(ORIGINAL_DRAFT_KEY, next.originalRaw);
+      if (localStorage.getItem(ORIGINAL_DRAFT_KEY) === null) localStorage.setItem(ORIGINAL_DRAFT_KEY, next.originalRaw);
       localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify(next));
       current.current = next; setRecord(next); setPhase("ready"); return true;
     } catch { setPhase("storage-error"); return false; }
   }, []);
   useEffect(() => {
-    // No migration bridge or local data access is enabled on a hosted origin.
-    if (window.location.origin !== CURRENT_ORIGIN) { setPhase("empty"); return; }
+    // /v2-workspace is portable: every browser origin has its own saved state.
+    // Only the historical 8080 origin may contact the old 8083 transfer bridge.
     setEnabled(true);
     let sameOrigin: string | null = null;
     try {
@@ -32,18 +32,18 @@ export function useLocalDraft() {
       if (existing) { current.current = existing; setRecord(existing); setPhase("ready"); return; }
       sameOrigin = localStorage.getItem(LEGACY_DRAFT_KEY);
     } catch { setPhase("invalid"); return; }
+    const restoreLegacy = () => {
+      if (current.current) return;
+      try {
+        save(resolveWorkspaceDraft(null, sameOrigin, window.location.origin, new Date().toISOString()));
+      } catch { setPhase("invalid"); }
+    };
+    if (window.location.origin !== CURRENT_ORIGIN) { restoreLegacy(); return; }
     setPhase("reading");
     const nonce = crypto.randomUUID();
     const frame = document.createElement("iframe");
     frame.hidden = true; frame.title = "Local CargoMesh draft transfer";
     frame.src = `${PREVIOUS_CURRENT_ORIGIN}/local-draft-transfer.html#${nonce}`;
-    const restoreLegacy = () => {
-      if (current.current) return;
-      try {
-        if (sameOrigin) save(importLocalDraft(sameOrigin, CURRENT_ORIGIN, new Date().toISOString()));
-        else setPhase("empty");
-      } catch { setPhase("invalid"); }
-    };
     const receive = (event: MessageEvent) => {
       if (!isLocalTransfer(event, frame.contentWindow, nonce, PREVIOUS_CURRENT_ORIGIN) || current.current) return;
       clearTimeout(timeout);

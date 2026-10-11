@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CURRENT_ORIGIN, importLocalDraft, LocalDraftEnvelopeSchema, type LocalDraft, type LocalDraftEnvelope } from "./local-draft-model";
+import { CURRENT_ORIGIN, importLocalDraft, readLocalDraft, LocalDraftEnvelopeSchema, type LocalDraft, type LocalDraftEnvelope } from "./local-draft-model";
 
 export const USER_REQUEST_ID = "CM-LOCAL-01";
 export const DEMO_REQUESTS_KEY = "cargomesh-v2-local-request-examples-v1";
@@ -16,14 +16,29 @@ const scenarios: Array<Partial<LocalDraft> & { originId: string; destinationId: 
 ];
 
 /** Local UI examples only: no commercial identity, carrier, route geometry or API writes. */
-export function initialDemoRequests(): LocalRequestEntry[] {
+export function initialDemoRequests(sourceOrigin = CURRENT_ORIGIN): LocalRequestEntry[] {
   return scenarios.map((fields, index) => ({ id: `CM-DEMO-${String(index + 2).padStart(2, "0")}`, example: true,
-    record: importLocalDraft(JSON.stringify({ savedForReview: false, ...fields }), CURRENT_ORIGIN, timestamp) }));
+    record: importLocalDraft(JSON.stringify({ savedForReview: false, ...fields }), sourceOrigin, timestamp) }));
+}
+
+/** Reproduce the coordination UI in a fresh browser without publishing a user's
+ * localStorage. Saved edits and legacy data always take priority over this seed. */
+export function resolveWorkspaceDraft(storedRaw: string | null, legacyRaw: string | null,
+  sourceOrigin: string, now: string): LocalDraftEnvelope {
+  const stored = readLocalDraft(storedRaw);
+  if (stored) return stored;
+  if (legacyRaw !== null) return importLocalDraft(legacyRaw, sourceOrigin, now);
+  return importLocalDraft(JSON.stringify({
+    originId: "callao", destinationId: "piura", cargoDescription: "Maquinaria industrial",
+    quantity: 10, unitWeightKg: 800, pickupDate: "2026-07-12", deliveryDate: "2026-09-12",
+    completedStep: 1, savedForReview: false,
+    truckPreference: { type: "curtainsider", model: "", photoDataUrl: null },
+  }), sourceOrigin, now);
 }
 const StoredExamples = z.object({ version: z.literal(1), records: z.record(LocalDraftEnvelopeSchema) });
-export function readDemoRequests(raw: string | null): LocalRequestEntry[] {
-  const defaults = initialDemoRequests();
-  if (!raw) return defaults;
+export function readDemoRequests(raw: string | null, sourceOrigin = CURRENT_ORIGIN): LocalRequestEntry[] {
+  const defaults = initialDemoRequests(sourceOrigin);
+  if (raw === null) return defaults;
   const stored = StoredExamples.parse(JSON.parse(raw));
   if (Object.keys(stored.records).length !== defaults.length || defaults.some(entry => !stored.records[entry.id])) throw new Error("INVALID_LOCAL_EXAMPLES");
   return defaults.map(entry => ({ ...entry, record: stored.records[entry.id] }));

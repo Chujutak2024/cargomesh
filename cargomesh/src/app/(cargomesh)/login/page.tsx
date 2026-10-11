@@ -1,10 +1,12 @@
-import { PasswordLogin } from "@/components/password-login";
-import { redirectAuthenticatedMemberFromLogin } from "@/server/auth/route-guard";
+import {PasswordLogin} from "@/components/password-login";
+import {authenticatedLoginDestination} from "@/server/auth/carrier-portal";
+import {safeLoginReturnTo} from "@/shared/schemas/v2/carrier-portal";
+import {redirect} from "next/navigation";
 import styles from "./page.module.css";
-export const dynamic = "force-dynamic";
-export default async function LoginPage() {
-  await redirectAuthenticatedMemberFromLogin();
-  return <main className={styles.page}><section className={styles.brandPanel}>
-    <h1>CargoMesh V2</h1><p>Captura solicitudes, evalúa servicios de transporte y consulta tus operaciones.</p>
-  </section><section className={styles.formPanel}><PasswordLogin /></section></main>;
+export const dynamic="force-dynamic";
+export default async function LoginPage({searchParams}:{searchParams:Promise<{returnTo?:string}>}){
+ const returnTo=safeLoginReturnTo((await searchParams).returnTo),destination=await authenticatedLoginDestination(returnTo);
+ if(destination)redirect(destination);
+ return <main className={styles.page}><section className={styles.brandPanel}><h1>CargoMesh V2</h1>
+ <p>Accede al espacio de tu organización o transportista.</p></section><section className={styles.formPanel}><PasswordLogin returnTo={returnTo}/></section></main>;
 }
