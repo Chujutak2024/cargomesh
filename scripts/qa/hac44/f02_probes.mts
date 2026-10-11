@@ -79,13 +79,13 @@ function get(obj:any,p:string){let at=obj;for(const token of p.replace(/\[\]/g,'
 function edit(obj:any,p:string,operation:'NULL'|'OMIT',fill:any=undefined){const v=structuredClone(obj),tokens=p.replace(/\[\]/g,'.0').split('.');let at=v;for(const token of tokens.slice(0,-1)){if(at[token]===undefined)at[token]={};at=at[token];}const key=tokens.at(-1)!;if(fill!==undefined)at[key]=fill;else if(operation==='NULL')at[key]=null;else delete at[key];return v;}
 const helpers=`
 create function pg_temp.cp2_attempt(q text) returns jsonb language plpgsql security invoker as $$
-declare val jsonb;accepted boolean:=false;s text;m text;r text;u uuid;
+declare val jsonb;accepted boolean:=false;s text;m text;cn text;r text;u uuid;
 begin r:=current_user;u:=auth.uid();
  begin execute q into val;set constraints all immediate;accepted:=true;
  raise exception using errcode='P0001',message='CP2_INTERNAL_ROLLBACK';
- exception when others then get stacked diagnostics s=returned_sqlstate,m=message_text;
+ exception when others then get stacked diagnostics s=returned_sqlstate,m=message_text,cn=constraint_name;
  if not(s='P0001' and m='CP2_INTERNAL_ROLLBACK') then accepted:=false;end if;end;
- return jsonb_build_object('accepted',accepted,'sqlstate',case when accepted then null else s end,'error',case when accepted then null else m end,'value',val,'role',r,'subject',u,'actualSession',current_setting('request.jwt.claims')::jsonb ? 'session_id');end;$$;
+ return jsonb_build_object('accepted',accepted,'sqlstate',case when accepted then null else s end,'error',case when accepted then null else m end,'constraint',case when accepted then null else cn end,'value',val,'role',r,'subject',u,'actualSession',current_setting('request.jwt.claims')::jsonb ? 'session_id');end;$$;
 grant execute on function pg_temp.cp2_attempt(text) to authenticated;`;
 function dbPair(name:string,rowIds:string[],positive:string,negative:string,expectAccepted:boolean,extraHelpers=''){
   const before=counts();
@@ -148,6 +148,7 @@ for(const [kind,path] of Object.entries({...catPaths,...wfPaths,...identityPaths
 write('LECTURAS_ACTUALES.json',{sha:process.env.HAC44_SOURCE_SHA,sources});
 const fields=index.attributes.filter((r:any)=>index.pending.some((p:any)=>p.tipo==='atributo'&&p.id===r.clase+'.'+r.atributo));
 for(const field of fields){
+  if(['CapacitySource','RouteSimulationScenario'].includes(field.clase))continue; // Actual projections/scenario representations are measured below/in the semantic source audit.
   const rowId=field.clase+'.'+field.atributo,kind=classes[field.clase],source=sources[kind];
   const path=field.ruta_output;
   const value=source?.record?get(source.record,path):undefined;
@@ -203,6 +204,12 @@ write('CP2_RESULTADOS.json',{sha:process.env.HAC44_SOURCE_SHA,evidence,complete:
 // Cardinality and XOR guards use fresh native routes for each independent rollback.
 const byAction=(action:string)=>captured.workflow.find((r:any)=>r.action===action);
 const routeRecipe=byAction('routes.create'),planRecipe=byAction('plans.create');
+// Audit events can block an otherwise valid plan. Restore through the native
+// event command before every plan control, rather than forcing source state.
+{const current=await request(`/carriers/${carrier}/assets/${refs.asset.id}`);if(current.body.data?.value.operatingStatus!=='AVAILABLE'){
+ const restored=await request(`/carriers/${carrier}/assets/${refs.asset.id}/events`,a,{schemaVersion:'2.0',expectedVersion:current.body.data.version,next:'AVAILABLE',reason:'Restore positive plan control',note:'CP1c prerequisite',evidence:ev});
+ if(restored.http!==201)throw new Error('Native plan availability prerequisite failed');
+}}
 for(const operation of ['NULL','OMIT'] as const){
  const value=edit(requestPayload,'cargoSpecification',operation);
  dbPair('CARDINALITY cargo specification '+operation,['FreightRequest','CargoSpecification'],newDraft(requestPayload),newDraft(value),false);
@@ -244,6 +251,18 @@ const poolRead=sources['capacity-pools'];
 const poolCalendar=poolRead?.record?await request(catPaths.calendars,a,{...calendarValue,assetId:null,capacityPoolId:poolRead.record.id}):null;
 const poolPlan=poolCalendar?.http===201?await request(wfPaths.plans,a,{...p,assignments:p.assignments.map((r:any)=>({...r,assetId:null,capacityPoolId:poolRead.record.id,calendarId:poolCalendar.body.data.id}))}):null;
 const projectedPool=poolPlan?.body.data?.data?.assignments?.[0]?.resource;
+if(process.env.HAC44_CP1C==='1'){
+ const poolPayload={...p,assignments:p.assignments.map((r:any)=>({...r,assetId:null,capacityPoolId:poolRead.record.id,calendarId:poolCalendar?.body.data?.id}))};
+ const positive=`select pg_temp.cp2_plan(${jsonSql(poolPayload)})`;
+ const neither={...poolPayload,assignments:poolPayload.assignments.map((r:any)=>({...r,capacityPoolId:null}))};
+ const both={...poolPayload,assignments:poolPayload.assignments.map((r:any)=>({...r,assetId:refs.asset.id}))};
+ const n=dbPair('CP1C UML08 35 UNKNOWN vs no source',['O3AsrRVXhiO8iDlZrkKS-248'],positive,`select pg_temp.cp2_plan(${jsonSql(neither)})`,false,wfHelpers);
+ const q=dbPair('CP1C UML08 35 UNKNOWN vs both sources',['O3AsrRVXhiO8iDlZrkKS-248'],positive,`select pg_temp.cp2_plan(${jsonSql(both)})`,false,wfHelpers);
+ record('CP1C UML08 relation 35 both ends',['O3AsrRVXhiO8iDlZrkKS-248'],!n.positive.accepted||!q.positive.accepted?'BLOQUEADO':n.positive.value?.status==='unknown'&&q.positive.value?.status==='unknown'&&!n.negative.accepted&&!q.negative.accepted&&projectedPool?.poolId===poolRead.record.id?'PASS':'DIFERENCIA',
+ {oneSourceRequiredEvenUnknown:true,noneRejected:true,bothRejected:true},
+ {positiveNative:{accepted:n.positive.accepted&&q.positive.accepted},unknownPlan:n.positive.value,negativeNone:n.negative,negativeBoth:q.negative,poolGetProjection:projectedPool},
+ {controlPositive:'Actual POOL plan accepted with UNKNOWN availability; eligible ASSET control is separately measured',contractRevision:'UML08 relation35 exact native command XOR'});
+}
 record('PROJECTION pool CapacitySource.sourceId',['CapacitySource','CapacityPool'],poolPlan?.http===201&&projectedPool?.poolId===poolRead.record.id&&sources.plans.record?.status==='eligible'?'PASS':'BLOQUEADO',{representation:'POOL/id in a native plan resource, compared with eligible ASSET control'},{value:projectedPool?.poolId,resource:projectedPool,poolPlanStatus:poolPlan?.body.data?.status,eligibleAssetStatus:sources.plans.record?.status,positiveHttp:poolPlan?.http,calendarHttp:poolCalendar?.http,error:poolPlan?.body.error??poolCalendar?.body.error??null},{controlPositive:'Native pool calendar and persisted native plan projection; eligible ASSET control remains separate, native ineligibility is preserved; no new CRUD'});
 const grouped={...p,assignments:p.assignments.map((r:any)=>({legSequence:r.legSequence,serviceId:r.serviceId,laneId:r.laneId,window:r.window,resources:[{calendarId:r.calendarId,assetId:r.assetId,capacityPoolId:r.capacityPoolId,combinationId:r.combinationId,role:r.role,allocations:r.allocations}]}))};
 planPair('CARDINALITY grouped resources min 1',['PlanLegAssignment','PlanResource','TransportPlanCandidate'],{...grouped,assignments:grouped.assignments.map((r:any)=>({...r,resources:[]}))});
@@ -254,6 +273,14 @@ for(const [attribute,value] of [['sourceId',capacity?.assetId??capacity?.poolId]
  record('PROJECTION CapacitySource.'+attribute,['CapacitySource.'+attribute],sources.plans?.result.http===200&&capacity?.assetId===sources.assets?.record?.id&&value!==undefined&&value!==null?'PASS':'BLOQUEADO',{representation:'Native plan resource ASSET/POOL, fulfilment provenance from actual referenced asset',field:attribute},{value,resource:capacity,sourceAssetId:sources.assets?.record?.id,availabilityIsNotFulfilmentProvenance:true},{controlPositive:'Own eligible native plan resource joined to its real source asset; no capacity-source CRUD'});
 }
 const requestRead=sources.request;
+if(process.env.HAC44_CP1C==='1')for(const [number,role,id] of [[73,'recipient','rg1mzH5NKyUcr1gneQok-1'],[90,'pickup','cm-v2fix-3']] as const){
+ const positive=await request('/freight/requests',a,requestPayload),negative=await request('/freight/requests',a,edit(requestPayload,'contacts.'+role,'OMIT'));
+ const own=positive.http===201?await request('/freight/requests/'+positive.body.data.id):positive;
+ const foreign=positive.http===201?await request('/freight/requests/'+positive.body.data.id,b):positive;
+ record('CP1C UML08 relation '+number+' both ends',[id],positive.http!==201?'BLOQUEADO':negative.http===400&&own.http===200&&sameValue(own.body.data.contacts?.[role],requestPayload.contacts[role])&&[403,404].includes(foreign.http)?'PASS':'DIFERENCIA',
+ {mandatoryContact:true,roundtripExact:true,foreignReadDenied:true},{positiveHttp:positive.http,negativeHttp:negative.http,getHttp:own.http,foreignHttp:foreign.http,contact:own.body.data?.contacts?.[role],error:negative.body.error??null},
+ {controlPositive:'Native full request POST and exact own GET of mandatory '+role+' value',contractRevision:'UML08 one embedded role value per request, no independent contact CRUD'});
+}
 const rolePresent=requestRead?.record?.contacts?.pickup!=null;
 record('DERIVED ShipmentContact.role',['ShipmentContact.role'],requestRead?.result.http===200&&rolePresent?'PASS':'BLOQUEADO',{role:'PICKUP',representation:'contacts.pickup container key'},{value:rolePresent?'PICKUP':null,contact:requestRead?.record?.contacts?.pickup},{controlPositive:'Own persisted request with pickup contact; no invented role field'});
 for(const attr of ['estimatedTolls','borderCostEstimate']){
@@ -311,6 +338,14 @@ for(const field of fields.filter((f:any)=>['AssetStatusEvent','IncidentUpdate','
 {const current=await request(`/carriers/${carrier}/assets/${refs.asset.id}`);if(current.body.data?.value.operatingStatus!=='AVAILABLE')setup.push({action:'Restore audit control availability',result:await request(`/carriers/${carrier}/assets/${refs.asset.id}/events`,a,{schemaVersion:'2.0',expectedVersion:current.body.data.version,next:'AVAILABLE',reason:'Restore positive eligibility control',note:'Synthetic restore',evidence:ev})});}
 // Embedded offer references are validated through the actual offer command.
 const offerRecipe=byAction('offers.create');
+if(process.env.HAC44_CP1C==='1'){
+ const assetNow=await request(`/carriers/${carrier}/assets/${refs.asset.id}`);
+ const event={schemaVersion:'2.0',expectedVersion:assetNow.body.data.version,note:'CP1c parent guard',evidence:ev,next:'IN_SERVICE',reason:'Native parent guard'};
+ dbPair('CP1C nullable asset_status_events.parent_id',['O3AsrRVXhiO8iDlZrkKS-209'],workflow('asset-events.create',event,{requestId:null,carrierId:carrier,parentId:refs.asset.id,id:null}),workflow('asset-events.create',event,{requestId:null,carrierId:carrier,parentId:null,id:null}),false);
+ const opportunity=byAction('opportunities.create');
+ dbPair('CP1C nullable carrier_opportunities.plan_id',['O3AsrRVXhiO8iDlZrkKS-251'],workflow(opportunity.action,opportunity.payload,opportunity.ctx),workflow(opportunity.action,{...opportunity.payload,planId:null},opportunity.ctx),false);
+ dbPair('CP1C nullable v2_carrier_offers.carrier_id',['O3AsrRVXhiO8iDlZrkKS-260'],workflow(offerRecipe.action,offerRecipe.payload,offerRecipe.ctx),workflow(offerRecipe.action,offerRecipe.payload,{...offerRecipe.ctx,carrierId:null}),false);
+}
 for(const [field,relation] of [['coveredAssignmentIds','DK0aJlq7bGL-fGDcFSUt-1'],['coveredServiceIds','cm-v2fix-8']] as const){
  const base=structuredClone(offerRecipe.payload);
  for(const invalid of ['empty','nonexistent'] as const){const bad={...base,[field]:invalid==='empty'?[]:[randomUUID()]};dbPair('RELATION '+relation+' JSON '+invalid,[relation],workflow('offers.create',base,offerRecipe.ctx),workflow('offers.create',bad,offerRecipe.ctx),false);const p=await request(`/carriers/${carrier}/opportunities/${offerRecipe.ctx.parentId}/offers`,a,base),n=await request(`/carriers/${carrier}/opportunities/${offerRecipe.ctx.parentId}/offers`,a,bad);record('RELATION '+relation+' HTTP JSON '+invalid,[relation],p.http!==201?'BLOQUEADO':[400,404].includes(n.http)?'PASS':'DIFERENCIA',{positiveHttp:201,foreignOrAbsentRejected:true},{positiveHttp:p.http,negativeHttp:n.http,error:n.body.error??null},{controlPositive:'Native same-plan own assignment/service JSON references'});}
@@ -400,13 +435,12 @@ const waypoint100=Array.from({length:100},(_,i)=>({...corridorRecipe.payload.way
 dbPair('CARDINALITY waypoints max 100 vs 101',['RouteWaypoint','RouteLeg','RouteCorridor'],workflow('corridors.publish',{...corridorRecipe.payload,waypoints:waypoint100},corridorRecipe.ctx),workflow('corridors.publish',{...corridorRecipe.payload,waypoints:[...waypoint100,waypoint100[0]]},corridorRecipe.ctx),false);
 // A revision of mutable inputs must leave previously persisted route/plan/offer snapshots unchanged.
 const beforeSnapshots:any={};for(const [k,path] of Object.entries({route:'/routes/'+refs.route.id,plan:'/plans/'+refs.plan.id,offer:'/offers/'+refs.offer.id})){beforeSnapshots[k]=await request(path);}
-async function snapshotMutation(name:string,mutate:()=>Promise<any>){
- const paths={route:'/routes/'+refs.route.id,plan:'/plans/'+refs.plan.id,offer:'/offers/'+refs.offer.id};
+async function snapshotMutation(name:string,mutate:()=>Promise<any>,paths:any={route:'/routes/'+refs.route.id,plan:'/plans/'+refs.plan.id,offer:'/offers/'+refs.offer.id}){
  const before:any={};for(const [kind,path] of Object.entries(paths))before[kind]=await request(path);
  const mutation=await mutate();
  for(const [kind,path] of Object.entries(paths)){
   const after=await request(path),unchanged=before[kind].http===200&&after.http===200&&JSON.stringify(before[kind].body.data)===JSON.stringify(after.body.data);
-  record('IMMUTABLE '+kind+' after '+name+' mutation',[kind==='route'?'RoutePlan':kind==='plan'?'TransportPlanCandidate':'CarrierOffer'],mutation.http!==200&&mutation.http!==201||before[kind].http!==200?'BLOQUEADO':unchanged?'PASS':'DIFERENCIA',{successfulSourceMutation:true,snapshotIdVersionAndContentUnchanged:true},{mutationHttp:mutation.http,mutationError:mutation.body.error??null,before:before[kind],after,unchanged},{controlPositive:'Native source mutation accepted and own prior snapshot read'});
+  record('IMMUTABLE '+kind+' after '+name+' mutation',[kind==='route'?'RoutePlan':kind==='plan'?'TransportPlanCandidate':'CarrierOffer'],mutation.http!==200&&mutation.http!==201||mutation.sourceMutationVerified===false||before[kind].http!==200?'BLOQUEADO':unchanged?'PASS':'DIFERENCIA',{successfulSourceMutation:true,snapshotIdVersionAndContentUnchanged:true},{mutationHttp:mutation.http,mutationError:mutation.body.error??null,sourceMutationProof:mutation.sourceMutationProof??null,before:before[kind],after,unchanged},{controlPositive:'Native source mutation accepted and own prior snapshot read'});
  }
 }
 // A partner snapshot must reference the partner through an actual native asset.
@@ -434,8 +468,51 @@ await snapshotMutation('source',async()=>{const path=`/carriers/${carrier}/asset
  const draft=await request('/freight/requests',a,captured.requestPayload),positive=draft.http===201?await request('/freight/requests/'+draft.body.data.id+'/revisions',a,{expectedDraftVersion:draft.body.data.draftVersion,value}):draft;
  const published=await request('/freight/requests/'+refs.request.id),negative=await request('/freight/requests/'+refs.request.id+'/revisions',a,{expectedDraftVersion:published.body.data.draftVersion,value});
  record('LOAD_REVISION_CONTROL native DRAFT vs published boundary',['FreightRequest','CargoSpecification'],positive.http!==200?'BLOQUEADO':negative.http===409&&negative.body.error?.code==='INVALID_TRANSITION'?'PASS':'DIFERENCIA',{positiveHttp:200,publishedRevisionRejected:true},{positiveHttp:positive.http,negativeHttp:negative.http,totals,error:negative.body.error??null},{controlPositive:'Native new DRAFT accepts coherent revised cargo; published source rejects REVISE per lifecycle, so no snapshot mutation is claimed',contractCitation:'supabase-v2/supabase/migrations/20261004025720_hac40_full_request_contract.sql:1046'});
+ if(process.env.HAC44_CP1C==='1'){
+  const path='/freight/requests/'+draft.body.data?.id;
+  const own=positive.http===200?await request(path):positive,foreign=positive.http===200?await request(path,b):positive;
+  const stale=positive.http===200?await request(path+'/revisions',a,{expectedDraftVersion:draft.body.data.draftVersion,value}):positive;
+  const cargo=own.body.data?.cargoSpecification;
+  const preserved=own.http===200&&own.body.data.status==='DRAFT'&&cargo?.totalWeightKg===totals.weightKg&&cargo?.totalVolumeM3===totals.volumeM3&&sameValue(cargo?.units.map((u:any)=>u.quantity),units.map((u:any)=>u.quantity));
+  record('METHOD FreightRequest.revise isolated',['FreightRequest'],positive.http!==200?'BLOQUEADO':preserved&&negative.http===409&&negative.body.error?.code==='INVALID_TRANSITION'&&stale.http===409&&[403,404].includes(foreign.http)?'PASS':'DIFERENCIA',
+   {coherentDraftRevisionPersisted:true,publishedAndStaleRejected:true,foreignReadDenied:true},
+   {positiveHttp:positive.http,getHttp:own.http,positiveDraftVersion:own.body.data?.draftVersion,persistedTotals:{weightKg:cargo?.totalWeightKg,volumeM3:cargo?.totalVolumeM3},negativeHttp:negative.http,staleHttp:stale.http,foreignHttp:foreign.http},
+   {controlPositive:'Native DRAFT REVISE and exact own GET of changed unit quantities and totals; same coherent payload rejected after publication and at stale version'});
+ }
 }
-await snapshotMutation('load',async()=>{const path='/freight/requests/'+refs.request.id,current=await request(path);const {cargoUnitTotalsV2}=await import(pathToFileURL(root+'/cargomesh/src/shared/schemas/v2/freight-request.ts').href);const units=captured.requestPayload.cargoSpecification.units.map((u:any)=>({...u,quantity:u.quantity+1}));const totals=cargoUnitTotalsV2(units);return request(path+'/revisions',a,{expectedDraftVersion:current.body.data.draftVersion,value:{...captured.requestPayload,cargoSpecification:{...captured.requestPayload.cargoSpecification,units,totalWeightKg:totals.weightKg,totalVolumeM3:totals.volumeM3}}});});
+// Native routing/planning/offers accept a complete DRAFT. Selection is the
+// operation that requires PENDING. Build snapshots before SUBMIT so the load
+// remains revisable through the product command; never reset a published state.
+{
+ const loadDraft=await request('/freight/requests',a,captured.requestPayload);
+ const requestId=loadDraft.body.data?.id;
+ const loadRoute=loadDraft.http===201?await request(`/freight/requests/${requestId}/routes`,a,routeRecipe.payload):loadDraft;
+ const loadPlan=loadRoute.http===201?await request(`/freight/requests/${requestId}/plans`,a,{...planRecipe.payload,routeId:loadRoute.body.data.id}):loadRoute;
+ const assignments=loadPlan.body.data?.data?.legAssignments?.map((x:any)=>x.id)??[];
+ const loadOpportunity=loadPlan.http===201&&loadPlan.body.data.status==='eligible'?await request(`/freight/requests/${requestId}/opportunities`,a,{...byAction('opportunities.create').payload,planId:loadPlan.body.data.id,assignmentIds:assignments}):loadPlan;
+ const loadOffer=loadOpportunity.http===201?await request(`/carriers/${carrier}/opportunities/${loadOpportunity.body.data.id}/offers`,a,{...byAction('offers.create').payload,planCandidateId:loadPlan.body.data.id,coveredAssignmentIds:assignments}):loadOpportunity;
+ const ready=loadDraft.http===201&&loadDraft.body.data.status==='DRAFT'&&loadRoute.http===201&&loadPlan.http===201&&loadPlan.body.data.status==='eligible'&&loadOpportunity.http===201&&loadOffer.http===201;
+ const paths=ready?{route:'/routes/'+loadRoute.body.data.id,plan:'/plans/'+loadPlan.body.data.id,offer:'/offers/'+loadOffer.body.data.id}:null;
+ const foreign=paths?await Promise.all(Object.values(paths).map(path=>request(path,b))):[];
+ const belongs=ready&&loadRoute.body.data.requestId===requestId&&loadPlan.body.data.requestId===requestId&&loadOffer.body.data.requestId===requestId&&foreign.every(r=>[403,404].includes(r.http));
+ record('LOAD_SNAPSHOT_CONTROL native DRAFT route plan offer',['FreightRequest','RoutePlan','TransportPlanCandidate','CarrierOffer'],!ready?'BLOQUEADO':belongs?'PASS':'DIFERENCIA',
+  {nativeDraft:true,eligiblePlan:true,offerAccepted:true,sameRequest:true,foreignReadsDenied:true},
+  {positiveHttp:loadOffer.http,draftHttp:loadDraft.http,draftStatus:loadDraft.body.data?.status,routeHttp:loadRoute.http,planHttp:loadPlan.http,planStatus:loadPlan.body.data?.status,opportunityHttp:loadOpportunity.http,offerHttp:loadOffer.http,requestId,foreignHttp:foreign.map(r=>r.http),errors:[loadDraft,loadRoute,loadPlan,loadOpportunity,loadOffer].map(r=>r.body.error??null)},
+  {controlPositive:'Native complete DRAFT -> route -> eligible plan -> invitation -> offer; no selection, reservation or manual state change',contractCitation:'supabase-v2/supabase/migrations/20261004154048_hac40_workflow.sql:362;731'});
+ if(belongs){
+  await snapshotMutation('load',async()=>{
+   const path='/freight/requests/'+requestId,current=await request(path);
+   const {cargoUnitTotalsV2}=await import(pathToFileURL(root+'/cargomesh/src/shared/schemas/v2/freight-request.ts').href);
+   const units=captured.requestPayload.cargoSpecification.units.map((u:any)=>({...u,quantity:u.quantity+1})),totals=cargoUnitTotalsV2(units);
+   const value={...captured.requestPayload,cargoSpecification:{...captured.requestPayload.cargoSpecification,units,totalWeightKg:totals.weightKg,totalVolumeM3:totals.volumeM3}};
+   const mutation=await request(path+'/revisions',a,{expectedDraftVersion:current.body.data.draftVersion,value}),after=await request(path),cargo=after.body.data?.cargoSpecification;
+   const sourceMutationVerified=current.http===200&&current.body.data.status==='DRAFT'&&mutation.http===200&&after.http===200&&after.body.data.status==='DRAFT'&&after.body.data.draftVersion>current.body.data.draftVersion&&cargo?.totalWeightKg===totals.weightKg&&cargo?.totalVolumeM3===totals.volumeM3&&sameValue(cargo?.units.map((u:any)=>u.quantity),units.map((u:any)=>u.quantity))&&!sameValue(current.body.data.cargoSpecification,cargo);
+   const proof={requestId,beforeHttp:current.http,afterHttp:after.http,beforeStatus:current.body.data?.status,afterStatus:after.body.data?.status,beforeDraftVersion:current.body.data?.draftVersion,afterDraftVersion:after.body.data?.draftVersion,expectedTotals:totals,persistedTotals:{weightKg:cargo?.totalWeightKg,volumeM3:cargo?.totalVolumeM3},sourceMutationVerified};
+   record('LOAD_SNAPSHOT_NATIVE_REVISION persisted quantities and totals',['FreightRequest','CargoSpecification'],mutation.http!==200?'BLOQUEADO':sourceMutationVerified?'PASS':'DIFERENCIA',{changedSourcePersisted:true},{positiveHttp:mutation.http,...proof},{controlPositive:'Native DRAFT REVISE with product-computed totals and exact own GET; published/stale controls remain separate'});
+   return {...mutation,sourceMutationVerified,sourceMutationProof:proof};
+  },paths);
+ }else for(const kind of ['route','plan','offer'])record('IMMUTABLE '+kind+' after load mutation',[kind==='route'?'RoutePlan':kind==='plan'?'TransportPlanCandidate':'CarrierOffer'],'BLOQUEADO',{nativeRevisableSnapshotControl:true},{reason:'Native DRAFT snapshot prerequisite failed; see LOAD_SNAPSHOT_CONTROL'},{controlPositive:'LOAD_SNAPSHOT_CONTROL native DRAFT route plan offer'});
+}
 const corridorCurrent=await request('/routing/corridors/'+refs.corridor.id);
 const reviseCorridor=await request('/routing/corridors/'+refs.corridor.id+'/revisions',a,{expectedVersion:corridorCurrent.body.data.version,value:{...corridorCurrent.body.data.data,estimatedDistanceKm:corridorCurrent.body.data.data.estimatedDistanceKm+1}});
 for(const [k,path] of Object.entries({route:'/routes/'+refs.route.id,plan:'/plans/'+refs.plan.id,offer:'/offers/'+refs.offer.id})){

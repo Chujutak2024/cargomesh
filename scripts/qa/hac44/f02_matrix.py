@@ -39,14 +39,23 @@ def main():
     methods=[]
     for d in config['methods']:
         status,reason=contract_verdict(d['requiredProbes'],evidence,d)
+        if d.get('partialUntilRuntimeMeasured') and status!='EVIDENCIA_MEDIDA':
+            status='PARCIAL'
+            reason=d['previousMeasurementRejected']+'; '+reason
         methods.append({**d,'estado':status,'motivo':reason+'; '+d['representationLimit'],
+                        'classification':'EVIDENCIA_FALTANTE' if status in ('PARCIAL','BLOQUEADO') else status,
                         'evidence':[r['source'] for r in evidence if r['probe'] in d['requiredProbes']],
                         'productSha':state()['head']})
     save('f02-method-matrix.json',methods);csvwrite('HAC-44_metodos_F02.csv',methods)
+    reconciliation=[]
+    if any(d.get('contractRevision')=='UML08 / #118' for d in config['rows']):
+        from cp1c_reconciliation import reconcile
+        reconciliation=reconcile(config,evidence,methods)
+        csvwrite('RECONCILIACION_9.csv',reconciliation)
     measured=[]
     for d in config['rows']:
         if d['originCategory']!='EVIDENCIA_PENDIENTE':
-            continue  # The nine documentary findings are retained separately, never promoted.
+            continue  # Reconcile the nine separately; keep the 189-row cohort fixed.
         if d['tipo']=='atributo':status,reason=attribute_verdict(d,evidence)
         elif d['tipo']=='relacion':status,reason=contract_verdict(d['requiredProbes'],evidence,d)
         else:continue
@@ -63,11 +72,11 @@ def main():
             reason += '; representation: ' + d['representation'] + '; retest: ' + d['retestCriterion']
         measured.append({**d,'estado':status,'motivo':reason,'evidence':[r['source']+' '+r['probe'] for r in selected],
                          'baseline42':'EVIDENCIA_PENDIENTE (external probes not incorporated)', 'productSha':state()['head']})
-    attrs={d['id']:d for d in measured if d['tipo']=='atributo'}
+    attrs={d['id']:d for d in measured+reconciliation if d['tipo']=='atributo'}
     relations=[d for d in measured if d['tipo']=='relacion']
     full_attrs=json.loads((LOGS/'attribute-matrix.json').read_text(encoding='utf-8')) if (LOGS/'attribute-matrix.json').exists() else []
     full_relations=json.loads((LOGS/'relationship-matrix.json').read_text(encoding='utf-8')) if (LOGS/'relationship-matrix.json').exists() else []
-    current_relation={d['id'].split()[0]:d for d in relations}
+    current_relation={d['id'].split()[0]:d for d in relations+[r for r in reconciliation if r['tipo']=='relacion']}
     def current_state(row):
         return 'EVIDENCIA_MEDIDA' if row['estado']=='COMPLETO' else row['estado'] if row['estado'] in ('EVIDENCIA_MEDIDA','BLOQUEADO') else 'PARCIAL'
     for d in config['rows']:
@@ -82,10 +91,16 @@ def main():
         reason += '; '+d['id']+' unresolved contracts: '+('; '.join(unresolved) or 'Unresolved attributes/associations in the full current model matrix')
         measured.append({**d,'estado':status,'motivo':reason,'evidence':['logs/f02-method-matrix.json'],
                          'baseline42':'EVIDENCIA_PENDIENTE (external probes not incorporated)','productSha':state()['head']})
+    for row in measured:
+        row['classification']='EVIDENCIA_FALTANTE' if row['estado'] in ('PARCIAL','BLOQUEADO') else row['estado']
+        if row['classification']=='EVIDENCIA_FALTANTE':row['owner']='HAC-44 / Jean Paul (measurement)'
     save('f02-row-matrix.json',measured)
     # Uniform columns preserve complete per-row evidence without storing credentials.
-    columns=('tipo','id','estado','motivo','contractMode','representation','owner','requiredProbes','evidence','baseline29','baseline42','retestCriterion','productSha')
+    columns=('tipo','id','estado','motivo','classification','contractMode','representation','owner','requiredProbes','evidence','baseline29','baseline42','retestCriterion','productSha')
     csvwrite('COBERTURA_189.csv',[{k:d.get(k,'') for k in columns} for d in measured])
+    if reconciliation:
+        full_columns=columns+('originCategory','historicalUml07Status','currentContractRef')
+        csvwrite('COBERTURA_198.csv',[{k:d.get(k,'') for k in full_columns} for d in measured+reconciliation])
     counts={kind:dict(collections.Counter(d['estado'] for d in measured if d['tipo']==kind)) for kind in ('atributo','relacion','clase')}
     counts['metodo']=dict(collections.Counter(d['estado'] for d in methods))
     save('f02-counts.json',counts)
@@ -97,7 +112,7 @@ def main():
     for kind,filename,output,key in matrix_specs:
         path=LOGS/filename
         if not path.exists():continue
-        rows=json.loads(path.read_text(encoding='utf-8'));index={d['id']:d for d in measured if d['tipo']==kind}
+        rows=json.loads(path.read_text(encoding='utf-8'));index={d['id']:d for d in measured+reconciliation if d['tipo']==kind}
         for row in rows:
             d=index.get(key(row))
             row.setdefault('estado_pre_f02',row['estado'])

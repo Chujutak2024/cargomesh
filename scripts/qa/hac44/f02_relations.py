@@ -7,6 +7,18 @@ from local import sql
 from catalog import QUERY
 from fk_inventory import validate_inventory
 from fk_strict import build_case, probe_sql, merge_results, lit, table_ident
+from f02_rules import paired
+
+NULLABLE_NATIVE_GUARDS={
+ 'O3AsrRVXhiO8iDlZrkKS-209':'CP1C nullable asset_status_events.parent_id',
+ 'O3AsrRVXhiO8iDlZrkKS-251':'CP1C nullable carrier_opportunities.plan_id',
+ 'O3AsrRVXhiO8iDlZrkKS-260':'CP1C nullable v2_carrier_offers.carrier_id',
+}
+
+def mandatory_nullable_obligation(ends, nullable, guard):
+    if '1' not in ends or not any(not n['notNull'] for n in nullable):return None
+    if guard and paired(guard)=='PASS' and guard.get('observed',{}).get('negative',{}).get('accepted') is False:return None
+    return 'Mandatory UML end has nullable physical columns: '+str(nullable)+'; isolated native parent guard is missing or did not pass'
 
 # Explicit F-02 associations, never a wider replacement of the baseline gate.
 PHYSICAL={
@@ -50,13 +62,17 @@ def main():
         exact=[c for c in cases if c['table']==child and c['constraint'] in {r['constraint'] for r in refs}]
         obligations=[];counts=[];nullable=[]
         native_many=next((r for r in native if r['probe']=='RELATION '+key+' native 0 and 2 belonging' and r['status']=='PASS'),None)
+        native_parent=next((r for r in native if r['probe']==NULLABLE_NATIVE_GUARDS.get(key)),None)
         for fk in refs:
             schema,table=child.split('.')
             nulls=[c for c in catalog['columns'] if c['table_schema']==schema and c['table_name']==table and c['column_name'] in fk['childColumns']]
             nullable.extend({'column':c['column_name'],'notNull':c['is_nullable']=='NO'} for c in nulls)
             if len(fk['childColumns'])==1 and fk['referenceColumns']==['id']:
                 col=fk['childColumns'][0]
-                query=f"begin;set local role authenticated;{claims}select jsonb_build_object('role',current_user,'actualSession',current_setting('request.jwt.claims')::jsonb ? 'session_id','parents',coalesce(jsonb_agg(x),'[]'::jsonb)) from (select p.id,count(c.{col}) children from {parent} p left join {child} c on c.{col}=p.id group by p.id) x;set constraints all immediate;rollback;"
+                # Counts are inventory, not an RLS or native-command proof. A
+                # transaction-local read helper replaces the denied direct read;
+                # the invoker and deferred FK cases still use real authenticated.
+                query=f"begin;create function pg_temp.association_counts() returns jsonb language sql security definer set search_path='' as $$select coalesce(jsonb_agg(x),'[]'::jsonb) from (select p.id,count(c.{col}) children from {parent} p left join {child} c on c.{col}=p.id group by p.id) x;$$;grant execute on function pg_temp.association_counts() to authenticated;set local role authenticated;{claims}select jsonb_build_object('role',current_user,'actualSession',current_setting('request.jwt.claims')::jsonb ? 'session_id','parents',pg_temp.association_counts(),'countReadMode','PHYSICAL_INVENTORY_ONLY_NOT_RLS');set constraints all immediate;rollback;"
                 result=sql('f02-association-count-'+key,query)
                 if result.returncode:
                     counts.append({'constraint':fk['constraint'],'parents':[],'readStatus':'BLOQUEADO','reason':'Authenticated direct count not exposed by native table permissions; native HTTP child collection is used where measured','exit':result.returncode})
@@ -65,7 +81,8 @@ def main():
                     counts.append({'constraint':fk['constraint'],**observed})
         if not exact or any(c['status']!='PASS' for c in exact):obligations.append('Exact authenticated FK pair unresolved: '+', '.join(c['constraint']+'='+c['status']+' '+c.get('reason','') for c in exact or [{'constraint':'no matching physical FK','status':'BLOQUEADO'}]))
         ends=d['umlEnds']['labels']
-        if '1' in ends and any(not n['notNull'] for n in nullable):obligations.append('Mandatory UML end has nullable physical columns: '+str(nullable)+'; native conditional/historical guard needs its isolated command measurement')
+        nullable_obligation=mandatory_nullable_obligation(ends,nullable,native_parent)
+        if nullable_obligation:obligations.append(nullable_obligation)
         if '0..*' in ends:
             population=[p['children'] for c in counts for p in c['parents']]
             if 0 not in population and not native_many:obligations.append('No visible valid zero-child parent in this fresh native cohort')
@@ -74,7 +91,7 @@ def main():
         if not native_many:obligations.append('Same-tenant/foreign-tenant native write pair for this exact association remains unexecuted; Auth and physical FK alone do not certify belonging')
         evidence.append({'sha':state()['head'],'probe':'RELATION '+key+' both UML ends','rowIds':[d['id']],
           'status':'PASS' if not obligations else 'PARCIAL' if any(c['status']=='PASS' for c in exact) else 'BLOQUEADO',
-          'observed':{'umlEnds':d['umlEnds'],'counts':counts,'notNull':nullable,'exactFkPairs':exact,'nativeZeroMany':native_many,'unresolved':obligations},
+          'observed':{'umlEnds':d['umlEnds'],'counts':counts,'notNull':nullable,'exactFkPairs':exact,'nativeZeroMany':native_many,'nativeParentGuard':native_parent,'unresolved':obligations},
           'controlPositive':'Fresh native child/parent fixtures; each physical negative is paired at authenticated ALL IMMEDIATE',
           'reason':'; '.join(obligations),'umlCitation':d['umlCitation'],'drawingCitation':d['drawingCitation']})
         write(OUT/'PROBES/CP1B_RELATIONS.json',json.dumps({'sha':state()['head'],'evidence':evidence,'complete':False},ensure_ascii=False,indent=2)+'\n')

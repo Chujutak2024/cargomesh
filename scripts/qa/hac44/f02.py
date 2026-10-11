@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 from common import ROOT, OUT, run, save, write
 from local import BANK, CLI, LAYOUT, HEAD
-from f02_rules import paired
+from f02_rules import paired, apply_directed_retests
 
 
 def main():
@@ -20,20 +20,26 @@ def main():
            'HAC44_CLI_JSON':json.dumps(CLI),'HAC44_API_URL':LAYOUT.api_url,'HAC44_HTTP_PORT':str(LAYOUT.app_port),
            'HAC44_BANK_DB':BANK.db,'HAC44_SOURCE_SHA':HEAD}
     cases = []
+    measurements = []
     for recipe, artifact in [('f02_focal.mts','CP2_FOCAL_RESULTADOS.json'),('f02_probes.mts','CP2_RESULTADOS.json'),('f02_native.mts','CP1B_NATIVE.json'),('f02_audit.mts','CP1B_AUDIT.json')]:
         result = run('f02-' + recipe, ['node', ROOT/'cargomesh/node_modules/tsx/dist/cli.mjs',
                      '--tsconfig',ROOT/'cargomesh/tsconfig.json',Path(__file__).with_name(recipe)],
                      cwd=ROOT/'cargomesh',timeout=1200,env_extra=env)
         path = OUT/'PROBES'/artifact
         data = json.loads(path.read_text(encoding='utf-8')) if path.exists() else {'evidence':[],'complete':False}
-        for row in data['evidence']:
-            raw = row.get('status')
-            checked = paired(row)
-            cases.append({'case':row['probe'],'status':'BLOQUEADO' if checked=='BLOQUEADO' else raw if raw in ('PASS','BLOQUEADO') else
-                          'FAIL' if raw == 'DIFERENCIA' else 'BLOQUEADO', 'source':'PROBES/'+artifact,
-                          'rawStatus':raw,'controlPositive':row.get('controlPositive')})
+        fresh=[{**row,'source':'PROBES/'+artifact+'#'+str(i+1)} for i,row in enumerate(data['evidence'])]
+        if artifact=='CP1B_AUDIT.json':
+            measurements=apply_directed_retests(measurements,fresh)
+        else:
+            measurements.extend(fresh)
         cases.append({'case':recipe,'status':'PASS' if result.returncode==0 and data.get('complete') else 'BLOQUEADO',
                       'exit':result.returncode,'reason':None if data.get('complete') else 'Campaign incomplete; inspect sanitized command log'})
+    for row in measurements:
+        raw = row.get('status')
+        checked = paired(row)
+        cases.append({'case':row['probe'],'status':'BLOQUEADO' if checked=='BLOQUEADO' else raw if raw in ('PASS','BLOQUEADO') else
+                      'FAIL' if raw == 'DIFERENCIA' else 'BLOQUEADO', 'source':row['source'],
+                      'rawStatus':raw,'controlPositive':row.get('controlPositive')})
     status = 'FAIL' if any(c['status']=='FAIL' for c in cases) else 'BLOQUEADO' if any(c['status']=='BLOQUEADO' for c in cases) else 'PASS'
     relation_run=run('f02-relations',[sys.executable,Path(__file__).with_name('f02_relations.py')])
     cases.append({'case':'Fresh relationship audit','status':'PASS' if relation_run.returncode==0 else 'BLOQUEADO','exit':relation_run.returncode})

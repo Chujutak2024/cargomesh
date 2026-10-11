@@ -5,6 +5,7 @@ import {createRequire} from 'node:module';
 import {spawnSync} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
 import {readCliStatus} from './pkce_smoke.mjs';
+import {syntheticFixtureSubjectAllowed} from './fixture_subjects.mjs';
 
 export function localConfig() {
   const out = process.env.HAC44_EVIDENCE ?? process.env.HAC44_OUT;
@@ -29,7 +30,7 @@ export function localConfig() {
 }
 
 export async function fixtureSession(id) {
-  assert.match(id, /^d4410000-0000-4000-8000-00000000000[123]$/);
+  assert.ok(syntheticFixtureSubjectAllowed(id),'Only the exact approved synthetic scenario actors');
   const {cfg, sql} = localConfig();
   const email = JSON.parse(sql("select to_jsonb(email) from auth.users where id='" + id + "'"));
   assert.ok(email?.endsWith('@cargomesh.test'), 'Only synthetic local users');

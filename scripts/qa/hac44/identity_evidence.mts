@@ -37,7 +37,9 @@ async function login(id:string,email:string){const c=createClient(cfg.API_URL,cf
 async function roundtrip(kind:string,token:string,path:string,input:any,written:any){const rows=await call(kind+' read',token,path);const read=Array.isArray(rows)?rows.find((r:any)=>r.id===written.id):rows;assert.deepEqual(read,written);roundtrips.push({kind,id:written.id,input,written,read,status:'PASS',authMechanism:'issuer-verified actual Auth session; PKCE for links'});output('identity-roundtrips.json',roundtrips);}
 let completed=false,clientId:string|undefined;
 try{
-sql(`update public.organization_members set role='OWNER' where id='d4420000-0000-4000-8000-000000000001';`);
+// The approved native scenario already seeds this actor as OWNER. Verify the
+// prerequisite instead of manufacturing authority by changing its stored role.
+assert.equal(sql("select role from public.organization_members where id='d4420000-0000-4000-8000-000000000001';").trim(),'OWNER','Native scenario owner prerequisite');
 const emails=JSON.parse(sql("select jsonb_agg(jsonb_build_object('id',id,'email',email) order by id) from auth.users;"));
 const a=await login(emails[0].id,emails[0].email),b=await login(emails[1].id,emails[1].email);
 const history=await call('historical links read',a.token,'/identity/mcp/links');

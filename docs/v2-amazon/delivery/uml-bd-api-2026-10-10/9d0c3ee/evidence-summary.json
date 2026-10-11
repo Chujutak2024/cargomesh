@@ -1,0 +1,76 @@
+{
+  "productSha": "9d0c3ee32179f00242a6961b90116293a1bc6d0e",
+  "preDeliveryHead": "68f8b797de0199bc5af9b753063aca648cd706b5",
+  "branch": "codex/v2-qa-f02-coverage",
+  "originMainAfterFetch": "9d0c3ee32179f00242a6961b90116293a1bc6d0e",
+  "mainAdvanced": false,
+  "newSynchronizationMerge": false,
+  "harnessHashesMatched": 96,
+  "matrixRows": {
+    "class-matrix.csv": 57,
+    "attribute-matrix.csv": 397,
+    "relationship-matrix.csv": 93,
+    "endpoint-matrix.csv": 225
+  },
+  "coverage": {
+    "attribute": {
+      "MEASURED_EVIDENCE": 90,
+      "OUTDATED_DOCUMENTATION": 7
+    },
+    "relationship": {
+      "BLOCKED": 11,
+      "PARTIAL": 21,
+      "MEASURED_EVIDENCE": 5
+    },
+    "class": {
+      "PARTIAL": 55
+    }
+  },
+  "methods": {
+    "BLOCKED": 125,
+    "MEASURED_EVIDENCE": 10,
+    "PARTIAL": 9
+  },
+  "pendingCount": 229,
+  "pendingByOwner": {
+    "HAC-40 / Cristhian": 7,
+    "HAC-44 / Jean Paul (measurement)": 87,
+    "HAC-44 / Jean Paul (mapping/fixture)": 134,
+    "HAC-41 / Axel": 1
+  },
+  "pendingByType": {
+    "attribute": 7,
+    "relationship": 32,
+    "class": 56,
+    "method": 134
+  },
+  "functionalDefects": 0,
+  "scope": "Harness and reviewed evidence only; F-02 remains partial",
+  "sourceArtifactsSha256": {
+    "ENTREGA/INTEGRAL_RESULT.json": "c3bccec724553be64d271ce603fcb53a15ee659e76057e9c97f79a2645cc6197",
+    "ENTREGA/MANIFEST_SHA256.json": "2221a0528fc8ac68a7892f1c67846e6858daed6d68a09ac3b180e4a6b73699e8",
+    "ENTREGA/COBERTURA_189.csv": "57caab290aa72431e8522dc3b9ce73a63186dba55607bfbdeaddc94d3e03f6a6",
+    "ENTREGA/COBERTURA_198.csv": "bccd8f08dda1d79958605532eebc93adbcb552c29ba186bccd8f695cf946486b",
+    "ENTREGA/RECONCILIACION_9.csv": "f978bc6bee4bdae481d7a24d7d666c9df56e95428e591417e700cff22be00645",
+    "ENTREGA/MAPPING_144.csv": "e778452cd14288b49df1cc066e5826ddf7bb1b09da497e8b34480879c08e1205",
+    "ENTREGA/MAPPING_RUNTIME_CONSUMERS_144.csv": "67ad568ac4260ffa119008a827b42039331ef97cbac5778889322ef2e10b6c9a",
+    "ENTREGA/HAC-44_metodos_F02.csv": "b05e3d24e87045e2755f09f5a4a12c488610b8dfe780f88ab2dbe0fb7751b230",
+    "ENTREGA/PENDIENTES_CLASIFICADOS.csv": "3fd6adaee85edfdded99f2fa2f8d03d8c3650295de50b166205a51559a098da8",
+    "RUN_6/HAC-44_matriz_clases.csv": "4dce072f421837cf47d81120f03456cf2e4ab3283fbf32709b2418d33bc69d5e",
+    "RUN_6/HAC-44_matriz_atributos.csv": "efca86cb89c912bd0708756e9c7be3f2ea968b43eea64a17c89b1b07bd8ce299",
+    "RUN_6/HAC-44_matriz_relaciones.csv": "6c55d30304b6516095bd0457ce407cccee36e05db8c5e8d42777c0970cfcf8ad",
+    "RUN_6/HAC-44_matriz_endpoints.csv": "3a97e06040b78e44da40be4c19551c11c6a41acdf2dc8ac7c6917a46f9d91503",
+    "ENTREGA/EQUIVALENCIAS_SCENARIO_7.csv": "e65eef75a5ac6e8f23e72f533d42e105c2b52496cea1c92a0e2f59a01c3b4934",
+    "ENTREGA/REPETIBILIDAD_342.csv": "14222ee2c570ce6c40dc6a03e0a516d307906706432ef899c251ab6ffc97d9ec",
+    "ENTREGA/UML08_Y_PADRES_NULL.csv": "a75e9b06e8fef0b5d0b50a15f0f42b3eb7dbb3a18674be46ad392427e354d665",
+    "ENTREGA/DEFECTOS.csv": "04c14db810cf25eaf33d81a137f7958473e61db62106083552b34e0e1932bfcb",
+    "ENTREGA/CICLOS_Y_CLEANUP.json": "ae9477207d04840a7d709a714c7840749bce3225cb19703d4234d4bf7038d288",
+    "ENTREGA/SUITE_22.json": "4d24f83cfb243169d3e253f91c9e00674a6ebb290323b927d75b7f94befd8331",
+    "RUN_6/logs/suite22-original.log": "ee2376679ad3e32e6e6c8f2a9376b9f041e898607e6ba94a5940a9a707344031",
+    "RUN_6/logs/suite22-reinforced.log": "bd0d2eae68d951c9a0741d2237d961751d0684d0eaa6e7c9fdb50d36532bf734"
+  },
+  "publication": "English compact projections of CP-1c RUN_6 regenerated matrices, not a new database execution; full immutable evidence retained externally",
+  "stagedHarnessHashesMatched": 96,
+  "logicalCp1cChangedPaths": 18,
+  "measuredLineEndingOnlyPaths": 69
+}

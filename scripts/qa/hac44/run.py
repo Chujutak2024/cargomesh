@@ -30,6 +30,7 @@ ARTIFACTS = {
     ("authentication.py",): ["authentication-result.json"],
     ("identity.py",): ["identity-result.json", "identity-cleanup.json"],
     ("f02.py",): ["f02-results.json"],
+    ("cp1c_suite22.py",): ["cp1c-suite22.json"],
 }
 CONTRACT_CASES = {
     "contract-required-field-result.json", "contract-route-cardinality-result.json",
@@ -192,6 +193,8 @@ class Runner:
             result = self.child(name, *args, blocked=blocked)
             if result["status"] != "PASS":
                 blocked = "Setup prerequisite did not pass: " + name
+            if name=='runtime.py' and os.environ.get('HAC44_CP1C')=='1':
+                self.child('cp1c_suite22.py',blocked=blocked)
         # Independent authentication contract suite; its FAIL remains in the verdict.
         # It reconstructs the owned empty bank before the dataset cycles.
         self.child("authentication.py", blocked=blocked)

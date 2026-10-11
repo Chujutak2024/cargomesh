@@ -68,13 +68,13 @@ function get(obj:any,p:string){let at=obj;for(const token of p.replace(/\[\]/g,'
 function edit(obj:any,p:string,operation:'NULL'|'OMIT',fill:any=undefined){const v=structuredClone(obj),tokens=p.replace(/\[\]/g,'.0').split('.');let at=v;for(const token of tokens.slice(0,-1)){if(at[token]===undefined)at[token]={};at=at[token];}const key=tokens.at(-1)!;if(fill!==undefined)at[key]=fill;else if(operation==='NULL')at[key]=null;else delete at[key];return v;}
 const helpers=`
 create function pg_temp.cp2_attempt(q text) returns jsonb language plpgsql security invoker as $$
-declare val jsonb;accepted boolean:=false;s text;m text;r text;u uuid;
+declare val jsonb;accepted boolean:=false;s text;m text;cn text;r text;u uuid;
 begin r:=current_user;u:=auth.uid();
  begin execute q into val;set constraints all immediate;accepted:=true;
  raise exception using errcode='P0001',message='CP2_INTERNAL_ROLLBACK';
- exception when others then get stacked diagnostics s=returned_sqlstate,m=message_text;
+ exception when others then get stacked diagnostics s=returned_sqlstate,m=message_text,cn=constraint_name;
  if not(s='P0001' and m='CP2_INTERNAL_ROLLBACK') then accepted:=false;end if;end;
- return jsonb_build_object('accepted',accepted,'sqlstate',case when accepted then null else s end,'error',case when accepted then null else m end,'value',val,'role',r,'subject',u,'actualSession',current_setting('request.jwt.claims')::jsonb ? 'session_id');end;$$;
+ return jsonb_build_object('accepted',accepted,'sqlstate',case when accepted then null else s end,'error',case when accepted then null else m end,'constraint',case when accepted then null else cn end,'value',val,'role',r,'subject',u,'actualSession',current_setting('request.jwt.claims')::jsonb ? 'session_id');end;$$;
 grant execute on function pg_temp.cp2_attempt(text) to authenticated;`;
 function dbPair(name:string,rowIds:string[],positive:string,negative:string,expectAccepted:boolean){
   const before=counts();
@@ -132,13 +132,40 @@ if(newRequest.http===201){
    const headers=plan.data.legAssignments.map((r:any)=>r.id);
    const opportunity=await nativeCreate('opportunity','/freight/requests/'+nr+'/opportunities',{...byAction('opportunities.create').payload,planId:plan.id,assignmentIds:headers});
    const offers:any[]=[];for(const assignmentId of headers){offers.push(await nativeCreate('offer','/carriers/'+carrier+'/opportunities/'+opportunity.id+'/offers',{...byAction('offers.create').payload,planCandidateId:plan.id,coveredAssignmentIds:[assignmentId]}));}
+   const beforeRankings=await request('/freight/requests/'+nr+'/ranking');
    const ranked=await nativeCreate('ranking','/freight/requests/'+nr+'/ranking',byAction('ranking.create').payload);
    const bundle=ranked.data.options.find((r:any)=>r.planId===plan.id);
    record('MULTIPLICITY RankedOption many offers',['RankedOption','CarrierOffer','O3AsrRVXhiO8iDlZrkKS-263 CarrierOffer → RankedOption '],bundle?.offerIds.length===2?'PASS':'DIFERENCIA',{offerIds:2},ranked,{controlPositive:'Two separately attributable native offers covering two disjoint leg assignments'});
    const selected=await nativeCreate('decision','/freight/requests/'+nr+'/decisions',{...byAction('decisions.create').payload,planId:plan.id,selectedOfferIds:offers.map(x=>x.id),consideredOfferIds:offers.map(x=>x.id)});
+   const beforeBookings=await request('/bookings');const zeroDecisionBookings=beforeBookings.body.data?.filter((x:any)=>x.data.decisionId===selected.id).length;
    const bookings:any[]=[];for(const offer of offers){bookings.push(await nativeCreate('booking','/bookings',{...byAction('bookings.create').payload,decisionId:selected.id,offerId:offer.id}));}
    const ownBookings=await request('/bookings');const forDecision=ownBookings.body.data.filter((r:any)=>r.data.decisionId===selected.id);
    record('MULTIPLICITY SelectionDecision many bookings',['SelectionDecision','Booking','TTPNMglXCn0O7Q35afVn-1 SelectionDecision → Booking '],ownBookings.http===200&&forDecision.length===2&&bookings.every(r=>r.data.decisionId===selected.id)?'PASS':'DIFERENCIA',{bookings:2,oneDecision:true},{get:ownBookings.http,decisionId:selected.id,bookings:forDecision},{controlPositive:'First booking authorized and readable; second independent booking for other selected offer'});
+   if(process.env.HAC44_CP1C==='1'){
+    const selectionPayload={...byAction('decisions.create').payload,planId:plan.id,selectedOfferIds:offers.map(x=>x.id),consideredOfferIds:offers.map(x=>x.id)};
+    const firstBooking={...byAction('bookings.create').payload,offerId:offers[0].id},secondBooking={...firstBooking,offerId:offers[1].id};
+    const command=(action:string,v:string,context:any)=>`public.command_v2_workflow('${ORGA}','${MEMA}','${action}',${jsonSql(context)},gen_random_uuid(),${v})->'record'`;
+    const pairedHelper=`create function pg_temp.cp1c_bookings(duplicate boolean) returns jsonb language plpgsql security invoker as $$declare d jsonb;b1 jsonb;b2 jsonb;begin
+      select ${command('decisions.create',jsonSql(selectionPayload),ctx)} into d;
+      select ${command('bookings.create',jsonSql(firstBooking)+"||jsonb_build_object('decisionId',d->>'id')",{})} into b1;
+      select ${command('bookings.create',`(case when duplicate then ${jsonSql(firstBooking)} else ${jsonSql(secondBooking)} end)||jsonb_build_object('decisionId',d->>'id')`,{})} into b2;
+      return jsonb_build_object('decisionId',d->>'id','bookings',jsonb_build_array(b1,b2));end;$$;grant execute on function pg_temp.cp1c_bookings(boolean) to authenticated;`;
+    const cb=counts();const pair=JSON.parse(sql(`begin;${helpers}${pairedHelper}set local role authenticated;${claim(a)}select jsonb_build_object('positive',pg_temp.cp2_attempt('select pg_temp.cp1c_bookings(false)'),'negative',pg_temp.cp2_attempt('select pg_temp.cp1c_bookings(true)'));set constraints all immediate;rollback;`));const ca=counts();assert.deepEqual(cb,ca);
+    const foreign=await request('/bookings',b);const noForeign=foreign.http===200&&!foreign.body.data.some((x:any)=>x.data.decisionId===selected.id);
+    record('CP1C UML08 relation 83 both ends',['TTPNMglXCn0O7Q35afVn-1'],!pair.positive.accepted?'BLOQUEADO':pair.positive.value?.bookings.length===2&&!pair.negative.accepted&&pair.negative.sqlstate==='23505'&&pair.negative.constraint==='one_booking_per_offer_decision'&&zeroDecisionBookings===0&&forDecision.length===2&&noForeign?'PASS':'DIFERENCIA',
+      {twoBookingsOneDecision:true,duplicateConstraint:'one_booking_per_offer_decision'},pair,
+      {countsBefore:cb,countsAfter:ca,rollbackDelta:0,controlPositive:'Native fresh decision with two selected offers creates two native bookings; exact duplicate rejected at authenticated boundary',zeroBookingsBefore:zeroDecisionBookings,httpGet:forDecision,foreignReadDenied:noForeign});
+    const overlapping=await nativeCreate('overlap offer','/carriers/'+carrier+'/opportunities/'+opportunity.id+'/offers',{...byAction('offers.create').payload,planCandidateId:plan.id,coveredAssignmentIds:[headers[0]]});
+    const reranked=await nativeCreate('overlap ranking','/freight/requests/'+nr+'/ranking',byAction('ranking.create').payload);
+    const getRank=await request('/freight/requests/'+nr+'/ranking');
+    const lookup=new Map([...offers,overlapping].map(x=>[x.id,x.data.coveredAssignmentIds]));
+    const completeCover=(option:any)=>{const ids=option.offerIds,covered=ids.flatMap((id:string)=>lookup.get(id)??[]);return ids.length>0&&new Set(ids).size===ids.length&&ids.includes(option.offerId)&&covered.length===headers.length&&new Set(covered).size===headers.length&&headers.every((id:string)=>covered.includes(id));};
+    const variants=reranked.data.options.filter((x:any)=>x.planId===plan.id),readRank=getRank.body.data?.find((x:any)=>x.id===reranked.id);
+    record('CP1C UML08 relation 40 both ends',['O3AsrRVXhiO8iDlZrkKS-263'],!bundle?'BLOQUEADO':beforeRankings.http===200&&beforeRankings.body.data.length===0&&bundle.offerIds.length===2&&completeCover(bundle)&&variants.length>=2&&variants.every(completeCover)&&getRank.http===200&&readRank?.data.options.filter((x:any)=>x.planId===plan.id).every(completeCover)?'PASS':'DIFERENCIA',
+      {completeDisjointCover:true,representativeOfferAndBundleExposed:true},
+      {positiveHttp:201,positiveOption:bundle,zeroRankingBefore:beforeRankings.body.data.length,negativeOverlapInput:overlapping.data.coveredAssignmentIds,negativeResult:variants,getHttp:getRank.http,get:readRank,physicalRepresentative:'ranked_options.offer_id',httpRepresentative:'data.options[].offerId',bundle:'data.options[].offerIds'},
+      {controlPositive:'Two disjoint persisted offers cover two assignments; competing overlapping offer never produces a duplicated assignment in ranked bundles',contractRevision:'UML08 relation40 1..* attributable offers per ranking option'});
+   }
   }
  }
 }

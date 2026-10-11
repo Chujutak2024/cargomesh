@@ -1,5 +1,6 @@
 """Record exact searches, UML ends and scenario representation without verdict inflation."""
 import json
+import os
 import re
 from pathlib import Path
 from common import ROOT, OUT, run, write, state
@@ -70,6 +71,10 @@ def prepare(config):
             if not d['requiredProbes']:d['requiredProbes']=['METHOD '+d['id']+' isolated']
             d['blockedCause']='QA HAC-44: semantic mapping and isolated '+d['metodo_uml']+' input/frontier remain unexecuted; domain declaration candidates '+(', '.join(sources) or 'absent in the originally proposed paths')+' are not proof of this signature'
             d['representationLimit']='Exact per-signature mapping/fixture required; source proximity is not implementation absence'
+    if os.environ.get('HAC44_CP1C')=='1':
+        from cp1c_sources import prepare as revise
+        from cp1c_mapping import mapping
+        config=mapping(revise(config))
     return config
 
 def main():
@@ -95,6 +100,14 @@ def main():
           'searchScope':'Manifest root schema; loader executes SQL, not a RouteSimulationScenario CRUD DTO',
           'reason':'UML '+field+' has no root field/explicit adapter in the real manifest; baseClock/package and SQL loader are the observed representation. Requires model reconciliation, never PASS.',
           'owner':'HAC-40 / Cristhian','controlPositive':'Existing manifest root parsed; unchanged native gate seed/verify execution is separately logged'})
+    if os.environ.get('HAC44_CP1C')=='1':
+        from cp1c_sources import scenario_evidence
+        evidence=scenario_evidence()
+        proof=run('cp1c-assignment-runtime-imports',['git','grep','-n','assignment-policy','--','cargomesh/src','supabase-v2'])
+        unexpected=[line for line in proof.stdout.splitlines() if 'assignment-policy.test.ts:' not in line]
+        if unexpected:raise RuntimeError('assignment-policy runtime imports changed; reconcile mappings before measurement')
+        write(OUT/'PROBES/CP1C_ASSIGNMENT_IMPORTS.json',json.dumps({'sha':state()['head'],'command':proof.args,'exit':proof.returncode,'hits':proof.stdout.splitlines(),'runtimeImportHits':unexpected,
+             'observationOwner':'HAC-40','document':'docs/v2-amazon/delivery/HAC40_FLEET_API.md:50','classification':'DOCUMENTATION_OBSERVATION_NOT_FUNCTIONAL_DEFECT'},ensure_ascii=False,indent=2)+'\n')
     write(OUT/'PROBES/CP1B_DESCRIPTORS.json',json.dumps(prepared,ensure_ascii=False,indent=2)+'\n')
     write(OUT/'PROBES/CP1B_SOURCE_AUDIT.json',json.dumps({'sha':state()['head'],'searches':searches,'evidence':evidence,'complete':True},ensure_ascii=False,indent=2)+'\n')
     print('PASS exact source audit; method searches never confer runtime coverage')

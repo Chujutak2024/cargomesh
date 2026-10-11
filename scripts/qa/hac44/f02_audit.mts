@@ -20,7 +20,7 @@ function counts(){return sql(`create temporary table c(n text,v bigint);do $$dec
 const actor=await fixtureSession('d4410000-0000-4000-8000-000000000001');
 const claims=`set local "request.jwt.claims"=${literal(JSON.stringify(actor.claims))};`;
 const transport=await startCoverageTransport();
-async function http(path:string,payload:any=null){const response=await fetch(transport.origin+'/api/v2'+path,{method:payload?'POST':'GET',headers:{Authorization:'Bearer '+actor.token,...(payload?{'Content-Type':'application/json','Idempotency-Key':randomUUID(),Origin:transport.origin}:{})},...(payload?{body:JSON.stringify(payload)}:{})});return {http:response.status,body:await response.json()};}
+async function http(path:string,payload:any=null,token=actor.token){const response=await fetch(transport.origin+'/api/v2'+path,{method:payload?'POST':'GET',headers:{Authorization:'Bearer '+token,...(payload?{'Content-Type':'application/json','Idempotency-Key':randomUUID(),Origin:transport.origin}:{})},...(payload?{body:JSON.stringify(payload)}:{})});return {http:response.status,body:await response.json()};}
 const record=(probe:string,rowId:string,status:string,observed:any,extra:any={})=>{results.push({sha,probe,rowIds:[rowId],status,observed,controlPositive:'Fresh native incident version from its scenario-emitted execution; Auth-issued/getUser-verified session',supersedes:{probe,source:'PROBES/CP2_RESULTADOS.json',reason:'Correct actual execution ID; DTO has no parentId field'},...extra});save();};
 const helper=`create function pg_temp.attempt(q text) returns jsonb language plpgsql security invoker as $$declare v jsonb;accepted boolean:=false;s text;m text;begin begin execute q into v;set constraints all immediate;accepted:=true;raise exception using message='QA_ROLLBACK';exception when others then get stacked diagnostics s=returned_sqlstate,m=message_text;if m<>'QA_ROLLBACK' then accepted:=false;end if;end;return jsonb_build_object('accepted',accepted,'value',v,'error',case when accepted then null else m end,'role',current_user,'actualSession',current_setting('request.jwt.claims')::jsonb ? 'session_id');end;$$;grant execute on function pg_temp.attempt(text) to authenticated;`;
 try{
@@ -39,6 +39,42 @@ try{
   const query=`select r from jsonb_array_elements(public.read_v2_workflow('${org}','${member}','incident-updates',${q({carrierId:carrier,requestId:null,parentId:incident,id:null})},100,0)) r where r->'data'->>'note'=${literal(value.note)} limit 1`;
   const cb=counts(),stored=sql(`begin;set local role authenticated;${claims}${query};set constraints all immediate;rollback;`),ca=counts();assert.deepEqual(cb,ca);
   record('FIELD roundtrip '+row+' audit DB/HTTP '+operation,row,positive.http!==200?'BLOQUEADO':isDeepStrictEqual(found?.data?.[field],value[field])&&isDeepStrictEqual(stored?.data?.[field],value[field])?'PASS':'BLOQUEADO',{positiveHttp:positive.http,value:found?.data?.[field],dbValue:stored?.data?.[field],written:value[field]},{countsBefore:cb,countsAfter:ca,rollbackDelta:0,fieldContractCitation:'cargomesh/src/shared/schemas/v2/workflow.ts:101'});
+ }
+ if(process.env.HAC44_CP1C==='1'){
+  const captured=JSON.parse(fs.readFileSync(out+'/PROBES/RECETAS_MEDIDAS.json','utf8'));
+  const value=structuredClone(captured.captured.requestPayload);
+  value.cargoSpecification.units[0].unitsPerPackage=2;
+  for(const field of ['company','addressDetail','handlingInstructions'])value.contacts.pickup[field]='Synthetic CP1c '+field;
+  const created=await http('/freight/requests',value),path='/freight/requests/'+created.body.data?.id;
+  const own=created.http===201?await http(path):created;
+  const foreign=await fixtureSession('d4410000-0000-4000-8000-000000000002');
+  try{
+   const denied=created.http===201?await http(path,null,foreign.token):created;
+   for(const row of ['CargoUnit.unitsPerPackage','ShipmentContact.role','ShipmentContact.company','ShipmentContact.addressDetail','ShipmentContact.handlingInstructions']){
+    const field=row.split('.')[1],expected=field==='unitsPerPackage'?2:field==='role'?'PICKUP':value.contacts.pickup[field];
+    const actual=field==='unitsPerPackage'?own.body.data?.cargoSpecification?.units[0]?.unitsPerPackage:field==='role'?(own.body.data?.contacts?.pickup?'PICKUP':undefined):own.body.data?.contacts?.pickup?.[field];
+    const probe='FIELD_READ '+row;
+    record(probe,row,created.http!==201||own.http!==200?'BLOQUEADO':isDeepStrictEqual(actual,expected)&&[403,404].includes(denied.http)?'PASS':'DIFERENCIA',
+     {positiveHttp:created.http,getHttp:own.http,negativeHttp:denied.http,value:actual,expected},
+     {controlPositive:'Fresh native enriched request POST and exact own GET; foreign session cannot read the same request',
+      representation:field==='role'?'contacts.pickup container key; no standalone writable role':'Concrete native request field',
+      supersedes:{probe,source:'PROBES/CP2_RESULTADOS.json',reason:'Reread concrete native enriched field; derive contact role from its actual container instead of a nonexistent role property'}});
+   }
+   const prefPath='/organizations/current/preferences',preferences=await http(prefPath);
+   const preference=Array.isArray(preferences.body.data)?preferences.body.data[0]:preferences.body.data;
+   const probe='FIELD_READ OrganizationPreferences.validUntil';
+   if(preferences.http!==200||!preference)record(probe,'OrganizationPreferences.validUntil','BLOQUEADO',{positiveHttp:preferences.http},{supersedes:{probe,source:'PROBES/CP2_RESULTADOS.json',reason:'A concrete expiry needs an actual native preference record'}});
+   else{
+    const expiry='2027-12-31T00:00:00.000Z',value={...preference.value,validUntil:expiry};
+    const positive=await http(prefPath+'/'+preference.id+'/revisions',{expectedVersion:preference.version,value});
+    const read=positive.http===200?await http(prefPath+'/'+preference.id):positive;
+    const denied=positive.http===200?await http(prefPath+'/'+preference.id,null,foreign.token):positive;
+    record(probe,'OrganizationPreferences.validUntil',positive.http!==200||read.http!==200?'BLOQUEADO':typeof read.body.data?.value.validUntil==='string'&&Date.parse(read.body.data.value.validUntil)===Date.parse(expiry)&&[403,404].includes(denied.http)?'PASS':'DIFERENCIA',
+     {positiveHttp:positive.http,getHttp:read.http,negativeHttp:denied.http,value:read.body.data?.value.validUntil,expected:expiry},
+     {controlPositive:'Concrete native preference expiry revision and exact own GET, with foreign read denied',
+      supersedes:{probe,source:'PROBES/CP2_RESULTADOS.json',reason:'Read a concrete expiry after native revision; initial valid NULL alone does not supply the requested concrete positive'}});
+   }
+  }finally{await foreign.client.auth.signOut({scope:'local'});}
  }
  save(true);
 }finally{await actor.client.auth.signOut({scope:'local'});await transport.stop();}
