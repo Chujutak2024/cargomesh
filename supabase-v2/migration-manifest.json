@@ -446,6 +446,17 @@
       "dependencies": [
         "20261009000410"
       ]
+    },
+    {
+      "issue": "HAC-45",
+      "path": "supabase-v2/supabase/migrations/20261010225539_hac45_carrier_portal_identity.sql",
+      "version": "20261010225539",
+      "sha256": "aaba859894de50924c51c36e88e1d41a4abbf6f2f9ee8bc78c9fab3ef970b24b",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261009190000"
+      ]
     }
   ]
 }

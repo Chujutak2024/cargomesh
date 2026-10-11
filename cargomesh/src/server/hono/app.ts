@@ -8,6 +8,7 @@ import { organizationsRouter } from "./routes/organizations";
 import { catalogRouter } from "./routes/catalog";
 import { workflowRouter } from "./routes/workflow";
 import { identityRouter } from "./routes/identity";
+import { carrierPortalRouter } from "./routes/carrier-portal";
 import { carrierWorkflowRouter } from "./routes/carrier-workflow";
 import { locationsRouter } from "./routes/locations";
 
@@ -29,6 +30,7 @@ export function createHonoApp() {
 
   // Routes
   app.route("/health", healthRouter);
+  app.route("/", carrierPortalRouter);
   app.route("/", identityRouter);
   app.route("/", carrierWorkflowRouter);
   app.route("/locations", locationsRouter);

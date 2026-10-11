@@ -6,6 +6,8 @@ Comienza por el [flujo vigente](./CURRENT_DELIVERY_STATE.md). Esta carpeta conti
 
 ## Trabajo actual
 
+- [Integración carrier HAC-45](./HAC45_CARRIER_PORTAL_INTEGRATION.md): identidad independiente, login, permisos, API, evidencia local y plan de despliegue pendiente.
+
 - [Revisión UML → BD/API del 9 de octubre](./uml-bd-api-2026-10-09/README.md): mappings de identidad, clasificación de parciales y dos correcciones de lectura; distinguir integración local de aplicación alojada.
 
 - [Plantilla de Linear](./LINEAR_ISSUE_TEMPLATE.md): alcance, dueño, dependencias, DoD y evidencia.

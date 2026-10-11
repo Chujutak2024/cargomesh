@@ -16,6 +16,10 @@ function fail(error: { code?: string; message: string }): never {
 export async function workflowRepositoryV2(): Promise<WorkflowRepositoryV2> {
   const db = await createV2ServerSupabaseClient();
   return {
+    async readCarrierRouting(actor,kind,page){
+      const {data,error}=await db.rpc("read_v2_carrier_portal_routing",{p_operator_id:actor.operatorId,p_carrier_id:actor.carrierId,p_kind:kind,p_limit:page.limit,p_offset:page.offset});
+      if(error)fail(error);return z.array(z.unknown()).parse(data);
+    },
     async read(actor, kind, context, page) {
       const { data, error } = "kind" in actor
         ? await db.rpc("read_v2_carrier_workflow", { p_operator_id: actor.operatorId, p_kind: kind,

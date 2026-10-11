@@ -60,5 +60,5 @@ export const carrierResources: PortalResource[] = [
     path: "assets/{parent}/events", parent: "asset", schema: WorkflowInputsV2["asset-events.create"] },
 ];
 export function resourcePath(carrierId: string, resource: PortalResource, parentId: string) {
-  return "/api/v2/carriers/" + encodeURIComponent(carrierId) + "/" + resource.path.replace("{parent}", encodeURIComponent(parentId));
+  return (resource.family === "catalog" ? "/api/v2/carrier-portal/carriers/" : "/api/v2/carriers/") + encodeURIComponent(carrierId) + "/" + resource.path.replace("{parent}", encodeURIComponent(parentId));
 }

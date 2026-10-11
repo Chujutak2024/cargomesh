@@ -24,7 +24,7 @@ export function CarrierMap({carrierId}:{carrierId:string}){
   const sources=["depots","executions","nodes","conditions"] as const;
   void Promise.allSettled(sources.map(async key=>{
    const resource=carrierResources.find(r=>r.key===key);
-   const result=await portalRequest(key==="nodes"||key==="conditions"?"/api/v2/routing/"+key+"?limit=100&offset=0":resourcePath(carrierId,resource!,"")+"?limit=100&offset=0",{signal:controller.signal});
+   const result=await portalRequest(key==="nodes"||key==="conditions"?"/api/v2/carrier-portal/carriers/"+encodeURIComponent(carrierId)+"/routing/"+key+"?limit=100&offset=0":resourcePath(carrierId,resource!,"")+"?limit=100&offset=0",{signal:controller.signal});
    if(!Array.isArray(result.data))throw new Error("Invalid response");
    const records=key==="nodes"||key==="conditions"?result.data.map(row=>{const record=WorkflowRecordV2Schema.parse(row);if(record.kind!==key)throw new Error("Invalid response");return record;}):parseRecords(resource!,result.data,carrierId);
    const mapped=records.map(record=>{
