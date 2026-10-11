@@ -40,6 +40,7 @@ for(const actor of credentials){
  const own=await get('/api/v2/carrier-portal/access');assert.equal(own.status,200);const access=(await own.json()).data;assert.equal(access.length,1);assert.equal(access[0].role,actor.role);pass();
  assert.equal((await get('/api/v2/carrier-portal/carriers/'+carrier)).status,200);pass();
  assert.equal((await get('/api/v2/carrier-portal/carriers/'+carrier+'/assets')).status,200);pass();
+ assert.equal((await get('/api/v2/carrier-portal/carriers/'+carrier+'/depots?limit=100&offset=0')).status,200);pass();
  const back=await get('/login?returnTo=%2Fcarrier-portal');assert.equal(back.status,307);assert.equal(new URL(back.headers.get('location'),origin).pathname,'/carrier-portal');pass();
  assert.equal((await get('/dashboard')).status,307);pass();
  const mutation=await fetch(origin+'/api/v2/carrier-portal/carriers/'+carrier+'/depots',{method:'POST',headers:{Cookie:cookies,Origin:origin,'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()},body:JSON.stringify({schemaVersion:'2.0',code:'HAC45_COOKIE_'+actor.role,name:'[SYNTHETIC] cookie depot',location:{label:'Local fixture',countryCode:'PE',region:'LIM',city:'Lima',lat:-12,lng:-77},active:true,handling:['BOX_TRUCK']})});

@@ -72,3 +72,7 @@ Ramón puede completar sus seeds reutilizando los DTO actuales; registrar admini
 ## Fricción observada
 
 La preparación inicial del smoke usó un code con guiones, que el DTO de catálogo rechaza correctamente. Además, ejecutar pgTAP y un smoke que persiste los mismos IDs en paralelo provocó una colisión de fixtures. Se corrigió el code, se reconstruyó solo el banco descartable y se midieron secuencialmente. No eran defectos funcionales del producto ni justifican relajar los contratos.
+
+## Revisión visual final del catálogo
+
+La sede sintética del escenario v2-road-baseline usaba QA-PIURA y no tenía address_line. El lector rechazaba la colección con CATALOG_DATA_INCOMPLETE, de acuerdo con el DTO vigente. Se corrige exclusivamente ese fixture a QA_PIURA y un label sintético explícito; las coordenadas siguen desconocidas y la sede no concede cobertura. El smoke de cookies incluye ahora GET de sedes para los tres roles.

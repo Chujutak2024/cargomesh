@@ -78,10 +78,10 @@ values ('c2340000-0000-4000-8000-000000000001', '[SYNTHETIC] QA ROAD carrier',
 on conflict (id) do nothing;
 
 -- Physical depot in Piura is deliberately not service coverage.
-insert into public.carrier_depots (id, carrier_id, code, name, country_code, city)
+insert into public.carrier_depots (id, carrier_id, code, name, country_code, city, address_line)
 values ('c2350000-0000-4000-8000-000000000001',
-        'c2340000-0000-4000-8000-000000000001', 'QA-PIURA',
-        '[SYNTHETIC] Depot without coverage', 'PE', 'Piura')
+        'c2340000-0000-4000-8000-000000000001', 'QA_PIURA',
+        '[SYNTHETIC] Depot without coverage', 'PE', 'Piura', 'LOCAL_ONLY Synthetic Piura depot address')
 on conflict (id) do nothing;
 
 -- Legacy origin/destination columns are required metadata, not V2 coverage proof.
