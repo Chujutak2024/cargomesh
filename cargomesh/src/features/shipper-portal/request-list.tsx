@@ -32,13 +32,27 @@ export function RequestList({ requests, initialQuery = "" }: { requests: Freight
     <header className={styles.panelHeader}><div><h2 id="request-list-title">{t("Solicitudes de tu organización", "Your organization requests")}</h2>
       <p>{t("Sólo datos visibles para el tenant autenticado.", "Only data visible to the authenticated tenant.")}</p></div><SlidersHorizontal size={18} aria-hidden="true" /></header>
     <div className={styles.toolbar}>
-      <label className={styles.search}><Search size={16} aria-hidden="true" /><span className="sr-only">{t("Buscar solicitudes", "Search requests")}</span>
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Código, ciudad o carga…", "Code, city, or cargo…")} /></label>
+      <label className={styles.search}>
+  <Search size={16} aria-hidden="true" />
+  <input
+    type="search"
+    aria-label={t("Buscar solicitudes", "Search requests")}
+    value={query}
+    onChange={(event) => setQuery(event.target.value)}
+    placeholder={t("Código, ciudad o carga…", "Code, city, or cargo…")}
+  />
+</label>
       <div className={styles.toolbarActions}><div className={styles.filters} aria-label={t("Filtrar por estado", "Filter by status")}>{filters.map((status) => <button
           className={styles.filter} type="button" key={status} aria-pressed={filter === status} onClick={() => setFilter(status)}>
           {status === "ALL" ? t("Todas", "All") : requestStatusLabel(status, locale)}
         </button>)}</div>
-        <label className={styles.sort}><ArrowUpDown size={14} aria-hidden="true"/><span className="sr-only">{t("Ordenar solicitudes", "Sort requests")}</span><select value={sort} onChange={(event) => setSort(event.target.value as Sort)}>
+        <label className={styles.sort}>
+  <ArrowUpDown size={14} aria-hidden="true" />
+  <select
+    aria-label={t("Ordenar solicitudes", "Sort requests")}
+    value={sort}
+    onChange={(event) => setSort(event.target.value as Sort)}
+  >
           <option value="UPDATED_DESC">{t("Más recientes", "Newest first")}</option><option value="UPDATED_ASC">{t("Más antiguas", "Oldest first")}</option><option value="PICKUP_ASC">{t("Próximo recojo", "Next pickup")}</option>
         </select></label></div>
     </div>
