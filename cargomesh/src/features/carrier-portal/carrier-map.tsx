@@ -8,6 +8,7 @@ import { portalErrorCopy, portalRequest } from "./api";
 import { parseRecords, recordData, recordName } from "./records";
 import { carrierResources, resourcePath } from "./resources";
 import { coordinatePair, coverageGeometry } from "./map-model";
+import { OpenStreetMap } from "./open-street-map";
 import { valueLabel } from "./contract-form";
 import s from "./portal.module.css";
 
@@ -19,7 +20,8 @@ export function CarrierMap({carrierId}:{carrierId:string}){
  const [layers,setLayers]=useState<Layer[]>(["depots","positions","nodes","conditions","coverage"]),[selected,setSelected]=useState<string|null>(null),[refresh,setRefresh]=useState(0);
  const [services,setServices]=useState<Array<{id:string;label:string}>>([]),[serviceId,setServiceId]=useState(""),[areas,setAreas]=useState<Area[]>([]),[areaError,setAreaError]=useState("");
  const polygons=useRef<google.maps.Polygon[]>([]);
- const [provider,setProvider]=useState<"loading"|"google"|"unavailable">("loading");const host=useRef<HTMLDivElement>(null),map=useRef<google.maps.Map|null>(null),markers=useRef<google.maps.Marker[]>([]);
+ const [useOsm,setUseOsm]=useState(false);
+ const [provider,setProvider]=useState<"loading"|"google"|"osm"|"unavailable">("loading");const host=useRef<HTMLDivElement>(null),map=useRef<google.maps.Map|null>(null),markers=useRef<google.maps.Marker[]>([]);
  useEffect(()=>{const controller=new AbortController();setPoints([]);setErrors([]);setLoading(true);setPartial(false);
   const sources=["depots","executions","nodes","conditions"] as const;
   void Promise.allSettled(sources.map(async key=>{
@@ -57,9 +59,9 @@ export function CarrierMap({carrierId}:{carrierId:string}){
  },[carrierId,serviceId,es,refresh]);
  const visible=useMemo(()=>points.filter(p=>layers.includes(p.layer)),[points,layers]);
  useEffect(()=>{let cancelled=false;const key=process.env.NEXT_PUBLIC_GOOGLE_MAPS_JS_API_KEY?.trim();
-  if(!key){setProvider("unavailable");return;}
-  const off=onGoogleMapsAuthFailure(()=>{setProvider("unavailable");map.current=null;});
-  void loadGoogleMaps(key).then(()=>{if(cancelled||!host.current)return;map.current=new google.maps.Map(host.current,{center:{lat:0,lng:0},zoom:2,gestureHandling:"cooperative",mapTypeControl:false,streetViewControl:false,fullscreenControl:true});setProvider("google");}).catch(()=>{if(!cancelled)setProvider("unavailable");});
+  if(!key){setUseOsm(true);return;}
+  const off=onGoogleMapsAuthFailure(()=>{setUseOsm(true);map.current=null;});
+  void loadGoogleMaps(key).then(()=>{if(cancelled||!host.current)return;map.current=new google.maps.Map(host.current,{center:{lat:0,lng:0},zoom:2,gestureHandling:"cooperative",mapTypeControl:false,streetViewControl:false,fullscreenControl:true});setProvider("google");}).catch(()=>{if(!cancelled)setUseOsm(true);});
   return()=>{cancelled=true;off();markers.current.forEach(m=>m.setMap(null));polygons.current.forEach(p=>p.setMap(null));map.current=null;};
  },[]);
  useEffect(()=>{if(!map.current||provider!=="google")return;markers.current.forEach(m=>m.setMap(null));markers.current=[];
@@ -83,8 +85,8 @@ export function CarrierMap({carrierId}:{carrierId:string}){
  const point=visible.find(p=>p.id===selected);
  return <><div className={s.notice}>{t("Las posiciones son registros, no seguimiento GPS. No se dibujan trayectos sin geometría publicada y procedencia verificable.","Positions are records, not GPS tracking. No paths are drawn without published geometry and verifiable provenance.")}</div>
  <div className={s.mapLayout}><section className={s.card}><div className={s.heading}><div><h2>{t("Tu red sobre el mapa","Your network on the map")}</h2><p>{t("Depósitos, posiciones, nodos y condiciones publicadas. La cobertura dibujada es un registro, no una confirmación de elegibilidad.","Depots, positions, published nodes and conditions. Drawn coverage is a record, not an eligibility confirmation.")}</p></div><button onClick={()=>setRefresh(x=>x+1)} disabled={loading}>{t("Actualizar","Refresh")}</button></div>
- <div className={s.mapSurface}><div ref={host} hidden={provider==="unavailable"} role="region" aria-label={t("Mapa geográfico de la operación","Geographic operations map")}/>{provider!=="google"?<div className={s.mapEmpty}><MapPin size={32} aria-hidden="true"/><h3>{provider==="loading"?t("Cargando mapa…","Loading map…"):t("Mapa no disponible","Map unavailable")}</h3><p>{t("La lista mantiene las referencias y su procedencia.","The list retains references and provenance.")}</p></div>:null}</div>
- <div className={s.mapNote}><Info size={15} aria-hidden="true"/><span>{provider==="google"?t("Mapa: Google Maps Platform · Capas registradas · Geometría de ruta no disponible","Map: Google Maps Platform · Recorded layers · Route geometry unavailable"):t("Proveedor cartográfico no disponible","Map provider unavailable")}</span></div>
+ <div className={s.mapSurface}><div ref={host} hidden={useOsm||provider==="unavailable"} role="region" aria-label={t("Mapa geográfico de la operación","Geographic operations map")}/>{useOsm?<OpenStreetMap points={visible} areas={layers.includes("coverage")?areas:[]} selected={selected} onSelect={setSelected} onStatus={setProvider} label={t("Mapa geográfico de la operación","Geographic operations map")}/>:null}{provider!=="google"&&provider!=="osm"?<div className={s.mapEmpty}><MapPin size={32} aria-hidden="true"/><h3>{provider==="loading"?t("Cargando mapa…","Loading map…"):t("Mapa no disponible","Map unavailable")}</h3><p>{t("La lista mantiene las referencias y su procedencia.","The list retains references and provenance.")}</p></div>:null}</div>
+ <div className={s.mapNote}><Info size={15} aria-hidden="true"/><span>{provider==="google"?t("Mapa: Google Maps Platform · Capas registradas · Geometría de ruta no disponible","Map: Google Maps Platform · Recorded layers · Route geometry unavailable"):provider==="osm"?t("Mapa: OpenStreetMap · Capas registradas · Geometría de ruta no disponible","Map: OpenStreetMap · Recorded layers · Route geometry unavailable"):t("Proveedor cartográfico no disponible","Map provider unavailable")}</span></div>
  {partial?<p>{t("La consulta incluye hasta 100 registros por capa; hay más datos fuera de esta vista.","Up to 100 records per layer are fetched; additional data is outside this view.")}</p>:null}
  {errors.map((error,i)=><p key={i} role="alert" className={s.error}>{error}</p>)}</section>
  <section className={s.card}><h2>{t("Capas y referencias","Layers and references")}</h2><div className={s.layers}>{(["depots","positions","nodes","conditions","coverage"] as Layer[]).map(layer=><label key={layer}><input type="checkbox" checked={layers.includes(layer)} onChange={e=>setLayers(current=>e.target.checked?[...current,layer]:current.filter(x=>x!==layer))}/>{layer==="depots"?t("Depósitos","Depots"):layer==="positions"?t("Posiciones","Positions"):layer==="nodes"?t("Nodos publicados","Published nodes"):layer==="conditions"?t("Condiciones publicadas","Published conditions"):t("Áreas registradas","Recorded areas")}</label>)}</div>
