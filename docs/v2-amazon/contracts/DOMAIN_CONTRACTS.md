@@ -2,7 +2,7 @@
 
 ## Alcance completo autorizado
 
-El [contrato HAC-27/HAC-40](../delivery/HAC40_FULL_API_AND_CLOSURE.md) incorpora también ofertas, selección, booking y operación. La restricción de una sola oferta del corte ROAD que se conserva debajo describe el corte anterior. La nueva política admite `1..*` ofertas con cobertura exacta y compromisos separados por emisor; aún necesita persistencia y endpoints antes de declararse operativa.
+El [contrato HAC-27/HAC-40](../delivery/HAC40_FULL_API_AND_CLOSURE.md) incorpora también ofertas, selección, booking y operación. La restricción de una sola oferta pertenece al corte ROAD anterior y queda sustituida. El workflow persistente admite `1..*` ofertas con cobertura exacta y compromisos separados por emisor, mediante servicios compartidos y endpoints V2. Véanse el [workflow implementado](../delivery/HAC40_WORKFLOW_API.md) y los [límites de certificación externa](../delivery/INTEGRATION_CERTIFICATION_2026-10-09.md).
 
 ## FreightRequest
 
@@ -36,9 +36,9 @@ La carga puede incluir pallets, cajas, contenedores, granel u otras unidades mod
 
 ## Selección, booking y compromiso de capacidad
 
-`SelectionDecision` guarda el plan candidato, las ofertas elegidas, el miembro de la organización que decidió, la política aplicada y la evidencia de autorización. Para el MVP ROAD de un responsable comercial, el conjunto elegido contiene exactamente una oferta. `1..*` ofertas es una extensión de diseño para planes con varios responsables, no una capacidad ya operativa; requeriría compromisos comerciales separados y pruebas de consistencia por tramo.
+`SelectionDecision` guarda el plan candidato, las ofertas elegidas, el miembro de la organización que decidió, la política aplicada y la evidencia de autorización. El conjunto elegido contiene `1..*` ofertas vigentes y atribuibles que cubren exactamente todas las asignaciones del plan, sin huecos ni doble cobertura. La decisión no combina precios bajo un emisor ficticio. La persistencia, lectura y validaciones de este conjunto están implementadas en el workflow V2; los positivos locales no acreditan coordinación con proveedores externos.
 
-Cada `Booking` referencia una decisión y una oferta vigente. `authorizationStatus` del shipper y `carrierConfirmationStatus` son hechos comerciales separados. El resultado técnico del adaptador y su correlation ID pertenecen a la capa de aplicación/integración, no a un segundo estado comercial del booking. Un booking puede vincular `0..* CapacityReservation`; cada reserva interna, como máximo, a un booking. Un hold previo puede estar aún sin booking. Para confirmar capacidad, cada recurso portador necesita reserva interna vigente o evidencia verificable del compromiso externo del carrier. Cancelación, liberación, concurrencia e idempotencia son guardas por implementar y probar; el diagrama no las declara desplegadas.
+Una decisión puede originar varios bookings; cada `Booking` referencia esa decisión y una oferta vigente seleccionada, manteniendo el compromiso atribuible a su emisor. `authorizationStatus` del shipper y `carrierConfirmationStatus` son hechos comerciales separados. El resultado técnico del adaptador y su correlation ID pertenecen a la capa de aplicación/integración, no a un segundo estado comercial del booking. Un booking puede vincular `0..* CapacityReservation`; cada reserva interna, como máximo, a un booking. Un hold previo puede estar aún sin booking. Para confirmar capacidad, cada recurso portador necesita reserva interna vigente o evidencia verificable del compromiso externo del carrier. Las guardas de cancelación, liberación, concurrencia e idempotencia están implementadas y tienen regresión ejecutable del workflow. La atomicidad transaccional local no implica atomicidad entre carriers externos; la integración live necesita su propia evidencia.
 
 ## Repetición de envíos
 

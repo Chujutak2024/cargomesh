@@ -63,6 +63,13 @@ select is((select value->>'status' from refs where name='execution'),'PLANNED','
 select pg_temp.save('hold','holds.create',jsonb_build_object('schemaVersion','2.0','bookingId',pg_temp.id('booking'),'assignmentId',pg_temp.id('assignment'),'expiresAt',now()+interval '1 hour','evidence',pg_temp.ev()));
 select is((select value->>'status' from refs where name='hold'),'HELD','capacity held atomically');
 
+-- Flush creation events while the real caller still owns the transaction.
+select is(current_user::text,'authenticated','creation boundary runs under the authenticated role');
+select is(auth.uid(),'c2310000-0000-4000-8000-000000000001'::uuid,'creation boundary retains the actor claims');
+set constraints all immediate;
+select is(current_user::text,'authenticated','creation constraints completed before privileged inspection');
+-- Later commands must also reach their own deferred boundary below.
+set constraints all deferred;
 reset role;
 select throws_ok($$update public.carriers set status='INACTIVE' where id='c2340000-0000-4000-8000-000000000001'$$,'PT409','CARRIER_HAS_COMMITMENTS','carrier cannot deactivate an active capacity commitment');
 set local role authenticated;

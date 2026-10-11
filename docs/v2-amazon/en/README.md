@@ -12,11 +12,11 @@ This English package describes the V2 product, its intended behavior, architectu
 
 CargoMesh V2 helps a business shipper describe a freight need, discover feasible carrier-service and transport-plan candidates, request attributable offers, compare eligible offers using an explainable policy, and authorize a booking. Web and Alexa+ are intended to use the same application services through an MCP server. The current implementation is incremental: a documented target capability is **not** an implemented, tested, or live integration.
 
-## Current evidence boundary — September 23, 2026
+## Current evidence boundary — October 9, 2026
 
 - The shared V2 baseline is `main`, authorized on 9 October 2026. Work uses registered branches and reviewed pull requests to `main`; an existing automatic deployment does not prove hosted functionality. Code and tests must be checked at the submitted commit, not inferred from this document.
-- The draft-idempotency and ROAD facilities/service-area/service-lane structural migrations have been applied to the linked Supabase project. The four new ROAD tables have RLS and policies, but contain no V2 catalog rows in that remote project. Schema readiness is not product readiness.
-- The Alexa MCP security/transport skeleton is integrated into the V2 base. Account linking and V2 commercial tools are not yet complete; a local MCP test is not an Alexa+ invocation. Do not advertise Alexa+ user access as live until the account-linking flow is implemented and verified end to end.
+- The separate hosted V2 project has 27 applied migrations and a synthetic V2 QA dataset. An earlier hosted OAuth PKCE/HTTP/MCP smoke reached IN_PROGRESS; see the [dated result](../delivery/uml-bd-api-2026-10-09/DEPLOY_Y_REPRUEBA_29c385f.md). This does not certify every UML method or a real carrier integration.
+- Account linking, verified identity and commercial MCP tools are implemented. The earlier hosted QA smoke used Supabase OAuth and simulated carrier data. Its temporary access was withdrawn; Alexa+ live and external carriers remain uncertified. Consult the [current integration record](../delivery/INTEGRATION_CERTIFICATION_2026-10-09.md).
 - V1 WebMCP fixtures and the three legacy carriers remain regression material. They do not demonstrate V2 coverage, availability, offers, or multimodal operation.
 - Bedrock is optional for the primary Alexa+ track. Claim AWS Builder integrations only for services actually used and shown; Kiro Crew evidence must be real and sanitized.
 

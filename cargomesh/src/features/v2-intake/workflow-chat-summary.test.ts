@@ -16,6 +16,18 @@ test("shipper authorization remains distinct from carrier confirmation", () => {
   const summary = summarizeWorkflow("bookings", [booking]);
   assert.match(summary, /shipper authorized, carrier pending/i);
   assert.doesNotMatch(summary, /confirmed booking/i);
+  assert.match(summary, /Shipper authorization is not carrier confirmation/);
+});
+
+test("C-03: confirmed and cancelled records use their persisted carrier status without stale caveats", () => {
+  for (const carrierConfirmationStatus of ["CONFIRMED", "CANCELLED"] as const) {
+    const booking = { kind: "bookings", id: "12345678-0000-4000-8000-000000000000", data: {
+      authorizationStatus: "AUTHORIZED", carrierConfirmationStatus,
+    } } as WorkflowChatRecord;
+    const summary = summarizeWorkflow("bookings", [booking]);
+    assert.match(summary, new RegExp(`carrier ${carrierConfirmationStatus.toLowerCase()}`));
+    assert.doesNotMatch(summary, /Shipper authorization is not carrier confirmation|select a current offer/i);
+  }
 });
 
 test("withdrawn and expired offers are not presented as current", () => {

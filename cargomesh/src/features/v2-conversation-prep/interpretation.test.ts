@@ -33,6 +33,9 @@ test("per-unit measurements require explicit wording; totals are not silently re
 test("price and booking never become create or evaluation effects", () => {
   assert.equal(interpretDeterministically({ schemaVersion: "2.0", text: "what is the price?", currentField: null }).intent, "PRICE");
   assert.equal(interpretDeterministically({ schemaVersion: "2.0", text: "book this now", currentField: null }).intent, "BOOKING");
+  for (const text of ["is it booked?", "show reservations", "is it reserved?"]) {
+    assert.equal(interpretDeterministically({ schemaVersion: "2.0", text, currentField: "originFacilityId" }).intent, "BOOKING");
+  }
 });
 
 test("product questions receive grounded guidance even without Bedrock", () => {

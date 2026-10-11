@@ -20,6 +20,10 @@ Actualizado el 9 de octubre de 2026. Este documento organiza la lectura; los con
 - [Reconstrucción V2 local](./HAC29_CLEAN_BOOTSTRAP.md).
 - [Calidad, revisión y aceptación](./QUALITY_AND_VALIDATION_PLAN.md).
 
+## Reconciliación documental posterior a main @ 42a4fde
+
+HAC-40 actualiza cinco relaciones en un UML derivado y en el DER reproducible; conserva el original y los estados QA históricos. La suite 22 añade un boundary autenticado de creaciones antes de la inspección privilegiada; el boundary final ya estaba autenticado en este corte. Véase el [acta del incremento](./HAC40_MODEL_QA_CLOSURE_2026-10-09.md). F-02 sigue parcial; la medición restante pertenece a HAC-44 y la actualización de identidad a HAC-41.
+
 ## Revisión vigente UML → BD/API e identidad
 
 La [revisión única de d3a80eb y su integración](./uml-bd-api-2026-10-09/README.md) incorpora los mappings actuales de HAC-41 y clasifica todas las filas sin certificación. La base auditada incorpora #111, #112, #113 y #114; no usar el corte de 23 migraciones ni el mapping anterior de OrganizationMember como evidencia del emisor CarrierOperator.
@@ -27,6 +31,10 @@ La [revisión única de d3a80eb y su integración](./uml-bd-api-2026-10-09/READM
 El incremento agrega una migración de lectura: RouteWaypoint.sequence y Booking.data.decisionId. La cadena del repositorio pasa de 26 a 27; los hashes de las 26 anteriores se conservan. Los gates locales del incremento pasan. La actualización alojada ya pasó: 27/27 migraciones, cuatro respaldos restaurados y smoke 21/21 hasta IN_PROGRESS. Véase el [resultado vigente](./uml-bd-api-2026-10-09/DEPLOY_Y_REPRUEBA_29c385f.md). La reprueba independiente de QA sigue separada.
 
 F-02 permanece parcial: la medición actual certifica 225 endpoints y 297 atributos; quedan 97 atributos parciales, tres divergencias documentales legacy, 42 relaciones y semántica de 146 métodos por probar. La clasificación vigente está en `uml-bd-api-2026-10-09/29c385f/`; los CSV del nivel superior conservan el corte original d3a80eb y no sustituyen los resultados posteriores. Axel puede continuar MCP desde la base compartida; los fallos nuevos requieren reproducción antes de cambiar dominio.
+
+## Contratos e integraciones externas — revisión posterior a main @ 3ba9b95
+
+Los contratos de dominio/arquitectura y sus traducciones se alinean con selección persistente de `1..*` ofertas y bookings separados. La [certificación de integraciones](./INTEGRATION_CERTIFICATION_2026-10-09.md) distingue el smoke OAuth alojado previo del acceso actual, el adaptador Bedrock de una respuesta real de AWS y la operación manual de un carrier externo. F-02 y el alcance del chat conservan sus responsables y pendientes.
 
 ## Antecedente del corte de limpieza — 7 octubre
 

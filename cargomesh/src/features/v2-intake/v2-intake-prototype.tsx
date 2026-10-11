@@ -56,6 +56,7 @@ import {
   loadIntakeOptions,
   reconcileCandidateSelection,
 } from "./v2-intake-client";
+import { ContentMotion } from "@/features/product-motion/content-motion";
 import styles from "./v2-intake-prototype.module.css";
 
 const STEP_ICONS = [MapPinned, Package, CalendarDays, ClipboardCheck] as const;
@@ -64,7 +65,8 @@ const CHAT_REQUEST_SESSION_KEY = "cargomesh-v2-chat-request-id";
 type SubmitPhase = "idle" | "creating" | "reading" | "evaluating" | "success" | "error";
 type Translate = (spanish: string, english: string) => string;
 
-export function V2IntakePrototype() {
+export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{embedded?:boolean;onPersisted?:(request:FreightRequestV2Data)=>void;
+ onEvaluation?:(request:FreightRequestV2Data,evaluation:RoadServiceabilityEvaluationV2Data,selectedCandidateId:string|null)=>void}={}) {
   const { locale, t } = useLocale();
   const [draft, setDraft] = useState<V2IntakePrototypeDraft>(EMPTY_PROTOTYPE_DRAFT);
   const [step, setStep] = useState<PrototypeStep>(1);
@@ -111,12 +113,18 @@ export function V2IntakePrototype() {
     void getFreightRequestV2(requestId).then((loaded) => {
       if (!active) return;
       setRequest(loaded.data);
+      onPersisted?.(loaded.data);
       setSubmitPhase("success");
     }).catch(() => {
       if (active) window.sessionStorage.removeItem(CHAT_REQUEST_SESSION_KEY);
     });
     return () => { active = false; };
-  }, []);
+  }, [onPersisted]);
+
+  useEffect(()=>{
+    if(request && evaluation && request.id===evaluation.freightRequestId && request.draftVersion===evaluation.evaluatedDraftVersion)
+      onEvaluation?.(request,evaluation,selectedCandidateId);
+  },[request,evaluation,selectedCandidateId,onEvaluation]);
 
   const activeOptions = options ?? EMPTY_INTAKE_OPTIONS;
   const origin = findIntakeFacility(activeOptions, draft.originFacilityId);
@@ -224,6 +232,7 @@ export function V2IntakePrototype() {
     if (flowSequence !== flowSequenceRef.current) return;
     assertFreightRequestRoundTrip(created, roundTrip.data);
     setRequest(roundTrip.data);
+    onPersisted?.(roundTrip.data);
     window.sessionStorage.setItem(CHAT_REQUEST_SESSION_KEY, roundTrip.data.id);
     setSubmitPhase("evaluating");
     const result = await getRoadServiceabilityV2(roundTrip.data.id, roundTrip.data.draftVersion);
@@ -285,13 +294,13 @@ export function V2IntakePrototype() {
   };
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${embedded?styles.embedded:""}`}>
       <div className={styles.frame}>
         <header className={styles.hero}>
           <div className={styles.heroCopy}>
-            <span className={styles.eyebrow}>CargoMesh V2 · Sprint 2 · HAC-14</span>
-            <h1>{t("Crear solicitud ROAD", "Create ROAD request")}</h1>
-            <p>{t(
+            {!embedded?<span className={styles.eyebrow}>CargoMesh V2</span>:null}
+            {embedded?<h2>{t("Datos de la solicitud", "Request details")}</h2>:<h1>{t("Crear solicitud ROAD", "Create ROAD request")}</h1>}
+            <p>{embedded ? t("Prepara el borrador y comprueba sus datos antes de enviarlo.", "Prepare the draft and check its details before saving it.") : t(
               "Flujo para clientes/shipper: crea un borrador y consulta elegibilidad preliminar sin convertirla en oferta ni reserva.",
               "Client/shipper flow: create a draft and read preliminary serviceability without turning it into an offer or booking.",
             )}</p>
@@ -301,12 +310,12 @@ export function V2IntakePrototype() {
               {optionsSource === "loading"
                 ? t("Consultando opciones", "Loading options")
                 : optionsSource === "api"
-                  ? t("Opciones API V2", "V2 API options")
+                  ? embedded ? t("Catálogo consultado", "Catalog loaded") : t("Opciones API V2", "V2 API options")
                   : optionsSource === "fixture"
                     ? t("Fixture dev explícito", "Explicit dev fixture")
                     : t("Error de opciones", "Options error")}
             </Badge>
-            <Button variant="secondary" type="button" disabled={!options || options.facilities.length < 2 || !optionCoverage.complete} onClick={loadExample}><Sparkles size={16} aria-hidden="true" />{t("Cargar ejemplo V2", "Load V2 example")}</Button>
+            {!embedded?<Button variant="secondary" type="button" disabled={!options || options.facilities.length < 2 || !optionCoverage.complete} onClick={loadExample}><Sparkles size={16} aria-hidden="true" />{t("Cargar ejemplo V2", "Load V2 example")}</Button>:null}
           </div>
         </header>
 
@@ -316,13 +325,13 @@ export function V2IntakePrototype() {
             <strong>{optionsSource === "fixture" ? t("Fixture de desarrollo activado explícitamente", "Explicit development fixture enabled") : t("Estado local hasta crear", "Local state until creation")}</strong>
             <span>{optionsSource === "fixture"
               ? t("NEXT_PUBLIC_V2_INTAKE_OPTIONS_SOURCE=fixture omite el GET sólo en desarrollo. El JSON está rotulado SIMULATED y crear todavía requiere el POST real.", "NEXT_PUBLIC_V2_INTAKE_OPTIONS_SOURCE=fixture skips GET only in development. The JSON is labelled SIMULATED and creation still requires the real POST.")
-              : t("No hay autosave: avanzar entre pasos no envía datos. Sólo «Crear DRAFT y evaluar» ejecuta POST→GET→serviceability.", "There is no autosave: moving between steps sends no data. Only “Create DRAFT & evaluate” runs POST→GET→serviceability.")}</span>
+              : t("Avanzar entre pasos conserva la edición en esta pantalla. Los datos se envían cuando confirmas la creación del borrador.", "Moving between steps retains editing on this screen. Data is sent when you confirm draft creation.")}</span>
           </div>
         </div>
 
-        {optionsSource === "loading" ? <OptionsLoadingState t={t} /> : null}
+        {optionsSource === "loading" ? <OptionsLoadingState t={t} embedded={embedded} /> : null}
         {optionsSource === "error" && optionsError ? (
-          <OptionsErrorState error={optionsError} retry={() => setOptionsAttempt((attempt) => attempt + 1)} t={t} />
+          <OptionsErrorState error={optionsError} retry={() => setOptionsAttempt((attempt) => attempt + 1)} t={t} embedded={embedded} />
         ) : null}
         {options && optionCoverage.emptyFacilities ? <EmptyFacilitiesState t={t} /> : null}
         {options && !optionCoverage.complete ? (
@@ -356,11 +365,12 @@ export function V2IntakePrototype() {
             </button>
           );
         })}</nav>
+        <div className={styles.stepProgress} aria-hidden="true"><span style={{width:`${step/4*100}%`}}/></div>
 
         <div className={styles.workspace}>
-          <section className={styles.card} aria-labelledby={`prototype-step-${step}`}>
+          <ContentMotion identity={step} focusOnChange className={styles.stepMotion}><section className={styles.card} aria-labelledby={`prototype-step-${step}`}>
             <header className={styles.cardHeader}>
-              <div><span className={styles.eyebrow}>{t(`Paso ${step} de 4`, `Step ${step} of 4`)}</span><h2 id={`prototype-step-${step}`}>{stepLabels[step - 1]}</h2><p>{stepDescription(step, t)}</p></div>
+              <div><span className={styles.eyebrow}>{t(`Paso ${step} de 4`, `Step ${step} of 4`)}</span><h2 tabIndex={-1} id={`prototype-step-${step}`}>{stepLabels[step - 1]}</h2><p>{stepDescription(step, t)}</p></div>
               <Badge tone={step === 4 ? "confirmed" : "preliminary"}>{step === 4 ? t("Listo para crear", "Ready to create") : t("Edición local", "Local editing")}</Badge>
             </header>
             <div className={styles.cardBody}>
@@ -369,7 +379,7 @@ export function V2IntakePrototype() {
               {step === 2 ? <CargoStep draft={draft} options={activeOptions} update={update} errorFor={errorFor} t={t} /> : null}
               {step === 3 ? <ScheduleAndContactsStep draft={draft} options={activeOptions} update={update} errorFor={errorFor} t={t} /> : null}
               {step === 4 ? <ReviewStep draft={draft} options={activeOptions} request={request} dirtyAfterCreate={dirtyAfterCreate} t={t} locale={locale} /> : null}
-              {submitError ? <ApiErrorState error={submitError} requestExists={Boolean(request)} retry={retryAfterCreate} t={t} /> : null}
+              {submitError ? <ApiErrorState error={submitError} requestExists={Boolean(request)} retry={retryAfterCreate} t={t} embedded={embedded} /> : null}
             </div>
             <footer className={styles.footer}>
               <Button variant="ghost" type="button" onClick={reset}><RotateCcw size={16} aria-hidden="true" />{t("Reiniciar", "Reset")}</Button>
@@ -382,7 +392,7 @@ export function V2IntakePrototype() {
                 )}
               </div>
             </footer>
-          </section>
+          </section></ContentMotion>
 
           <LiveSummary draft={draft} options={activeOptions} request={request} evaluation={evaluation} dirtyAfterCreate={dirtyAfterCreate} t={t} />
         </div>
@@ -420,12 +430,12 @@ type FieldHelpers = {
   t: Translate;
 };
 
-function OptionsLoadingState({ t }: { t: Translate }) {
-  return <div className={styles.optionsState} role="status"><Loader2 className={styles.spinner} size={20} aria-hidden="true" /><div><strong>{t("Cargando selectores autenticados", "Loading authenticated selectors")}</strong><span>{t("Esperando los cinco grupos de GET /api/v2/intake/options.", "Waiting for the five groups from GET /api/v2/intake/options.")}</span></div></div>;
+function OptionsLoadingState({ t, embedded = false }: { t: Translate; embedded?: boolean }) {
+  return <div className={styles.optionsState} role="status"><Loader2 className={styles.spinner} size={20} aria-hidden="true" /><div><strong>{embedded ? t("Consultando el catálogo", "Loading the catalog") : t("Cargando selectores autenticados", "Loading authenticated selectors")}</strong><span>{embedded ? t("Cargando ubicaciones y opciones de carga autorizadas.", "Loading authorized locations and cargo options.") : t("Esperando los cinco grupos de GET /api/v2/intake/options.", "Waiting for the five groups from GET /api/v2/intake/options.")}</span></div></div>;
 }
 
-function OptionsErrorState({ error, retry, t }: { error: V2IntakeApiError; retry: () => void; t: Translate }) {
-  return <div className={styles.optionsError} role="alert"><ShieldAlert size={20} aria-hidden="true" /><div><strong>{error.code}</strong><span>{error.message}</span><small>{t("El formulario permanece bloqueado: errores 401/403, red o contrato nunca activan el fixture automáticamente.", "The form remains blocked: 401/403, network, or contract errors never activate the fixture automatically.")}</small></div><Button variant="secondary" type="button" onClick={retry}><RefreshCw size={15} aria-hidden="true" />{t("Reintentar GET", "Retry GET")}</Button></div>;
+function OptionsErrorState({ error, retry, t, embedded = false }: { error: V2IntakeApiError; retry: () => void; t: Translate; embedded?: boolean }) {
+  return <div className={styles.optionsError} role="alert"><ShieldAlert size={20} aria-hidden="true" /><div><strong>{embedded ? t("No se pudo cargar el catálogo", "The catalog could not be loaded") : error.code}</strong><span>{embedded ? intakeErrorCopy(error, t) : error.message}</span><small>{embedded ? t("El formulario estará disponible cuando podamos consultar tus opciones autorizadas.", "The form will be available when your authorized options can be loaded.") : t("El formulario permanece bloqueado: errores 401/403, red o contrato nunca activan el fixture automáticamente.", "The form remains blocked: 401/403, network, or contract errors never activate the fixture automatically.")}</small></div><Button variant="secondary" type="button" onClick={retry}><RefreshCw size={15} aria-hidden="true" />{embedded ? t("Reintentar", "Retry") : t("Reintentar GET", "Retry GET")}</Button></div>;
 }
 
 function EmptyFacilitiesState({ t }: { t: Translate }) {
@@ -524,8 +534,15 @@ function LiveSummary({ draft, options, request, evaluation, dirtyAfterCreate, t 
   </div><div className={styles.statusLegend}><Legend tone="preliminary" label={t("Local", "Local")} text={t("Editable; no persistido.", "Editable; not persisted.")} /><Legend tone="unknown" label="UNKNOWN" text={t("Sin evidencia suficiente.", "Insufficient evidence.")} /><Legend tone="confirmed" label="DRAFT" text={t("Devuelto por POST y GET V2.", "Returned by V2 POST and GET.")} /></div></aside>;
 }
 
-function ApiErrorState({ error, requestExists, retry, t }: { error: V2IntakeApiError; requestExists: boolean; retry: () => Promise<void>; t: Translate }) {
-  return <div className={styles.apiError} role="alert"><div><strong>{error.code}</strong><span>{error.message}</span><small>{requestExists ? t("El DRAFT ya fue creado; el reintento sólo vuelve a leer y evaluar.", "The DRAFT was already created; retry only reads and evaluates again.") : t("No se declara persistencia hasta recibir el envelope v2.0.", "Persistence is not claimed until the v2.0 envelope is received.")}</small></div><Button variant="secondary" type="button" onClick={() => void retry()}><RefreshCw size={15} aria-hidden="true" />{t("Reintentar", "Retry")}</Button></div>;
+function ApiErrorState({ error, requestExists, retry, t, embedded = false }: { error: V2IntakeApiError; requestExists: boolean; retry: () => Promise<void>; t: Translate; embedded?: boolean }) {
+  return <div className={styles.apiError} role="alert"><div><strong>{embedded ? t("No se pudo completar la consulta", "The request could not be completed") : error.code}</strong><span>{embedded ? intakeErrorCopy(error, t) : error.message}</span><small>{requestExists ? t("El borrador ya fue creado; el reintento sólo vuelve a leer y evaluar.", "The draft was already created; retry only reads and evaluates again.") : embedded ? t("Todavía no se ha confirmado el guardado de la solicitud.", "Saving this request has not been confirmed yet.") : t("No se declara persistencia hasta recibir el envelope v2.0.", "Persistence is not claimed until the v2.0 envelope is received.")}</small></div><Button variant="secondary" type="button" onClick={() => void retry()}><RefreshCw size={15} aria-hidden="true" />{t("Reintentar", "Retry")}</Button></div>;
+}
+
+function intakeErrorCopy(error: V2IntakeApiError, t: Translate) {
+  if (error.status === 401) return t("Inicia sesión para consultar tus datos y vuelve a intentarlo.", "Sign in to access your data, then try again.");
+  if (error.status === 403) return t("Tu cuenta no tiene permiso para esta acción.", "Your account is not authorized for this action.");
+  if (error.status === 409) return t("El registro cambió. Consulta su versión actual antes de continuar.", "The record has changed. Load its current version before continuing.");
+  return t("El servicio no devolvió datos disponibles para continuar. Vuelve a intentarlo más tarde.", "The service did not return usable data to continue. Try again later.");
 }
 
 function LoadingOrPending({ phase, retry, t }: { phase: SubmitPhase; retry: () => Promise<void>; t: Translate }) {

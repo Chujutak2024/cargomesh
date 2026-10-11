@@ -310,7 +310,12 @@ def build():
         for path in update['evidence']:
             assert (ROOT / path).is_file(), f'Missing relation evidence: {path}'
         relation['currentTreatment'] = update
+    current_spec = importlib.util.spec_from_file_location('current_uml', Path(__file__).with_name('build-v2-current-uml.py'))
+    current_uml = importlib.util.module_from_spec(current_spec)
+    current_spec.loader.exec_module(current_uml)
+    derived = current_uml.verify()
     return {'schemaVersion': '2.0', 'sourceSha256': model['sourceSha256'],
+        'currentDerivedUml': derived,
         'currentRelationReconciliation': current,
         'currentAttributeReconciliation': current_attrs,
         'currentIdentityReconciliation': identity,
@@ -352,6 +357,13 @@ def render(model):
     for index, relation in enumerate(model['relations']):
         lines.append(f"| {index} | {relation['source']} → {relation['target']} ({relation['label']}) | "
             f"{' / '.join(relation['endLabels']) or 'herencia/realización'} | {relation['physicalTreatment'].replace('|', '/')} | {relation['designTreatment']} | {relation['qaStatus']} |")
+    derived = model['currentDerivedUml']
+    lines += ['', '## UML derivado vigente: cinco relaciones reconciliadas', '',
+        f"Origen histórico SHA-256 `{derived['historicalSha256']}`. Revisión derivada: `{derived['path']}`; SHA-256 `{derived['sha256']}`. Se conservan las clases, atributos, operaciones, IDs y geometría; solo cambian cinco etiquetas de multiplicidad y el nombre de la página.", '',
+        '| Nº | Relación | Extremos históricos (origen / destino) | Extremos vigentes (origen / destino) |', '|---|---|---|---|']
+    for change in derived['changes']:
+        lines.append(f"| {change['number']} | {change['source']} → {change['target']} | {' / '.join(change['historicalEndLabels'])} | {' / '.join(change['currentEndLabels'])} |")
+    lines += ['', 'Las multiplicidades describen el contrato de comandos nativos V2. CapacitySource exige XOR ASSET/POOL; cada RankedOption reúne 1..* ofertas con cobertura completa y disjunta; los contactos PICKUP y RECIPIENT son valores obligatorios del agregado; una decisión admite 0..* bookings, uno por oferta seleccionada/emisor. La evidencia independiente de main @ 42a4fde informa diferencias documentales, sin defecto funcional nuevo confirmado. Esta derivación requiere relectura independiente y no promueve estados QA históricos ni cierra F-02.', '']
     lines += ['', '## Reconciliación vigente: F-02 y asociaciones HAC-40', '',
         f"Corte documental HAC-40: `{model['currentRelationReconciliation']['sourceCommit']}`. Cada tratamiento declara su evidencia; los conteos históricos no describen la cadena HAC-41. El baseline anterior permanece intacto.", '',
         model['currentRelationReconciliation']['qaEvidence'], '',
@@ -374,7 +386,7 @@ def render(model):
         'El enlace indirecto de LoadAllocation al recurso es deliberado y explícito; no se promete una columna directa inexistente. En reservas, el trigger garantiza coherencia cuando hay un binding, pero permite los tres IDs NULL sin comprobar fase o booking. La exigencia de asignación del comando nativo es una garantía distinta del catálogo físico. Esta sección no reobserva los 397 atributos ni certifica las 93 relaciones o Supabase alojado.', '', '## Gate antes de aplicar el esquema', '',
         'El inventario y este diseño deben coincidir exactamente con el UML. Después se comprobará cada destino contra pg_catalog, constraints, RLS y comandos reales; '
         'los 397 destinos y 93 tratamientos no pasan a IMPLEMENTADO por aparecer aquí. '
-        'Faltan las migraciones y servicios restantes, pruebas de concurrencia y aislamiento, datos autorizados y consumo Web/MCP del flujo completo.', '']
+        'Para cerrar F-02 falta medir la evidencia pendiente por SHA y entorno. Los estados del baseline histórico no prueban defectos actuales ni justifican migraciones nuevas por sí solos. Optimización sobre datos incompletos, adaptadores externos y canales live conservan sus límites documentados.', '']
     return '\n'.join(lines)
 
 if __name__ == '__main__':

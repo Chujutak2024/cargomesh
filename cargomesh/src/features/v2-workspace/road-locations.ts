@@ -20,6 +20,17 @@ export const facilities: readonly RoadLocation[] = [
   { id: "arequipa", city: "Arequipa", countryCode: "PE", region: "south-america", landNetwork: "south-america", lat: -16.409, lng: -71.5375 },
   { id: "piura", city: "Piura", countryCode: "PE", region: "south-america", landNetwork: "south-america", lat: -5.1945, lng: -80.6328 },
   { id: "lima", city: "Lima", countryCode: "PE", region: "south-america", landNetwork: "south-america", lat: -12.0464, lng: -77.0428 },
+  // City references for existing fleet journeys; never surveyed depots or GPS fixes.
+  // SimpleMaps Peru city subset (MIT): https://simplemaps.com/static/data/country-cities/pe/pe.json
+  { id: "trujillo", city: "Trujillo", countryCode: "PE", region: "south-america", landNetwork: "south-america", lat: -8.1119, lng: -79.0289 },
+  { id: "chiclayo", city: "Chiclayo", countryCode: "PE", region: "south-america", landNetwork: "south-america", lat: -6.7717, lng: -79.8383 },
+  { id: "cusco", city: "Cusco", countryCode: "PE", region: "south-america", landNetwork: "south-america", lat: -13.5169, lng: -71.9786 },
+  { id: "ica", city: "Ica", countryCode: "PE", region: "south-america", landNetwork: "south-america", lat: -14.0667, lng: -75.7333 },
+  { id: "huancayo", city: "Huancayo", countryCode: "PE", region: "south-america", landNetwork: "south-america", lat: -12.0667, lng: -75.2167 },
+  { id: "pucallpa", city: "Pucallpa", countryCode: "PE", region: "south-america", landNetwork: "south-america", lat: -8.3833, lng: -74.55 },
+  { id: "huanuco", city: "Huánuco", countryCode: "PE", region: "south-america", landNetwork: "south-america", lat: -9.9294, lng: -76.2397 },
+  // GeoNames populated place: https://www.geonames.org/3935720/lurin.html
+  { id: "lurin", city: "Lurín", countryCode: "PE", region: "south-america", landNetwork: "south-america", lat: -12.27461, lng: -76.86901 },
   { id: "cl-santiago", city: "Santiago", countryCode: "CL", region: "south-america", landNetwork: "south-america", lat: -33.4489, lng: -70.6693 },
   { id: "buenos-aires", city: "Buenos Aires", countryCode: "AR", region: "south-america", landNetwork: "south-america", lat: -34.6037, lng: -58.3816 },
   { id: "bogota", city: "Bogotá", countryCode: "CO", region: "south-america", landNetwork: "south-america", lat: 4.711, lng: -74.0721 },

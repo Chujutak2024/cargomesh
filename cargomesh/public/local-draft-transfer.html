@@ -1,0 +1,14 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><title>CargoMesh local draft recovery</title>
+<script>
+(() => {
+  if (!['http://127.0.0.1:8080','http://127.0.0.1:8083'].includes(location.origin)) return;
+  const nonce = location.hash.slice(1);
+  if (parent === window || !/^[a-f0-9-]{36}$/.test(nonce)) return;
+  let raw = null, recordRaw = null;
+  try {
+    raw = localStorage.getItem('cargomesh-v2-react-workspace-draft');
+    recordRaw = localStorage.getItem('cargomesh-v2-coordinator-local-draft-v1');
+  } catch { return; }
+  parent.postMessage({channel:'cargomesh-local-draft-transfer-v1',nonce,raw,recordRaw},'http://127.0.0.1:8080');
+})();
+</script></html>
