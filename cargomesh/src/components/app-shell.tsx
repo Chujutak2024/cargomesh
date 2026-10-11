@@ -1,25 +1,29 @@
 "use client";
 
 import {
+  Bot,
   Building2,
   CircleHelp,
   ClipboardList,
   History,
   Headphones,
   LayoutDashboard,
+  LogOut,
   MapPinned,
   Menu,
   PackagePlus,
   Route,
   Search,
-  Waypoints,
+  ShieldCheck,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { LanguageSwitcher } from "./language-switcher";
 import { useLocale } from "@/features/i18n/locale-provider";
+import { ContentMotion } from "@/features/product-motion/content-motion";
 import styles from "./app-shell.module.css";
 
 type ShellIdentity = { organizationName: string; displayName: string; role: string } | null;
@@ -71,11 +75,11 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
     <div className={styles.shell}>
       <a className={styles.skipLink} href="#main-content">{t("Saltar al contenido", "Skip to content")}</a>
 
-      <aside className={`${styles.sidebar} ${open ? styles.sidebarOpen : ""}`}>
+      <aside className={`${styles.sidebar} ${open ? styles.sidebarOpen : ""}`} aria-label={t("Espacio de trabajo del cliente", "Shipper workspace")}>
         <div className={styles.brandRow}>
           <Link className={styles.brand} href="/dashboard" onClick={() => setOpen(false)}>
-            <span className={styles.brandMark} aria-hidden="true"><Waypoints size={21} /></span>
-            <span><strong>CargoMesh</strong><small>Control Tower</small></span>
+            <Image className={styles.brandMark} src="/v2-workspace/cargomesh-icon.png" width={42} height={42} sizes="42px" alt="" aria-hidden="true" priority />
+            <span className={styles.brandCopy}><strong>CargoMesh</strong><small>{t("PORTAL CLIENTE", "SHIPPER PORTAL")}</small></span>
           </Link>
           <button className={styles.closeButton} type="button" aria-label={t("Cerrar navegación", "Close navigation")} onClick={() => setOpen(false)}>
             <X size={20} />
@@ -84,7 +88,8 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
 
         <div className={styles.workspace}>
           <span className={styles.workspaceIcon} aria-hidden="true"><Building2 size={17} /></span>
-          <span><small>{t("Organización activa", "Active organization")}</small><strong>{identity?.organizationName ?? "CargoMesh"}</strong></span>
+          <span className={styles.workspaceCopy}><small>{t("Organización activa", "Active organization")}</small><strong>{identity?.organizationName ?? "CargoMesh"}</strong></span>
+          <ShieldCheck className={styles.workspaceVerified} size={16} aria-label={t("Sesión protegida", "Protected session")} />
         </div>
 
         <nav className={styles.navigation} aria-label={t("Navegación principal", "Main navigation")}>
@@ -95,7 +100,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
                 const hrefPath = href.split("?")[0];
                 const active = pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
                 return (
-                  <Link key={href} href={href} aria-current={active ? "page" : undefined} className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`} onClick={() => setOpen(false)}>
+                  <Link key={href} href={href} title={label} aria-label={label} aria-current={active ? "page" : undefined} className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`} onClick={() => setOpen(false)}>
                     <Icon size={17} strokeWidth={1.8} aria-hidden="true" />
                     <span>{label}</span>
                   </Link>
@@ -107,7 +112,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
 
         <div className={styles.sidebarFoot}>
           <span className={styles.environmentDot} aria-hidden="true" />
-          <span><strong>{t("CargoMesh V2", "CargoMesh V2")}</strong><small>{t("Datos protegidos por organización", "Organization-scoped data")}</small></span>
+          <span className={styles.sidebarFootCopy}><strong>{t("CargoMesh V2", "CargoMesh V2")}</strong><small>{t("Datos protegidos por organización", "Organization-scoped data")}</small></span>
         </div>
       </aside>
 
@@ -119,26 +124,33 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
             <Menu size={20} />
           </button>
           <div className={styles.context}>
+            <span className={styles.contextEyebrow}>{t("Espacio de trabajo shipper", "Shipper workspace")}</span>
             <strong>{pageContext.title}</strong>
-            <span>{pageContext.subtitle}</span>
+            <span className={styles.contextSubtitle}>{pageContext.subtitle}</span>
           </div>
           <div className={styles.topbarActions}>
-            <LanguageSwitcher compact />
             <form className={styles.search} action="/requests">
               <Search size={17} aria-hidden="true" />
               <span className={styles.srOnly}>{t("Buscar en operaciones", "Search operations")}</span>
               <input name="q" type="search" placeholder={t("Buscar operación", "Search operation")} />
               <kbd>↵</kbd>
             </form>
+            <Link className={styles.assistantButton} href="/freight-request/new?assistant=open" aria-label={t("Abrir asistente CargoMesh", "Open CargoMesh assistant")}>
+              <Bot size={17} aria-hidden="true" />
+              <span>{t("Asistente", "Assistant")}</span>
+            </Link>
+            <LanguageSwitcher compact />
             <div className={styles.avatar} aria-hidden="true">{initials}</div>
             <div className={styles.userCopy}>
               <strong>{identity?.displayName ?? "CargoMesh"}</strong>
               <span>{identity?.role ?? t("Invitado", "Guest")}</span>
             </div>
-            <form action="/api/auth/logout" method="post"><button type="submit">{t("Cerrar sesión", "Sign out")}</button></form>
+            <form className={styles.signOut} action="/api/auth/logout" method="post"><button type="submit" aria-label={t("Cerrar sesión", "Sign out")}><LogOut size={16} aria-hidden="true"/><span>{t("Salir", "Sign out")}</span></button></form>
           </div>
         </header>
-        <main id="main-content" className={styles.main}>{children}</main>
+        <main id="main-content" className={styles.main}>
+          <ContentMotion identity={pathname} className={styles.motionRegion}>{children}</ContentMotion>
+        </main>
       </div>
     </div>
   );
