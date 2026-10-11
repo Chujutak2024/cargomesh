@@ -1,5 +1,6 @@
 import type {
   CreateFreightRequestV2Input,
+  FreightRequestV2Data,
   IntakeFacilityOption,
   IntakeOptionsData,
 } from "./contracts";
@@ -46,8 +47,8 @@ function withDerivedCargoTotals(draft: V2IntakePrototypeDraft): V2IntakePrototyp
   const volume = Number(draft.unitVolumePerUnitM3);
   return {
     ...draft,
-    totalWeightKg: count > 0 && weight > 0 ? String(count * weight) : "",
-    totalVolumeM3: count > 0 && volume > 0 ? String(count * volume) : "",
+    totalWeightKg: count > 0 && weight > 0 ? String(Number((count * weight).toFixed(6))) : "",
+    totalVolumeM3: count > 0 && volume > 0 ? String(Number((count * volume).toFixed(6))) : "",
   };
 }
 
@@ -69,6 +70,59 @@ export function applyChatFieldToDraft(draft: V2IntakePrototypeDraft, field: keyo
   const next = updatePrototypeDraftField(draft, field, value as never);
   if (field === "packaging") next.unitPackageType = value;
   return next;
+}
+
+/** Apply one interpreted turn atomically so totals and unchanged fields survive corrections. */
+export function applyChatFieldsToDraft(
+  draft: V2IntakePrototypeDraft,
+  fields: ReadonlyArray<{ field: keyof V2IntakePrototypeDraft; value: string }>,
+): V2IntakePrototypeDraft {
+  return fields.reduce((current, { field, value }) => applyChatFieldToDraft(current, field, value), draft);
+}
+
+function localDateTime(instant: string): string {
+  const date = new Date(instant);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+/** A persisted request is editable here only if this intake can represent it without losing units or locations. */
+export function requestToPrototypeDraft(request: FreightRequestV2Data): V2IntakePrototypeDraft | null {
+  const unit = request.cargoSpecification.units[0];
+  if (!request.origin.facilityId || !request.destination.facilityId || request.cargoSpecification.units.length !== 1 || !unit) return null;
+  return {
+    originFacilityId: request.origin.facilityId,
+    destinationFacilityId: request.destination.facilityId,
+    categoryCode: request.cargoSpecification.categoryCode,
+    packaging: request.cargoSpecification.packaging,
+    cargoDescription: request.cargoSpecification.description,
+    totalWeightKg: String(request.cargoSpecification.totalWeightKg),
+    totalVolumeM3: String(request.cargoSpecification.totalVolumeM3),
+    divisible: request.cargoSpecification.divisible,
+    requirements: [...request.cargoSpecification.requirements],
+    temperatureMinCelsius: request.cargoSpecification.temperatureRange?.minCelsius == null ? "" : String(request.cargoSpecification.temperatureRange.minCelsius),
+    temperatureMaxCelsius: request.cargoSpecification.temperatureRange?.maxCelsius == null ? "" : String(request.cargoSpecification.temperatureRange.maxCelsius),
+    unitPackageType: unit.packageType,
+    unitQuantity: String(unit.quantity),
+    unitWeightPerUnitKg: String(unit.weightPerUnitKg),
+    unitVolumePerUnitM3: String(unit.volumePerUnitM3),
+    unitLengthCm: String(unit.dimensionsCm.length),
+    unitWidthCm: String(unit.dimensionsCm.width),
+    unitHeightCm: String(unit.dimensionsCm.height),
+    unitIndivisible: unit.indivisible,
+    unitStackable: unit.stackable,
+    pickupWindowStartsAt: localDateTime(request.pickupWindow.startsAt),
+    pickupWindowEndsAt: localDateTime(request.pickupWindow.endsAt),
+    deliveryWindowStartsAt: localDateTime(request.deliveryWindow.startsAt),
+    deliveryWindowEndsAt: localDateTime(request.deliveryWindow.endsAt),
+    requiredEquipment: request.requiredEquipment ?? "",
+    pickupContactName: request.contacts.pickup.name,
+    pickupContactPhoneE164: request.contacts.pickup.phoneE164,
+    pickupContactEmail: request.contacts.pickup.email ?? "",
+    recipientContactName: request.contacts.recipient.name,
+    recipientContactPhoneE164: request.contacts.recipient.phoneE164,
+    recipientContactEmail: request.contacts.recipient.email ?? "",
+  };
 }
 
 export type PrototypeValidationCode =
@@ -500,6 +554,33 @@ export function mapDraftToCreateFreightRequestV2Input(
         phoneE164: draft.recipientContactPhoneE164.trim(),
         email: draft.recipientContactEmail.trim(),
       },
+    },
+  };
+}
+
+/** Preserve persisted fields this guided intake does not expose while revising its supported fields. */
+export function mapDraftToRevisionInput(
+  draft: V2IntakePrototypeDraft,
+  options: IntakeOptionsData,
+  request: FreightRequestV2Data,
+): CreateFreightRequestV2Input {
+  if (!requestToPrototypeDraft(request)) throw new Error("REQUEST_NOT_EDITABLE_IN_INTAKE");
+  const edited = mapDraftToCreateFreightRequestV2Input(draft, options);
+  return {
+    ...edited,
+    acceptedModes: request.acceptedModes,
+    serviceType: request.serviceType,
+    selectionObjective: request.selectionObjective ?? undefined,
+    preferredEquipment: request.preferredEquipment,
+    budget: request.budget,
+    cargoSpecification: {
+      ...request.cargoSpecification,
+      ...edited.cargoSpecification,
+      units: [{ ...request.cargoSpecification.units[0], ...edited.cargoSpecification.units[0] }],
+    },
+    contacts: {
+      pickup: { ...request.contacts.pickup, ...edited.contacts.pickup },
+      recipient: { ...request.contacts.recipient, ...edited.contacts.recipient },
     },
   };
 }

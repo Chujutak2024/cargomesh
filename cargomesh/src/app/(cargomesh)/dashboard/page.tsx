@@ -5,6 +5,7 @@ import { listWorkspaceFacilities, listWorkspaceRequests, listWorkspaceWorkflow }
 import { getRequestLocale } from "@/server/i18n/server";
 import { localeTag, translate } from "@/features/i18n/config";
 import { formatDateTime, formatMass, requestStatusLabel, requestStatusTone } from "@/features/shipper-portal/shipper-model";
+import { ConversationEntry } from "@/features/v2-intake/conversation-entry";
 import styles from "@/features/shipper-portal/shipper-portal.module.css";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,8 @@ export default async function DashboardPage() {
       <p>{t("Crea un borrador versionado, compara alternativas reales, autoriza la reserva y consulta únicamente eventos reportados.", "Create a versioned draft, compare real alternatives, authorize booking, and review only reported events.")}</p></div>
       <div className={styles.heroActions}><Link className={styles.secondary} href="/freight-request/new?assistant=open"><Bot size={17}/>{t("Abrir asistente", "Open assistant")}</Link>
         <Link className={styles.primary} href="/freight-request/new"><PackagePlus size={17}/>{t("Nueva solicitud", "New request")}</Link></div></header>
+
+    <ConversationEntry />
 
     <section className={styles.metrics} aria-label={t("Resumen operativo", "Operations summary")}>
       <Metric icon={<ClipboardList size={19}/>} value={requests.length} label={t("Solicitudes", "Requests")} />

@@ -227,6 +227,30 @@ export async function createFreightRequestV2(
   );
 }
 
+export async function reviseFreightRequestV2(
+  requestId: string,
+  expectedDraftVersion: number,
+  value: CreateFreightRequestV2Input,
+  idempotencyKey: string,
+  fetcher: FetchLike = fetch,
+) {
+  const response = await fetcher(`/api/v2/freight/requests/${encodeURIComponent(requestId)}/revisions`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
+    },
+    body: JSON.stringify({ expectedDraftVersion, value }),
+  });
+  return parseContract<FreightRequestV2Response>(
+    await requireOk(response),
+    "POST /api/v2/freight/requests/:id/revisions",
+    FreightRequestV2ResponseSchema,
+  );
+}
+
 export async function getFreightRequestV2(id: string, fetcher: FetchLike = fetch) {
   const response = await fetcher(`/api/v2/freight/requests/${encodeURIComponent(id)}`, {
     method: "GET",
