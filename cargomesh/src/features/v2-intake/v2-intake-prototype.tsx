@@ -3,18 +3,24 @@
 import {
   ArrowLeft,
   ArrowRight,
+  ArrowUpDown,
+  Bot,
   CalendarDays,
   Check,
+  ChevronDown,
   ClipboardCheck,
   ContactRound,
+  Copy,
   Info,
   Loader2,
   MapPinned,
   Package,
+  Route,
   RefreshCw,
   RotateCcw,
   ShieldAlert,
   Sparkles,
+  Truck,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -22,6 +28,7 @@ import Link from "next/link";
 import { Badge, Button, Checkbox, Input, Select, Textarea } from "@/components/ui";
 import { useLocale } from "@/features/i18n/locale-provider";
 import { CandidateResults } from "./components/candidate-results";
+import { FacilityPicker } from "./components/facility-picker";
 import { ConversationChat } from "./conversation-chat";
 import type { ConversationField } from "./conversation-fields";
 import { RoadCandidateMapBoundary } from "./components/road-candidate-map-boundary";
@@ -41,6 +48,7 @@ import {
   findIntakeFacility,
   mapDraftToCreateFreightRequestV2Input,
   toggleRequirement,
+  updatePrototypeDraftField,
   validatePrototypeReview,
   validatePrototypeStep,
   type PrototypeStep,
@@ -87,6 +95,7 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
   const idempotencyRef = useRef<{ fingerprint: string; key: string } | null>(null);
   const flowSequenceRef = useRef(0);
   const draftRevisionRef = useRef(0);
+  const submitInFlightRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -137,6 +146,7 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
     t("Ventanas y contactos", "Windows & contacts"),
     t("Crear y evaluar", "Create & evaluate"),
   ];
+  const ActiveStepIcon = STEP_ICONS[step - 1];
   const mapProps = useMemo(() => {
     if (!request || !evaluation) return null;
     return mapServiceabilityToMapViewProps(
@@ -149,7 +159,7 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
 
   const update = <K extends keyof V2IntakePrototypeDraft>(field: K, value: V2IntakePrototypeDraft[K]) => {
     draftRevisionRef.current += 1;
-    setDraft((current) => ({ ...current, [field]: value }));
+    setDraft((current) => updatePrototypeDraftField(current, field, value));
     setIssues((current) => current.filter((issue) => issue.field !== field));
     if (request) setDirtyAfterCreate(true);
   };
@@ -219,6 +229,7 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
     setEvaluation(null);
     setSelectedCandidateId(null);
     setDirtyAfterCreate(false);
+    submitInFlightRef.current = false;
     idempotencyRef.current = null;
     window.sessionStorage.removeItem(CHAT_REQUEST_SESSION_KEY);
   };
@@ -247,7 +258,9 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
     }
   };
   const createDraftAndEvaluate = async () => {
+    if (submitInFlightRef.current) return;
     if (!enterReview()) return;
+    submitInFlightRef.current = true;
     setSubmitError(null);
     setEvaluation(null);
     const flowSequence = flowSequenceRef.current + 1;
@@ -268,10 +281,15 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
       if (flowSequence !== flowSequenceRef.current) return;
       setSubmitError(normalizeApiError(error));
       setSubmitPhase("error");
+    } finally {
+      submitInFlightRef.current = false;
     }
   };
   const retryAfterCreate = async () => {
+    if (submitInFlightRef.current) return;
+    submitInFlightRef.current = true;
     if (!request) {
+      submitInFlightRef.current = false;
       await createDraftAndEvaluate();
       return;
     }
@@ -284,6 +302,8 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
       if (flowSequence !== flowSequenceRef.current) return;
       setSubmitError(normalizeApiError(error));
       setSubmitPhase("error");
+    } finally {
+      submitInFlightRef.current = false;
     }
   };
 
@@ -298,13 +318,21 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
     <div className={`${styles.page} ${embedded?styles.embedded:""}`}>
       <div className={styles.frame}>
         <header className={styles.hero}>
-          <div className={styles.heroCopy}>
-            {!embedded?<span className={styles.eyebrow}>CargoMesh V2</span>:null}
-            {embedded?<h2>{t("Datos de la solicitud", "Request details")}</h2>:<h1>{t("Crear solicitud ROAD", "Create ROAD request")}</h1>}
-            <p>{embedded ? t("Prepara el borrador y comprueba sus datos antes de enviarlo.", "Prepare the draft and check its details before saving it.") : t(
-              "Flujo para clientes/shipper: crea un borrador y consulta elegibilidad preliminar sin convertirla en oferta ni reserva.",
-              "Client/shipper flow: create a draft and read preliminary serviceability without turning it into an offer or booking.",
-            )}</p>
+          <div className={styles.heroMain}>
+            {!embedded ? <span className={styles.heroIcon} aria-hidden="true"><Package size={24} /></span> : null}
+            <div className={styles.heroCopy}>
+              {!embedded?<span className={styles.eyebrow}>{t("Nuevo transporte · ROAD", "New shipment · ROAD")}</span>:null}
+              {embedded?<h2>{t("Datos de la solicitud", "Request details")}</h2>:<h1>{t("Crea tu solicitud de transporte", "Create your freight request")}</h1>}
+              <p>{embedded ? t("Prepara el borrador y comprueba sus datos antes de enviarlo.", "Prepare the draft and check its details before saving it.") : t(
+                "Elige sedes, describe la carga y confirma las ventanas. CargoMesh conserva todo localmente hasta que autorices crear el DRAFT.",
+                "Choose facilities, describe the cargo, and confirm the windows. CargoMesh keeps everything local until you authorize DRAFT creation.",
+              )}</p>
+              {!embedded ? <div className={styles.heroFacts}>
+                <span><Route size={14} aria-hidden="true" />{t("4 etapas guiadas", "4 guided stages")}</span>
+                <span><ShieldAlert size={14} aria-hidden="true" />{t("Sin precio ni booking ficticio", "No fictitious price or booking")}</span>
+                <span><Bot size={14} aria-hidden="true" />{t("Asistente sobre el mismo borrador", "Assistant on the same draft")}</span>
+              </div> : null}
+            </div>
           </div>
           <div className={styles.heroActions}>
             <Badge tone={optionsSource === "api" ? "confirmed" : optionsSource === "error" ? "unknown" : "preliminary"}>
@@ -323,7 +351,7 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
         <div className={`${styles.notice} ${optionsSource === "fixture" ? styles.fixtureNotice : ""}`} role="note">
           <Info size={18} aria-hidden="true" />
           <div>
-            <strong>{optionsSource === "fixture" ? t("Fixture de desarrollo activado explícitamente", "Explicit development fixture enabled") : t("Estado local hasta crear", "Local state until creation")}</strong>
+            <strong>{optionsSource === "fixture" ? t("Fixture de desarrollo activado explícitamente", "Explicit development fixture enabled") : t("Tu edición permanece local", "Your editing stays local")}</strong>
             <span>{optionsSource === "fixture"
               ? t("NEXT_PUBLIC_V2_INTAKE_OPTIONS_SOURCE=fixture omite el GET sólo en desarrollo. El JSON está rotulado SIMULATED y crear todavía requiere el POST real.", "NEXT_PUBLIC_V2_INTAKE_OPTIONS_SOURCE=fixture skips GET only in development. The JSON is labelled SIMULATED and creation still requires the real POST.")
               : t("Avanzar entre pasos conserva la edición en esta pantalla. Los datos se envían cuando confirmas la creación del borrador.", "Moving between steps retains editing on this screen. Data is sent when you confirm draft creation.")}</span>
@@ -343,6 +371,7 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
         ) : null}
 
         {options && !optionCoverage.emptyFacilities && optionCoverage.complete ? <>
+        {!embedded ? <div className={styles.assistantBridge}><span className={styles.assistantBridgeIcon} aria-hidden="true"><Bot size={19} /></span><div><strong>{t("¿Prefieres contarlo con tus palabras?", "Prefer to describe it in your own words?")}</strong><span>{t("El asistente y este formulario editan el mismo borrador local; no crean una segunda solicitud.", "The assistant and this form edit the same local draft; they do not create a second request.")}</span></div><Button variant="secondary" type="button" onClick={() => window.dispatchEvent(new Event("cargomesh:open-assistant"))}>{t("Abrir asistente", "Open assistant")}</Button></div> : null}
         <nav className={styles.stepper} aria-label={t("Pasos del intake V2", "V2 intake steps")}>{stepLabels.map((label, index) => {
           const number = (index + 1) as PrototypeStep;
           const Icon = STEP_ICONS[index];
@@ -371,6 +400,7 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
         <div className={styles.workspace}>
           <ContentMotion identity={step} focusOnChange className={styles.stepMotion}><section className={styles.card} aria-labelledby={`prototype-step-${step}`}>
             <header className={styles.cardHeader}>
+              <span className={styles.stepHeaderIcon} aria-hidden="true"><ActiveStepIcon size={20} /></span>
               <div><span className={styles.eyebrow}>{t(`Paso ${step} de 4`, `Step ${step} of 4`)}</span><h2 tabIndex={-1} id={`prototype-step-${step}`}>{stepLabels[step - 1]}</h2><p>{stepDescription(step, t)}</p></div>
               <Badge tone={step === 4 ? "confirmed" : "preliminary"}>{step === 4 ? t("Listo para crear", "Ready to create") : t("Edición local", "Local editing")}</Badge>
             </header>
@@ -379,7 +409,7 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
               {step === 1 ? <FacilityStep draft={draft} options={activeOptions} update={update} errorFor={errorFor} t={t} /> : null}
               {step === 2 ? <CargoStep draft={draft} options={activeOptions} update={update} errorFor={errorFor} t={t} /> : null}
               {step === 3 ? <ScheduleAndContactsStep draft={draft} options={activeOptions} update={update} errorFor={errorFor} t={t} /> : null}
-              {step === 4 ? <ReviewStep draft={draft} options={activeOptions} request={request} dirtyAfterCreate={dirtyAfterCreate} t={t} locale={locale} /> : null}
+              {step === 4 ? <ReviewStep draft={draft} options={activeOptions} request={request} dirtyAfterCreate={dirtyAfterCreate} t={t} locale={locale} onEdit={(target) => { setStep(target); setIssues([]); }} /> : null}
               {submitError ? <ApiErrorState error={submitError} requestExists={Boolean(request)} retry={retryAfterCreate} t={t} embedded={embedded} /> : null}
             </div>
             <footer className={styles.footer}>
@@ -446,57 +476,97 @@ function EmptyFacilitiesState({ t }: { t: Translate }) {
 function FacilityStep({ draft, options, update, errorFor, t }: FieldHelpers) {
   const origin = findIntakeFacility(options, draft.originFacilityId);
   const destination = findIntakeFacility(options, draft.destinationFacilityId);
-  return <><h3 className={styles.sectionTitle}><MapPinned size={16} aria-hidden="true" />{t("Selecciona sedes de tu organización", "Select facilities in your organization")}</h3><div className={styles.formGrid}>
-    <Select label={t("Sede de origen", "Origin facility")} value={draft.originFacilityId} error={errorFor("originFacilityId")} hint={t("El servidor vuelve a validar tenant y ubicación canónica.", "The server revalidates tenant and canonical location.")} onChange={(event) => update("originFacilityId", event.target.value)}><option value="">{t("Seleccionar origen", "Select origin")}</option>{options.facilities.map((facility) => <option value={facility.facilityId} key={facility.facilityId}>{facility.code} · {facility.label}</option>)}</Select>
-    <Select label={t("Sede de destino", "Destination facility")} value={draft.destinationFacilityId} error={errorFor("destinationFacilityId")} onChange={(event) => update("destinationFacilityId", event.target.value)}><option value="">{t("Seleccionar destino", "Select destination")}</option>{options.facilities.map((facility) => <option value={facility.facilityId} key={facility.facilityId}>{facility.code} · {facility.label}</option>)}</Select>
-    {origin ? <FacilityCard facility={origin} t={t} /> : null}{destination ? <FacilityCard facility={destination} t={t} /> : null}
-  </div><div className={styles.boundaryNotice} role="note"><Info size={16} aria-hidden="true" /><span>{t("Seleccionar sedes no confirma ruta, cobertura, capacidad, precio ni persistencia. Esas conclusiones sólo proceden de las respuestas del servidor.", "Selecting facilities does not confirm route, coverage, capacity, price, or persistence. Those conclusions come only from server responses.")}</span></div></>;
-}
-
-function FacilityCard({ facility, t }: { facility: IntakeOptionsData["facilities"][number]; t: Translate }) {
-  return <article className={styles.siteCard}><div className={styles.siteMeta}><Badge tone="preliminary">{t("Selector", "Selector")}</Badge><Badge tone={facility.lat == null ? "unknown" : "confirmed"}>{facility.lat == null ? "UNKNOWN GEO" : "CANONICAL GEO"}</Badge></div><strong>{facility.code} · {facility.label}</strong><span>{facility.city}, {facility.region ?? "—"}, {facility.countryCode}</span><small>{t("La pertenencia al tenant se confirma server-side al crear.", "Tenant ownership is confirmed server-side on creation.")}</small></article>;
+  return <>
+    <div className={styles.facilityIntro}><div><h3 className={styles.sectionTitle}><MapPinned size={17} aria-hidden="true" />{t("Construye el corredor desde tus sedes", "Build the lane from your facilities")}</h3><p>{t("Busca por nombre, código o área. Sólo aparecen sedes del catálogo autenticado de tu organización.", "Search by name, code, or area. Only facilities from your authenticated organization catalog are shown.")}</p></div>
+      {origin && destination ? <Button variant="secondary" type="button" onClick={() => { update("originFacilityId", destination.facilityId); update("destinationFacilityId", origin.facilityId); }}><ArrowUpDown size={15} aria-hidden="true" />{t("Invertir ruta", "Swap route")}</Button> : null}
+    </div>
+    <div className={styles.facilityGrid}>
+      <FacilityPicker kind="origin" facilities={options.facilities} value={draft.originFacilityId} excludedFacilityId={draft.destinationFacilityId} error={errorFor("originFacilityId")} onChange={(value) => update("originFacilityId", value)} t={t} />
+      <FacilityPicker kind="destination" facilities={options.facilities} value={draft.destinationFacilityId} excludedFacilityId={draft.originFacilityId} error={errorFor("destinationFacilityId")} onChange={(value) => update("destinationFacilityId", value)} t={t} />
+    </div>
+    <div className={styles.routeStatus} data-complete={origin && destination ? "true" : "false"}>
+      <span className={styles.routeNode}><MapPinned size={15} aria-hidden="true" /></span>
+      <div><strong>{origin?.city ?? t("Origen pendiente", "Origin pending")}</strong><small>{origin?.label ?? t("Selecciona una sede autorizada", "Select an authorized facility")}</small></div>
+      <span className={styles.routeConnector}><Route size={16} aria-hidden="true" /></span>
+      <div><strong>{destination?.city ?? t("Destino pendiente", "Destination pending")}</strong><small>{destination?.label ?? t("Selecciona una sede distinta", "Select a different facility")}</small></div>
+      <Badge tone={origin && destination ? "preliminary" : "neutral"}>{origin && destination ? t("Corredor local", "Local lane") : t("Incompleto", "Incomplete")}</Badge>
+    </div>
+    <div className={styles.boundaryNotice} role="note"><Info size={16} aria-hidden="true" /><span>{t("Seleccionar sedes no confirma ruta, cobertura, capacidad, precio ni persistencia. La dirección postal y el contacto de sede no forman parte del contrato actual; no se inventan.", "Selecting facilities does not confirm route, coverage, capacity, price, or persistence. Postal address and facility contact are not part of the current contract and are not invented.")}</span></div>
+  </>;
 }
 
 function CargoStep({ draft, options, update, errorFor, t }: FieldHelpers) {
   const category = options.cargoCategories.find((option) => option.code === draft.categoryCode);
   const packaging = options.packagingOptions.find((option) => option.code === draft.packaging);
   const unitPackaging = options.packagingOptions.find((option) => option.code === draft.unitPackageType);
-  return <><h3 className={styles.sectionTitle}><Package size={16} aria-hidden="true" />{t("Especificación y unidad de carga", "Cargo specification and unit")}</h3><div className={styles.formGrid}>
-    <OptionSelect label={t("Categoría", "Category")} placeholder={t("Seleccionar categoría", "Select category")} options={options.cargoCategories} value={draft.categoryCode} error={errorFor("categoryCode")} onChange={(value) => update("categoryCode", value)} t={t} />
-    <OptionSelect label={t("Embalaje", "Packaging")} placeholder={t("Seleccionar embalaje", "Select packaging")} options={options.packagingOptions} value={draft.packaging} error={errorFor("packaging")} onChange={(value) => { update("packaging", value); if (!draft.unitPackageType) update("unitPackageType", value); }} t={t} />
-    {category ? <CategoryGuidanceEvidence guidance={category.guidance} t={t} /> : null}
-    {packaging?.verification ? <OptionEvidence label="verification" value={`${packaging.verification} · ${t("El embalaje se captura, pero no confirma compatibilidad de manipulación.", "Packaging is captured, but handling compatibility is not confirmed.")}`} /> : null}
-    <Textarea fieldClassName={styles.wide} label={t("Descripción", "Description")} rows={3} value={draft.cargoDescription} error={errorFor("cargoDescription")} onChange={(event) => update("cargoDescription", event.target.value)} />
-    <Input label={t("Peso total (kg)", "Total weight (kg)")} type="number" min="0" step="0.1" value={draft.totalWeightKg} error={errorFor("totalWeightKg")} onChange={(event) => update("totalWeightKg", event.target.value)} />
-    <Input label={t("Volumen total (m³)", "Total volume (m³)")} type="number" min="0" step="0.1" value={draft.totalVolumeM3} error={errorFor("totalVolumeM3")} onChange={(event) => update("totalVolumeM3", event.target.value)} />
-    <Checkbox label={t("Carga divisible", "Divisible cargo")} hint={t("Dato declarado; no implica que un carrier pueda fraccionarla.", "Declared fact; it does not imply a carrier can split it.")} checked={draft.divisible} onChange={(event) => update("divisible", event.target.checked)} />
-  </div>
-  <fieldset className={styles.optionFieldset}><legend>{t("Requisitos especiales", "Special requirements")}</legend><div className={styles.checkboxGrid}>{options.requirementOptions.map((option) => <Checkbox key={option.code} label={optionLabel(option, t)} hint={verificationCopy(option.verification, t)} checked={draft.requirements.includes(option.code)} onChange={(event) => update("requirements", toggleRequirement(draft.requirements, option.code, event.target.checked))} />)}</div></fieldset>
-  {draft.requirements.includes("TEMP_CONTROLLED") ? <div className={styles.formGrid}><Input label={t("Temperatura mínima (°C)", "Minimum temperature (°C)")} type="number" step="0.1" value={draft.temperatureMinCelsius} error={errorFor("temperatureMinCelsius")} onChange={(event) => update("temperatureMinCelsius", event.target.value)} /><Input label={t("Temperatura máxima (°C)", "Maximum temperature (°C)")} type="number" step="0.1" value={draft.temperatureMaxCelsius} error={errorFor("temperatureMaxCelsius")} onChange={(event) => update("temperatureMaxCelsius", event.target.value)} /></div> : null}
-  <fieldset className={styles.optionFieldset}><legend>{t("Unidad de carga · units[0]", "Cargo unit · units[0]")}</legend><div className={styles.formGrid}>
-    <OptionSelect label={t("Tipo de paquete", "Package type")} placeholder={t("Seleccionar tipo", "Select type")} options={options.packagingOptions} value={draft.unitPackageType} error={errorFor("unitPackageType")} onChange={(value) => update("unitPackageType", value)} t={t} />
-    {unitPackaging?.verification ? <OptionEvidence label="verification" value={`${unitPackaging.verification} · ${t("Dato de captura; no prueba compatibilidad del carrier.", "Capture data; it does not prove carrier compatibility.")}`} /> : null}
-    <Input label={t("Cantidad", "Quantity")} type="number" min="1" step="1" value={draft.unitQuantity} error={errorFor("unitQuantity")} onChange={(event) => update("unitQuantity", event.target.value)} />
-    <Input label={t("Peso por unidad (kg)", "Weight per unit (kg)")} type="number" min="0" step="0.1" value={draft.unitWeightPerUnitKg} error={errorFor("unitWeightPerUnitKg")} onChange={(event) => update("unitWeightPerUnitKg", event.target.value)} />
-    <Input label={t("Volumen por unidad (m³)", "Volume per unit (m³)")} type="number" min="0" step="0.1" value={draft.unitVolumePerUnitM3} error={errorFor("unitVolumePerUnitM3")} onChange={(event) => update("unitVolumePerUnitM3", event.target.value)} />
-    <Input label={t("Largo (cm)", "Length (cm)")} type="number" min="0" step="0.1" value={draft.unitLengthCm} error={errorFor("unitLengthCm")} onChange={(event) => update("unitLengthCm", event.target.value)} />
-    <Input label={t("Ancho (cm)", "Width (cm)")} type="number" min="0" step="0.1" value={draft.unitWidthCm} error={errorFor("unitWidthCm")} onChange={(event) => update("unitWidthCm", event.target.value)} />
-    <Input label={t("Alto (cm)", "Height (cm)")} type="number" min="0" step="0.1" value={draft.unitHeightCm} error={errorFor("unitHeightCm")} onChange={(event) => update("unitHeightCm", event.target.value)} />
-    <Checkbox label={t("Unidad indivisible", "Indivisible unit")} checked={draft.unitIndivisible} onChange={(event) => update("unitIndivisible", event.target.checked)} />
-    <Checkbox label={t("Apilable", "Stackable")} checked={draft.unitStackable} onChange={(event) => update("unitStackable", event.target.checked)} />
-  </div></fieldset></>;
+  const dimensionFields: Array<keyof V2IntakePrototypeDraft> = ["unitLengthCm", "unitWidthCm", "unitHeightCm"];
+  const hasDimensionErrors = dimensionFields.some((field) => Boolean(errorFor(field)));
+  const [unitDetailsOpen, setUnitDetailsOpen] = useState(Boolean(draft.unitLengthCm));
+  useEffect(() => { if (hasDimensionErrors) setUnitDetailsOpen(true); }, [hasDimensionErrors]);
+  const suggestedRequirements = category ? Object.entries(category.guidance.suggestedRequirements)
+    .filter(([, enabled]) => enabled === true)
+    .map(([code]) => code)
+    .filter((code) => options.requirementOptions.some((option) => option.code === code)) : [];
+
+  return <>
+    <section className={styles.formSection}>
+      <header className={styles.formSectionHeader}><div><span className={styles.sectionKicker}>{t("Primero lo esencial", "Start with the essentials")}</span><h3 className={styles.sectionTitle}><Package size={17} aria-hidden="true" />{t("¿Qué necesitas transportar?", "What are you shipping?")}</h3><p>{t("La categoría activa la guía contractual; el embalaje define cómo capturamos la unidad.", "The category activates contract guidance; packaging defines how the unit is captured.")}</p></div></header>
+      <div className={styles.formGrid}>
+        <OptionSelect label={t("Categoría de carga", "Cargo category")} placeholder={t("Seleccionar categoría", "Select category")} options={options.cargoCategories} value={draft.categoryCode} error={errorFor("categoryCode")} onChange={(value) => update("categoryCode", value)} t={t} />
+        <OptionSelect label={t("Embalaje principal", "Primary packaging")} placeholder={t("Seleccionar embalaje", "Select packaging")} options={options.packagingOptions} value={draft.packaging} error={errorFor("packaging")} onChange={(value) => { update("packaging", value); if (!draft.unitPackageType) update("unitPackageType", value); }} t={t} />
+        <Textarea fieldClassName={styles.wide} label={t("Descripción operativa", "Operational description")} hint={t("Describe el contenido sin incluir precio, carrier o supuestos de cobertura.", "Describe the contents without price, carrier, or coverage assumptions.")} rows={3} value={draft.cargoDescription} error={errorFor("cargoDescription")} onChange={(event) => update("cargoDescription", event.target.value)} />
+        <Checkbox label={t("La carga puede dividirse", "Cargo may be split")} hint={t("Dato declarado; no implica que un carrier pueda fraccionarla.", "Declared fact; it does not imply a carrier can split it.")} checked={draft.divisible} onChange={(event) => update("divisible", event.target.checked)} />
+        {packaging?.verification ? <OptionEvidence label="verification" value={`${packaging.verification} · ${t("Captura del embalaje; no confirma manipulación ni compatibilidad.", "Packaging capture; it does not confirm handling or compatibility.")}`} /> : null}
+      </div>
+      {category ? <details className={styles.guidanceDisclosure}><summary><span>{t("Ver guía recomendada por la categoría", "View category guidance")}</span><ChevronDown size={16} aria-hidden="true" /></summary><CategoryGuidanceEvidence guidance={category.guidance} t={t} /></details> : null}
+    </section>
+
+    {category ? <fieldset className={styles.choiceFieldset}><legend>{t("Condiciones y requisitos", "Conditions and requirements")}</legend><div className={styles.choiceHeading}><p>{t("Selecciona únicamente lo que necesita esta carga. Cada estado de verificación se conserva.", "Select only what this cargo needs. Every verification state is preserved.")}</p>{suggestedRequirements.length ? <Button variant="ghost" type="button" onClick={() => update("requirements", [...new Set([...draft.requirements, ...suggestedRequirements])])}><Sparkles size={14} aria-hidden="true" />{t("Aplicar sugeridos", "Apply suggested")}</Button> : null}</div><div className={styles.checkboxGrid}>{options.requirementOptions.map((option) => <Checkbox key={option.code} label={optionLabel(option, t)} hint={verificationCopy(option.verification, t)} checked={draft.requirements.includes(option.code)} onChange={(event) => update("requirements", toggleRequirement(draft.requirements, option.code, event.target.checked))} />)}</div></fieldset> : null}
+
+    {draft.requirements.includes("TEMP_CONTROLLED") ? <section className={`${styles.formSection} ${styles.temperatureSection}`}><header className={styles.formSectionHeader}><div><span className={styles.sectionKicker}>TEMP_CONTROLLED</span><h3>{t("Rango de temperatura declarado", "Declared temperature range")}</h3></div><Badge tone="unknown">RESOURCE_EVIDENCE</Badge></header><div className={styles.formGrid}><Input label={t("Temperatura mínima (°C)", "Minimum temperature (°C)")} type="number" step="0.1" value={draft.temperatureMinCelsius} error={errorFor("temperatureMinCelsius")} onChange={(event) => update("temperatureMinCelsius", event.target.value)} /><Input label={t("Temperatura máxima (°C)", "Maximum temperature (°C)")} type="number" step="0.1" value={draft.temperatureMaxCelsius} error={errorFor("temperatureMaxCelsius")} onChange={(event) => update("temperatureMaxCelsius", event.target.value)} /></div></section> : null}
+
+    {draft.packaging ? <section className={styles.formSection}>
+      <header className={styles.formSectionHeader}><div><span className={styles.sectionKicker}>{t("Una sola captura", "One capture")}</span><h3 className={styles.sectionTitle}>{t("Unidad de carga", "Cargo unit")}</h3><p>{t("Ingresa cantidad y medidas por unidad; los totales se calculan automáticamente.", "Enter quantity and per-unit measures; totals are calculated automatically.")}</p></div></header>
+      <div className={styles.unitGrid}>
+        <OptionSelect label={t("Tipo de paquete", "Package type")} placeholder={t("Seleccionar tipo", "Select type")} options={options.packagingOptions} value={draft.unitPackageType} error={errorFor("unitPackageType")} onChange={(value) => update("unitPackageType", value)} t={t} />
+        <Input label={t("Cantidad", "Quantity")} type="number" min="1" step="1" value={draft.unitQuantity} error={errorFor("unitQuantity")} onChange={(event) => update("unitQuantity", event.target.value)} />
+        <Input label={t("Peso por unidad (kg)", "Weight per unit (kg)")} type="number" min="0" step="0.1" value={draft.unitWeightPerUnitKg} error={errorFor("unitWeightPerUnitKg")} onChange={(event) => update("unitWeightPerUnitKg", event.target.value)} />
+        <Input label={t("Volumen por unidad (m³)", "Volume per unit (m³)")} type="number" min="0" step="0.1" value={draft.unitVolumePerUnitM3} error={errorFor("unitVolumePerUnitM3")} onChange={(event) => update("unitVolumePerUnitM3", event.target.value)} />
+      </div>
+      <div className={styles.computedTotals} aria-live="polite"><div><span>{t("Peso total calculado", "Calculated total weight")}</span><strong>{draft.totalWeightKg ? `${draft.totalWeightKg} kg` : "—"}</strong>{errorFor("totalWeightKg") ? <small>{errorFor("totalWeightKg")}</small> : null}</div><div><span>{t("Volumen total calculado", "Calculated total volume")}</span><strong>{draft.totalVolumeM3 ? `${draft.totalVolumeM3} m³` : "—"}</strong>{errorFor("totalVolumeM3") ? <small>{errorFor("totalVolumeM3")}</small> : null}</div></div>
+      {unitPackaging?.verification ? <OptionEvidence label="verification" value={`${unitPackaging.verification} · ${t("Dato de captura; no prueba compatibilidad del carrier.", "Capture data; it does not prove carrier compatibility.")}`} /> : null}
+      <details className={styles.advancedDisclosure} open={unitDetailsOpen} onToggle={(event) => setUnitDetailsOpen(event.currentTarget.open)}><summary><span><strong>{t("Dimensiones y manipulación", "Dimensions and handling")}</strong><small>{t("Campos contractuales obligatorios", "Required contract fields")}</small></span><ChevronDown size={17} aria-hidden="true" /></summary><div className={styles.formGrid}><Input label={t("Largo (cm)", "Length (cm)")} type="number" min="0" step="0.1" value={draft.unitLengthCm} error={errorFor("unitLengthCm")} onChange={(event) => update("unitLengthCm", event.target.value)} /><Input label={t("Ancho (cm)", "Width (cm)")} type="number" min="0" step="0.1" value={draft.unitWidthCm} error={errorFor("unitWidthCm")} onChange={(event) => update("unitWidthCm", event.target.value)} /><Input label={t("Alto (cm)", "Height (cm)")} type="number" min="0" step="0.1" value={draft.unitHeightCm} error={errorFor("unitHeightCm")} onChange={(event) => update("unitHeightCm", event.target.value)} /><div className={styles.handlingGrid}><Checkbox label={t("Unidad indivisible", "Indivisible unit")} checked={draft.unitIndivisible} onChange={(event) => update("unitIndivisible", event.target.checked)} /><Checkbox label={t("Apilable", "Stackable")} checked={draft.unitStackable} onChange={(event) => update("unitStackable", event.target.checked)} /></div></div></details>
+    </section> : <div className={styles.disclosurePrompt}><Package size={20} aria-hidden="true" /><div><strong>{t("Selecciona el embalaje para continuar", "Select packaging to continue")}</strong><span>{t("Después mostraremos únicamente la captura de unidad necesaria.", "Then we will show only the unit capture that is needed.")}</span></div></div>}
+  </>;
 }
 
 function ScheduleAndContactsStep({ draft, options, update, errorFor, t }: FieldHelpers) {
-  return <><h3 className={styles.sectionTitle}><CalendarDays size={16} aria-hidden="true" />{t("Ventanas y equipo requerido", "Windows and required equipment")}</h3><div className={styles.formGrid}>
-    <Input label={t("Retiro desde", "Pickup starts")} type="datetime-local" value={draft.pickupWindowStartsAt} error={errorFor("pickupWindowStartsAt")} onChange={(event) => update("pickupWindowStartsAt", event.target.value)} />
-    <Input label={t("Retiro hasta", "Pickup ends")} type="datetime-local" value={draft.pickupWindowEndsAt} error={errorFor("pickupWindowEndsAt")} onChange={(event) => update("pickupWindowEndsAt", event.target.value)} />
-    <Input label={t("Entrega desde", "Delivery starts")} type="datetime-local" value={draft.deliveryWindowStartsAt} error={errorFor("deliveryWindowStartsAt")} onChange={(event) => update("deliveryWindowStartsAt", event.target.value)} />
-    <Input label={t("Entrega hasta", "Delivery ends")} type="datetime-local" value={draft.deliveryWindowEndsAt} error={errorFor("deliveryWindowEndsAt")} onChange={(event) => update("deliveryWindowEndsAt", event.target.value)} />
-    <OptionSelect fieldClassName={styles.wide} label={t("Equipo ROAD requerido", "Required ROAD equipment")} placeholder={t("Seleccionar equipo", "Select equipment")} options={options.equipmentOptions} value={draft.requiredEquipment} error={errorFor("requiredEquipment")} onChange={(value) => update("requiredEquipment", value)} t={t} />
-    <OptionEvidence label={t("Contrato de equipo", "Equipment contract")} value={t("Se envía exactamente el code ROAD del backend; seleccionarlo no confirma disponibilidad de un activo.", "The exact backend ROAD code is sent; selecting it does not confirm asset availability.")} />
-  </div>
-  <h3 className={styles.sectionTitle}><ContactRound size={16} aria-hidden="true" />{t("Contactos operativos", "Operational contacts")}</h3><div className={styles.contactGrid}><ContactFields kind="pickup" draft={draft} update={update} errorFor={errorFor} t={t} /><ContactFields kind="recipient" draft={draft} update={update} errorFor={errorFor} t={t} /></div></>;
+  const category = options.cargoCategories.find((option) => option.code === draft.categoryCode);
+  const recommended = new Set(category?.guidance.recommendedVehicleClasses ?? []);
+  const copyPickupContact = () => {
+    update("recipientContactName", draft.pickupContactName);
+    update("recipientContactPhoneE164", draft.pickupContactPhoneE164);
+    update("recipientContactEmail", draft.pickupContactEmail);
+  };
+  return <>
+    <section className={styles.formSection}>
+      <header className={styles.formSectionHeader}><div><span className={styles.sectionKicker}>{t("Ventanas operativas", "Operational windows")}</span><h3 className={styles.sectionTitle}><CalendarDays size={17} aria-hidden="true" />{t("¿Cuándo debe moverse?", "When should it move?")}</h3><p>{t("Las ventanas se validan en orden retiro → entrega y se envían como instantes ISO.", "Windows are validated in pickup → delivery order and sent as ISO instants.")}</p></div></header>
+      <div className={styles.windowGrid}>
+        <fieldset className={styles.windowCard}><legend>{t("Retiro", "Pickup")}</legend><Input label={t("Desde", "Starts")} type="datetime-local" value={draft.pickupWindowStartsAt} error={errorFor("pickupWindowStartsAt")} onChange={(event) => update("pickupWindowStartsAt", event.target.value)} /><Input label={t("Hasta", "Ends")} type="datetime-local" value={draft.pickupWindowEndsAt} error={errorFor("pickupWindowEndsAt")} onChange={(event) => update("pickupWindowEndsAt", event.target.value)} /></fieldset>
+        <span className={styles.windowArrow} aria-hidden="true"><ArrowRight size={18} /></span>
+        <fieldset className={styles.windowCard}><legend>{t("Entrega", "Delivery")}</legend><Input label={t("Desde", "Starts")} type="datetime-local" value={draft.deliveryWindowStartsAt} error={errorFor("deliveryWindowStartsAt")} onChange={(event) => update("deliveryWindowStartsAt", event.target.value)} /><Input label={t("Hasta", "Ends")} type="datetime-local" value={draft.deliveryWindowEndsAt} error={errorFor("deliveryWindowEndsAt")} onChange={(event) => update("deliveryWindowEndsAt", event.target.value)} /></fieldset>
+      </div>
+    </section>
+
+    <fieldset className={styles.choiceFieldset}><legend>{t("Equipo ROAD requerido", "Required ROAD equipment")}</legend><div className={styles.choiceHeading}><p>{t("Se envía exactamente el code recibido del backend. Una recomendación no confirma disponibilidad.", "The exact backend code is sent. A recommendation does not confirm availability.")}</p></div><div className={styles.equipmentGrid} role="radiogroup" aria-label={t("Equipo ROAD", "ROAD equipment")}>
+      {options.equipmentOptions.map((option) => { const active = option.code === draft.requiredEquipment; const suggested = recommended.has(option.code); return <button className={styles.equipmentCard} data-selected={active ? "true" : "false"} type="button" role="radio" aria-checked={active} key={option.code} onClick={() => update("requiredEquipment", option.code)}><span className={styles.equipmentIcon}><Truck size={20} aria-hidden="true" /></span><span><strong>{t(option.labelEs, option.labelEn)}</strong><small>{option.code}</small></span>{suggested ? <Badge tone="preliminary">{t("Sugerido", "Suggested")}</Badge> : null}<span className={styles.equipmentCheck}><Check size={14} aria-hidden="true" /></span></button>; })}
+    </div>{errorFor("requiredEquipment") ? <p className={styles.fieldError} role="alert">{errorFor("requiredEquipment")}</p> : null}</fieldset>
+
+    <section className={styles.formSection}>
+      <header className={styles.formSectionHeader}><div><span className={styles.sectionKicker}>{t("Coordinación humana", "Human coordination")}</span><h3 className={styles.sectionTitle}><ContactRound size={17} aria-hidden="true" />{t("Contactos operativos", "Operational contacts")}</h3><p>{t("El catálogo de sedes no contiene contactos. Confirma quién entrega y quién recibe.", "The facility catalog has no contacts. Confirm who hands over and who receives.")}</p></div>{draft.pickupContactName || draft.pickupContactPhoneE164 || draft.pickupContactEmail ? <Button variant="ghost" type="button" onClick={copyPickupContact}><Copy size={14} aria-hidden="true" />{t("Copiar al destinatario", "Copy to recipient")}</Button> : null}</header>
+      <div className={styles.contactGrid}><ContactFields kind="pickup" draft={draft} update={update} errorFor={errorFor} t={t} /><ContactFields kind="recipient" draft={draft} update={update} errorFor={errorFor} t={t} /></div>
+    </section>
+  </>;
 }
 
 function ContactFields({ kind, draft, update, errorFor, t }: Pick<FieldHelpers, "draft" | "update" | "errorFor" | "t"> & { kind: "pickup" | "recipient" }) {
@@ -504,29 +574,30 @@ function ContactFields({ kind, draft, update, errorFor, t }: Pick<FieldHelpers, 
   const name = pickup ? "pickupContactName" : "recipientContactName";
   const phone = pickup ? "pickupContactPhoneE164" : "recipientContactPhoneE164";
   const email = pickup ? "pickupContactEmail" : "recipientContactEmail";
-  return <fieldset className={styles.optionFieldset}><legend>{pickup ? t("Contacto de retiro", "Pickup contact") : t("Destinatario", "Recipient")}</legend><div className={styles.contactFields}><Input label={t("Nombre", "Name")} value={draft[name]} error={errorFor(name)} onChange={(event) => update(name, event.target.value)} /><Input label={t("Teléfono E.164", "E.164 phone")} type="tel" placeholder="+51987654321" value={draft[phone]} error={errorFor(phone)} onChange={(event) => update(phone, event.target.value)} /><Input label={t("Correo", "Email")} type="email" value={draft[email]} error={errorFor(email)} onChange={(event) => update(email, event.target.value)} /></div></fieldset>;
+  return <fieldset className={styles.contactCard}><legend>{pickup ? t("Contacto de retiro", "Pickup contact") : t("Destinatario", "Recipient")}</legend><div className={styles.contactFields}><Input label={t("Nombre", "Name")} autoComplete="name" value={draft[name]} error={errorFor(name)} onChange={(event) => update(name, event.target.value)} /><Input label={t("Teléfono E.164", "E.164 phone")} autoComplete="tel" type="tel" placeholder="+51987654321" value={draft[phone]} error={errorFor(phone)} onChange={(event) => update(phone, event.target.value)} /><Input label={t("Correo", "Email")} autoComplete="email" type="email" value={draft[email]} error={errorFor(email)} onChange={(event) => update(email, event.target.value)} /></div></fieldset>;
 }
 
-function ReviewStep({ draft, options, request, dirtyAfterCreate, t, locale }: { draft: V2IntakePrototypeDraft; options: IntakeOptionsData; request: FreightRequestV2Data | null; dirtyAfterCreate: boolean; t: Translate; locale: "es" | "en" }) {
+function ReviewStep({ draft, options, request, dirtyAfterCreate, t, locale, onEdit }: { draft: V2IntakePrototypeDraft; options: IntakeOptionsData; request: FreightRequestV2Data | null; dirtyAfterCreate: boolean; t: Translate; locale: "es" | "en"; onEdit: (step: PrototypeStep) => void }) {
   const origin = findIntakeFacility(options, draft.originFacilityId);
   const destination = findIntakeFacility(options, draft.destinationFacilityId);
   return <div className={styles.reviewGrid}>
-    <ReviewSection title={t("Sedes", "Facilities")} items={[[t("Origen", "Origin"), origin?.label ?? "—"], [t("Destino", "Destination"), destination?.label ?? "—"]]} />
-    <ReviewSection title={t("Carga y unidad", "Cargo and unit")} items={[[t("Categoría", "Category"), draft.categoryCode], [t("Peso / volumen", "Weight / volume"), `${draft.totalWeightKg} kg · ${draft.totalVolumeM3} m³`], [t("Unidad", "Unit"), `${draft.unitQuantity} × ${draft.unitPackageType}`], [t("Equipo", "Equipment"), draft.requiredEquipment]]} />
-    <ReviewSection title={t("Ventanas", "Windows")} items={[[t("Retiro", "Pickup"), formatLocalRange(draft.pickupWindowStartsAt, draft.pickupWindowEndsAt, locale)], [t("Entrega", "Delivery"), formatLocalRange(draft.deliveryWindowStartsAt, draft.deliveryWindowEndsAt, locale)]]} />
+    <div className={styles.reviewLead}><span className={styles.reviewLeadIcon}><ClipboardCheck size={22} aria-hidden="true" /></span><div><strong>{t("Revisa antes de crear", "Review before creation")}</strong><p>{t("Todavía puedes volver a cualquier etapa. Nada se persiste hasta confirmar el botón final.", "You can still return to any stage. Nothing is persisted until you confirm the final button.")}</p></div></div>
+    <ReviewSection title={t("Corredor", "Lane")} editLabel={t("Editar sedes", "Edit facilities")} onEdit={() => onEdit(1)} items={[[t("Origen", "Origin"), origin ? `${origin.label} · ${origin.city}` : "—"], [t("Destino", "Destination"), destination ? `${destination.label} · ${destination.city}` : "—"]]} />
+    <ReviewSection title={t("Carga y unidad", "Cargo and unit")} editLabel={t("Editar carga", "Edit cargo")} onEdit={() => onEdit(2)} items={[[t("Categoría", "Category"), draft.categoryCode], [t("Peso / volumen", "Weight / volume"), `${draft.totalWeightKg} kg · ${draft.totalVolumeM3} m³`], [t("Unidad", "Unit"), `${draft.unitQuantity} × ${draft.unitPackageType}`], [t("Requisitos", "Requirements"), draft.requirements.join(", ") || t("Ninguno", "None")]]} />
+    <ReviewSection title={t("Agenda y equipo", "Schedule and equipment")} editLabel={t("Editar agenda", "Edit schedule")} onEdit={() => onEdit(3)} items={[[t("Retiro", "Pickup"), formatLocalRange(draft.pickupWindowStartsAt, draft.pickupWindowEndsAt, locale)], [t("Entrega", "Delivery"), formatLocalRange(draft.deliveryWindowStartsAt, draft.deliveryWindowEndsAt, locale)], [t("Equipo", "Equipment"), draft.requiredEquipment]]} />
     <ReviewSection title={t("Límites comerciales", "Commercial boundaries")} tone="unknown" items={[[t("Elegibilidad", "Serviceability"), t("Se lee después de persistir DRAFT", "Read after DRAFT persistence")], [t("Precio / oferta / booking", "Price / offer / booking"), t("No confirmados ni creados", "Not confirmed or created")]]} />
     {request ? <div className={styles.persistedNotice} role="status"><strong>{request.referenceCode} · {request.status} · v{request.draftVersion}</strong><span>{dirtyAfterCreate ? t("Hay cambios locales posteriores; no se guardaron automáticamente.", "There are later local changes; they were not autosaved.") : t("El GET devolvió el borrador persistido.", "GET returned the persisted draft.")}</span></div> : null}
   </div>;
 }
 
-function ReviewSection({ title, items, tone = "preliminary" }: { title: string; items: string[][]; tone?: "preliminary" | "unknown" }) {
-  return <section className={styles.reviewSection}><header><h3>{title}</h3><Badge tone={tone}>{tone === "unknown" ? "UNKNOWN" : "LOCAL"}</Badge></header><div className={styles.reviewList}>{items.map(([label, value]) => <div className={styles.reviewItem} key={label}><span>{label}</span><strong>{value}</strong></div>)}</div></section>;
+function ReviewSection({ title, items, tone = "preliminary", editLabel, onEdit }: { title: string; items: string[][]; tone?: "preliminary" | "unknown"; editLabel?: string; onEdit?: () => void }) {
+  return <section className={styles.reviewSection}><header><div><h3>{title}</h3><Badge tone={tone}>{tone === "unknown" ? "UNKNOWN" : "LOCAL"}</Badge></div>{onEdit ? <Button variant="ghost" type="button" onClick={onEdit}>{editLabel}</Button> : null}</header><div className={styles.reviewList}>{items.map(([label, value]) => <div className={styles.reviewItem} key={label}><span>{label}</span><strong>{value}</strong></div>)}</div></section>;
 }
 
 function LiveSummary({ draft, options, request, evaluation, dirtyAfterCreate, t }: { draft: V2IntakePrototypeDraft; options: IntakeOptionsData; request: FreightRequestV2Data | null; evaluation: RoadServiceabilityEvaluationV2Data | null; dirtyAfterCreate: boolean; t: Translate }) {
   const origin = findIntakeFacility(options, draft.originFacilityId);
   const destination = findIntakeFacility(options, draft.destinationFacilityId);
-  return <aside className={`${styles.card} ${styles.summary}`} aria-label={t("Resumen en vivo", "Live summary")}><header className={styles.cardHeader}><div><span className={styles.eyebrow}>{t("Resumen local", "Local summary")}</span><h2>{t("Solicitud de cliente", "Client request")}</h2><p>{t("Los pasos no se guardan automáticamente.", "Steps are not autosaved.")}</p></div></header><div className={styles.summaryBody}>
+  return <aside className={`${styles.card} ${styles.summary}`} aria-label={t("Resumen en vivo", "Live summary")}><header className={styles.cardHeader}><span className={styles.stepHeaderIcon} aria-hidden="true"><Route size={19} /></span><div><span className={styles.eyebrow}>{t("Resumen en vivo", "Live summary")}</span><h2>{t("Tu solicitud", "Your request")}</h2><p>{t("Se actualiza con el mismo estado que usa el asistente.", "It updates from the same state used by the assistant.")}</p></div></header><div className={styles.summaryRoute}><span className={styles.routeDot}/><div><small>{t("Origen", "Origin")}</small><strong>{origin?.city ?? "—"}</strong></div><span className={styles.routeDash}/><span className={styles.routeDot}/><div><small>{t("Destino", "Destination")}</small><strong>{destination?.city ?? "—"}</strong></div></div><div className={styles.summaryBody}>
     <SummaryRow label={t("Origen", "Origin")} value={origin?.label ?? t("Sin seleccionar", "Not selected")} tone={origin ? "preliminary" : "neutral"} status={origin ? t("Local", "Local") : t("Pendiente", "Pending")} />
     <SummaryRow label={t("Destino", "Destination")} value={destination?.label ?? t("Sin seleccionar", "Not selected")} tone={destination ? "preliminary" : "neutral"} status={destination ? t("Local", "Local") : t("Pendiente", "Pending")} />
     <SummaryRow label={t("Carga", "Cargo")} value={draft.cargoDescription || t("Sin describir", "Not described")} tone={draft.cargoDescription ? "preliminary" : "neutral"} status={draft.cargoDescription ? t("Local", "Local") : t("Pendiente", "Pending")} />

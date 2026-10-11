@@ -10,8 +10,10 @@ import {
   applyChatFieldToDraft,
   PROVISIONAL_PROTOTYPE_DRAFT,
   buildPrototypeExample,
+  filterIntakeFacilities,
   mapDraftToCreateFreightRequestV2Input,
   toggleRequirement,
+  updatePrototypeDraftField,
   validatePrototypeDraft,
   validatePrototypeReview,
   validatePrototypeStep,
@@ -23,6 +25,22 @@ test("multi-slot chat updates derive totals from the latest provisional values",
   draft = applyChatFieldToDraft(draft, "unitVolumePerUnitM3", "2.4");
   assert.equal(draft.totalWeightKg, "2400");
   assert.equal(draft.totalVolumeM3, "4.8");
+});
+
+test("form unit inputs derive totals without requiring duplicate entry", () => {
+  let draft = updatePrototypeDraftField(EMPTY_PROTOTYPE_DRAFT, "unitQuantity", "3");
+  draft = updatePrototypeDraftField(draft, "unitWeightPerUnitKg", "250");
+  draft = updatePrototypeDraftField(draft, "unitVolumePerUnitM3", "1.5");
+  assert.equal(draft.totalWeightKg, "750");
+  assert.equal(draft.totalVolumeM3, "4.5");
+  assert.equal(updatePrototypeDraftField(draft, "unitQuantity", "").totalWeightKg, "");
+});
+
+test("facility search uses only catalog fields and excludes the opposite endpoint", () => {
+  const facilities = getIntakeOptionsFixture().data.facilities;
+  assert.deepEqual(filterIntakeFacilities(facilities, "arequipa").map((item) => item.code), [facilities[1].code]);
+  assert.equal(filterIntakeFacilities(facilities, "pe", facilities[0].facilityId).some((item) => item.facilityId === facilities[0].facilityId), false);
+  assert.equal(filterIntakeFacilities(facilities, "missing-place").length, 0);
 });
 
 test("the local HAC-27 options fixture covers every visible selector", () => {

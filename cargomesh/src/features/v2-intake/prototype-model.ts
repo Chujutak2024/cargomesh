@@ -40,15 +40,34 @@ export type V2IntakePrototypeDraft = {
   recipientContactEmail: string;
 };
 
+function withDerivedCargoTotals(draft: V2IntakePrototypeDraft): V2IntakePrototypeDraft {
+  const count = Number(draft.unitQuantity);
+  const weight = Number(draft.unitWeightPerUnitKg);
+  const volume = Number(draft.unitVolumePerUnitM3);
+  return {
+    ...draft,
+    totalWeightKg: count > 0 && weight > 0 ? String(count * weight) : "",
+    totalVolumeM3: count > 0 && volume > 0 ? String(count * volume) : "",
+  };
+}
+
+/** Apply one form field and keep contract totals derived from the visible unit inputs. */
+export function updatePrototypeDraftField<K extends keyof V2IntakePrototypeDraft>(
+  draft: V2IntakePrototypeDraft,
+  field: K,
+  value: V2IntakePrototypeDraft[K],
+): V2IntakePrototypeDraft {
+  const next = { ...draft, [field]: value };
+  if (field === "unitQuantity" || field === "unitWeightPerUnitKg" || field === "unitVolumePerUnitM3") {
+    return withDerivedCargoTotals(next);
+  }
+  return next;
+}
+
 /** Apply one provisional chat field against the latest draft, including canonical UI totals. */
 export function applyChatFieldToDraft(draft: V2IntakePrototypeDraft, field: keyof V2IntakePrototypeDraft, value: string): V2IntakePrototypeDraft {
-  const next = { ...draft, [field]: value };
+  const next = updatePrototypeDraftField(draft, field, value as never);
   if (field === "packaging") next.unitPackageType = value;
-  const count = Number(next.unitQuantity);
-  const weight = Number(next.unitWeightPerUnitKg);
-  const volume = Number(next.unitVolumePerUnitM3);
-  if (count > 0 && weight > 0) next.totalWeightKg = String(count * weight);
-  if (count > 0 && volume > 0) next.totalVolumeM3 = String(count * volume);
   return next;
 }
 
@@ -375,6 +394,21 @@ export function validatePrototypeReview(draft: V2IntakePrototypeDraft) {
 
 export function findIntakeFacility(options: IntakeOptionsData, id: string) {
   return options.facilities.find((facility) => facility.facilityId === id) ?? null;
+}
+
+export function filterIntakeFacilities(
+  facilities: IntakeFacilityOption[],
+  query: string,
+  excludedFacilityId?: string,
+) {
+  const normalized = query.trim().toLocaleLowerCase();
+  return facilities.filter((facility) => {
+    if (excludedFacilityId && facility.facilityId === excludedFacilityId) return false;
+    if (!normalized) return true;
+    return [facility.code, facility.label, facility.city, facility.region, facility.countryCode]
+      .filter((value): value is string => Boolean(value))
+      .some((value) => value.toLocaleLowerCase().includes(normalized));
+  });
 }
 
 function toIso(localDateTime: string) {

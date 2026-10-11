@@ -91,6 +91,11 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("assistant") === "open") setOpen(true);
   }, []);
+  useEffect(() => {
+    const openAssistant = () => setOpen(true);
+    window.addEventListener("cargomesh:open-assistant", openAssistant);
+    return () => window.removeEventListener("cargomesh:open-assistant", openAssistant);
+  }, []);
   const nextField = request ? null : missingField(draft);
   const syntheticCatalog = optionsSource === "fixture" || options.facilities.some((facility) => facility.label.includes("[SYNTHETIC]"));
   const ask = (field: GuidedConversationField) => questionForField(field, voiceLanguage);
