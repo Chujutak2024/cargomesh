@@ -202,7 +202,29 @@ function EditDialog({ open, edit, setEdit, request, confirmed, setConfirmed, onR
   return <Dialog open={open} title={t("Editar borrador versionado", "Edit versioned draft")} description={t(`Se guardará contra draftVersion ${request.draftVersion} y después se reevaluará.`, `It will save against draftVersion ${request.draftVersion} and then reevaluate.`)} closeLabel={t("Cerrar", "Close")} onClose={onClose}>
     <div className={styles.editGrid}><Input label={t("Referencia de origen", "Origin reference")} value={edit.originLabel} onChange={(e) => field("originLabel")(e.target.value)}/><Input label={t("Ciudad de origen", "Origin city")} value={edit.originCity} onChange={(e) => field("originCity")(e.target.value)}/>
       <Input label={t("Referencia de destino", "Destination reference")} value={edit.destinationLabel} onChange={(e) => field("destinationLabel")(e.target.value)}/><Input label={t("Ciudad de destino", "Destination city")} value={edit.destinationCity} onChange={(e) => field("destinationCity")(e.target.value)}/>
-      <LocationResolver label={t("Buscar origen autorizado", "Search authorized origin")} onConfirmed={onResolveOrigin}/><LocationResolver label={t("Buscar destino autorizado", "Search authorized destination")} onConfirmed={onResolveDestination}/>
+      <LocationResolver
+  label={t("Buscar origen autorizado", "Search authorized origin")}
+  onConfirmed={onResolveOrigin}
+  onProposedCoordinates={(lat, lng) => {
+    setEdit({
+      ...edit,
+      originLabel: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+    });
+    setConfirmed(false);
+  }}
+/>
+
+<LocationResolver
+  label={t("Buscar destino autorizado", "Search authorized destination")}
+  onConfirmed={onResolveDestination}
+  onProposedCoordinates={(lat, lng) => {
+    setEdit({
+      ...edit,
+      destinationLabel: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+    });
+    setConfirmed(false);
+  }}
+/>
       <Input label={t("Inicio recojo", "Pickup start")} type="datetime-local" value={edit.pickupStartsAt} onChange={(e) => field("pickupStartsAt")(e.target.value)}/><Input label={t("Fin recojo", "Pickup end")} type="datetime-local" value={edit.pickupEndsAt} onChange={(e) => field("pickupEndsAt")(e.target.value)}/>
       <Input label={t("Inicio entrega", "Delivery start")} type="datetime-local" value={edit.deliveryStartsAt} onChange={(e) => field("deliveryStartsAt")(e.target.value)}/><Input label={t("Fin entrega", "Delivery end")} type="datetime-local" value={edit.deliveryEndsAt} onChange={(e) => field("deliveryEndsAt")(e.target.value)}/>
       <Textarea fieldClassName={styles.wide} label={t("Descripción", "Description")} value={edit.description} onChange={(e) => field("description")(e.target.value)}/>
