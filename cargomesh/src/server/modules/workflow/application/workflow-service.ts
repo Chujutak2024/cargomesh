@@ -6,6 +6,7 @@ import { V2DraftError, type V2Actor } from "../../freight-requests/application/d
 export type WorkflowActorV2 = V2Actor | { kind: "carrier"; operatorId: string; carrierId: string; organizationId: null };
 
 export interface WorkflowRepositoryV2 {
+  readCarrierRouting?(actor: Extract<WorkflowActorV2,{kind:"carrier"}>, kind:"nodes"|"conditions", page:{limit:number;offset:number}):Promise<unknown[]>;
   read(actor: WorkflowActorV2, kind: string, context: WorkflowContextV2, page: { limit: number; offset: number }): Promise<unknown[]>;
   command(actor: WorkflowActorV2, action: WorkflowActionV2, context: WorkflowContextV2, key: string,
     value: WorkflowValueV2 | { expectedVersion: number; value: WorkflowValueV2 }):
@@ -23,6 +24,18 @@ export class WorkflowServiceV2 {
       throw new V2DraftError("FORBIDDEN_WORKFLOW", "Resource scope mismatch.", 403);
     }
     return record;
+  }
+  async readCarrierRouting(actor:Extract<WorkflowActorV2,{kind:"carrier"}>,rawKind:unknown,rawPage:unknown){
+    const kind=z.enum(["nodes","conditions"]).parse(rawKind),page=PageV2Schema.parse(rawPage);
+    if(!this.repository.readCarrierRouting)throw new V2DraftError("ROUTING_UNAVAILABLE","Routing reader unavailable.",503);
+    const rows=await this.repository.readCarrierRouting(actor,kind,page);
+    const data=rows.map(row=>{
+      const record=WorkflowRecordV2Schema.parse(row);
+      if(record.kind!==kind||record.organizationId!==null||(record.carrierId!==null&&record.carrierId!==actor.carrierId))
+        throw new V2DraftError("FORBIDDEN_WORKFLOW","Routing scope mismatch.",403);
+      return record;
+    });
+    return {schemaVersion:"2.0" as const,data,meta:{...page,nextOffset:data.length===page.limit?page.offset+page.limit:null}};
   }
   async read(actor: WorkflowActorV2, kind: string, rawContext: WorkflowContextV2, rawPage: unknown) {
     const context = WorkflowContextV2Schema.parse(rawContext);

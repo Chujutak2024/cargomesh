@@ -4,16 +4,18 @@ import { CatalogInputsV2, CatalogScopeV2Schema, parseCatalogRecordV2,
 import { PageV2Schema } from "@/shared/schemas/v2/facilities";
 import { V2DraftError, type V2Actor } from "../../freight-requests/application/draft-service";
 
+export type CatalogActorV2=V2Actor|{kind:"carrier";operatorId:string;carrierId:string;organizationId:null};
+
 export interface CatalogRepositoryV2 {
-  read(actor: V2Actor, kind: CatalogKindV2, scope: CatalogScopeV2,
+  read(actor: CatalogActorV2, kind: CatalogKindV2, scope: CatalogScopeV2,
     page: { limit: number; offset: number }, id: string | null): Promise<unknown[]>;
-  command(actor: V2Actor, kind: CatalogKindV2, scope: CatalogScopeV2,
+  command(actor: CatalogActorV2, kind: CatalogKindV2, scope: CatalogScopeV2,
     input: { id: string | null; key: string; expectedVersion: number | null; value: CatalogValueV2 }):
     Promise<{ record: unknown; replay: boolean }>;
 }
 export class CatalogServiceV2 {
   constructor(private readonly repository: CatalogRepositoryV2) {}
-  private record(actor: V2Actor, kind: CatalogKindV2, scope: CatalogScopeV2, raw: unknown) {
+  private record(actor: CatalogActorV2, kind: CatalogKindV2, scope: CatalogScopeV2, raw: unknown) {
     let record: CatalogRecordV2;
     try {
       record = parseCatalogRecordV2(kind, raw);
@@ -23,27 +25,28 @@ export class CatalogServiceV2 {
       }
       throw error;
     }
-    if (((kind === "preferences" || kind === "cargo-profiles") && record.organizationId !== actor.organizationId)
+    if (("kind" in actor && (record.carrierId !== actor.carrierId || scope.carrierId !== actor.carrierId))
+      || ((kind === "preferences" || kind === "cargo-profiles") && record.organizationId !== actor.organizationId)
       || (scope.carrierId !== null && record.carrierId !== scope.carrierId)
       || (scope.serviceId !== null && record.serviceId !== scope.serviceId)) {
       throw new V2DraftError("FORBIDDEN_CATALOG", "Catalog scope mismatch.", 403);
     }
     return record;
   }
-  async list(actor: V2Actor, kind: CatalogKindV2, scope: CatalogScopeV2, page: unknown) {
+  async list(actor: CatalogActorV2, kind: CatalogKindV2, scope: CatalogScopeV2, page: unknown) {
     const parsed = PageV2Schema.parse(page);
     const rows = await this.repository.read(actor, kind, CatalogScopeV2Schema.parse(scope), parsed, null);
     const data = rows.map(row => this.record(actor, kind, scope, row));
     return { schemaVersion: "2.0" as const, data,
       meta: { ...parsed, nextOffset: data.length === parsed.limit ? parsed.offset + parsed.limit : null } };
   }
-  async get(actor: V2Actor, kind: CatalogKindV2, scope: CatalogScopeV2, id: string) {
+  async get(actor: CatalogActorV2, kind: CatalogKindV2, scope: CatalogScopeV2, id: string) {
     const rows = await this.repository.read(actor, kind, CatalogScopeV2Schema.parse(scope),
       { limit: 1, offset: 0 }, z.string().uuid().parse(id));
     if (!rows.length) throw new V2DraftError("CATALOG_NOT_FOUND", "Catalog entry not found.", 404);
     return this.response(this.record(actor, kind, scope, rows[0]), false);
   }
-  async command(actor: V2Actor, kind: CatalogKindV2, scope: CatalogScopeV2,
+  async command(actor: CatalogActorV2, kind: CatalogKindV2, scope: CatalogScopeV2,
     id: string | null, body: unknown, key: string | undefined) {
     let version: number | null = null;
     let raw = body;
