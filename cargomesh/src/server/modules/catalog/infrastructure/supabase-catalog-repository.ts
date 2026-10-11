@@ -20,7 +20,9 @@ export async function catalogRepositoryV2(): Promise<CatalogRepositoryV2> {
   const db = await createV2ServerSupabaseClient();
   return {
     async read(actor, kind, scope, page, id) {
-      const { data, error } = await db.rpc("read_v2_catalog", {
+      const { data, error } = "kind" in actor ? await db.rpc("read_v2_carrier_catalog", {
+        p_operator_id:actor.operatorId,p_kind:kind,p_carrier_id:scope.carrierId!,p_service_id:scope.serviceId,p_id:id,p_limit:page.limit,p_offset:page.offset,
+      }) : await db.rpc("read_v2_catalog", {
         p_organization_id: actor.organizationId, p_member_id: actor.memberId, p_kind: kind,
         p_carrier_id: scope.carrierId, p_service_id: scope.serviceId, p_id: id,
         p_limit: page.limit, p_offset: page.offset,
@@ -29,7 +31,9 @@ export async function catalogRepositoryV2(): Promise<CatalogRepositoryV2> {
       return z.array(z.unknown()).parse(data);
     },
     async command(actor, kind, scope, input) {
-      const { data, error } = await db.rpc("command_v2_catalog", {
+      const { data, error } = "kind" in actor ? await db.rpc("command_v2_carrier_catalog", {
+        p_operator_id:actor.operatorId,p_kind:kind,p_carrier_id:scope.carrierId!,p_service_id:scope.serviceId,p_id:input.id,p_idempotency_key:input.key,p_expected_version:input.expectedVersion,p_value:input.value,
+      }) : await db.rpc("command_v2_catalog", {
         p_organization_id: actor.organizationId, p_member_id: actor.memberId, p_kind: kind,
         p_carrier_id: scope.carrierId, p_service_id: scope.serviceId, p_id: input.id,
         p_idempotency_key: input.key, p_expected_version: input.expectedVersion, p_value: input.value,

@@ -13,6 +13,8 @@ Actualizado el 9 de octubre de 2026. Este documento organiza la lectura; los con
 
 ## Lectura del backend y los modelos
 
+- [Integración carrier HAC-45](./HAC45_CARRIER_PORTAL_INTEGRATION.md): identidad independiente, login, permisos, API, evidencia local y plan de despliegue pendiente.
+
 - [UML, modelos y DER](../models/README.md).
 - [Contrato integral y límites de HAC-40](./HAC40_FULL_API_AND_CLOSURE.md).
 - [Catálogo de endpoints](./HAC40_API_ENDPOINTS.md).

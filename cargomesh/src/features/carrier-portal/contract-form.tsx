@@ -88,7 +88,7 @@ export function valueLabel(value:string,es:boolean){return valueLabels[value]?.[
 function Field({ schema, value, onChange, name, path, errors, es }: { schema:z.ZodTypeAny; value:Value; onChange:(value:Value)=>void;
  name:string; path:string; errors:Record<string,string>; es:boolean }) {
  const id = useId(), type=unwrapped(schema), label=fieldLabel(name,es), nullable=schema.isNullable() || schema.isOptional();
- if (name==="schemaVersion" || name==="expectedVersion") return null;
+ if (name==="schemaVersion" || name==="expectedVersion" || path==="source.issuerId") return null;
  if (type instanceof z.ZodLiteral) return <div className={s.constant}><span>{label}</span><strong>{String(type.value)}</strong></div>;
  if (nullable && value == null) return <div className={s.nullField}><span>{label}</span><small>{es?"Sin dato":"No data"}</small>
    <button type="button" aria-label={(es?"Añadir dato: ":"Add data: ")+label} onClick={()=>onChange(emptyInput(type))}>{es?"Añadir dato":"Add data"} <Plus size={14} aria-hidden="true"/></button></div>;

@@ -83,3 +83,21 @@ describe("HAC-40 persistent workflow boundary",()=>{
   assert.equal(WorkflowInputsV2["consolidations.position"].safeParse(audit).success,false);
  });
 });
+
+describe('HAC-45 carrier map read boundary',()=>{
+ const carrier={kind:'carrier' as const,carrierId:id,operatorId:org,organizationId:null};
+ it('allows shared and own routing records but rejects another carrier and organization',async()=>{
+  const repo=repository();repo.readCarrierRouting=async()=>[record,{...record,carrierId:id}];
+  assert.equal((await new WorkflowServiceV2(repo).readCarrierRouting(carrier,'nodes',{})).data.length,2);
+  for(const row of [{...record,carrierId:org},{...record,organizationId:org}]){
+   repo.readCarrierRouting=async()=>[row];
+   await assert.rejects(new WorkflowServiceV2(repo).readCarrierRouting(carrier,'nodes',{}),/Routing scope mismatch/);
+  }
+ });
+ it('rejects unknown kinds and excessive pages before calling the repository',async()=>{
+  const repo=repository();repo.readCarrierRouting=async()=>{throw Error('UNEXPECTED_DATABASE_ACCESS')};
+  const service=new WorkflowServiceV2(repo);
+  await assert.rejects(service.readCarrierRouting(carrier,'bookings',{}),{name:'ZodError'});
+  await assert.rejects(service.readCarrierRouting(carrier,'nodes',{limit:101}),{name:'ZodError'});
+ });
+});

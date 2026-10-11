@@ -12,7 +12,7 @@ import { createMcpHttpHandler } from '../src/server/mcp/http.ts';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const bank = path.resolve(root, process.env.HAC41_BANK_DIR ?? 'supabase-v2');
 const project = fs.readFileSync(path.join(bank,'supabase/config.toml'),'utf8').match(/^project_id = "([a-z0-9-]+)"/m)?.[1];
-assert.ok(['cargomesh-v2-local','hac41-identity-mcp'].includes(project), 'only the explicitly named local test banks are allowed');
+assert.ok(['cargomesh-v2-local','hac41-identity-mcp','hac45-carrier-local'].includes(project), 'only the explicitly named local test banks are allowed');
 const container = `supabase_db_${project}`;
 function sql(query) {
   const result=spawnSync('docker',['exec','-i',container,'psql','-X','-A','-t','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres'],
@@ -25,9 +25,11 @@ function command(args) {
     process.env.HAC41_SUPABASE_CLI ? args : ['--yes','supabase@2.117.0',...args],{cwd:root,encoding:'utf8',maxBuffer:8e6});
   assert.equal(result.status,0,'local Supabase CLI prerequisite');return result.stdout;
 }
-const statusText=command(['status','--workdir',bank,'-o','json']);
+const statusText=process.env.HAC41_LOCAL_STATUS_FILE?fs.readFileSync(process.env.HAC41_LOCAL_STATUS_FILE,'utf8'):command(['status','--workdir',bank,'-o','json']);
 const status=JSON.parse(statusText.slice(statusText.indexOf('{'),statusText.lastIndexOf('}')+1));
 const url=status.API_URL;
+const configuredApiPort=fs.readFileSync(path.join(bank,'supabase/config.toml'),'utf8').match(/\[api\][\s\S]*?^port\s*=\s*(\d+)/m)?.[1];
+assert.equal(new URL(url).port,configuredApiPort,'status file must belong to the configured local bank');
 assert.ok(['127.0.0.1','localhost'].includes(new URL(url).hostname),'never use a hosted Supabase project');
 process.env.NEXT_PUBLIC_SUPABASE_URL=url;
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY=status.ANON_KEY;
@@ -156,6 +158,28 @@ try {
   pass('current Auth email confirmation is required on every MCP call; same token and active link recover');
   assert.equal((await rpc(a.token,'tools/list',{})).status,401);pass('ordinary password session cannot impersonate an OAuth MCP bearer');
   await web(c.token,'GET',`/carriers/${CARRIER}/operators`);await web(c.token,'GET',`/carriers/${CARRIER}/offers`);pass('carrier HTTP works without shipper membership');
+  const access=await web(c.token,'GET','/carrier-portal/access');assert.equal(access.data.length,1);assert.equal(access.data[0].operatorId,OP);
+  const portal='/carrier-portal/carriers/'+CARRIER;
+  const own=await web(c.token,'GET',portal);assert.equal(own.data.id,CARRIER);
+  await web(b.token,'GET',portal,undefined,randomUUID(),403);
+  await web(c.token,'GET','/carrier-portal/carriers/c2390000-0000-4000-8000-000000000001',undefined,randomUUID(),403);
+  const catalog=JSON.parse(fs.readFileSync(path.join(root,'supabase/scenarios/v2-road-baseline/fixtures/hac40-catalog.json'),'utf8'));
+  const depotInput={schemaVersion:'2.0',...catalog.depots,code:'HAC45_HTTP_DEPOT'};const dk=randomUUID();
+  const depot=await web(c.token,'POST',portal+'/depots',depotInput,dk,201);
+  assert.equal((await web(c.token,'POST',portal+'/depots',depotInput,dk)).meta.idempotentReplay,true);
+  await web(c.token,'POST',portal+'/depots',{...depotInput,name:'conflict'},dk,409);
+  await web(c.token,'POST',portal+'/depots/'+depot.data.id+'/revisions',{expectedVersion:99,value:depotInput},randomUUID(),409);
+  for(const role of ['OPERATOR','DISPATCHER']){
+   sql(`update public.carrier_operators set role='${role}' where id='${OP}';`);
+   assert.equal((await web(c.token,'GET','/carrier-portal/access')).data[0].role,role);
+   await web(c.token,'GET',portal+'/assets');await web(c.token,'GET',portal+'/routing/nodes');
+   await web(c.token,'POST',portal+'/depots',depotInput,randomUUID(),403);
+  }
+  sql(`update public.carrier_operators set role='ADMIN' where id='${OP}';`);
+  const fleet=JSON.parse(fs.readFileSync(path.join(root,'supabase/scenarios/v2-road-baseline/fixtures/hac40-fleet.json'),'utf8'));
+  const assetInput={...fleet.assets,code:'HAC45_HTTP_ASSET',roadVehicle:{...fleet.assets.roadVehicle,plate:'HAC45-HTTP',registrationCode:'HAC45-REG'}};
+  await web(c.token,'POST',portal+'/assets',assetInput,randomUUID(),201);
+  pass('HAC45 independent carrier catalog, fleet, discovery, role enforcement, replay and stale versions');
   await web(b.token,'GET',`/carriers/${CARRIER}/offers`,undefined,randomUUID(),403);pass('foreign actor cannot read carrier workflow');
   const integration=await web(c.token,'POST',`/carriers/${CARRIER}/integrations`,{serviceId:SERVICE,channel:'API',endpointRef:'env://HAC41_RESPONSE_URL',enabled:true,expectedVersion:0});
   assert.equal(integration.data.status,'PENDING');
@@ -239,21 +263,28 @@ try {
   assert.equal(missingCrew.error.code,'CONFIRMED_CREW_REQUIRED');assert.equal(counts(),beforeMissingCrew);
   const crewWindow={startsAt:setup.requestPayload.pickupWindow.startsAt,endsAt:setup.requestPayload.deliveryWindow.endsAt};
   const crewEvidence={reference:'fixture:hac41-crew',verifiedAt:evidence.observedAt,validUntil:evidence.validUntil,provenanceStatus:'SIMULATED'};
-  const driver=await web(a.token,'POST',`/carriers/${CARRIER}/drivers`,{schemaVersion:'2.0',serviceId:SERVICE,
+  const driver=await web(c.token,'POST',`/carrier-portal/carriers/${CARRIER}/drivers`,{schemaVersion:'2.0',serviceId:SERVICE,
     fullName:'[SYNTHETIC] HAC41 crew',portalAccountId:null,licenseClass:'QA_LICENSE',licenseValidUntil:'2030-01-01',licenseTimezone:'America/Lima',
     qualifications:['QA_CERT'],experienceYears:2,dutyStatus:'AVAILABLE',evidence:crewEvidence,availableWindows:[crewWindow],
     dutyWindow:crewWindow,maximumDutySeconds:40000,usedDutySeconds:0},randomUUID(),201);
   const crewBase={schemaVersion:'2.0',serviceId:SERVICE,executionId:execution.result.data.id,window:crewWindow,status:'CONFIRMED',evidence:crewEvidence};
-  await web(a.token,'POST',`/carriers/${CARRIER}/driver-assignments`,{...crewBase,driverId:driver.data.id,role:'PRIMARY',
+  await web(c.token,'POST',`/carrier-portal/carriers/${CARRIER}/driver-assignments`,{...crewBase,driverId:driver.data.id,role:'PRIMARY',
     acceptedLicenseClasses:['QA_LICENSE'],requiredQualifications:['QA_CERT'],policyEvidence:crewEvidence},randomUUID(),201);
-  await web(a.token,'POST',`/carriers/${CARRIER}/vehicle-assignments`,{...crewBase,assetId:setup.assetId,combinationId:null,
+  await web(c.token,'POST',`/carrier-portal/carriers/${CARRIER}/vehicle-assignments`,{...crewBase,assetId:setup.assetId,combinationId:null,
     reservationId:hold.result.data.id,capacityCommitted:{weightKg:1000,volumeM3:2}},randomUUID(),201);
   await web(c.token,'POST',`/carriers/${CARRIER}/executions/${execution.result.data.id}/starts`,update);
   pass('execution rejects missing crew atomically and starts after verified driver/vehicle commitments');
   const tracked=await tool(at,'read_v2_workflow',{kind:'executions',context:ctx(null,null,null,execution.result.data.id),page:{}});
   assert.equal(tracked.data.status,'IN_PROGRESS');pass('carrier execution is visible through the shared shipper MCP read');
+  const live=await web(c.token,'GET',`/carriers/${CARRIER}/executions/${execution.result.data.id}`);
+  const closed=await web(c.token,'POST',`/carriers/${CARRIER}/executions/${execution.result.data.id}/completions`,{...update,expectedVersion:live.data.version});
+  assert.equal(closed.data.status,'COMPLETED');
+  assert.equal((await web(c.token,'GET',`/carriers/${CARRIER}/bookings/${booking.data.id}`)).data.status,'COMPLETED');
+  pass('HAC45 full carrier journey closes execution and booking after separate shipper authorization');
   sql(`update public.carrier_operators set status='INACTIVE' where id='${OP}';`);
   await web(c.token,'GET',`/carriers/${CARRIER}/offers`,undefined,randomUUID(),403);
+  assert.equal((await web(c.token,'GET','/carrier-portal/access')).data.length,0);
+  await web(c.token,'GET','/carrier-portal/carriers/'+CARRIER,undefined,randomUUID(),403);
   sql(`update public.carrier_operators set status='ACTIVE' where id='${OP}';`);
   await web(c.token,'GET',`/carriers/${CARRIER}/offers`);pass('revoked carrier operator loses access and the positive control restores it');
   await web(at,'POST',`/identity/mcp/links/${linkA.data.id}/revocations`,{expectedVersion:1,reason:'end of local smoke'});
