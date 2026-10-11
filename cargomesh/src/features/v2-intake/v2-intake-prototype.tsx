@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 
 import { Badge, Button, Checkbox, Input, Select, Textarea } from "@/components/ui";
 import { useLocale } from "@/features/i18n/locale-provider";
@@ -401,7 +402,7 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
           <section className={styles.integrationArea} aria-live="polite">
             <header className={styles.integrationHeader}>
               <div><span className={styles.eyebrow}>{request.referenceCode}</span><h2>{t("Borrador persistido y lectura operativa", "Persisted draft and operational read")}</h2><p>{t(`Estado ${request.status} · draftVersion ${request.draftVersion}`, `Status ${request.status} · draftVersion ${request.draftVersion}`)}</p></div>
-              <Badge tone={request.status === "DRAFT" ? "preliminary" : "neutral"}>{request.status}</Badge>
+              <div className={styles.integrationActions}><Badge tone={request.status === "DRAFT" ? "preliminary" : "neutral"}>{request.status}</Badge><Link className={styles.requestLink} href={`/requests/${request.id}`}>{t("Continuar solicitud", "Continue request")}<ArrowRight size={14}/></Link></div>
             </header>
             {dirtyAfterCreate ? <div className={styles.pendingState} role="status">{t(
               "Los cambios del formulario son locales. Tarjetas y mapa todavía muestran el DRAFT persistido y la versión evaluada indicada arriba.",

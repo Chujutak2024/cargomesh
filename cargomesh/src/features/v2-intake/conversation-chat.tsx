@@ -88,6 +88,9 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     language: voiceLanguage,
     rate: voiceRate,
   });
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("assistant") === "open") setOpen(true);
+  }, []);
   const nextField = request ? null : missingField(draft);
   const syntheticCatalog = optionsSource === "fixture" || options.facilities.some((facility) => facility.label.includes("[SYNTHETIC]"));
   const ask = (field: GuidedConversationField) => questionForField(field, voiceLanguage);

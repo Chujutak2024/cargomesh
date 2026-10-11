@@ -1,18 +1,57 @@
+import { ArrowRight, Bot, CalendarCheck2, CircleDotDashed, ClipboardList, MapPinned, PackagePlus, Warehouse } from "lucide-react";
 import Link from "next/link";
-import { listWorkspaceRequests } from "@/server/services/v2-workspace/workspace-server";
-import styles from "./page.module.css";
+import type { ReactNode } from "react";
+import { listWorkspaceFacilities, listWorkspaceRequests, listWorkspaceWorkflow } from "@/server/services/v2-workspace/workspace-server";
+import { getRequestLocale } from "@/server/i18n/server";
+import { localeTag, translate } from "@/features/i18n/config";
+import { formatDateTime, formatMass, requestStatusLabel, requestStatusTone } from "@/features/shipper-portal/shipper-model";
+import styles from "@/features/shipper-portal/shipper-portal.module.css";
+
 export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
-  const requests = await listWorkspaceRequests();
+  const [requests, bookings, executions, facilities, locale] = await Promise.all([
+    listWorkspaceRequests(), listWorkspaceWorkflow("bookings"), listWorkspaceWorkflow("executions"),
+    listWorkspaceFacilities(), getRequestLocale(),
+  ]);
+  const t = (es: string, en: string) => translate(locale, es, en);
+  const localeName = localeTag(locale);
+  const active = requests.filter((request) => !["BOOKED", "FAILED", "CANCELLED"].includes(request.status)).length;
+  const recent = [...requests].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)).slice(0, 6);
+
   return <div className={styles.page}>
-    <section className={styles.hero}><div><span className={styles.eyebrow}>CargoMesh V2</span>
-      <h1>Control de operaciones</h1><p>Solicitudes V2 de tu organización. La disponibilidad se verifica con el servicio ROAD.</p></div>
-      <Link href="/freight-request/new">Nueva carga</Link></section>
-    <section><h2>Solicitudes recientes</h2>
-      {requests.length ? <ul>{requests.map(request => <li key={request.id}>
-        <Link href={`/requests/${request.id}`}>{request.referenceCode}</Link> · {request.origin.label} → {request.destination.label} · {request.status}
-      </li>)}</ul> : <p>No tienes solicitudes V2. Crea tu primera carga.</p>}
-      <Link href="/requests">Ver todas las solicitudes</Link>
+    <header className={styles.hero}><div className={styles.heroCopy}><span className={styles.eyebrow}>{t("Portal shipper · CargoMesh V2", "Shipper portal · CargoMesh V2")}</span>
+      <h1>{t("Tus cargas, de la solicitud al seguimiento", "Your shipments, from request to tracking")}</h1>
+      <p>{t("Crea un borrador versionado, compara alternativas reales, autoriza la reserva y consulta únicamente eventos reportados.", "Create a versioned draft, compare real alternatives, authorize booking, and review only reported events.")}</p></div>
+      <div className={styles.heroActions}><Link className={styles.secondary} href="/freight-request/new?assistant=open"><Bot size={17}/>{t("Abrir asistente", "Open assistant")}</Link>
+        <Link className={styles.primary} href="/freight-request/new"><PackagePlus size={17}/>{t("Nueva solicitud", "New request")}</Link></div></header>
+
+    <section className={styles.metrics} aria-label={t("Resumen operativo", "Operations summary")}>
+      <Metric icon={<ClipboardList size={19}/>} value={requests.length} label={t("Solicitudes", "Requests")} />
+      <Metric icon={<CircleDotDashed size={19}/>} value={active} label={t("En proceso", "In progress")} />
+      <Metric icon={<CalendarCheck2 size={19}/>} value={bookings.length} label={t("Reservas", "Bookings")} />
+      <Metric icon={<MapPinned size={19}/>} value={executions.length} label={t("Ejecuciones", "Executions")} />
     </section>
+
+    <div className={styles.layout}>
+      <section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Actividad reciente", "Recent activity")}</h2><p>{t("Datos persistidos del tenant actual", "Persisted data for the current tenant")}</p></div><Link href="/requests">{t("Ver todo", "View all")} <ArrowRight size={13}/></Link></header>
+        {recent.length ? <div className={styles.list}>{recent.map((request) => <Link className={styles.row} href={`/requests/${request.id}`} key={request.id}>
+          <span className={styles.stack}><strong>{request.referenceCode}</strong><small>{formatDateTime(request.updatedAt, localeName)}</small></span>
+          <span className={styles.stack}><strong>{request.origin.city} → {request.destination.city}</strong><span>{request.origin.label} → {request.destination.label}</span></span>
+          <span className={styles.stack}><strong>{formatMass(request.cargoSpecification.totalWeightKg, localeName)} · {request.cargoSpecification.totalVolumeM3.toLocaleString(localeName)} m³</strong><small>{request.cargoSpecification.description}</small></span>
+          <span className={styles.status} data-tone={requestStatusTone(request.status)}>{requestStatusLabel(request.status, locale)}</span>
+        </Link>)}</div> : <div className={styles.empty}><span className={styles.emptyIcon}><PackagePlus size={22}/></span><strong>{t("Aún no hay solicitudes", "No requests yet")}</strong><p>{t("Crea el primer DRAFT. Nada se envía mientras avanzas entre pasos.", "Create the first DRAFT. Nothing is sent while moving between steps.")}</p><Link className={styles.primary} href="/freight-request/new">{t("Crear solicitud", "Create request")}</Link></div>}
+      </section>
+      <aside className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Accesos rápidos", "Quick access")}</h2><p>{t("Un solo flujo, sin duplicar estado", "One flow, without duplicate state")}</p></div></header>
+        <div className={styles.quickGrid}><Link className={styles.quickCard} href="/facilities"><Warehouse size={20}/><strong>{t("Sedes", "Facilities")}</strong><span>{facilities.length} {t("registradas", "registered")}</span></Link>
+          <Link className={styles.quickCard} href="/bookings"><CalendarCheck2 size={20}/><strong>{t("Reservas", "Bookings")}</strong><span>{t("Consentimiento y estado carrier", "Consent and carrier status")}</span></Link>
+          <Link className={styles.quickCard} href="/tracking"><MapPinned size={20}/><strong>{t("Seguimiento", "Tracking")}</strong><span>{t("Eventos e incidencias reportados", "Reported events and incidents")}</span></Link>
+          <Link className={styles.quickCard} href="/history"><ClipboardList size={20}/><strong>{t("Historial", "History")}</strong><span>{t("Solicitud ≠ evento de envío", "Request ≠ shipment event")}</span></Link></div>
+      </aside>
+    </div>
   </div>;
+}
+
+function Metric({ icon, value, label }: { icon: ReactNode; value: number; label: string }) {
+  return <article className={styles.metric}><span className={styles.metricIcon}>{icon}</span><div><strong>{value}</strong><span>{label}</span></div></article>;
 }

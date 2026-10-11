@@ -149,6 +149,8 @@
 .integrationHeader > div { display: grid; gap: 0.28rem; }
 .integrationHeader h2 { margin: 0; color: var(--cm-color-heading); font-size: 1.05rem; }
 .integrationHeader p { margin: 0; color: var(--cm-color-muted); font-size: 0.65rem; }
+.integrationActions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .55rem; }
+.requestLink { display: inline-flex; min-height: 2.4rem; align-items: center; gap: .35rem; border-radius: .55rem; padding: .45rem .7rem; color: #fff; background: var(--cm-color-primary); font-size: .65rem; font-weight: 800; text-decoration: none; }
 .pendingState { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; border: 1px dashed #b9cbc6; border-radius: var(--cm-radius-md); padding: 0.85rem; color: var(--cm-color-muted); font-size: 0.66rem; }
 
 @media (max-width: 900px) {

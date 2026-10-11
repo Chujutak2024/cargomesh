@@ -6,6 +6,7 @@ Comienza por el [flujo vigente](./CURRENT_DELIVERY_STATE.md). Esta carpeta conti
 
 ## Trabajo actual
 
+- [Flujo shipper conectado HAC-42](./HAC42_SHIPPER_FLOW_2026-10-10.md): dashboard, sedes, intake, solicitud versionada, ofertas/decisión/booking, seguimiento, matriz de endpoints, evidencia y límites verificables.
 - [Revisión UML → BD/API del 9 de octubre](./uml-bd-api-2026-10-09/README.md): mappings de identidad, clasificación de parciales y dos correcciones de lectura; distinguir integración local de aplicación alojada.
 
 - [Plantilla de Linear](./LINEAR_ISSUE_TEMPLATE.md): alcance, dueño, dependencias, DoD y evidencia.
