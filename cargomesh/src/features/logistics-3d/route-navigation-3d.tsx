@@ -15,11 +15,14 @@ import { buildScenicRouteTerrain, buildScenicRouteWorld, disposeScenicWorld, pre
 import { buildScenicRouteSky } from "./scenic-route-sky";
 import s from "./route-navigation.module.css";
 
-export type RouteNavigationProps = { presentation: MapPresentation; origin: string; destination: string; variant?: TruckVisualType; modelAssetId?: string | null; custom?: boolean; title?: string; loading?: boolean; initialProgress?: number; inactive?: boolean };
+export type RouteNavigationProps = { presentation: MapPresentation; origin: string; destination: string; variant?: TruckVisualType; modelAssetId?: string | null; custom?: boolean; title?: string; loading?: boolean; initialProgress?: number; inactive?: boolean; cameraControls?: boolean; showProgress?: boolean; onUnavailable?: () => void };
 /** Original scenic interpretation. Visual travel never changes shipment progress or provider geometry. */
-export default function RouteNavigation3D({ presentation, origin, destination, variant = "articulated", modelAssetId, custom = false, title, loading = false, initialProgress = 0, inactive = false }: RouteNavigationProps) {
+export default function RouteNavigation3D({ presentation, origin, destination, variant = "articulated", modelAssetId, custom = false, title, loading = false, initialProgress = 0, inactive = false, cameraControls = false, showProgress = true, onUnavailable }: RouteNavigationProps) {
   const host = useRef<HTMLDivElement>(null), reduced = !!useReducedMotion(), track = useMemo(() => buildRouteTrack(presentation.paths), [presentation.paths]);
   const landscape = routeLandscape(origin, destination), [state, setState] = useState<"loading" | "ready" | "failed">("loading");
+  const [cameraMode, setCameraMode] = useState<"follow" | "side" | "overhead">("follow");
+  const cameraModeRef = useRef(cameraMode), onUnavailableRef = useRef(onUnavailable);
+  cameraModeRef.current = cameraMode; onUnavailableRef.current = onUnavailable;
   const progress = THREE.MathUtils.clamp(initialProgress, 0, .995);
   useEffect(() => {
     if (!track || !host.current) return;
@@ -80,7 +83,7 @@ export default function RouteNavigation3D({ presentation, origin, destination, v
         if (disposed) return;
         request = requestAnimationFrame(animate);
         if (document.hidden) { last = time; return; }
-        if (placed && time - last < 1000 / 60 - .4) return;
+        if (placed && time - last < (reduced && cameraControls ? 100 : 1000 / 60 - .4)) return;
         const delta = last ? Math.min((time - last) / 1000, .05) : 0; last = time;
         if (!reduced && !inactive) elapsed += delta;
         // Continuous visual distance is independent from the operational percentage in the HUD.
@@ -100,7 +103,12 @@ export default function RouteNavigation3D({ presentation, origin, destination, v
         if (!placed) truck!.quaternion.copy(desiredRotation); else truck!.quaternion.slerp(desiredRotation, 1 - Math.exp(-delta * 16));
         if (!modelAssetId) setTruckWheelAngle(truck!, wheelDistance / (.369 * 1.45));
         const mobile = camera.aspect < .8;
-        const view = localPoint.clone().addScaledVector(pose.tangent, mobile ? -23 : -18.5).addScaledVector(pose.normal, mobile ? .6 : 6.8).setY(mobile ? 11.8 : 9.4);
+        const cameraModeNow = cameraModeRef.current;
+        const view = cameraModeNow === "overhead"
+          ? localPoint.clone().addScaledVector(pose.tangent, -8).setY(31)
+          : cameraModeNow === "side"
+            ? localPoint.clone().addScaledVector(pose.tangent, -5).addScaledVector(pose.normal, mobile ? 15 : 21).setY(8)
+            : localPoint.clone().addScaledVector(pose.tangent, mobile ? -23 : -18.5).addScaledVector(pose.normal, mobile ? .6 : 6.8).setY(mobile ? 11.8 : 9.4);
         const ahead = road.poseAt(cursor + 6).point.sub(frameOrigin).setY(1.7);
         if (!placed) { camera.position.copy(view); lookTarget.copy(ahead); placed = true; }
         else { camera.position.lerp(view, 1 - Math.exp(-delta * 4)); lookTarget.lerp(ahead, 1 - Math.exp(-delta * 5)); }
@@ -111,21 +119,21 @@ export default function RouteNavigation3D({ presentation, origin, destination, v
         frames++; if (!fpsSince) fpsSince = time; if (time - fpsSince > 1000) { fps = frames * 1000 / (time - fpsSince); frames = 0; fpsSince = time; }
         const canvas = renderer!.domElement;
         if (!lastMetrics || time - lastMetrics > 250) { lastMetrics = time; Object.assign(canvas.dataset, { routeRenderer: "continuous-scenic-three", routeLandscape: landscape, routeProgress: progress.toFixed(5), routeCursor: cursor.toFixed(3), routeBaseLength: road.length.toFixed(3), routeX: pose.point.x.toFixed(3), routeZ: pose.point.z.toFixed(3), routeHeading: pose.angle.toFixed(3), routeVariant: modelAssetId ? "custom" : variant, drawCalls: String(renderer!.info.render.calls), routeChunks: String(chunks.size), routeStreamed: String(streamed), routeChunk: String(chunkIndex), routeFps: fps.toFixed(1), routeGeometries: String(renderer!.info.memory.geometries), routeTextures: String(renderer!.info.memory.textures), environment: light.phase, motion: reduced ? "reduced" : inactive ? "inactive" : "running" }); }
-        if (reduced) { cancelAnimationFrame(request); request = 0; }
+        if (reduced && !cameraControls) { cancelAnimationFrame(request); request = 0; }
       };
       request = requestAnimationFrame(animate); setState("ready");
     };
-    void install().catch(() => { if (!disposed) setState("failed"); });
+    void install().catch(() => { if (!disposed) { setState("failed"); onUnavailableRef.current?.(); } });
     return () => {
       disposed = true; cancelAnimationFrame(request); clearInterval(lightingTimer); if (streamTimer !== null) clearTimeout(streamTimer); terrainTask?.cancel(); resize?.disconnect();
       chunks.forEach(({ world }) => disposeScenicWorld(world.root)); chunks.clear(); if (terrain) disposeScenicWorld(terrain.root); sky.dispose(); arrowGeometry.dispose(); arrowMaterial.dispose();
       if (truck) { if (modelAssetId) disposeTruckAsset(truck); else disposeCargoMeshTruck(truck); } environment?.dispose(); sun.dispose(); scene.clear(); renderer?.dispose(); renderer?.forceContextLoss(); node.replaceChildren();
     };
-  }, [track, landscape, variant, modelAssetId, custom, progress, reduced, inactive, destination]);
+  }, [track, landscape, variant, modelAssetId, custom, progress, reduced, inactive, destination, cameraControls]);
   const absent = !track && !loading;
   return <section className={s.root} aria-label="Recorrido del camión en 3D"><div className={s.stage} data-route-state={absent ? "absent" : state}><div ref={host} className={s.world} role="img" aria-label={`Camión siguiendo una carretera en 3D · ${landscapeLabels[landscape]}`}/>
     {(state === "loading" && !absent) || loading ? <div className={s.message} role="status"><Navigation size={26}/><strong>Preparando el recorrido 3D…</strong></div> : null}
     {absent || state === "failed" ? <div className={s.message} role="status"><Route size={30}/><strong>{absent ? "No hay un recorrido disponible" : "No se pudo abrir la vista 3D"}</strong><p>{absent ? "Calcula una ruta por carretera para ver el recorrido del camión." : custom ? "Comprueba el archivo GLB de tu camión." : "El navegador no pudo iniciar el visor. Vuelve a abrir la vista."}</p></div> : null}
-    {!absent && state === "ready" ? <><div className={s.direction}><span><ArrowUpRight size={27}/></span><div><small>Hacia el destino</small><strong>{destination}</strong><p>{landscapeLabels[landscape]}</p></div></div><div className={s.progress}><strong>{Math.round(progress * 100)}%</strong><span>{inactive ? "Recorrido detenido" : progress >= .8 ? "Tramo final" : "En carretera"}</span></div><div className={s.vehicle}><Navigation size={17}/><strong>{title ?? "Camión en ruta"}</strong><span>Guía de recorrido</span></div></> : null}
-    </div><div className={s.caption}><span><MapPin size={15}/>{origin} → {destination}</span><span>{presentation.distanceKm !== null ? presentation.distanceKm.toLocaleString("es-PE") + " km" : ""} · Vista de recorrido</span></div></section>;
+    {!absent && state === "ready" ? <><div className={s.direction}><span><ArrowUpRight size={27}/></span><div><small>Hacia el destino</small><strong>{destination}</strong><p>{landscapeLabels[landscape]}</p></div></div>{showProgress ? <div className={s.progress}><strong>{Math.round(progress * 100)}%</strong><span>{inactive ? "Recorrido detenido" : progress >= .8 ? "Tramo final" : "En carretera"}</span></div> : null}<div className={s.vehicle}><Navigation size={17}/><strong>{title ?? "Camión en ruta"}</strong><span>Guía de recorrido</span></div></> : null}
+    </div><div className={s.caption}><span><MapPin size={15}/>{origin} → {destination}</span><span>{presentation.distanceKm !== null ? presentation.distanceKm.toLocaleString("es-PE") + " km" : ""} · Vista de recorrido</span></div>{cameraControls && state === "ready" ? <div className={s.cameraControls} role="group" aria-label="3D camera view"><span>Camera</span>{(["follow", "side", "overhead"] as const).map((mode) => <button type="button" key={mode} aria-pressed={cameraMode === mode} onClick={() => setCameraMode(mode)}>{mode === "follow" ? "Follow" : mode === "side" ? "Side" : "Overhead"}</button>)}</div> : null}</section>;
 }

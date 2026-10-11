@@ -1,36 +1,65 @@
-import { AlertTriangle, CheckCircle2, CircleDot, MapPinned } from "lucide-react";
+import { ArrowLeft, CalendarClock, MapPin, ShieldCheck, Truck } from "lucide-react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { TrackingVisual } from "@/features/shipper-portal/tracking-visual";
 import { routeRecordToPresentation } from "@/features/shipper-portal/tracking-model";
-import { executionProgress, formatDateTime } from "@/features/shipper-portal/shipper-model";
+import { canShowConceptual3D, routeForExecution, type Booking, type Execution, type ExecutionEvent, type Incident, type Route } from "@/features/shipper-portal/tracking-journey";
+import { TrackingEventsPanel, TrackingIncidentsPanel, TrackingJourneyPanel } from "@/features/shipper-portal/tracking-experience";
+import type { WorkflowRecordV2 } from "@/features/shipper-portal/shipper-model";
+import { formatDateTime } from "@/features/shipper-portal/shipper-model";
 import { getRequestLocale } from "@/server/i18n/server";
 import { localeTag, translate } from "@/features/i18n/config";
 import { listWorkspaceWorkflow, readWorkspaceRequest } from "@/server/services/v2-workspace/workspace-server";
-import styles from "@/features/shipper-portal/shipper-portal.module.css";
+import s from "@/features/shipper-portal/tracking-experience.module.css";
 
 export const dynamic = "force-dynamic";
 export default async function TrackingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!z.string().uuid().safeParse(id).success) notFound();
-  const [allExecutions, events, incidents, locale] = await Promise.all([
+  const [allExecutions, eventRecords, incidentRecords, locale] = await Promise.all([
     listWorkspaceWorkflow("executions"), listWorkspaceWorkflow("execution-events", { parentId: id }),
     listWorkspaceWorkflow("incidents", { parentId: id }), getRequestLocale(),
   ]);
-  const execution = allExecutions.find((item): item is Extract<typeof item, { kind: "executions" }> => item.kind === "executions" && item.id === id);
+  const execution = allExecutions.find((item): item is Execution => item.kind === "executions" && item.id === id);
   if (!execution) notFound();
-  const request = execution.requestId ? await readWorkspaceRequest(execution.requestId) : null;
-  const routes = execution.requestId ? await listWorkspaceWorkflow("routes", { requestId: execution.requestId }) : [];
-  const route = routes.findLast((item) => item.kind === "routes") ?? null;
-  const presentation = route && route.kind === "routes" ? routeRecordToPresentation(route) : routeRecordToPresentation(null);
-  const progress = executionProgress(execution.status, events);
+  const events = eventRecords.filter((item): item is ExecutionEvent => item.kind === "execution-events" && item.requestId === execution.requestId);
+  const incidents = incidentRecords.filter((item): item is Incident => item.kind === "incidents" && item.requestId === execution.requestId);
+  const [request, bookingRecords, decisionRecords, planRecords, routeRecords] = await Promise.all([
+    execution.requestId ? readWorkspaceRequest(execution.requestId) : Promise.resolve(null),
+    listWorkspaceWorkflow("bookings", { requestId: execution.requestId }),
+    listWorkspaceWorkflow("decisions", { requestId: execution.requestId }),
+    listWorkspaceWorkflow("plans", { requestId: execution.requestId }),
+    listWorkspaceWorkflow("routes", { requestId: execution.requestId }),
+  ]);
+  const bookings = bookingRecords.filter((item): item is Booking => item.kind === "bookings");
+  const decisions = decisionRecords.filter((item): item is Extract<WorkflowRecordV2, { kind: "decisions" }> => item.kind === "decisions");
+  const plans = planRecords.filter((item): item is Extract<WorkflowRecordV2, { kind: "plans" }> => item.kind === "plans");
+  const routes = routeRecords.filter((item): item is Route => item.kind === "routes");
+  const booking = bookings.find((item) => item.id === execution.data.bookingId && item.requestId === execution.requestId) ?? null;
+  const linkedRoute = routeForExecution(execution, bookings, decisions, plans, routes);
+  const presentation = routeRecordToPresentation(linkedRoute);
+  const canView3D = canShowConceptual3D(linkedRoute, presentation.paths.length > 0);
   const t = (es: string, en: string) => translate(locale, es, en), tag = localeTag(locale);
-  const sortedEvents = [...events].sort((a, b) => Date.parse(a.updatedAt) - Date.parse(b.updatedAt));
-  return <div className={styles.page}><header className={styles.hero}><div className={styles.heroCopy}><span className={styles.eyebrow}>{t("Ejecución V2", "V2 execution")}</span><h1>{request?.referenceCode ?? id.slice(0, 8)}</h1><p>{request ? `${request.origin.label} → ${request.destination.label}` : t("Solicitud asociada no disponible en esta lectura.", "Associated request unavailable in this read.")}</p></div><span className={styles.status} data-tone={execution.status === "COMPLETED" ? "positive" : execution.status === "CANCELLED" ? "danger" : "pending"}>{execution.status}</span></header>
-    <section className={styles.panel}><div className={styles.summary}><div className={styles.summaryItem}><small>{t("Progreso por eventos", "Event-based progress")}</small><strong>{progress}%</strong><div className={styles.progressTrack}><div className={styles.progressFill} style={{ width: `${progress}%` }}/></div></div><div className={styles.summaryItem}><small>{t("Última posición", "Last position")}</small><strong>{execution.data.lastKnownPosition?.label ?? t("Desconocida", "Unknown")}</strong></div><div className={styles.summaryItem}><small>{t("Inicio real", "Actual start")}</small><strong>{formatDateTime(execution.data.actualStartedAt, tag)}</strong></div><div className={styles.summaryItem}><small>{t("Fin real", "Actual completion")}</small><strong>{formatDateTime(execution.data.actualCompletedAt, tag)}</strong></div></div></section>
-    <div className={styles.detailGrid}><TrackingVisual presentation={presentation} origin={request?.origin.label ?? t("Origen", "Origin")} destination={request?.destination.label ?? t("Destino", "Destination")} progress={progress} inactive={execution.status === "CANCELLED" || execution.status === "COMPLETED"}/>
-      <aside className={styles.page}><section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Cronología física", "Physical timeline")}</h2><p>{t("Sólo eventos persistidos", "Persisted events only")}</p></div><MapPinned size={18}/></header>{sortedEvents.length ? <div className={styles.timeline}>{sortedEvents.map((event) => <div className={styles.timelineItem} key={event.id}><span className={styles.timelineDot}><CheckCircle2 size={13}/></span><div><strong>{event.kind === "execution-events" ? event.data.action : event.status}</strong><span>{formatDateTime(event.updatedAt, tag)}</span></div></div>)}</div> : <div className={styles.empty}><CircleDot size={20}/><strong>{t("Sin eventos reportados", "No reported events")}</strong></div>}</section>
-        <section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Incidencias", "Incidents")}</h2><p>{t("No se confunden con cancelación o rechazo", "Not conflated with cancellation or rejection")}</p></div><AlertTriangle size={18}/></header>{incidents.length ? <div className={styles.section}>{incidents.map((incident) => incident.kind === "incidents" ? <article className={styles.notice} data-tone={incident.data.severity === "CRITICAL" ? "danger" : "warning"} key={incident.id}><AlertTriangle size={16}/><div><strong>{incident.data.kind} · {incident.data.status}</strong><div>{incident.data.description}</div></div></article> : null)}</div> : <div className={styles.empty}><strong>{t("Sin incidencias reportadas", "No reported incidents")}</strong></div>}</section></aside>
-    </div>
+  return <div className={s.page}>
+    <header className={s.hero}><div className={s.heroCopy}><span className={s.eyebrow}>{t("Seguimiento de transporte", "Transport tracking")}</span><h1>{request?.referenceCode ?? id.slice(0, 8)}</h1><p>{request ? `${request.origin.label} → ${request.destination.label}` : t("Solicitud asociada no disponible en esta lectura.", "Associated request unavailable in this read.")}</p></div><Link className={s.heroAction} href="/tracking"><ArrowLeft size={16} aria-hidden="true"/>{t("Todos los transportes", "All transports")}</Link></header>
+    <section className={s.panel} aria-label={t("Datos de seguimiento", "Tracking facts")}><div className={s.facts}>
+      <div className={s.fact}><small>{t("Estado de ejecución", "Execution state")}</small><strong>{execution.status}</strong></div>
+      <div className={s.fact}><small>{t("Reserva carrier", "Carrier booking")}</small><strong>{booking?.data.carrierConfirmationStatus ?? t("Desconocida", "Unknown")}</strong></div>
+      <div className={s.fact}><small>{t("Inicio reportado", "Reported start")}</small><strong>{formatDateTime(execution.data.actualStartedAt, tag)}</strong></div>
+      <div className={s.fact}><small>{t("Entrega reportada", "Reported delivery")}</small><strong>{formatDateTime(execution.data.actualCompletedAt, tag)}</strong></div>
+    </div></section>
+    <div className={s.detailGrid}><div className={s.mainColumn}>
+      <TrackingJourneyPanel execution={execution} booking={booking} events={events} incidents={incidents} t={t} tag={tag}/>
+      <TrackingVisual presentation={presentation} origin={request?.origin.label ?? t("Origen", "Origin")} destination={request?.destination.label ?? t("Destino", "Destination")} canView3D={canView3D}/>
+      <TrackingEventsPanel events={events} t={t} tag={tag} locale={locale}/>
+    </div><aside className={s.sideColumn}>
+      <TrackingIncidentsPanel incidents={incidents} t={t} tag={tag}/>
+      <section className={s.panel}><div className={s.panelHeading}><div><span className={s.eyebrow}>{t("Procedencia", "Provenance")}</span><h2>{t("Qué representa esta vista", "What this view represents")}</h2></div><ShieldCheck size={21} aria-hidden="true"/></div><div className={s.facts}>
+        <div className={s.fact}><small><MapPin size={12} aria-hidden="true"/> {t("Geometría", "Geometry")}</small><strong>{linkedRoute ? `${linkedRoute.data.confidence} · ${linkedRoute.data.geographicSource.kind}` : t("Sin ruta enlazada a este booking", "No route linked to this booking")}</strong></div>
+        <div className={s.fact}><small><CalendarClock size={12} aria-hidden="true"/> {t("Última lectura", "Last read")}</small><strong>{formatDateTime(execution.updatedAt, tag)}</strong></div>
+        <div className={s.fact}><small><Truck size={12} aria-hidden="true"/> {t("Posición", "Position")}</small><strong>{t("Sólo reportes persistidos; sin GPS simulado", "Persisted reports only; no simulated GPS")}</strong></div>
+      </div></section>
+    </aside></div>
   </div>;
 }

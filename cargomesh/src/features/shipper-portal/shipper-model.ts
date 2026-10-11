@@ -87,13 +87,3 @@ export function formatDateTime(value: string | null | undefined, locale = "es-PE
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(parsed);
 }
 
-export function executionProgress(status: string, events: WorkflowRecordV2[]) {
-  if (status === "COMPLETED") return 100;
-  if (status === "CANCELLED") return 0;
-  const eventActions = events.flatMap((event) => event.kind === "execution-events" ? [event.data.action] : []);
-  if (eventActions.includes("executions.complete")) return 100;
-  if (eventActions.includes("executions.position")) return 58;
-  if (eventActions.includes("executions.start")) return 22;
-  return 0;
-}
-

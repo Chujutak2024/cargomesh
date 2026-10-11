@@ -1,4 +1,5 @@
 import type { MapPresentation } from "@/features/v2-road-map/road-map-model";
+import { validCoordinate } from "@/features/v2-road-map/road-map-model";
 import type { WorkflowRecordV2 } from "./shipper-model";
 
 type RouteRecord = Extract<WorkflowRecordV2, { kind: "routes" }>;
@@ -7,7 +8,7 @@ export function routeRecordToPresentation(route: RouteRecord | null): MapPresent
   if (!route) return emptyPresentation();
   const points = route.data.legs.map((leg) => [leg.origin, ...leg.waypoints.map((waypoint) => waypoint.location), leg.destination]);
   const complete = points.length > 0 && points.every((leg) => leg.length >= 2 && leg.every((point) =>
-    point.lat !== null && point.lng !== null && Number.isFinite(point.lat) && Number.isFinite(point.lng)));
+    validCoordinate(point.lat, point.lng)));
   if (!complete || route.data.confidence === "UNKNOWN") return {
     ...emptyPresentation(), provenanceStatus: "UNKNOWN", geometrySource: "PUBLISHED_CORRIDORS",
   };
