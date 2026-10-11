@@ -72,15 +72,8 @@ async function call(label: string, actor: string | null, path: string, expected:
   results.push(row); save("carrier-http-cases.json", results);
   console.log(label + ": expected=" + expected + " observed=" + response.status + " " + (row.pass ? "PASS" : "FAIL"));
   if (!row.pass) {
-    const catalogScreens = ["depots", "services", "areas", "lanes", "partners", "assets", "vehicle-combinations",
-      "drivers", "capacity-pools", "calendars", "driver-assignments", "vehicle-assignments", "maintenances",
-      "repositioning-blocks", "asset-capabilities", "capability-definitions"];
-    const knownCatalog = label === "portal-profile-carrier-only" || label.startsWith("portal-catalog-")
-      || label === "portal-driver-assignment-carrier-only" || catalogScreens.some(key => label === "screen-" + key);
-    Object.assign(row, { failureKind: knownCatalog && response.status === 403 && value.error?.code === "FORBIDDEN_TENANT"
-      ? "KNOWN_HAC41_FORBIDDEN_TENANT" : "NEW_FAILURE" });
+    Object.assign(row, { failureKind: "HAC45_RETEST_FAILURE" });
     save("carrier-http-cases.json", results);
-    if ((row as any).failureKind === "NEW_FAILURE") throw new Error("New failure: " + label);
   }
   return { row, value, data: value.data };
 }
@@ -89,7 +82,11 @@ const pair = (negative: any, positive: any) => Object.assign(negative.row, {
   positiveControl: positive.row.label,
   pairVerdict: positive.row.pass ? negative.row.pass ? "PASS" : "FAIL" : "BLOQUEADO" });
 const carrierPath = "/carriers/" + id("C1");
+// HAC45 integration:26-30; resources.ts:65. Member catalog endpoint controls
+// retain /carriers; carrier catalog certification follows the actual Web path.
+const portalPath = "/carrier-portal/carriers/" + id("C1");
 let blocked = false;
+const permissionChecks: any[] = [];
 try {
   for (const actor of ["c1-admin", "c1-operator", "c1-dispatcher"])
     await call(actor + "-own-open", actor, carrierPath + "/opportunities", 200, undefined, nonempty);
@@ -108,7 +105,24 @@ try {
   const anonymous = await call("anonymous-negative", null, carrierPath + "/opportunities", 401);
   Object.assign(anonymous.row, { positiveControl: anonymousControl.row.label,
     pairVerdict: anonymousControl.row.pass && anonymous.row.pass ? "PASS" : "BLOQUEADO" });
-  await call("portal-profile-carrier-only", "c1-admin", carrierPath, 200, undefined, v => v.data?.id === id("C1"), true);
+  const profileControl = await call("portal-profile-carrier-only", "c1-admin", portalPath, 200, undefined, v => v.data?.id === id("C1"), true);
+  for (const [actor, role, carrier] of [["c1-admin", "ADMIN", "C1"], ["c1-operator", "OPERATOR", "C1"],
+    ["c1-dispatcher", "DISPATCHER", "C1"], ["c2-admin", "ADMIN", "C2"], ["c2-operator", "OPERATOR", "C2"]]) {
+    await call(actor + "-portal-access", actor, "/carrier-portal/access", 200, undefined,
+      v => v.data?.length === 1 && v.data[0].carrierId === id(carrier) && v.data[0].role === role);
+    const own = await call(actor + "-portal-profile", actor, "/carrier-portal/carriers/" + id(carrier), 200,
+      undefined, v => v.data?.id === id(carrier));
+    pair(await call(actor + "-portal-other-profile-negative", actor, "/carrier-portal/carriers/" + id(carrier === "C1" ? "C2" : "C1"), 403), own);
+  }
+  for (const actor of ["inactive", "invited", "unverified", "expired", "revoked", "shipper", "setup"]) {
+    await call(actor + "-portal-access-empty", actor, "/carrier-portal/access", 200, undefined,
+      v => Array.isArray(v.data) && v.data.length === 0);
+    pair(await call(actor + "-portal-profile-negative", actor, portalPath, 403, undefined,
+      v => v.error?.code === "FORBIDDEN_CARRIER_IDENTITY"), profileControl);
+    const catalogControl = await call(actor + "-portal-catalog-control", "c1-admin", portalPath + "/services", 200, undefined, nonempty);
+    pair(await call(actor + "-portal-catalog-negative", actor, portalPath + "/services", 403, undefined,
+      v => v.error?.code === "FORBIDDEN_CARRIER_IDENTITY"), catalogControl);
+  }
   for (const carrier of ["C1", "C2"]) {
     const path = "/carriers/" + id(carrier);
     const profile = await call(carrier + "-setup-profile-endpoint-control", "setup", path, 200, undefined,
@@ -127,7 +141,15 @@ try {
       contractLimit: "IDENTITY_AND_MCP_CHANNELS.md:9,10,14; PRODUCT_SCOPE.md:47 does not establish a shipper catalog-read prohibition" });
   }
   for (const path of ["services", "depots", "assets", "drivers", "calendars", "asset-capabilities", "capability-definitions"])
-    await call("portal-catalog-" + path, "c1-admin", carrierPath + "/" + path, 200, undefined, nonempty);
+    await call("portal-catalog-" + path, "c1-admin", portalPath + "/" + path, 200, undefined, nonempty);
+  const profileRevision = { value: profileControl.data.value, expectedVersion: profileControl.data.version };
+  const revisionControl = await call("admin-profile-revision-positive", "c1-admin", portalPath + "/revisions", 200,
+    profileRevision, v => v.data?.id === id("C1") && v.data?.version === profileControl.data.version + 1, true);
+  for (const actor of ["c1-operator", "c1-dispatcher", "c2-admin", "shipper", "inactive", "invited", "unverified", "expired", "revoked"])
+    pair(await call(actor + "-profile-revision-negative", actor, portalPath + "/revisions", 403, profileRevision,
+      // Catalog HTTP maps PT403 to FORBIDDEN_CATALOG; workflow preserves its
+      // role code. supabase-catalog-repository.ts:8 is the HTTP boundary.
+      v => v.error?.code === (["c1-operator", "c1-dispatcher"].includes(actor) ? "FORBIDDEN_CATALOG" : "FORBIDDEN_CARRIER_IDENTITY")), revisionControl);
   const offerBody = (suffix = "") => ({ schemaVersion: "2.0", carrierReference: "HAC44_CP_OFFER" + suffix,
     planCandidateId: id(suffix ? "conflict-plan" : "plan"), coveredServiceIds: [id("C1-service")],
     coveredAssignmentIds: [id(suffix ? "conflict-assignment" : "assignment")],
@@ -174,13 +196,17 @@ try {
   const crew = JSON.parse(readFileSync(root + "/supabase/scenarios/v2-road-baseline/fixtures/hac40-crew.json", "utf8"));
   const driverBody = { ...crew["driver-assignments"], serviceId: id("C1-service"), driverId: id("C1-driver"),
     executionId: executions[0].id, window: refs.window, status: "CONFIRMED" };
-  await call("portal-driver-assignment-carrier-only", "c1-admin", carrierPath + "/driver-assignments", 201, driverBody);
-  const driver = await call("driver-free-positive", "setup", carrierPath + "/driver-assignments", 201, driverBody);
+  const carrierDriver = await call("portal-driver-assignment-carrier-only", "c1-admin", portalPath + "/driver-assignments", 201, driverBody);
+  for (const actor of ["c1-operator", "c1-dispatcher", "c2-admin", "shipper"])
+    pair(await call(actor + "-portal-driver-write-negative", actor, portalPath + "/driver-assignments", 403, driverBody,
+      v => v.error?.code === (["c1-operator", "c1-dispatcher"].includes(actor) ? "FORBIDDEN_CATALOG" : "FORBIDDEN_CARRIER_IDENTITY")), carrierDriver);
+  const controlDriverBody = { ...driverBody, driverId: id("C1-control-driver") };
+  const driver = await call("driver-free-positive", "setup", carrierPath + "/driver-assignments", 201, controlDriverBody);
   Object.assign(driver.row, { certification: "ENDPOINT_CONTROL_ONLY; independent catalog setup, not carrier authorization" });
   pair(await call("shipper-no-catalog-grant-negative", "shipper", carrierPath + "/driver-assignments", 403,
     driverBody, v => v.error?.code === "FORBIDDEN_CATALOG"), driver);
   const driverBusy = await call("driver-occupied-negative", "setup", carrierPath + "/driver-assignments", 409,
-    { ...driverBody, executionId: executions[1].id }, v => v.error?.code === "FLEET_COMMITMENT_CONFLICT");
+    { ...controlDriverBody, executionId: executions[1].id }, v => v.error?.code === "FLEET_COMMITMENT_CONFLICT");
   Object.assign(driverBusy.row, { positiveControl: driver.row.label, pairVerdict: driver.row.pass ? driverBusy.row.pass ? "PASS" : "FAIL" : "BLOQUEADO" });
   await call("vehicle-confirmed-positive", "setup", carrierPath + "/vehicle-assignments", 201,
     { ...crew["vehicle-assignments"], serviceId: id("C1-service"), executionId: executions[0].id, assetId: id("C1-asset"),
@@ -288,17 +314,59 @@ try {
     }
   }
   const { carrierResources, resourcePath } = await import(pathToFileURL(root + "/cargomesh/src/features/carrier-portal/resources.ts").href);
+  const { parseRecords } = await import(pathToFileURL(root + "/cargomesh/src/features/carrier-portal/records.ts").href);
+  const { canCreateCarrierRecord, canReviseCarrierRecord, canCarrierAction } = await import(pathToFileURL(root + "/cargomesh/src/features/carrier-portal/permissions.ts").href);
   const coverage = [];
   for (const resource of carrierResources) {
     const parent = resource.parent === "service" ? id("C1-service") : resource.parent === "execution" ? executions[0].id
       : resource.parent === "asset" ? id("C1-ltl-asset") : incident.data.id;
     const path = resourcePath(id("C1"), resource, parent).replace(/^\/api\/v2/, "");
-    const probe = await call("screen-" + resource.key, "c1-admin", path, 200, undefined,
-      ["metrics", "consolidations", "asset-events"].includes(resource.key) ? nonempty : () => true);
-    coverage.push({ key: resource.key, section: resource.section, family: resource.family, path,
-      observed: probe.row.observed, rows: Array.isArray(probe.data) ? probe.data.length : null,
-      classification: probe.row.observed !== 200 ? "DEFECT_REPRODUCED" : Array.isArray(probe.data) && !probe.data.length ? "EVIDENCE_MISSING_EMPTY_FIXTURE" : "FUNCTIONAL_DATA_OBSERVED" });
-    if (Array.isArray(probe.data) && !probe.data.length) Object.assign(probe.row, { certification: "BLOQUEADO: empty result alone does not prove authorization" });
+    let control: any;
+    for (const [actor, role] of [["c1-admin", "ADMIN"], ["c1-operator", "OPERATOR"], ["c1-dispatcher", "DISPATCHER"]] as const) {
+      const probe = await call(actor === "c1-admin" ? "screen-" + resource.key : actor + "-screen-" + resource.key,
+        actor, path + "?limit=25&offset=0", 200, undefined, v => {
+          try { return nonempty(v) && parseRecords(resource, v.data, id("C1")).length === v.data.length; } catch { return false; }
+        });
+      if (!control) control = probe;
+      const record = probe.data?.[0];
+      if (record?.id) await call(actor + "-detail-" + resource.key, actor, path + "/" + record.id, 200, undefined,
+        v => { try { return v.data?.id === record.id && parseRecords(resource, [v.data], id("C1")).length === 1; } catch { return false; } });
+      const expectedCreate = !!resource.schema && (resource.family === "catalog" || ["limits", "metrics"].includes(resource.key)
+        ? role === "ADMIN" : ["incidents", "consolidations", "asset-events"].includes(resource.key));
+      const expectedRevise = role === "ADMIN" && !!resource.schema && (resource.family === "catalog" || ["limits", "metrics"].includes(resource.key));
+      permissionChecks.push({ role, resource: resource.key, expectedCreate, observedCreate: canCreateCarrierRecord(role, resource),
+        expectedRevise, observedRevise: canReviseCarrierRecord(role, resource),
+        pass: expectedCreate === canCreateCarrierRecord(role, resource) && expectedRevise === canReviseCarrierRecord(role, resource) });
+      pair(await call(actor + "-other-carrier-screen-negative-" + resource.key, actor,
+        path.replace(id("C1"), id("C2")), 403, undefined, v => v.error?.code === "FORBIDDEN_CARRIER_IDENTITY"), probe);
+      coverage.push({ key: resource.key, actor, role, section: resource.section, family: resource.family, path,
+        observed: probe.row.observed, rows: Array.isArray(probe.data) ? probe.data.length : null,
+        classification: probe.row.pass ? "FUNCTIONAL_DATA_OBSERVED" : "HAC45_RETEST_FAILURE" });
+    }
+    for (const actor of ["c2-admin", "c2-operator", "shipper"])
+      pair(await call(actor + "-foreign-screen-negative-" + resource.key, actor, path, 403, undefined,
+        v => v.error?.code === "FORBIDDEN_CARRIER_IDENTITY"), control);
+  }
+  for (const kind of ["nodes", "conditions"]) {
+    for (const actor of ["c1-admin", "c1-operator", "c1-dispatcher"]) {
+      const control = await call(actor + "-map-" + kind, actor, portalPath + "/routing/" + kind + "?limit=100&offset=0", 200,
+        undefined, nonempty);
+      pair(await call(actor + "-other-map-negative-" + kind, actor,
+        "/carrier-portal/carriers/" + id("C2") + "/routing/" + kind, 403), control);
+      pair(await call(actor + "-shipper-map-negative-" + kind, "shipper", portalPath + "/routing/" + kind, 403), control);
+    }
+  }
+  // UI action permission expectations are explicit contract roles/states; never
+  // derive the expected value from the function under test.
+  for (const [action, status, allowedRoles] of [
+    ["bookings.confirm", "AUTHORIZED", ["ADMIN", "OPERATOR"]], ["holds.confirm", "HELD", ["ADMIN", "OPERATOR"]],
+    ["offers.create", "SENT", ["ADMIN", "OPERATOR"]], ["executions.start", "PLANNED", ["ADMIN", "OPERATOR", "DISPATCHER"]],
+    ["incidents.update", "OPEN", ["ADMIN", "OPERATOR", "DISPATCHER"]], ["consolidations.close", "OPEN", ["ADMIN", "OPERATOR", "DISPATCHER"]],
+    ["executions.start", "COMPLETED", []], ["bookings.confirm", "COMPLETED", []],
+  ] as const) for (const role of ["ADMIN", "OPERATOR", "DISPATCHER"] as const) {
+    const expected = (allowedRoles as readonly string[]).includes(role);
+    permissionChecks.push({ role, action, status, expected, observed: canCarrierAction(role, action, status),
+      pass: expected === canCarrierAction(role, action, status) });
   }
   save("carrier-portal-endpoints.json", coverage);
 } catch (error) {
@@ -307,10 +375,12 @@ try {
   console.log("BLOQUEADO downstream prerequisite; see carrier-http-blocker.json");
 } finally {
   save("carrier-http-cases.json", results);
+  save("carrier-portal-permissions.json", permissionChecks);
   save("carrier-http-summary.json", { total: results.length, passed: results.filter(r => r.pass).length, blocked,
+    permissionChecks: permissionChecks.length, permissionFailures: permissionChecks.filter(r => !r.pass).length,
     failed: results.filter(r => !r.pass).length, paired: results.filter(r => r.pairVerdict).map(r => ({ label: r.label, verdict: r.pairVerdict })) });
   await new Promise<void>(resolve => server.close(() => resolve()));
-  if (blocked || results.some(r => !r.pass) || results.some(r => r.pairVerdict === "BLOQUEADO")) process.exitCode = 1;
+  if (blocked || results.some(r => !r.pass) || results.some(r => r.pairVerdict === "BLOQUEADO") || permissionChecks.some(r => !r.pass)) process.exitCode = 1;
 }
 }
 main().catch(() => { console.error("BLOQUEADO HTTP harness initialization; no credential diagnostics"); process.exitCode = 1; });

@@ -147,12 +147,14 @@
     "cleanup": "Explicit user authorization in this task; one local transaction, affected noninternal triggers only, original O/A/R/D restored and checked; FK/CHECK remain active"
   },
   "cleanup": "Exact registered business/Auth PKs, prior external credential-free backup, incoming FK audit including CASCADE, child-first deletion; external child/cycle aborts",
-  "certificationLimit": "Synthetic local API/RPC evidence. Future correction-SHA portal retest and full shared LTL trip are outside this task. Known carrier catalog defects retain FAIL. Shipper discovery observations do not certify a stricter catalog-read policy absent an explicit contract.",
+  "certificationLimit": "HAC-45 synthetic local HTTP/RPC correction-SHA retest; actual Web routes under every carrier role. Browser rendering and every optional command/state combination remain unmeasured. Historical expected statuses retained.",
   "nativeAuthorizationFixtures": {
     "phase": "functional HTTP using actual local Auth",
     "metrics": "metrics.publish; ADMIN; 1 row per carrier; OPERATOR/DISPATCHER denied",
     "consolidations": "consolidations.create; separate ROAD LTL service/physical calendar; OPEN authorization fixture only; DISPATCHER/OPERATOR",
     "assetEvents": "asset-events.create; spare LTL asset after primary booking completion; DISPATCHER/OPERATOR",
     "readControls": "exact native IDs under ADMIN/OPERATOR/DISPATCHER; paired foreign-carrier/shipper denials"
-  }
+  },
+  "retestMainSHA": "e8a04cb19dd0df9d859a15db1b4948b0384308ce",
+  "retestCutSHA": "7a4aaa1ba7055ab8dafb29d960a7bfd6076c28cb"
 }

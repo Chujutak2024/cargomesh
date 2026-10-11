@@ -101,7 +101,7 @@ $$;
 create function pg_temp.ctx(q uuid default null,c uuid default null,p uuid default null,i uuid default null)
 returns jsonb language sql as $$ select jsonb_build_object('requestId',q,'carrierId',c,'parentId',p,'id',i) $$;
 create function pg_temp.w(n text,a text,v jsonb,ctx jsonb default pg_temp.ctx()) returns void language plpgsql as $$
-declare setup_only boolean:=a in ('nodes.publish','corridors.publish','route-policies.publish','scoring-policies.publish');
+declare setup_only boolean:=a in ('nodes.publish','conditions.publish','corridors.publish','route-policies.publish','scoring-policies.publish');
     prior text:=current_setting('request.jwt.claims',true); anchor text;
 begin
     anchor:=case when setup_only then '000000000012' else '000000000001' end;
@@ -152,6 +152,24 @@ do $$ declare name text; c uuid; s uuid; road jsonb; loc jsonb; begin
             'serviceId',s,'fullName','[SYNTHETIC] Driver '||name,'licenseValidUntil','2030-01-01',
             'availableWindows',jsonb_build_array(pg_temp.win()),
             'dutyWindow',jsonb_build_object('startsAt',now()-interval '2 hours','endsAt',now()+interval '8 hours'))));
+        -- HAC-45 makes the carrier assignment succeed. Keep setup's independent
+        -- positive/conflict pair on another driver (migration 28:22-23, 51).
+        perform pg_temp.cat(name||'-control-driver','drivers',c,null,pg_temp.tpl('drivers',jsonb_build_object(
+            'serviceId',s,'fullName','[SYNTHETIC] Endpoint control driver '||name,'licenseValidUntil','2030-01-01',
+            'availableWindows',jsonb_build_array(pg_temp.win()),
+            'dutyWindow',jsonb_build_object('startsAt',now()-interval '2 hours','endsAt',now()+interval '8 hours'))));
+        -- Nonempty portal collection/detail controls, using unchanged native
+        -- writers. Future windows do not occupy the functional booking.
+        perform pg_temp.cat(name||'-partner','partners',c,null,pg_temp.tpl('partners',
+            jsonb_build_object('registeredName','[SYNTHETIC] Portal partner '||name)));
+        perform pg_temp.cat(name||'-pool','capacity-pools',c,null,pg_temp.tpl('capacity-pools',
+            jsonb_build_object('serviceId',s,'code','HAC44_CP_POOL_'||name)));
+        perform pg_temp.cat(name||'-combination','vehicle-combinations',c,null,pg_temp.tpl('vehicle-combinations',
+            jsonb_build_object('serviceId',s,'assetIds',jsonb_build_array(pg_temp.id(name||'-asset')))));
+        perform pg_temp.cat(name||'-maintenance','maintenances',c,null,pg_temp.tpl('maintenances',
+            jsonb_build_object('serviceId',s,'assetId',pg_temp.id(name||'-asset'))));
+        perform pg_temp.cat(name||'-reposition','repositioning-blocks',c,null,pg_temp.tpl('repositioning-blocks',
+            jsonb_build_object('serviceId',s,'calendarId',pg_temp.id(name||'-calendar'))));
         -- Separate ROAD LTL resources for consolidation authorization. They do
         -- not occupy or change the primary booking's resource/calendar.
         perform pg_temp.cat(name||'-ltl-service','services',c,null,pg_temp.tpl('services',jsonb_build_object(
@@ -216,6 +234,12 @@ set local role authenticated;
 set local "request.jwt.claims"='{"sub":"e4410000-0000-4000-8000-000000000001","role":"authenticated"}';
 \ir open-flow.sql
 \ir conflict-flow.sql
+-- Inactive shared map condition: visible to routing reads, never a planner
+-- restriction. HAC45 integration:29; migration 28:357-363.
+select pg_temp.w('map-condition','conditions.publish',jsonb_build_object('schemaVersion','2.0','active',false,
+    'corridorId',pg_temp.id('corridor'),'kind','DELAY',
+    'location',(select v2_snapshot->'origin' from public.freight_requests where id=pg_temp.id('request'))-'facilityId',
+    'observedAt',now()-interval '1 day','validUntil',now()+interval '30 days','source',pg_temp.ev(),'confidence','SIMULATED'));
 reset role;
 select hac44_qa.capture_ids();
 \ir counts.sql

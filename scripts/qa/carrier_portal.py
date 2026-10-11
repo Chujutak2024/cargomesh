@@ -251,7 +251,8 @@ def cycles():
     for number in [1, 2]:
         phases = {"cycle": number, "sourceSHA": HEAD, "fixtureHashes": {
             str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
-            for path in sorted(SCENARIO.glob("*")) if path.is_file()}}
+            for path in sorted(list(SCENARIO.glob("*")) + [Path(__file__), ROOT / "scripts/qa/carrier_portal_http.ts"])
+            if path.is_file()}}
         try:
             seed()
             verify()
@@ -275,10 +276,8 @@ def cycles():
             phases["triggerStatesRestored"] = True
             write(snapshot / "result.json", json.dumps(phases, indent=2) + "\n")
             aggregate.append(phases)
-        cases = json.loads((snapshot / "logs/carrier-http-cases.json").read_text())
-        if summary["blocked"] or any(row.get("failureKind") == "NEW_FAILURE" for row in cases):
-            save("carrier-two-cycles.json", aggregate)
-            raise RuntimeError("Stopped after mandatory cleanup: new failure or prerequisite blocker; no CP-2")
+        # HAC-45 retest publishes failures too. Preserve exit 1 and both cleaned
+        # repetitions; a prerequisite blocker remains explicit in each snapshot.
     save("carrier-two-cycles.json", aggregate)
     if any(row["functionalContracts"] != "PASS" for row in aggregate):
         raise RuntimeError("Two cycles completed and cleaned; product contract failures retained")
