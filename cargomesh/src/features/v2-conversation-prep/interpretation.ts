@@ -49,6 +49,13 @@ export const InterpretationResponseSchema = z.object({
 export type InterpretationRequest = z.infer<typeof InterpretationRequestSchema>;
 export type Interpretation = z.infer<typeof InterpretationSchema>;
 
+/** Explicit corrections win over model guesses, especially relative dates. */
+export function guardExplicitCorrection(text: string, currentField: z.infer<typeof ConversationFieldNameSchema> | null, proposed: Interpretation): Interpretation {
+  const bounded = interpretDeterministically({ schemaVersion: "2.0", text, currentField });
+  return bounded.intent === "CORRECT" && (bounded.fields.length > 0 || Boolean(bounded.acknowledgment))
+    ? bounded : proposed;
+}
+
 export function isProductHelpQuestion(text: string): boolean {
   return /\b(?:para qu[eé] sirve|qu[eé] es cargomesh|c[oó]mo funciona|c[oó]mo (?:me )?ayuda|qu[eé] puedes hacer|escoger|elegir|comparar|servicios|qu[eé] ofrecen|what is cargomesh|what can you do|how (?:does it|can you) help|how does it work|choose|compare|services|what do you offer)\b/i.test(text);
 }
@@ -91,17 +98,22 @@ export function interpretDeterministically(input: InterpretationRequest): Interp
   if (/\b(evaluate|eligib|road options|road result|check road|availability|available|evaluar|elegibilidad|opciones road|revisar road|disponibilidad|disponible)\b/.test(lower)) return { intent: "EVALUATE", fields: [] };
   if (/\b(read|show|retrieve|leer|mostrar|ver)\b.*\b(draft|request|borrador|solicitud)\b/.test(lower)) return { intent: "READ", fields: [] };
   if (/\b(create|save|submit|crear|guardar|enviar)\b.*\b(draft|request|borrador|solicitud)\b/.test(lower)) return { intent: "CREATE", fields: [] };
-  const correcting = /^(?:correct|change|update|corregir|cambiar|actualizar)\b/i.test(text);
+  const relativeDay = /\b(?:next|this)\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b|\b(?:el\s+)?(?:pr[oó]ximo\s+)?(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\b/i.test(text);
+  const correcting = /^(?:correct|change|update|corregir|cambiar|actualizar|cambia|corrige)\b/i.test(text)
+    || /^(?:son|it's|it is)\s+\d+\s+(?:pallets?|palets?|cajas?|boxes?)\s*,?\s+(?:no|not)\s+\d+/i.test(text);
   if (correcting) {
-    const correction = /^(?:correct|change|update)\s+(?:the\s+)?(pickup|origin|delivery|destination|cargo category|packaging|quantity|weight|volume|equipment)\s+(?:to|as)\s+(.+)$/i.exec(text);
-    const fieldsByName = { pickup: "originFacilityId", origin: "originFacilityId", delivery: "destinationFacilityId", destination: "destinationFacilityId", "cargo category": "categoryCode", packaging: "packaging", quantity: "unitQuantity", weight: "unitWeightPerUnitKg", volume: "unitVolumePerUnitM3", equipment: "requiredEquipment" } as const;
-    if (!correction) return { intent: "CORRECT", fields: [] };
-    return { intent: "CORRECT", fields: [{ field: fieldsByName[correction[1].toLowerCase() as keyof typeof fieldsByName], value: correction[2].trim() }] };
+    const correction = /^(?:correct|change|update|corregir|cambiar|actualizar|cambia|corrige)\s+(?:the\s+|el\s+|la\s+)?(pickup|origin|delivery|destination|cargo category|packaging|quantity|weight|volume|equipment|origen|destino|cantidad|equipo|embalaje)\s+(?:to|as|a|por)\s+(.+)$/i.exec(text);
+    const fieldsByName = { pickup: "originFacilityId", origin: "originFacilityId", delivery: "destinationFacilityId", destination: "destinationFacilityId", "cargo category": "categoryCode", packaging: "packaging", quantity: "unitQuantity", weight: "unitWeightPerUnitKg", volume: "unitVolumePerUnitM3", equipment: "requiredEquipment", origen: "originFacilityId", destino: "destinationFacilityId", cantidad: "unitQuantity", equipo: "requiredEquipment", embalaje: "packaging" } as const;
+    if (correction) return { intent: "CORRECT", fields: [{ field: fieldsByName[correction[1].toLowerCase() as keyof typeof fieldsByName], value: correction[2].trim() }] };
+    const correctedCount = /^(?:son|it's|it is)\s+(\d+)\s+(pallets?|palets?|cajas?|boxes?)\s*,?\s+(?:no|not)\s+\d+/i.exec(text);
+    if (correctedCount) return { intent: "CORRECT", fields: [{ field: "unitQuantity", value: correctedCount[1] }] };
+    return { intent: "CORRECT", fields: [] };
   }
+  if (relativeDay && /^(?:mejor|better|instead|hazlo|make it)\b/i.test(text)) return { intent: "CORRECT", fields: [], acknowledgment: "Please confirm the exact pickup and delivery dates and times. I have not changed the saved windows." };
   const fields: Interpretation["fields"] = [];
-  const route = /\b(?:from|de)\s+([^,]+?)\s+(?:to|a)\s+([^,]+?)(?:[,.]|$)/i.exec(text);
+  const route = /\b(?:from|desde|de)\s+(.+?)\s+(?:to|hasta|a)\s+(.+?)(?=\s+(?:el\s+pr[oó]ximo|el\s+(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)|next\s+|on\s+|this\s+)|[,.]|$)/i.exec(text);
   if (route) {
-    fields.push({ field: "originFacilityId", value: route[1].trim() });
+    fields.push({ field: "originFacilityId", value: route[1].trim().replace(/^(?:nuestra|nuestro|our)\s+(?:sede|facility)\s+(?:de|in|at)\s+/i, "") });
     fields.push({ field: "destinationFacilityId", value: route[2].trim() });
   } else {
     const origin = /\b(?:from|pickup (?:in|at)|recojo (?:en|desde)|recoger (?:en|desde))\s+([^,.]+?)(?:[,.]|$)/i.exec(text);
@@ -130,5 +142,5 @@ export function interpretDeterministically(input: InterpretationRequest): Interp
       && !/\b(?:hello|hola|how|what|why|can|could|tell|feel|help|c[oó]mo|qu[eé]|puedes|dime|ayuda)\b/i.test(cleaned);
     if (!location || plausibleLocation) fields.push({ field: input.currentField, value: cleaned });
   }
-  return { intent: "PROVIDE", fields };
+  return { intent: "PROVIDE", fields, ...(relativeDay ? { acknowledgment: "I can capture the route and cargo, but I need exact pickup and delivery dates and times before saving." } : {}) };
 }

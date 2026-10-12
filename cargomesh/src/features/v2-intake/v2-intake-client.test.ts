@@ -16,6 +16,7 @@ import {
   getRoadServiceabilityV2,
   loadIntakeOptions,
   reconcileCandidateSelection,
+  reviseFreightRequestV2,
 } from "./v2-intake-client";
 import { mapDraftToCreateFreightRequestV2Input, PROVISIONAL_PROTOTYPE_DRAFT } from "./prototype-model";
 
@@ -47,6 +48,29 @@ test("GET maps the real five-group contract into selector codes", async () => {
   assert.equal(result.options.data.equipmentOptions[0].code, "REEFER_TRUCK");
   assert.equal(result.options.data.packagingOptions[0].verification, "CAPTURE_ONLY");
   assert.equal(result.options.data.requirementOptions[2].verification, "REQUIRES_REVIEW");
+});
+
+test("revision posts the expected version and stable idempotency key without changing tenant identity", async () => {
+  const payload = mapDraftToCreateFreightRequestV2Input(PROVISIONAL_PROTOTYPE_DRAFT, parseIntakeOptionsResponse(INTAKE_OPTIONS_FIXTURE)!.data);
+  const result = await reviseFreightRequestV2(ROAD_REQUEST_FIXTURE.id, 3, payload, "revision-test-key", async (input, init) => {
+    assert.equal(String(input), `/api/v2/freight/requests/${ROAD_REQUEST_FIXTURE.id}/revisions`);
+    assert.equal(init?.method, "POST");
+    assert.equal(init?.credentials, "same-origin");
+    assert.equal(new Headers(init?.headers).get("Idempotency-Key"), "revision-test-key");
+    const body = JSON.parse(String(init?.body));
+    assert.equal(body.expectedDraftVersion, 3);
+    assert.equal(body.value.schemaVersion, "2.0");
+    assert.equal(body.value.organizationId, undefined);
+    return json(requestEnvelope());
+  });
+  assert.equal(result.data.id, ROAD_REQUEST_FIXTURE.id);
+});
+
+test("revision exposes a stale-draft conflict instead of falling back to fixture", async () => {
+  await assert.rejects(() => reviseFreightRequestV2(ROAD_REQUEST_FIXTURE.id, 1,
+    mapDraftToCreateFreightRequestV2Input(PROVISIONAL_PROTOTYPE_DRAFT, parseIntakeOptionsResponse(INTAKE_OPTIONS_FIXTURE)!.data),
+    "revision-test-key", async () => json({ schemaVersion: "2.0", error: { code: "STALE_DRAFT", message: "Version mismatch", retryable: false } }, { status: 409 })),
+  (error: unknown) => error instanceof V2IntakeApiError && error.code === "STALE_DRAFT" && error.status === 409);
 });
 
 test("parser preserves HAC-12 guidance objects for all eight cargo categories", () => {
