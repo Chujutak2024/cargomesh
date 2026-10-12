@@ -1,17 +1,11 @@
-import { ArrowLeft, CalendarClock, MapPin, Truck } from "lucide-react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { TrackingVisual } from "@/features/shipper-portal/tracking-visual";
 import { routeRecordToPresentation } from "@/features/shipper-portal/tracking-model";
 import { canShowConceptual3D, routeForExecution, type Booking, type Execution, type ExecutionEvent, type Incident, type Route } from "@/features/shipper-portal/tracking-journey";
-import { TrackingEventsPanel, TrackingIncidentsPanel, TrackingJourneyPanel } from "@/features/shipper-portal/tracking-experience";
+import { TrackingDetail } from "@/features/shipper-portal/tracking-detail";
 import type { WorkflowRecordV2 } from "@/features/shipper-portal/shipper-model";
-import { formatDateTime } from "@/features/shipper-portal/shipper-model";
 import { getRequestLocale } from "@/server/i18n/server";
-import { localeTag, translate } from "@/features/i18n/config";
 import { listWorkspaceWorkflow, readWorkspaceRequest } from "@/server/services/v2-workspace/workspace-server";
-import s from "@/features/shipper-portal/tracking-experience.module.css";
 
 export const dynamic = "force-dynamic";
 export default async function TrackingDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -40,26 +34,10 @@ export default async function TrackingDetailPage({ params }: { params: Promise<{
   const linkedRoute = routeForExecution(execution, bookings, decisions, plans, routes);
   const presentation = routeRecordToPresentation(linkedRoute);
   const canView3D = canShowConceptual3D(linkedRoute, presentation.paths.length > 0);
-  const t = (es: string, en: string) => translate(locale, es, en), tag = localeTag(locale);
-  return <div className={s.page}>
-    <header className={s.hero}><div className={s.heroCopy}><span className={s.eyebrow}>{t("Seguimiento de transporte", "Transport tracking")}</span><h1>{request?.referenceCode ?? id.slice(0, 8)}</h1><p>{request ? `${request.origin.label} → ${request.destination.label}` : t("Solicitud asociada no disponible en esta lectura.", "Associated request unavailable in this read.")}</p></div><Link className={s.heroAction} href="/tracking"><ArrowLeft size={16} aria-hidden="true"/>{t("Todos los transportes", "All transports")}</Link></header>
-    <section className={s.panel} aria-label={t("Datos de seguimiento", "Tracking facts")}><div className={s.facts}>
-      <div className={s.fact}><small>{t("Estado de ejecución", "Execution state")}</small><strong>{execution.status}</strong></div>
-      <div className={s.fact}><small>{t("Reserva carrier", "Carrier booking")}</small><strong>{booking?.data.carrierConfirmationStatus ?? t("Desconocida", "Unknown")}</strong></div>
-      <div className={s.fact}><small>{t("Inicio reportado", "Reported start")}</small><strong>{formatDateTime(execution.data.actualStartedAt, tag)}</strong></div>
-      <div className={s.fact}><small>{t("Entrega reportada", "Reported delivery")}</small><strong>{formatDateTime(execution.data.actualCompletedAt, tag)}</strong></div>
-    </div></section>
-    <div className={s.detailGrid}><div className={s.mainColumn}>
-      <TrackingJourneyPanel execution={execution} booking={booking} events={events} incidents={incidents} t={t} tag={tag}/>
-      <TrackingVisual presentation={presentation} origin={request?.origin.label ?? t("Origen", "Origin")} destination={request?.destination.label ?? t("Destino", "Destination")} canView3D={canView3D}/>
-      <TrackingEventsPanel events={events} t={t} tag={tag} locale={locale}/>
-    </div><aside className={s.sideColumn}>
-      <TrackingIncidentsPanel incidents={incidents} t={t} tag={tag}/>
-      <section className={s.panel} aria-label={t("Procedencia", "Provenance")}><div className={s.facts}>
-        <div className={s.fact}><small><MapPin size={12} aria-hidden="true"/> {t("Geometría", "Geometry")}</small><strong>{linkedRoute ? `${linkedRoute.data.confidence} · ${linkedRoute.data.geographicSource.kind}` : t("Sin ruta enlazada a este booking", "No route linked to this booking")}</strong></div>
-        <div className={s.fact}><small><CalendarClock size={12} aria-hidden="true"/> {t("Última lectura", "Last read")}</small><strong>{formatDateTime(execution.updatedAt, tag)}</strong></div>
-        <div className={s.fact}><small><Truck size={12} aria-hidden="true"/> {t("Posición", "Position")}</small><strong>{t("Sólo reportes persistidos; sin GPS simulado", "Persisted reports only; no simulated GPS")}</strong></div>
-      </div></section>
-    </aside></div>
-  </div>;
+  return <TrackingDetail execution={execution} booking={booking} events={events} incidents={incidents}
+    reference={request?.referenceCode ?? id.slice(0, 8)}
+    origin={request?.origin.city ?? "—"} destination={request?.destination.city ?? "—"}
+    originLabel={request?.origin.label ?? "—"} destinationLabel={request?.destination.label ?? "—"}
+    requestId={execution.requestId} presentation={presentation} canView3D={canView3D}
+    locale={locale}/>;
 }

@@ -2,3 +2,16 @@
 @media(max-width:700px){.vehicle{top:108px;bottom:auto;padding:8px 10px}.vehicle>span{display:none}}
 .stage::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 42%,transparent 52%,#12374720 100%);z-index:1}.world{z-index:0}.direction,.progress,.vehicle,.message{z-index:2}
 .cameraControls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-top:12px;color:#527584;font-size:11px}.cameraControls span{margin-right:4px;font-weight:800}.cameraControls button{min-height:34px;border:1px solid #b9d2da;border-radius:9px;padding:6px 10px;color:#214653;background:#fff;font:inherit;font-weight:700;cursor:pointer}.cameraControls button[aria-pressed="true"]{border-color:#087d83;color:#087d83;background:#e5f6f6}.cameraControls button:focus-visible{outline:3px solid #13aeb7;outline-offset:2px}
+.root.embedded { padding:0; background:transparent; }
+.embedded .stage { height:var(--tracking-viewport-height,24rem); min-height:0; border-radius:.8rem; border-color:var(--cm-color-line-strong); }
+.embedded .direction { top:.75rem; left:.75rem; max-width:calc(100% - 1.5rem); padding:.65rem .8rem; gap:.6rem; border-radius:.7rem; }
+.embedded .direction > span { width:2rem; height:2rem; border-radius:.5rem; }
+.embedded .direction strong { font-size:.78rem; max-width:24rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.embedded .vehicle { top:auto; bottom:.75rem; left:.75rem; padding:.5rem .7rem; max-width:calc(100% - 1.5rem); }
+.embedded .vehicle strong { font-size:.7rem; }
+.embedded .caption { display:none; }
+.embedded .cameraControls { padding-top:.7rem; gap:.4rem; color:var(--cm-color-muted); font-size:.72rem; }
+.embedded .cameraControls button { display:inline-flex; align-items:center; gap:.35rem; min-height:2.75rem; border-color:var(--cm-color-line-strong); color:var(--cm-color-heading); background:var(--cm-color-surface); }
+.embedded .cameraControls button[aria-pressed="true"] { color:var(--cm-color-primary); border-color:var(--cm-color-primary); background:var(--cm-color-surface-tint); }
+.embedded .cameraControls button:disabled { opacity:.7; cursor:default; }
+@media (max-width:600px) { .embedded .direction strong { max-width:11rem; } .embedded .cameraControls > span { width:100%; } }

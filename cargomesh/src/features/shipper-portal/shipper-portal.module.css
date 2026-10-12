@@ -128,7 +128,6 @@
 .comparisonFacts > div { display: grid; gap: .2rem; border: 1px solid var(--cm-color-line); border-radius: .65rem; padding: .65rem; background: var(--cm-color-surface); }
 .comparisonFacts small { color: var(--cm-color-muted); font-size: .7rem; }
 .comparisonFacts strong { color: var(--cm-color-heading); font-size: .9rem; }
-.rankingNote { margin: 0; color: var(--cm-color-muted); font-size: .8rem; line-height: 1.55; }
 .offerDetail { display: grid; gap: .7rem; border: 1px solid var(--cm-color-line); border-radius: .8rem; padding: .85rem; background: var(--cm-color-surface); }
 .offerDetail h3 { margin: .15rem 0; color: var(--cm-color-heading); font-size: .9rem; }
 .offerDetail p, .offerDetail li { margin: 0; color: var(--cm-color-muted); font-size: .78rem; line-height: 1.5; }
