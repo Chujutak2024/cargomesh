@@ -484,7 +484,6 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
             <header className={styles.cardHeader}>
               <span className={styles.stepHeaderIcon} aria-hidden="true"><ActiveStepIcon size={20} /></span>
               <div><span className={styles.eyebrow}>{t(`Paso ${step} de 4`, `Step ${step} of 4`)}</span><h2 tabIndex={-1} id={`prototype-step-${step}`}>{stepLabels[step - 1]}</h2></div>
-              <Badge tone={step === 4 ? "confirmed" : "preliminary"}>{step === 4 ? t("Listo para crear", "Ready to create") : t("Edición local", "Local editing")}</Badge>
             </header>
             <div className={styles.cardBody}>
               {issues.length ? <div className={styles.errorSummary} role="alert" tabIndex={-1} ref={errorRef}><strong>{t("Revisa los campos marcados", "Review the marked fields")}</strong><span>{t(`Hay ${issues.length} dato(s) pendiente(s) en este paso.`, `There are ${issues.length} pending field(s) in this step.`)}</span></div> : null}
@@ -513,7 +512,7 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
         {request ? (
           <section className={styles.integrationArea} aria-live="polite">
             <header className={styles.integrationHeader}>
-              <div><span className={styles.eyebrow}>{request.referenceCode}</span><h2>{t("Borrador persistido y lectura operativa", "Persisted draft and operational read")}</h2><p>{t(`Estado ${request.status} · draftVersion ${request.draftVersion}`, `Status ${request.status} · draftVersion ${request.draftVersion}`)}</p></div>
+              <div><span className={styles.eyebrow}>{request.referenceCode}</span><h2>{t("Borrador persistido y lectura operativa", "Persisted draft and operational read")}</h2></div>
               <div className={styles.integrationActions}><Badge tone={request.status === "DRAFT" ? "preliminary" : "neutral"}>{request.status}</Badge><Link className={styles.requestLink} href={`/requests/${request.id}`}>{t("Continuar solicitud", "Continue request")}<ArrowRight size={14}/></Link></div>
             </header>
             {dirtyAfterCreate ? <div className={styles.pendingState} role="status">{t(
@@ -566,8 +565,6 @@ function FacilityStep({ draft, options, update, errorFor, t }: FieldHelpers) {
 
 function CargoStep({ draft, options, update, errorFor, t }: FieldHelpers) {
   const category = options.cargoCategories.find((option) => option.code === draft.categoryCode);
-  const packaging = options.packagingOptions.find((option) => option.code === draft.packaging);
-  const unitPackaging = options.packagingOptions.find((option) => option.code === draft.unitPackageType);
   const dimensionFields: Array<keyof V2IntakePrototypeDraft> = ["unitLengthCm", "unitWidthCm", "unitHeightCm"];
   const hasDimensionErrors = dimensionFields.some((field) => Boolean(errorFor(field)));
   const [unitDetailsOpen, setUnitDetailsOpen] = useState(Boolean(draft.unitLengthCm));
@@ -585,17 +582,16 @@ function CargoStep({ draft, options, update, errorFor, t }: FieldHelpers) {
         <OptionSelect label={t("Embalaje principal", "Primary packaging")} placeholder={t("Seleccionar embalaje", "Select packaging")} options={options.packagingOptions} value={draft.packaging} error={errorFor("packaging")} onChange={(value) => { update("packaging", value); if (!draft.unitPackageType) update("unitPackageType", value); }} t={t} />
         <Textarea fieldClassName={styles.wide} label={t("Descripción operativa", "Operational description")} hint={t("Describe el contenido sin incluir precio, carrier o supuestos de cobertura.", "Describe the contents without price, carrier, or coverage assumptions.")} rows={3} value={draft.cargoDescription} error={errorFor("cargoDescription")} onChange={(event) => update("cargoDescription", event.target.value)} />
         <Checkbox label={t("La carga puede dividirse", "Cargo may be split")} hint={t("Dato declarado; no implica que un carrier pueda fraccionarla.", "Declared fact; it does not imply a carrier can split it.")} checked={draft.divisible} onChange={(event) => update("divisible", event.target.checked)} />
-        {packaging?.verification ? <OptionEvidence label="verification" value={`${packaging.verification} · ${t("Captura del embalaje; no confirma manipulación ni compatibilidad.", "Packaging capture; it does not confirm handling or compatibility.")}`} /> : null}
       </div>
       {category ? <details className={styles.guidanceDisclosure}><summary><span>{t("Ver guía recomendada por la categoría", "View category guidance")}</span><ChevronDown size={16} aria-hidden="true" /></summary><CategoryGuidanceEvidence guidance={category.guidance} t={t} /></details> : null}
     </section>
 
     {category ? <fieldset className={styles.choiceFieldset}><legend>{t("Condiciones y requisitos", "Conditions and requirements")}</legend><div className={styles.choiceHeading}><p>{t("Selecciona únicamente lo que necesita esta carga. Cada estado de verificación se conserva.", "Select only what this cargo needs. Every verification state is preserved.")}</p>{suggestedRequirements.length ? <Button variant="ghost" type="button" onClick={() => update("requirements", [...new Set([...draft.requirements, ...suggestedRequirements])])}><Sparkles size={14} aria-hidden="true" />{t("Aplicar sugeridos", "Apply suggested")}</Button> : null}</div><div className={styles.checkboxGrid}>{options.requirementOptions.map((option) => <Checkbox key={option.code} label={optionLabel(option, t)} hint={verificationCopy(option.verification, t)} checked={draft.requirements.includes(option.code)} onChange={(event) => update("requirements", toggleRequirement(draft.requirements, option.code, event.target.checked))} />)}</div></fieldset> : null}
 
-    {draft.requirements.includes("TEMP_CONTROLLED") ? <section className={`${styles.formSection} ${styles.temperatureSection}`}><header className={styles.formSectionHeader}><div><span className={styles.sectionKicker}>TEMP_CONTROLLED</span><h3>{t("Rango de temperatura declarado", "Declared temperature range")}</h3></div><Badge tone="unknown">RESOURCE_EVIDENCE</Badge></header><div className={styles.formGrid}><Input label={t("Temperatura mínima (°C)", "Minimum temperature (°C)")} type="number" step="0.1" value={draft.temperatureMinCelsius} error={errorFor("temperatureMinCelsius")} onChange={(event) => update("temperatureMinCelsius", event.target.value)} /><Input label={t("Temperatura máxima (°C)", "Maximum temperature (°C)")} type="number" step="0.1" value={draft.temperatureMaxCelsius} error={errorFor("temperatureMaxCelsius")} onChange={(event) => update("temperatureMaxCelsius", event.target.value)} /></div></section> : null}
+    {draft.requirements.includes("TEMP_CONTROLLED") ? <section className={`${styles.formSection} ${styles.temperatureSection}`}><header className={styles.formSectionHeader}><div><h3>{t("Rango de temperatura declarado", "Declared temperature range")}</h3></div></header><div className={styles.formGrid}><Input label={t("Temperatura mínima (°C)", "Minimum temperature (°C)")} type="number" step="0.1" value={draft.temperatureMinCelsius} error={errorFor("temperatureMinCelsius")} onChange={(event) => update("temperatureMinCelsius", event.target.value)} /><Input label={t("Temperatura máxima (°C)", "Maximum temperature (°C)")} type="number" step="0.1" value={draft.temperatureMaxCelsius} error={errorFor("temperatureMaxCelsius")} onChange={(event) => update("temperatureMaxCelsius", event.target.value)} /></div></section> : null}
 
     {draft.packaging ? <section className={styles.formSection}>
-      <header className={styles.formSectionHeader}><div><span className={styles.sectionKicker}>{t("Una sola captura", "One capture")}</span><h3 className={styles.sectionTitle}>{t("Unidad de carga", "Cargo unit")}</h3><p>{t("Ingresa cantidad y medidas por unidad; los totales se calculan automáticamente.", "Enter quantity and per-unit measures; totals are calculated automatically.")}</p></div></header>
+      <header className={styles.formSectionHeader}><div><h3 className={styles.sectionTitle}>{t("Unidad de carga", "Cargo unit")}</h3></div></header>
       <div className={styles.unitGrid}>
         <OptionSelect label={t("Tipo de paquete", "Package type")} placeholder={t("Seleccionar tipo", "Select type")} options={options.packagingOptions} value={draft.unitPackageType} error={errorFor("unitPackageType")} onChange={(value) => update("unitPackageType", value)} t={t} />
         <Input label={t("Cantidad", "Quantity")} type="number" min="1" step="1" value={draft.unitQuantity} error={errorFor("unitQuantity")} onChange={(event) => update("unitQuantity", event.target.value)} />
@@ -603,8 +599,7 @@ function CargoStep({ draft, options, update, errorFor, t }: FieldHelpers) {
         <Input label={t("Volumen por unidad (m³)", "Volume per unit (m³)")} type="number" min="0" step="0.1" value={draft.unitVolumePerUnitM3} error={errorFor("unitVolumePerUnitM3")} onChange={(event) => update("unitVolumePerUnitM3", event.target.value)} />
       </div>
       <div className={styles.computedTotals} aria-live="polite"><div><span>{t("Peso total calculado", "Calculated total weight")}</span><strong>{draft.totalWeightKg ? `${draft.totalWeightKg} kg` : "—"}</strong>{errorFor("totalWeightKg") ? <small>{errorFor("totalWeightKg")}</small> : null}</div><div><span>{t("Volumen total calculado", "Calculated total volume")}</span><strong>{draft.totalVolumeM3 ? `${draft.totalVolumeM3} m³` : "—"}</strong>{errorFor("totalVolumeM3") ? <small>{errorFor("totalVolumeM3")}</small> : null}</div></div>
-      {unitPackaging?.verification ? <OptionEvidence label="verification" value={`${unitPackaging.verification} · ${t("Dato de captura; no prueba compatibilidad del carrier.", "Capture data; it does not prove carrier compatibility.")}`} /> : null}
-      <details className={styles.advancedDisclosure} open={unitDetailsOpen} onToggle={(event) => setUnitDetailsOpen(event.currentTarget.open)}><summary><span><strong>{t("Dimensiones y manipulación", "Dimensions and handling")}</strong><small>{t("Campos contractuales obligatorios", "Required contract fields")}</small></span><ChevronDown size={17} aria-hidden="true" /></summary><div className={styles.formGrid}><Input label={t("Largo (cm)", "Length (cm)")} type="number" min="0" step="0.1" value={draft.unitLengthCm} error={errorFor("unitLengthCm")} onChange={(event) => update("unitLengthCm", event.target.value)} /><Input label={t("Ancho (cm)", "Width (cm)")} type="number" min="0" step="0.1" value={draft.unitWidthCm} error={errorFor("unitWidthCm")} onChange={(event) => update("unitWidthCm", event.target.value)} /><Input label={t("Alto (cm)", "Height (cm)")} type="number" min="0" step="0.1" value={draft.unitHeightCm} error={errorFor("unitHeightCm")} onChange={(event) => update("unitHeightCm", event.target.value)} /><div className={styles.handlingGrid}><Checkbox label={t("Unidad indivisible", "Indivisible unit")} checked={draft.unitIndivisible} onChange={(event) => update("unitIndivisible", event.target.checked)} /><Checkbox label={t("Apilable", "Stackable")} checked={draft.unitStackable} onChange={(event) => update("unitStackable", event.target.checked)} /></div></div></details>
+      <details className={styles.advancedDisclosure} open={unitDetailsOpen} onToggle={(event) => setUnitDetailsOpen(event.currentTarget.open)}><summary><span><strong>{t("Dimensiones y manipulación", "Dimensions and handling")}</strong></span><ChevronDown size={17} aria-hidden="true" /></summary><div className={styles.formGrid}><Input label={t("Largo (cm)", "Length (cm)")} type="number" min="0" step="0.1" value={draft.unitLengthCm} error={errorFor("unitLengthCm")} onChange={(event) => update("unitLengthCm", event.target.value)} /><Input label={t("Ancho (cm)", "Width (cm)")} type="number" min="0" step="0.1" value={draft.unitWidthCm} error={errorFor("unitWidthCm")} onChange={(event) => update("unitWidthCm", event.target.value)} /><Input label={t("Alto (cm)", "Height (cm)")} type="number" min="0" step="0.1" value={draft.unitHeightCm} error={errorFor("unitHeightCm")} onChange={(event) => update("unitHeightCm", event.target.value)} /><div className={styles.handlingGrid}><Checkbox label={t("Unidad indivisible", "Indivisible unit")} checked={draft.unitIndivisible} onChange={(event) => update("unitIndivisible", event.target.checked)} /><Checkbox label={t("Apilable", "Stackable")} checked={draft.unitStackable} onChange={(event) => update("unitStackable", event.target.checked)} /></div></div></details>
     </section> : null}
   </>;
 }
@@ -654,12 +649,12 @@ function ReviewStep({ draft, options, request, dirtyAfterCreate, t, locale, onEd
     <ReviewSection title={t("Carga y unidad", "Cargo and unit")} editLabel={t("Editar carga", "Edit cargo")} onEdit={() => onEdit(2)} items={[[t("Categoría", "Category"), draft.categoryCode], [t("Peso / volumen", "Weight / volume"), `${Number(draft.totalWeightKg).toLocaleString(locale, { maximumFractionDigits: 6 })} kg · ${Number(draft.totalVolumeM3).toLocaleString(locale, { maximumFractionDigits: 6 })} m³`], [t("Unidad", "Unit"), `${draft.unitQuantity} × ${draft.unitPackageType}`], [t("Requisitos", "Requirements"), draft.requirements.join(", ") || t("Ninguno", "None")]]} />
     <ReviewSection title={t("Agenda y equipo", "Schedule and equipment")} editLabel={t("Editar agenda", "Edit schedule")} onEdit={() => onEdit(3)} items={[[t("Retiro", "Pickup"), formatLocalRange(draft.pickupWindowStartsAt, draft.pickupWindowEndsAt, locale)], [t("Entrega", "Delivery"), formatLocalRange(draft.deliveryWindowStartsAt, draft.deliveryWindowEndsAt, locale)], [t("Equipo", "Equipment"), draft.requiredEquipment]]} />
     <ReviewSection title={t("Límites comerciales", "Commercial boundaries")} tone="unknown" items={[[t("Elegibilidad", "Serviceability"), t("Se lee después de persistir DRAFT", "Read after DRAFT persistence")], [t("Precio / oferta / booking", "Price / offer / booking"), t("No confirmados ni creados", "Not confirmed or created")]]} />
-    {request ? <div className={styles.persistedNotice} role="status"><strong>{request.referenceCode} · {request.status} · v{request.draftVersion}</strong><span>{dirtyAfterCreate ? t("Hay cambios locales posteriores; no se guardaron automáticamente.", "There are later local changes; they were not autosaved.") : t("El GET devolvió el borrador persistido.", "GET returned the persisted draft.")}</span></div> : null}
+    {request && dirtyAfterCreate ? <div className={styles.persistedNotice} role="status">{t("Hay cambios locales posteriores; no se guardaron automáticamente.", "There are later local changes; they were not autosaved.")}</div> : null}
   </div>;
 }
 
 function ReviewSection({ title, items, tone = "preliminary", editLabel, onEdit }: { title: string; items: string[][]; tone?: "preliminary" | "unknown"; editLabel?: string; onEdit?: () => void }) {
-  return <section className={styles.reviewSection}><header><div><h3>{title}</h3><Badge tone={tone}>{tone === "unknown" ? "UNKNOWN" : "LOCAL"}</Badge></div>{onEdit ? <Button variant="ghost" type="button" onClick={onEdit}>{editLabel}</Button> : null}</header><div className={styles.reviewList}>{items.map(([label, value]) => <div className={styles.reviewItem} key={label}><span>{label}</span><strong>{value}</strong></div>)}</div></section>;
+  return <section className={styles.reviewSection}><header><div><h3>{title}</h3>{tone === "unknown" ? <Badge tone="unknown">UNKNOWN</Badge> : null}</div>{onEdit ? <Button variant="ghost" type="button" onClick={onEdit}>{editLabel}</Button> : null}</header><div className={styles.reviewList}>{items.map(([label, value]) => <div className={styles.reviewItem} key={label}><span>{label}</span><strong>{value}</strong></div>)}</div></section>;
 }
 
 function LiveSummary({ draft, options, request, evaluation, dirtyAfterCreate, t }: { draft: V2IntakePrototypeDraft; options: IntakeOptionsData; request: FreightRequestV2Data | null; evaluation: RoadServiceabilityEvaluationV2Data | null; dirtyAfterCreate: boolean; t: Translate }) {
@@ -696,18 +691,18 @@ function OptionSelect({ label, placeholder, options, value, error, onChange, fie
 }
 
 function optionLabel(option: IntakeOption, t: Translate) {
-  return `${t(option.labelEs, option.labelEn)} · ${option.code}`;
+  return t(option.labelEs, option.labelEn);
 }
 
 function verificationCopy(verification: IntakeOption["verification"], t: Translate) {
   if (verification === "RESOURCE_EVIDENCE") {
-    return t("verification: RESOURCE_EVIDENCE · requiere evidencia del mismo recurso portador.", "verification: RESOURCE_EVIDENCE · evidence from the same carrying resource is required.");
+    return t("Requiere evidencia del mismo recurso portador.", "Evidence from the same carrying resource is required.");
   }
   if (verification === "REQUIRES_REVIEW") {
-    return t("verification: REQUIRES_REVIEW · permanece desconocido hasta revisión documental y operativa.", "verification: REQUIRES_REVIEW · remains unknown until document and operational review.");
+    return t("Requiere revisión documental y operativa.", "Document and operational review required.");
   }
   if (verification === "CAPTURE_ONLY") {
-    return t("verification: CAPTURE_ONLY · sólo captura; no confirma compatibilidad.", "verification: CAPTURE_ONLY · capture only; compatibility is not confirmed.");
+    return t("Se registra como dato declarado; no confirma compatibilidad.", "Recorded as declared data; compatibility is not confirmed.");
   }
   return undefined;
 }
@@ -729,10 +724,6 @@ function CategoryGuidanceEvidence({ guidance, t }: { guidance: IntakeCargoCatego
     <small>{t("Guía de categoría", "Category guidance")}</small>
     <dl className={styles.guidanceList}>{rows.map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl>
   </div>;
-}
-
-function OptionEvidence({ label, value }: { label: string; value: string }) {
-  return <div className={styles.optionEvidence}><small>{label}</small><strong>{value}</strong></div>;
 }
 
 function SummaryRow({ label, value, tone, status, hint }: { label: string; value: string; tone: "preliminary" | "unknown" | "confirmed" | "neutral"; status: string; hint?: string }) {

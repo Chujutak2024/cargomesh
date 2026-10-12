@@ -27,10 +27,6 @@ export function CandidateResults({
         <ShieldAlert size={22} aria-hidden="true" />
         <div>
           <h3>{t("Cero candidatos para esta ruta y ventana", "Zero candidates for this route and window")}</h3>
-          <p>{t(
-            "La evaluación respondió sin servicios candidatos. Esto no autoriza inventar una ruta, precio u oferta.",
-            "The evaluation returned no candidate services. This does not authorize inventing a route, price, or offer.",
-          )}</p>
         </div>
       </section>
     );

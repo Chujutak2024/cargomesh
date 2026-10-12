@@ -108,7 +108,6 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     return () => window.removeEventListener("cargomesh:open-assistant", openAssistant);
   }, []);
   const nextField = missingField(draft);
-  const syntheticCatalog = optionsSource === "fixture" || options.facilities.some((facility) => facility.label.includes("[SYNTHETIC]"));
   const ask = (field: GuidedConversationField) => questionForField(field, voiceLanguage);
 
 
@@ -391,7 +390,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M4 5.5h16v11H9l-5 3v-14Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M8 10h8M8 13h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>{launcherLabel}</span>
     </button> : null}
     {open && <section id="v2-chat-panel" className={styles.panel} aria-label="ROAD freight conversation">
-      <header className={styles.header}><span className={styles.headerIcon} aria-hidden="true">CM</span><div className={styles.headerCopy}><strong>{t("Planifica con CargoMesh", "Plan with CargoMesh")}</strong><span>{syntheticCatalog ? "V2 demo · synthetic facilities" : t("Tu copiloto para solicitudes ROAD", "Your ROAD request copilot")}</span></div>{presentation === "floating" ? <button type="button" className={styles.close} aria-label="Close CargoMesh assistant" onClick={closePanel}>×</button> : <span className={styles.headerState}>{request ? `${request.referenceCode} · v${request.draftVersion}` : t("Borrador local", "Local draft")}</span>}</header>
+      <header className={styles.header}><span className={styles.headerIcon} aria-hidden="true">CM</span><div className={styles.headerCopy}><strong>{t("Planifica con CargoMesh", "Plan with CargoMesh")}</strong></div>{presentation === "floating" ? <button type="button" className={styles.close} aria-label="Close CargoMesh assistant" onClick={closePanel}>×</button> : request ? <span className={styles.headerState}>{request.referenceCode} · v{request.draftVersion}</span> : null}</header>
       <div className={styles.conversationContent}>
       <div className={styles.scrollArea}>
         <div className={styles.history} role="log" aria-live="off" aria-label="Conversation messages">

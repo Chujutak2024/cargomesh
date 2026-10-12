@@ -145,7 +145,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
 
   const mapProps = evaluation ? mapServiceabilityToMapViewProps(request, evaluation, selectedCandidateId, setSelectedCandidateId) : null;
   return <div className={styles.page}>
-    <header className={styles.hero}><div className={styles.heroCopy}><span className={styles.eyebrow}>{t("Solicitud shipper", "Shipper request")} · v{request.draftVersion}</span><h1>{request.referenceCode}</h1><p>{request.origin.label} → {request.destination.label}</p></div>
+    <header className={styles.hero}><div className={styles.heroCopy}><h1>{request.referenceCode}</h1><p>{request.origin.city} → {request.destination.city}</p></div>
       <div className={styles.heroActions}>{request.status === "DRAFT" ? <Button variant="secondary" onClick={() => setEditOpen(true)}><Edit3 size={16}/>{t("Editar borrador", "Edit draft")}</Button> : null}
         <Button isLoading={phase === "evaluating"} loadingLabel={t("Evaluando…", "Evaluating…")} onClick={() => void evaluate()}><RefreshCw size={16}/>{t("Reevaluar", "Reevaluate")}</Button></div></header>
 
@@ -155,7 +155,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
       <Summary label={t("Carga", "Cargo")} value={`${formatMass(request.cargoSpecification.totalWeightKg, localeTag)} · ${request.cargoSpecification.totalVolumeM3.toLocaleString(localeTag)} m³`} />
       <Summary label={t("Ventana de recojo", "Pickup window")} value={formatDateTime(request.pickupWindow.startsAt, localeTag)} />
       <Summary label={t("Clase solicitada", "Requested class")} value={request.serviceType ?? "UNKNOWN"} />
-    </div><p className={styles.notice}><ShieldCheck size={17}/>{t("Esta solicitud, su evaluación, sus ofertas y su reserva son recursos distintos. CargoMesh no convierte datos faltantes en confirmaciones.", "This request, its evaluation, offers, and booking are distinct resources. CargoMesh never converts missing data into confirmations.")}</p></section>
+    </div></section>
 
     <div className={styles.detailGrid}><div className={styles.page}>
       <section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Factibilidad y mapa", "Serviceability and map")}</h2><p>GET /serviceability · draftVersion {request.draftVersion}</p></div><MapPin size={18}/></header>
@@ -176,7 +176,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
         {activeBookings.length ? <Link className={styles.primary} href="/bookings"><Truck size={16}/>{t("Ver reservas", "View bookings")}</Link> : null}
         <Link className={styles.secondary} href="/freight-request/new?assistant=open">{t("Abrir asistente", "Open assistant")}</Link>
       </div></section>
-      <section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Trazabilidad", "Traceability")}</h2><p>{t("Recursos persistidos asociados", "Related persisted resources")}</p></div></header><div className={styles.timeline}>
+      <section className={styles.panel} aria-label={t("Historial de la solicitud", "Request history")}><div className={styles.timeline}>
         <Timeline label={t("Solicitud creada", "Request created")} value={formatDateTime(request.createdAt, localeTag)} />
         <Timeline label={t("Última revisión", "Last revision")} value={`${formatDateTime(request.updatedAt, localeTag)} · v${request.draftVersion}`} />
         <Timeline label={t("Ofertas recibidas", "Offers received")} value={String(offers.length)} />

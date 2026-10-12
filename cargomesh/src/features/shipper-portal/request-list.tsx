@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpDown, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowUpDown, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useLocale } from "@/features/i18n/locale-provider";
@@ -34,7 +34,7 @@ export function RequestList({ requests, initialQuery = "" }: { requests: Freight
 
   return <section className={styles.panel} aria-labelledby="request-list-title">
     <header className={styles.panelHeader}><div><h2 id="request-list-title">{t("Solicitudes de tu organización", "Your organization requests")}</h2>
-      <p>{t("Sólo datos visibles para el tenant autenticado.", "Only data visible to the authenticated tenant.")}</p></div><SlidersHorizontal size={18} aria-hidden="true" /></header>
+      </div></header>
     <div className={styles.toolbar}>
       <label className={styles.search}>
   <Search size={16} aria-hidden="true" />

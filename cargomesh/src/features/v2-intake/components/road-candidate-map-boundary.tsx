@@ -15,5 +15,5 @@ export function RoadCandidateMapBoundary({ props }: {
   props: RoadCandidateMapViewProps;
   t: Translate;
 }) {
-  return <RoadCandidateMapView {...props} />;
+  return <RoadCandidateMapView {...props} hideEmptyGuidance />;
 }

@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarClock, MapPin, ShieldCheck, Truck } from "lucide-react";
+import { ArrowLeft, CalendarClock, MapPin, Truck } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -55,7 +55,7 @@ export default async function TrackingDetailPage({ params }: { params: Promise<{
       <TrackingEventsPanel events={events} t={t} tag={tag} locale={locale}/>
     </div><aside className={s.sideColumn}>
       <TrackingIncidentsPanel incidents={incidents} t={t} tag={tag}/>
-      <section className={s.panel}><div className={s.panelHeading}><div><span className={s.eyebrow}>{t("Procedencia", "Provenance")}</span><h2>{t("Qué representa esta vista", "What this view represents")}</h2></div><ShieldCheck size={21} aria-hidden="true"/></div><div className={s.facts}>
+      <section className={s.panel} aria-label={t("Procedencia", "Provenance")}><div className={s.facts}>
         <div className={s.fact}><small><MapPin size={12} aria-hidden="true"/> {t("Geometría", "Geometry")}</small><strong>{linkedRoute ? `${linkedRoute.data.confidence} · ${linkedRoute.data.geographicSource.kind}` : t("Sin ruta enlazada a este booking", "No route linked to this booking")}</strong></div>
         <div className={s.fact}><small><CalendarClock size={12} aria-hidden="true"/> {t("Última lectura", "Last read")}</small><strong>{formatDateTime(execution.updatedAt, tag)}</strong></div>
         <div className={s.fact}><small><Truck size={12} aria-hidden="true"/> {t("Posición", "Position")}</small><strong>{t("Sólo reportes persistidos; sin GPS simulado", "Persisted reports only; no simulated GPS")}</strong></div>

@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, CircleHelp, ShieldAlert } from "lucide-react";
+import { ArrowRight, CircleHelp } from "lucide-react";
 import Link from "next/link";
 import type { FreightRequestV2Data } from "@/features/v2-intake/contracts";
 import type { WorkflowRecordV2 } from "./shipper-model";
@@ -39,10 +39,10 @@ export function OutcomePanel({ requests, offers, bookings, incidents, t, localeT
       tone: incident.data.severity === "CRITICAL" ? "danger" : "warning",
       recoveryHref: "/tracking", recoveryLabel: t("Ver seguimiento", "View tracking") })),
   ].sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
-  return <section className={styles.panel} aria-labelledby="outcome-title"><header className={styles.panelHeader}><div><h2 id="outcome-title">{t("Rechazos, cancelaciones e incidencias", "Rejections, cancellations and incidents")}</h2><p>{t("Qué ocurrió, cuándo y cómo continuar — sólo con datos persistidos", "What happened, when and how to continue — persisted data only")}</p></div><ShieldAlert size={18}/></header>
+  return <section className={styles.panel} aria-labelledby="outcome-title"><header className={styles.panelHeader}><div><h2 id="outcome-title">{t("Rechazos, cancelaciones e incidencias", "Rejections, cancellations and incidents")}</h2></div></header>
     {items.length ? <div className={`${styles.section} ${styles.outcomeGrid}`}>{items.map((item) => <article className={styles.outcomeCard} data-tone={item.tone} key={item.key}>
       <div className={styles.offerHead}><h3>{item.title}</h3><small>{formatDateTime(item.at, localeTag)}</small></div><p>{item.detail}</p><p><CircleHelp size={14} aria-hidden="true"/> {item.reason}</p>
       <div className={styles.outcomeActions}>{item.requestId && requestById.has(item.requestId) ? <Link className={styles.secondary} href={`/requests/${item.requestId}`}>{t("Revisar solicitud", "Review request")}<ArrowRight size={14}/></Link> : null}<Link className={styles.secondary} href={item.recoveryHref}>{item.recoveryLabel}</Link></div>
-    </article>)}</div> : <div className={styles.empty}><AlertTriangle className={styles.emptyIcon} size={22}/><strong>{t("Sin incidencias o rechazos registrados", "No recorded incidents or rejections")}</strong><p>{t("Un estado desconocido no se interpreta como rechazo. Los eventos de ejecución se muestran por separado.", "An unknown status is not interpreted as a rejection. Execution events are shown separately.")}</p></div>}
+    </article>)}</div> : <div className={styles.empty}><strong>{t("Sin incidencias o rechazos registrados", "No recorded incidents or rejections")}</strong></div>}
   </section>;
 }

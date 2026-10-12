@@ -111,7 +111,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
   const match = contexts.find(([prefix]) => pathname.startsWith(prefix));
   const pageContext = match
     ? { title: match[1], subtitle: match[2] }
-    : { title: "Dashboard", subtitle: t("Vista general de operaciones", "Operations overview") };
+    : { title: "Dashboard", subtitle: "" };
   const initials = identity?.displayName.split(/\s+/).slice(0, 2).map((word) => word[0]).join("").toUpperCase() || "CM";
 
   if (pathname === "/login") {
@@ -171,9 +171,8 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
             <Menu size={20} />
           </button>
           <div className={styles.context}>
-            <span className={styles.contextEyebrow}>{t("Espacio de trabajo shipper", "Shipper workspace")}</span>
             <strong>{pageContext.title}</strong>
-            <span className={styles.contextSubtitle}>{pageContext.subtitle}</span>
+            {pageContext.subtitle ? <span className={styles.contextSubtitle}>{pageContext.subtitle}</span> : null}
           </div>
           <div className={styles.topbarActions}>
             <form className={styles.search} action="/requests">

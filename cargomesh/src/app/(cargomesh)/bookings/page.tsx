@@ -15,8 +15,8 @@ export default async function BookingsPage() {
   const decisions = decisionRecords.filter((item) => item.kind === "decisions");
   const requestById = new Map(requests.map((request) => [request.id, request]));
   const t = (es: string, en: string) => translate(locale, es, en), tag = localeTag(locale);
-  return <div className={styles.page}><header className={styles.hero}><div className={styles.heroCopy}><span className={styles.eyebrow}>{t("Compromisos comerciales V2", "V2 commercial commitments")}</span><h1>{t("Reservas", "Bookings")}</h1><p>{t("Una autorización del shipper puede seguir pendiente, confirmada, rechazada o cancelada por el carrier. Esos estados nunca se confunden.", "A shipper authorization may still be pending, confirmed, rejected, or cancelled by the carrier. These states are never conflated.")}</p></div></header>
-    <section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Estado de cada reserva", "Status of each booking")}</h2><p>{bookings.length} {t("registros del tenant · autorización ≠ confirmación", "tenant records · authorization ≠ confirmation")}</p></div><CalendarCheck2 size={18}/></header>
+  return <div className={styles.page}><header className={styles.hero}><div className={styles.heroCopy}><h1>{t("Reservas", "Bookings")}</h1></div></header>
+    <section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Estado de cada reserva", "Status of each booking")}</h2></div></header>
       {bookings.length ? <div className={styles.facilityGrid}>{bookings.map((booking) => { const request = booking.requestId ? requestById.get(booking.requestId) : undefined; const status = booking.data.carrierConfirmationStatus;
         const offer = resolveBookingOffer(booking, decisions, offers);
         const presentation = bookingStatusPresentation(status, locale);
