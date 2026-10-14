@@ -1,0 +1,1 @@
+strands-agents[bidi-io,bidi-pyaudio,bidi-aec,bidi-google]==1.61.0
