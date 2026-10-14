@@ -15,6 +15,8 @@ import { readRequestWorkflow } from "./workflow-chat-client";
 import { summarizeWorkflow } from "./workflow-chat-summary";
 import { workflowChatIntent } from "./workflow-chat-intent";
 import { chatSendGate } from "./chat-send-gate";
+import { contextualHelpReply } from "./contextual-help";
+import { canApproveDraftReview, proposeDraftReview, type DraftReview } from "./draft-review";
 import styles from "./conversation-chat.module.css";
 import { useLocale } from "@/features/i18n/locale-provider";
 
@@ -42,6 +44,28 @@ function locationName(id: string, options: IntakeOptionsData) {
 
 function draftSummary(draft: V2IntakePrototypeDraft, options: IntakeOptionsData, request: FreightRequestV2Data | null) {
   return `Review the structured details below. ${locationName(draft.originFacilityId, options)} → ${locationName(draft.destinationFacilityId, options)}; ${draft.unitQuantity} unit(s) of ${draft.categoryCode.toLowerCase()}. ${request ? `Saving will revise ${request.referenceCode} from version ${request.draftVersion}.` : "Saving will create a DRAFT for your authorized organization."} Confirm explicitly or tell me what to change.`;
+}
+
+function reviewRows(draft: V2IntakePrototypeDraft, options: IntakeOptionsData) {
+  const labels: Partial<Record<keyof V2IntakePrototypeDraft, string>> = {
+    originFacilityId: "Pickup facility", destinationFacilityId: "Delivery facility", categoryCode: "Cargo category",
+    packaging: "Packaging", cargoDescription: "Cargo description", unitQuantity: "Quantity",
+    unitWeightPerUnitKg: "Weight per unit (kg)", unitVolumePerUnitM3: "Volume per unit (m³)",
+    totalWeightKg: "Total weight (kg)", totalVolumeM3: "Total volume (m³)",
+    unitLengthCm: "Unit length (cm)", unitWidthCm: "Unit width (cm)", unitHeightCm: "Unit height (cm)",
+    pickupWindowStartsAt: "Pickup from", pickupWindowEndsAt: "Pickup until",
+    deliveryWindowStartsAt: "Delivery from", deliveryWindowEndsAt: "Delivery until",
+    requiredEquipment: "Required equipment", pickupContactName: "Pickup contact",
+    pickupContactPhoneE164: "Pickup phone", pickupContactEmail: "Pickup email",
+    recipientContactName: "Recipient contact", recipientContactPhoneE164: "Recipient phone",
+    recipientContactEmail: "Recipient email", temperatureMinCelsius: "Minimum temperature (°C)",
+    temperatureMaxCelsius: "Maximum temperature (°C)", requirements: "Requirements",
+    divisible: "Cargo divisible", unitIndivisible: "Unit indivisible", unitStackable: "Unit stackable",
+  };
+  return (Object.entries(draft) as Array<[keyof V2IntakePrototypeDraft, V2IntakePrototypeDraft[keyof V2IntakePrototypeDraft]]>)
+    .filter(([field, value]) => field !== "unitPackageType" && (typeof value === "boolean" || (Array.isArray(value) ? value.length > 0 : Boolean(String(value).trim()))))
+    .map(([field, value]) => ({ label: labels[field] ?? field, value: field === "originFacilityId" || field === "destinationFacilityId"
+      ? locationName(String(value), options) : Array.isArray(value) ? value.join(", ") : typeof value === "boolean" ? value ? "Yes" : "No" : String(value) }));
 }
 
 export function ConversationChat({ draft, options, optionsSource = "api", request, evaluation, error = null, draftDirty = false, busy, presentation = "floating", canRevise = false, onFields, onSave, onRead, onEvaluate, onEdit, onReload, onStartOver }: {
@@ -77,7 +101,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const voiceLanguage = locale === "es" ? "es-PE" as const : "en-US" as const;
   const [voiceRate, setVoiceRate] = useState(0.96);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
-  const confirmationRef = useRef<{ fingerprint: string; requestId: string | null; version: number | null } | null>(null);
+  const confirmationRef = useRef<{ review: DraftReview; requestId: string | null; version: number | null } | null>(null);
   const [choices, setChoices] = useState<Choice[]>([]);
   const [viewport, setViewport] = useState<{ height: number; keyboardInset: number } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -124,7 +148,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   useEffect(() => { if (open && presentation === "floating") inputRef.current?.focus(); }, [open, presentation]);
   useEffect(() => {
     const confirmation = confirmationRef.current;
-    if (awaitingConfirmation && confirmation && (confirmation.fingerprint !== JSON.stringify(draft)
+    if (awaitingConfirmation && confirmation && (!canApproveDraftReview(confirmation.review, draft)
       || confirmation.requestId !== (request?.id ?? null) || confirmation.version !== (request?.draftVersion ?? null))) {
       confirmationRef.current = null;
       setAwaitingConfirmation(false);
@@ -202,7 +226,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       add(user, "This version is already saved. Tell me what to correct, or use the form; I will ask for confirmation before saving a new revision.");
       return;
     }
-    confirmationRef.current = { fingerprint: JSON.stringify(nextDraft), requestId: request?.id ?? null, version: request?.draftVersion ?? null };
+    confirmationRef.current = { review: proposeDraftReview(nextDraft), requestId: request?.id ?? null, version: request?.draftVersion ?? null };
     setAwaitingConfirmation(true);
     add(user, draftSummary(nextDraft, options, request));
   }
@@ -215,7 +239,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       return;
     }
     const confirmation = confirmationRef.current;
-    if (!confirmation || confirmation.fingerprint !== JSON.stringify(draft)
+    if (!confirmation || !canApproveDraftReview(confirmation.review, draft)
       || confirmation.requestId !== (request?.id ?? null) || confirmation.version !== (request?.draftVersion ?? null)
       || !validatePrototypeReview(draft).valid || (request && (!canRevise || request.status !== "DRAFT"))) {
       add(user, "The draft changed, is incomplete, or cannot be revised here. Review it again before saving.");
@@ -282,12 +306,23 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       add(value, "Nothing was saved. Tell me what to correct, for example: “change the pickup to Lima.”");
       return;
     }
+    if (awaitingConfirmation) {
+      confirmationRef.current = null;
+      setAwaitingConfirmation(false);
+    }
     setInterpretationBusy(true);
     try {
       const { interpretation: received, mode } = await interpret(value);
       const proposal = guardExplicitCorrection(value, nextField, received);
       if (proposal.intent === "PRICE" || proposal.intent === "BOOKING") { add(value, unavailable); return; }
-      if (proposal.intent === "HELP") { if (!isHelpFollowUp(value)) previousHelpTopic.current = helpTopic(value); add(value, englishAcknowledgment(proposal.acknowledgment) ?? "Tell me the pickup and delivery locations, cargo and dates. I will ask only for missing details, and you can correct them before saving."); return; }
+      if (proposal.intent === "HELP") {
+        if (!isHelpFollowUp(value)) previousHelpTopic.current = helpTopic(value);
+        const guided = contextualHelpReply(draft, options, nextField, value);
+        const modelReply = mode === "BEDROCK" ? englishAcknowledgment(proposal.acknowledgment) : undefined;
+        const explanatoryReply = englishAcknowledgment(proposal.acknowledgment);
+        add(value, modelReply ?? (/\b(?:services|offer|available|selection|compare|what is|what can|para qu[eé]|servicios|escoger|comparar)\b/i.test(value) ? explanatoryReply : undefined) ?? guided ?? explanatoryReply ?? "Tell me what you need to ship, and I'll guide you through the request.");
+        return;
+      }
       if (proposal.intent === "START_OVER") {
         onStartOver?.();
         failedAttempts.current = 0;
@@ -355,8 +390,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       if (!accepted.size) {
         if (proposal.intent === "CORRECT" && proposal.acknowledgment) { add(value, proposal.acknowledgment); return; }
         failedAttempts.current = Math.min(3, failedAttempts.current + 1);
-        if (mode === "DETERMINISTIC" && optionsSource !== "fixture") {
-          add(value, "The conversation service is unavailable right now. Your provisional details remain here; you can provide a specific detail or continue in the form.");
+        if (mode === "DETERMINISTIC" && optionsSource !== "fixture" && /\b(?:help|how|what|can you|tell me)\b/i.test(value)) {
+          add(value, contextualHelpReply(draft, options, nextField, value) ?? `I can help you prepare a request. ${ask(nextField ?? "originFacilityId")}`);
           return;
         }
         if (mode === "BEDROCK" && englishAcknowledgment(proposal.acknowledgment)) {
@@ -372,7 +407,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       setAwaitingConfirmation(false);
       confirmationRef.current = null;
       const remaining = missingField(projected);
-      const preface = englishAcknowledgment(proposal.acknowledgment) ?? "Got it.";
+      const preface = englishAcknowledgment(proposal.acknowledgment) ?? `I have ${[...accepted].map((field) => field === "originFacilityId" ? `pickup at ${locationName(projected.originFacilityId, options)}` : field === "destinationFacilityId" ? `delivery at ${locationName(projected.destinationFacilityId, options)}` : field === "unitQuantity" ? `${projected.unitQuantity} unit(s)` : field === "cargoDescription" ? `cargo described as ${projected.cargoDescription}` : field === "categoryCode" ? `${projected.categoryCode.toLowerCase()} cargo` : field === "packaging" ? `${projected.packaging.toLowerCase()} packaging` : "that detail").join(" and ")}.`;
       const changed = proposal.intent === "CORRECT" ? ` Updated ${[...accepted].map((field) => field === "originFacilityId" ? "pickup" : field === "destinationFacilityId" ? "delivery" : field).join(", ")}.` : "";
       if (remaining) add(value, `${preface}${changed} ${ask(remaining)}`);
       else {
@@ -398,10 +433,9 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
           {history.map((message, index) => <div key={index} className={message.speaker === "user" ? styles.userRow : styles.assistantRow}><p className={message.speaker === "user" ? styles.user : styles.assistant}><span className={styles.speaker}>{message.speaker === "user" ? "You" : "CargoMesh"}</span>{message.text}</p></div>)}
         </div>
         <div className={styles.srOnly} role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
-        {!awaitingConfirmation && !interpretationBusy && nextField && !history.at(-1)?.text.includes(ask(nextField)) && !/[?？]\s*$/.test(history.at(-1)?.text ?? "") && <p className={styles.nextQuestion}>{ask(nextField)}</p>}
         {choices.length > 0 && <div className={styles.choiceList} aria-label="Confirm a location">{choices.map((choice) => <button key={choice.value} type="button" onClick={() => { const field = { field: choice.field, value: choice.value }; onFields([field]); setChoices([]); add(null, `Confirmed ${choice.label}. ${ask(missingField(applyChatFieldsToDraft(draft, [field])) ?? "categoryCode")}`); }}>{choice.label}</button>)}</div>}
         {!awaitingConfirmation && !busy && (!request || draftDirty) && <button type="button" className={styles.suggestion} onClick={() => prepareConfirmation(draft)}>{request ? t("Revisar cambios antes de guardar", "Review changes before saving") : t("Revisar borrador antes de crear", "Review draft before creating")}</button>}
-        {awaitingConfirmation && <div className={styles.confirmation} role="group" aria-label="Confirm request save"><strong>{request ? t("Guardar revisión del DRAFT", "Save DRAFT revision") : t("Crear DRAFT", "Create DRAFT")}</strong><p>{request ? t(`Se usará la versión esperada ${request.draftVersion}; los cambios no se guardan hasta tu confirmación.`, `Expected version ${request.draftVersion} will be used; changes are not saved until you confirm.`) : t("Se creará una solicitud para tu organización actual y luego se consultará ROAD.", "A request will be created for your current organization, then ROAD will be checked.")}</p><div><button type="button" onClick={() => confirmSave(null)} disabled={busy}>{request ? t("Confirmar revisión", "Confirm revision") : t("Confirmar creación", "Confirm creation")}</button><button type="button" onClick={() => { confirmationRef.current = null; setAwaitingConfirmation(false); add(null, "Nothing was saved. You can keep editing."); }}>{t("Seguir editando", "Keep editing")}</button></div></div>}
+        {awaitingConfirmation && <div className={styles.confirmation} role="group" aria-label="Confirm request save"><strong>{request ? "Save DRAFT revision" : "Create DRAFT"}</strong><p>{request ? `Expected version ${request.draftVersion} will be used.` : "A DRAFT will be created for your current organization."} Check every detail below. This approval expires after five minutes; no booking will occur.</p><dl>{reviewRows(draft, options).map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl><div><button type="button" onClick={() => confirmSave(null)} disabled={busy}>{request ? "Confirm revision" : "Confirm creation"}</button><button type="button" onClick={() => { confirmationRef.current = null; setAwaitingConfirmation(false); add(null, "Nothing was saved. You can keep editing."); }}>Keep editing</button></div></div>}
         {draftDirty && <p className={styles.notice} role="status">{t("Hay cambios locales sin guardar. Confirma la revisión para volver a evaluar ROAD.", "Local changes are unsaved. Confirm the revision before checking ROAD again.")}</p>}
         {error?.code === "STALE_DRAFT" && onReload && <div className={styles.conflict} role="alert"><strong>{t("Conflicto de versión", "Version conflict")}</strong><p>{t("Otro cambio actualizó el DRAFT. Recargar la versión del servidor descartará tus cambios locales sin guardar.", "Another change updated this DRAFT. Reloading the server version will discard your unsaved local changes.")}</p><button type="button" onClick={onReload}>{t("Recargar versión actual", "Reload current version")}</button></div>}
         {interpretationBusy && <p className={styles.loading} role="status">{t("Interpretando tu mensaje…", "Interpreting your message…")}</p>}

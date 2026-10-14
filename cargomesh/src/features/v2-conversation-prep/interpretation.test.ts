@@ -64,6 +64,27 @@ test("a bare facility answer still works but a conversational question is not a 
   assert.deepEqual(interpretDeterministically({ ...base, text: "Can you tell me what this service does?" }).fields, []);
 });
 
+test("request guidance never becomes a pickup answer", () => {
+  const turn = interpretDeterministically({ schemaVersion: "2.0", text: "hi can you tell me to make a request", currentField: "originFacilityId" });
+  assert.equal(turn.intent, "HELP");
+  assert.deepEqual(turn.fields, []);
+  assert.match(turn.acknowledgment ?? "", /prepare a freight request/);
+  const openQuestion = interpretDeterministically({ schemaVersion: "2.0", text: "How does this work?", currentField: "originFacilityId" });
+  assert.equal(openQuestion.intent, "HELP");
+  assert.deepEqual(openQuestion.fields, []);
+});
+
+test("spoken quantity and cargo are provisional facts, not invented coverage", () => {
+  const turn = interpretDeterministically({ schemaVersion: "2.0", text: "I need to ship two pallets of machinery from Lima to Arequipa", currentField: "originFacilityId" });
+  assert.deepEqual(turn.fields, [
+    { field: "originFacilityId", value: "Lima" },
+    { field: "destinationFacilityId", value: "Arequipa" },
+    { field: "unitQuantity", value: "2" },
+    { field: "packaging", value: "PALLET" },
+    { field: "categoryCode", value: "machinery" },
+  ]);
+});
+
 test("service questions distinguish current ROAD from future modes", () => {
   const turn = interpretDeterministically({ schemaVersion: "2.0", text: "¿Qué servicios ofrecen?", currentField: "originFacilityId" });
   assert.equal(turn.intent, "HELP");
