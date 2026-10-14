@@ -17,10 +17,11 @@ export function Select({ id, label, hint, error, fieldClassName, className, chil
   const hintId = hint ? `${controlId}-hint` : undefined;
   const errorId = error ? `${controlId}-error` : undefined;
   return (
-    <label className={[styles.field, fieldClassName].filter(Boolean).join(" ")} htmlFor={controlId}>
+    <label data-cm-field className={[styles.field, fieldClassName].filter(Boolean).join(" ")} htmlFor={controlId}>
       <span className={styles.fieldLabel}>{label}</span>
       <select
         {...props}
+        data-cm-select
         id={controlId}
         className={[styles.control, className].filter(Boolean).join(" ")}
         aria-invalid={Boolean(error)}

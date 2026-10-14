@@ -1,3 +1,4 @@
+import { demoEnabled } from "@/server/demo/access";
 import type { Metadata } from "next";
 import { ConnectedCoordinator } from "@/features/carrier-portal/coordinator";
 import { authenticatedLoginDestination } from "@/server/auth/carrier-portal";
@@ -15,5 +16,5 @@ export default async function V2WorkspacePage() {
   // Carrier grants still do not authorize shipper APIs or change domain permissions.
   const destination = await authenticatedLoginDestination('/v2-workspace');
   if (!destination) return <WorkspaceAccessRequired />;
-  return <ConnectedCoordinator />;
+  return <ConnectedCoordinator previewEnabled={demoEnabled()} />;
 }

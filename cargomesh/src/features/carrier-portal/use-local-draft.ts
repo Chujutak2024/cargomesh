@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CURRENT_ORIGIN, PREVIOUS_CURRENT_ORIGIN, LEGACY_DRAFT_KEY, LEGACY_ORIGIN, LOCAL_DRAFT_KEY, ORIGINAL_DRAFT_KEY,
-  importLocalDraft, isLocalTransfer, readLocalDraft, LocalDraftEnvelopeSchema, type LocalDraftEnvelope } from "./local-draft-model";
+import { LEGACY_DRAFT_KEY, LOCAL_DRAFT_KEY, ORIGINAL_DRAFT_KEY,
+  readLocalDraft, LocalDraftEnvelopeSchema, type LocalDraftEnvelope } from "./local-draft-model";
 import { resolveWorkspaceDraft } from "./local-request-demo";
 export type SaveLocalDraft = (next: LocalDraftEnvelope | ((current: LocalDraftEnvelope) => LocalDraftEnvelope)) => boolean;
 
@@ -23,42 +23,14 @@ export function useLocalDraft() {
     } catch { setPhase("storage-error"); return false; }
   }, []);
   useEffect(() => {
-    // /v2-workspace is portable: every browser origin has its own saved state.
-    // Only the historical 8080 origin may contact the old 8083 transfer bridge.
+    // One app/origin. Restore same-origin saved data; never depend on a retired preview.
     setEnabled(true);
-    let sameOrigin: string | null = null;
     try {
       const existing = readLocalDraft(localStorage.getItem(LOCAL_DRAFT_KEY));
       if (existing) { current.current = existing; setRecord(existing); setPhase("ready"); return; }
-      sameOrigin = localStorage.getItem(LEGACY_DRAFT_KEY);
-    } catch { setPhase("invalid"); return; }
-    const restoreLegacy = () => {
-      if (current.current) return;
-      try {
-        save(resolveWorkspaceDraft(null, sameOrigin, window.location.origin, new Date().toISOString()));
-      } catch { setPhase("invalid"); }
-    };
-    if (window.location.origin !== CURRENT_ORIGIN) { restoreLegacy(); return; }
-    setPhase("reading");
-    const nonce = crypto.randomUUID();
-    const frame = document.createElement("iframe");
-    frame.hidden = true; frame.title = "Local CargoMesh draft transfer";
-    frame.src = `${PREVIOUS_CURRENT_ORIGIN}/local-draft-transfer.html#${nonce}`;
-    const receive = (event: MessageEvent) => {
-      if (!isLocalTransfer(event, frame.contentWindow, nonce, PREVIOUS_CURRENT_ORIGIN) || current.current) return;
-      clearTimeout(timeout);
-      try {
-        const previous = readLocalDraft(event.data.recordRaw ?? null);
-        if (previous) save(previous);
-        else if (event.data.raw) save(importLocalDraft(event.data.raw, LEGACY_ORIGIN, new Date().toISOString()));
-        else restoreLegacy();
-      }
-      catch { setPhase("invalid"); }
-    };
-    window.addEventListener("message", receive);
-    const timeout = window.setTimeout(restoreLegacy, 3000);
-    document.body.append(frame);
-    return () => { clearTimeout(timeout); window.removeEventListener("message", receive); frame.remove(); };
+      const legacy = localStorage.getItem(LEGACY_DRAFT_KEY);
+      save(resolveWorkspaceDraft(null, legacy, window.location.origin, new Date().toISOString()));
+    } catch { setPhase("invalid"); }
   }, [attempt, save]);
   useEffect(() => {
     const sync = (event: StorageEvent) => {

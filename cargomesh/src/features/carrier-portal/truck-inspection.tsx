@@ -1,5 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
+import { lockDocumentScroll } from "@/shared/browser/scroll-lock";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Building2, MapPin, Navigation, Route, Truck, X } from "lucide-react";
 import { RoadMapCanvas } from "@/features/v2-road-map/road-map-canvas";
@@ -21,10 +22,9 @@ export function TruckInspection({ context, onClose }: { context: TruckInspection
   const presentation = useMemo(() => context.routeDraft ? localMapPresentation(context.routeDraft, result?.preview ?? null) : context.map, [context, result?.preview]);
   useEffect(() => {
     const node = dialog.current, previous = document.activeElement;
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const releaseScroll = lockDocumentScroll(document);
     node?.showModal();
-    return () => { node?.close(); document.body.style.overflow = overflow; if (previous instanceof HTMLElement && previous.isConnected) previous.focus({ preventScroll: true }); };
+    return () => { node?.close(); releaseScroll(); if (previous instanceof HTMLElement && previous.isConnected) previous.focus({ preventScroll: true }); };
   }, []);
   useEffect(() => { heading.current?.focus({ preventScroll: true }); }, [view]);
   const title = view === "summary" ? "Resumen del camión" : view === "route" ? "Ruta del camión" : view==="route3d"?"Vista 3D de la ruta":"Operación en la sede";

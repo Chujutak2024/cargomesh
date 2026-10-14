@@ -1,3 +1,4 @@
+@import "../components/ui/select-picker.css";
 :root {
   --page-max-wide: 100rem;
   --page-max-standard: 80rem;
@@ -15,30 +16,30 @@
 
   /* CargoMesh V2 product tokens. Shared by shipper controls and aligned with the
      carrier workspace without coupling either portal to the other's CSS module. */
-  --cm-color-canvas: #e5edf6;
+  --cm-color-canvas: #f5f7f8;
   --cm-color-surface: #ffffff;
-  --cm-color-surface-subtle: #edf3f9;
-  --cm-color-surface-tint: #f4f9fc;
+  --cm-color-surface-subtle: #eef3f4;
+  --cm-color-surface-tint: #f1f7f7;
   --cm-color-ink: #163349;
-  --cm-color-heading: #113346;
-  --cm-color-muted: #4d657b;
-  --cm-color-line: #c3d3e2;
-  --cm-color-line-strong: #a9bfce;
-  --cm-color-primary: #185be7;
-  --cm-color-primary-hover: #144bc2;
+  --cm-color-heading: #163349;
+  --cm-color-muted: #536b78;
+  --cm-color-line: #dce5e8;
+  --cm-color-line-strong: #a9bec5;
+  --cm-color-primary: #00747c;
+  --cm-color-primary-hover: #005f67;
   --cm-color-logistics: #00747c;
   --cm-color-logistics-hover: #005f67;
   --cm-color-focus: #13aeb7;
-  --cm-color-positive-surface: #e5f5ef;
+  --cm-color-positive-surface: #e9f5ef;
   --cm-color-accent: #d2a95f;
   --cm-color-warning-surface: #fff4d9;
-  --cm-color-warning-ink: #755c26;
+  --cm-color-warning-ink: #815b16;
   --cm-color-danger-surface: #fff4f1;
   --cm-color-danger: #9b3325;
   --cm-radius-sm: 0.5rem;
   --cm-radius-md: 0.7rem;
   --cm-radius-lg: 0.9rem;
-  --cm-shadow-card: 0 0.15rem 0.35rem rgb(25 59 85 / 4%), 0 0.75rem 1.75rem rgb(25 59 85 / 7%);
+  --cm-shadow-card: 0 2px 6px rgb(22 51 73 / 3%);
   --cm-shadow-panel: 0 1.4rem 4rem rgb(16 45 67 / 16%);
   --cm-control-height: 2.75rem;
   --cm-motion-fast: 120ms;
@@ -47,6 +48,19 @@
   --cm-motion-panel: 240ms;
   --cm-motion-ease: cubic-bezier(.2, .8, .2, 1);
   --cm-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --cm-color-sidebar: #eef2f3;
+  --cm-color-selected: #e6f3f3;
+  --cm-color-positive: #216650;
+  --cm-color-info: #245b91;
+  --cm-color-info-surface: #edf3fa;
+  --cm-color-brand-deep: #163349;
+  --cm-page-title-size: clamp(1.65rem,2vw,2rem);
+  --cm-page-title-weight: 700;
+  --cm-page-description-size: .875rem;
+  --cm-header-height: 4.5rem;
+  --cm-metric-padding: 1.125rem;
+  --cm-metric-radius: .875rem;
+  --cm-workspace-inset: clamp(16px,2vw,32px);
 }
 
 * {

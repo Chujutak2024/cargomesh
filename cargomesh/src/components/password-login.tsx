@@ -1,28 +1,27 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { safeLoginReturnTo } from "@/shared/schemas/v2/carrier-portal";
+import { safeLoginReturnTo, type LoginReturnTo } from "@/shared/schemas/v2/carrier-portal";
 import { useLocale } from "@/features/i18n/locale-provider";
 import styles from "./password-login.module.css";
 import { Button } from "@/components/ui";
-export function PasswordLogin({returnTo}:{returnTo?:"/carrier-portal"|"/dashboard"|"/v2-workspace"}) {
+export function PasswordLogin({returnTo}:{returnTo?:LoginReturnTo}) {
   const router = useRouter();
   const { t } = useLocale();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [demoEmail, setDemoEmail] = useState("");
   const edited = useRef(false);
   useEffect(() => {
     // Private defaults are served by the loopback preview, never bundled or deployed.
-    if (!['127.0.0.1', 'localhost'].includes(window.location.hostname) || window.location.port !== '3907') return;
+    if (!['127.0.0.1', 'localhost'].includes(window.location.hostname) || window.location.port !== '8080') return;
     const controller = new AbortController();
-    void fetch('/__demo/login-defaults', { cache: 'no-store', signal: controller.signal })
+    void fetch('/api/local/login-defaults', { cache: 'no-store', signal: controller.signal })
       .then(async response => response.ok ? response.json() : null)
       .then(value => {
         if (controller.signal.aborted || edited.current || !value || typeof value.email !== 'string' || typeof value.password !== 'string') return;
-        setEmail(value.email); setPassword(value.password); setDemoEmail(value.email);
+        setEmail(value.email); setPassword(value.password);
       }).catch(() => { /* Manual sign-in remains available if local defaults are unavailable. */ });
     return () => controller.abort();
   }, []);
@@ -38,9 +37,7 @@ export function PasswordLogin({returnTo}:{returnTo?:"/carrier-portal"|"/dashboar
       const result=await response.json();
       const destination=safeLoginReturnTo(result.destination);
       if(!destination){setError(t("No se pudo resolver tu espacio de trabajo.", "Unable to find your workspace."));return;}
-      // This public coordinator is a presentation preview. Real API scopes stay unchanged.
-      const localDemo = demoEmail && String(fields.get('email')).trim() === demoEmail && returnTo === '/v2-workspace';
-      router.replace(localDemo ? '/v2-workspace' : destination); router.refresh();
+      router.replace(destination); router.refresh();
     } catch { setError(t("No se pudo conectar. Reintenta.", "Unable to connect. Please try again.")); }
     finally { setBusy(false); }
   }
