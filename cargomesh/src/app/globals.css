@@ -13,28 +13,40 @@
   --success: #57c79a;
   --danger: #ff8a78;
 
-  /* CargoMesh V2 application tokens. Prefixed to avoid changing V1 surfaces. */
-  --cm-color-canvas: #f7f6f1;
+  /* CargoMesh V2 product tokens. Shared by shipper controls and aligned with the
+     carrier workspace without coupling either portal to the other's CSS module. */
+  --cm-color-canvas: #e5edf6;
   --cm-color-surface: #ffffff;
-  --cm-color-surface-subtle: #f4f7f5;
-  --cm-color-ink: #1f2928;
-  --cm-color-heading: #123c3a;
-  --cm-color-muted: #687573;
-  --cm-color-line: #dde3e0;
-  --cm-color-primary: #185c55;
-  --cm-color-primary-hover: #123c3a;
-  --cm-color-focus: #2bae9a;
-  --cm-color-positive-surface: #ddf3ea;
+  --cm-color-surface-subtle: #edf3f9;
+  --cm-color-surface-tint: #f4f9fc;
+  --cm-color-ink: #163349;
+  --cm-color-heading: #113346;
+  --cm-color-muted: #4d657b;
+  --cm-color-line: #c3d3e2;
+  --cm-color-line-strong: #a9bfce;
+  --cm-color-primary: #185be7;
+  --cm-color-primary-hover: #144bc2;
+  --cm-color-logistics: #00747c;
+  --cm-color-logistics-hover: #005f67;
+  --cm-color-focus: #13aeb7;
+  --cm-color-positive-surface: #e5f5ef;
   --cm-color-accent: #d2a95f;
   --cm-color-warning-surface: #fff4d9;
   --cm-color-warning-ink: #755c26;
   --cm-color-danger-surface: #fff4f1;
   --cm-color-danger: #9b3325;
   --cm-radius-sm: 0.5rem;
-  --cm-radius-md: 0.75rem;
-  --cm-radius-lg: 1rem;
-  --cm-shadow-card: 0 0.8rem 2.2rem rgb(18 60 58 / 6%);
+  --cm-radius-md: 0.7rem;
+  --cm-radius-lg: 0.9rem;
+  --cm-shadow-card: 0 0.15rem 0.35rem rgb(25 59 85 / 4%), 0 0.75rem 1.75rem rgb(25 59 85 / 7%);
+  --cm-shadow-panel: 0 1.4rem 4rem rgb(16 45 67 / 16%);
   --cm-control-height: 2.75rem;
+  --cm-motion-fast: 120ms;
+  --cm-motion-interaction: 160ms;
+  --cm-motion-content: 200ms;
+  --cm-motion-panel: 240ms;
+  --cm-motion-ease: cubic-bezier(.2, .8, .2, 1);
+  --cm-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 * {

@@ -1,7 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useReducedMotion } from "motion/react";
+import { useReducedMotionPreference } from "@/features/product-motion/use-motion-preference";
 import { Download, Info, MoonStar, Pause, Play, RotateCcw, RotateCw, Scan, Sun, Sunset } from "lucide-react";
 import { useLocale } from "@/features/i18n/locale-provider";
 import styles from "./truck.module.css";
@@ -23,7 +23,7 @@ export function LogisticsTruck(props:Props) {
   return <TruckView key={`${props.variant??"default"}:${props.modelAssetId??"catalog"}:${!!props.custom}`} {...props}/>;
 }
 function TruckView({compact=false,variant,thumbnail=false,label,photo,caption,modelAssetId,custom=false,onInspect,suspended=false}:Props) {
-  const {t}=useLocale();const reduced=useReducedMotion();const element=useRef<HTMLDivElement>(null);
+  const {t}=useLocale();const preferred=useReducedMotionPreference();const [motionRequested,setMotionRequested]=useState(false);const reduced=preferred&&!motionRequested;const element=useRef<HTMLDivElement>(null);
   const [visible,setVisible]=useState(false),[eligible,setEligible]=useState(false),[hidden,setHidden]=useState(false),[ready,setReady]=useState(false),[failed,setFailed]=useState(false);
   const [autoRotate,setAutoRotate]=useState(false);const controls=useRef<TruckViewControls|null>(null);
   const [exportFailed,setExportFailed]=useState(false);
@@ -93,7 +93,7 @@ function TruckView({compact=false,variant,thumbnail=false,label,photo,caption,mo
     </div>
     {interactive?<>
       <div className={styles.controls} role="group" aria-label={t("Controles de vista 3D","3D view controls")}>
-        <button type="button" disabled={!available||!!reduced} aria-pressed={moving} onClick={()=>setDrive(value=>!value)} aria-label={moving?t("Pausar avance del camión","Pause truck motion"):t("Reanudar avance del camión","Resume truck motion")} title={reduced?t("Avance desactivado por tu preferencia de movimiento reducido","Motion disabled by your reduced motion preference"):undefined}>{moving?<Pause size={15} aria-hidden="true"/>:<Play size={15} aria-hidden="true"/>}<span>{moving?t("Pausar avance","Pause motion"):t("Reanudar avance","Resume motion")}</span></button>
+        <button type="button" disabled={!available} aria-pressed={moving} onClick={()=>{if(reduced){setMotionRequested(true);setDrive(true);}else setDrive(value=>!value);}} aria-label={moving?t("Pausar avance del camión","Pause truck motion"):t("Reanudar avance del camión","Resume truck motion")} title={reduced?t("Reproducir solo esta escena; el inicio automático respeta movimiento reducido","Play this scene only; autoplay respects reduced motion"):undefined}>{moving?<Pause size={15} aria-hidden="true"/>:<Play size={15} aria-hidden="true"/>}<span>{moving?t("Pausar avance","Pause motion"):t("Reanudar avance","Resume motion")}</span></button>
         <button type="button" disabled={!available} onClick={()=>controls.current?.rotate(Math.PI/6)} aria-label={t("Girar camión a la izquierda","Rotate truck left")} title={t("Girar a la izquierda","Rotate left")}><RotateCcw size={17} aria-hidden="true"/></button>
         <button type="button" disabled={!available} onClick={()=>controls.current?.rotate(-Math.PI/6)} aria-label={t("Girar camión a la derecha","Rotate truck right")} title={t("Girar a la derecha","Rotate right")}><RotateCw size={17} aria-hidden="true"/></button>
         <button type="button" disabled={!available} onClick={()=>controls.current?.reset()} aria-label={t("Centrar vista del camión","Reset truck view")} title={t("Centrar vista","Reset view")}><Scan size={17} aria-hidden="true"/></button>

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { ConnectedCoordinator } from "@/features/carrier-portal/coordinator";
+import { authenticatedLoginDestination } from "@/server/auth/carrier-portal";
+import { WorkspaceAccessRequired } from "@/components/workspace-access-required";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "CargoMesh V2 | ROAD workspace",
@@ -9,10 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default async function V2WorkspacePage() {
-  // Both local accesses point to the current application. The 8080 origin keeps
-  // the user's saved browser data and the existing Maps referrer restriction.
-  if ((await headers()).get("host") === "127.0.0.1:8083") {
-    redirect("http://127.0.0.1:8080/v2-workspace");
-  }
+  // Validate the cookie with Supabase before rendering even the local presentation.
+  // Carrier grants still do not authorize shipper APIs or change domain permissions.
+  const destination = await authenticatedLoginDestination('/v2-workspace');
+  if (!destination) return <WorkspaceAccessRequired />;
   return <ConnectedCoordinator />;
 }

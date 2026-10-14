@@ -1,11 +1,11 @@
 "use client";
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useReducedMotion } from "motion/react";
+import { useScenePlayback } from "@/features/product-motion/use-motion-preference";
 import { ACESFilmicToneMapping, Color, Group, OrthographicCamera, PMREMGenerator, SRGBColorSpace, Vector3, MathUtils } from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Building2, PackageCheck, RotateCcw, Warehouse, ZoomIn, ZoomOut } from "lucide-react";
+import { Building2, PackageCheck, Pause, Play, RotateCcw, Warehouse, ZoomIn, ZoomOut } from "lucide-react";
 import type { TruckInspectionContext } from "@/features/carrier-portal/truck-inspection-model";
 import { buildDepot, disposeDepot } from "./depot-model";
 import { depotCyclePose, depotPhases, DEPOT_CYCLE_SECONDS, ease, type DepotPhase } from "./depot-cycle";
@@ -22,7 +22,7 @@ type SceneProps = { context:TruckInspectionContext; reduced:boolean; night:numbe
 function DepotScene({context,reduced,night,hidden,interior,controlsReady,report,failed,ready}:SceneProps){
   const {camera,gl,scene,invalidate,size}=useThree();
   const [model,setModel]=useState<{depot:ReturnType<typeof buildDepot>;truck:Group;actors:ReturnType<typeof buildDepotActors>}|null>(null);
-  const travel=useRef(reduced?57:0),lastReport=useRef(-1),frames=useRef(0),target=useRef(new Vector3()),position=useRef(new Vector3());
+  const travel=useRef(0),lastReport=useRef(-1),frames=useRef(0),target=useRef(new Vector3()),position=useRef(new Vector3());
   const orbit=useRef<OrbitControls|null>(null),guided=useRef(true),resetView=useRef(false);
   useEffect(()=>{
     const controls=new OrbitControls(camera,gl.domElement);orbit.current=controls;
@@ -63,7 +63,7 @@ function DepotScene({context,reduced,night,hidden,interior,controlsReady,report,
     scene.environment=env.texture;room.dispose();generator.dispose();return()=>{scene.environment=previous;env.dispose();};
   },[gl,scene]);
   useEffect(()=>{scene.environmentIntensity=.75-night*.45;scene.background=new Color("#dce9ed").lerp(new Color("#182b45"),night);invalidate();},[night,scene,invalidate]);
-  useEffect(()=>{travel.current=reduced?57:0;lastReport.current=-1;invalidate();},[reduced,invalidate]);
+  useEffect(()=>{invalidate();},[reduced,invalidate]);
   useEffect(()=>{
     if(hidden||reduced){invalidate();return;}
     const timer=window.setInterval(()=>{if(!document.hidden)invalidate();},1000/30);return()=>window.clearInterval(timer);
@@ -101,7 +101,8 @@ function DepotScene({context,reduced,night,hidden,interior,controlsReady,report,
 }
 class DepotBoundary extends Component<{children:ReactNode;failed:()=>void},{error:boolean}>{state={error:false};static getDerivedStateFromError(){return{error:true};}componentDidCatch(){this.props.failed();}render(){return this.state.error?null:this.props.children;}}
 export default function DepotArrival({context}:{context:TruckInspectionContext}){
-  const reduced=!!useReducedMotion(),[frame,setFrame]=useState<FrameReport>({phase:"approach",time:0,loadProgress:0}),[error,setError]=useState(false),[loaded,setLoaded]=useState(false),[clock,setClock]=useState(new Date()),[hidden,setHidden]=useState(false);
+  const {playing,toggle}=useScenePlayback(),reduced=!playing;
+  const [frame,setFrame]=useState<FrameReport>({phase:"approach",time:0,loadProgress:0}),[error,setError]=useState(false),[loaded,setLoaded]=useState(false),[clock,setClock]=useState(new Date()),[hidden,setHidden]=useState(false);
   const [interior,setInterior]=useState(false),viewControls=useRef<ViewControls|null>(null);
   const controlsReady=useCallback((controls:ViewControls|null)=>{viewControls.current=controls;},[]);
   const report=useCallback((value:FrameReport)=>setFrame(value),[]),failed=useCallback(()=>setError(true),[]),ready=useCallback(()=>setLoaded(true),[]);
@@ -112,6 +113,7 @@ export default function DepotArrival({context}:{context:TruckInspectionContext})
     <div className={s.stage} data-depot-roof={!interior} data-depot-state={error?"failed":loaded?"ready":"loading"}>
       {!error?<DepotBoundary failed={failed}><Canvas orthographic shadows="soft" dpr={[1,1.5]} frameloop={hidden?"never":"demand"} camera={{position:[-24,24,30],zoom:16,near:.1,far:180}} gl={{antialias:true,powerPreference:"low-power"}} onCreated={({gl})=>{gl.toneMapping=ACESFilmicToneMapping;gl.outputColorSpace=SRGBColorSpace;}}><DepotScene context={context} reduced={reduced} night={environment.night} hidden={hidden} interior={interior} controlsReady={controlsReady} report={report} failed={failed} ready={ready}/></Canvas></DepotBoundary>:<div className={s.error} role="status"><Building2 size={38}/><strong>{context.custom?"El modelo 3D del camión no está disponible":"No se pudo abrir el visor 3D"}</strong><p>{context.custom?"Carga el archivo GLB del camión para ver su llegada a la sede.":"Tu navegador necesita WebGL para mostrar esta escena."}</p></div>}
       {!error?<div className={s.viewTools} role="group" aria-label="Controles de vista de la sede">
+        <button type="button" disabled={!loaded} aria-pressed={playing} aria-label={playing?"Pausar operación de la sede":"Reproducir operación de la sede"} onClick={toggle}>{playing?<Pause size={18}/>:<Play size={18}/>}</button>
         <button aria-label="Acercar la sede" title="Acercar" disabled={!loaded} onClick={()=>viewControls.current?.zoom(1.2)}><ZoomIn size={18}/></button>
         <button aria-label="Alejar la sede" title="Alejar" disabled={!loaded} onClick={()=>viewControls.current?.zoom(1/1.2)}><ZoomOut size={18}/></button>
         <button aria-label="Centrar la sede" title="Centrar vista" disabled={!loaded} onClick={()=>viewControls.current?.center()}><RotateCcw size={18}/></button>

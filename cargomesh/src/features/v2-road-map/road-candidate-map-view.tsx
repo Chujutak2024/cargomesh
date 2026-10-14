@@ -11,7 +11,7 @@ import styles from "./road-candidate-map-view.module.css";
 export type { RoadCandidateMapViewProps } from "./road-map-contract";
 
 /** Presentational V2 ROAD map. HAC-14 owns the parent state and mapper. */
-export function RoadCandidateMapView(props: RoadCandidateMapViewProps) {
+export function RoadCandidateMapView(props: RoadCandidateMapViewProps & { hideEmptyGuidance?: boolean }) {
   const { locale, t } = useLocale();
   const presentation = useMemo(() => getMapPresentation(props), [props.origin, props.destination, props.candidates, props.selectedCandidateId]);
   const [provider, setProvider] = useState<MapProvider>("loading");
@@ -37,7 +37,7 @@ export function RoadCandidateMapView(props: RoadCandidateMapViewProps) {
       <div className={styles.candidates} role="group" aria-label={t("Lista de candidatos", "Candidate list")}>
         <div className={styles.listHeading}><strong>{t("Opciones ROAD", "ROAD options")}</strong><span>{props.candidates.length}</span></div>
         {props.candidates.length === 0
-          ? <div className={styles.emptyCandidates}><strong>{t("No se devolvieron candidatos ROAD para esta solicitud.", "No ROAD candidates were returned for this request.")}</strong><span>{t("Puedes revisar los datos de origen, destino y carga.", "Review the origin, destination, and cargo details.")}</span></div>
+          ? <div className={styles.emptyCandidates}><strong>{t("No se devolvieron candidatos ROAD para esta solicitud.", "No ROAD candidates were returned for this request.")}</strong>{!props.hideEmptyGuidance ? <span>{t("Puedes revisar los datos de origen, destino y carga.", "Review the origin, destination, and cargo details.")}</span> : null}</div>
           : props.candidates.map((candidate) => {
             const active = candidate.candidateId === props.selectedCandidateId;
             const candidatePresentation = getMapPresentation({ ...props, selectedCandidateId: candidate.candidateId });
@@ -58,7 +58,7 @@ export function RoadCandidateMapView(props: RoadCandidateMapViewProps) {
       </div>
 
       <div className={styles.mapColumn}>
-        <div className={styles.mapHead}><div><strong>{t("Vista de ruta", "Route view")}</strong>{!selected ? <span>{props.candidates.length ? t("Selecciona un candidato para ver su ruta", "Select a candidate to view its route") : t("Origen y destino · sin opciones disponibles", "Origin and destination · no options available")}</span> : null}</div></div>
+        <div className={styles.mapHead}><div><strong>{t("Vista de ruta", "Route view")}</strong>{!selected && (props.candidates.length > 0 || !props.hideEmptyGuidance) ? <span>{props.candidates.length ? t("Selecciona un candidato para ver su ruta", "Select a candidate to view its route") : t("Origen y destino · sin opciones disponibles", "Origin and destination · no options available")}</span> : null}</div></div>
         <RoadMapCanvas presentation={presentation} onProviderChange={handleProviderChange} />
         <p className={styles.providerNote} aria-live="polite"><Info size={14} aria-hidden="true" /><span>{note}</span></p>
       </div>

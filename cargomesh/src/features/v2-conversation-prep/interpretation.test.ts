@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { InterpretationRequestSchema, InterpretationResponseSchema, interpretDeterministically } from "./interpretation";
+import { InterpretationRequestSchema, InterpretationResponseSchema, guardExplicitCorrection, interpretDeterministically } from "./interpretation";
 
 test("bounded conversation context accepts provisional facts but rejects contacts and extra authority", () => {
   const request = { schemaVersion: "2.0", text: "Change it to Piura", currentField: "destinationFacilityId", context: {
@@ -89,6 +89,46 @@ test("Spanish freight turns keep their explicit values and never imply a booking
 test("a named correction changes the requested field, not the current prompt", () => {
   const turn = interpretDeterministically({ schemaVersion: "2.0", text: "change origin to Piura", currentField: "cargoDescription" });
   assert.deepEqual(turn, { intent: "CORRECT", fields: [{ field: "originFacilityId", value: "Piura" }] });
+});
+
+test("a natural Spanish turn captures only explicit cargo and route facts", () => {
+  const turn = interpretDeterministically({ schemaVersion: "2.0", text: "Necesito enviar 10 pallets desde nuestra sede de Callao hasta Santiago el próximo viernes", currentField: "originFacilityId" });
+  assert.deepEqual(turn.fields, [
+    { field: "originFacilityId", value: "Callao" },
+    { field: "destinationFacilityId", value: "Santiago" },
+    { field: "unitQuantity", value: "10" },
+    { field: "packaging", value: "PALLET" },
+  ]);
+  assert.match(turn.acknowledgment ?? "", /exact pickup and delivery dates/);
+  assert.equal(turn.fields.some((field) => field.field.endsWith("At")), false);
+});
+
+test("natural corrections target one field and never guess a relative date", () => {
+  const input = { schemaVersion: "2.0" as const, currentField: "recipientContactName" as const };
+  assert.deepEqual(interpretDeterministically({ ...input, text: "Son 12 pallets, no 10" }), { intent: "CORRECT", fields: [{ field: "unitQuantity", value: "12" }] });
+  assert.deepEqual(interpretDeterministically({ ...input, text: "Cambia el origen a Arequipa" }), { intent: "CORRECT", fields: [{ field: "originFacilityId", value: "Arequipa" }] });
+  const date = interpretDeterministically({ ...input, text: "Mejor hazlo el martes" });
+  assert.equal(date.intent, "CORRECT");
+  assert.deepEqual(date.fields, []);
+  assert.match(date.acknowledgment ?? "", /exact pickup and delivery dates/);
+});
+
+test("model output cannot expand a clear correction to unrelated fields or invent Tuesday", () => {
+  const proposal = { intent: "CORRECT" as const, fields: [
+    { field: "unitQuantity" as const, value: "12" },
+    { field: "destinationFacilityId" as const, value: "other-tenant-id" },
+  ] };
+  assert.deepEqual(guardExplicitCorrection("Son 12 pallets, no 10", "categoryCode", proposal), {
+    intent: "CORRECT", fields: [{ field: "unitQuantity", value: "12" }],
+  });
+  assert.deepEqual(guardExplicitCorrection("Cambia el origen a Arequipa", "categoryCode", proposal), {
+    intent: "CORRECT", fields: [{ field: "originFacilityId", value: "Arequipa" }],
+  });
+  const date = guardExplicitCorrection("Mejor hazlo el martes", "pickupWindowStartsAt", {
+    intent: "CORRECT", fields: [{ field: "pickupWindowStartsAt", value: "2026-10-13T08:00" }],
+  });
+  assert.deepEqual(date.fields, []);
+  assert.match(date.acknowledgment ?? "", /confirm the exact/);
 });
 
 test("untrusted model output must use the versioned bounded response contract", () => {

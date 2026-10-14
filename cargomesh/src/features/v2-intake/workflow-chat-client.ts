@@ -1,3 +1,4 @@
+import {workspaceFetch} from "@/features/workspace-mode/workspace-fetch";
 import { z } from "zod";
 import { WorkflowRecordV2Schema } from "@/shared/schemas/v2/workflow";
 
@@ -5,7 +6,7 @@ const List = z.object({ schemaVersion: z.literal("2.0"), data: z.array(WorkflowR
   meta: z.object({ nextOffset: z.number().int().nonnegative().nullable() }).passthrough() });
 export type WorkflowChatRecord = z.infer<typeof WorkflowRecordV2Schema>;
 
-export async function readRequestWorkflow(requestId: string, kind: "offers" | "bookings" | "executions", fetcher: typeof fetch = fetch): Promise<WorkflowChatRecord[]> {
+export async function readRequestWorkflow(requestId: string, kind: "offers" | "bookings" | "executions", fetcher: typeof fetch = workspaceFetch): Promise<WorkflowChatRecord[]> {
   const path = kind === "offers" ? `/api/v2/freight/requests/${encodeURIComponent(requestId)}/offers` : `/api/v2/${kind}`;
   const records: WorkflowChatRecord[] = [];
   let offset: number | null = 0;

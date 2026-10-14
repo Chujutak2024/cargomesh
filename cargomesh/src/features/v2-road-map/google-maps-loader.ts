@@ -40,7 +40,7 @@ export function loadGoogleMaps(browserKey: string): Promise<void> {
       else finish(new Error("MAP_PROVIDER_UNAVAILABLE"));
     };
     script.async = true;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(browserKey)}&v=weekly&loading=async&callback=__cargomeshGoogleMapsReady`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(browserKey)}&v=weekly&language=en&region=PE&loading=async&callback=__cargomeshGoogleMapsReady`;
     script.onerror = () => finish(new Error("MAP_PROVIDER_UNAVAILABLE"));
     document.head.appendChild(script);
   }).catch((error: unknown) => {

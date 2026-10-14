@@ -1,4 +1,6 @@
-import type { Metadata } from "next";
-import { CarrierPortal } from "@/features/carrier-portal/portal";
-export const metadata: Metadata = {title:"CargoMesh V2 | Carrier portal",description:"Carrier catalog, commercial responses and operations using the V2 API."};
-export default function Page(){return <CarrierPortal/>;}
+import { redirect } from "next/navigation";
+
+// Retire the duplicate entry. The workspace keeps its server-side access guard.
+export default function Page() {
+  redirect("/v2-workspace#/fleet");
+}

@@ -8,5 +8,5 @@ export default async function LoginPage({searchParams}:{searchParams:Promise<{re
  const returnTo=safeLoginReturnTo((await searchParams).returnTo),destination=await authenticatedLoginDestination(returnTo);
  if(destination)redirect(destination);
  return <main className={styles.page}><section className={styles.brandPanel}><h1>CargoMesh V2</h1>
- <p>Accede al espacio de tu organización o transportista.</p></section><section className={styles.formPanel}><PasswordLogin returnTo={returnTo}/></section></main>;
+ <p>Access your shipper or carrier workspace.</p></section><section className={styles.formPanel}><PasswordLogin returnTo={returnTo}/></section></main>;
 }

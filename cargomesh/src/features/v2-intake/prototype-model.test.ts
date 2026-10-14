@@ -8,14 +8,20 @@ import { INTAKE_OPTIONS_FIXTURE } from "./fixtures/intake-options.fixture";
 import {
   EMPTY_PROTOTYPE_DRAFT,
   applyChatFieldToDraft,
+  applyChatFieldsToDraft,
   PROVISIONAL_PROTOTYPE_DRAFT,
   buildPrototypeExample,
+  filterIntakeFacilities,
   mapDraftToCreateFreightRequestV2Input,
+  mapDraftToRevisionInput,
+  requestToPrototypeDraft,
   toggleRequirement,
+  updatePrototypeDraftField,
   validatePrototypeDraft,
   validatePrototypeReview,
   validatePrototypeStep,
 } from "./prototype-model";
+import { ROAD_REQUEST_FIXTURE } from "./fixtures/contract-flow.fixture";
 
 test("multi-slot chat updates derive totals from the latest provisional values", () => {
   let draft = applyChatFieldToDraft(EMPTY_PROTOTYPE_DRAFT, "unitQuantity", "2");
@@ -23,6 +29,53 @@ test("multi-slot chat updates derive totals from the latest provisional values",
   draft = applyChatFieldToDraft(draft, "unitVolumePerUnitM3", "2.4");
   assert.equal(draft.totalWeightKg, "2400");
   assert.equal(draft.totalVolumeM3, "4.8");
+});
+
+test("chat correction and form edit share one draft without clearing unrelated fields", () => {
+  const options = getIntakeOptionsFixture().data;
+  const initial = buildPrototypeExample(options);
+  const corrected = applyChatFieldsToDraft(initial, [
+    { field: "unitQuantity", value: "12" },
+    { field: "originFacilityId", value: options.facilities[2].facilityId },
+  ]);
+  assert.equal(corrected.unitQuantity, "12");
+  assert.equal(corrected.totalWeightKg, String(12 * Number(initial.unitWeightPerUnitKg)));
+  assert.equal(corrected.totalVolumeM3, "28.8");
+  assert.equal(corrected.destinationFacilityId, initial.destinationFacilityId);
+  assert.equal(corrected.pickupContactEmail, initial.pickupContactEmail);
+  const fromForm = updatePrototypeDraftField(corrected, "cargoDescription", "Updated in the form");
+  assert.equal(fromForm.unitQuantity, "12");
+  assert.equal(fromForm.cargoDescription, "Updated in the form");
+});
+
+test("saved single-unit draft recovers into intake and revisions preserve unexposed fields", () => {
+  const options = getIntakeOptionsFixture().data;
+  const recovered = requestToPrototypeDraft(ROAD_REQUEST_FIXTURE);
+  assert.ok(recovered);
+  assert.equal(recovered.originFacilityId, ROAD_REQUEST_FIXTURE.origin.facilityId);
+  const changed = applyChatFieldsToDraft(recovered, [{ field: "unitQuantity", value: "12" }]);
+  const payload = mapDraftToRevisionInput(changed, options, ROAD_REQUEST_FIXTURE);
+  assert.equal(payload.cargoSpecification.units[0].quantity, 12);
+  assert.equal(payload.cargoSpecification.totalWeightKg, 12 * ROAD_REQUEST_FIXTURE.cargoSpecification.units[0].weightPerUnitKg);
+  assert.deepEqual(payload.acceptedModes, ROAD_REQUEST_FIXTURE.acceptedModes);
+  assert.equal(payload.contacts.recipient.name, ROAD_REQUEST_FIXTURE.contacts.recipient.name);
+  assert.equal(requestToPrototypeDraft({ ...ROAD_REQUEST_FIXTURE, cargoSpecification: { ...ROAD_REQUEST_FIXTURE.cargoSpecification, units: [ROAD_REQUEST_FIXTURE.cargoSpecification.units[0], ROAD_REQUEST_FIXTURE.cargoSpecification.units[0]] } }), null);
+});
+
+test("form unit inputs derive totals without requiring duplicate entry", () => {
+  let draft = updatePrototypeDraftField(EMPTY_PROTOTYPE_DRAFT, "unitQuantity", "3");
+  draft = updatePrototypeDraftField(draft, "unitWeightPerUnitKg", "250");
+  draft = updatePrototypeDraftField(draft, "unitVolumePerUnitM3", "1.5");
+  assert.equal(draft.totalWeightKg, "750");
+  assert.equal(draft.totalVolumeM3, "4.5");
+  assert.equal(updatePrototypeDraftField(draft, "unitQuantity", "").totalWeightKg, "");
+});
+
+test("facility search uses only catalog fields and excludes the opposite endpoint", () => {
+  const facilities = getIntakeOptionsFixture().data.facilities;
+  assert.deepEqual(filterIntakeFacilities(facilities, "arequipa").map((item) => item.code), [facilities[1].code]);
+  assert.equal(filterIntakeFacilities(facilities, "pe", facilities[0].facilityId).some((item) => item.facilityId === facilities[0].facilityId), false);
+  assert.equal(filterIntakeFacilities(facilities, "missing-place").length, 0);
 });
 
 test("the local HAC-27 options fixture covers every visible selector", () => {
@@ -207,5 +260,6 @@ test("the intake keeps provisional details in React memory and stores only the r
   assert.match(source, /sessionStorage\.setItem\(CHAT_REQUEST_SESSION_KEY, roundTrip\.data\.id\)/);
   assert.doesNotMatch(source, /sessionStorage\.setItem\([^,]+,\s*(?:draft|JSON\.stringify|history)/i);
   assert.match(source, /createFreightRequestV2\(payload/);
-  assert.match(source, /POST.*GET.*serviceability/);
+  assert.match(source, /getFreightRequestV2\(created\.id\)/);
+  assert.match(source, /getRoadServiceabilityV2\(roundTrip\.data\.id, roundTrip\.data\.draftVersion\)/);
 });
