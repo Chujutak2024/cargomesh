@@ -66,6 +66,19 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
     return () => synth.removeEventListener("voiceschanged", refresh);
   }, []);
 
+  useEffect(() => {
+    try { setSelectedVoiceURI(window.localStorage.getItem("cargomesh-voice-uri") ?? ""); }
+    catch { /* Voice preference is optional when browser storage is disabled. */ }
+  }, []);
+
+  function selectVoice(voiceURI: string) {
+    setSelectedVoiceURI(voiceURI);
+    try {
+      if (voiceURI) window.localStorage.setItem("cargomesh-voice-uri", voiceURI);
+      else window.localStorage.removeItem("cargomesh-voice-uri");
+    } catch { /* Playback still works without preference storage. */ }
+  }
+
   function finishTurn(instance: Recognition, transcript: string) {
     if (stopped.current || recognition.current !== instance) return;
     stopped.current = true;
@@ -214,5 +227,5 @@ export function useConversationVoice({ onTranscript, onSilence, responseText, la
   }
 
   return { state, message, speaking, start, stop, readResponse, stopResponse, finishProcessing, canRead: Boolean(responseText),
-    availableVoices: voicesForLanguage(availableVoices, language), selectedVoiceURI, setSelectedVoiceURI };
+    availableVoices: voicesForLanguage(availableVoices, language), selectedVoiceURI, setSelectedVoiceURI: selectVoice };
 }
