@@ -1,0 +1,5 @@
+.preview{margin:.5rem .75rem;color:#174940;font-size:.76rem}
+.preview button{border:1px solid #176455;background:#176455;color:white;border-radius:.55rem;padding:.55rem .8rem;font:inherit;font-weight:700;cursor:pointer}
+.preview .active{background:#a34035;border-color:#a34035}
+.preview p{margin:.4rem 0 0;line-height:1.4}
+.limit{color:#4e6964}
