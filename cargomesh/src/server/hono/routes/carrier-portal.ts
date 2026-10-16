@@ -48,3 +48,5 @@ carrierPortalRouter.get("/carrier-portal/carriers/:carrierId/routing/:kind",c=>i
  const actor=await requireAuthenticatedCarrier(c.req.param("carrierId")!);
  return c.json(await new WorkflowServiceV2(await workflowRepositoryV2()).readCarrierRouting(actor,c.req.param("kind"),c.req.query()));
 }));
+
+export {identity as carrierPortalIdentity};

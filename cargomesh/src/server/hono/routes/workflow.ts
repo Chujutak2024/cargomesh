@@ -39,6 +39,7 @@ const collections: [string, string, WorkflowActionV2 | null][] = [
   ["plans", "/freight/requests/:requestId/plans", "plans.create"],
   ["opportunities", "/freight/requests/:requestId/opportunities", "opportunities.create"],
   ["offers", "/freight/requests/:requestId/offers", null],
+  ["bookings", "/freight/requests/:requestId/bookings", null],
   ["ranking", "/freight/requests/:requestId/ranking", "ranking.create"],
   ["decisions", "/freight/requests/:requestId/decisions", "decisions.create"],
   ["bookings", "/bookings", "bookings.create"], ["holds", "/capacity/holds", "holds.create"],

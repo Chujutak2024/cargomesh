@@ -4,7 +4,7 @@ import { WorkflowRecordV2Schema } from "@/shared/schemas/v2/workflow";
 import { PortalApiError } from "./api";
 import type { PortalResource } from "./resources";
 
-export type PortalRecord = {id:string;version:number;status?:string;updatedAt:string;value?:unknown;data?:unknown;carrierId:string|null};
+export type PortalRecord = {id:string;version:number;status?:string;updatedAt:string;value?:unknown;data?:unknown;carrierId:string|null;serviceId?:string|null};
 export function parseRecords(resource:PortalResource,data:unknown,carrierId:string):PortalRecord[] {
  if(!Array.isArray(data)) throw new PortalApiError(502,"INVALID_RESPONSE");
  try {return data.map(raw=>{

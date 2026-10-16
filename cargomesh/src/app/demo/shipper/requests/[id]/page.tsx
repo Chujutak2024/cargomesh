@@ -13,5 +13,5 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
     if (error instanceof V2DraftError && error.httpStatus === 404) notFound();
     throw error;
   });
-  return <RequestWorkspace initialRequest={flow.request} initialWorkflow={flow.workflow as Record<string, WorkflowRecordV2[]>}/>;
+  return <RequestWorkspace commercialRefreshEnabled={false} initialRequest={flow.request} initialWorkflow={flow.workflow as Record<string, WorkflowRecordV2[]>}/>;
 }

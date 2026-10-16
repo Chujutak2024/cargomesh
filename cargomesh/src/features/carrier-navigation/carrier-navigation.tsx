@@ -25,8 +25,8 @@ export function CarrierBreadcrumb({ currentLabel, locale = 'en', workspaceHref =
   </nav>;
 }
 
-export function CarrierNavigation({ children, current, locale, workspaceHref = '/v2-workspace', towerHref, editRequest = false, previewEnabled = true, sourceLabel }: {
-  children: ReactNode; current: string; locale: 'es' | 'en'; workspaceHref?: string; towerHref: string; editRequest?: boolean; previewEnabled?: boolean; sourceLabel: string;
+export function CarrierNavigation({ children, current, locale, workspaceHref = '/v2-workspace', towerHref, editRequest = false, previewEnabled = true, demoMode = false, sourceLabel }: {
+  children: ReactNode; current: string; locale: 'es' | 'en'; workspaceHref?: string; towerHref: string; editRequest?: boolean; previewEnabled?: boolean; demoMode?: boolean; sourceLabel: string;
 }) {
   const [collapsed, setCollapsed] = useState(false), [open, setOpen] = useState(false), [mobile, setMobile] = useState(false), [hash, setHash] = useState('');
   const sidebarId = useId(), titleId = useId();
@@ -62,8 +62,9 @@ export function CarrierNavigation({ children, current, locale, workspaceHref = '
     document.addEventListener('keydown', keydown);
     return () => { releaseScroll(); document.removeEventListener('keydown', keydown); };
   }, [open, mobile]);
-  const groups = carrierNavigation({ locale, workspaceHref, towerHref, editRequest, previewEnabled });
-  const active = carrierActiveItem(current === 'route-lab' ? 'tower' : current, hash);
+  const groups = carrierNavigation({ locale, workspaceHref, towerHref, editRequest, previewEnabled, demoMode });
+  const rawActive = carrierActiveItem(current === 'route-lab' ? 'tower' : current, hash);
+  const active = !demoMode && rawActive === 'register' ? 'fleet' : rawActive;
   const expanded = mobile ? open : !collapsed;
   return <NavigationContext.Provider value={{ expanded, mobile, sidebarId, locale, toggle: () => {
     if (mobile) { trigger.current = document.activeElement as HTMLElement; setOpen(value => !value); }

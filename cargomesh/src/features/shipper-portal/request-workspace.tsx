@@ -2,7 +2,7 @@
 
 import { AlertTriangle, CalendarClock, CheckCircle2, Edit3, FileCheck2, Loader2, MapPin, PackageCheck, RefreshCw, Send, ShieldCheck, Truck } from "lucide-react";
 import {WorkspaceLink as Link} from "@/features/workspace-mode/workspace-link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Dialog, Input, Select, Textarea } from "@/components/ui";
 import { EquipmentCodeV2Schema } from "@/shared/schemas/v2/freight-request";
 import { useLocale } from "@/features/i18n/locale-provider";
@@ -17,6 +17,7 @@ import styles from "./shipper-portal.module.css";
 import { LocationResolver } from "./location-resolver";
 import { CommercialPanel } from "./commercial-panel";
 import { bookingsStillNeeded, optionAvailability } from "./commercial-view";
+import {refreshRequestCommercial} from './shipper-commercial-client';
 import { OutcomePanel } from "./outcome-panel";
 
 type Workflow = Record<string, WorkflowRecordV2[]>;
@@ -26,16 +27,16 @@ type EditState = {
   description: string; equipment: string; quantity: string; weightPerUnitKg: string; volumePerUnitM3: string;
 };
 
-export function RequestWorkspace({ initialRequest, initialWorkflow }: {
+export function RequestWorkspace({ initialRequest, initialWorkflow, commercialRefreshEnabled = true }: {
   initialRequest: FreightRequestV2Data;
-  initialWorkflow: Workflow;
+  initialWorkflow: Workflow; commercialRefreshEnabled?:boolean;
 }) {
   const { locale, localeTag, t } = useLocale();
   const [request, setRequest] = useState(initialRequest);
   const [workflow, setWorkflow] = useState(initialWorkflow);
   const [evaluation, setEvaluation] = useState<RoadServiceabilityEvaluationV2Data | null>(null);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
-  const [phase, setPhase] = useState<"idle" | "evaluating" | "saving" | "submitting" | "deciding" | "booking">("idle");
+  const [phase, setPhase] = useState<"idle" | "evaluating" | "saving" | "submitting" | "deciding" | "booking" | "refreshing">("idle");
   const [error, setError] = useState<ShipperApiError | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [decisionOpen, setDecisionOpen] = useState(false);
@@ -57,6 +58,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
   const incidents = (workflow.incidents ?? []).filter((item): item is Extract<WorkflowRecordV2, { kind: "incidents" }> => item.kind === "incidents");
 
   async function evaluate(next = request) {
+    if(refreshBusy.current)return;
     setPhase("evaluating"); setError(null); setEvaluation(null); setSelectedCandidateId(null);
     try {
       const response = await getRoadServiceabilityV2(next.id, next.draftVersion);
@@ -67,6 +69,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
   }
 
   async function saveRevision() {
+    if(phase!=="idle"||refreshBusy.current)return;
     const placeChanged = edit.originLabel !== request.origin.label || edit.originCity !== request.origin.city
       || edit.destinationLabel !== request.destination.label || edit.destinationCity !== request.destination.city;
     if (placeChanged && !placeConfirmed) {
@@ -97,6 +100,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
   }
 
   async function submit() {
+    if(phase!=="idle"||refreshBusy.current)return;
     setPhase("submitting"); setError(null);
     try { const next = await submitFreightRequest(request.id, request.draftVersion); setRequest(next); setDecisionOpen(false); }
     catch (caught) { setError(toShipperError(caught)); }
@@ -121,7 +125,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
   }
 
   async function book() {
-    if (!decision || !bookingConsent || bookingInFlight.current) return;
+    if (phase!=="idle" || !decision || !bookingConsent || bookingInFlight.current) return;
     const pending = bookingsStillNeeded(decision.data.selectedOfferIds, activeBookings, decision.id);
     if (!pending.length) { setBookingOpen(false); return; }
     if (!pending.every((id) => { const offer = offers.find((item) => item.id === id); return offer && optionAvailability({ offerIds: [id] } as NonNullable<typeof selectedOption>, offers).available; })) {
@@ -143,11 +147,21 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
     finally { bookingInFlight.current = false; setPhase("idle"); }
   }
 
+  const commercialRefresh=useRef<AbortController|null>(null),refreshBusy=useRef(false);
+  useEffect(()=>()=>commercialRefresh.current?.abort(),[]);
+  async function refreshCommercial(){
+    if(phase!=="idle"||refreshBusy.current||!commercialRefreshEnabled)return;
+    refreshBusy.current=true;const controller=new AbortController();commercialRefresh.current=controller;
+    setPhase("refreshing");setError(null);setDecisionOpen(false);setBookingOpen(false);setBookingConsent(false);
+    try{const fresh=await refreshRequestCommercial(request.id,request.organizationId,controller.signal);if(controller.signal.aborted)return;setRequest(fresh.request);setWorkflow(old=>({...old,...fresh.workflow}));setSelectedOptionIndex(0);setDecision(latestRecord((fresh.workflow.decisions??[]).filter((r):r is Extract<WorkflowRecordV2,{kind:"decisions"}>=>r.kind==="decisions"&&r.data.status==="SELECTED")));}
+    catch(error){if(!controller.signal.aborted)setError(toShipperError(error));}
+    finally{refreshBusy.current=false;if(!controller.signal.aborted)setPhase("idle");}
+  }
   const mapProps = evaluation ? mapServiceabilityToMapViewProps(request, evaluation, selectedCandidateId, setSelectedCandidateId) : null;
   return <div className={styles.page}>
     <header className={styles.hero}><div className={styles.heroCopy}><h1>{request.referenceCode}</h1><p>{request.origin.city} → {request.destination.city}</p></div>
-      <div className={styles.heroActions}>{request.status === "DRAFT" ? <Button variant="secondary" onClick={() => setEditOpen(true)}><Edit3 size={16}/>{t("Editar borrador", "Edit draft")}</Button> : null}
-        <Button isLoading={phase === "evaluating"} loadingLabel={t("Evaluando…", "Evaluating…")} onClick={() => void evaluate()}><RefreshCw size={16}/>{t("Reevaluar", "Reevaluate")}</Button></div></header>
+      <div className={styles.heroActions}>{commercialRefreshEnabled?<Button variant="secondary" disabled={phase!=="idle"} isLoading={phase==="refreshing"} onClick={()=>void refreshCommercial()}><RefreshCw size={16}/>{t("Actualizar ofertas y reservas","Refresh offers & bookings")}</Button>:null}{request.status === "DRAFT" ? <Button variant="secondary" disabled={phase!=="idle"} onClick={() => setEditOpen(true)}><Edit3 size={16}/>{t("Editar borrador", "Edit draft")}</Button> : null}
+        <Button disabled={phase!=="idle"} isLoading={phase === "evaluating"} loadingLabel={t("Evaluando…", "Evaluating…")} onClick={() => void evaluate()}><RefreshCw size={16}/>{t("Reevaluar", "Reevaluate")}</Button></div></header>
 
     {error ? <ErrorNotice error={error} t={t} /> : null}
     <section className={styles.panel}><div className={styles.summary}>
@@ -161,18 +175,18 @@ export function RequestWorkspace({ initialRequest, initialWorkflow }: {
       <section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Factibilidad y mapa", "Serviceability and map")}</h2></div><MapPin size={18}/></header>
         {phase === "evaluating" ? <div className={styles.empty} role="status"><Loader2 className="animate-spin"/><strong>{t("Consultando evaluación vigente…", "Loading current evaluation…")}</strong></div>
           : evaluation ? <div className={styles.section}><CandidateResults evaluation={evaluation} selectedCandidateId={selectedCandidateId} onSelectCandidate={setSelectedCandidateId} t={t}/>{mapProps ? <RoadCandidateMapBoundary props={mapProps} t={t}/> : null}</div>
-          : <div className={styles.empty}><span className={styles.emptyIcon}><MapPin size={22}/></span><strong>{t("Evaluación aún no cargada", "Evaluation not loaded yet")}</strong><p>{t("Reevaluar consulta el servicio V2; no usa una ruta anterior mientras carga.", "Reevaluate queries the V2 service; it does not keep an old route while loading.")}</p><Button onClick={() => void evaluate()}>{t("Evaluar ahora", "Evaluate now")}</Button></div>}
+          : <div className={styles.empty}><span className={styles.emptyIcon}><MapPin size={22}/></span><strong>{t("Evaluación aún no cargada", "Evaluation not loaded yet")}</strong><p>{t("Reevaluar consulta el servicio V2; no usa una ruta anterior mientras carga.", "Reevaluate queries the V2 service; it does not keep an old route while loading.")}</p><Button disabled={phase!=="idle"} onClick={() => void evaluate()}>{t("Evaluar ahora", "Evaluate now")}</Button></div>}
       </section>
       <CommercialPanel offers={offers} ranking={ranking} selectedOptionIndex={selectedOptionIndex} setSelectedOptionIndex={setSelectedOptionIndex}
-        decision={decision} bookings={activeBookings} onDecide={() => setDecisionOpen(true)} onBook={() => { setBookingConsent(false); setBookingOpen(true); }} t={t} localeTag={localeTag}/>
+        decision={decision} bookings={activeBookings} busy={phase!=="idle"} onDecide={() => {if(phase==="idle")setDecisionOpen(true);}} onBook={() => { if(phase!=="idle")return; setBookingConsent(false); setBookingOpen(true); }} t={t} localeTag={localeTag}/>
     </div>
       <aside className={styles.page}><section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Siguiente acción", "Next action")}</h2></div><Send size={18}/></header><div className={styles.section}>
         {request.status === "FAILED" ? <p className={styles.notice} data-tone="danger"><AlertTriangle size={17}/>{t("La solicitud falló. Revisa la trazabilidad y los datos persistidos; corrige mediante una revisión permitida o crea una nueva solicitud. No se reintenta en silencio.", "The request failed. Review traceability and persisted data; correct it through an allowed revision or create a new request. It is never retried silently.")}</p> : null}
         {request.status === "CANCELLED" ? <p className={styles.notice} data-tone="warning"><AlertTriangle size={17}/>{t("Esta solicitud fue cancelada y no puede continuar a ofertas o booking. Crea una solicitud nueva si la operación sigue vigente.", "This request was cancelled and cannot continue to offers or booking. Create a new request if the operation is still needed.")}</p> : null}
-        {request.status === "DRAFT" ? <><p className={styles.notice} data-tone="warning"><AlertTriangle size={17}/>{t("Enviar bloquea la versión esperada. Un conflicto 409 debe recargarse, no ocultarse.", "Submit uses the expected version. A 409 conflict must be reloaded, not hidden.")}</p><Button isLoading={phase === "submitting"} onClick={() => void submit()}><Send size={16}/>{t("Enviar solicitud", "Submit request")}</Button></> : null}
+        {request.status === "DRAFT" ? <><p className={styles.notice} data-tone="warning"><AlertTriangle size={17}/>{t("Enviar bloquea la versión esperada. Un conflicto 409 debe recargarse, no ocultarse.", "Submit uses the expected version. A 409 conflict must be reloaded, not hidden.")}</p><Button disabled={phase!=="idle"} isLoading={phase === "submitting"} onClick={() => void submit()}><Send size={16}/>{t("Enviar solicitud", "Submit request")}</Button></> : null}
         {request.status !== "DRAFT" && !ranking ? <p className={styles.notice}><CalendarClock size={17}/>{t("La solicitud está enviada. Las alternativas y ofertas aparecerán cuando el backend las persista.", "The request is submitted. Alternatives and offers appear when the backend persists them.")}</p> : null}
-        {ranking && !decision ? <Button onClick={() => setDecisionOpen(true)}><FileCheck2 size={16}/>{t("Revisar selección", "Review selection")}</Button> : null}
-        {decision && bookingsStillNeeded(decision.data.selectedOfferIds, activeBookings, decision.id).length ? <Button onClick={() => { setBookingConsent(false); setBookingOpen(true); }}><PackageCheck size={16}/>{t("Autorizar booking", "Authorize booking")}</Button> : null}
+        {ranking && !decision ? <Button disabled={phase!=="idle"} onClick={() => setDecisionOpen(true)}><FileCheck2 size={16}/>{t("Revisar selección", "Review selection")}</Button> : null}
+        {decision && bookingsStillNeeded(decision.data.selectedOfferIds, activeBookings, decision.id).length ? <Button disabled={phase!=="idle"} onClick={() => { setBookingConsent(false); setBookingOpen(true); }}><PackageCheck size={16}/>{t("Autorizar booking", "Authorize booking")}</Button> : null}
         {activeBookings.length ? <Link className={styles.primary} href="/bookings"><Truck size={16}/>{t("Ver reservas", "View bookings")}</Link> : null}
         <Link className={styles.secondary} href="/freight-request/new?assistant=open">{t("Abrir asistente", "Open assistant")}</Link>
       </div></section>

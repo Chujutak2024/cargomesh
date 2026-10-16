@@ -8,6 +8,7 @@ import { hasSessionOrigin } from "@/server/auth/session-origin";
 
 export const carrierWorkflowRouter = new Hono();
 async function authorized(c: Context, operation: (actor: WorkflowActorV2, service: WorkflowServiceV2) => Promise<Response>) {
+  c.header("Cache-Control","no-store, private");c.header("Vary","Cookie, Authorization");
   const header = c.req.header("Authorization");
   const token = header?.match(/^Bearer ([^\s]+)$/i)?.[1];
   if (header !== undefined && !token) return v2Error(c, new V2DraftError("UNAUTHORIZED", "Authentication required.", 401));

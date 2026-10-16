@@ -13,7 +13,7 @@ export function canReviseCarrierRecord(role:CarrierPortalRole,resource:PortalRes
 export function canCarrierAction(role:CarrierPortalRole,action:string,status:string){
  if(role==='DISPATCHER'&&!['executions','incidents','asset-events','consolidations'].some(prefix=>action.startsWith(prefix+'.')))return false;
  const states:Record<string,string[]>={
- 'opportunities.respond':['SENT','ACCEPTED'], 'offers.create':['SENT','ACCEPTED'],
+ 'opportunities.respond':['SENT','ACCEPTED'], 'offers.create':['SENT','ACCEPTED','OFFERED'],
  'offers.withdraw':['RECEIVED'], 'offers.supersede':['RECEIVED'],
  'bookings.confirm':['AUTHORIZED'], 'bookings.cancel':['AUTHORIZED','CONFIRMED'],
  'holds.confirm':['HELD'], 'holds.release':['HELD','CONFIRMED'],

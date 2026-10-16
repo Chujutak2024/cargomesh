@@ -17,7 +17,7 @@ test('nested fleet entries and local review remain addressable',()=>{
  assert.equal(carrierActiveItem('fleet','#/fleet/service/carriers'),'sites');
  assert.equal(carrierActiveItem('fleet','#/fleet/register'),'register');
  assert.equal(carrierActiveItem('fleet','#/fleet/vehicle/CM-267'),'fleet');
- const groups=carrierNavigation({locale:'en',workspaceHref:CARRIER_WORKSPACE,towerHref:CARRIER_TOWER,editRequest:true});
+ const groups=carrierNavigation({locale:'en',workspaceHref:CARRIER_WORKSPACE,towerHref:CARRIER_TOWER,editRequest:true,demoMode:true});
  assert.equal(groups.flatMap(g=>g.items).find(i=>i.id==='desk')?.href,'/v2-workspace#/desk/review');
 });
 function documentStub(){

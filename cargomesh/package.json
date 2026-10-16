@@ -33,7 +33,10 @@
     "test:road-routing": "node --conditions=react-server --import tsx --test src/server/maps/road-routing.test.ts src/server/maps/local-road-preview.test.ts src/features/v2-workspace/road-locations.test.ts src/features/v2-road-map/road-map-model.test.ts",
     "dev:local": "node scripts/dev-local.mjs",
     "test:carrier-entry": "node --conditions=react-server --import tsx --test src/server/auth/local-login-defaults.test.ts src/server/auth/login-access.test.ts src/shared/schemas/v2/carrier-entry.test.ts src/features/carrier-portal/permissions.test.ts src/server/auth/session-origin.test.ts src/features/auth/password-login.test.ts",
-    "test:carrier-navigation": "node --conditions=react-server --import tsx --test src/features/carrier-navigation/navigation.test.ts"
+    "test:carrier-navigation": "node --conditions=react-server --import tsx --test src/features/carrier-navigation/navigation.test.ts",
+    "test:connected-fleet": "node --conditions=react-server --import tsx --test src/features/carrier-portal/connected-fleet.test.ts src/features/carrier-portal/fleet-model.test.ts src/features/carrier-portal/api.test.ts src/features/carrier-portal/permissions.test.ts src/features/carrier-portal/carrier-workspace-model.test.ts",
+    "test:carrier-operations": "node --conditions=react-server --import tsx --test src/server/modules/fleet/application/availability-service.test.ts src/server/modules/depot-operations/application/depot-service.test.ts src/server/modules/fleet/domain/assignment-policy.test.ts src/shared/schemas/v2/crew.test.ts src/server/modules/fleet/application/operational-assessment-service.test.ts",
+    "test:carrier-commercial": "node --conditions=react-server --import tsx --test src/features/carrier-portal/commercial-model.test.ts src/features/carrier-portal/commercial-client.test.ts src/features/shipper-portal/shipper-commercial-client.test.ts src/features/carrier-portal/permissions.test.ts src/features/shipper-portal/commercial-view.test.ts src/server/modules/workflow/application/workflow-service.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1137.0",
