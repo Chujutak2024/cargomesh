@@ -96,6 +96,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const [history, setHistory] = useState<Message[]>([{ speaker: "assistant", text: GREETING_EN }]);
   const [announcement, setAnnouncement] = useState("");
   const [sendNotice, setSendNotice] = useState("");
+  const [lastVoiceInput, setLastVoiceInput] = useState("");
   const [failedMessage, setFailedMessage] = useState("");
   const [interpretationBusy, setInterpretationBusy] = useState(false);
   const [workflowBusy, setWorkflowBusy] = useState(false);
@@ -460,10 +461,19 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
             : !novaVoiceEnabled && <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing" || voice.speaking || busy || interpretationBusy || workflowBusy} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>}
           <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || workflowBusy}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
-        {novaVoiceEnabled && <NovaVoicePreview preview={optionsSource === "fixture"} onTurn={(update) => {
-          setHistory((current) => applyVoiceTranscript(current, update));
-          if (update.final && update.role === "assistant") setAnnouncement(update.text);
-        }} />}
+        {novaVoiceEnabled && <>
+          <NovaVoicePreview preview={optionsSource === "fixture"} onTurn={(update) => {
+            setHistory((current) => applyVoiceTranscript(current, update));
+            if (update.final && update.role === "assistant") setAnnouncement(update.text);
+            if (update.final && update.role === "user") setLastVoiceInput(update.text);
+          }} />
+          {lastVoiceInput && <button type="button" className={styles.retry}
+            disabled={Boolean(text.trim()) || busy || interpretationBusy || workflowBusy}
+            title={text.trim() ? "Clear the current message first" : undefined}
+            onClick={() => { setText(lastVoiceInput); setLastVoiceInput(""); inputRef.current?.focus(); }}>
+            Use last spoken message in request chat
+          </button>}
+        </>}
         {!novaVoiceEnabled && <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button><label>Voice <select aria-label="Voice for spoken replies" value={voice.selectedVoiceURI} onChange={(event) => voice.setSelectedVoiceURI(event.target.value)}><option value="">Automatic · Zira preferred</option>{voice.availableVoices.map((option) => <option key={option.voiceURI} value={option.voiceURI}>{option.name} ({option.lang}){option.localService ? " · device" : ""}</option>)}</select></label><label>Pace <select aria-label="Voice pace" value={voiceRate} onChange={(event) => setVoiceRate(Number(event.target.value))}><option value={0.88}>Relaxed</option><option value={0.96}>Natural</option><option value={1.06}>Brisk</option></select></label><button type="button" onClick={() => voice.readResponse("Hello, I'm CargoMesh. Tell me what you need to ship, and I'll help you step by step.")} disabled={voice.speaking}>Test voice</button></div>}
       </div>
     </section>}

@@ -1,6 +1,6 @@
 # Nova voice: shared staging deployment
 
-The browser voice pilot can run on a shared HTTPS staging site after the separate Python gateway is deployed. This is a deployment recipe, not evidence that the gateway is live. Nova speech is guidance only: typed chat remains the workflow that edits or saves freight requests. Alexa+ is a separate channel.
+The browser voice pilot can run on a shared HTTPS staging site after the separate Python gateway is deployed. This is a deployment recipe, not evidence that the gateway is live. Nova speech is guidance only. The user can explicitly copy the last recognized spoken message into the editable request composer and send it through the existing authenticated chat API; typed chat remains the workflow that edits or saves freight requests. Alexa+ is a separate channel.
 
 ## Components
 
