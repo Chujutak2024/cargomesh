@@ -7,6 +7,8 @@ import type { PrototypeStep, V2IntakePrototypeDraft } from "./prototype-model";
 import { applyChatFieldsToDraft, validatePrototypeReview } from "./prototype-model";
 import { CONVERSATION_FIELDS, choicesForField, matchingConversationChoices, questionForField, resolveConversationSuggestions, type ConversationField, type GuidedConversationField } from "./conversation-fields";
 import { useConversationVoice } from "@/features/v2-conversation-prep/voice-controls";
+import { NovaVoicePreview } from "@/features/v2-conversation-prep/nova-voice-preview";
+import { applyVoiceTranscript, type VoiceTurn } from "@/features/v2-conversation-prep/voice-transcript";
 import { InterpretationResponseSchema, guardExplicitCorrection, helpTopic, isHelpFollowUp, type Interpretation } from "@/features/v2-conversation-prep/interpretation";
 import { conversationContext } from "./conversation-context";
 import { serviceabilityReply } from "./serviceability-reply";
@@ -15,10 +17,12 @@ import { readRequestWorkflow } from "./workflow-chat-client";
 import { summarizeWorkflow } from "./workflow-chat-summary";
 import { workflowChatIntent } from "./workflow-chat-intent";
 import { chatSendGate } from "./chat-send-gate";
+import { contextualHelpReply } from "./contextual-help";
+import { canApproveDraftReview, proposeDraftReview, type DraftReview } from "./draft-review";
 import styles from "./conversation-chat.module.css";
 import { useLocale } from "@/features/i18n/locale-provider";
 
-type Message = { speaker: "assistant" | "user"; text: string };
+type Message = VoiceTurn;
 type Choice = { value: string; label: string; field: ConversationField };
 const GREETING_EN = "Hi, I'm CargoMesh. Tell me what you need to ship, and I'll help you prepare a request and review preliminary ROAD options.";
 const unavailable = "I cannot quote or book transportation here yet. The ROAD check is preliminary; it is neither an offer nor a reservation.";
@@ -42,6 +46,28 @@ function locationName(id: string, options: IntakeOptionsData) {
 
 function draftSummary(draft: V2IntakePrototypeDraft, options: IntakeOptionsData, request: FreightRequestV2Data | null) {
   return `Review the structured details below. ${locationName(draft.originFacilityId, options)} → ${locationName(draft.destinationFacilityId, options)}; ${draft.unitQuantity} unit(s) of ${draft.categoryCode.toLowerCase()}. ${request ? `Saving will revise ${request.referenceCode} from version ${request.draftVersion}.` : "Saving will create a DRAFT for your authorized organization."} Confirm explicitly or tell me what to change.`;
+}
+
+function reviewRows(draft: V2IntakePrototypeDraft, options: IntakeOptionsData) {
+  const labels: Partial<Record<keyof V2IntakePrototypeDraft, string>> = {
+    originFacilityId: "Pickup facility", destinationFacilityId: "Delivery facility", categoryCode: "Cargo category",
+    packaging: "Packaging", cargoDescription: "Cargo description", unitQuantity: "Quantity",
+    unitWeightPerUnitKg: "Weight per unit (kg)", unitVolumePerUnitM3: "Volume per unit (m³)",
+    totalWeightKg: "Total weight (kg)", totalVolumeM3: "Total volume (m³)",
+    unitLengthCm: "Unit length (cm)", unitWidthCm: "Unit width (cm)", unitHeightCm: "Unit height (cm)",
+    pickupWindowStartsAt: "Pickup from", pickupWindowEndsAt: "Pickup until",
+    deliveryWindowStartsAt: "Delivery from", deliveryWindowEndsAt: "Delivery until",
+    requiredEquipment: "Required equipment", pickupContactName: "Pickup contact",
+    pickupContactPhoneE164: "Pickup phone", pickupContactEmail: "Pickup email",
+    recipientContactName: "Recipient contact", recipientContactPhoneE164: "Recipient phone",
+    recipientContactEmail: "Recipient email", temperatureMinCelsius: "Minimum temperature (°C)",
+    temperatureMaxCelsius: "Maximum temperature (°C)", requirements: "Requirements",
+    divisible: "Cargo divisible", unitIndivisible: "Unit indivisible", unitStackable: "Unit stackable",
+  };
+  return (Object.entries(draft) as Array<[keyof V2IntakePrototypeDraft, V2IntakePrototypeDraft[keyof V2IntakePrototypeDraft]]>)
+    .filter(([field, value]) => field !== "unitPackageType" && (typeof value === "boolean" || (Array.isArray(value) ? value.length > 0 : Boolean(String(value).trim()))))
+    .map(([field, value]) => ({ label: labels[field] ?? field, value: field === "originFacilityId" || field === "destinationFacilityId"
+      ? locationName(String(value), options) : Array.isArray(value) ? value.join(", ") : typeof value === "boolean" ? value ? "Yes" : "No" : String(value) }));
 }
 
 export function ConversationChat({ draft, options, optionsSource = "api", request, evaluation, error = null, draftDirty = false, busy, presentation = "floating", canRevise = false, onFields, onSave, onRead, onEvaluate, onEdit, onReload, onStartOver }: {
@@ -70,14 +96,16 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const [history, setHistory] = useState<Message[]>([{ speaker: "assistant", text: GREETING_EN }]);
   const [announcement, setAnnouncement] = useState("");
   const [sendNotice, setSendNotice] = useState("");
+  const [lastVoiceInput, setLastVoiceInput] = useState("");
   const [failedMessage, setFailedMessage] = useState("");
   const [interpretationBusy, setInterpretationBusy] = useState(false);
   const [workflowBusy, setWorkflowBusy] = useState(false);
+  const novaVoiceEnabled = process.env.NEXT_PUBLIC_CARGOMESH_NOVA_VOICE_PREVIEW === "true";
   const [audioReplies, setAudioReplies] = useState(true);
   const voiceLanguage = locale === "es" ? "es-PE" as const : "en-US" as const;
   const [voiceRate, setVoiceRate] = useState(0.96);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
-  const confirmationRef = useRef<{ fingerprint: string; requestId: string | null; version: number | null } | null>(null);
+  const confirmationRef = useRef<{ review: DraftReview; requestId: string | null; version: number | null } | null>(null);
   const [choices, setChoices] = useState<Choice[]>([]);
   const [viewport, setViewport] = useState<{ height: number; keyboardInset: number } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -116,7 +144,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   useEffect(() => {
     const index = history.length - 1;
     const latest = history[index];
-    if (!audioReplies || !latest || latest.speaker !== "assistant" || index <= lastSpokenMessage.current || latest.text.endsWith("…") || busy || interpretationBusy) return;
+    if (novaVoiceEnabled || !audioReplies || !latest || latest.speaker !== "assistant" || index <= lastSpokenMessage.current || latest.text.endsWith("…") || busy || interpretationBusy) return;
     lastSpokenMessage.current = index;
     voice.finishProcessing();
     voice.readResponse(latest.text);
@@ -124,7 +152,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   useEffect(() => { if (open && presentation === "floating") inputRef.current?.focus(); }, [open, presentation]);
   useEffect(() => {
     const confirmation = confirmationRef.current;
-    if (awaitingConfirmation && confirmation && (confirmation.fingerprint !== JSON.stringify(draft)
+    if (awaitingConfirmation && confirmation && (!canApproveDraftReview(confirmation.review, draft)
       || confirmation.requestId !== (request?.id ?? null) || confirmation.version !== (request?.draftVersion ?? null))) {
       confirmationRef.current = null;
       setAwaitingConfirmation(false);
@@ -202,7 +230,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       add(user, "This version is already saved. Tell me what to correct, or use the form; I will ask for confirmation before saving a new revision.");
       return;
     }
-    confirmationRef.current = { fingerprint: JSON.stringify(nextDraft), requestId: request?.id ?? null, version: request?.draftVersion ?? null };
+    confirmationRef.current = { review: proposeDraftReview(nextDraft), requestId: request?.id ?? null, version: request?.draftVersion ?? null };
     setAwaitingConfirmation(true);
     add(user, draftSummary(nextDraft, options, request));
   }
@@ -215,7 +243,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       return;
     }
     const confirmation = confirmationRef.current;
-    if (!confirmation || confirmation.fingerprint !== JSON.stringify(draft)
+    if (!confirmation || !canApproveDraftReview(confirmation.review, draft)
       || confirmation.requestId !== (request?.id ?? null) || confirmation.version !== (request?.draftVersion ?? null)
       || !validatePrototypeReview(draft).valid || (request && (!canRevise || request.status !== "DRAFT"))) {
       add(user, "The draft changed, is incomplete, or cannot be revised here. Review it again before saving.");
@@ -282,12 +310,23 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       add(value, "Nothing was saved. Tell me what to correct, for example: “change the pickup to Lima.”");
       return;
     }
+    if (awaitingConfirmation) {
+      confirmationRef.current = null;
+      setAwaitingConfirmation(false);
+    }
     setInterpretationBusy(true);
     try {
       const { interpretation: received, mode } = await interpret(value);
       const proposal = guardExplicitCorrection(value, nextField, received);
       if (proposal.intent === "PRICE" || proposal.intent === "BOOKING") { add(value, unavailable); return; }
-      if (proposal.intent === "HELP") { if (!isHelpFollowUp(value)) previousHelpTopic.current = helpTopic(value); add(value, englishAcknowledgment(proposal.acknowledgment) ?? "Tell me the pickup and delivery locations, cargo and dates. I will ask only for missing details, and you can correct them before saving."); return; }
+      if (proposal.intent === "HELP") {
+        if (!isHelpFollowUp(value)) previousHelpTopic.current = helpTopic(value);
+        const guided = contextualHelpReply(draft, options, nextField, value);
+        const modelReply = mode === "BEDROCK" ? englishAcknowledgment(proposal.acknowledgment) : undefined;
+        const explanatoryReply = englishAcknowledgment(proposal.acknowledgment);
+        add(value, modelReply ?? (/\b(?:services|offer|available|selection|compare|what is|what can|para qu[eé]|servicios|escoger|comparar)\b/i.test(value) ? explanatoryReply : undefined) ?? guided ?? explanatoryReply ?? "Tell me what you need to ship, and I'll guide you through the request.");
+        return;
+      }
       if (proposal.intent === "START_OVER") {
         onStartOver?.();
         failedAttempts.current = 0;
@@ -355,8 +394,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       if (!accepted.size) {
         if (proposal.intent === "CORRECT" && proposal.acknowledgment) { add(value, proposal.acknowledgment); return; }
         failedAttempts.current = Math.min(3, failedAttempts.current + 1);
-        if (mode === "DETERMINISTIC" && optionsSource !== "fixture") {
-          add(value, "The conversation service is unavailable right now. Your provisional details remain here; you can provide a specific detail or continue in the form.");
+        if (mode === "DETERMINISTIC" && optionsSource !== "fixture" && /\b(?:help|how|what|can you|tell me)\b/i.test(value)) {
+          add(value, contextualHelpReply(draft, options, nextField, value) ?? `I can help you prepare a request. ${ask(nextField ?? "originFacilityId")}`);
           return;
         }
         if (mode === "BEDROCK" && englishAcknowledgment(proposal.acknowledgment)) {
@@ -372,7 +411,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       setAwaitingConfirmation(false);
       confirmationRef.current = null;
       const remaining = missingField(projected);
-      const preface = englishAcknowledgment(proposal.acknowledgment) ?? "Got it.";
+      const preface = englishAcknowledgment(proposal.acknowledgment) ?? `I have ${[...accepted].map((field) => field === "originFacilityId" ? `pickup at ${locationName(projected.originFacilityId, options)}` : field === "destinationFacilityId" ? `delivery at ${locationName(projected.destinationFacilityId, options)}` : field === "unitQuantity" ? `${projected.unitQuantity} unit(s)` : field === "cargoDescription" ? `cargo described as ${projected.cargoDescription}` : field === "categoryCode" ? `${projected.categoryCode.toLowerCase()} cargo` : field === "packaging" ? `${projected.packaging.toLowerCase()} packaging` : "that detail").join(" and ")}.`;
       const changed = proposal.intent === "CORRECT" ? ` Updated ${[...accepted].map((field) => field === "originFacilityId" ? "pickup" : field === "destinationFacilityId" ? "delivery" : field).join(", ")}.` : "";
       if (remaining) add(value, `${preface}${changed} ${ask(remaining)}`);
       else {
@@ -398,10 +437,9 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
           {history.map((message, index) => <div key={index} className={message.speaker === "user" ? styles.userRow : styles.assistantRow}><p className={message.speaker === "user" ? styles.user : styles.assistant}><span className={styles.speaker}>{message.speaker === "user" ? "You" : "CargoMesh"}</span>{message.text}</p></div>)}
         </div>
         <div className={styles.srOnly} role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
-        {!awaitingConfirmation && !interpretationBusy && nextField && !history.at(-1)?.text.includes(ask(nextField)) && !/[?？]\s*$/.test(history.at(-1)?.text ?? "") && <p className={styles.nextQuestion}>{ask(nextField)}</p>}
         {choices.length > 0 && <div className={styles.choiceList} aria-label="Confirm a location">{choices.map((choice) => <button key={choice.value} type="button" onClick={() => { const field = { field: choice.field, value: choice.value }; onFields([field]); setChoices([]); add(null, `Confirmed ${choice.label}. ${ask(missingField(applyChatFieldsToDraft(draft, [field])) ?? "categoryCode")}`); }}>{choice.label}</button>)}</div>}
         {!awaitingConfirmation && !busy && (!request || draftDirty) && <button type="button" className={styles.suggestion} onClick={() => prepareConfirmation(draft)}>{request ? t("Revisar cambios antes de guardar", "Review changes before saving") : t("Revisar borrador antes de crear", "Review draft before creating")}</button>}
-        {awaitingConfirmation && <div className={styles.confirmation} role="group" aria-label="Confirm request save"><strong>{request ? t("Guardar revisión del DRAFT", "Save DRAFT revision") : t("Crear DRAFT", "Create DRAFT")}</strong><p>{request ? t(`Se usará la versión esperada ${request.draftVersion}; los cambios no se guardan hasta tu confirmación.`, `Expected version ${request.draftVersion} will be used; changes are not saved until you confirm.`) : t("Se creará una solicitud para tu organización actual y luego se consultará ROAD.", "A request will be created for your current organization, then ROAD will be checked.")}</p><div><button type="button" onClick={() => confirmSave(null)} disabled={busy}>{request ? t("Confirmar revisión", "Confirm revision") : t("Confirmar creación", "Confirm creation")}</button><button type="button" onClick={() => { confirmationRef.current = null; setAwaitingConfirmation(false); add(null, "Nothing was saved. You can keep editing."); }}>{t("Seguir editando", "Keep editing")}</button></div></div>}
+        {awaitingConfirmation && <div className={styles.confirmation} role="group" aria-label="Confirm request save"><strong>{request ? "Save DRAFT revision" : "Create DRAFT"}</strong><p>{request ? `Expected version ${request.draftVersion} will be used.` : "A DRAFT will be created for your current organization."} Check every detail below. This approval expires after five minutes; no booking will occur.</p><dl>{reviewRows(draft, options).map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl><div><button type="button" onClick={() => confirmSave(null)} disabled={busy}>{request ? "Confirm revision" : "Confirm creation"}</button><button type="button" onClick={() => { confirmationRef.current = null; setAwaitingConfirmation(false); add(null, "Nothing was saved. You can keep editing."); }}>Keep editing</button></div></div>}
         {draftDirty && <p className={styles.notice} role="status">{t("Hay cambios locales sin guardar. Confirma la revisión para volver a evaluar ROAD.", "Local changes are unsaved. Confirm the revision before checking ROAD again.")}</p>}
         {error?.code === "STALE_DRAFT" && onReload && <div className={styles.conflict} role="alert"><strong>{t("Conflicto de versión", "Version conflict")}</strong><p>{t("Otro cambio actualizó el DRAFT. Recargar la versión del servidor descartará tus cambios locales sin guardar.", "Another change updated this DRAFT. Reloading the server version will discard your unsaved local changes.")}</p><button type="button" onClick={onReload}>{t("Recargar versión actual", "Reload current version")}</button></div>}
         {interpretationBusy && <p className={styles.loading} role="status">{t("Interpretando tu mensaje…", "Interpreting your message…")}</p>}
@@ -413,17 +451,30 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       <ChatStructuredSummary draft={draft} options={options} request={request} dirty={draftDirty} onEdit={onEdit} t={t} />
       </div>
       <div className={styles.composerDock}>
-        {(voice.message || voice.state === "unsupported") && <p className={styles.voiceStatus} role="status">{voice.message || "Speech recognition is unavailable here. You can type every step."}</p>}
+        {!novaVoiceEnabled && (voice.message || voice.state === "unsupported") && <p className={styles.voiceStatus} role="status">{voice.message || "Speech recognition is unavailable here. You can type every step."}</p>}
         {sendNotice && <p className={styles.voiceStatus} role="status">{sendNotice}</p>}
         <form onSubmit={(event) => { event.preventDefault(); void send(); }} className={styles.composer}>
           <label className={styles.srOnly} htmlFor="v2-chat-text">Your message or editable voice transcript</label>
           <input ref={inputRef} id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder={t("Describe tu carga o corrige un dato…", "Describe cargo or correct a detail…")} autoComplete="off" disabled={busy || interpretationBusy || workflowBusy} />
-          {voice.state === "listening" || voice.state === "requesting_permission"
+          {!novaVoiceEnabled && (voice.state === "listening" || voice.state === "requesting_permission")
             ? <button type="button" className={styles.micActive} aria-label="Stop listening" title="Stop listening" onClick={voice.stop}>■</button>
-            : <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing" || voice.speaking || busy || interpretationBusy || workflowBusy} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>}
+            : !novaVoiceEnabled && <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing" || voice.speaking || busy || interpretationBusy || workflowBusy} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>}
           <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || workflowBusy}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
-        <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button><label>Voice <select aria-label="Voice for spoken replies" value={voice.selectedVoiceURI} onChange={(event) => voice.setSelectedVoiceURI(event.target.value)}><option value="">Automatic</option>{voice.availableVoices.map((option) => <option key={option.voiceURI} value={option.voiceURI}>{option.name} ({option.lang}){option.localService ? " · device" : ""}</option>)}</select></label><label>Pace <select aria-label="Voice pace" value={voiceRate} onChange={(event) => setVoiceRate(Number(event.target.value))}><option value={0.88}>Relaxed</option><option value={0.96}>Natural</option><option value={1.06}>Brisk</option></select></label><button type="button" onClick={() => voice.readResponse("Hello, I'm CargoMesh. Tell me what you need to ship, and I'll help you step by step.")} disabled={voice.speaking}>Test voice</button></div>
+        {novaVoiceEnabled && <>
+          <NovaVoicePreview preview={optionsSource === "fixture"} onTurn={(update) => {
+            setHistory((current) => applyVoiceTranscript(current, update));
+            if (update.final && update.role === "assistant") setAnnouncement(update.text);
+            if (update.final && update.role === "user") setLastVoiceInput(update.text);
+          }} />
+          {lastVoiceInput && <button type="button" className={styles.retry}
+            disabled={Boolean(text.trim()) || busy || interpretationBusy || workflowBusy}
+            title={text.trim() ? "Clear the current message first" : undefined}
+            onClick={() => { setText(lastVoiceInput); setLastVoiceInput(""); inputRef.current?.focus(); }}>
+            Use last spoken message in request chat
+          </button>}
+        </>}
+        {!novaVoiceEnabled && <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button><label>Voice <select aria-label="Voice for spoken replies" value={voice.selectedVoiceURI} onChange={(event) => voice.setSelectedVoiceURI(event.target.value)}><option value="">Automatic · Zira preferred</option>{voice.availableVoices.map((option) => <option key={option.voiceURI} value={option.voiceURI}>{option.name} ({option.lang}){option.localService ? " · device" : ""}</option>)}</select></label><label>Pace <select aria-label="Voice pace" value={voiceRate} onChange={(event) => setVoiceRate(Number(event.target.value))}><option value={0.88}>Relaxed</option><option value={0.96}>Natural</option><option value={1.06}>Brisk</option></select></label><button type="button" onClick={() => voice.readResponse("Hello, I'm CargoMesh. Tell me what you need to ship, and I'll help you step by step.")} disabled={voice.speaking}>Test voice</button></div>}
       </div>
     </section>}
   </aside>;

@@ -457,6 +457,28 @@
       "dependencies": [
         "20261009190000"
       ]
+    },
+    {
+      "issue": "HAC-50",
+      "path": "supabase-v2/supabase/migrations/20261015055541_hac50_depot_operations.sql",
+      "version": "20261015055541",
+      "sha256": "b0906a271ae199c415e60567843ac1ebfbb99846bd658ef9cf32a5ee26272db1",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261010225539"
+      ]
+    },
+    {
+      "issue": "HAC-50",
+      "path": "supabase-v2/supabase/migrations/20261015122904_hac50_booking_offer_projection.sql",
+      "version": "20261015122904",
+      "sha256": "7030c479f7fc4fe687b33547e1adf186794c54bd6767515930dc16526d4eaa8a",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261015055541"
+      ]
     }
   ]
 }
