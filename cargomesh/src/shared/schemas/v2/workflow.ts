@@ -193,7 +193,7 @@ export const WorkflowRecordV2Schema = z.discriminatedUnion("kind", [
   z.object({ ...Metadata, kind: z.literal("decisions"), data: Stored({ planId: Id, selectedPlanId: Id, selectedOfferIds: z.array(Id).min(1),
     rationale: Text, policyId: Id.nullable(), policyVersion: Text.nullable(), consideredOfferIds: z.array(Id), evidence: z.array(Evidence),
     selectedAt: Instant, selectedBy: Id, status: z.enum(["SELECTED", "REVOKED"]) }) }).strict(),
-  z.object({ ...Metadata, kind: z.literal("bookings"), data: Stored({ decisionId: Id, carrierReference: Text.nullable(), confirmedAt: Instant.nullable(),
+  z.object({ ...Metadata, kind: z.literal("bookings"), data: Stored({ decisionId: Id, offerId: Id.optional(), carrierReference: Text.nullable(), confirmedAt: Instant.nullable(),
     authorizedAt: Instant, authorizedBy: Id, authorizationStatus: z.enum(["AUTHORIZED", "REVOKED"]),
     carrierConfirmationStatus: z.enum(["PENDING", "CONFIRMED", "REJECTED", "CANCELLED"]), capacityEvidence: z.array(HoldRecord), authorizationEvidence: Evidence }) }).strict(),
   HoldRecord,

@@ -1,0 +1,125 @@
+/* Native single-value selects retain form semantics and keyboard behavior.
+   Unsupported browsers keep their functional system picker. */
+@supports (appearance: base-select) and selector(select::picker(select)) {
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]) {
+    appearance: base-select;
+    color-scheme: light;
+    align-items: center;
+    gap: 0.65rem;
+    cursor: pointer;
+    transition: border-color var(--cm-motion-interaction) var(--cm-motion-ease), background var(--cm-motion-interaction) var(--cm-motion-ease);
+  }
+
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size])::picker(select) {
+    appearance: base-select;
+    color-scheme: light;
+    margin-block: 6px;
+    border: 1px solid var(--cm-color-line);
+    border-radius: var(--cm-radius-md);
+    padding: 5px;
+    background: var(--cm-color-surface);
+    color: var(--cm-color-ink);
+    font-family: var(--cm-font-sans);
+    font-size: inherit;
+    font-weight: 450;
+    line-height: 1.45;
+    box-shadow: var(--cm-shadow-panel);
+    max-block-size: min(19rem, 60dvh);
+    inline-size: max-content;
+    min-inline-size: anchor-size(width);
+    max-inline-size: calc(100vw - 24px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cm-color-line-strong) transparent;
+  }
+
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size])::picker-icon {
+    content: "";
+    inline-size: 7px;
+    block-size: 7px;
+    border-inline-end: 1.5px solid currentColor;
+    border-block-end: 1.5px solid currentColor;
+    rotate: 45deg;
+    translate: 0 -2px;
+    color: var(--cm-color-muted);
+    margin-inline-start: auto;
+    transition: rotate var(--cm-motion-interaction) var(--cm-motion-ease);
+  }
+
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):open::picker-icon {
+    rotate: 225deg;
+    translate: 0 2px;
+    color: var(--cm-color-primary);
+  }
+
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]) option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 0;
+    border-radius: var(--cm-radius-sm);
+    padding: 8px 10px;
+    background: transparent;
+    color: var(--cm-color-ink);
+    font: inherit;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]) option:hover {
+    background: var(--cm-color-surface-subtle);
+  }
+
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]) option:checked {
+    background: var(--cm-color-selected);
+    color: var(--cm-color-primary-hover);
+    font-weight: 600;
+  }
+
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]) option:focus-visible {
+    outline: 2px solid var(--cm-color-focus);
+    outline-offset: -2px;
+  }
+
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]) option::checkmark {
+    order: 1;
+    margin-inline-start: auto;
+    color: var(--cm-color-primary);
+  }
+
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]) option:disabled {
+    background: transparent;
+    color: var(--cm-color-muted);
+    opacity: 0.6;
+  }
+
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):hover:not(:disabled) {
+    border-color: var(--cm-color-line-strong);
+  }
+
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):focus-visible,
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):open {
+    border-color: var(--cm-color-primary);
+    outline: 3px solid color-mix(in srgb, var(--cm-color-focus) 25%, transparent);
+    outline-offset: 2px;
+  }
+
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size])[aria-invalid=true] {
+    border-color: var(--cm-color-danger);
+    background: var(--cm-color-danger-surface);
+  }
+
+  :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):disabled {
+    background: var(--cm-color-surface-subtle);
+    color: var(--cm-color-muted);
+    cursor: not-allowed;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]),
+    :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size])::picker-icon {
+      transition: none;
+    }
+  }
+}

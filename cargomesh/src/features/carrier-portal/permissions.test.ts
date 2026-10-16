@@ -4,9 +4,9 @@ import {carrierResources} from './resources';
 import {loginDestination} from '@/shared/schemas/v2/carrier-portal';
 const access=[{carrierId:'00000000-0000-4000-8000-000000000001',operatorId:'00000000-0000-4000-8000-000000000002',role:'OPERATOR' as const,carrierName:'Synthetic',displayName:'Operator'}];
 test('carrier-only login returns to portal, without shipper membership or open redirects',()=>{
- assert.equal(loginDestination('/carrier-portal',false,access),'/carrier-portal');
- assert.equal(loginDestination('/dashboard',false,access),'/carrier-portal');
- assert.equal(loginDestination('https://attacker.invalid',false,access),'/carrier-portal');
+ assert.equal(loginDestination('/carrier-portal',false,access),'/v2-workspace#/fleet');
+ assert.equal(loginDestination('/dashboard',false,access),'/v2-workspace#/fleet');
+ assert.equal(loginDestination('https://attacker.invalid',false,access),'/v2-workspace#/fleet');
  assert.equal(loginDestination('/carrier-portal',true,[]),null);
  assert.equal(loginDestination(undefined,true,[]),'/dashboard');
  assert.equal(loginDestination(undefined,false,[]),null);

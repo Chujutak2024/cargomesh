@@ -5,6 +5,7 @@ import styles from "./v2-ui.module.css";
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "accent" | "secondary" | "ghost";
+  size?: "regular" | "compact";
   isLoading?: boolean;
   loadingLabel?: string;
   children: ReactNode;
@@ -12,6 +13,7 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export function Button({
   variant = "primary",
+  size = "regular",
   isLoading = false,
   loadingLabel = "Loading…",
   disabled,
@@ -22,6 +24,7 @@ export function Button({
   return (
     <button
       {...props}
+      data-cm-button data-variant={variant} data-size={size}
       className={[styles.button, styles[variant], className].filter(Boolean).join(" ")}
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}

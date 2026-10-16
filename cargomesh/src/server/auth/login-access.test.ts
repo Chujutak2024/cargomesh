@@ -9,7 +9,7 @@ test("independent access reads start concurrently instead of waiting for members
  const member=deferred<boolean>(),carriers=deferred<typeof carrier[]>(),started:string[]=[];
  const pending=resolveLoginAccess("/v2-workspace",{member:()=>{started.push("member");return member.promise;},carriers:()=>{started.push("carriers");return carriers.promise;}});
  await Promise.resolve();assert.deepEqual(started.sort(),["carriers","member"]);
- carriers.resolve([carrier]);member.resolve(false);assert.equal(await pending,"/carrier-portal");
+ carriers.resolve([carrier]);member.resolve(false);assert.equal(await pending,"/v2-workspace#/fleet");
 });
 
 test("an authorized member does not wait for an irrelevant carrier read",async()=>{

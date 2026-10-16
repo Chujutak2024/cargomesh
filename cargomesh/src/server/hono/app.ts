@@ -22,6 +22,8 @@ import { locationsRouter } from "./routes/locations";
 //   /freight/requests      → POST /api/v2/freight/requests
 // ---------------------------------------------------------------------------
 
+import {carrierOperationsRouter} from './routes/carrier-operations';
+
 export function createHonoApp() {
   const app = new Hono().basePath("/api/v2");
 
@@ -30,6 +32,7 @@ export function createHonoApp() {
 
   // Routes
   app.route("/health", healthRouter);
+  app.route("/", carrierOperationsRouter);
   app.route("/", carrierPortalRouter);
   app.route("/", identityRouter);
   app.route("/", carrierWorkflowRouter);
