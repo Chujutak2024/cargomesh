@@ -1,6 +1,6 @@
 import type {Opportunity} from './commercial-model';
 
-type Leg = {id?:unknown; mode?:unknown; estimatedDistanceKm?:unknown; source?:unknown};
+type Leg = {sequence?:unknown; mode?:unknown; estimatedDistanceKm?:unknown; source?:unknown};
 type Snapshot = {resource?:{equipment?:unknown}; routeLeg?:Leg};
 
 /** Only persisted ROAD legs and one unambiguous load-bearing equipment type are quotable. */
@@ -10,11 +10,11 @@ export function carrierEstimateBasis(opportunity:Opportunity, assignmentIds:stri
  const equipment=[...new Set(snapshots.map(row=>row.resource?.equipment).filter((v):v is string=>typeof v==='string'&&v.length>0))];
  if(equipment.length!==1)return null;
  const legs=new Map<string,number>();
- for(const row of snapshots){const leg=row.routeLeg;if(!leg||leg.mode!=='ROAD'||typeof leg.id!=='string'||typeof leg.estimatedDistanceKm!=='number'||!Number.isFinite(leg.estimatedDistanceKm)||leg.estimatedDistanceKm<=0)return null;
-  const previous=legs.get(leg.id);if(previous!==undefined&&previous!==leg.estimatedDistanceKm)return null;legs.set(leg.id,leg.estimatedDistanceKm);
+ for(const row of snapshots){const leg=row.routeLeg;if(!leg||leg.mode!=='ROAD'||!Number.isInteger(leg.sequence)||Number(leg.sequence)<=0||typeof leg.estimatedDistanceKm!=='number'||!Number.isFinite(leg.estimatedDistanceKm)||leg.estimatedDistanceKm<=0)return null;
+  const key=String(leg.sequence);const previous=legs.get(key);if(previous!==undefined&&previous!==leg.estimatedDistanceKm)return null;legs.set(key,leg.estimatedDistanceKm);
  }
  const distanceKm=[...legs.values()].reduce((a,b)=>a+b,0);
- return distanceKm>0&&Number.isFinite(distanceKm)?{distanceKm,equipmentType:equipment[0],legIds:[...legs.keys()]}:null;
+ return distanceKm>0&&Number.isFinite(distanceKm)?{distanceKm,equipmentType:equipment[0],legSequences:[...legs.keys()].map(Number)}:null;
 }
 
 export function carrierPriceEstimate(distanceKm:number,usdPerKm:number){
