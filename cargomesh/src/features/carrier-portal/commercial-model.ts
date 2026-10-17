@@ -17,6 +17,11 @@ export function parseCommercialRecord<K extends WorkflowRecordV2['kind']>(kind:K
 }
 const sameRequest=(a:WorkflowRecordV2,b:WorkflowRecordV2)=>a.carrierId===b.carrierId&&a.requestId===b.requestId&&a.organizationId===b.organizationId;
 export const opportunityOffers=(o:Opportunity,s:CommercialSnapshot)=>s.offers.filter(f=>f.data.opportunityId===o.id&&f.data.planCandidateId===o.data.planId&&sameRequest(o,f));
+export function pendingCarrierOpportunities(s:CommercialSnapshot,now:number){
+ if(s.partial)return [];
+ return s.opportunities.filter(o=>(o.status==='SENT'||o.status==='ACCEPTED')
+  &&Date.parse(o.data.responseDeadline)>now&&!opportunityOffers(o,s).length);
+}
 export function offerState(f:Offer,now:number){return f.status!=='RECEIVED'?f.status:Date.parse(f.data.validity.endsAt)<=now?'EXPIRED':Date.parse(f.data.validity.startsAt)>now?'NOT_STARTED':'CURRENT';}
 export function bookingOffer(b:Booking,s:CommercialSnapshot){const id=z.string().uuid().safeParse(b.data.offerId);return id.success?s.offers.find(f=>f.id===id.data&&sameRequest(b,f))??null:null;}
 export function bookingExecutions(b:Booking,s:CommercialSnapshot){return s.executions.filter(e=>e.data.bookingId===b.id&&sameRequest(b,e));}

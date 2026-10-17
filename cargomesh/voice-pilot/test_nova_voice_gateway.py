@@ -4,7 +4,8 @@ import unittest
 
 import jwt
 
-from nova_voice_gateway import AUDIENCE, ISSUER, BrowserOutput, _used_grants, validate_network, verify_grant
+from nova_voice_gateway import AUDIENCE, ISSUER, BrowserInput, BrowserOutput, _used_grants, validate_network, verify_grant
+from cargomesh_voice_prompt import voice_prompt
 
 SECRET = "local-test-secret-at-least-thirty-two-characters"
 
@@ -49,8 +50,33 @@ class VoiceGrantTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify_grant(signed(), "too-short")
 
+    def test_customer_prompt_guides_a_real_request_without_pilot_language(self):
+        prompt = voice_prompt({"role": "shipper"})
+        self.assertIn("freight request", prompt)
+        self.assertIn("review step", prompt)
+        self.assertNotIn("comparison", prompt)
+
+    def test_carrier_prompt_uses_only_scoped_request_and_does_not_invent_a_quote(self):
+        prompt = voice_prompt({"role": "carrier", "opportunity": {
+            "route": "Lima to Arequipa", "cargo": "GENERAL", "responseDeadline": "2026-10-20",
+        }})
+        self.assertIn("Lima to Arequipa", prompt)
+        self.assertIn("no verified tariff", prompt)
+        self.assertIn("review and submit it on screen", prompt)
+        with self.assertRaises(ValueError):
+            voice_prompt({"role": "carrier"})
+
 
 class VoiceTranscriptTests(unittest.IsolatedAsyncioTestCase):
+    async def test_carrier_opening_is_one_text_turn_before_microphone_audio(self):
+        class Socket:
+            async def recv(self):
+                return b"\x00\x00"
+
+        input_stream = BrowserInput(Socket(), "Brief me on this opportunity.")
+        self.assertEqual(await input_stream(), "Brief me on this opportunity.")
+        self.assertEqual((await input_stream()).source["bytes"], b"\x00\x00")
+
     async def test_partial_and_final_transcripts_retain_same_content_id(self):
         class Socket:
             def __init__(self):

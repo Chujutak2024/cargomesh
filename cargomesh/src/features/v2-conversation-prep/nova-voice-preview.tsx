@@ -11,8 +11,10 @@ type VoiceEvent =
   | { type: "transcript_delta"; role: "user" | "assistant"; contentId: string; delta: string }
   | { type: "error"; message: string };
 
-export function NovaVoicePreview({ preview = false, onTurn }: {
+export function NovaVoicePreview({ preview = false, carrierScope, autoStart = false, onTurn }: {
   preview?: boolean;
+  carrierScope?: { carrierId: string; opportunityId: string };
+  autoStart?: boolean;
   onTurn: (update: { role: "user" | "assistant"; contentId: string; text: string; final: boolean }) => void;
 }) {
   const [status, setStatus] = useState("Nova voice ready.");
@@ -97,11 +99,12 @@ export function NovaVoicePreview({ preview = false, onTurn }: {
     const muted = context.createGain();
     muted.gain.value = 0;
     worklet.connect(muted).connect(context.destination);
-    setStatus("Listening with Nova. This preview cannot change a request.");
+    setStatus("Listening with Nova. Review and confirm any business action on screen.");
   }
 
   async function start() {
-    if (active || !navigator.mediaDevices?.getUserMedia || !window.AudioWorkletNode) {
+    if (active) return;
+    if (!navigator.mediaDevices?.getUserMedia || !window.AudioWorkletNode) {
       setStatus("This browser cannot start Nova voice. Use the existing microphone or text.");
       return;
     }
@@ -111,7 +114,7 @@ export function NovaVoicePreview({ preview = false, onTurn }: {
     try {
       const response = await fetch("/api/v2/conversation/voice/session", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ preview }),
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ preview, ...carrierScope }),
       });
       if (!response.ok) throw new Error(response.status === 401 ? "Sign in to try Nova voice." : "Nova voice is not configured here. Use the existing voice or text.");
       const grant = await response.json() as Grant;
@@ -151,12 +154,18 @@ export function NovaVoicePreview({ preview = false, onTurn }: {
     }
   }
 
+  useEffect(() => {
+    if (!autoStart) return;
+    const timer = window.setTimeout(() => { void start(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [autoStart]);
+
   return <div className={styles.preview}>
     <button type="button" className={active ? styles.active : styles.start} aria-label={active ? "Stop Nova voice" : "Start Nova voice"}
       onClick={active ? () => { stop(); setStatus("Nova voice stopped."); } : () => void start()}>
       {active ? "Stop Nova" : "Talk with Nova"}
     </button>
     <p role="status">{status}</p>
-    <p className={styles.limit}>Nova listens and speaks directly, as in the PowerShell pilot. Voice guidance does not edit or save a request.</p>
+    <p className={styles.limit}>Nova can guide this conversation. Review and confirm all changes in the CargoMesh form.</p>
   </div>;
 }

@@ -1,8 +1,10 @@
-# Strands + Gemini Live voice comparison
+# CargoMesh Nova voice bridge and historical pilots
 
 For a shared, authenticated Nova staging site, see [the Nova voice deployment recipe](../../../docs/v2-amazon/delivery/NOVA_VOICE_STAGING_DEPLOYMENT.md). The gateway container uses an IAM task role and HTTPS/WSS; the local PowerShell pilot still uses the developer's AWS profile.
 
-This is a local voice comparison and browser pilot, separate from the Alexa+ MCP channel. It does not read an account, call business tools, save requests, quote carriers or book transport. When the local Nova flag is enabled, Nova is the Web chat's default **spoken** path; typed messages still use the existing structured chat.
+The active Web path uses Strands with Nova 2.5 Sonic. The browser obtains a short-lived session grant from CargoMesh, and the gateway uses the authenticated customer or carrier scope. Customer speech can be moved into the request chat for explicit DRAFT review. A carrier can open an authorized opportunity from an in-app alert, hear its details and use one spoken USD total as an editable offer draft. Speech never submits an offer, saves a request, reserves capacity or books transport. Alexa+ remains a separate MCP channel.
+
+## Historical Gemini Live comparison
 
 Strands `BidiAgent` orchestrates the session; Google Gemini Live supplies recognition and a selectable spoken voice. The default is `Kore` for a first female-voice comparison. Google usage is billed separately from AWS credits. The pilot stops after 90 seconds by default and never exceeds 180 seconds per run.
 
@@ -22,7 +24,7 @@ This pilot is **not** the production voice path. Before enabling it in the Web c
 
 Sources: [Strands Bidi Quickstart](https://strandsagents.com/docs/user-guide/sdk/bidi/quickstart/), [Google Gemini Live model](https://strandsagents.com/docs/user-guide/sdk/bidi/models/google/), [Strands I/O](https://strandsagents.com/docs/user-guide/sdk/bidi/io/).
 
-## Compare Amazon Nova 2.5 Sonic
+## Historical PowerShell comparison with Amazon Nova 2.5 Sonic
 
 The optional `strands_nova_sonic.py` uses the **same CargoMesh pilot prompt** as Gemini, but runs through Amazon Bedrock using the local `cargomesh-bedrock` AWS profile. It does not use a Bedrock API key, access an account, read carrier inventory or mutate orders. Nova's default comparison voice is the female voice `tiffany`. The browser/Zira path remains available when the Nova flag is disabled.
 
@@ -42,7 +44,7 @@ Sources: [Strands Nova Sonic](https://strandsagents.com/docs/user-guide/sdk/bidi
 
 ## Local browser bridge (first transport slice)
 
-The local Web voice is gated by `NEXT_PUBLIC_CARGOMESH_NOVA_VOICE_PREVIEW=true`. On authenticated freight pages it requires an active CargoMesh membership. On the synthetic `/hac37-preview` page, `CARGOMESH_NOVA_DEMO_VOICE=true` allows a voice-only grant on localhost in development; it is disabled in production and on LAN hosts. The browser calls `POST /api/v2/conversation/voice/session`; that route issues a 45-second, one-use signed grant. The local Python gateway accepts only the configured origin and loopback host, caps each voice session at 90 seconds and runs at most two at once. It has **no business tools**. Spoken turns appear in the same chat history but do not update or save a freight request.
+The local Web voice is gated by `NEXT_PUBLIC_CARGOMESH_NOVA_VOICE_PREVIEW=true`. Authenticated customer sessions require active organization membership; carrier sessions require an authorized carrier identity and a persisted opportunity in that carrier's scope. On the synthetic `/hac37-preview` page, `CARGOMESH_NOVA_DEMO_VOICE=true` allows a voice-only grant on localhost in development; it is disabled in production and on LAN hosts. The browser calls `POST /api/v2/conversation/voice/session`; that route issues a 45-second, one-use signed grant. The local Python gateway accepts only the configured origin and loopback host, caps each voice session at 90 seconds and runs at most two at once. It has **no business mutation tools**. Carrier speech can prefill a proposed USD amount, but the carrier must complete evidence and confirm the offer form.
 
 Set these values only in the ignored `cargomesh/.env.local` of this worktree:
 
@@ -55,7 +57,7 @@ CARGOMESH_NOVA_DEMO_VOICE=true
 
 Use a unique random secret; the web app and gateway must read the same value. The existing Supabase URL and anon key must also be configured for the authenticated web session. Restart Next.js after changing `.env.local`. Start the gateway separately from `cargomesh/voice-pilot` with `.\start-nova-gateway.ps1 -Origin http://localhost:3218`. Do not publish a plain `ws://` gateway on a network interface. Deployment requires HTTPS/WSS, server-side temporary IAM credentials, and separate security validation.
 
-With the flag enabled, **Talk with Nova** replaces the browser microphone and Zira controls. The browser streams microphone audio directly to the same Nova model and `tiffany` voice used in PowerShell; Nova performs its own speech recognition, conversation and speech synthesis. The text/chat pathway remains the only way to edit, save or inspect persisted workflow. Browser capture and playback differ from the PowerShell audio devices and still require a human listening test. Connecting read-only backend tools and validated draft proposals is the next implementation slice. A successful voice session does not certify those operations or Alexa+.
+With the flag enabled, **Talk with Nova** replaces the browser microphone and Zira controls. The browser streams microphone audio directly to the same Nova model and `tiffany` voice used in PowerShell; Nova performs its own speech recognition, conversation and speech synthesis. The customer request chat and carrier offer form remain the only paths to persist changes. The gateway receives only bounded, authorized opportunity context and initiates a spoken carrier briefing. Browser capture and playback still require a human listening test. A successful voice session does not certify Alexa+.
 
 The gateway forwards Nova's transcript deltas as they arrive, and the chat replaces each provisional turn with its final transcript. This reduces the visible delay caused by waiting for a complete transcript block; it cannot remove Nova's own recognition/turn-finalization time or network latency. The browser fallback remains in the code for deployments without the Nova flag, so its voice files and tests are not unused dependencies. The separate `requirements-gateway.txt` installs only the Python packages needed by the web bridge; `requirements.txt` also supports the PowerShell audio and Gemini comparison pilots.
 
