@@ -7,6 +7,7 @@ test("a carrier's explicit spoken USD amount becomes only a proposed form value"
   assert.equal(carrierVoicePrice("I would quote $1,250.50 for this route"), 1250.5);
   assert.equal(carrierVoicePrice("Change the price to 1400 dollars"), 1400);
   assert.equal(carrierVoicePrice("1200"), 1200);
+  assert.equal(carrierVoicePrice("Cámbialo a 1350 dólares"), 1350);
 });
 
 test("ambiguous, invalid, and context-only speech never becomes an offer amount", () => {
