@@ -29,7 +29,7 @@ node node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --port 8091
 - Dev utiliza `.next-dev`; build/start utiliza `.next`, evitando que la compilación reemplace los chunks del servidor de desarrollo.
 - El preview sintético no necesita credenciales. El portal conectado mantiene su autenticación y requiere la configuración privada de Supabase habitual. Este entorno carece de URL/anon de Supabase: no se certificó una sesión conectada real ni se añadió un bypass.
 
-No hay un despliegue nuevo como parte de esta entrega. El proceso local anterior de 8080 se conserva y no se usa como evidencia del código de esta rama. Para comparar los nuevos diseños debe usarse 8091 iniciado desde este checkout.
+No se ejecutó un despliegue manual ni se cambió la configuración de producción. Al publicar el PR #128, la integración existente de Vercel inició su preview automático; su estado se consulta en el PR y no sustituye la prueba local. El proceso local anterior de 8080 se conserva y no se usa como evidencia del código de esta rama. Para comparar los nuevos diseños debe usarse 8091 iniciado desde este checkout.
 
 ## Verificación ejecutada sobre el código de esta entrega
 
