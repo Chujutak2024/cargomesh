@@ -1,0 +1,36 @@
+✔ returns success after Supabase creates an authenticated session (2.508ms)
+✔ returns a safe authentication error for invalid credentials (0.4466ms)
+✔ keeps unexpected authentication failures recoverable (0.2943ms)
+✔ keeps a non-credential HTTP 400 error recoverable (0.2131ms)
+✔ redirects an anonymous visitor away from an operational route (1.7163ms)
+✔ redirects a non-active member away from an operational route (0.2623ms)
+✔ allows only a resolved active member to render an operational route (0.3448ms)
+✔ redirects an active member away from login and leaves denied visitors on login (0.2659ms)
+✔ demo navigation retains query, fragment and identifiers inside its namespace (1.1333ms)
+✔ connected navigation never acquires demo routes (0.2635ms)
+✔ demo links cannot prefix another context, external URL or already-prefixed path (0.2221ms)
+✔ demo API transport is isolated from the connected API (0.1497ms)
+✔ demo writes never reach any backend transport (28.3844ms)
+✔ demo reads from string, URL and Request resolve to the separate demo API (3.4887ms)
+✔ connected writes preserve the real API destination and request options (0.3687ms)
+✔ independent access reads start concurrently instead of waiting for membership (3.5818ms)
+✔ an authorized member does not wait for an irrelevant carrier read (0.2618ms)
+✔ carrier access failures still deny a carrier-only entry (0.5009ms)
+✔ membership read failures never become carrier-only success (0.2517ms)
+✔ a member still needs a carrier grant when explicitly requesting the carrier endpoint (0.3049ms)
+✔ no member and no grant cannot open a workspace (0.2617ms)
+✔ member destination remains independent of carrier outage (0.3063ms)
+✔ external return destinations are rejected by the shared destination policy (1.0549ms)
+✔ cookie session mutations accept same origin and Next loopback normalization (22.4663ms)
+✔ cookie session mutations reject missing/external origins and mismatched authorities (0.8958ms)
+✔ demo is disabled by default even for reads and writes (22.4757ms)
+✔ enabled demo never accepts a mutation (1.0536ms)
+✔ only declared fixture reads succeed, without forwarding unknown data (0.65ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 647.8732

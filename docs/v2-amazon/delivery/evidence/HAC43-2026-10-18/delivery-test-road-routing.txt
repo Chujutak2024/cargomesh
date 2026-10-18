@@ -1,0 +1,47 @@
+✔ draws only declared simulated geometry and labels the Google map honestly (1.6274ms)
+✔ routePreview null, empty legs and UNKNOWN never draw a route (1.3711ms)
+✔ missing canonical coordinates prevent geometry without inventing markers (0.4811ms)
+✔ selection is entirely controlled by parent props (0.218ms)
+✔ zero candidates is a domain empty state, with canonical markers only (0.4072ms)
+✔ provider note uses actual renderer and Google Routes only for an explicit source (0.3216ms)
+✔ absent source, empty waypoints or invalid coordinates cannot assert usable geometry (0.2735ms)
+✔ separate declared legs are never joined with an invented bridge (0.2434ms)
+✔ an outdated parent selection never silently selects the first candidate (0.185ms)
+✔ provider restriction applies to selection updates as well as initial fallback (0.2123ms)
+✔ catalog references are unique, bounded city coordinates covering six geographic regions (1.2469ms)
+✔ land policy allows reverse routes and does not equate continents with land networks (0.2799ms)
+✔ city and country labels follow Spanish and English, not a hardcoded Peru label (20.3353ms)
+✔ decodes declared Google polyline points without interpolation (2.4905ms)
+✔ sends canonical coordinates to Routes from the server and retains estimated provenance (33.1811ms)
+✔ missing key and upstream failure never produce replacement geometry or leak errors (0.7671ms)
+✔ empty, malformed or incomplete provider responses have no geometry or metrics (1.5899ms)
+✔ local adapter is disabled by default and rejects non-local or foreign origins before calling Google (4.6493ms)
+✔ invalid IDs, identical cities and oversize bodies cannot make paid routing calls (1.633ms)
+✔ Next internal URL reconstruction does not reject an authorized local Host and Origin (0.9832ms)
+✔ duplicate in-flight requests share one call (32.2679ms)
+✔ ferry, ferry train and non-driving steps are rejected, including a later leg (0.8555ms)
+✔ missing leg, step or maneuver metadata cannot establish a road-only result (0.9995ms)
+✔ ocean crossings and the Americas road gap are blocked without a provider call (1.1605ms)
+✔ different simultaneous pairs use their own server catalog coordinates and results (26.5195ms)
+✔ routing call budget permits browsing pairs but limits calls to twenty per minute (5.1644ms)
+✔ current workspace port requires its exact Host and Origin, while other origins remain forbidden (0.5521ms)
+✔ selection minimizes the declared objective, not provider order (3.3977ms)
+✔ tie breaks by the secondary metric then original index, independent of input ordering (0.3782ms)
+✔ malformed alternatives cannot hide a later valid route; original index retained (0.7943ms)
+✔ all legs must be road-only; ferry preference alone is not proof (0.4463ms)
+✔ rejects wrong, reversed or broken geometry and ignored restrictions without fallback (0.9347ms)
+✔ server requests high-quality alternatives with the chosen traffic model and no truck claim (20.2667ms)
+✔ missing server key, denial, timeout, malformed JSON and upstream errors expose no credential or geometry (1.4024ms)
+✔ local disabled/origin/Host/content/body validation prevent paid calls (12.3187ms)
+✔ city scenarios use catalog coordinates; synthetic responses test plumbing, not real road access (2.9158ms)
+✔ disconnected city networks block before missing credentials or paid calls (0.9571ms)
+✔ deduplicates only simultaneous identical queries; objectives and cities never share a result (50.666ms)
+✔ ten calls per process per minute budget and reset (4.9661ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 581.9289

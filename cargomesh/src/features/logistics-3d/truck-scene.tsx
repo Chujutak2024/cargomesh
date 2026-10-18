@@ -8,13 +8,14 @@ import { buildCargoMeshTruck, disposeCargoMeshTruck, setTruckWheelAngle, type Tr
 import { disposeTruckAsset, loadTruckGlb } from "./load-truck-glb";
 import { RoadEnvironment } from "./road-environment";
 import type { TruckEnvironment } from "./truck-environment";
+import { truckDesign } from './visual-catalog';
 
 export type TruckViewControls = { rotate: (horizontal: number, vertical?: number) => void; reset: () => void; capture: () => Promise<Blob> };
-type StudioProps = { active: boolean; reduced: boolean; onReady: () => void; variant: TruckVisualType;
+type StudioProps = { active: boolean; reduced: boolean; onReady: () => void; variant: TruckVisualType; designId?: string;
   modelBlob?: Blob | null; onFailure: () => void; environment?: TruckEnvironment;
   interactive: boolean; autoRotate: boolean; moving: boolean; onControlsReady: (controls: TruckViewControls | null) => void; onInteraction: () => void; onInspect?: () => void };
 
-function Studio({active, reduced, onReady, onFailure, variant, modelBlob, environment, interactive, autoRotate, moving, onControlsReady, onInteraction, onInspect}:StudioProps) {
+function Studio({active, reduced, onReady, onFailure, variant, designId, modelBlob, environment, interactive, autoRotate, moving, onControlsReady, onInteraction, onInspect}:StudioProps) {
   const [truck,setTruck]=useState<Group|null>(null),frames=useRef(0);
   const travel=useRef(0), suspension=useRef<Group>(null);
   const {invalidate,gl,scene,camera,size}=useThree();
@@ -23,9 +24,9 @@ function Studio({active, reduced, onReady, onFailure, variant, modelBlob, enviro
     let cancelled=false,owned:Group|null=null;setTruck(null);
     const install=(model:Group)=>{owned=model;if(cancelled){disposeTruckAsset(model);return;}setTruck(model);invalidate();};
     if(modelBlob)modelBlob.arrayBuffer().then(loadTruckGlb).then(install).catch(()=>{if(!cancelled)onFailure();});
-    else install(buildCargoMeshTruck(variant));
+    else install(buildCargoMeshTruck(variant, { appearance: truckDesign(designId)?.appearance, designId }));
     return()=>{cancelled=true;if(owned){if(modelBlob)disposeTruckAsset(owned);else disposeCargoMeshTruck(owned);owned=null;}};
-  },[variant,modelBlob,invalidate,onFailure]);
+  },[variant,designId,modelBlob,invalidate,onFailure]);
   useEffect(()=>{
     const generator=new PMREMGenerator(gl),room=new RoomEnvironment();
     const environment=generator.fromScene(room,.04,.1,100,{size:128});
@@ -73,13 +74,13 @@ function Studio({active, reduced, onReady, onFailure, variant, modelBlob, enviro
   },[camera,gl,scene,invalidate,interactive,onControlsReady,onInteraction]);
   useEffect(()=>{
     // Frame every body from all azimuths, including narrow mobile viewports.
-    const radius=Math.max(10.3,4/(Math.tan(31*Math.PI/360)*Math.max(size.width/size.height,.5)));
+    const radius=Math.max(10.3,4/(Math.tan(31*Math.PI/360)*Math.max(size.width/size.height,.5)))*(designId?1.15:1);
     camera.position.copy(new Vector3(-6.5,interactive?.6:2.4,7.6).normalize().multiplyScalar(radius).add(new Vector3(0,1.2,0)));
     camera.lookAt(0,1.2,0);
     const controls=orbit.current;
     if(controls){const damping=controls.enableDamping;controls.enableDamping=false;controls.autoRotate=false;controls.update(0);controls.saveState();controls.enableDamping=damping;onInteraction();}
     invalidate();
-  },[variant,modelBlob,interactive,size.width,size.height,camera,invalidate,onInteraction]);
+  },[variant,designId,modelBlob,interactive,size.width,size.height,camera,invalidate,onInteraction]);
   useEffect(()=>{
     const controls=orbit.current;if(!controls)return;
     controls.enabled=active;controls.enableDamping=!reduced;controls.autoRotate=active&&autoRotate&&!reduced;
@@ -94,6 +95,7 @@ function Studio({active, reduced, onReady, onFailure, variant, modelBlob, enviro
     }
     gl.domElement.dataset.frames=String(++frames.current);gl.domElement.dataset.cameraX=String(camera.position.x);gl.domElement.dataset.cameraY=String(camera.position.y);gl.domElement.dataset.cameraZ=String(camera.position.z);
     gl.domElement.dataset.truckVariant=modelBlob?"custom":variant;
+    gl.domElement.dataset.truckDesign=designId??'';
     gl.domElement.dataset.truckDetail=truck?.userData.detailLevel??(modelBlob?"imported":"loading");
     gl.domElement.dataset.triangles=String(gl.info.render.triangles);
     gl.domElement.dataset.drawCalls=String(gl.info.render.calls);
@@ -108,11 +110,11 @@ function Studio({active, reduced, onReady, onFailure, variant, modelBlob, enviro
 }
 
 type SceneProps = Omit<StudioProps,"variant"|"interactive"> & {onFailure:()=>void;variant?:TruckVisualType;thumbnail?:boolean};
-export default function TruckScene({active,reduced,onReady,onFailure,variant="articulated",modelBlob,environment,thumbnail=false,autoRotate,moving,onControlsReady,onInteraction,onInspect}:SceneProps) {
+export default function TruckScene({active,reduced,onReady,onFailure,variant="articulated",designId,modelBlob,environment,thumbnail=false,autoRotate,moving,onControlsReady,onInteraction,onInspect}:SceneProps) {
   const removeContextListener=useRef<(()=>void)|null>(null);
   useEffect(()=>()=>{removeContextListener.current?.();removeContextListener.current=null;},[]);
   return <Canvas aria-hidden="true" tabIndex={-1} shadows={thumbnail?false:"percentage"} dpr={[1,thumbnail?1.25:1.5]} frameloop={active?"demand":"never"} camera={{position:[-6.5,3.6,7.6],fov:31,near:.1,far:100}}
     gl={{alpha:true,antialias:true,powerPreference:"low-power",preserveDrawingBuffer:false}}
     onCreated={({gl,camera})=>{gl.toneMapping=ACESFilmicToneMapping;gl.outputColorSpace=SRGBColorSpace;camera.lookAt(0,1.2,0);gl.domElement.addEventListener("webglcontextlost",onFailure,{once:true});removeContextListener.current=()=>gl.domElement.removeEventListener("webglcontextlost",onFailure);}}
-    fallback={null}><Studio active={active} reduced={reduced} onReady={onReady} onFailure={onFailure} variant={variant} modelBlob={modelBlob} environment={thumbnail?undefined:environment} interactive={!thumbnail} autoRotate={autoRotate} moving={moving&&!thumbnail} onControlsReady={onControlsReady} onInteraction={onInteraction} onInspect={onInspect}/></Canvas>;
+    fallback={null}><Studio active={active} reduced={reduced} onReady={onReady} onFailure={onFailure} variant={variant} designId={designId} modelBlob={modelBlob} environment={thumbnail?undefined:environment} interactive={!thumbnail} autoRotate={autoRotate} moving={moving&&!thumbnail} onControlsReady={onControlsReady} onInteraction={onInteraction} onInspect={onInspect}/></Canvas>;
 }

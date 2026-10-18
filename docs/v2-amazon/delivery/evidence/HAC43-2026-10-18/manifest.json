@@ -1,0 +1,55 @@
+{
+  "hashBasis": "Git index blob bytes (before platform checkout newline conversion)",
+  "files": [
+    {
+      "file": "browser-results.json",
+      "bytes": 4306,
+      "sha256": "61ae570ba71a8e95f398a0657b1cd6043c413c69974065b80f8ab71c77f02506"
+    },
+    {
+      "file": "delivery-build.txt",
+      "bytes": 4548,
+      "sha256": "2c1762d5f15ddc03b1873dfb556e58c2610c20c3462024074add17f9d876ce1d"
+    },
+    {
+      "file": "delivery-test-connected-fleet.txt",
+      "bytes": 4059,
+      "sha256": "9647d2e5322f080ed178774d5016a72b2fe3ae08e105c72818e9283da60dd202"
+    },
+    {
+      "file": "delivery-test-logistics.txt",
+      "bytes": 15282,
+      "sha256": "17fbed347982464be4d0dc9dc28532fb7c26deba2497a6ac451b8cacb964a304"
+    },
+    {
+      "file": "delivery-test-road-routing.txt",
+      "bytes": 3725,
+      "sha256": "b9b8951d9459f8464a2b4128fc56baae0fc2e4c54a256ce4f148005aa7ba58d0"
+    },
+    {
+      "file": "delivery-test-workspace-modes.txt",
+      "bytes": 2325,
+      "sha256": "42179a4377e7d2e044343fd166756027ebfa19a9525787609e72b38c8452fd3b"
+    },
+    {
+      "file": "five-trucks.png",
+      "bytes": 185272,
+      "sha256": "553849de8d2d2bce3bfd20dd2899e9d98e3115d849830ad9cbb62fe6917f9afa"
+    },
+    {
+      "file": "five-trucks.webm",
+      "bytes": 9192007,
+      "sha256": "fa96edfbaa074ec28df8a5633b14c40d51461bcd10d773124120e2220cb0888b"
+    },
+    {
+      "file": "inspection-retained.png",
+      "bytes": 241735,
+      "sha256": "778535c96709ba809acf6919bc6ad5f45ab0ed921dc612d83466028583c7038a"
+    },
+    {
+      "file": "loading-to-departure.png",
+      "bytes": 182680,
+      "sha256": "ded249af70084c3392f2df58f7031a80e9641baeaad4a96a459095190203b5d0"
+    }
+  ]
+}

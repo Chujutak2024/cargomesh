@@ -1,0 +1,76 @@
+   ▲ Next.js 15.5.24
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 36.1s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/19) ...
+   Generating static pages (4/19)
+   Generating static pages (9/19)
+   Generating static pages (14/19)
+ ✓ Generating static pages (19/19)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                     Size  First Load JS
+┌ ƒ /                                        2.97 kB         112 kB
+├ ƒ /_not-found                                994 B         105 kB
+├ ƒ /.well-known/oauth-authorization-server    218 B         104 kB
+├ ƒ /.well-known/oauth-protected-resource      218 B         104 kB
+├ ƒ /api/auth/login                            218 B         104 kB
+├ ƒ /api/auth/logout                           218 B         104 kB
+├ ƒ /api/demo/v2/[[...route]]                  218 B         104 kB
+├ ƒ /api/local/login-defaults                  218 B         104 kB
+├ ƒ /api/local/road-preview                    218 B         104 kB
+├ ƒ /api/local/route-lab                       218 B         104 kB
+├ ƒ /api/local/truck-3d                        218 B         104 kB
+├ ƒ /api/v2/[[...route]]                       218 B         104 kB
+├ ƒ /api/v2/conversation/interpret             218 B         104 kB
+├ ƒ /api/v2/conversation/preview               218 B         104 kB
+├ ƒ /api/v2/conversation/voice/session         218 B         104 kB
+├ ƒ /bookings                                1.71 kB         109 kB
+├ ƒ /carrier-control-tower                     218 B         104 kB
+├ ƒ /carrier-portal                            218 B         104 kB
+├ ƒ /carrier-route-lab                         218 B         104 kB
+├ ƒ /dashboard                               3.54 kB         111 kB
+├ ƒ /demo/shipper                              218 B         104 kB
+├ ƒ /demo/shipper/bookings                   1.71 kB         109 kB
+├ ƒ /demo/shipper/dashboard                  3.54 kB         111 kB
+├ ƒ /demo/shipper/facilities                   129 B         108 kB
+├ ƒ /demo/shipper/freight-request/new          163 B         228 kB
+├ ƒ /demo/shipper/help                         859 B         108 kB
+├ ƒ /demo/shipper/history                      203 B         128 kB
+├ ƒ /demo/shipper/organization                 471 B         104 kB
+├ ƒ /demo/shipper/requests                     200 B         128 kB
+├ ƒ /demo/shipper/requests/[id]                159 B         208 kB
+├ ƒ /demo/shipper/support                      471 B         104 kB
+├ ƒ /demo/shipper/tracking                     143 B         132 kB
+├ ƒ /demo/shipper/tracking/[id]                211 B         136 kB
+├ ƒ /depot-preview                             157 B         258 kB
+├ ƒ /enter                                     218 B         104 kB
+├ ƒ /facilities                                129 B         108 kB
+├ ƒ /freight-request/new                       163 B         228 kB
+├ ƒ /hac15-preview                           4.06 kB         113 kB
+├ ƒ /hac37-preview                            3.4 kB         152 kB
+├ ƒ /help                                      867 B         108 kB
+├ ƒ /history                                   203 B         128 kB
+├ ƒ /login                                   3.43 kB         168 kB
+├ ƒ /mcp                                       218 B         104 kB
+├ ƒ /oauth/token                               218 B         104 kB
+├ ƒ /organization                              476 B         104 kB
+├ ƒ /requests                                  200 B         128 kB
+├ ƒ /requests/[id]                             159 B         208 kB
+├ ƒ /support                                   476 B         104 kB
+├ ƒ /tracking                                  142 B         132 kB
+├ ƒ /tracking-preview                        4.11 kB         149 kB
+├ ƒ /tracking/[id]                             211 B         136 kB
+├ ƒ /v2-workspace                             111 kB         413 kB
+└ ƒ /vehicle-designs                           157 B         258 kB
++ First Load JS shared by all                 104 kB
+  ├ chunks/3724-f5e67bf3df0e975c.js          46.7 kB
+  ├ chunks/518829b8-7a9e1cb074cc1c41.js      54.2 kB
+  └ other shared chunks (total)              3.05 kB
+
+
+ƒ  (Dynamic)  server-rendered on demand
