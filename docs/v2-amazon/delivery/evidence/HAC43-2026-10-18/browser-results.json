@@ -1,0 +1,152 @@
+{
+  "source": "SIMULATED",
+  "fixture": "depot-five-trucks-v1",
+  "viewport": {
+    "width": 1440,
+    "height": 1100
+  },
+  "browser": "156.0.8078.4",
+  "recorded": true,
+  "checks": [
+    {
+      "label": "Yard → Scenario summary → Yard retains clock, selection and pause",
+      "before": {
+        "clock": 826,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      },
+      "after": {
+        "clock": 826,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      }
+    },
+    {
+      "label": "Yard → Truck designs → Yard retains clock, selection and pause",
+      "before": {
+        "clock": 826,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      },
+      "after": {
+        "clock": 826,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      }
+    },
+    {
+      "label": "Yard → Scenic trip → Yard retains clock, selection and pause",
+      "before": {
+        "clock": 826,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      },
+      "after": {
+        "clock": 826,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      }
+    },
+    {
+      "label": "Explicit resume advances the retained clock",
+      "before": {
+        "clock": 826,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      },
+      "after": {
+        "clock": 1391,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      }
+    },
+    {
+      "label": "Inspection Summary/Depot round 1 retains clock, selection and pause",
+      "before": {
+        "clock": 832,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      },
+      "after": {
+        "clock": 832,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      }
+    },
+    {
+      "label": "Inspection Summary/Depot round 2 retains clock, selection and pause",
+      "before": {
+        "clock": 832,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      },
+      "after": {
+        "clock": 832,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      }
+    },
+    {
+      "label": "Closing a separate inspection preserves the studio state",
+      "before": {
+        "clock": 1391,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      },
+      "after": {
+        "clock": 1391,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      }
+    },
+    {
+      "label": "Recorded natural loading/departure; parked and maintenance remain in the roster",
+      "state": {
+        "clock": 23535,
+        "selected": "",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1"
+      },
+      "roster": "Vehicles\n5\nPresent\n3\nTruck B\nRefrigerated\nWaiting\nQueue · Bay 02 next\nTruck C\nRigid\nParked · Reserved\nParking area · No task\nTruck E\nTipper\nMaintenance\nBAY 03\nDepartures\n2\nTruck A\nArticulated\nDeparting\nBAY 02\nTruck D\nFlatbed\nDeparted\nOutside the yard"
+    }
+  ],
+  "errors": [],
+  "unexpectedRequests": [],
+  "renderer": {
+    "engine": "three.js r186",
+    "depotInstance": "f51b465b-0974-4bdd-9ddf-267de3ba0c98",
+    "depotTime": "23535",
+    "depotSelected": "",
+    "depotVehicles": "4",
+    "frames": "727",
+    "drawCalls": "339",
+    "triangles": "316696",
+    "geometries": "199",
+    "textures": "9",
+    "dpr": "1",
+    "cameraMode": "overview",
+    "depotRoof": "true",
+    "motion": "paused",
+    "depotTemplate": "distribution",
+    "depotDesigns": "articulated-box,refrigerated-linehaul,rigid-city,flatbed-deck,tipper-site",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 2060 (0x00001F08) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+  },
+  "pass": true,
+  "videoBytes": 9192007,
+  "videoFrames": 601,
+  "videoFps": 15
+}

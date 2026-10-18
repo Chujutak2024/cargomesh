@@ -8,6 +8,7 @@ import styles from "./truck.module.css";
 import type { TruckVisualType } from "./truck-model";
 import type { TruckViewControls } from "./truck-scene";
 import { readTruckModel } from "./truck-model-assets";
+import { truckDesign } from './visual-catalog';
 import { getTruckEnvironment, nextEnvironmentPhase, previewTruckEnvironment, type TruckEnvironmentPhase } from "./truck-environment";
 
 const TruckScene=dynamic(()=>import("./truck-scene"),{ssr:false,loading:()=>null});
@@ -18,11 +19,13 @@ class SceneBoundary extends Component<{children:ReactNode;onFailure:()=>void},{f
 }
 
 /** No asset identity, capacity or position claims; independent of all API state. */
-type Props = { compact?:boolean;variant?:TruckVisualType;thumbnail?:boolean;label?:string;photo?:string|null;caption?:string;modelAssetId?:string|null;custom?:boolean;onInspect?:()=>void;suspended?:boolean };
+type Props = { compact?:boolean;variant?:TruckVisualType;designId?:string;thumbnail?:boolean;label?:string;photo?:string|null;caption?:string;modelAssetId?:string|null;custom?:boolean;onInspect?:()=>void;suspended?:boolean };
 export function LogisticsTruck(props:Props) {
-  return <TruckView key={`${props.variant??"default"}:${props.modelAssetId??"catalog"}:${!!props.custom}`} {...props}/>;
+  return <TruckView key={`${props.designId??props.variant??"default"}:${props.modelAssetId??"catalog"}:${!!props.custom}`} {...props}/>;
 }
-function TruckView({compact=false,variant,thumbnail=false,label,photo,caption,modelAssetId,custom=false,onInspect,suspended=false}:Props) {
+function TruckView({compact=false,variant,designId,thumbnail=false,label,photo,caption,modelAssetId,custom=false,onInspect,suspended=false}:Props) {
+  const design = truckDesign(designId);
+  const validDesignId = design?.family === (variant ?? 'articulated') ? designId : undefined;
   const {t}=useLocale();const preferred=useReducedMotionPreference();const [motionRequested,setMotionRequested]=useState(false);const reduced=preferred&&!motionRequested;const element=useRef<HTMLDivElement>(null);
   const [visible,setVisible]=useState(false),[eligible,setEligible]=useState(false),[hidden,setHidden]=useState(false),[ready,setReady]=useState(false),[failed,setFailed]=useState(false);
   const [autoRotate,setAutoRotate]=useState(false);const controls=useRef<TruckViewControls|null>(null);
@@ -85,7 +88,7 @@ function TruckView({compact=false,variant,thumbnail=false,label,photo,caption,mo
       {photo||!custom&&!modelAssetId?<img className={styles.poster} src={photo??`/v2-workspace/trucks/${variant??"articulated"}-3d.png`} alt={photo?t("Foto de tu camión preferido","Preferred truck photo"):""} width={thumbnail?340:840} height={thumbnail?150:540} loading="lazy" style={{opacity:eligible&&ready&&!failed?0:1,zIndex:1}}/>:null}
       {!canRender&&!photo||failed&&modelAssetId&&!photo?<p className={styles.empty} role="status">{modelAssetId&&assetState==="loading"?t("Cargando tu modelo 3D…","Loading your 3D model…"):modelAssetId?t("Modelo no disponible. Vuelve a cargar el archivo GLB.","Model unavailable. Import the GLB file again."):t("Sube una foto o un modelo 3D de tu camión.","Upload a photo or a 3D model of your truck.")}</p>:null}
       {/* Keep a ready scene mounted while offscreen; its demand loop pauses without losing the visual or controls. */}
-      {eligible&&(visible||ready)&&!failed&&canRender?<SceneBoundary onFailure={markFailure}><TruckScene active={visible&&!hidden&&!suspended} reduced={!!reduced} moving={moving} onReady={markReady} onFailure={markFailure} variant={variant} modelBlob={modelBlob} environment={interactive?environment:undefined} thumbnail={thumbnail} autoRotate={rotating} onControlsReady={receiveControls} onInteraction={stopRotation} onInspect={onInspect?()=>{element.current?.focus({preventScroll:true});onInspect();}:undefined}/></SceneBoundary>:null}
+      {eligible&&(visible||ready)&&!failed&&canRender?<SceneBoundary onFailure={markFailure}><TruckScene active={visible&&!hidden&&!suspended} reduced={!!reduced} moving={moving} onReady={markReady} onFailure={markFailure} variant={variant} designId={validDesignId} modelBlob={modelBlob} environment={interactive?environment:undefined} thumbnail={thumbnail} autoRotate={rotating} onControlsReady={receiveControls} onInteraction={stopRotation} onInspect={onInspect?()=>{element.current?.focus({preventScroll:true});onInspect();}:undefined}/></SceneBoundary>:null}
       {interactive?<button type="button" className={styles.phaseButton} data-phase={environment.phase}
         aria-label={`${phaseName(environment.phase)} · ${t("Cambiar a","Switch to")} ${phaseName(nextEnvironmentPhase(environment.phase)).toLowerCase()}`}
         title={`${phaseName(environment.phase)} · ${t("Cambiar a","Switch to")} ${phaseName(nextEnvironmentPhase(environment.phase)).toLowerCase()}`}

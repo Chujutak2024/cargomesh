@@ -2,6 +2,7 @@ import { FleetOutputsV2 } from "@/shared/schemas/v2/fleet";
 import { recordData, type PortalRecord } from "./records";
 import type { TruckVisualType } from "@/features/logistics-3d/truck-model";
 import { regularFleetDriver, type FleetDriver } from "./fleet-drivers";
+import { additionalLocalFleet } from './fleet-local-additions';
 
 export type FleetStatus = "AVAILABLE" | "IN_SERVICE" | "MAINTENANCE" | "OUT_OF_SERVICE";
 export type EngineDay = { date: string; driving: number; idle: number };
@@ -141,7 +142,7 @@ export function exampleFleet(): FleetVehicle[] {
     ["Chiclayo, Perú", "Trujillo, Perú"], ["Piura, Perú", "Chiclayo, Perú"], ["Callao, Perú", "Arequipa, Perú"],
     ["Ica, Perú","Lima, Perú"],["Lurín, Perú","Lima, Perú"],["Huancayo, Perú","Lima, Perú"],["Lima, Perú","Ica, Perú"],["Pucallpa, Perú","Huánuco, Perú"],["Cusco, Perú","Arequipa, Perú"]];
   const additionalDescriptions=["Cisterna de líquidos con escotillas y barandas de seguridad.","Mezclador de concreto para abastecimiento de obra.","Semirremolque de lona lateral para carga paletizada.","Cama baja para maquinaria y equipos de gran tamaño.","Unidad maderera con soportes de sujeción para troncos.","Semirremolque refrigerado para distribución en el corredor sur."];
-  return rows.map((row, index) => ({
+  const original: FleetVehicle[] = rows.map((row, index) => ({
     id: "example-" + row[0], code: row[0], variant: row[1], source: "EXAMPLE", status: row[2], model: models[index], body: row[3],
     driver: row[4], location: row[5], fuelPercent: row[6], odometerKm: row[7], conditionScore: row[8],
     driverProfile: regularFleetDriver(row[0]), driverProfileRole:"regular",
@@ -161,6 +162,7 @@ export function exampleFleet(): FleetVehicle[] {
       driving: [8.2, 8.5, 6.4, 4.8, 0, 0, 7.3, 8.1, 9.1, 5.9, 8.6, 0, 6.2, 7.8][(day + index) % 14],
       idle: [0.6, 0.4, 0.8, 0.2, 0, 0, 0.5][(day + index) % 7] })),
   }));
+  return [...original, ...additionalLocalFleet(EXAMPLE_AS_OF)];
 }
 
 export function remainingRangeKm(vehicle: FleetVehicle) {

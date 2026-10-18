@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries, mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
+import type { TruckAppearance } from './visual-catalog';
 
 export const truckVisualTypes = ["rigid", "articulated", "refrigerated", "flatbed", "tipper", "tanker", "mixer", "curtainsider", "lowloader", "logging"] as const;
 export type TruckVisualType = typeof truckVisualTypes[number];
@@ -22,8 +23,8 @@ export function setTruckWheelAngle(truck: THREE.Group, angle: number) {
 }
 
 /** Original CargoMesh studio equipment. Decorative, never an assigned asset. */
-export function buildCargoMeshTruck(variant: TruckVisualType = "articulated", options: { cargoAccess?: boolean } = {}) {
-  const livery=liveries[variant];
+export function buildCargoMeshTruck(variant: TruckVisualType = "articulated", options: { cargoAccess?: boolean; appearance?: TruckAppearance; designId?: string } = {}) {
+  const livery=options.appearance ?? liveries[variant];
   const materials = {
     paint: new THREE.MeshPhysicalMaterial({ color: livery.cab, metalness: .56, roughness: .25, clearcoat: .85, clearcoatRoughness: .16 }),
     teal: new THREE.MeshStandardMaterial({ color: livery.accent, metalness: variant === "logging" ? 0 : .35, roughness: variant === "logging" ? .85 : .3 }),
@@ -377,6 +378,39 @@ export function buildCargoMeshTruck(variant: TruckVisualType = "articulated", op
       }
     }
   }
+  // Optional original fittings are merged into existing material batches. They
+  // alter the visual assembly only, never an equipment class or cargo capacity.
+  const fittings = options.appearance?.fittings ?? [];
+  if (fittings.includes('high-roof')) {
+    box([.82, .32, 1.1], [-2.75, 2.46, 0], 'paint', .08);
+    detailBox([.52, .025, .7], [-2.75, 2.64, 0], 'dark');
+  }
+  if (fittings.includes('aero')) {
+    box([.66, .09, 1.12], [-2.12, 2.54, 0], 'paint', .02, [0, 0, .24]);
+    for (const side of [-1, 1]) box([length * .55, .34, .045], [center - .35, .78, side * .66], 'trailer', .015);
+  }
+  if (fittings.includes('side-guards')) for (const side of [-1, 1]) {
+    for (const y of [.62, .82]) detailBox([short ? 1.25 : 1.85, .05, .05], [short ? -.15 : .55, y, side * .77], 'alloy');
+    for (const x of [short ? -.6 : -.15, short ? .35 : 1.25]) detailBox([.045, .34, .045], [x, .77, side * .77], 'dark');
+  }
+  if (fittings.includes('tail-lift')) {
+    box([.09, 1.05, 1.18], [rear + .15, 1.57, 0], 'alloy', .012);
+    for (const side of [-1, 1]) detailBox([.1, .9, .09], [rear + .22, 1.55, side * .54], 'dark');
+    for (let z = -.5; z <= .5; z += .12) detailBox([.012, .94, .014], [rear + .204, 1.57, z], 'dark');
+  }
+  if (fittings.includes('headboard')) {
+    const x = center - length / 2 + .08;
+    for (const side of [-1, 1]) detailBox([.07, 1.42, .07], [x, 1.95, side * .68], 'alloy');
+    for (const y of [1.5, 2.05, 2.65]) detailBox([.07, .07, 1.42], [x, y, 0], 'alloy');
+  }
+  if (fittings.includes('beacons')) for (const side of [-1, 1]) {
+    detailBox([.19, .04, .17], [-2.62, fittings.includes('high-roof') ? 2.66 : 2.37, side * .39], 'dark');
+    add(new THREE.CylinderGeometry(.06, .07, .1, 12), 'amber', [-2.62, fittings.includes('high-roof') ? 2.72 : 2.43, side * .39]);
+  }
+  if (fittings.includes('cab-guard')) {
+    for (const side of [-1, 1]) detailBox([.07, .56, .07], [-3.67, 1, side * .46], 'alloy');
+    for (const y of [.78, 1.22]) detailBox([.07, .06, 1.22], [-3.67, y, 0], 'alloy');
+  }
   const truck = new THREE.Group(); truck.name = `CargoMesh original ${variant} truck`;
   const wheelAngle = { value: 0 }; wheelAngles.set(truck, wheelAngle);
   if (short) truck.position.x = .8;
@@ -399,7 +433,7 @@ export function buildCargoMeshTruck(variant: TruckVisualType = "articulated", op
     materials[name].customProgramCacheKey = () => "cargomesh-wheel-motion-v1";
     mesh.castShadow = name !== "glass"; mesh.receiveShadow = name !== "glass"; truck.add(mesh);
   }
-  truck.userData = { author: "CargoMesh local project", license: "original project asset", decorative: true, componentCount, variant, detailLevel: "cab-finished" };
+  truck.userData = { author: "CargoMesh local project", license: "original project asset", decorative: true, componentCount, variant, designId: options.designId, detailLevel: "cab-finished" };
   if(options.cargoAccess&&["rigid","articulated","refrigerated","curtainsider"].includes(variant)){
     const doors:THREE.Group[]=[];
     for(const side of [-1,1]){
