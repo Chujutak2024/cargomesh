@@ -133,6 +133,23 @@ export async function POST(request: Request) {
   }
   if (!carrierScope && voiceContext.length) voiceScope = { ...voiceScope,
     voiceContext: voiceContext.slice(offerRequestId ? -6 : -12).map((turn) => turn.slice(0, offerRequestId ? 160 : 180)) };
+  if (!carrierScope && !offerRequestId) {
+    try {
+      const facilities = localPreview
+        ? (await import("@/features/v2-intake/fixtures/intake-options.fixture")).INTAKE_OPTIONS_FIXTURE.data.facilities
+            .map((facility) => ({ city: facility.city, countryCode: facility.countryCode }))
+        : await (await (await import("@/server/modules/intake/infrastructure/supabase-intake-options-repository"))
+            .v2IntakeOptionsRepository()).listActiveFacilities(identity.organizationId)
+            .then((rows) => rows.filter((row) => row.active && row.organization_id === identity.organizationId)
+              .map((row) => ({ city: row.city, countryCode: row.country_code })));
+      voiceScope = { ...voiceScope, facilityCatalog: {
+        complete: facilities.length <= 40,
+        locations: facilities.slice(0, 40).map((facility) => `${facility.city.slice(0, 80)}, ${facility.countryCode.slice(0, 3)}`),
+      } };
+    } catch {
+      voiceScope = { ...voiceScope, facilityCatalog: { complete: false, locations: [] } };
+    }
+  }
   const token = await new SignJWT({ organizationId: identity.organizationId, memberId: identity.memberId, preview: localPreview, ...voiceScope })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuer(ISSUER)

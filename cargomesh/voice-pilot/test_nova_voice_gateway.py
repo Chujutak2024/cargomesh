@@ -69,6 +69,16 @@ class VoiceGrantTests(unittest.TestCase):
         self.assertIn("use the latest correction", prompt)
         self.assertIn("Never claim that a field was accepted", prompt)
 
+    def test_customer_prompt_distinguishes_missing_facility_from_carrier_coverage(self):
+        prompt = voice_prompt({"role": "shipper", "facilityCatalog": {
+            "complete": True, "locations": ["Lima, PE", "Arequipa, PE"],
+        }})
+        self.assertIn("Lima, PE", prompt)
+        self.assertIn("no saved facility there", prompt)
+        self.assertIn("Do not say there are no carriers or companies there", prompt)
+        incomplete = voice_prompt({"role": "shipper", "facilityCatalog": {"complete": False, "locations": []}})
+        self.assertIn("do not infer absence", incomplete)
+
     def test_carrier_prompt_uses_only_scoped_request_and_does_not_invent_a_quote(self):
         prompt = voice_prompt({"role": "carrier", "opportunity": {
             "route": "Lima to Arequipa", "cargo": "GENERAL", "responseDeadline": "2026-10-20",

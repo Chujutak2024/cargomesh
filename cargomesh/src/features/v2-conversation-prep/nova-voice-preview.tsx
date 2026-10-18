@@ -23,6 +23,12 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
 }) {
   const [status, setStatus] = useState("Nova voice ready.");
   const [active, setActive] = useState(false);
+  const [listening, setListening] = useState(false);
+  const listeningRef = useRef(false);
+  const captureVersionRef = useRef(0);
+  const microphoneRef = useRef<Promise<MediaStream> | null>(null);
+  const workletLoadedRef = useRef(false);
+  const readyRef = useRef(false);
   const socketRef = useRef<WebSocket | null>(null);
   const contextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -41,34 +47,61 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
 
   function stop() {
     stoppedRef.current = true;
+    readyRef.current = false;
+    pauseCapture();
     renewOnCloseRef.current = false;
     sessionStartedAtRef.current = 0;
     lastUserTurnAtRef.current = 0;
-    workletRef.current?.disconnect();
-    sourceRef.current?.disconnect();
-    workletRef.current = null;
-    sourceRef.current = null;
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
     outputsRef.current.forEach((output) => { try { output.stop(); } catch { /* Already ended. */ } });
     outputsRef.current = [];
     socketRef.current?.close();
     socketRef.current = null;
     void contextRef.current?.close();
     contextRef.current = null;
+    workletLoadedRef.current = false;
     nextPlayRef.current = 0;
     setActive(false);
   }
 
   useEffect(() => () => {
     stoppedRef.current = true;
+    listeningRef.current = false;
+    captureVersionRef.current++;
     workletRef.current?.disconnect();
     sourceRef.current?.disconnect();
     streamRef.current?.getTracks().forEach((track) => track.stop());
+    void microphoneRef.current?.then((stream) => stream.getTracks().forEach((track) => track.stop())).catch(() => {});
     outputsRef.current.forEach((output) => { try { output.stop(); } catch { /* Already ended. */ } });
     socketRef.current?.close();
     void contextRef.current?.close();
   }, []);
+
+  function prepareMicrophone() {
+    if (!microphoneRef.current) {
+      const pending = navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
+      microphoneRef.current = pending;
+      void pending.then((stream) => {
+        if (microphoneRef.current !== pending || stoppedRef.current || !listeningRef.current) stream.getTracks().forEach((track) => track.stop());
+      }).catch(() => {});
+    }
+    return microphoneRef.current;
+  }
+
+  function pauseCapture() {
+    listeningRef.current = false;
+    setListening(false);
+    captureVersionRef.current++;
+    workletRef.current?.disconnect();
+    sourceRef.current?.disconnect();
+    workletRef.current = null;
+    sourceRef.current = null;
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    void microphoneRef.current?.then((stream) => stream.getTracks().forEach((track) => track.stop())).catch(() => {});
+    microphoneRef.current = null;
+    renewOnCloseRef.current = false;
+    setStatus("Microphone off. Your conversation and draft are intact. Resume when you want to speak.");
+  }
 
   function playAudio(event: Extract<VoiceEvent, { type: "audio" }>) {
     const context = contextRef.current;
@@ -94,19 +127,29 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
   }
 
   async function startCapture(socket: WebSocket) {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
-    if (stoppedRef.current) { stream.getTracks().forEach((track) => track.stop()); return; }
-    const context = new AudioContext();
+    const version = ++captureVersionRef.current;
+    listeningRef.current = true;
+    setListening(true);
+    setStatus("Preparing microphone…");
+    const stream = await prepareMicrophone();
+    if (stoppedRef.current || !listeningRef.current || version !== captureVersionRef.current) {
+      stream.getTracks().forEach((track) => track.stop()); return;
+    }
+    const context = contextRef.current ?? new AudioContext();
     streamRef.current = stream;
     contextRef.current = context;
-    await context.audioWorklet.addModule("/nova-pcm-worklet.js");
-    if (stoppedRef.current) return;
+    if (!workletLoadedRef.current) {
+      await context.audioWorklet.addModule("/nova-pcm-worklet.js");
+      workletLoadedRef.current = true;
+    }
+    if (stoppedRef.current || !listeningRef.current || version !== captureVersionRef.current) return;
+    await context.resume();
     const source = context.createMediaStreamSource(stream);
     const worklet = new AudioWorkletNode(context, "nova-pcm-worklet");
     sourceRef.current = source;
     workletRef.current = worklet;
     worklet.port.onmessage = (message: MessageEvent<ArrayBuffer>) => {
-      if (socket.readyState === WebSocket.OPEN && !stoppedRef.current) socket.send(message.data);
+      if (socket.readyState === WebSocket.OPEN && !stoppedRef.current && listeningRef.current) socket.send(message.data);
     };
     source.connect(worklet);
     // Some browsers do not run a worklet unless it is attached to an output.
@@ -123,10 +166,14 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
       return;
     }
     stoppedRef.current = false;
+    readyRef.current = false;
+    listeningRef.current = true;
+    setListening(true);
     setActive(true);
-    setStatus(renewing ? "Continuing your Nova conversation…" : "Connecting to Nova…");
+    setStatus(renewing ? "Continuing your Nova conversation…" : "Connecting to Nova. The first connection can take a few seconds…");
     const sessionId = crypto.randomUUID();
     try {
+      prepareMicrophone();
       // Let the final transcript update the parent history before requesting a fresh grant.
       if (renewing) {
         await new Promise((resolve) => window.setTimeout(resolve, 100));
@@ -147,8 +194,10 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
         let event: VoiceEvent;
         try { event = JSON.parse(String(message.data)) as VoiceEvent; } catch { return; }
         if (event.type === "ready") {
+          readyRef.current = true;
           sessionStartedAtRef.current = Date.now();
-          void startCapture(socket).catch(() => { setStatus("Microphone unavailable. Continue by text."); stop(); });
+          if (listeningRef.current) void startCapture(socket).catch(() => { stop(); setStatus("Microphone unavailable. Continue by text."); });
+          else setStatus("Microphone off. Resume when you want to speak.");
         } else if (event.type === "audio") playAudio(event);
         else if ((event.type === "transcript" || event.type === "transcript_delta")
           && (event.role === "user" || event.role === "assistant") && typeof event.contentId === "string") {
@@ -156,10 +205,14 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
           const final = event.type === "transcript";
           if (typeof text === "string" && text && text.length <= 4096) {
             if (final && event.role === "user") lastUserTurnAtRef.current = Date.now();
+            if (final && event.role === "user") setStatus("Nova heard you and is preparing a reply…");
+            if (final && event.role === "assistant") setStatus(listeningRef.current
+              ? "Listening with Nova. Review and confirm any business action on screen."
+              : "Microphone off. Your conversation and draft are intact. Resume when you want to speak.");
             onTurnRef.current({ role: event.role, contentId: `nova:${sessionId}:${event.contentId}`, text, final });
           }
         } else if (event.type === "session_limit") {
-          renewOnCloseRef.current = shouldRenewVoiceSession(sessionStartedAtRef.current, lastUserTurnAtRef.current, Date.now());
+          renewOnCloseRef.current = listeningRef.current && shouldRenewVoiceSession(sessionStartedAtRef.current, lastUserTurnAtRef.current, Date.now());
         } else if (event.type === "barge_in") {
           outputsRef.current.forEach((output) => { try { output.stop(); } catch { /* Already ended. */ } });
           outputsRef.current = [];
@@ -191,9 +244,13 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
   }, [autoStart]);
 
   return <div className={styles.preview}>
-    <button type="button" className={active ? styles.active : styles.start} aria-label={active ? "Stop Nova voice" : "Start Nova voice"}
-      onClick={active ? () => { stop(); setStatus("Nova voice stopped."); } : () => void start()}>
-      {active ? "Stop Nova" : "Talk with Nova"}
+    <button type="button" className={active && listening ? styles.active : styles.start} aria-label={active ? (listening ? "Turn off Nova microphone" : "Resume Nova microphone") : "Start Nova voice"}
+      onClick={active ? listening ? () => pauseCapture() : () => {
+        const socket = socketRef.current;
+        if (socket?.readyState === WebSocket.OPEN && readyRef.current) void startCapture(socket).catch(() => { stop(); setStatus("Microphone unavailable. Continue by text."); });
+        else { listeningRef.current = true; setListening(true); setStatus("Connecting to Nova…"); }
+      } : () => void start()}>
+      {active ? (listening ? "Stop listening" : "Resume listening") : "Talk with Nova"}
     </button>
     <p role="status">{status}</p>
     <p className={styles.limit}>Nova guides by voice. Recognized details enter a local draft; review every field and explicitly confirm before a request is created.</p>
