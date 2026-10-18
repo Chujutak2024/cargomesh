@@ -75,6 +75,22 @@
 .confirmation>div{display:flex;flex-wrap:wrap;gap:.45rem}
 .confirmation button,.retry{min-height:2.15rem;padding:.4rem .7rem;border:1px solid var(--cm-color-primary);border-radius:.55rem;background:var(--cm-color-primary);color:white;font:inherit;font-size:.74rem;font-weight:700;cursor:pointer}
 .confirmation button+button{border-color:var(--cm-color-line);background:white;color:var(--cm-color-heading)}
+.spokenReview{margin:.9rem 0;padding:1rem;border:1px solid var(--cm-color-line);border-radius:.85rem;background:#fff;color:var(--cm-color-ink)}
+.spokenReview header strong{display:block;color:var(--cm-color-heading);font-size:1rem}
+.spokenReview header p,.reviewPending{margin:.3rem 0 .8rem;color:var(--cm-color-muted);font-size:.76rem;line-height:1.45}
+.spokenReview dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;margin:0 0 .8rem}
+.spokenReview dl>div{min-width:0;padding:.65rem;border:1px solid var(--cm-color-line);border-radius:.6rem;background:var(--cm-color-surface-tint)}
+.spokenReview dt{font-size:.69rem;font-weight:800;color:var(--cm-color-muted)}
+.spokenReview dd{margin:.25rem 0 0;font-size:.84rem;font-weight:700;overflow-wrap:anywhere}
+.spokenReview dd small{display:block;margin-top:.3rem;font-size:.69rem;font-weight:500;color:var(--cm-color-muted)}
+.reviewMore{margin:.2rem 0 .75rem;font-size:.76rem}.reviewMore summary{cursor:pointer;color:var(--cm-color-primary);font-weight:700}.reviewMore dl{margin-top:.5rem}
+  .reviewJson{max-height:18rem;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:.7rem;border:1px solid var(--cm-color-line);border-radius:.5rem;background:var(--cm-color-surface-tint);font-size:.68rem}
+.reviewMissing{margin:.1rem 0 .8rem;padding-left:1.15rem;color:var(--cm-color-muted);font-size:.75rem;line-height:1.6}
+.reviewActions{display:flex;flex-wrap:wrap;gap:.5rem}
+.reviewActions button,.reviewAction{min-height:2.2rem;padding:.4rem .65rem;border:1px solid var(--cm-color-primary);border-radius:.5rem;background:#fff;color:var(--cm-color-primary);font:inherit;font-size:.75rem;font-weight:700;cursor:pointer}
+.reviewActions .reviewAction,.reviewAction{background:var(--cm-color-primary);color:#fff}
+.reviewAction:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:600px){.spokenReview dl{grid-template-columns:1fr}}
 .retry{margin-top:.6rem;background:white;color:var(--cm-color-primary)}
 .conflict{margin:.8rem 0;padding:.85rem;border:1px solid var(--cm-color-danger);border-radius:.7rem;background:var(--cm-color-danger-surface)}
 .conflict strong{color:var(--cm-color-danger);font-size:.84rem}.conflict p{margin:.3rem 0 .65rem;color:var(--cm-color-ink);font-size:.75rem;line-height:1.45}

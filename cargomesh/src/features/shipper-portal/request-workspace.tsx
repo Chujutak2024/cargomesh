@@ -19,6 +19,8 @@ import { CommercialPanel } from "./commercial-panel";
 import { bookingsStillNeeded, optionAvailability } from "./commercial-view";
 import {refreshRequestCommercial} from './shipper-commercial-client';
 import { OutcomePanel } from "./outcome-panel";
+import { buildOfferBriefing } from "./offer-briefing";
+import { NovaVoicePreview } from "@/features/v2-conversation-prep/nova-voice-preview";
 
 type Workflow = Record<string, WorkflowRecordV2[]>;
 type EditState = {
@@ -41,6 +43,8 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, commercialRe
   const [editOpen, setEditOpen] = useState(false);
   const [decisionOpen, setDecisionOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [offerVoiceOpen, setOfferVoiceOpen] = useState(false);
+  const [offerVoiceTurns, setOfferVoiceTurns] = useState<string[]>([]);
   const [bookingConsent, setBookingConsent] = useState(false);
   const bookingInFlight = useRef(false);
   const bookingKeys = useRef(new Map<string, string>());
@@ -49,7 +53,9 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, commercialRe
   const [resolvedDestination, setResolvedDestination] = useState<FreightLocationV2 | null>(null);
   const [edit, setEdit] = useState<EditState>(() => editState(initialRequest));
   const offers = (workflow.offers ?? []).filter((item): item is Extract<WorkflowRecordV2, { kind: "offers" }> => item.kind === "offers");
+  const acceptedOpportunities = (workflow.opportunities ?? []).filter((item) => item.kind === "opportunities" && item.data.status === "ACCEPTED");
   const ranking = latestRecord((workflow.ranking ?? []).filter((item): item is Extract<WorkflowRecordV2, { kind: "ranking" }> => item.kind === "ranking"));
+  const offerBriefing = buildOfferBriefing(offers, ranking);
   const existingDecision = latestRecord((workflow.decisions ?? []).filter((item): item is Extract<WorkflowRecordV2, { kind: "decisions" }> => item.kind === "decisions" && item.data.status === "SELECTED"));
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
   const selectedOption = ranking?.data.options[selectedOptionIndex] ?? null;
@@ -149,14 +155,21 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, commercialRe
 
   const commercialRefresh=useRef<AbortController|null>(null),refreshBusy=useRef(false);
   useEffect(()=>()=>commercialRefresh.current?.abort(),[]);
-  async function refreshCommercial(){
+  async function refreshCommercial(quiet = false){
     if(phase!=="idle"||refreshBusy.current||!commercialRefreshEnabled)return;
     refreshBusy.current=true;const controller=new AbortController();commercialRefresh.current=controller;
-    setPhase("refreshing");setError(null);setDecisionOpen(false);setBookingOpen(false);setBookingConsent(false);
-    try{const fresh=await refreshRequestCommercial(request.id,request.organizationId,controller.signal);if(controller.signal.aborted)return;setRequest(fresh.request);setWorkflow(old=>({...old,...fresh.workflow}));setSelectedOptionIndex(0);setDecision(latestRecord((fresh.workflow.decisions??[]).filter((r):r is Extract<WorkflowRecordV2,{kind:"decisions"}>=>r.kind==="decisions"&&r.data.status==="SELECTED")));}
+    if(!quiet){setPhase("refreshing");setError(null);setDecisionOpen(false);setBookingOpen(false);setBookingConsent(false);}
+    try{const fresh=await refreshRequestCommercial(request.id,request.organizationId,controller.signal);if(controller.signal.aborted)return;setRequest(fresh.request);setWorkflow(old=>({...old,...fresh.workflow}));if(!quiet)setSelectedOptionIndex(0);setDecision(latestRecord((fresh.workflow.decisions??[]).filter((r):r is Extract<WorkflowRecordV2,{kind:"decisions"}>=>r.kind==="decisions"&&r.data.status==="SELECTED")));}
     catch(error){if(!controller.signal.aborted)setError(toShipperError(error));}
-    finally{refreshBusy.current=false;if(!controller.signal.aborted)setPhase("idle");}
+    finally{refreshBusy.current=false;if(!controller.signal.aborted&&!quiet)setPhase("idle");}
   }
+  useEffect(() => {
+    if (!commercialRefreshEnabled) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible" && phase === "idle") void refreshCommercial(true);
+    }, 20_000);
+    return () => window.clearInterval(timer);
+  }, [commercialRefreshEnabled, phase, request.id, request.organizationId]);
   const mapProps = evaluation ? mapServiceabilityToMapViewProps(request, evaluation, selectedCandidateId, setSelectedCandidateId) : null;
   return <div className={styles.page}>
     <header className={styles.hero}><div className={styles.heroCopy}><h1>{request.referenceCode}</h1><p>{request.origin.city} → {request.destination.city}</p></div>
@@ -164,6 +177,16 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, commercialRe
         <Button disabled={phase!=="idle"} isLoading={phase === "evaluating"} loadingLabel={t("Evaluando…", "Evaluating…")} onClick={() => void evaluate()}><RefreshCw size={16}/>{t("Reevaluar", "Reevaluate")}</Button></div></header>
 
     {error ? <ErrorNotice error={error} t={t} /> : null}
+    {offerBriefing.currentOfferCount > 0 ? <section className={styles.offerArrival} role="status" aria-live="polite">
+      <div><strong>{t("Llegaron ofertas de transportistas", "Carrier offers have arrived")}</strong>
+        <p>{offerBriefing.currentOfferCount} {t("oferta(s) vigente(s)", "current offer(s)")} · {offerBriefing.recommended
+          ? t(`El ranking recomienda revisar primero la opción ${offerBriefing.recommended.position}.`, `The ranking recommends reviewing option ${offerBriefing.recommended.position} first.`)
+          : t("Aún no hay un plan completo y clasificado para recomendar.", "No complete ranked plan is ready to recommend yet.")}</p></div>
+      <Button variant="secondary" onClick={() => { setOfferVoiceTurns([]); setOfferVoiceOpen(true); }}>{t("Escuchar opciones con Nova", "Hear options with Nova")}</Button>
+    </section> : acceptedOpportunities.length > 0 ? <section className={styles.offerArrival} role="status" aria-live="polite">
+      <div><strong>{t("Un transportista aceptó revisar la solicitud", "A carrier accepted the opportunity")}</strong>
+        <p>{t("Aún no ha enviado una oferta con precio. Te avisaremos aquí cuando llegue; todavía no hay una opción que Nova pueda recomendar.", "No priced offer has arrived yet. We will show it here when it arrives; Nova has no option to recommend yet.")}</p></div>
+    </section> : null}
     <section className={styles.panel}><div className={styles.summary}>
       <Summary label={t("Estado", "Status")} value={requestStatusLabel(request.status, locale)} badge={requestStatusTone(request.status)} />
       <Summary label={t("Carga", "Cargo")} value={`${formatMass(request.cargoSpecification.totalWeightKg, localeTag)} · ${request.cargoSpecification.totalVolumeM3.toLocaleString(localeTag)} m³`} />
@@ -206,6 +229,15 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, commercialRe
       busy={phase === "saving"} onClose={() => setEditOpen(false)} onSave={() => void saveRevision()} t={t}/>
     <Dialog open={decisionOpen} title={t("Confirmar alternativa", "Confirm alternative")} description={t("Esta decisión queda auditada y no crea una reserva por sí sola.", "This decision is audited and does not create a booking by itself.")} closeLabel={t("Cerrar", "Close")} onClose={() => setDecisionOpen(false)}>
       <div className={styles.dialogCopy}><p>{selectedOption ? `${t("Plan", "Plan")}: ${selectedOption.planId} · ${selectedOption.offerIds.length} ${t("oferta(s)", "offer(s)")}` : t("No hay opción seleccionada.", "No option selected.")}</p><p>{t("La comparación es una instantánea: el servidor volverá a validar vigencia, permisos y elegibilidad.", "The comparison is a snapshot: the server will revalidate validity, permissions and eligibility.")}</p><Button disabled={!optionAvailability(selectedOption, offers).available || phase !== "idle"} isLoading={phase === "deciding"} onClick={() => void chooseOption()}><CheckCircle2 size={16}/>{t("Confirmar selección", "Confirm selection")}</Button></div>
+    </Dialog>
+    <Dialog open={offerVoiceOpen} title={t("Opciones del carrier", "Carrier options")} description={t("Nova explica ofertas persistidas y el ranking vigente. La selección y la reserva requieren tu confirmación en pantalla.", "Nova explains persisted offers and the current ranking. Selecting and booking require your confirmation on screen.")} closeLabel={t("Cerrar", "Close")} onClose={() => setOfferVoiceOpen(false)}>
+      <div className={styles.offerVoice}><p>{offerBriefing.script}</p>
+        {offerVoiceOpen ? <NovaVoicePreview offerRequestId={request.id} autoStart voiceContext={offerVoiceTurns.slice(-16)} onTurn={(turn) => {
+          if (turn.final) setOfferVoiceTurns((current) => [...current.slice(-15), `${turn.role === "user" ? "Customer" : "CargoMesh"}: ${turn.text.slice(0, 300)}`]);
+        }}/> : null}
+        {offerVoiceTurns.length ? <div aria-label="Nova offer conversation">{offerVoiceTurns.map((turn, index) => <p key={`${index}-${turn.slice(0, 20)}`}>{turn}</p>)}</div> : null}
+        <Button variant="secondary" onClick={() => setOfferVoiceOpen(false)}>{t("Revisar ofertas en pantalla", "Review offers on screen")}</Button>
+      </div>
     </Dialog>
     <Dialog open={bookingOpen} title={t("Autorizar booking", "Authorize booking")} description={t("Acción comercial explícita. No puede inferirse del ranking ni del chat.", "Explicit commercial action. It cannot be inferred from ranking or chat.")} closeLabel={t("Cancelar", "Cancel")} onClose={() => setBookingOpen(false)}>
       <div className={styles.dialogCopy}><p>{decision ? `${bookingsStillNeeded(decision.data.selectedOfferIds, activeBookings, decision.id).length} ${t("oferta(s) pendientes de autorización", "offer(s) awaiting authorization")}.` : t("Primero confirma una decisión.", "Confirm a decision first.")}</p>

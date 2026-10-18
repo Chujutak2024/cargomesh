@@ -6,8 +6,13 @@ import {DataValue} from './contract-form';
 import {portalErrorCopy} from './api';
 import {canCarrierAction} from './permissions';
 import {readCommercial,readCommercialDetail} from './commercial-client';
+import {readFleetResource} from './fleet-client';
+import {parseCommercialRecord} from './commercial-model';
+import {NovaVoicePreview} from '@/features/v2-conversation-prep/nova-voice-preview';
+import {carrierVoicePrice} from './carrier-voice-price';
+import {acceptsSuggestedPrice,carrierEstimateBasis,carrierPriceEstimate} from './carrier-price-estimate';
 import {CommercialActionForm,type CommercialAction} from './commercial-action-form';
-import {bookingOffer,bookingExecutions,orderStage,opportunityOffers,pipelineItems,stages,offerState,routeLabel,offerContext,type CommercialSnapshot,type Opportunity,type Offer,type Booking} from './commercial-model';
+import {bookingOffer,bookingExecutions,orderStage,opportunityOffers,pendingCarrierOpportunities,pipelineItems,stages,offerState,routeLabel,offerContext,type CommercialSnapshot,type Opportunity,type Offer,type Booking} from './commercial-model';
 import s from './commercial-workspace.module.css';
 type View='dashboard'|'shipments'|'desk'|'orders'|'pipeline'|'tracking';
 type Selection={kind:'opportunities'|'offers'|'bookings';id:string};
@@ -19,27 +24,45 @@ export function ConnectedCommercialWorkspace({carrier,view}:{carrier:CarrierPort
  const [selection,setSelection]=useState<Selection|null>(null),[detail,setDetail]=useState<Opportunity|Offer|Booking|null>(null),[detailError,setDetailError]=useState('');
  const [busy,setBusy]=useState(false);const detailPanel=useRef<HTMLElement|null>(null);
  const [action,setAction]=useState<CommercialAction|null>(null),[selectedAssignments,setSelectedAssignments]=useState<string[]>([]),[now,setNow]=useState(Date.now());
+ const [voiceTurns,setVoiceTurns]=useState<{id:string;role:string;text:string}[]>([]);
+ const [spokenAmount,setSpokenAmount]=useState<number|null>(null);
+ const [ratePerKm,setRatePerKm]=useState('');
+ const [useEstimate,setUseEstimate]=useState(false);
+ const [autoVoiceOpportunityId,setAutoVoiceOpportunityId]=useState<string|null>(null);
  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),30000);return()=>clearInterval(timer);},[]);
  useEffect(()=>{const controller=new AbortController();setSnapshot(null);setError('');setDetail(null);setAction(null);setDetailError('');
   void readCommercial(carrier.carrierId,controller.signal).then(value=>{if(!controller.signal.aborted)setSnapshot(value);}).catch(e=>{if(!controller.signal.aborted)setError(portalErrorCopy(e,false));});return()=>controller.abort();
  },[carrier.carrierId,refresh]);
- useEffect(()=>{const controller=new AbortController();setDetail(null);setAction(null);setDetailError('');setSelectedAssignments([]);
+ useEffect(()=>{const controller=new AbortController();setDetail(null);setAction(null);setDetailError('');setSelectedAssignments([]);setVoiceTurns([]);setSpokenAmount(null);setRatePerKm('');setUseEstimate(false);
   if(selection&&snapshot)void readCommercialDetail(carrier.carrierId,selection.kind,selection.id,controller.signal).then(row=>{if(!controller.signal.aborted){setDetail(row);if(row.kind==='opportunities')setSelectedAssignments(row.data.assignmentIds);}}).catch(e=>{if(!controller.signal.aborted)setDetailError(portalErrorCopy(e,false));});return()=>controller.abort();
- },[carrier.carrierId,selection,snapshot]);
+ },[carrier.carrierId,selection,!!snapshot,refresh]);
+ useEffect(()=>{if(!snapshot)return;let active=true;const controller=new AbortController();
+  const timer=setInterval(()=>{if(document.visibilityState!=='visible')return;
+   void readFleetResource(carrier.carrierId,'opportunities',controller.signal).then(page=>{
+    if(!active||page.truncated)return;
+    const rows=page.records.map(row=>parseCommercialRecord('opportunities',row,carrier.carrierId));
+    setSnapshot(current=>current?{...current,opportunities:rows,readAt:new Date().toISOString()}:current);
+   }).catch(()=>{/* Keep the last known read; manual refresh reports errors. */});
+  },30000);return()=>{active=false;controller.abort();clearInterval(timer);};
+ },[carrier.carrierId,!!snapshot]);
  useEffect(()=>{if(detail){detailPanel.current?.focus({preventScroll:true});detailPanel.current?.scrollIntoView({block:'start',behavior:'auto'});}},[detail]);
  const matches=(text:string)=>text.toLowerCase().includes(search.trim().toLowerCase());
  const opportunities=snapshot?.opportunities.filter(o=>matches(routeLabel(o)+' '+o.id+' '+o.data.cargoSpecification.categoryCode))??[];
  const offers=snapshot?.offers.filter(f=>matches(f.data.carrierReference+' '+f.id))??[];
  const orders=snapshot?.bookings.filter(b=>matches((b.data.carrierReference??'')+' '+b.id+' '+(b.requestId??''))&&(filter==='All'||orderStage(b,snapshot)===filter))??[];
  const pipeline=snapshot?pipelineItems(snapshot,now).filter(p=>opportunities.some(o=>o.id===p.opportunity.id)):[];
- const open=(kind:Selection['kind'],id:string)=>{if(busy)return;setSelection({kind,id});setAction(null);};
+ const pending=snapshot?pendingCarrierOpportunities(snapshot,now):[];
+ const open=(kind:Selection['kind'],id:string,autoVoice=false)=>{if(busy)return;setSelection({kind,id});setAction(null);setAutoVoiceOpportunityId(autoVoice&&kind==='opportunities'?id:null);};
  const allowed=(name:string,status:string)=>!busy&&!!snapshot&&!snapshot.partial&&canCarrierAction(carrier.role,name,status);
- function beginOffer(o:Opportunity,old:Offer|null=null){if(busy)return;const ids=old?.data.coveredAssignmentIds??selectedAssignments;try{const issuedAt=new Date().toISOString();offerContext(o,ids,old,issuedAt);setAction({kind:'offer',row:o,assignmentIds:ids,supersedes:old,issuedAt});setDetailError('');}catch{setDetailError('Select recorded assignments with complete service references.');}}
+ function beginOffer(o:Opportunity,old:Offer|null=null,voicePrice?:number,estimated=false){if(busy)return;const ids=old?.data.coveredAssignmentIds??selectedAssignments;try{const issuedAt=new Date().toISOString();offerContext(o,ids,old,issuedAt);const basis=estimated?carrierEstimateBasis(o,ids):null;setAction({kind:'offer',row:o,assignmentIds:ids,supersedes:old,issuedAt,voicePrice,estimateBasis:basis?{...basis,usdPerKm:Number(ratePerKm)}:undefined});setDetailError('');}catch{setDetailError('Select recorded assignments with complete service references.');}}
+ const estimateBasis=detail?.kind==='opportunities'?carrierEstimateBasis(detail,selectedAssignments):null;
+ const estimatedAmount=estimateBasis?carrierPriceEstimate(estimateBasis.distanceKm,Number(ratePerKm)):null;
  function saved(){setBusy(false);setAction(null);setRefresh(n=>n+1);}
  return <div className={s.workspace}>
  <div className={s.toolbar}><SearchField label="Search loaded records" value={search} onValueChange={setSearch}/><Button variant="secondary" disabled={busy} onClick={()=>setRefresh(n=>n+1)}>Refresh commercial records</Button></div>
  {error?<p role="alert">{error}</p>:!snapshot?<p role="status">Loading authorized opportunities, offers, bookings and operations…</p>:<>
  {snapshot.partial?<p role="status" className={s.notice}>Partial read. Counts cover loaded records; commercial actions are disabled. Missing relationships remain unconfirmed.</p>:null}
+ {pending.length?<section className={s.notice} role="status" aria-label="New freight opportunities"><strong>{pending.length} freight {pending.length===1?'opportunity needs':'opportunities need'} your review.</strong> <Button variant="secondary" onClick={()=>open('opportunities',pending[0].id,true)}>Hear and review newest request</Button></section>:null}
  <p className={s.notice}>Connected Carrier records · read {date(snapshot.readAt)}. Customer requests remain customer-owned. Accepting an opportunity does not reserve capacity; the customer chooses and authorizes a booking.</p>
  {view==='dashboard'?<><div className={s.summary}><div><strong>{snapshot.opportunities.length}{snapshot.partial?'+':''}</strong><span>Loaded opportunities</span></div><div><strong>{snapshot.offers.filter(f=>offerState(f,now)==='CURRENT').length}</strong><span>Current offers in loaded records</span></div><div><strong>{snapshot.bookings.length}{snapshot.partial?'+':''}</strong><span>Customer booking authorizations</span></div><div><strong>{snapshot.executions.filter(e=>e.status==='IN_PROGRESS').length}</strong><span>Recorded operations in progress</span></div></div><div className={s.actions}><a href="#/shipments">Review opportunities</a><a href="#/orders">Open Orders</a><a href="#/pipeline">Open pipeline</a></div></>:null}
  {view==='pipeline'?<><p>Stages are derived from commercial and execution records. The board is read-only; stage changes use the explicit actions in each detail.</p><div className={s.board}>{stages.map(stage=><section key={stage} className={s.column} aria-label={stage}><h2>{stage} · {pipeline.filter(p=>p.stage===stage).length}</h2>{pipeline.filter(p=>p.stage===stage).map(p=><article key={p.opportunity.id} className={s.card}><h3>{routeLabel(p.opportunity)}</h3><p>{p.opportunity.data.cargoSpecification.categoryCode}</p><small>Opportunity {short(p.opportunity.id)} · {p.offers.length} offer version(s) · {p.bookings.length} linked booking(s)</small><Button variant="secondary" onClick={()=>open('opportunities',p.opportunity.id)}>Open opportunity</Button></article>)}</section>)}</div>{snapshot.bookings.some(b=>!bookingOffer(b,snapshot))?<p className={s.notice}>Some bookings have no available offer link. They remain visible in Orders; their pipeline relationship is pending.</p>:null}</>:null}
@@ -50,6 +73,26 @@ export function ConnectedCommercialWorkspace({carrier,view}:{carrier:CarrierPort
  </>}
  {selection?<section ref={detailPanel} tabIndex={-1} className={s.panel} aria-label="Commercial record detail"><div className={s.actions}><Button variant="secondary" disabled={busy} onClick={()=>{setSelection(null);setAction(null);}}>Close detail</Button><Button variant="secondary" disabled={busy} onClick={()=>{setAction(null);setRefresh(n=>n+1);}}>Refresh detail</Button></div>{detailError?<p role="alert">{detailError}</p>:null}{!detail&&!detailError?<p role="status">Reading the current record and version…</p>:null}
  {detail?.kind==='opportunities'?<><h2>{routeLabel(detail)}</h2><span className={s.badge}>{detail.status}</span><p>Opportunity {short(detail.id)} · revision {detail.version} · customer organization {short(detail.organizationId)}</p><dl className={s.facts}><div><dt>Origin</dt><dd><DataValue value={detail.data.origin} es={false}/></dd></div><div><dt>Destination</dt><dd><DataValue value={detail.data.destination} es={false}/></dd></div><div><dt>Response deadline</dt><dd>{date(detail.data.responseDeadline)}</dd></div><div><dt>Response channel</dt><dd>{detail.data.responseChannel}</dd></div></dl><h3>Cargo & customer requirements</h3><DataValue value={detail.data.cargoSpecification} es={false}/><details><summary>Assigned legs, equipment, capacity and windows</summary><DataValue value={detail.data.assignmentSnapshots} es={false}/></details>
+ <div className={s.notice}>
+  <strong>Discuss this request with Nova</strong>
+  <p>Nova can explain the recorded request. For a price estimate, enter your own rate for the recorded vehicle type. Distance × USD/km is indicative; tolls, fuel, taxes and other costs need separate review. Nothing is sent until you confirm the offer form.</p>
+  <NovaVoicePreview key={detail.id} autoStart={autoVoiceOpportunityId===detail.id} carrierScope={{carrierId:carrier.carrierId,opportunityId:detail.id}} onTurn={turn=>{
+   if(!turn.final)return;
+   setVoiceTurns(rows=>[...rows.filter(row=>row.id!==turn.contentId),{id:turn.contentId,role:turn.role,text:turn.text}].slice(-8));
+   if(turn.role==='user'){const amount=carrierVoicePrice(turn.text);setSpokenAmount(amount);setUseEstimate(amount===null&&acceptsSuggestedPrice(turn.text));}
+  }}/>
+  {voiceTurns.length?<div aria-label="Recent voice transcript">{voiceTurns.map(turn=><p key={turn.id}><strong>{turn.role==='user'?'You':'CargoMesh'}:</strong> {turn.text}</p>)}</div>:null}
+  {spokenAmount!==null?<p role="status">I heard your proposed total: <strong>{new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(spokenAmount)}</strong>. This is not a CargoMesh recommendation.</p>:null}
+  {spokenAmount!==null?<Button disabled={!allowed('offers.create',detail.status)||!selectedAssignments.length||Date.parse(detail.data.responseDeadline)<=now} onClick={()=>beginOffer(detail,null,spokenAmount)}>Use my spoken amount in an editable offer</Button>:null}
+ </div>
+ <div className={s.notice} aria-label="Carrier price estimate"><strong>Estimate from your carrier rate</strong>
+  {estimateBasis?<><p>Recorded ROAD distance: {estimateBasis.distanceKm.toLocaleString('en-US')} km · vehicle/equipment: {estimateBasis.equipmentType.replaceAll('_',' ')}.</p>
+   <label>Rate for {estimateBasis.equipmentType.replaceAll('_',' ')} (USD per km) <input type="number" min="0.01" max="100000" step="0.01" value={ratePerKm} onChange={e=>{setRatePerKm(e.target.value);setUseEstimate(false);}} /></label>
+   {estimatedAmount!==null?<p role="status">Indicative transport price: <strong>{new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(estimatedAmount)}</strong> = {estimateBasis.distanceKm.toLocaleString('en-US')} km × {Number(ratePerKm).toFixed(2)} USD/km. This rate is entered by you, not a verified CargoMesh tariff.</p>:<p>Enter your rate to calculate a proposal.</p>}
+   {useEstimate&&estimatedAmount!==null?<p role="status">I heard that you like this estimate. Review the prefilled offer and confirm it explicitly before sending.</p>:null}
+   <Button disabled={estimatedAmount===null||!allowed('offers.create',detail.status)||Date.parse(detail.data.responseDeadline)<=now} onClick={()=>{if(estimatedAmount!==null)beginOffer(detail,null,estimatedAmount,true);}}>Review offer at estimated price</Button>
+  </>:<p>Automatic estimate unavailable: the selected assignment needs recorded ROAD distance and one unambiguous vehicle type. You can still enter a manual offer with its evidence.</p>}
+ </div>
  <div className={s.actions}><Button disabled={!allowed('opportunities.respond',detail.status)||Date.parse(detail.data.responseDeadline)<=now} onClick={()=>setAction({kind:'respond',row:detail,response:'ACCEPTED'})}>Accept for review</Button><Button variant="secondary" disabled={!allowed('opportunities.respond',detail.status)||Date.parse(detail.data.responseDeadline)<=now} onClick={()=>setAction({kind:'respond',row:detail,response:'DECLINED'})}>Decline</Button></div>
  <h3>Assignments covered by this offer</h3><fieldset className={s.selection} disabled={!!action}><legend>Select the recorded legs you will quote</legend>{detail.data.assignmentIds.map((id,i)=><label key={id}><input type="checkbox" checked={selectedAssignments.includes(id)} onChange={e=>setSelectedAssignments(ids=>e.target.checked?[...ids,id]:ids.filter(x=>x!==id))}/>Assigned leg {i+1}</label>)}</fieldset><Button disabled={!allowed('offers.create',detail.status)||!selectedAssignments.length||Date.parse(detail.data.responseDeadline)<=now} onClick={()=>beginOffer(detail)}>Prepare offer</Button>
  <h3>Offer history</h3>{snapshot?opportunityOffers(detail,snapshot).map(f=><article key={f.id} className={s.card}><strong>{f.data.carrierReference} · {money(f)}</strong><p>Version {f.data.offerVersion} · {offerState(f,now)}</p><Button variant="secondary" onClick={()=>open('offers',f.id)}>View this offer</Button></article>):null}</>:null}
