@@ -1,10 +1,11 @@
 import json
 import time
 import unittest
+from unittest.mock import patch
 
 import jwt
 
-from nova_voice_gateway import AUDIENCE, ISSUER, BrowserInput, BrowserOutput, _used_grants, validate_network, verify_grant
+from nova_voice_gateway import AUDIENCE, ISSUER, BrowserInput, BrowserOutput, _used_grants, handle, validate_network, verify_grant
 from cargomesh_voice_prompt import voice_prompt
 
 SECRET = "local-test-secret-at-least-thirty-two-characters"
@@ -53,8 +54,20 @@ class VoiceGrantTests(unittest.TestCase):
     def test_customer_prompt_guides_a_real_request_without_pilot_language(self):
         prompt = voice_prompt({"role": "shipper"})
         self.assertIn("freight request", prompt)
-        self.assertIn("review step", prompt)
+        self.assertIn("Review spoken request details", prompt)
+        self.assertIn("voice session cannot directly populate", prompt)
         self.assertNotIn("comparison", prompt)
+
+    def test_customer_prompt_keeps_latest_correction_across_sessions(self):
+        prompt = voice_prompt({"role": "shipper", "voiceContext": [
+            "Customer: from Lima to Piura",
+            "Customer: sorry, from Lima to Santiago Chile",
+            "Customer: 2000 kilograms, fragile handling",
+        ]})
+        self.assertIn("Lima to Santiago Chile", prompt)
+        self.assertIn("2000 kilograms, fragile handling", prompt)
+        self.assertIn("use the latest correction", prompt)
+        self.assertIn("Never claim that a field was accepted", prompt)
 
     def test_carrier_prompt_uses_only_scoped_request_and_does_not_invent_a_quote(self):
         prompt = voice_prompt({"role": "carrier", "opportunity": {
@@ -66,8 +79,50 @@ class VoiceGrantTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             voice_prompt({"role": "carrier"})
 
+    def test_shipper_offer_prompt_requires_server_briefing_and_keeps_booking_explicit(self):
+        prompt = voice_prompt({"role": "shipper_offers", "offerBriefing": "Two current offers; option 1 is ranked first.",
+                               "voiceContext": ["Customer: why option one?"]})
+        self.assertIn("option 1 is ranked first", prompt)
+        self.assertIn("why option one?", prompt)
+        self.assertIn("explicitly select", prompt)
+        with self.assertRaises(ValueError):
+            voice_prompt({"role": "shipper_offers"})
+
 
 class VoiceTranscriptTests(unittest.IsolatedAsyncioTestCase):
+    async def test_timeout_emits_renewal_signal_without_claiming_provider_errors_are_renewable(self):
+        class Socket:
+            request = type("Request", (), {"path": "/voice"})()
+
+            def __init__(self):
+                self.state = type("State", (), {"name": "OPEN"})()
+                self.messages = []
+                self.closed = None
+
+            async def recv(self):
+                return json.dumps({"type": "auth", "token": signed()})
+
+            async def send(self, message):
+                self.messages.append(json.loads(message))
+
+            async def close(self, code, reason=None):
+                self.closed = code
+                self.state.name = "CLOSED"
+
+        class Agent:
+            async def run(self, **_kwargs):
+                raise TimeoutError
+
+            def cancel(self):
+                pass
+
+        _used_grants.clear()
+        socket = Socket()
+        with patch("nova_voice_gateway.boto3.Session"), patch("nova_voice_gateway.BedrockNovaSonicModel"), patch("nova_voice_gateway.BidiAgent", return_value=Agent()):
+            await handle(socket, SECRET, None)
+        self.assertEqual(socket.messages, [{"type": "session_limit"}])
+        self.assertEqual(socket.closed, 1000)
+
     async def test_carrier_opening_is_one_text_turn_before_microphone_audio(self):
         class Socket:
             async def recv(self):

@@ -67,6 +67,7 @@ export function updatePrototypeDraftField<K extends keyof V2IntakePrototypeDraft
 
 /** Apply one provisional chat field against the latest draft, including canonical UI totals. */
 export function applyChatFieldToDraft(draft: V2IntakePrototypeDraft, field: keyof V2IntakePrototypeDraft, value: string): V2IntakePrototypeDraft {
+  if (field === "requirements") return { ...draft, requirements: [...new Set([...draft.requirements, value])] };
   const next = updatePrototypeDraftField(draft, field, value as never);
   if (field === "packaging") next.unitPackageType = value;
   return next;

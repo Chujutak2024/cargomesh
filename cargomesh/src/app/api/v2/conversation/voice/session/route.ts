@@ -5,6 +5,9 @@ import { hasSessionOrigin } from "@/server/auth/session-origin";
 import { requireAuthenticatedMember } from "@/server/auth/member";
 import { z } from "zod";
 import { carrierVoiceOpportunity, voiceFact } from "@/server/conversation/carrier-voice-scope";
+import { WorkflowRecordV2Schema } from "@/shared/schemas/v2/workflow";
+import { buildOfferBriefing } from "@/features/shipper-portal/offer-briefing";
+import type { WorkflowRecordV2 } from "@/features/shipper-portal/shipper-model";
 
 export const runtime = "nodejs";
 
@@ -36,20 +39,32 @@ export async function POST(request: Request) {
   const localHosts = ["localhost", "127.0.0.1", "[::1]"];
   let preview = false;
   let carrierScope: { carrierId: string; opportunityId: string } | null = null;
+  let offerRequestId: string | null = null;
+  let voiceContext: string[] = [];
   try {
     const body = await request.json() as unknown;
     preview = typeof body === "object" && body !== null && "preview" in body && body.preview === true;
+    if (typeof body === "object" && body !== null && "voiceContext" in body) {
+      const parsed = z.array(z.string().min(1).max(320)).max(16).safeParse(body.voiceContext);
+      if (!parsed.success) return NextResponse.json({ error: "INVALID_VOICE_CONTEXT" }, { status: 400 });
+      voiceContext = parsed.data;
+    }
     if (typeof body === "object" && body !== null && "carrierId" in body) {
       const parsed = z.object({ carrierId: z.string().uuid(), opportunityId: z.string().uuid() }).safeParse(body);
       if (!parsed.success) return NextResponse.json({ error: "INVALID_VOICE_SCOPE" }, { status: 400 });
       carrierScope = parsed.data;
+    }
+    if (typeof body === "object" && body !== null && "offerRequestId" in body && body.offerRequestId !== undefined) {
+      const parsed = z.string().uuid().safeParse(body.offerRequestId);
+      if (!parsed.success) return NextResponse.json({ error: "INVALID_OFFER_SCOPE" }, { status: 400 });
+      offerRequestId = parsed.data;
     }
   } catch { /* Ordinary authenticated requests need no body. */ }
   const localPreview = preview && process.env.NODE_ENV !== "production"
     && process.env.CARGOMESH_NOVA_DEMO_VOICE === "true"
     && localHosts.includes(new URL(request.url).hostname)
     && localHosts.includes(new URL(request.headers.get("origin") ?? "").hostname);
-  if (preview && (!localPreview || carrierScope)) {
+  if (preview && (!localPreview || carrierScope || offerRequestId) || carrierScope && offerRequestId) {
     return NextResponse.json({ error: "VOICE_UNAVAILABLE" }, { status: 403 });
   }
   let identity: { userId: string; organizationId: string; memberId: string };
@@ -81,7 +96,43 @@ export async function POST(request: Request) {
     } catch {
       return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
     }
+    if (offerRequestId) {
+      try {
+        const { createServerSupabaseClient } = await import("@/server/db/supabase/server");
+        const db = await createServerSupabaseClient();
+        const { data: requestRow, error } = await db.from("freight_requests")
+          .select("id").eq("id", offerRequestId).eq("organization_id", identity.organizationId).maybeSingle();
+        if (error || !requestRow) throw new Error("REQUEST_NOT_FOUND");
+        const { WorkflowServiceV2 } = await import("@/server/modules/workflow/application/workflow-service");
+        const { workflowRepositoryV2 } = await import("@/server/modules/workflow/infrastructure/supabase-workflow-repository");
+        const workflow = new WorkflowServiceV2(await workflowRepositoryV2());
+        const actor = await requireAuthenticatedMember({ organizationId: identity.organizationId });
+        const read = async (kind: "offers" | "ranking") => {
+          const rows: WorkflowRecordV2[] = [];
+          let offset = 0;
+          for (let page = 0; page < 10; page++) {
+            const result = await workflow.read(actor, kind,
+              { requestId: offerRequestId, carrierId: null, parentId: null, id: null }, { limit: 100, offset });
+            const parsed = z.array(WorkflowRecordV2Schema).parse(result.data);
+            if (parsed.some((row) => row.kind !== kind || row.requestId !== offerRequestId || row.organizationId !== identity.organizationId)) throw new Error("INVALID_OFFER_SCOPE");
+            rows.push(...parsed);
+            if (result.meta?.nextOffset == null) return rows;
+            if (result.meta.nextOffset <= offset) throw new Error("INVALID_OFFER_PAGE");
+            offset = result.meta.nextOffset;
+          }
+          throw new Error("PARTIAL_OFFER_READ");
+        };
+        const offerRows = (await read("offers")).filter((row): row is Extract<WorkflowRecordV2, { kind: "offers" }> => row.kind === "offers");
+        const rankingRows = (await read("ranking")).filter((row): row is Extract<WorkflowRecordV2, { kind: "ranking" }> => row.kind === "ranking");
+        const latestRanking = rankingRows.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0] ?? null;
+        voiceScope = { role: "shipper_offers", offerBriefing: buildOfferBriefing(offerRows, latestRanking).script.slice(0, 1600) };
+      } catch {
+        return NextResponse.json({ error: "FORBIDDEN_OFFER_SCOPE" }, { status: 403 });
+      }
+    }
   }
+  if (!carrierScope && voiceContext.length) voiceScope = { ...voiceScope,
+    voiceContext: voiceContext.slice(offerRequestId ? -6 : -12).map((turn) => turn.slice(0, offerRequestId ? 160 : 180)) };
   const token = await new SignJWT({ organizationId: identity.organizationId, memberId: identity.memberId, preview: localPreview, ...voiceScope })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuer(ISSUER)

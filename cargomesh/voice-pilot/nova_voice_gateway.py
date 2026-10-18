@@ -31,7 +31,7 @@ REGION = os.environ.get("AWS_REGION", "us-east-1")
 VOICE = "tiffany"
 MAX_AUDIO_FRAME = 8192
 MAX_SESSIONS = 2
-SESSION_SECONDS = 90
+SESSION_SECONDS = 240
 _used_grants: dict[str, int] = {}
 _slots = asyncio.Semaphore(MAX_SESSIONS)
 
@@ -134,10 +134,14 @@ async def handle(socket: ServerConnection, secret: str, profile: str | None) -> 
         )
         try:
             await asyncio.wait_for(
-                agent.run(inputs=[BrowserInput(socket, "Brief me on this opportunity and ask if I want to prepare an offer." if claims.get("role") == "carrier" else None)], outputs=[BrowserOutput(socket)]),
+                agent.run(inputs=[BrowserInput(socket, "Brief me on this opportunity and ask if I want to prepare an offer." if claims.get("role") == "carrier" else "Tell me what offers arrived, which ranked option you recommend, and why." if claims.get("role") == "shipper_offers" else None)], outputs=[BrowserOutput(socket)]),
                 timeout=SESSION_SECONDS,
             )
-        except (asyncio.TimeoutError, ConnectionClosed):
+        except asyncio.TimeoutError:
+            agent.cancel()
+            if socket.state.name == "OPEN":
+                await socket.send(json.dumps({"type": "session_limit"}))
+        except ConnectionClosed:
             agent.cancel()
         except Exception:
             # Do not log audio, identity, token, prompt or provider payload.

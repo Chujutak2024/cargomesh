@@ -2,4 +2,4 @@
 !Dockerfile.gateway
 !requirements-gateway.txt
 !nova_voice_gateway.py
-!strands_gemini_live.py
+!cargomesh_voice_prompt.py
