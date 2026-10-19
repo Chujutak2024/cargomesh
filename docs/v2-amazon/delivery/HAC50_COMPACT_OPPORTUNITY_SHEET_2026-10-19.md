@@ -37,3 +37,22 @@ Compactar la ficha existente siguiendo la referencia de orden de trabajo del usu
 ## Continuidad
 
 El flujo funcional siguiente sigue siendo oferta → selección Cliente → booking → compromisos/asignaciones → ejecución, coordinado con Luis. Este incremento visual no declara cerrado HAC-50 ni resuelto el acceso al Supabase alojado.
+
+
+# Ajuste de proporciones de la ficha — 19-oct-2026
+
+Usuario aporta una nueva imagen de referencia y pide redimensionar la ficha actual.
+
+- Cabecera autónoma: referencia, estado, recepción registrada y trayecto con puntos de origen/destino.
+- Horario y contexto separados en dos superficies; contexto en filas etiqueta/valor.
+- Resumen de carga separado de bultos/requisitos; totales con iconos y separadores.
+- Panel lateral con título Carrier response y dos bloques internos: revisión y preparación de oferta. Botones apilados de ancho completo.
+- Aviso operativo, privacidad, desplegables y actualización agrupados bajo la tabla.
+- Márgenes del contenido reducidos solo cuando existe esta ficha; fondo más claro, bordes sutiles, radios y densidad alineados con la referencia. Sidebar y rutas actuales conservados; no se añaden los destinos ficticios del ejemplo.
+- Motion y la pieza de HyperFrames anterior se conservan; no hay nuevo render ni cambio de dominio.
+
+Archivos: opportunity-record.tsx, opportunity-record.module.css, connected-opportunities.tsx y portal.module.css, todos dentro de cargomesh/src/features/carrier-juan/ del checkout activo.
+
+Comprobación focal: compilador TypeScript instalado PASS tras el cambio de estructura. Navegador integrado móvil muestra la ficha reagrupada; escritorio y uso general siguen para el usuario/el 21. Sin suites generales, acciones comerciales, DDL ni cambios de autenticación. Captura: request-sheet-proportions.png. Respaldo: before-sheet-proportions/.
+
+No se reintenta push en este ajuste: las dos subidas del corte e6c7646 fallaron por curl 55 y HTTP 408. Conservar los commits locales para compartir cuando se recupere la conexión; nunca force push.

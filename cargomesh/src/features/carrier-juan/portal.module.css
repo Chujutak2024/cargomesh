@@ -187,3 +187,7 @@
 .topbar>div:last-child{min-width:0;max-width:100%;flex-wrap:wrap;justify-content:flex-end}
 .fleetHeaderSlot{min-width:0;max-width:100%}
 @media(max-width:767px){.topbar>div:last-child{width:100%}.fleetHeaderSlot{flex:1 1 200px}}
+
+/* Opportunity sheet uses the denser spacing of its approved reference. */
+.content:has([data-opportunity-record]){padding:12px 22px 28px;max-width:none;background:linear-gradient(115deg,#f1f7fc,#edf5fc)}
+@media(max-width:767px){.content:has([data-opportunity-record]){padding:12px 14px 24px}}

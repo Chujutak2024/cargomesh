@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useRef,useState,useSyncExternalStore} from 'react';
-import {ArrowLeft,ArrowRight,Package,Search} from 'lucide-react';
+import {ArrowLeft,ArrowRight,CalendarDays,ChevronRight,CirclePlus,Clock3,Package,Search,Tag,Users} from 'lucide-react';
 import {SearchField,Select} from '@/components/ui';
 import type {CarrierPortalAccessV2} from '@/shared/schemas/v2/carrier-portal';
 import {readCommercialDetail} from '@/features/carrier-portal/commercial-client';
@@ -58,18 +58,18 @@ export function ConnectedOpportunities({carrier,active=true,routeHash,refreshTok
    {id:'accepted',label:'Accepted for review',value:current?rows.filter(item=>item.status==='ACCEPTED').length:null,tone:'violet',art:'accepted'},
   ]}/>:null}
   {invalid?<section className={p.card}><p role="alert">Invalid opportunity reference. Local example IDs are not connected opportunities.</p><button onClick={back}>Back to opportunities</button></section>:id?<>
-   <div className={sheet.back}><button disabled={busy} onClick={back}><ArrowLeft size={16}/>All opportunities</button></div>
+   <nav className={sheet.back} aria-label="Request breadcrumb"><button disabled={busy} onClick={back}><ArrowLeft size={14}/>Requests</button><ChevronRight size={13} aria-hidden="true"/><strong>{row?shortRequestReference(row):'Request detail'}</strong></nav>
    {loadingDetail?<p role="status">Reading the current opportunity revision…</p>:detailError?<p role="alert">{detailError} <button disabled={busy} onClick={retry}>Refresh detail</button></p>:row&&facts?<div className={sheet.layout}>
     <OpportunityRecord row={row} headingRef={heading} busy={busy} onRefresh={retry}/>
-    <aside className={`${p.card} ${sheet.response}`} aria-label="Carrier review response"><span className={p.eyebrow}>Carrier response</span><h2>Review request</h2><p>Accept to start reviewing, or decline. This does not quote or reserve a vehicle.</p><p className={sheet.deadline}><strong>Respond by</strong><br/>{displayOpportunityDate(row.data.responseDeadline)}</p>
+    <aside className={`${p.card} ${sheet.response}`} aria-label="Carrier review response"><h2 className={sheet.responseTitle}><Users size={18} aria-hidden="true"/>Carrier response</h2><section className={sheet.responseSection}><h3><CalendarDays size={18} aria-hidden="true"/>Review request</h3><p>Accept to start reviewing, or decline. This does not quote or reserve a vehicle.</p><p className={sheet.deadline}><strong>Respond by</strong><br/>{displayOpportunityDate(row.data.responseDeadline)}</p>
      {Date.parse(row.data.responseDeadline)<=now?<p role="status">The response deadline has passed.</p>:null}
      {!allowed&&!busy?<p>Responses require an allowed Carrier role, a complete read, an open response window and a current opportunity state.</p>:null}
-     <div className={sheet.actions}><button className={p.primary} disabled={!allowed||busy||row.status==='ACCEPTED'} onClick={()=>setResponse('ACCEPTED')}>Accept for review</button><button disabled={!allowed||busy} onClick={()=>setResponse('DECLINED')}>Decline</button></div>
+     <div className={sheet.actions}><button className={p.primary} disabled={!allowed||busy||row.status==='ACCEPTED'} onClick={()=>setResponse('ACCEPTED')}>Accept for review<ArrowRight size={16} aria-hidden="true"/></button><button disabled={!allowed||busy} onClick={()=>setResponse('DECLINED')}>Decline</button></div>
      {response&&(allowed||busy)?<OpportunityResponseForm key={row.id+row.version+response} carrier={carrier} row={row} response={response} allowed={allowed} onBusyChange={changeBusy} onClose={()=>setResponse(null)} onSaved={saved=>{setDetail(saved);setResponse(null);setMessage(opportunityLabel(saved.status)+' saved — revision '+saved.version);retry();onSaved?.();}}/>:null}
-     <h3>Offer preparation</h3><div className={sheet.actions}>
-      <button disabled={busy||!current||current.partial||!!error||!canPrepareOffer(row,carrier.role,now)} onClick={()=>navigateJuanHash('#/desk/prepare/'+row.id)}>Prepare offer</button>
-      <button disabled={busy} onClick={()=>navigateJuanHash('#/desk/opportunity/'+row.id)}>View offers &amp; version history</button>
-     </div>
+     </section><section className={sheet.responseSection}><h3><Tag size={18} aria-hidden="true"/>Offer preparation</h3><div className={sheet.actions}>
+      <button disabled={busy||!current||current.partial||!!error||!canPrepareOffer(row,carrier.role,now)} onClick={()=>navigateJuanHash('#/desk/prepare/'+row.id)}><CirclePlus size={17} aria-hidden="true"/>Prepare offer</button>
+      <button disabled={busy} onClick={()=>navigateJuanHash('#/desk/opportunity/'+row.id)}><Clock3 size={17} aria-hidden="true"/>View offers &amp; version history</button>
+     </div></section>
     </aside>
    </div>:null}
   </>:current?<>
