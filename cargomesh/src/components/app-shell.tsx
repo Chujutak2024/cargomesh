@@ -20,6 +20,7 @@ import {
 import Image from "next/image";
 import {WorkspaceLink as Link} from "@/features/workspace-mode/workspace-link";
 import {isShipperDemoPath, SHIPPER_DEMO_PREFIX,workspaceHref} from "@/features/workspace-mode/paths";
+import {clientSectionPath} from '@/shared/navigation/workspaces';
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { LanguageSwitcher } from "./language-switcher";
@@ -29,9 +30,9 @@ import styles from "./app-shell.module.css";
 
 type ShellIdentity = { organizationName: string; displayName: string; role: string } | null;
 
-export function AppShell({ children, identity }: { children: ReactNode; identity: ShellIdentity }) {
-  const currentPath=usePathname(),demo=isShipperDemoPath(currentPath);
-  const pathname=demo?currentPath.slice(SHIPPER_DEMO_PREFIX.length):currentPath;
+export function AppShell({ children, identity, preview=false }: { children: ReactNode; identity: ShellIdentity; preview?:boolean }) {
+  const currentPath=usePathname(),legacyDemo=isShipperDemoPath(currentPath),demo=legacyDemo||preview;
+  const pathname=legacyDemo?currentPath.slice(SHIPPER_DEMO_PREFIX.length):clientSectionPath(currentPath);
   const [open, setOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -121,7 +122,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
   }
 
   return (
-    <div className={styles.shell}>
+    <div className={styles.shell} data-cm-client-preview={preview?"true":undefined}>
       <a className={styles.skipLink} href="#main-content">{t("Saltar al contenido", "Skip to content")}</a>
 
       <aside ref={sidebarRef} className={`${styles.sidebar} ${open ? styles.sidebarOpen : ""}`} role={open ? "dialog" : undefined} aria-modal={open ? true : undefined} aria-label={t("Espacio de trabajo del cliente", "Shipper workspace")}>
@@ -193,7 +194,7 @@ export function AppShell({ children, identity }: { children: ReactNode; identity
               <strong>{identity?.displayName ?? "CargoMesh"}</strong>
               <span>{identity?.role ?? t("Invitado", "Guest")}</span>
             </div>
-            {demo?<Link className={styles.signOut} href="/">Exit demo</Link>:<form className={styles.signOut} action="/api/auth/logout" method="post"><button type="submit" aria-label={t("Cerrar sesión", "Sign out")}><LogOut size={16} aria-hidden="true"/><span>{t("Salir", "Sign out")}</span></button></form>}
+            {preview?<form action="/api/local/client-session" method="post"><input type="hidden" name="action" value="exit"/><button className={styles.signOut} type="submit">Exit test session</button></form>:demo?<Link className={styles.signOut} href="/">Exit demo</Link>:<form className={styles.signOut} action="/api/auth/logout" method="post"><button type="submit" aria-label={t("Cerrar sesión", "Sign out")}><LogOut size={16} aria-hidden="true"/><span>{t("Salir", "Sign out")}</span></button></form>}
           </div>
         </header>
         <main id="main-content" className={styles.main}>

@@ -1,0 +1,20 @@
+export type {FleetDriver} from '@/features/carrier-portal/fleet-drivers';
+import type {FleetDriver} from '@/features/carrier-portal/fleet-drivers';
+
+/** Local presentation data. Portraits are licensed stock photos, not the named people. */
+export const fleetDrivers: FleetDriver[] = [
+  {id:"lm",name:"Lucía Martínez",enabled:true,vehicleCode:"CM-077",photo:"lm",licenseClass:"A-IIIc",licenseExpiresAt:"2028-04-20",experienceYears:9,joinedAt:"2023-02-14",base:"Trujillo",shift:"06:00–16:00",specialties:["Cadena de frío","Costa norte"],completedTrips:186,punctualityPercent:97},
+  {id:"ar",name:"Andrés Rojas",enabled:true,vehicleCode:"CM-231",photo:"ar",licenseClass:"A-IIIc",licenseExpiresAt:"2028-11-12",experienceYears:12,joinedAt:"2022-06-03",base:"Arequipa",shift:"05:30–15:30",specialties:["Carga general","Corredor sur"],completedTrips:248,punctualityPercent:96},
+  {id:"mt",name:"Miguel Torres",enabled:false,vehicleCode:"CM-311",photo:"mt",licenseClass:"A-IIIb",licenseExpiresAt:"2027-09-18",experienceYears:18,joinedAt:"2021-08-10",base:"Callao",shift:"07:00–17:00",specialties:["Distribución urbana","Carga seca"],completedTrips:312,punctualityPercent:98},
+  {id:"dc",name:"Diego Castro",enabled:true,vehicleCode:"CM-204",photo:"dc",licenseClass:"A-IIIc",licenseExpiresAt:"2029-02-07",experienceYears:7,joinedAt:"2024-03-21",base:"Chiclayo",shift:"06:30–16:30",specialties:["Plataforma","Maquinaria"],completedTrips:142,punctualityPercent:95},
+  {id:"sv",name:"Sofía Vega",enabled:true,vehicleCode:"CM-162",photo:"sv",licenseClass:"A-IIIc",licenseExpiresAt:"2028-06-25",experienceYears:8,joinedAt:"2023-10-05",base:"Piura",shift:"06:00–16:00",specialties:["Agregados","Operación de volquete"],completedTrips:174,punctualityPercent:98},
+  {id:"cl",name:"Carlos López",enabled:true,vehicleCode:"CM-212",photo:"cl",licenseClass:"A-IIIc",licenseExpiresAt:"2029-01-30",experienceYears:11,joinedAt:"2022-09-16",base:"Callao",shift:"05:00–15:00",specialties:["Larga distancia","Carga seca"],completedTrips:226,punctualityPercent:96},
+  {id:"eq",name:"Elena Quispe",enabled:true,vehicleCode:"CM-245",photo:"eq",licenseClass:"A-IIIc",licenseExpiresAt:"2028-08-11",experienceYears:10,joinedAt:"2023-04-11",base:"Ica",shift:"05:30–15:30",specialties:["Transporte de líquidos","Cisterna"],completedTrips:208,punctualityPercent:99},
+  {id:"jp",name:"Javier Paredes",enabled:false,vehicleCode:"CM-328",photo:"jp",licenseClass:"A-IIIb",licenseExpiresAt:"2029-03-05",experienceYears:6,joinedAt:"2024-01-18",base:"Lurín",shift:"07:00–17:00",specialties:["Concreto","Operación de mezclador"],completedTrips:128,punctualityPercent:95},
+  {id:"rv",name:"Renato Vargas",enabled:true,vehicleCode:"CM-256",photo:"rv",licenseClass:"A-IIIc",licenseExpiresAt:"2028-12-10",experienceYears:8,joinedAt:"2023-07-24",base:"Huancayo",shift:"06:00–16:00",specialties:["Carga paletizada","Lona lateral"],completedTrips:163,punctualityPercent:97},
+  {id:"av",name:"Ana Valverde",enabled:true,vehicleCode:"CM-289",photo:"av",licenseClass:"A-IIIc",licenseExpiresAt:"2029-05-17",experienceYears:13,joinedAt:"2022-11-08",base:"Lima",shift:"06:00–16:00",specialties:["Cama baja","Carga sobredimensionada"],completedTrips:231,punctualityPercent:98},
+  {id:"pc",name:"Pedro Cárdenas",enabled:true,vehicleCode:"CM-267",photo:"pc",licenseClass:"A-IIIc",licenseExpiresAt:"2028-10-22",experienceYears:15,joinedAt:"2021-12-06",base:"Pucallpa",shift:"05:00–15:00",specialties:["Transporte de madera","Corredor central"],completedTrips:286,punctualityPercent:96},
+  {id:"vr",name:"Valeria Ramírez",enabled:true,vehicleCode:"CM-304",photo:"vr",licenseClass:"A-IIIc",licenseExpiresAt:"2029-07-15",experienceYears:5,joinedAt:"2024-05-09",base:"Cusco",shift:"06:30–16:30",specialties:["Carga refrigerada","Corredor sur"],completedTrips:119,punctualityPercent:97},
+];
+export const regularFleetDriver=(code:string)=>fleetDrivers.find(driver=>driver.vehicleCode===code)??null;
+export const fleetDriverById=(id:string|null)=>fleetDrivers.find(driver=>driver.id===id)??null;

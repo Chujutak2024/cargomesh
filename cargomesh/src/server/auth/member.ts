@@ -1,4 +1,5 @@
 import "server-only";
+import {cache} from 'react';
 
 import { createServerSupabaseClient } from "../db/supabase/server";
 
@@ -22,11 +23,8 @@ type OrganizationMemberRow = {
  * Validates the current user session and active organization membership.
  * Throws actionable errors if unauthenticated or membership is not active.
  */
-export async function requireAuthenticatedMember(
-  options: {
-    organizationId?: string;
-    requiredRole?: "OWNER" | "SUPERVISOR" | "REQUESTER";
-  } = {},
+async function resolveAuthenticatedMember(
+  organizationId: string | null,
 ): Promise<AuthenticatedMemberContext> {
   const supabase = await createServerSupabaseClient();
   const {
@@ -44,8 +42,8 @@ export async function requireAuthenticatedMember(
     .eq("auth_user_id", user.id)
     .eq("status", "ACTIVE");
 
-  if (options.organizationId) {
-    memberQuery = memberQuery.eq("organization_id", options.organizationId);
+  if (organizationId) {
+    memberQuery = memberQuery.eq("organization_id", organizationId);
   }
 
   const { data: memberData, error: memberError } = await memberQuery.limit(1).maybeSingle();
@@ -57,9 +55,7 @@ export async function requireAuthenticatedMember(
   const member = memberData as unknown as OrganizationMemberRow;
   const role = member.role as "OWNER" | "SUPERVISOR" | "REQUESTER";
 
-  if (options.requiredRole && role !== "OWNER" && role !== options.requiredRole) {
-    throw new Error(`FORBIDDEN: Requires ${options.requiredRole} role.`);
-  }
+
 
   return {
     userId: user.id,
@@ -69,4 +65,12 @@ export async function requireAuthenticatedMember(
     role,
     status: member.status,
   };
+}
+
+// React cache is scoped to this server render, never shared between users or requests.
+const memberForRender=cache(resolveAuthenticatedMember);
+export async function requireAuthenticatedMember(options:{organizationId?:string;requiredRole?:'OWNER'|'SUPERVISOR'|'REQUESTER'}={}):Promise<AuthenticatedMemberContext>{
+ const member=await memberForRender(options.organizationId??null);
+ if(options.requiredRole&&member.role!=='OWNER'&&member.role!==options.requiredRole)throw new Error(`FORBIDDEN: Requires ${options.requiredRole} role.`);
+ return member;
 }

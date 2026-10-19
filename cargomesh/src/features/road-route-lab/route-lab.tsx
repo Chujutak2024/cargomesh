@@ -1,4 +1,5 @@
 "use client";
+import {CarrierLink} from '@/features/carrier-navigation/carrier-link';
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { CARRIER_TOWER } from "@/features/carrier-navigation/workspace-route";
 import { facilities, cityLabel } from "@/features/v2-workspace/road-locations";
@@ -24,7 +25,7 @@ const failures: Record<string, string> = {
   NOT_AVAILABLE: "The local routing lab is disabled or its local origin is not configured.",
 };
 
-export function RouteLab() {
+export function RouteLab({embedded=false}:{embedded?:boolean}) {
   useEffect(()=>{document.querySelector<HTMLElement>('#coordinator-content h1')?.focus({preventScroll:true});},[]);
   const [query, setQuery] = useState<RouteQuery>({ originId: "lima", destinationId: "arequipa", objective: "FASTEST", traffic: "TRAFFIC_AWARE_OPTIMAL" });
   const [result, setResult] = useState<RoadCalculation | null>(null);
@@ -53,7 +54,7 @@ export function RouteLab() {
   }
   const alternatives = result?.status === "estimated" ? result.alternatives : emptyRoutes;
   return <main id="coordinator-content" className={s.shell}>
-    <header className={s.header}><div><a href={CARRIER_TOWER}>← Control tower</a><h1 tabIndex={-1}>Road routing lab</h1><p>Compare calculated city-to-city routes before connecting vehicle movement.</p></div><span className={s.badge}>LOCAL PREVIEW</span></header>
+    <header className={s.header}><div><CarrierLink href={CARRIER_TOWER}>← Control tower</CarrierLink>{!embedded?<h1 tabIndex={-1}>Road routing lab</h1>:null}<p>Compare calculated city-to-city routes before connecting vehicle movement.</p></div><span className={s.badge}>LOCAL PREVIEW</span></header>
     <p className={s.notice}>City references are sample inputs. Routes are driving estimates from Google, not verified truck access, carrier coverage or live GPS.</p>
     <div className={s.cases} aria-label="City scenarios">{cases.map(([label, originId, destinationId]) => <button key={label} type="button" onClick={() => change({ ...query, originId, destinationId })}>{label}</button>)}</div>
     <form className={s.form} onSubmit={calculate}>

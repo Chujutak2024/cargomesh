@@ -1,5 +1,7 @@
 # HAC-48 — Calculated road geometry and bounded route selection
 
+> Update, 2026-10-17: the local server credential is now configured and five real application city-pair queries passed. See [live validation and IPv4 restart instructions](./HAC48_LIVE_ROAD_VALIDATION_2026-10-17.md). Missing-key statements below describe the historical 2026-10-14 cut; authenticated visual and truck-access checks remain pending.
+
 Research and implementation: 2026-10-14. Issue: HAC-48. Existing working branch: `codex/unified-workspaces-demo-boundary`, dependent on HAC-47 @ `5729571`. No main merge, production deployment, schema migration or operational record changes.
 
 ## Decision

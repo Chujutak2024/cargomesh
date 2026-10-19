@@ -17,3 +17,6 @@ Thumbs.db
 *.tsbuildinfo
 .supabase/temp/
 .system_generated/
+
+# Isolated local fleet profile build output
+**/.next-fleet-scenario/

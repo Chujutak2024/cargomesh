@@ -9,7 +9,7 @@ export async function readFleetResource(carrierId: string, key: string, signal: 
   const resource = carrierResources.find(value => value.key === key);
   if (!validCarrierId(carrierId) || !resource || resource.parent && (resource.parent !== "service" || !validCarrierId(parentId))) throw new PortalApiError(400, "INVALID_API_PATH");
   const records: PortalRecord[] = [], offsets = new Set<number>();
-  let offset: number | null = 0;
+  let offset: number | null = 0; let partial = false;
   for (let page = 0; page < 10 && offset !== null; page++) {
     if (offsets.has(offset)) throw new PortalApiError(502, "INVALID_RESPONSE");
     offsets.add(offset);
@@ -18,9 +18,9 @@ export async function readFleetResource(carrierId: string, key: string, signal: 
     if (resource.parent === "service" && parsed.some(record => record.serviceId !== parentId)) throw new PortalApiError(502, "INVALID_RESPONSE");
     if (parsed.length > 100 || new Set(parsed.map(record => record.id)).size !== parsed.length
       || parsed.some(record => records.some(previous => previous.id === record.id))) throw new PortalApiError(502, "INVALID_RESPONSE");
-    records.push(...parsed); offset = result.meta?.nextOffset ?? null;
+    records.push(...parsed); partial ||= result.meta?.partial === true; offset = result.meta?.nextOffset ?? null;
   }
-  return { records, truncated: offset !== null };
+  return { records, truncated: partial || offset !== null };
 }
 export async function loadFleet(carrierId: string, signal: AbortSignal, fetcher: typeof fetch = fetch) {
   if (!validCarrierId(carrierId)) throw new PortalApiError(400, "INVALID_API_PATH");

@@ -1,6 +1,5 @@
 import { z } from "zod";
 import type { Point, RoadAlternative, RoadCalculation, RouteObjective, TrafficPreference } from "@/features/road-route-lab/contract";
-import type { RoadLocation } from "@/features/v2-workspace/road-locations";
 import { decodeRoutePolyline } from "./local-road-preview";
 
 const routeSchema = z.object({
@@ -30,7 +29,7 @@ function distanceMeters(a: Point, b: Point) {
 }
 
 export function evaluateRoadAlternatives(payload: unknown, input: {
-  origin: Point; destination: Point; objective: RouteObjective; traffic: TrafficPreference; calculatedAt: string;
+  origin: Point & {maxSnapMeters?:number}; destination: Point & {maxSnapMeters?:number}; objective: RouteObjective; traffic: TrafficPreference; calculatedAt: string;
 }): RoadCalculation {
   const envelope = z.object({ routes: z.array(z.unknown()).max(4).optional() }).safeParse(payload);
   const failure = (reason: "NO_ROUTE" | "NO_VALID_ROAD_ROUTE"): RoadCalculation => ({ status: "unavailable", reason, alternatives: [] });
@@ -53,8 +52,8 @@ export function evaluateRoadAlternatives(payload: unknown, input: {
     catch { reject("INVALID_GEOMETRY"); return; }
     // Routing snaps a city reference to a road. Reject unrelated/reversed geometry,
     // rather than connecting the city reference to the returned path by a made-up segment.
-    if (distanceMeters(input.origin, points[0]) > 5000
-      || distanceMeters(input.destination, points[points.length - 1]) > 5000) { reject("ENDPOINT_MISMATCH"); return; }
+    if (distanceMeters(input.origin, points[0]) > (input.origin.maxSnapMeters ?? 5000)
+      || distanceMeters(input.destination, points[points.length - 1]) > (input.destination.maxSnapMeters ?? 5000)) { reject("ENDPOINT_MISMATCH"); return; }
     alternatives.push({ id: `google-${providerIndex}`, providerIndex, distanceMeters: route.distanceMeters,
       durationSeconds, points, warnings: route.warnings ?? [] });
   });
@@ -66,18 +65,19 @@ export function evaluateRoadAlternatives(payload: unknown, input: {
 }
 
 export async function calculateRoadRoutes(input: {
-  origin: RoadLocation; destination: RoadLocation; objective: RouteObjective; traffic: TrafficPreference;
-  apiKey?: string; fetcher?: typeof fetch;
+  origin: Point & {placeId?:string;maxSnapMeters?:number}; destination: Point & {placeId?:string;maxSnapMeters?:number}; objective: RouteObjective; traffic: TrafficPreference;
+  apiKey?: string; fetcher?: typeof fetch; departureTime?: string;
 }): Promise<RoadCalculation> {
   const fail = (reason: "SERVER_KEY_MISSING" | "PROVIDER_DENIED" | "PROVIDER_UNAVAILABLE"): RoadCalculation => ({ status: "unavailable", reason, alternatives: [] });
   if (!input.apiKey?.trim()) return fail("SERVER_KEY_MISSING");
-  const waypoint = (p: Point) => ({ location: { latLng: { latitude: p.lat, longitude: p.lng } } });
+  const waypoint = (p: Point & {placeId?:string}) => p.placeId ? {placeId:p.placeId} : { location: { latLng: { latitude: p.lat, longitude: p.lng } } };
   try {
     const response = await (input.fetcher ?? fetch)("https://routes.googleapis.com/directions/v2:computeRoutes", {
       method: "POST", headers: { "Content-Type": "application/json", "X-Goog-Api-Key": input.apiKey,
         "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline,routes.legs.steps.travelMode,routes.legs.steps.navigationInstruction.maneuver,routes.warnings,routes.travelAdvisory" },
       body: JSON.stringify({ origin: waypoint(input.origin), destination: waypoint(input.destination),
         travelMode: "DRIVE", routingPreference: input.traffic, computeAlternativeRoutes: true,
+        ...(input.departureTime && input.traffic !== "TRAFFIC_UNAWARE" ? { departureTime: input.departureTime } : {}),
         polylineQuality: "HIGH_QUALITY", polylineEncoding: "ENCODED_POLYLINE", units: "METRIC", languageCode: "en",
         routeModifiers: { avoidFerries: true } }), signal: AbortSignal.timeout(15_000), cache: "no-store",
     });

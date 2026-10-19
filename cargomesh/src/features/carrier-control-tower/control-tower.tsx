@@ -1,72 +1,74 @@
 'use client';
-
-import { useCallback,useEffect,useMemo,useState } from 'react';
-import { Activity,ArrowLeft,ArrowRight,ArrowUpRight,Bell,Building2,Check,ChevronRight,CircleHelp,Clock3,FileCheck2,Globe2,LayoutDashboard,Map,MapPinned,Menu,Network,Route,Search,ShieldCheck,Truck,X,AlertTriangle,Package,SlidersHorizontal,List } from 'lucide-react';
-import { GoogleOperationMap } from './google-operation-map';
-import { depots,exceptions,fleet,filterShipments,shipments,type Exception } from './demo-model';
-import { Button, Dialog, SearchField } from "@/components/ui";
-import { ContentMotion } from "@/features/product-motion/content-motion";
+import {RoadPlanner} from './road-planner';
+import {selectedRoad,type RoadDisplay} from './road-plan-client';
+import {useCallback,useEffect,useMemo,useState} from 'react';
+import {Activity,ArrowRight,ArrowUpRight,Bell,Building2,ChevronRight,Clock3,Globe2,List,Map,MapPinned,RefreshCw,Route,Search,ShieldCheck,Truck,X} from 'lucide-react';
+import {Button,SearchField} from '@/components/ui';
+import {CarrierLink} from '@/features/carrier-navigation/carrier-link';
+import {CarrierNavigation,CarrierMenuButton,CarrierBreadcrumb} from '@/features/carrier-navigation/carrier-navigation';
+import {ContentMotion} from '@/features/product-motion/content-motion';
+import type {CarrierPortalAccessV2} from '@/shared/schemas/v2/carrier-portal';
+import {recordData} from '@/features/carrier-portal/records';
+import {CARRIER_ROUTE_LAB,CARRIER_TOWER} from '@/features/carrier-navigation/workspace-route';
+import {GoogleOperationMap} from './google-operation-map';
+import {useConnectedTower,useTowerIncidents} from './use-connected-tower';
+import {filterTower,towerDate,towerItems,towerSites} from './tower-model';
 import s from './tower.module.css';
-import { CarrierNavigation, CarrierMenuButton, CarrierBreadcrumb } from '@/features/carrier-navigation/carrier-navigation';
 import navStyles from '@/features/carrier-navigation/carrier-navigation.module.css';
-import { CARRIER_ROUTE_LAB, CARRIER_TOWER } from '@/features/carrier-navigation/workspace-route';
-const carrier='/v2-workspace';
-export function ControlTower({embedded=false}:{embedded?:boolean}){
- const [query,setQuery]=useState(''),[status,setStatus]=useState('All'),[selectedId,setSelectedId]=useState<string|null>(null),[view,setView]=useState<'map'|'list'>('map'),[exceptionTab,setExceptionTab]=useState('Open'),[showSites,setShowSites]=useState(true),[dialog,setDialog]=useState<Exception|null>(null);
- useEffect(()=>{if(embedded)document.querySelector<HTMLElement>('#tower-main h1')?.focus({preventScroll:true});},[embedded]);
- const visible=useMemo(()=>filterShipments(query,status),[query,status]);
- const selected=visible.find(item=>item.id===selectedId)??null;
- const select=useCallback((id:string)=>setSelectedId(id),[]);
- const visibleExceptions=exceptions.filter(e=>visible.some(item=>item.id===e.shipmentId)&&(exceptionTab!=='Critical'||e.severity==='Critical'));
- const critical=exceptions.filter(e=>e.severity==='Critical').length;
- const selectAlert=(alert:Exception)=>{setQuery('');setStatus('All');setSelectedId(alert.shipmentId);};
- const content = <div className={`${s.shell} ${navStyles.workspaceSurface}`}>
 
-  <div className={s.workspace}>
-   <header className={s.topbar}>
-    <CarrierMenuButton/>
-    <CarrierBreadcrumb className={s.breadcrumb} currentLabel="Control tower" workspaceHref={carrier}/>
-    <SearchField fieldClassName={s.search} label="Search shipments, vehicles or cities" placeholder="Search shipments, vehicles or cities…" value={query} onValueChange={setQuery} hideLabel shortcut/>
-    <div className={s.headerActions}><span><Globe2 size={14}/>EN</span><span className={s.alertIndicator} aria-label={`${exceptions.length} sample exceptions`}><Bell size={18}/><i>{exceptions.length}</i></span><span className={s.avatar}>CM</span></div>
-   </header>
-   <main id="tower-main" className={s.main}><ContentMotion identity="tower" animateOnMount>
-    <div className={s.pageHeading}><div><div className={s.eyebrow}><Activity size={13}/>OPERATIONS OVERVIEW</div><h1 tabIndex={-1}>Control tower <span>Preview</span></h1><p>Your shipments, available vehicles and exceptions in one view.</p></div><span className={s.scenarioDate}><Clock3 size={14}/>Scenario · Oct 13, 2026</span></div>
-    <div className={s.demoNotice}><ShieldCheck size={16}/><span><strong>Simulated operation.</strong> Sample positions and illustrative routes. No live GPS, road validation or operational writes.</span></div>
-    <a className={s.routePreviewLink} href={CARRIER_ROUTE_LAB}>Explore calculated road routes <ArrowUpRight size={14} aria-hidden="true"/><span>Preview</span></a>
-    <section className={s.metrics} aria-label="Sample operation summary">
-     {[{label:'Active shipments',value:shipments.filter(item=>item.status!=='Delivered').length,caption:'2 in transit · 1 scheduled',Icon:Route},{label:'Available vehicles',value:fleet.filter(item=>item.status==='Available').length,caption:`${fleet.length} vehicles in this scenario`,Icon:Truck},{label:'Open exceptions',value:exceptions.length,caption:`${critical} critical · review first`,Icon:AlertTriangle},{label:'Demo hubs',value:depots.length,caption:'Recorded sites, not service coverage',Icon:Building2}].map(({label,value,caption,Icon})=><div className={s.metric} key={label}><span className={s.metricIcon}><Icon size={18}/></span><div><span>{label}</span><strong>{value}</strong><small>{caption}</small></div></div>)}
-    </section>
-    <div className={s.operationGrid}>
-     <section className={s.mapCard} aria-labelledby="transportation-map-title">
-      <div className={s.mapHeader}><div><h2 id="transportation-map-title">Transportation map</h2><p>ROAD · Peru demonstration</p></div><div className={s.viewToggle} aria-label="Operation view"><Button variant="secondary" size="compact" aria-pressed={view==='map'} onClick={()=>setView('map')}><Map size={14}/>Map</Button><Button variant="secondary" size="compact" aria-pressed={view==='list'} onClick={()=>setView('list')}><List size={15}/>List</Button></div></div>
-      <div className={s.filters}><div className={s.statusFilters} aria-label="Shipment status">{['All','In transit','Scheduled','Delivered'].map(value=><Button variant="secondary" size="compact" key={value} aria-pressed={status===value} onClick={()=>setStatus(value)}>{value}{value==='All'?<span>{shipments.length}</span>:null}</Button>)}</div><label className={s.sitesToggle}><input type="checkbox" checked={showSites} onChange={e=>setShowSites(e.target.checked)}/><Building2 size={13}/>Hubs</label></div>
-      <ContentMotion identity={view} className={s.visualFrame}>
-       <div hidden={view!=='map'}><GoogleOperationMap items={visible} selected={selected} onSelect={select} showSites={showSites}/></div>
-       {view==='list'?<div className={s.listView} aria-label="Demo shipment list">{visible.length?visible.map(item=><button className={s.shipmentRow} key={item.id} onClick={()=>select(item.id)} aria-pressed={selected?.id===item.id}><span className={s.vehicleIcon}><Truck size={18}/></span><span><strong>{item.vehicle}<small>{item.id}</small></strong><span>{item.origin} → {item.destination}</span></span><span className={`${s.statusBadge} ${item.status==='Delivered'?s.positive:''}`}>{item.status}</span><ChevronRight size={16}/></button>):<div className={s.empty}><Search size={26}/><strong>No shipments match your filters</strong><Button variant="secondary" size="compact" onClick={()=>{setQuery('');setStatus('All');}}>Reset filters</Button></div>}</div>:null}
-       {selected&&view==='map'?<article className={s.mapDetail} aria-label="Selected shipment"><div><span className={s.detailIcon}><Truck size={18}/></span><span><strong>{selected.vehicle}</strong><small>{selected.id}</small></span><Button variant="secondary" size="compact" onClick={()=>setSelectedId(null)} aria-label="Close selected shipment"><X size={16}/></Button></div><h3>{selected.origin}<ArrowRight size={14}/>{selected.destination}</h3><p>{selected.cargo}</p><div className={s.detailFacts}><span>Estimated arrival<strong>{selected.eta}</strong></span><span>Journey status<strong>{selected.status}</strong></span></div><div className={s.progressTrack} role="progressbar" aria-label="Simulated journey progress" aria-valuenow={selected.progress} aria-valuemin={0} aria-valuemax={100}><span style={{width:`${selected.progress}%`}}/></div><small className={s.detailSource}>Sample report · {selected.lastReport}</small></article>:null}
-       {!visible.length&&view==='map'?<div className={s.noMatches} role="status">No matching shipments. Try another search or status.</div>:null}
-      </ContentMotion>
-      <div className={s.mapFooter}><span role="status" aria-live="polite"><i/>{visible.length} of {shipments.length} sample shipments</span><span>Google Maps · Route lines are illustrative</span></div>
-     </section>
-     <aside className={s.exceptionPanel} aria-labelledby="exception-title"><div className={s.exceptionHeading}><div><h2 id="exception-title">Exception queue</h2><p>Prioritize what needs attention.</p></div><span>{exceptions.length}</span></div>
-      <div className={s.exceptionTabs} aria-label="Exception priority">{['Open','Critical','All'].map(tab=><Button variant="secondary" size="compact" key={tab} aria-pressed={exceptionTab===tab} onClick={()=>setExceptionTab(tab)}>{tab}<span>{tab==='Critical'?critical:exceptions.length}</span></Button>)}</div>
-      <div className={s.exceptionList}>{visibleExceptions.length?visibleExceptions.map(alert=><article key={alert.id} className={`${s.exceptionCard} ${alert.shipmentId===selected?.id?s.exceptionSelected:''}`}><div className={s.exceptionTop}><span className={`${s.severityIcon} ${s[alert.severity.toLowerCase()]}`}><AlertTriangle size={16}/></span><button className={s.alertTitle} onClick={()=>selectAlert(alert)}><strong>{alert.title}</strong><small>{alert.shipmentId} · <span className={s[alert.severity.toLowerCase()]}>{alert.severity}</span></small></button><button className={s.locate} onClick={()=>{selectAlert(alert);setView('map');}} aria-label={`Locate ${alert.shipmentId}`}><MapPinned size={17}/></button></div><p>{alert.detail}</p><div className={s.exceptionBottom}><small>Sample · {alert.reportedAt}</small><Button variant="secondary" size="compact" onClick={()=>setDialog(alert)}>Review details<ArrowUpRight size={13}/></Button></div></article>):<div className={s.empty}><Check size={25}/><strong>No matching exceptions</strong><p>There are no sample exceptions for the current filters.</p></div>}</div>
-      <div className={s.queueNote}><Clock3 size={14}/>Reports are simulated, not live telemetry.</div>
-     </aside>
-    </div>
-    <section className={s.bottomGrid} aria-label="Operational context">
-     <article className={s.contextCard}><div><Route size={17}/><h2>{selected?'Selected journey':'Journey overview'}</h2></div>{selected?<><h3>{selected.origin} → {selected.destination}</h3><p>{selected.equipment} · {selected.vehicle}</p><dl><div><dt>Sample driver</dt><dd>{selected.driver}</dd></div><div><dt>Progress</dt><dd>{selected.progress}%</dd></div></dl></>:<><h3>Choose a vehicle or exception</h3><p>The map, shipment details and exception queue share the same selection.</p><Button variant="secondary" size="compact" onClick={()=>{setQuery('');setStatus('All');select(shipments[0].id);}}>Explore a sample journey<ArrowRight size={14}/></Button></>}</article>
-     <article className={s.contextCard}><div><Truck size={17}/><h2>Fleet readiness</h2></div><div className={s.fleetBar}>{fleet.map(unit=><span key={unit.id} className={unit.status==='Available'?s.available:unit.status==='Maintenance'?s.maintenance:s.assigned} title={`${unit.id} · ${unit.status}`}/>)}</div><dl>{['Available','Assigned','Maintenance'].map(value=><div key={value}><dt>{value}</dt><dd>{fleet.filter(unit=>unit.status===value).length}</dd></div>)}</dl><p>Sample fleet state. No capacity is reserved by this preview.</p></article>
-     <article className={s.contextCard}><div><Building2 size={17}/><h2>Network context</h2></div>{depots.map(depot=><div key={depot.id} className={s.hubRow}><span className={s.hubIcon}><Building2 size={16}/></span><span><strong>{depot.name}</strong><small>Simulated site · Peru</small></span></div>)}<p>A site does not imply permitted routes or service coverage.</p></article>
-    </section>
-   </ContentMotion></main>
-  </div>
-  {dialog?<ExceptionDialog alert={dialog} onClose={()=>setDialog(null)} onView={()=>{selectAlert(dialog);setDialog(null);setView('map');}}/>:null}
- </div>;
- return embedded ? content : <CarrierNavigation current="tower" locale="en" workspaceHref={carrier} towerHref={CARRIER_TOWER} sourceLabel="Visual scenario · read only">{content}</CarrierNavigation>;
-}
-function ExceptionDialog({alert,onClose,onView}:{alert:Exception;onClose:()=>void;onView:()=>void}){
- return <Dialog open animated title={alert.title} description="Exception review · Simulated operation" closeLabel="Close exception details" onClose={onClose} footer={<Button onClick={onView}>View shipment on map<ArrowRight size={16}/></Button>}>
-  <p>{alert.detail}</p><dl><div><dt>Shipment</dt><dd>{alert.shipmentId}</dd></div><div><dt>Severity</dt><dd>{alert.severity}</dd></div><div><dt>Source</dt><dd>Explicit simulated scenario</dd></div><div><dt>Report time</dt><dd>Oct 13, 2026 · {alert.reportedAt}</dd></div></dl><p>This preview does not contact a driver, acknowledge an incident or update operational records.</p>
- </Dialog>;
+export function ControlTower({embedded=false,carrier,refreshToken=0}:{embedded?:boolean;carrier?:CarrierPortalAccessV2;refreshToken?:number}){
+ const [query,setQuery]=useState(''),[status,setStatus]=useState('All'),[selectedId,setSelectedId]=useState<string|null>(null),[view,setView]=useState<'map'|'list'>('map'),[showSites,setShowSites]=useState(true),[refresh,setRefresh]=useState(0),[incidentFilter,setIncidentFilter]=useState('Open');
+ const [road,setRoad]=useState<RoadDisplay|null>(null);const displayRoad=useCallback((value:RoadDisplay|null)=>setRoad(value),[]),showRoadMap=useCallback(()=>setView('map'),[]);
+ const {snapshot,error,invalidate}=useConnectedTower(carrier?.carrierId,refresh+refreshToken);
+ const items=useMemo(()=>snapshot?towerItems(snapshot):[],[snapshot]);
+ const sites=useMemo(()=>snapshot?towerSites(snapshot):[],[snapshot]);
+ const visible=useMemo(()=>filterTower(items,query,status),[items,query,status]);
+ const selected=visible.find(item=>item.id===selectedId)??null;
+ const incidents=useTowerIncidents(carrier?.carrierId,selected,refresh+refreshToken);
+ useEffect(()=>{if(incidents.denied)invalidate(incidents.error);},[incidents.denied,incidents.error,invalidate]);
+ const displayedIncidents=incidents.rows.filter(row=>incidentFilter==='All'||row.status==='OPEN');
+ const select=useCallback((id:string)=>setSelectedId(id),[]);
+ useEffect(()=>{setSelectedId(null);setQuery('');setStatus('All');setRoad(null);},[carrier?.carrierId,carrier?.operatorId]);
+ useEffect(()=>{if(embedded)document.querySelector<HTMLElement>('#tower-main h1')?.focus({preventScroll:true});},[embedded]);
+ const positions=visible.filter(item=>item.position!==null).length;
+ const resources=snapshot?.records.assets.filter(row=>recordData(row).mode==='ROAD')??[];
+ const conditions=['AVAILABLE','IN_SERVICE','MAINTENANCE','OUT_OF_SERVICE'];
+ const count=(key:'executions'|'assets'|'depots')=>snapshot?.loaded[key]?snapshot.records[key].length:'—';
+ const content=<div className={`${s.shell} ${navStyles.workspaceSurface}`}><div className={s.workspace}>
+  <header className={s.topbar}>{!embedded?<><CarrierMenuButton/><CarrierBreadcrumb className={s.breadcrumb} currentLabel="Control tower" workspaceHref="/carriers"/></>:null}
+   <SearchField fieldClassName={s.search} label="Search operations, vehicles or cities" placeholder="Search operations, vehicles or cities…" value={query} onValueChange={setQuery} hideLabel shortcut/>
+   <div className={s.headerActions}><span><Globe2 size={14}/>EN</span><span className={s.alertIndicator} aria-label="Incidents are read for the selected operation"><Bell size={18}/></span></div>
+  </header>
+  <main id="tower-main" className={s.main}><ContentMotion identity="tower" animateOnMount>
+   <div className={s.pageHeading}><div>{!embedded?<><div className={s.eyebrow}><Activity size={13}/>OPERATIONS OVERVIEW</div><h1 tabIndex={-1}>Control tower</h1></>:null}<p>{carrier?.carrierName??'Select an authorized Carrier'} · Operations, assigned resources and recorded sites.</p></div><Button variant="secondary" disabled={!carrier} onClick={()=>setRefresh(n=>n+1)}><RefreshCw size={15}/>Refresh</Button></div>
+   <div className={s.demoNotice}><ShieldCheck size={16}/><span><strong>Authorized Carrier records.</strong> Positions are last recorded reports, not live GPS. Vehicle availability and road access require separate validation.</span></div>
+   <CarrierLink className={s.routePreviewLink} href={CARRIER_ROUTE_LAB}>Explore calculated road routes<ArrowUpRight size={14}/><span>Separate calculation preview</span></CarrierLink>
+   {!carrier?<p role="status">Select an authorized Carrier in the workspace header.</p>:error?<p role="alert">{error}</p>:!snapshot?<p role="status">Loading authorized operations and resources…</p>:null}
+   {snapshot?.partial?<div role="status" className={s.demoNotice}><span><strong>Incomplete read.</strong> Counts cover loaded records; missing relationships remain unknown.<ul>{snapshot.issues.map(issue=><li key={issue}>{issue}</li>)}</ul></span></div>:null}
+   <section className={s.metrics} aria-label="Loaded Carrier records">{[
+    {label:'Operations',value:count('executions'),caption:'Loaded execution records',Icon:Route},
+    {label:'Road vehicles',value:snapshot?.loaded.assets?resources.length:'—',caption:'Catalog records, not available capacity',Icon:Truck},
+    {label:'Recorded positions',value:snapshot?.loaded.executions?items.filter(item=>item.position).length:'—',caption:'Operation positions; no extrapolation',Icon:MapPinned},
+    {label:'Carrier sites',value:count('depots'),caption:'Recorded sites, not service coverage',Icon:Building2},
+   ].map(({label,value,caption,Icon})=><div className={s.metric} key={label}><span className={s.metricIcon}><Icon size={18}/></span><div><span>{label}</span><strong>{value}</strong><small>{caption}</small></div></div>)}</section>
+   {carrier&&snapshot&&!error?<RoadPlanner key={carrier.operatorId+':'+carrier.carrierId} carrierId={carrier.carrierId} revision={snapshot.readAt} onDisplay={displayRoad} onDenied={invalidate} onShowMap={showRoadMap}/>:null}
+   <div className={s.operationGrid}><section className={s.mapCard} aria-labelledby="transportation-map-title">
+    <div className={s.mapHeader}><div><h2 id="transportation-map-title">Transportation map</h2><p>Recorded operation positions and Carrier sites</p></div><div className={s.viewToggle} aria-label="Operation view"><Button variant="secondary" size="compact" aria-pressed={view==='map'} onClick={()=>setView('map')}><Map size={14}/>Map</Button><Button variant="secondary" size="compact" aria-pressed={view==='list'} onClick={()=>setView('list')}><List size={15}/>List</Button></div></div>
+    <div className={s.filters}><div className={s.statusFilters} aria-label="Recorded state">{['All',...new Set(items.map(item=>item.status))].map(value=><Button variant="secondary" size="compact" key={value} aria-pressed={status===value} onClick={()=>setStatus(value)}>{value}</Button>)}</div><label className={s.sitesToggle}><input type="checkbox" checked={showSites} onChange={e=>setShowSites(e.target.checked)}/><Building2 size={13}/>Sites</label></div>
+    <ContentMotion identity={view} className={s.visualFrame}><div hidden={view!=='map'}><GoogleOperationMap key={carrier?.operatorId+':'+carrier?.carrierId} items={visible} sites={sites} selected={selected} onSelect={select} showSites={showSites} road={road}/></div>
+     {view==='list'?<div className={s.listView} aria-label="Authorized operations and vehicles">{visible.map(item=><button type="button" className={s.shipmentRow} key={item.id} onClick={()=>select(item.id)} aria-pressed={selected?.id===item.id}><span className={s.vehicleIcon}><Truck size={18}/></span><span style={{minWidth:0,flex:1,overflowWrap:'anywhere'}}><strong style={{flexWrap:'wrap'}}>{item.vehicle}<small>{item.operationId?'Operation '+item.operationId.slice(0,8):'Vehicle record'}</small></strong><span>{item.origin} → {item.destination}</span><small style={{display:'block',marginLeft:0}}>{item.position?'Last recorded position · '+item.provenance:item.positionIssue}</small></span><span className={s.statusBadge}>{item.status}</span><ChevronRight size={16}/></button>)}{!visible.length?<div className={s.empty}><Search size={26}/><strong>{error?'Records unavailable':snapshot?'No matching records':'Waiting for authorized records'}</strong></div>:null}</div>:null}
+     {selected&&view==='map'?<article className={s.mapDetail} aria-label="Selected operation"><div><span className={s.detailIcon}><Truck size={18}/></span><span><strong>{selected.vehicle}</strong><small>{selected.status}</small></span><Button variant="secondary" size="compact" onClick={()=>setSelectedId(null)} aria-label="Close selected operation"><X size={16}/></Button></div><h3>{selected.origin}<ArrowRight size={14}/>{selected.destination}</h3><p>{selected.cargo}</p><div className={s.detailFacts}><span>Planned end<strong>{towerDate(selected.plannedEnd)}</strong></span><span>Position source<strong>{selected.position?selected.provenance:selected.positionIssue}</strong></span></div><small className={s.detailSource}>Observed: {towerDate(selected.observedAt)} · Accuracy unknown</small></article>:null}
+     {view==='map'&&snapshot&&!positions&&!selectedRoad(road)?<div className={s.noMatches} role="status">No operation positions to plot. Vehicles remain in the list; site markers do not locate trucks. <Button variant="secondary" size="compact" onClick={()=>setView('list')}>View records</Button></div>:null}
+    </ContentMotion><div className={s.mapFooter}><span role="status" aria-live="polite">{visible.length} loaded records · {positions} plotted positions</span><span>Google Maps · {selectedRoad(road)?'Planning route from Google · not saved to an order':'No calculated route attached'}</span></div>
+   </section>
+   <aside className={s.exceptionPanel} aria-labelledby="exception-title"><div className={s.exceptionHeading}><div><h2 id="exception-title">Operation incidents</h2><p>Read for the selected operation.</p></div></div><div className={s.exceptionTabs}>{['Open','All'].map(value=><Button variant="secondary" size="compact" key={value} aria-pressed={incidentFilter===value} onClick={()=>setIncidentFilter(value)}>{value}</Button>)}</div>
+    <div className={s.exceptionList}>{incidents.error?<p role="alert" className={s.empty}>{incidents.error}</p>:incidents.loading?<p role="status" className={s.empty}>Loading incidents…</p>:!selected?.operationId?<div className={s.empty}><Search size={26}/><strong>Select an operation</strong><p>Incident counts are not inferred from the loaded fleet.</p></div>:displayedIncidents.length?displayedIncidents.map(row=><article key={row.id} className={s.exceptionCard}><div className={s.exceptionTop}><strong>{row.data.kind}</strong><span>{row.data.severity} · {row.status}</span></div><p>{row.data.description}</p><small>Occurred {towerDate(row.data.occurredAt)}</small><p>Evidence: {row.data.evidence.map(ev=>ev.provenanceStatus).join(', ')||'Unknown'}</p></article>):<div className={s.empty}><strong>No incidents in this read</strong></div>}</div>
+    <div className={s.queueNote}><Clock3 size={14}/>{incidents.partial?'Incident read incomplete.':'No live telemetry or automatic alerts.'}</div>
+   </aside></div>
+   <section className={s.bottomGrid} aria-label="Operational context"><article className={s.contextCard}><div><Route size={17}/><h2>Selected operation</h2></div>{selected?<><h3>{selected.origin} → {selected.destination}</h3><p>{selected.vehicle} · {selected.equipment}</p><p>Assigned drivers: {selected.driver}</p><p>{selected.position?'Last recorded position: '+towerDate(selected.observedAt)+' · '+selected.provenance:selected.positionIssue}</p>{selected.issues.map(issue=><p key={issue}>{issue}</p>)}{selected.bookingId?<CarrierLink href={'/carriers/orders/details/'+selected.bookingId}>Open linked order<ArrowRight size={14}/></CarrierLink>:selected.operationId?<CarrierLink href="/carriers/orders">Inspect Orders<ArrowRight size={14}/></CarrierLink>:<CarrierLink href="/carriers/fleet">Inspect Fleet<ArrowRight size={14}/></CarrierLink>}</>:<><h3>Select a record</h3><p>Map, list and incident details use the same selection.</p></>}</article>
+    <article className={s.contextCard}><div><Truck size={17}/><h2>Fleet operating conditions</h2></div><div className={s.fleetBar}>{resources.map(row=><span key={row.id} className={recordData(row).operatingStatus==='MAINTENANCE'?s.maintenance:s.assigned} title={String(recordData(row).code)+' · '+String(recordData(row).operatingStatus)}/>)}</div><dl style={{flexWrap:'wrap'}}>{conditions.map(value=><div key={value}><dt>{value.replaceAll('_',' ')}</dt><dd>{snapshot?.loaded.assets?resources.filter(row=>recordData(row).operatingStatus===value).length:'—'}</dd></div>)}</dl><p>Catalog condition does not establish availability for a date or physical location.</p></article>
+    <article className={s.contextCard}><div><Building2 size={17}/><h2>Network context</h2></div>{sites.map(site=><div key={site.id} className={s.hubRow}><span className={s.hubIcon}><Building2 size={16}/></span><span><strong>{site.name}</strong><small>{site.location} · {site.active?'Active':'Inactive'} · {site.position?'Coordinates recorded':'Coordinates unavailable'}</small></span></div>)}{snapshot?.loaded.depots&&!sites.length?<p>No Carrier sites recorded.</p>:null}<p>A site is not evidence of coverage or truck presence.</p><CarrierLink href="/carriers/sites">Open Sites & coverage</CarrierLink></article>
+   </section>{snapshot?<p className={s.queueNote}>Read at {towerDate(snapshot.readAt)}. Counts cover loaded records.</p>:null}
+  </ContentMotion></main></div></div>;
+ return embedded?content:<CarrierNavigation current="tower" locale="en" workspaceHref="/carriers" towerHref={CARRIER_TOWER} sourceLabel={carrier?.carrierName??'Authorized records required'}>{content}</CarrierNavigation>;
 }

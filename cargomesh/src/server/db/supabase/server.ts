@@ -1,4 +1,5 @@
 ﻿import "server-only";
+import {localScenarioCookieOptions} from "./local-profile";
 
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
@@ -20,6 +21,7 @@ export async function createServerSupabaseClient(): Promise<ReturnType<typeof cr
   }
 
   return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: localScenarioCookieOptions({profile:process.env.CARGOMESH_LOCAL_PROFILE,url:supabaseUrl,production:process.env.NODE_ENV==="production"}),
     cookies: {
       getAll() {
         return cookieStore.getAll();

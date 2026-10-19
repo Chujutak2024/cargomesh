@@ -3,8 +3,7 @@
   overflow-x: clip;
   color-scheme: light;
   background:
-    radial-gradient(circle at 76% -15%, rgb(66 151 187 / 13%), transparent 34rem),
-    linear-gradient(135deg, #e9f0f7, var(--cm-color-canvas) 62%, #e8eff6);
+    var(--cm-color-canvas);
   color: var(--cm-color-ink);
   font-family: var(--cm-font-sans);
 }

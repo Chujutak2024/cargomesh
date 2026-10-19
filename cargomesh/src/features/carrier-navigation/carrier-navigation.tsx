@@ -1,5 +1,8 @@
 "use client";
 
+import {usePathname} from 'next/navigation';
+import {CarrierLink} from './carrier-link';
+import {carrierHashFromPath} from '@/shared/navigation/workspaces';
 import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Activity, Building2, ClipboardCheck, CircleHelp, ChevronRight, LayoutDashboard, Menu, Package, PanelLeftClose, PanelLeftOpen, Plus, Route, Truck, UserRound, X } from 'lucide-react';
 import { carrierActiveItem, carrierNavigation, type CarrierNavIcon } from './navigation-model';
@@ -17,17 +20,18 @@ export function CarrierMenuButton() {
   return <button className={s.menuButton} type="button" aria-label={label} aria-controls={nav.sidebarId} aria-expanded={nav.expanded} onClick={nav.toggle}><Icon size={18} aria-hidden="true" /></button>;
 }
 
-export function CarrierBreadcrumb({ currentLabel, locale = 'en', workspaceHref = '/v2-workspace', className }: {
+export function CarrierBreadcrumb({ currentLabel, locale = 'en', workspaceHref = '/carriers', className }: {
   currentLabel: string; locale?: 'es' | 'en'; workspaceHref?: string; className?: string;
 }) {
   return <nav className={[s.breadcrumb, className].filter(Boolean).join(' ')} aria-label={locale === 'es' ? 'Ruta de navegación' : 'Breadcrumb'}>
-    <ol><li className={s.breadcrumbRoot}><a href={workspaceHref + '#/dashboard'}>Carrier</a><ChevronRight size={13} aria-hidden="true" /></li><li aria-current="page">{currentLabel}</li></ol>
+    <ol><li className={s.breadcrumbRoot}><CarrierLink href={workspaceHref==='/carriers'?'/carriers':workspaceHref + '#/dashboard'}>Carrier</CarrierLink><ChevronRight size={13} aria-hidden="true" /></li><li aria-current="page">{currentLabel}</li></ol>
   </nav>;
 }
 
-export function CarrierNavigation({ children, current, locale, workspaceHref = '/v2-workspace', towerHref, editRequest = false, previewEnabled = true, demoMode = false, sourceLabel }: {
+export function CarrierNavigation({ children, current, locale, workspaceHref = '/carriers', towerHref, editRequest = false, previewEnabled = true, demoMode = false, sourceLabel }: {
   children: ReactNode; current: string; locale: 'es' | 'en'; workspaceHref?: string; towerHref: string; editRequest?: boolean; previewEnabled?: boolean; demoMode?: boolean; sourceLabel: string;
 }) {
+  const pathname=usePathname();
   const [collapsed, setCollapsed] = useState(false), [open, setOpen] = useState(false), [mobile, setMobile] = useState(false), [hash, setHash] = useState('');
   const sidebarId = useId(), titleId = useId();
   const sidebar = useRef<HTMLElement>(null), closeButton = useRef<HTMLButtonElement>(null), trigger = useRef<HTMLElement | null>(null);
@@ -37,10 +41,10 @@ export function CarrierNavigation({ children, current, locale, workspaceHref = '
   useEffect(() => {
     const media = window.matchMedia('(max-width: 767px)');
     const resize = () => { setMobile(media.matches); if (!media.matches) setOpen(false); };
-    const syncHash = () => { setHash(window.location.hash); setOpen(false); };
-    resize(); syncHash(); media.addEventListener('change', resize); window.addEventListener('hashchange', syncHash);
-    return () => { media.removeEventListener('change', resize); window.removeEventListener('hashchange', syncHash); };
-  }, []);
+    const syncHash = () => { setHash(pathname.startsWith('/carriers')?carrierHashFromPath(window.location.pathname):window.location.hash); setOpen(false); };
+    resize(); syncHash(); media.addEventListener('change', resize); window.addEventListener('hashchange', syncHash);window.addEventListener('cm-carrier-route',syncHash);window.addEventListener('popstate',syncHash);
+    return () => { media.removeEventListener('change', resize); window.removeEventListener('hashchange', syncHash);window.removeEventListener('cm-carrier-route',syncHash);window.removeEventListener('popstate',syncHash); };
+  }, [pathname]);
   useEffect(() => {
     if (!open || !mobile) {
       if (wasOpen.current) trigger.current?.focus();
@@ -63,7 +67,7 @@ export function CarrierNavigation({ children, current, locale, workspaceHref = '
     return () => { releaseScroll(); document.removeEventListener('keydown', keydown); };
   }, [open, mobile]);
   const groups = carrierNavigation({ locale, workspaceHref, towerHref, editRequest, previewEnabled, demoMode });
-  const rawActive = carrierActiveItem(current === 'route-lab' ? 'tower' : current, hash);
+  const rawActive = carrierActiveItem(current === 'route-lab' ? 'tower' : current, hash, demoMode);
   const active = !demoMode && rawActive === 'register' ? 'fleet' : rawActive;
   const expanded = mobile ? open : !collapsed;
   return <NavigationContext.Provider value={{ expanded, mobile, sidebarId, locale, toggle: () => {
@@ -74,19 +78,19 @@ export function CarrierNavigation({ children, current, locale, workspaceHref = '
       <a className={s.skip} href={current === 'tower' ? '#tower-main' : '#coordinator-content'}>{t('Saltar al contenido', 'Skip to content')}</a>
       <aside ref={sidebar} id={sidebarId} className={s.sidebar} role={mobile && open ? 'dialog' : undefined} aria-modal={mobile && open ? true : undefined} aria-labelledby={titleId} inert={mobile && !open}>
         <div className={s.brandRow}>
-          <a className={s.brand} href={`${workspaceHref}#/dashboard`} aria-label="CargoMesh" onClick={close}>
+          <CarrierLink className={s.brand} href={workspaceHref==='/carriers'?'/carriers':`${workspaceHref}#/dashboard`} aria-label="CargoMesh" onClick={close}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/v2-workspace/cargomesh-icon.png" width={30} height={30} alt="" /><span>CargoMesh</span>
-          </a>
+          </CarrierLink>
           <span id={titleId} className={s.srOnly}>{t('Navegación carrier', 'Carrier navigation')}</span>
           <button ref={closeButton} className={s.closeButton} type="button" onClick={close} aria-label={t('Cerrar menú carrier', 'Close carrier menu')}><X size={19} aria-hidden="true" /></button>
         </div>
         <nav className={s.nav} aria-label={t('Menú carrier', 'Carrier menu')}>
           {groups.map(group => <section className={s.group} key={group.id} aria-labelledby={`${sidebarId}-${group.id}`}>
             <h2 id={`${sidebarId}-${group.id}`} className={s.groupLabel}>{group.label}</h2>
-            {group.items.map(item => { const Icon = icons[item.icon]; return <a key={item.id} href={item.href} className={s.item} aria-label={`${item.label}${item.preview ? ' · Preview' : ''}`} aria-current={active === item.id ? 'page' : undefined} title={!expanded ? item.label : undefined} onClick={close}>
+            {group.items.map(item => { const Icon = icons[item.icon]; return <CarrierLink key={item.id} href={item.href} className={s.item} aria-label={`${item.label}${item.preview ? ' · Preview' : ''}`} aria-current={active === item.id ? 'page' : undefined} title={!expanded ? item.label : undefined} onClick={close}>
               <Icon size={18} strokeWidth={1.5} aria-hidden="true" /><span className={s.itemLabel}>{item.label}</span>{item.preview ? <small className={s.preview}>Preview</small> : null}
-            </a>; })}
+            </CarrierLink>; })}
           </section>)}
         </nav>
         <div className={s.identity}><span className={s.avatar}><UserRound size={19} aria-hidden="true" /></span><div><strong>{t('Espacio carrier', 'Carrier workspace')}</strong><span>{sourceLabel}</span></div></div>

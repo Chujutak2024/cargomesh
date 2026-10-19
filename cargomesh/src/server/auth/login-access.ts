@@ -14,7 +14,8 @@ export async function resolveLoginAccess(preferred: unknown, reads: AccessReads)
     error => ({ok: false as const, error}),
   );
   const hasMember = await reads.member();
-  if (hasMember && safeLoginReturnTo(preferred) !== "/carrier-portal" && safeLoginReturnTo(preferred) !== CARRIER_WORKSPACE_ENTRY) {
+  if(safeLoginReturnTo(preferred)==='/clients'&&!hasMember)return null;
+  if (hasMember && !['/carriers','/carriers/fleet'].includes(safeLoginReturnTo(preferred)??'') && safeLoginReturnTo(preferred) !== "/carrier-portal" && safeLoginReturnTo(preferred) !== CARRIER_WORKSPACE_ENTRY) {
     return loginDestination(preferred, true, []);
   }
   const result = await carriers;

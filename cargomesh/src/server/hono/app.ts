@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import {carrierRegularDriversRouter} from "./routes/carrier-regular-drivers";
 import { errorHandler } from "./middleware/error-handler";
 import { healthRouter } from "./routes/health";
 import { freightRequestsRouter } from "./routes/freight/requests";
@@ -22,6 +23,9 @@ import { locationsRouter } from "./routes/locations";
 //   /freight/requests      → POST /api/v2/freight/requests
 // ---------------------------------------------------------------------------
 
+import { carrierRoadOperationRouter } from './routes/carrier-road-operation';
+import { carrierRoadRouter } from './routes/carrier-road-routing';
+import { carrierBordersRouter } from './routes/carrier-borders';
 import {carrierOperationsRouter} from './routes/carrier-operations';
 
 export function createHonoApp() {
@@ -32,7 +36,11 @@ export function createHonoApp() {
 
   // Routes
   app.route("/health", healthRouter);
+  app.route("/", carrierRegularDriversRouter);
   app.route("/", carrierOperationsRouter);
+  app.route("/", carrierBordersRouter);
+  app.route("/", carrierRoadRouter);
+  app.route("/", carrierRoadOperationRouter);
   app.route("/", carrierPortalRouter);
   app.route("/", identityRouter);
   app.route("/", carrierWorkflowRouter);

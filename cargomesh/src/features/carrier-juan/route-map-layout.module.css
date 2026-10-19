@@ -1,0 +1,13 @@
+.withTracking.withTracking{grid-template-columns:minmax(0,1fr) 310px;gap:22px;--workspace-map-height:560px;--workspace-map-max-height:650px}
+.withTracking .mapColumn{min-width:0}
+.withTracking .trackingRail{padding:0;background:transparent;border-radius:0;min-width:0}
+.withTracking .facts{background:#f0f6fa;border:1px solid #d7e4ec;border-radius:12px;padding:16px 18px;margin-top:16px}
+.withTracking .facts h3{font-size:13px;margin-bottom:12px}
+.withTracking .facts dl{grid-template-columns:1fr 1fr 1.2fr;gap:18px}
+.withTracking .facts dl>div{display:block;border:0;padding:0}
+.withTracking .facts dt{font-size:11px;margin-bottom:4px;color:#536f82}
+.withTracking .facts dd{font-size:15px;font-weight:700;color:#183e50}
+.withTracking .facts p{font-size:11px;margin:12px 0 0;line-height:1.6}
+@media(min-width:1500px){.withTracking.withTracking{grid-template-columns:minmax(0,1fr) 340px;--workspace-map-height:600px}}
+@media(max-width:1000px){.withTracking.withTracking{grid-template-columns:minmax(0,1fr);--workspace-map-height:440px}}
+@media(max-width:650px){.withTracking.withTracking{--workspace-map-height:340px;gap:18px}.withTracking .facts{padding:14px}.withTracking .facts dl{grid-template-columns:1fr 1fr;gap:14px}.withTracking .facts dl>div:last-child{grid-column:1/-1}}
