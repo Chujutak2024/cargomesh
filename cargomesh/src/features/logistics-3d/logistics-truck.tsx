@@ -1,13 +1,14 @@
 "use client";
 import dynamic from "next/dynamic";
 import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useReducedMotion } from "motion/react";
+import { useReducedMotionPreference } from "@/features/product-motion/use-motion-preference";
 import { Download, Info, MoonStar, Pause, Play, RotateCcw, RotateCw, Scan, Sun, Sunset } from "lucide-react";
 import { useLocale } from "@/features/i18n/locale-provider";
 import styles from "./truck.module.css";
 import type { TruckVisualType } from "./truck-model";
 import type { TruckViewControls } from "./truck-scene";
 import { readTruckModel } from "./truck-model-assets";
+import { truckDesign } from './visual-catalog';
 import { getTruckEnvironment, nextEnvironmentPhase, previewTruckEnvironment, type TruckEnvironmentPhase } from "./truck-environment";
 
 const TruckScene=dynamic(()=>import("./truck-scene"),{ssr:false,loading:()=>null});
@@ -18,12 +19,15 @@ class SceneBoundary extends Component<{children:ReactNode;onFailure:()=>void},{f
 }
 
 /** No asset identity, capacity or position claims; independent of all API state. */
-type Props = { compact?:boolean;variant?:TruckVisualType;thumbnail?:boolean;label?:string;photo?:string|null;caption?:string;modelAssetId?:string|null;custom?:boolean;onInspect?:()=>void;suspended?:boolean };
+type Props = { compact?:boolean;variant?:TruckVisualType;designId?:string;thumbnail?:boolean;label?:string;photo?:string|null;caption?:string;modelAssetId?:string|null;custom?:boolean;onInspect?:()=>void;suspended?:boolean };
 export function LogisticsTruck(props:Props) {
-  return <TruckView key={`${props.variant??"default"}:${props.modelAssetId??"catalog"}:${!!props.custom}`} {...props}/>;
+  return <TruckView key={`${props.designId??props.variant??"default"}:${props.modelAssetId??"catalog"}:${!!props.custom}`} {...props}/>;
 }
-function TruckView({compact=false,variant,thumbnail=false,label,photo,caption,modelAssetId,custom=false,onInspect,suspended=false}:Props) {
-  const {t}=useLocale();const reduced=useReducedMotion();const element=useRef<HTMLDivElement>(null);
+function TruckView({compact=false,variant,designId,thumbnail=false,label,photo,caption,modelAssetId,custom=false,onInspect,suspended=false}:Props) {
+  const design = truckDesign(designId);
+  const validDesignId = design?.family === (variant ?? 'articulated') ? designId : undefined;
+  const newBody = !!validDesignId && !!design?.appearance.bodyStyle;
+  const {t}=useLocale();const preferred=useReducedMotionPreference();const [motionRequested,setMotionRequested]=useState(false);const reduced=preferred&&!motionRequested;const element=useRef<HTMLDivElement>(null);
   const [visible,setVisible]=useState(false),[eligible,setEligible]=useState(false),[hidden,setHidden]=useState(false),[ready,setReady]=useState(false),[failed,setFailed]=useState(false);
   const [autoRotate,setAutoRotate]=useState(false);const controls=useRef<TruckViewControls|null>(null);
   const [exportFailed,setExportFailed]=useState(false);
@@ -82,10 +86,11 @@ function TruckView({compact=false,variant,thumbnail=false,label,photo,caption,mo
       data-environment-phase={interactive?environment.phase:undefined} data-environment-mode={interactive?preview?"preview":"auto":undefined} data-environment-blend={interactive?environment.blend.toFixed(3):undefined} data-truck-moving={moving}>
       {/* Poster is rendered from this exact original 3D scene; no stock or assigned vehicle. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      {photo||!custom&&!modelAssetId?<img className={styles.poster} src={photo??`/v2-workspace/trucks/${variant??"articulated"}-3d.png`} alt={photo?t("Foto de tu camión preferido","Preferred truck photo"):""} width={thumbnail?340:840} height={thumbnail?150:540} loading="lazy" style={{opacity:eligible&&ready&&!failed?0:1,zIndex:1}}/>:null}
+      {photo||!custom&&!modelAssetId&&!newBody?<img className={styles.poster} src={photo??`/v2-workspace/trucks/${variant??"articulated"}-3d.png`} alt={photo?t("Foto de tu camión preferido","Preferred truck photo"):""} width={thumbnail?340:840} height={thumbnail?150:540} loading="lazy" style={{opacity:eligible&&ready&&!failed?0:1,zIndex:1}}/>:null}
+      {newBody&&(!ready||failed)?<p className={styles.empty} role="status">{failed?t("Este diseño necesita un navegador con gráficos 3D disponibles.","This design requires a browser with 3D graphics available."):t("Preparando esta carrocería 3D…","Preparing this 3D body…")}</p>:null}
       {!canRender&&!photo||failed&&modelAssetId&&!photo?<p className={styles.empty} role="status">{modelAssetId&&assetState==="loading"?t("Cargando tu modelo 3D…","Loading your 3D model…"):modelAssetId?t("Modelo no disponible. Vuelve a cargar el archivo GLB.","Model unavailable. Import the GLB file again."):t("Sube una foto o un modelo 3D de tu camión.","Upload a photo or a 3D model of your truck.")}</p>:null}
       {/* Keep a ready scene mounted while offscreen; its demand loop pauses without losing the visual or controls. */}
-      {eligible&&(visible||ready)&&!failed&&canRender?<SceneBoundary onFailure={markFailure}><TruckScene active={visible&&!hidden&&!suspended} reduced={!!reduced} moving={moving} onReady={markReady} onFailure={markFailure} variant={variant} modelBlob={modelBlob} environment={interactive?environment:undefined} thumbnail={thumbnail} autoRotate={rotating} onControlsReady={receiveControls} onInteraction={stopRotation} onInspect={onInspect?()=>{element.current?.focus({preventScroll:true});onInspect();}:undefined}/></SceneBoundary>:null}
+      {eligible&&(visible||ready)&&!failed&&canRender?<SceneBoundary onFailure={markFailure}><TruckScene active={visible&&!hidden&&!suspended} reduced={!!reduced} moving={moving} onReady={markReady} onFailure={markFailure} variant={variant} designId={validDesignId} modelBlob={modelBlob} environment={interactive?environment:undefined} thumbnail={thumbnail} autoRotate={rotating} onControlsReady={receiveControls} onInteraction={stopRotation} onInspect={onInspect?()=>{element.current?.focus({preventScroll:true});onInspect();}:undefined}/></SceneBoundary>:null}
       {interactive?<button type="button" className={styles.phaseButton} data-phase={environment.phase}
         aria-label={`${phaseName(environment.phase)} · ${t("Cambiar a","Switch to")} ${phaseName(nextEnvironmentPhase(environment.phase)).toLowerCase()}`}
         title={`${phaseName(environment.phase)} · ${t("Cambiar a","Switch to")} ${phaseName(nextEnvironmentPhase(environment.phase)).toLowerCase()}`}
@@ -93,7 +98,7 @@ function TruckView({compact=false,variant,thumbnail=false,label,photo,caption,mo
     </div>
     {interactive?<>
       <div className={styles.controls} role="group" aria-label={t("Controles de vista 3D","3D view controls")}>
-        <button type="button" disabled={!available||!!reduced} aria-pressed={moving} onClick={()=>setDrive(value=>!value)} aria-label={moving?t("Pausar avance del camión","Pause truck motion"):t("Reanudar avance del camión","Resume truck motion")} title={reduced?t("Avance desactivado por tu preferencia de movimiento reducido","Motion disabled by your reduced motion preference"):undefined}>{moving?<Pause size={15} aria-hidden="true"/>:<Play size={15} aria-hidden="true"/>}<span>{moving?t("Pausar avance","Pause motion"):t("Reanudar avance","Resume motion")}</span></button>
+        <button type="button" disabled={!available} aria-pressed={moving} onClick={()=>{if(reduced){setMotionRequested(true);setDrive(true);}else setDrive(value=>!value);}} aria-label={moving?t("Pausar avance del camión","Pause truck motion"):t("Reanudar avance del camión","Resume truck motion")} title={reduced?t("Reproducir solo esta escena; el inicio automático respeta movimiento reducido","Play this scene only; autoplay respects reduced motion"):undefined}>{moving?<Pause size={15} aria-hidden="true"/>:<Play size={15} aria-hidden="true"/>}<span>{moving?t("Pausar avance","Pause motion"):t("Reanudar avance","Resume motion")}</span></button>
         <button type="button" disabled={!available} onClick={()=>controls.current?.rotate(Math.PI/6)} aria-label={t("Girar camión a la izquierda","Rotate truck left")} title={t("Girar a la izquierda","Rotate left")}><RotateCcw size={17} aria-hidden="true"/></button>
         <button type="button" disabled={!available} onClick={()=>controls.current?.rotate(-Math.PI/6)} aria-label={t("Girar camión a la derecha","Rotate truck right")} title={t("Girar a la derecha","Rotate right")}><RotateCw size={17} aria-hidden="true"/></button>
         <button type="button" disabled={!available} onClick={()=>controls.current?.reset()} aria-label={t("Centrar vista del camión","Reset truck view")} title={t("Centrar vista","Reset view")}><Scan size={17} aria-hidden="true"/></button>

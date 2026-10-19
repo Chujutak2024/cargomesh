@@ -1,0 +1,88 @@
+"use client";
+import {useEffect,useRef,useState} from 'react';
+import {ArrowLeft,ArrowRight,CalendarDays,ClipboardCheck,MapPin,Package,Truck} from 'lucide-react';
+import {LocaleProvider} from '@/features/i18n/locale-provider';
+import {SearchField,Select} from '@/components/ui';
+import type {CarrierPortalAccessV2} from '@/shared/schemas/v2/carrier-portal';
+import type {OfferPreparationValue} from '@/shared/schemas/v2/offer-preparation';
+import {readCommercialDetail} from '@/features/carrier-portal/commercial-client';
+import {offerState,type Opportunity,type Offer} from '@/features/carrier-portal/commercial-model';
+import {portalErrorCopy,PortalApiError} from '@/features/carrier-portal/api';
+import {DataValue} from '@/features/carrier-portal/contract-form';
+import {opportunityFacts,opportunityReference,opportunityLabel,displayOpportunityDate} from './opportunity-model';
+import {emptyPreparation,preparationKey,prepareFromOffer,canPrepareOffer,canChangeOffer,offerRelations} from './offers-model';
+import {useConnectedOffers} from './use-connected-offers';
+import {offerDestination,requestOfferHistory} from './commercial-navigation-model';
+import {navigateJuanHash} from './juan-navigation';
+import {OfferPreparationEditor} from './offer-preparation-editor';
+import {OfferWithdrawalForm} from './offer-withdrawal-form';
+import r from './request-review.module.css';
+import d from './local-request-directory.module.css';
+import p from './portal.module.css';
+import filters from '@/features/carrier-portal/commercial-workspace.module.css';
+import controls from './operations.module.css';
+type Selection={kind:'offers'|'opportunities';id:string};
+type OffersProps={carrier:CarrierPortalAccessV2;active?:boolean;commercial?:boolean;routeHash?:string;refreshToken?:number;initialOfferId?:string;onBusyChange:(busy:boolean)=>void;onSaved?:()=>void};
+export function ConnectedOffers(props:OffersProps){
+ return <LocaleProvider locale="en"><OffersWorkspace key={props.carrier.operatorId+':'+props.carrier.carrierId} {...props}/></LocaleProvider>;
+}
+export function OffersWorkspace({carrier,active=true,commercial=false,routeHash,refreshToken=0,initialOfferId='',onBusyChange,onSaved}:OffersProps){
+ const target=routeHash===undefined?null:offerDestination(routeHash);
+ const state=useConnectedOffers(carrier,refreshToken),[selection,setSelection]=useState<Selection|null>(()=>target?.selection??(initialOfferId?{kind:'offers',id:initialOfferId}:null)),[detail,setDetail]=useState<Opportunity|Offer|null>(null),[detailError,setDetailError]=useState(''),[detailLoading,setDetailLoading]=useState(false);
+ const [tab,setTab]=useState<'offers'|'opportunities'>('offers'),[search,setSearch]=useState(''),[status,setStatus]=useState('all'),[editing,setEditing]=useState(target?.prepare??false),[withdrawing,setWithdrawing]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[now,setNow]=useState(Date.now());
+ const previousRoute=useRef(routeHash);
+ const navigateOffer=(hash:string)=>{previousRoute.current=hash;navigateJuanHash(hash);};
+ useEffect(()=>{if(routeHash===undefined||previousRoute.current===routeHash)return;previousRoute.current=routeHash;const next=offerDestination(routeHash);setSelection(next.selection);setEditing(next.prepare);setWithdrawing(false);setMessage('');},[routeHash]);
+ useEffect(()=>{if(active&&routeHash&&offerDestination(routeHash).prepare)setEditing(true);},[active,routeHash]);
+ const [local,setLocal]=useState<Record<string,OfferPreparationValue>>({}),heading=useRef<HTMLHeadingElement>(null);
+ const current=state.current;
+ useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),30000);return()=>clearInterval(timer);},[]);
+ useEffect(()=>()=>onBusyChange(false),[onBusyChange]);
+ const changeBusy=(value:boolean)=>{setBusy(value);onBusyChange(value);};
+ useEffect(()=>{const controller=new AbortController();setDetail(null);setDetailError('');setDetailLoading(!!selection);
+  if(selection)void readCommercialDetail(carrier.carrierId,selection.kind,selection.id,controller.signal).then(row=>{if(!controller.signal.aborted)setDetail(row);}).catch(failure=>{if(!controller.signal.aborted){setDetailError(portalErrorCopy(failure,false));if(failure instanceof PortalApiError&&[401,403].includes(failure.status))setEditing(false);}}).finally(()=>{if(!controller.signal.aborted)setDetailLoading(false);});
+  return()=>controller.abort();
+ },[carrier.carrierId,selection?.id,selection?.kind,current?.readAt]);
+ useEffect(()=>{if(active&&detail)heading.current?.focus({preventScroll:true});},[active,detail]);
+ const row=detail?.carrierId===carrier.carrierId&&detail.id===selection?.id?detail:null;
+ const offer=row?.kind==='offers'?row:null;
+ const opportunity=row?.kind==='opportunities'?row:offer?current?.opportunities.find(o=>o.id===offer.data.opportunityId&&offerRelations(offer,o))??null:null;
+ const facts=opportunity?opportunityFacts(opportunity):null,readReady=active&&!!current&&!current.partial&&!state.loading&&!state.error&&!state.denied&&!detailLoading&&!detailError;
+ const mayPrepare=readReady&&!!opportunity&&canPrepareOffer(opportunity,carrier.role,now)&&(!offer||canChangeOffer(offer,opportunity??undefined,current!,carrier.role,now,true));
+ const mayWithdraw=readReady&&!!offer&&canChangeOffer(offer,opportunity??undefined,current!,carrier.role,now);
+ const key=opportunity?preparationKey(carrier.operatorId,carrier.carrierId,opportunity.id,offer?.id??null):'';
+ const saved=state.drafts?.records.find(r=>r.value.opportunityId===opportunity?.id&&r.value.supersedesOfferId===(offer?.id??null));
+ const draft=local[key]??saved?.value;
+ const open=(next:Selection)=>{if(busy)return;setSelection(next);setEditing(false);setWithdrawing(false);setMessage('');if(commercial)navigateOffer('#/desk/'+(next.kind==='offers'?'details':'opportunity')+'/'+next.id);};
+ const refresh=()=>{if(busy)return;state.refresh();};
+ const afterSave=(f:Offer)=>{setEditing(false);setWithdrawing(false);setMessage((f.status==='WITHDRAWN'?'Offer withdrawn':'Offer issued')+' · '+f.data.carrierReference+'. Capacity and booking remain separate.');setSelection({kind:'offers',id:f.id});if(commercial)navigateOffer('#/desk/details/'+f.id);state.refresh();onSaved?.();};
+ const rows=current?(tab==='offers'?current.offers:current.opportunities):[];
+ const filtered=rows.filter(row=>{const label=row.kind==='offers'?row.data.carrierReference:opportunityReference(row);const state=row.kind==='offers'?offerState(row,now):row.status;return (status==='all'||state===status)&&[label,row.id,row.requestId,row.kind==='opportunities'?opportunityFacts(row).origin:'',row.kind==='opportunities'?opportunityFacts(row).destination:''].join(' ').toLowerCase().includes(search.trim().toLowerCase());});
+ return <div className={d.directory} aria-label="Carrier commercial offers">
+ <p className={p.notice}>Commercial responses for {carrier.carrierName}. Customer details are read-only. Accepting for review does not issue an offer or confirm capacity.</p>
+ {message?<p className={p.notice} role="status">{message}</p>:null}
+ {state.error?<p className={p.error} role="alert">{state.error} <button disabled={busy} onClick={refresh}>Refresh records</button></p>:state.loading?<p role="status">Loading authorized offers and opportunities…</p>:null}
+ {state.draftError?<p className={p.notice} role="status">{state.draftError}</p>:null}
+ {current?.partial||state.drafts?.partial?<p className={p.notice} role="status">Partial read. Counts cover loaded records; affected write actions are disabled.</p>:null}
+ {!commercial?<div className={controls.row}><button disabled={busy} onClick={refresh}>Refresh offers</button><button disabled={busy} aria-pressed={tab==='offers'} onClick={()=>{setTab('offers');setStatus('all');setSelection(null);setEditing(false);setWithdrawing(false);}}>Issued offers</button><button disabled={busy} aria-pressed={tab==='opportunities'} onClick={()=>{setTab('opportunities');setStatus('all');setSelection(null);setEditing(false);setWithdrawing(false);}}>Prepare from opportunity</button></div>:null}
+ {target?.invalid?<p role="alert">Invalid commercial reference. <button onClick={()=>navigateJuanHash('#/desk')}>Back to offers</button></p>:null}
+ {!state.denied&&!target?.invalid?<>
+ {!selection?<><div className={filters.directoryFilters}>
+  <div className={filters.toolbar}><SearchField label="Search loaded records" value={search} onValueChange={setSearch} placeholder="Reference or request…"/><Select label="Commercial state" value={status} onChange={e=>setStatus(e.target.value)}><option value="all">All</option>{[...new Set(rows.map(row=>row.kind==='offers'?offerState(row,now):row.status))].map(value=><option key={value} value={value}>{value}</option>)}</Select></div>
+  <small className={filters.filterCount} role="status">{filtered.length} of {rows.length} loaded records</small>
+ </div>
+ <div className={d.requestGrid}>{filtered.map(item=>{const o=item.kind==='opportunities'?item:current?.opportunities.find(o=>offerRelations(item,o));const f=o?opportunityFacts(o):null;return <article key={item.id} className={d.directoryCard}><header><strong>{item.kind==='offers'?item.data.carrierReference:opportunityReference(item)}</strong><span className={d.originBadge}>{item.kind==='offers'?'Issued offer':'Customer opportunity'}</span></header><div className={d.cardRoute}><div><small>Origin</small><h3>{f?.origin??'Not in this read'}</h3></div><ArrowRight size={16}/><div><small>Destination</small><h3>{f?.destination??'Not in this read'}</h3></div></div><div className={d.cargoPreview}><Package size={18}/><p>{f?.description??'Customer projection unavailable'}</p></div><dl className={d.cardFacts}><div><dt>{item.kind==='offers'?'Quoted total':'Response deadline'}</dt><dd>{item.kind==='offers'?'USD '+item.data.price.amount.toFixed(2):displayOpportunityDate(item.data.responseDeadline)}</dd></div><div><dt>State</dt><dd>{item.kind==='offers'?offerState(item,now):opportunityLabel(item.status)}</dd></div></dl><footer><button disabled={busy} onClick={()=>open({kind:item.kind,id:item.id})}>Open {item.kind==='offers'?'offer':'preparation context'}<ArrowRight size={15}/></button></footer></article>;})}</div>{current&&!filtered.length?<section className={p.card}><h2>{rows.length?'No matches':'No '+tab+' recorded'}</h2><p>No local examples are used as a fallback.</p></section>:null}</>:<>
+ <div className={d.detailHeading}><button disabled={busy} onClick={()=>{setSelection(null);setEditing(false);setWithdrawing(false);if(commercial)navigateOffer('#/desk');}}><ArrowLeft size={16}/>Back to directory</button><strong>{offer?.data.carrierReference??(opportunity?opportunityReference(opportunity):'Commercial detail')}</strong></div>
+ {detailLoading?<p role="status">Reading current commercial revision…</p>:detailError?<p role="alert">{detailError} <button disabled={busy} onClick={refresh}>Retry detail</button></p>:row?<>
+ <div className={r.layout}><section className={r.manifest} aria-label="Read-only customer manifest"><header><span><ClipboardCheck size={18}/>Customer transport details</span><strong>{opportunity?opportunityReference(opportunity):'Projection unavailable'}</strong></header><div className={r.route}><div><small><MapPin size={13}/>Origin</small><strong>{facts?.origin??'Unknown'}</strong></div><ArrowRight size={22}/><div><small><MapPin size={13}/>Destination</small><strong>{facts?.destination??'Unknown'}</strong></div></div><div className={r.cargo}><div className={r.subheading}><h3><Package size={18}/>{facts?.description??'Cargo details unavailable'}</h3></div><div className={r.cargoMetrics}><div><small>Requested weight</small><strong>{facts?.weightKg??'Unknown'} <span>kg</span></strong></div><div><small>Requested volume</small><strong>{facts?.volumeM3??'Unknown'} <span>m³</span></strong></div></div>{opportunity?<details><summary>Read-only cargo and requirements</summary><DataValue value={opportunity.data.cargoSpecification} es={false}/></details>:null}</div><div className={r.schedule}><div><CalendarDays size={18}/><div><small>Requested pickup window</small><strong>{facts?.pickup?displayOpportunityDate(facts.pickup.startsAt)+' — '+displayOpportunityDate(facts.pickup.endsAt):'Not included in Carrier projection'}</strong></div></div><div><CalendarDays size={18}/><div><small>Requested delivery window</small><strong>{facts?.delivery?displayOpportunityDate(facts.delivery.startsAt)+' — '+displayOpportunityDate(facts.delivery.endsAt):'Not included in Carrier projection'}</strong></div></div></div><div className={r.equipment}><div className={r.preview}><Truck size={48} aria-hidden="true"/></div><div><small>Authorized plan context</small><p>Resource windows and the response deadline do not establish the customer's requested windows.</p>{opportunity?<details><summary>Recorded assignments and resource windows</summary><DataValue value={opportunity.data.assignmentSnapshots} es={false}/></details>:null}</div></div></section>
+ <aside className={r.checklist}><div className={r.checkHeading}><span><ClipboardCheck size={22}/></span><div><h2 ref={heading} tabIndex={-1}>{offer?'Issued commercial offer':'Commercial preparation'}</h2><p>{offer?offerState(offer,now):opportunityLabel(row.status)}</p></div></div><dl className={p.details}>{offer?<><div><dt>Price</dt><dd>USD {offer.data.price.amount.toFixed(2)}</dd></div><div><dt>Record / commercial version</dt><dd>{offer.version} / {offer.data.offerVersion}</dd></div><div><dt>Source</dt><dd>{offer.data.source.channel} · {offer.data.source.evidence.provenanceStatus}</dd></div><div><dt>Commercial validity</dt><dd>{displayOpportunityDate(offer.data.validity.startsAt)} — {displayOpportunityDate(offer.data.validity.endsAt)}</dd></div></>:null}<div><dt>Opportunity deadline</dt><dd>{opportunity?displayOpportunityDate(opportunity.data.responseDeadline):'Unknown'}</dd></div></dl><p className={r.note}>{offer?'Issued offers cannot be edited directly. Withdraw or issue a versioned replacement where the server permits.':'Keep a preparation separately, then review and confirm issuance. No Client request is edited here.'}</p>
+ <div className={controls.row}><button disabled={!mayPrepare||busy} onClick={()=>{setEditing(true);setWithdrawing(false);}}>{offer?'Prepare replacement':'Prepare offer'}</button>{offer?<button disabled={!mayWithdraw||busy} onClick={()=>{setWithdrawing(true);setEditing(false);}}>Withdraw offer</button>:null}</div>{!mayPrepare?<p>Issuance requires an allowed role, a complete current read and an open opportunity. Commitments and selection constraints are rechecked by the server.</p>:null}
+ {offer?<details><summary>Version chain and record references</summary><p>Replaces: {offer.data.supersedesOfferId??'None'}</p><ul>{current?.offers.filter(f=>f.data.supersedesOfferId===offer.id).map(f=><li key={f.id}><button onClick={()=>open({kind:'offers',id:f.id})}>{f.data.carrierReference} · version {f.data.offerVersion}</button></li>)}</ul><DataValue value={{offerId:offer.id,opportunityId:offer.data.opportunityId,requestId:offer.requestId,organizationId:offer.organizationId,planId:offer.data.planCandidateId,assignments:offer.data.coveredAssignmentIds,services:offer.data.coveredServiceIds}} es={false}/></details>:null}</aside></div>
+ {opportunity?<section className={p.card} aria-label="Request offer version history"><h2>Offer version history</h2>{requestOfferHistory(opportunity,current?.offers??[]).map(f=><article key={f.id}><div className={controls.row}><strong>{f.data.carrierReference}</strong><span>Version {f.data.offerVersion} · {offerState(f,now)}</span><span>{f.data.price.currency} {f.data.price.amount.toFixed(2)}</span><button disabled={busy} onClick={()=>open({kind:'offers',id:f.id})}>View version {f.data.offerVersion}</button></div></article>)}{!requestOfferHistory(opportunity,current?.offers??[]).length?<p>{current?.partial?'No linked offers in the loaded records. The read is partial.':'No linked offers in this read.'}</p>:null}<button disabled={busy} onClick={()=>navigateJuanHash('#/shipments/details/'+opportunity.id)}>Back to Request</button></section>:null}
+ {offer?<section className={p.card}><h2>Saved offer details</h2><p>All persisted commercial fields, source evidence and proposed dates. Expired validity is derived; it does not create a new persisted state.</p><DataValue value={offer.data} es={false}/></section>:null}
+ {editing&&opportunity?<OfferPreparationEditor key={key} carrier={carrier} opportunity={opportunity} supersedes={offer} initial={draft?.fields??(offer?prepareFromOffer(offer):emptyPreparation(carrier.carrierName))} initialAssignments={draft?.assignmentIds??offer?.data.coveredAssignmentIds??opportunity.data.assignmentIds} cloudRecord={saved} cloudReady={!!state.drafts&&!state.drafts.partial&&!state.draftError} allowed={mayPrepare} onLocal={value=>setLocal(previous=>({...previous,[key]:value}))} onPersistentSaved={row=>{setMessage('Preparation saved to the service · revision '+row.version+'. No offer was issued.');state.refresh();}} onSaved={afterSave} onClose={()=>setEditing(false)} onBusyChange={changeBusy}/>:null}
+ {withdrawing&&offer?<OfferWithdrawalForm key={offer.id+':'+offer.version} carrier={carrier} row={offer} allowed={mayWithdraw} onSaved={afterSave} onClose={()=>setWithdrawing(false)} onBusyChange={changeBusy}/>:null}
+ </>:null}</>}
+ </>:state.denied?<p>Access could not be confirmed. Previous Carrier records and forms are hidden.</p>:null}
+ </div>;
+}

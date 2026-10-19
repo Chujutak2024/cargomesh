@@ -1,126 +1,81 @@
-"use client";
-import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useReducedMotion } from "motion/react";
-import { ACESFilmicToneMapping, Color, Group, OrthographicCamera, PMREMGenerator, SRGBColorSpace, Vector3, MathUtils } from "three";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Building2, PackageCheck, RotateCcw, Warehouse, ZoomIn, ZoomOut } from "lucide-react";
-import type { TruckInspectionContext } from "@/features/carrier-portal/truck-inspection-model";
-import { buildDepot, disposeDepot } from "./depot-model";
-import { depotCyclePose, depotPhases, DEPOT_CYCLE_SECONDS, ease, type DepotPhase } from "./depot-cycle";
-import { buildDepotActors, animateDepotActors } from "./depot-actors";
-import { buildCargoMeshTruck, disposeCargoMeshTruck, setTruckWheelAngle, setTruckCargoAccess } from "./truck-model";
-import { disposeTruckAsset, loadTruckGlb } from "./load-truck-glb";
-import { readTruckModel } from "./truck-model-assets";
-import { getTruckEnvironment } from "./truck-environment";
-import s from "./depot.module.css";
-
-type FrameReport = { phase: DepotPhase; time: number; loadProgress: number };
-type ViewControls = { zoom:(factor:number)=>void; center:()=>void };
-type SceneProps = { context:TruckInspectionContext; reduced:boolean; night:number; hidden:boolean; interior:boolean; controlsReady:(controls:ViewControls|null)=>void; report:(value:FrameReport)=>void; failed:()=>void; ready:()=>void };
-function DepotScene({context,reduced,night,hidden,interior,controlsReady,report,failed,ready}:SceneProps){
-  const {camera,gl,scene,invalidate,size}=useThree();
-  const [model,setModel]=useState<{depot:ReturnType<typeof buildDepot>;truck:Group;actors:ReturnType<typeof buildDepotActors>}|null>(null);
-  const travel=useRef(reduced?57:0),lastReport=useRef(-1),frames=useRef(0),target=useRef(new Vector3()),position=useRef(new Vector3());
-  const orbit=useRef<OrbitControls|null>(null),guided=useRef(true),resetView=useRef(false);
-  useEffect(()=>{
-    const controls=new OrbitControls(camera,gl.domElement);orbit.current=controls;
-    controls.target.set(0,0,1);controls.enablePan=true;controls.enableZoom=true;
-    controls.minZoom=2.5;controls.maxZoom=150;controls.minPolarAngle=.08;controls.maxPolarAngle=Math.PI/2-.03;
-    controls.enableDamping=!reduced;controls.dampingFactor=.12;controls.rotateSpeed=.65;controls.zoomSpeed=.7;controls.panSpeed=.7;
-    const manual=()=>{guided.current=false;invalidate();};
-    const change=()=>invalidate();
-    const zoom=(factor:number)=>{
-      manual();if(camera instanceof OrthographicCamera){camera.zoom=MathUtils.clamp(camera.zoom*factor,controls.minZoom,controls.maxZoom);camera.updateProjectionMatrix();}controls.update(0);invalidate();
-    };
-    const center=()=>{resetView.current=true;invalidate();};
-    const keys=(event:KeyboardEvent)=>{
-      if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","+","=","-","Home"].includes(event.key))event.preventDefault();else return;
-      if(event.key==="Home")center();else if(event.key==="+"||event.key==="=")zoom(1.2);else if(event.key==="-")zoom(1/1.2);else{manual();if(event.key==="ArrowLeft"||event.key==="ArrowRight")controls.rotateLeft(event.key==="ArrowLeft"?.12:-.12);else controls.rotateUp(event.key==="ArrowUp"?.1:-.1);controls.update(0);invalidate();}
-    };
-    gl.domElement.tabIndex=0;gl.domElement.setAttribute("aria-label","Vista interactiva de la sede: girar, desplazar y acercar");
-    controls.addEventListener("start",manual);controls.addEventListener("change",change);gl.domElement.addEventListener("keydown",keys);
-    controlsReady({zoom,center});controls.update(0);
-    return()=>{controlsReady(null);controls.removeEventListener("start",manual);controls.removeEventListener("change",change);gl.domElement.removeEventListener("keydown",keys);controls.dispose();orbit.current=null;};
-  },[camera,gl,invalidate,reduced,controlsReady]);
-  useEffect(()=>{if(model){model.depot.roof.visible=!interior;invalidate();}},[model,interior,invalidate]);
-  useEffect(()=>{resetView.current=true;invalidate();},[interior,invalidate]);
-  useEffect(()=>{
-    let cancelled=false,owned:NonNullable<typeof model>|null=null;
-    const install=(truck:Group)=>{
-      if(cancelled){disposeTruckAsset(truck);return;}
-      owned={depot:buildDepot(context.depot.color),truck,actors:buildDepotActors(context.variant)};
-      owned.depot.root.add(owned.actors.root);owned.actors.payload.visible=!context.modelAssetId;truck.add(owned.actors.payload);
-      setModel(owned);invalidate();ready();
-    };
-    if(context.modelAssetId)readTruckModel(context.modelAssetId).then(asset=>{if(!asset)throw new Error("MODEL_MISSING");return asset.blob.arrayBuffer();}).then(loadTruckGlb).then(install).catch(()=>{if(!cancelled)failed();});
-    else if(context.custom)failed();else install(buildCargoMeshTruck(context.variant,{cargoAccess:true}));
-    return()=>{cancelled=true;if(owned){owned.truck.remove(owned.actors.payload);owned.depot.root.add(owned.actors.payload);disposeDepot(owned.depot.root);if(context.modelAssetId)disposeTruckAsset(owned.truck);else disposeCargoMeshTruck(owned.truck);}};
-  },[context,invalidate,failed,ready]);
-  useEffect(()=>{
-    const generator=new PMREMGenerator(gl),room=new RoomEnvironment(),env=generator.fromScene(room,.05,.1,100,{size:128}),previous=scene.environment;
-    scene.environment=env.texture;room.dispose();generator.dispose();return()=>{scene.environment=previous;env.dispose();};
-  },[gl,scene]);
-  useEffect(()=>{scene.environmentIntensity=.75-night*.45;scene.background=new Color("#dce9ed").lerp(new Color("#182b45"),night);invalidate();},[night,scene,invalidate]);
-  useEffect(()=>{travel.current=reduced?57:0;lastReport.current=-1;invalidate();},[reduced,invalidate]);
-  useEffect(()=>{
-    if(hidden||reduced){invalidate();return;}
-    const timer=window.setInterval(()=>{if(!document.hidden)invalidate();},1000/30);return()=>window.clearInterval(timer);
-  },[hidden,reduced,invalidate]);
-  useFrame((_,delta)=>{
-    if(!model)return;
-    if(!reduced&&!hidden&&!document.hidden)travel.current=(travel.current+Math.min(delta,.05))%(DEPOT_CYCLE_SECONDS+7);
-    const pose=depotCyclePose(travel.current,["rigid","tipper","mixer"].includes(context.variant??""));
-    model.truck.position.copy(pose.position);model.truck.position.y=.21;model.truck.rotation.y=pose.yaw;model.truck.scale.setScalar(.58);
-    if(!context.modelAssetId)setTruckWheelAngle(model.truck,pose.wheelDistance/(.369*.58));
-    setTruckCargoAccess(model.truck,pose.doors);animateDepotActors(model.actors,pose,reduced);
-    model.depot.barrier.rotation.x=-pose.gate*Math.PI/2;model.depot.exitBarrier.rotation.x=-pose.exitGate*Math.PI/2;
-    model.depot.shutters.forEach((door,i)=>{const open=i===1?ease((pose.time-23)/3)*(1-ease((pose.time-61)/3)):0;door.scale.y=1-open*.96;door.position.y=.35+2.28*open*.96;});
-    const close=ease((pose.time-18)/8)*(1-ease((pose.time-60)/6));
-    const controls=orbit.current;
-    if(resetView.current||guided.current){
-      target.current.set(interior?3:3*close,interior?.7:.8*close,interior?-2.4:1+1.2*close);
-      position.current.set(interior?-10:-24+14*close,interior?20:24-15*close,interior?13:30-15*close).add(target.current);
-      const blend=resetView.current||reduced?1:1-Math.exp(-Math.min(delta,.05)*3.5);
-      camera.position.lerp(position.current,blend);controls?.target.copy(target.current);camera.lookAt(target.current);
-      if(camera instanceof OrthographicCamera){camera.zoom=MathUtils.lerp(camera.zoom,Math.max(3,Math.min(size.width/(interior?24:48-24*close),size.height/(interior?20:31-22*close))),blend);camera.updateProjectionMatrix();}
-      if(resetView.current){guided.current=!interior;resetView.current=false;}
-    }
-    controls?.update(Math.min(delta,.05));
-    const tick=Math.floor(pose.time*4);if(tick!==lastReport.current){lastReport.current=tick;report({phase:pose.phase,time:pose.time,loadProgress:pose.loadProgress});}
-    const data=gl.domElement.dataset;data.arrivalPhase=pose.phase;data.arrivalProgress=pose.progress.toFixed(3);data.cycleTime=pose.time.toFixed(2);data.loadProgress=pose.loadProgress.toFixed(3);data.loadedBatches=String(pose.loaded);data.crewCount=String(model.actors.crew.length);data.frames=String(++frames.current);data.drawCalls=String(gl.info.render.calls);data.truckVariant=context.modelAssetId?"custom":context.variant??"articulated";data.arrivalX=pose.position.x.toFixed(3);data.arrivalZ=pose.position.z.toFixed(3);
-    data.cameraMode=guided.current?"guided":"manual";data.cameraX=camera.position.x.toFixed(3);data.cameraY=camera.position.y.toFixed(3);data.cameraZ=camera.position.z.toFixed(3);data.cameraZoom=String(camera.zoom);data.targetX=String(controls?.target.x);data.targetZ=String(controls?.target.z);data.depotRoof=String(model.depot.roof.visible);
-  });
-  return <>
-    <ambientLight intensity={.5-night*.22}/><hemisphereLight args={["#eaf6ff","#929a7e",1.45-night*.6]}/>
-    <directionalLight position={[-12,22,10]} intensity={3-night*1.8} color={night>.5?"#c4d9ff":"#fff0d4"} castShadow shadow-mapSize={[2048,2048]} shadow-camera-left={-24} shadow-camera-right={24} shadow-camera-top={24} shadow-camera-bottom={-24} shadow-bias={-.0005} shadow-normalBias={.025}/>
-    <pointLight position={[3,4,2]} color="#ffe2a4" intensity={night*115} distance={18} decay={2}/><pointLight position={[-6,4,1]} color="#97d5ef" intensity={night*60} distance={13} decay={2}/>
-    {model?<><primitive object={model.depot.root} dispose={null}/><primitive object={model.truck} dispose={null}/></>:null}
-  </>;
+'use client';
+import dynamic from 'next/dynamic';
+import { Component, useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { Building2, Eye, Pause, Play, RotateCcw, Truck, Warehouse, Wrench, ZoomIn, ZoomOut } from 'lucide-react';
+import { useReducedMotionPreference } from '@/features/product-motion/use-motion-preference';
+import type { TruckInspectionContext } from '@/features/carrier-portal/truck-inspection-model';
+import { createDepotCoordinator, yardPhaseLabels, type DepotCoordinator } from './depot-coordinator';
+import type { YardViewControls } from './depot-yard-scene';
+import { getTruckEnvironment } from './truck-environment';
+import { depotTemplate, depotTemplates, type DepotTemplateId } from './depot-templates';
+import { truckDesigns } from './visual-catalog';
+import s from './depot.module.css';
+const DepotYardScene = dynamic(() => import('./depot-yard-scene'), { ssr: false, loading: () => null });
+class DepotBoundary extends Component<{ children: ReactNode; failed: () => void }, { error: boolean }> {
+  state = { error: false }; static getDerivedStateFromError() { return { error: true }; }
+  componentDidCatch() { this.props.failed(); } render() { return this.state.error ? null : this.props.children; }
 }
-class DepotBoundary extends Component<{children:ReactNode;failed:()=>void},{error:boolean}>{state={error:false};static getDerivedStateFromError(){return{error:true};}componentDidCatch(){this.props.failed();}render(){return this.state.error?null:this.props.children;}}
-export default function DepotArrival({context}:{context:TruckInspectionContext}){
-  const reduced=!!useReducedMotion(),[frame,setFrame]=useState<FrameReport>({phase:"approach",time:0,loadProgress:0}),[error,setError]=useState(false),[loaded,setLoaded]=useState(false),[clock,setClock]=useState(new Date()),[hidden,setHidden]=useState(false);
-  const [interior,setInterior]=useState(false),viewControls=useRef<ViewControls|null>(null);
-  const controlsReady=useCallback((controls:ViewControls|null)=>{viewControls.current=controls;},[]);
-  const report=useCallback((value:FrameReport)=>setFrame(value),[]),failed=useCallback(()=>setError(true),[]),ready=useCallback(()=>setLoaded(true),[]);
-  useEffect(()=>{const update=()=>{setHidden(document.hidden);if(!document.hidden)setClock(new Date());};update();const timer=window.setInterval(update,30000);document.addEventListener("visibilitychange",update);return()=>{window.clearInterval(timer);document.removeEventListener("visibilitychange",update);};},[]);
-  const environment=getTruckEnvironment(clock),phase=depotPhases.find(item=>item.id===frame.phase)!;
-  return <section className={s.root} aria-label="Sede 3D y operación del camión">
-    <div className={s.facility}><span className={s.brand} style={{background:context.depot.color}}><Building2 size={23}/></span><div><h3>{context.depot.name}<span> · {context.depot.city}</span></h3><p>{context.depot.carrier??"Centro logístico"}{context.depot.planned?" · Destino previsto":""}</p></div><span className={s.vehicle}>{context.title}</span></div>
-    <div className={s.stage} data-depot-roof={!interior} data-depot-state={error?"failed":loaded?"ready":"loading"}>
-      {!error?<DepotBoundary failed={failed}><Canvas orthographic shadows="soft" dpr={[1,1.5]} frameloop={hidden?"never":"demand"} camera={{position:[-24,24,30],zoom:16,near:.1,far:180}} gl={{antialias:true,powerPreference:"low-power"}} onCreated={({gl})=>{gl.toneMapping=ACESFilmicToneMapping;gl.outputColorSpace=SRGBColorSpace;}}><DepotScene context={context} reduced={reduced} night={environment.night} hidden={hidden} interior={interior} controlsReady={controlsReady} report={report} failed={failed} ready={ready}/></Canvas></DepotBoundary>:<div className={s.error} role="status"><Building2 size={38}/><strong>{context.custom?"El modelo 3D del camión no está disponible":"No se pudo abrir el visor 3D"}</strong><p>{context.custom?"Carga el archivo GLB del camión para ver su llegada a la sede.":"Tu navegador necesita WebGL para mostrar esta escena."}</p></div>}
-      {!error?<div className={s.viewTools} role="group" aria-label="Controles de vista de la sede">
-        <button aria-label="Acercar la sede" title="Acercar" disabled={!loaded} onClick={()=>viewControls.current?.zoom(1.2)}><ZoomIn size={18}/></button>
-        <button aria-label="Alejar la sede" title="Alejar" disabled={!loaded} onClick={()=>viewControls.current?.zoom(1/1.2)}><ZoomOut size={18}/></button>
-        <button aria-label="Centrar la sede" title="Centrar vista" disabled={!loaded} onClick={()=>viewControls.current?.center()}><RotateCcw size={18}/></button>
-        <button className={s.interiorToggle} aria-pressed={interior} disabled={!loaded} onClick={()=>setInterior(value=>!value)}><Warehouse size={18}/>{interior?"Ver exterior":"Ver interior"}</button>
-      </div>:null}
-      {!loaded&&!error?<span className={s.preparing} role="status">Preparando la sede…</span>:null}
-      {!error?<div className={s.sceneLegend}><i style={{background:context.depot.color}}/>Patio de maniobras<span>•</span>Muelle 02</div>:null}
-      {!error&&frame.time>=26?<div className={s.loadBadge}><PackageCheck size={18}/><span>{frame.time<36?"Preparando pedido":frame.time<57?"Carga en curso":frame.time<62?"Revisando carga":"Camión cargado"}<strong>{Math.round(frame.loadProgress*100)}%</strong></span></div>:null}
+export default function DepotArrival({ context, coordinator }: { context: TruckInspectionContext; coordinator?: DepotCoordinator }) {
+  const [local] = useState(createDepotCoordinator), controller = coordinator ?? local;
+  const snapshot = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
+  const preferredReduced = useReducedMotionPreference();
+  const playing = (snapshot.requestedPlay ?? !preferredReduced) && !snapshot.completed;
+  const reduced = preferredReduced && snapshot.requestedPlay !== true;
+  const [error, setError] = useState(false), [loaded, setLoaded] = useState(false), [retry, setRetry] = useState(0);
+  const [visible, setVisible] = useState(false), [hidden, setHidden] = useState(false), [clock, setClock] = useState<Date | null>(null);
+  const host = useRef<HTMLDivElement>(null), controls = useRef<YardViewControls | null>(null);
+  const receiveControls = useCallback((value: YardViewControls | null) => { controls.current = value; }, []);
+  const failed = useCallback(() => setError(true), []), ready = useCallback(() => setLoaded(true), []);
+  useEffect(() => {
+    const observer = new IntersectionObserver(entries => setVisible(entries.some(entry => entry.isIntersecting)));
+    if (host.current) observer.observe(host.current);
+    const visibility = () => { setHidden(document.hidden); if (!document.hidden) setClock(new Date()); };
+    visibility(); const timer = window.setInterval(visibility, 30000); document.addEventListener('visibilitychange', visibility);
+    return () => { observer.disconnect(); window.clearInterval(timer); document.removeEventListener('visibilitychange', visibility); };
+  }, []);
+  const active = visible && !hidden && !error;
+  useEffect(() => {
+    if (!active || !playing || !loaded) return;
+    let last = performance.now();
+    // This clock lives outside R3F. Inactive views freeze without rewinding.
+    const timer = window.setInterval(() => { if (document.hidden) return; const now = performance.now(); controller.advance(Math.min(100, now - last)); last = now; }, 1000 / 30);
+    return () => window.clearInterval(timer);
+  }, [controller, active, playing, loaded]);
+  useEffect(() => { if (!visible || loaded || error) return; const timeout = window.setTimeout(failed, 12000); return () => window.clearTimeout(timeout); }, [visible, loaded, error, failed, retry]);
+  const selected = snapshot.vehicles.find(vehicle => vehicle.assetId === snapshot.selectedAssetId);
+  const groups = [
+    { label: 'Present', vehicles: snapshot.vehicles.filter(v => !['departing', 'departed', 'unknown'].includes(v.phase)) },
+    { label: 'Departures', vehicles: snapshot.vehicles.filter(v => ['departing', 'departed'].includes(v.phase)) },
+    { label: 'Location unknown', vehicles: snapshot.vehicles.filter(v => v.phase === 'unknown') },
+  ];
+  return <section className={s.root} aria-label="Depot visual simulation" data-depot-time={snapshot.elapsedMs} data-scenario-id={snapshot.scenarioId}>
+    <header className={s.facility}><span className={s.brand}><Building2 size={23}/></span><div><h3>Depot operations</h3><p>{context.depot.name} · {context.depot.city}</p></div><span className={s.simulation}>Visual simulation</span></header>
+    <p className={s.disclaimer}>{snapshot.vehicles.length} illustrative vehicles share one yard. This scene does not report live positions or availability.</p>
+    <div className={s.designControls}>
+      <label>Depot design<select aria-label="Depot design" value={snapshot.templateId} onChange={event => controller.setTemplate(event.target.value as DepotTemplateId)}>{depotTemplates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
+      {selected ? <label>Vehicle design<select aria-label="Vehicle design" value={selected.designId} onChange={event => controller.setDesign(selected.assetId, event.target.value)}>{truckDesigns.filter(design => design.family === selected.family && (!selected.cargo || !design.appearance.bodyStyle)).map(design => <option key={design.id} value={design.id}>{design.name}</option>)}</select></label> : null}
+      <p>{depotTemplate(snapshot.templateId).description} Visual layout only.</p>
     </div>
-    <div className={s.caption}><span className={s.stateDot}/><strong>{error?"Vista no disponible":!loaded?"Cargando":phase.label}</strong><span>Preparación, carga y salida</span></div>
+    <div className={s.layout}><div className={s.viewer}>
+      <div ref={host} className={s.stage} data-depot-state={error ? 'failed' : loaded ? 'ready' : 'loading'}>
+        {!error && visible ? <DepotBoundary key={retry} failed={failed}><DepotYardScene controller={controller} color={context.depot.color} active={active} running={playing && active} reduced={reduced} night={getTruckEnvironment(clock ?? new Date(2000, 0, 1, 12)).night} onReady={ready} onFailure={failed} onControls={receiveControls}/></DepotBoundary> : null}
+        {error ? <div className={s.error} role="alert"><Building2 size={32}/><strong>The 3D view is unavailable</strong><p>The vehicle list and scenario state are still available.</p><button onClick={() => { setLoaded(false); setError(false); setRetry(value => value + 1); }}>Retry 3D view</button></div> : !loaded ? <div className={s.preparing} role="status">Preparing the depot…</div> : null}
+        {loaded && !error ? <div className={s.sceneLegend}><span className={s.dot}/>{selected ? selected.label : 'Site overview'}<span>·</span>{snapshot.interior ? 'Interior' : 'Exterior'}</div> : null}
+      </div>
+      <div className={s.toolbar} role="group" aria-label="Depot view controls">
+        <button className={s.playback} disabled={snapshot.completed} aria-pressed={playing} onClick={() => controller.setPlaying(!playing)}>{playing ? <Pause size={16}/> : <Play size={16}/>} {snapshot.completed ? 'Scenario complete' : playing ? 'Pause visualization' : 'Resume visualization'}</button>
+        <button onClick={() => { controller.select(null); controls.current?.overview(); }} aria-label="Site overview" title="Site overview"><RotateCcw size={17}/></button>
+        <button disabled={!loaded || error} onClick={() => controls.current?.zoom(1.2)} aria-label="Zoom in" title="Zoom in"><ZoomIn size={17}/></button>
+        <button disabled={!loaded || error} onClick={() => controls.current?.zoom(1 / 1.2)} aria-label="Zoom out" title="Zoom out"><ZoomOut size={17}/></button>
+        <button aria-pressed={snapshot.interior} onClick={() => controller.setInterior(!snapshot.interior)}><Warehouse size={17}/>{snapshot.interior ? 'Exterior' : 'Interior'}</button>
+      </div>
+      <p className={s.playbackNote}>Playback only affects this visualization. Leaving this view keeps its state.</p>
+    </div><aside className={s.roster} aria-label="Depot vehicle list">
+      <div className={s.rosterHeading}><h4>Vehicles</h4><span>{snapshot.vehicles.length}</span></div>
+      {snapshot.vehicles.length === 0 ? <p className={s.empty}>No vehicles in this visual scenario.</p> : groups.filter(group => group.vehicles.length).map(group => <div key={group.label} className={s.group}><h5>{group.label}<span>{group.vehicles.length}</span></h5><ul>{group.vehicles.map(vehicle => <li key={vehicle.assetId}><button className={s.vehicle} data-phase={vehicle.phase} aria-pressed={snapshot.selectedAssetId === vehicle.assetId} onClick={event => controller.select(snapshot.selectedAssetId === vehicle.assetId ? null : vehicle.assetId, event.detail === 0)}>
+        <span className={s.vehicleIcon}>{vehicle.phase === 'maintenance' ? <Wrench size={19}/> : <Truck size={19}/>}</span><span className={s.vehicleText}><strong>{vehicle.label}<small>{vehicle.family}</small></strong><span>{yardPhaseLabels[vehicle.phase]}{vehicle.reserved ? ' · Reserved' : ''}</span><small>{vehicle.resourceCode ? vehicle.resourceCode.replace('_', ' ') : vehicle.phase === 'unknown' ? 'Not placed in the yard' : vehicle.phase === 'parked' ? 'Parking area · No task' : vehicle.phase === 'waiting' ? 'Queue · Bay 02 next' : vehicle.phase === 'departed' ? 'Outside the yard' : 'Yard lane'}</small></span><Eye className={s.focusIcon} size={15}/>
+      </button></li>)}</ul></div>)}
+    </aside></div>
+    <div className={s.event} role="status" aria-live="polite"><span className={s.dot}/><p>{snapshot.lastEvent}</p></div>
   </section>;
 }

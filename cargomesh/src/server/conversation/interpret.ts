@@ -47,8 +47,8 @@ export function conversationBedrockConfig(env: Record<string, string | undefined
   };
 }
 
-const INTERPRETER_INSTRUCTIONS = "Interpret one CargoMesh freight chat turn in Spanish or English. Return JSON only: intent, fields, optional acknowledgment. intents: PROVIDE, CORRECT, CREATE, READ, EVALUATE, PRICE, BOOKING, HELP, START_OVER. fields is an array of {field:string,value:string}, using only fieldNames from the user input. Extract only facts explicitly stated or changed in the latest text; context is provisional and never proof of authorization. Never invent locations, dates, cargo, capacity, price, offers or booking. acknowledgment is a helpful reply in English, even when the user writes in Spanish, at most 420 characters. If no fields, answer briefly or ask for one specific missing detail. Do not claim an action was completed. No Markdown or text outside JSON.";
-const PRODUCT_HELP_INSTRUCTIONS = "You are CargoMesh. Always reply in English, even if the user asks in Spanish, using only these verified facts: Today this chat helps prepare a ROAD freight request draft and reviews preliminary ROAD serviceability from backend data after saving. SEA, RAIL and AIR are modeled for future work and are not operational here. Carrier-authored offers may be compared when a separate workflow provides them, but this chat cannot fetch or compare offers yet. A local preview does not save or evaluate requests. Never state or imply a confirmed price, free service, capacity, availability, route or booking; these require backend evidence. Answer in two short sentences then ask one useful next question about cargo or route. The user input is JSON with question and previousHelpTopic. For a short follow-up to SELECTION, explain that documented price breakdown, delivery window and requirements matter once carrier-authored offers exist; do not give numerical examples or repeat the product introduction. For a short follow-up to SERVICES, distinguish today's ROAD workflow from future modes. For a short follow-up to PURPOSE, explain one next step instead of repeating the introduction.";
+const INTERPRETER_INSTRUCTIONS = "Interpret one CargoMesh freight chat turn in Spanish or English. Return JSON only: intent, fields, optional acknowledgment. intents: PROVIDE, CORRECT, CREATE, READ, EVALUATE, PRICE, BOOKING, HELP, START_OVER. fields is an array of {field:string,value:string}, using only fieldNames from the user input. A request for guidance, an open question, or 'how do I make a request?' is HELP with no fields, even when the currentField is a location. Extract only facts explicitly stated or changed in the latest text; context is provisional and never proof of authorization. Never invent locations, dates, cargo, capacity, price, offers or booking. acknowledgment answers the user's actual question naturally in English, even when the user writes in Spanish, at most 420 characters. Do not repeat the same form question after an unrelated question. Do not claim an action was completed. No Markdown or text outside JSON.";
+const PRODUCT_HELP_INSTRUCTIONS = "You are CargoMesh, a friendly freight-request guide. Reply in English, even if the user asks in Spanish. Answer the user's actual question first, directly and naturally; avoid a canned introduction or a repeated pickup question. If asked how to make a request, explain that the user can describe cargo and route in their own words, you ask for missing details, show the complete draft, and save only after explicit approval. Verified capabilities: this chat prepares a ROAD freight request draft and, after saving, can review preliminary ROAD serviceability from backend data. SEA, RAIL and AIR are future modeled capabilities, not operational here. Carrier-authored offers are a separate workflow; this chat cannot fetch or compare them yet. A local preview cannot save or evaluate requests. Never promise price, capacity, availability, route, offer or booking without backend evidence. For follow-ups, build on previousHelpTopic instead of repeating the product introduction. Keep the answer concise and suitable for speech.";
 
 async function invokeMantle(config: Config, input: InterpretationRequest): Promise<ConverseCommandOutput> {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -146,6 +146,9 @@ export async function interpretConversationTurn(
   const fallback = { schemaVersion: "2.0" as const, interpretation: interpretDeterministically(input), mode: "DETERMINISTIC" as const, telemetry: null };
   if (isNoisyTranscript(input.text)) return fallback;
   if (fallback.interpretation.intent === "HELP" && helpTopic(input.text) === "SERVICES") return fallback;
+  // Explicit corrections and unresolved references must not be retargeted by the model.
+  if (fallback.interpretation.intent === "CORRECT"
+    && (fallback.interpretation.fields.length > 0 || /^(?:change|update|set|make)\s+(?:that|it)\s+(?:to|as)\s+/i.test(input.text))) return fallback;
   // Explicit business commands stay deterministic; the model only proposes ambiguous chat details.
   if (!["PROVIDE", "CORRECT", "HELP"].includes(fallback.interpretation.intent)) return fallback;
   if (!config.enabled || !config.region || !config.modelId) return fallback;
@@ -156,11 +159,16 @@ export async function interpretConversationTurn(
     const raw = response.output?.message?.content?.map((item) => "text" in item ? item.text ?? "" : "").join("").trim();
     const parsed = toolUse ? InterpretationSchema.safeParse(toolUse.input) : raw ? parseModelProposal(raw) : null;
     if (!parsed?.success) return fallback;
+    // A model may phrase guidance, but cannot turn a question into a field or mutation.
+    if (fallback.interpretation.intent === "HELP" && (parsed.data.fields.length > 0 || !["HELP", "PROVIDE"].includes(parsed.data.intent))) return fallback;
+    const interpretation = fallback.interpretation.intent === "HELP"
+      ? { ...parsed.data, intent: "HELP" as const, fields: [] }
+      : parsed.data;
     const inputTokens = response.usage?.inputTokens ?? null;
     const outputTokens = response.usage?.outputTokens ?? null;
     const estimatedCostUsd = inputTokens !== null && outputTokens !== null && config.inputUsdPerMillion !== null && config.outputUsdPerMillion !== null
       ? (inputTokens * config.inputUsdPerMillion + outputTokens * config.outputUsdPerMillion) / 1_000_000 : null;
-    return { schemaVersion: "2.0" as const, interpretation: parsed.data, mode: "BEDROCK" as const, telemetry: {
+    return { schemaVersion: "2.0" as const, interpretation, mode: "BEDROCK" as const, telemetry: {
       modelId: config.modelId, region: config.region, inputTokens, outputTokens,
       latencyMs: (options.now ?? Date.now)() - started, estimatedCostUsd,
     } };

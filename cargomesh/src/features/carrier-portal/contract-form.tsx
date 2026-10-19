@@ -1,5 +1,5 @@
 "use client";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { z } from "zod";
 import { Check, Plus, X } from "lucide-react";
 import { useLocale } from "@/features/i18n/locale-provider";
@@ -150,20 +150,23 @@ function Field({ schema, value, onChange, name, path, errors, es }: { schema:z.Z
   {errors[path]?<small id={error} className={s.error}>{errors[path]}</small>:null}
  </div>;
 }
-export function ContractForm({ schema, initial, path, revision, title, onSaved, onClose, onBusyChange }:{
- schema:z.ZodTypeAny; initial?:unknown; path:string; revision?:number; title:string; onSaved:()=>void; onClose:()=>void; onBusyChange?:(busy:boolean)=>void }) {
+export function ContractForm({ schema, initial, path, revision, title, onSaved, onClose, onBusyChange, hiddenReviewFields = [], validateSaved }:{
+ schema:z.ZodTypeAny; initial?:unknown; path:string; revision?:number; title:string; onSaved:()=>void; onClose:()=>void; onBusyChange?:(busy:boolean)=>void; hiddenReviewFields?:string[]; validateSaved?:(data:unknown)=>void }) {
  const {locale,t}=useLocale(),es=locale==="es";
  const [value,setValue]=useState<Value>(initial===undefined?emptyInput(schema):projectInput(schema,initial)),[errors,setErrors]=useState<Record<string,string>>({});
  const [review,setReview]=useState(false),[busy,setBusy]=useState(false),[failure,setFailure]=useState("");
  const receipt=useRef<ReturnType<typeof mutationReceipt>|null>(null),form=useRef<HTMLFormElement>(null),errorSummary=useRef<HTMLParagraphElement>(null);
+ const request=useRef<AbortController|null>(null);
+ useEffect(()=>()=>request.current?.abort(),[]);
  const checked=schema.safeParse(value);
  const submit=async()=>{
    if (!checked.success || busy) return;
-   const body=revision?{expectedVersion:revision,value:checked.data}:checked.data;
+   const body=revision!==undefined?{expectedVersion:revision,value:checked.data}:checked.data;
    receipt.current=mutationReceipt(receipt.current,path,body,()=>crypto.randomUUID());
    setBusy(true);onBusyChange?.(true);setFailure("");
-   try { await portalRequest(path,{method:"POST",headers:{"Content-Type":"application/json","Idempotency-Key":receipt.current.key},body:JSON.stringify(body)});
-     onSaved();onClose(); }catch(error){setFailure(portalErrorCopy(error,es));}finally{setBusy(false);onBusyChange?.(false);}
+   const controller=new AbortController();request.current=controller;
+   try { const response=await portalRequest(path,{signal:controller.signal,method:"POST",headers:{"Content-Type":"application/json","Idempotency-Key":receipt.current.key},body:JSON.stringify(body)});
+     if(controller.signal.aborted)return;validateSaved?.(response.data);onSaved();onClose(); }catch(error){if(!controller.signal.aborted)setFailure(portalErrorCopy(error,es));}finally{if(!controller.signal.aborted){setBusy(false);onBusyChange?.(false);}}
  };
  return <form ref={form} className={s.editor} onSubmit={e=>{e.preventDefault();const result=schema.safeParse(value);
   if (!result.success) {const next=Object.fromEntries(result.error.issues.map(i=>[i.path.join("."),t("Revisa este dato y su coherencia con el formulario.","Check this value and its consistency with the form.")]));
@@ -172,7 +175,7 @@ export function ContractForm({ schema, initial, path, revision, title, onSaved, 
   <div className={s.editorHeading}><div><h2>{title}</h2><p>{t("Se guardará mediante el servicio V2, con tu sesión y permisos.","Saved through the V2 service using your session and permissions.")}</p></div>
    <button type="button" disabled={busy} onClick={onClose} aria-label={t("Cerrar formulario","Close form")}><X size={20} aria-hidden="true"/></button></div>
   {review?<><h3>{t("Confirma la acción","Confirm the action")}</h3><p>{t("Revisa los datos antes de enviarlos. La acción queda atribuida a tu cuenta.","Review the data before sending. The action is attributed to your account.")}</p>
-   <dl className={s.reviewData}>{Object.entries((checked.success?checked.data:{}) as Record<string,unknown>).filter(([k])=>k!=="schemaVersion").map(([k,v])=>
+   <dl className={s.reviewData}>{Object.entries((checked.success?checked.data:{}) as Record<string,unknown>).filter(([k])=>k!=="schemaVersion"&&!hiddenReviewFields.includes(k)).map(([k,v])=>
     <div key={k}><dt>{fieldLabel(k,es)}</dt><dd><DataValue value={v} es={es}/></dd></div>)}</dl>
   </>:<Field schema={schema} value={value} onChange={v=>{setValue(v);setReview(false);setErrors({});}} name={es?"Datos":"Data"} path="" errors={errors} es={es}/>}
   {Object.keys(errors).length?<p ref={errorSummary} tabIndex={-1} role="alert" className={s.error}>{t("Hay datos incompletos o incompatibles. Revísalos antes de continuar.","Some data is incomplete or inconsistent. Review it before continuing.")}</p>:null}

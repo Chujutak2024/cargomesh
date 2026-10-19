@@ -1,0 +1,67 @@
+.workspace{display:grid;gap:18px;min-width:0;color:#163b50}
+.panel{min-width:0;background:#fff;border:1px solid #d1e0e8;border-radius:16px;box-shadow:0 4px 16px #17384b05;overflow:hidden}
+.heading{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 22px;border-bottom:1px solid #e8eff3;flex-wrap:wrap}
+.workspace .heading h2{margin:0;font-size:17px;letter-spacing:-.3px}
+.workspace .heading p{margin:5px 0 0;font-size:11px;color:#62798a}
+.controls{display:flex;align-items:center;gap:9px;flex-wrap:wrap;min-width:0;max-width:100%}
+.controls label{min-width:0}
+.controls select{max-width:330px;text-overflow:ellipsis;font-size:12px;min-height:40px;padding:8px 10px;border-radius:9px}
+.controls button{font-size:12px;min-height:40px;border-radius:9px}
+.driverStrip{display:flex;align-items:center;gap:28px;flex-wrap:wrap;padding:22px}
+.person{display:flex;gap:12px;align-items:center;flex:1 1 250px;min-width:0}
+.person>div{display:grid;gap:5px;min-width:0}
+.person strong{font-size:15px;overflow-wrap:anywhere}
+.person span{font-size:11px;color:#62798a}
+.metric{display:grid;gap:4px;min-width:110px}
+.metric>span,.metric>small{font-size:11px;color:#62798a}
+.metric strong{font-size:25px;font-variant-numeric:tabular-nums;line-height:1.2}
+.metric strong small{font-size:13px;font-weight:400}
+.workspace button.textAction{border:0;padding:0;background:transparent;color:#087583;font-size:12px;min-height:40px}
+.chartHeading{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding:0 22px 12px;font-size:11px;color:#62798a}
+.chartHeading>span{display:flex;align-items:center;gap:6px}
+.chartHeading output{display:flex;gap:12px;align-items:center;font-variant-numeric:tabular-nums}
+.chartHeading strong{font-size:15px;color:#6c4bc4}
+.chartScroll{overflow-x:auto;padding:0 22px 20px}
+.chart{display:grid;gap:8px;min-width:380px;border-bottom:1px solid #e2eaf0;background:repeating-linear-gradient(to top,transparent 0,transparent 47px,#edf2f6 48px,transparent 49px)}
+.workspace button.day{display:flex;flex-direction:column;justify-content:flex-end;gap:9px;border:0;padding:0 3px;background:transparent;border-radius:8px;min-width:24px;color:#62798a}
+.barTrack{display:flex;align-items:flex-end;justify-content:center;width:100%;height:175px}
+.barTrack>span{width:100%;max-width:38px;min-height:3px;border-radius:10px;background:linear-gradient(0deg,#cbb7f1,#eee5fb);border:1px solid #e1d5f5}
+.barTrack>span[data-empty=true]{background:#e3eaf0;border:0}
+.day[aria-pressed=true] .barTrack>span,.day:hover .barTrack>span{background:linear-gradient(0deg,#8964d8,#bd9bee);border-color:#a583df}
+.day small{font-size:10px;line-height:20px;font-variant-numeric:tabular-nums}
+.empty{min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin:0 22px 22px;padding:24px;background:#f7f9fc;border:1px dashed #dbe4ec;border-radius:12px;color:#62798a;font-size:12px;text-align:center}
+.empty svg{color:#9d83cb}
+.empty strong{color:#405d70;font-size:14px}
+.search{display:flex;align-items:center;gap:8px;border:1px solid #cbdbe7;border-radius:9px;padding:0 10px;background:#fff;flex:1 1 170px;max-width:260px;color:#62798a}
+.workspace .search input{border:0;min-width:0;min-height:38px;padding:7px 0;font-size:12px;background:transparent}
+.tableScroll{overflow-x:auto;min-width:0}
+.table{border-collapse:collapse;width:100%;font-size:12px;text-align:left;min-width:880px}
+.table thead{background:#f6f8fb;color:#647c8d}
+.table th{font-weight:500}
+.table th,.table td{padding:15px 18px;border-bottom:1px solid #edf1f5;vertical-align:middle}
+.table tbody tr:last-child>*{border-bottom:0}
+.table tbody tr[data-selected=true]{background:#f5fafb}
+.table td>strong{font-size:12px;font-weight:600}
+.table td>small,.duty small{display:block;margin-top:5px;font-size:10px;color:#6b8190;max-width:190px;overflow-wrap:anywhere}
+.table small[data-expired=true]{color:#a03d59}
+.workspace button.selectDriver{display:flex;justify-content:flex-start;gap:11px;min-height:44px;padding:0;border:0;background:transparent;text-align:left;max-width:300px}
+.selectDriver>span:last-child{display:grid;gap:5px;min-width:0}
+.selectDriver strong{font-weight:600;font-size:12px;overflow-wrap:anywhere}
+.selectDriver small{font-size:10px;color:#718796;font-weight:400}
+.status{display:inline-flex;gap:6px;align-items:center;white-space:nowrap;font-size:11px;color:#4d687b}
+.status i{height:6px;width:6px;border-radius:50%;background:#94a6b2}
+.status[data-state=ON_DUTY] i{background:#4d76d4}
+.status[data-state=AVAILABLE] i{background:#16948b}
+.status[data-state=SUSPENDED] i{background:#b54a68}
+.duty{min-width:150px;font-variant-numeric:tabular-nums}
+.duty meter{display:block;appearance:none;width:100%;height:5px;border:0;margin-top:8px;background:#e9e1f4;border-radius:5px}
+.duty meter::-webkit-meter-bar{background:#ece5f6;border:0;border-radius:5px}
+.duty meter::-webkit-meter-optimum-value{background:#9c7cce;border-radius:5px}
+.duty meter::-moz-meter-bar{background:#9c7cce;border-radius:5px}
+.workspace button.profileButton{width:34px;min-height:34px;padding:6px;border-radius:8px;color:#527183;border-color:#dce7ed}
+.workspace .noResults{padding:22px;margin:0;font-size:12px;color:#62798a}
+.srOnly{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.workspace :is(button,input,select,[tabindex]):focus-visible{outline:2px solid #168a99;outline-offset:3px}
+@media(prefers-reduced-motion:no-preference){.barTrack>span{transition:height 180ms ease,background 160ms ease}.table tbody tr{transition:background 150ms ease}}
+@media(max-width:767px){.heading{padding:16px}.controls{width:100%}.controls label{flex:1 1 140px}.controls select{max-width:100%}.driverStrip{gap:18px;padding:16px}.person{flex-basis:100%}.metric{flex:1}.chartHeading{padding-inline:16px}.chartScroll{padding-inline:16px}.empty{margin-inline:16px;min-height:150px}.table th,.table td{padding:12px}.search{max-width:none}.heading .controls button{flex:1 1 140px}}
+@media(forced-colors:active){.panel,.empty{border-color:CanvasText}.barTrack>span,.day[aria-pressed=true] .barTrack>span,.day:hover .barTrack>span{background:Highlight;border-color:Highlight;forced-color-adjust:none}.status i{background:CanvasText}.table tbody tr[data-selected=true]{outline:1px solid Highlight;outline-offset:-1px}}

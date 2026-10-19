@@ -1,0 +1,32 @@
+"use client";
+import {useEffect,useState} from 'react';
+import {DataValue} from '@/features/carrier-portal/contract-form';
+import {portalErrorCopy} from '@/features/carrier-portal/api';
+import {recordData,recordName} from '@/features/carrier-portal/records';
+import type {Execution} from '@/features/carrier-portal/commercial-model';
+import {CarrierLink} from '@/features/carrier-navigation/carrier-link';
+import {readExecutionEvents} from './orders-client';
+import {executionResources,holdResources,orderDates,type OrdersSnapshot,type Hold,type OrderAction,type ActionTarget} from './orders-model';
+import p from './portal.module.css';
+import s from './operations.module.css';
+type Commands={can:(action:OrderAction,row:ActionTarget)=>boolean;begin:(action:OrderAction,row:ActionTarget)=>void;busy:boolean};
+export function ReservationRecord({row,snapshot,commands}:{row:Hold;snapshot:OrdersSnapshot;commands:Commands}){
+ const resource=holdResources(row,snapshot);
+ return <article className={p.card}><h4>Reservation {row.id.slice(-8)} · {row.status}</h4><p>Revision {row.version} · {row.data.active?'Recorded active':'Recorded inactive'} · {row.data.parentReservationId?'Child of a grouped reservation':'Primary reservation'}</p><p>Recorded window: {orderDates(row.data.window.startsAt)} — {orderDates(row.data.window.endsAt)}</p><p>Hold expiry: {orderDates(row.data.expiresAt)}{row.status==='HELD'&&row.data.expiresAt&&Date.parse(row.data.expiresAt)<=Date.now()?' · Expired hold':''}</p><p>Calendar: {resource.calendar?recordName(resource.calendar):'Unavailable in the matching service'} · Capacity source: {resource.asset?recordName(resource.asset):resource.pool?recordName(resource.pool):'Unknown'}</p>
+ <p>Plan assignment {row.data.assignmentId} · plan resource {row.data.planResourceId}</p><DataValue value={{declaredCommittedCapacity:row.data.capacityCommitted,evidence:row.data.evidence,parentReservationId:row.data.parentReservationId}} es={false}/>
+ {!resource.booking||!resource.offer||!resource.calendar?<p role="status">Reservation relationship is incomplete. It remains visible; capacity and resources are not inferred.</p>:null}
+ <div className={s.row}><button disabled={!commands.can('holds.confirm',row)||commands.busy} onClick={()=>commands.begin('holds.confirm',row)}>Confirm reservation</button><button disabled={!commands.can('holds.release',row)||commands.busy} onClick={()=>commands.begin('holds.release',row)}>Release reservation</button></div></article>;
+}
+export function ExecutionRecord({row,snapshot,commands,revision,onDenied}:{row:Execution;snapshot:OrdersSnapshot;commands:Commands;revision:number;onDenied:()=>void}){
+ const [eventsOpen,setEventsOpen]=useState(false),[events,setEvents]=useState<Awaited<ReturnType<typeof readExecutionEvents>>|null>(null),[error,setError]=useState(''),[retry,setRetry]=useState(0);
+ const resources=executionResources(row,snapshot);
+ useEffect(()=>{const controller=new AbortController();setEvents(null);setError('');if(!eventsOpen)return()=>controller.abort();
+  void readExecutionEvents(snapshot.carrierId,row,controller.signal).then(result=>{if(!controller.signal.aborted)setEvents(result);}).catch(failure=>{if(!controller.signal.aborted){setError(portalErrorCopy(failure,false));if(failure&&typeof failure==='object'&&'status' in failure&&[401,403].includes(Number(failure.status)))onDenied();}});return()=>controller.abort();
+ },[snapshot.carrierId,row.id,row.version,eventsOpen,revision,retry]);
+ return <article className={p.card}><h4>Operation {row.id.slice(-8)} · {row.status}</h4><p>Service {row.data.serviceId} · revision {row.version}</p><p>Planned resource window: {orderDates(row.data.plannedWindow.startsAt)} — {orderDates(row.data.plannedWindow.endsAt)}</p><p>Actual start: {orderDates(row.data.actualStartedAt)} · Actual completion: {orderDates(row.data.actualCompletedAt)}</p>
+ {resources.issues.map(issue=><p key={issue} role="status">{issue}</p>)}
+ <h4>Recorded vehicle and combination assignments</h4>{resources.vehicles.map(({assignment,asset,combination,reservation})=><div key={assignment.id}><p>{asset?recordName(asset):'Vehicle reference unavailable'} · {String(recordData(assignment).status)} · assignment revision {assignment.version}</p><p>Combination: {combination?recordName(combination):recordData(assignment).combinationId?'Unverified reference':'None recorded'} · Reservation: {reservation?reservation.id.slice(-8)+' · '+reservation.status:'Not verified'}</p><details><summary>Assignment window, capacity and evidence</summary><DataValue value={recordData(assignment)} es={false}/></details></div>)}{!resources.vehicles.length?<p>No recorded vehicle assignments in this read. No truck is selected automatically.</p>:null}
+ <h4>Recorded driver assignments</h4>{resources.drivers.map(({assignment,driver})=><div key={assignment.id}><p>{driver?recordName(driver):'Driver reference unavailable'} · {String(recordData(assignment).role)} · {String(recordData(assignment).status)}</p><details><summary>Driver assignment window and evidence</summary><DataValue value={recordData(assignment)} es={false}/></details></div>)}{!resources.drivers.length?<p>No recorded driver assignments in this read.</p>:null}
+ <CarrierLink href="/carriers/fleet/assignment">Manage resources in Fleet</CarrierLink><div className={s.row}>{(['executions.start','executions.complete','executions.cancel'] as const).map(action=><button key={action} disabled={commands.busy||!commands.can(action,row)} onClick={()=>commands.begin(action,row)}>{action==='executions.start'?'Start operation':action==='executions.complete'?'Complete operation':'Cancel operation'}</button>)}<button disabled={commands.busy} onClick={()=>setEventsOpen(v=>!v)}>{eventsOpen?'Hide event history':'Read event history'}</button></div>
+ {eventsOpen?<section aria-label="Operation event history">{error?<p role="alert">{error} <button onClick={()=>setRetry(n=>n+1)}>Retry events</button></p>:!events?<p role="status">Reading recorded execution events…</p>:<>{events.partial?<p>Partial event history. Other events may exist.</p>:null}{events.records.map(event=><article key={event.id}><p>{event.data.action} · {orderDates(event.data.at)} · actor {event.data.actorId}</p><DataValue value={{reason:event.data.note,evidence:event.data.evidence,expectedVersion:event.data.expectedVersion}} es={false}/></article>)}{!events.records.length?<p>No events in this read.</p>:null}</>}</section>:null}</article>;
+}

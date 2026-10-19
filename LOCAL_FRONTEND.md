@@ -19,6 +19,10 @@ Abre `http://127.0.0.1:3907/v2-workspace#/dashboard`. En un navegador nuevo apar
 
 Si utilizas `next start`, ejecuta primero `pnpm build` y reinicia el servidor: un pull no actualiza una compilación que ya está ejecutándose. Puedes contrastar la revisión con `git rev-parse HEAD` y los cambios pendientes con `git status --short`.
 
+### Salidas de compilación locales
+
+Next dev usa `.next-dev/` y build/start usan `.next/`. Así un preview de desarrollo no sobrescribe los assets de un servidor de producción local. No reconstruyas `.next/` mientras un `next start` de otra revisión siga sirviendo esa misma carpeta: usa un runtime independiente o reinícialo coordinadamente con el build correspondiente. La reparación del 17 de octubre separó el panel estable de 8080/8083 y el preview Three.js de 8091; detalles en `docs/v2-amazon/delivery/friction-logs/HAC43_DEPOT_PREVIEW_ENVIRONMENT_2026-10-17.md`.
+
 ## Abrir después de reiniciar Windows
 
 Ejecuta `Start-CargoMeshV2.ps1`, o el acceso **Abrir CargoMesh V2 conectado** situado junto a las carpetas locales. El acceso inicia el servidor y espera su respuesta antes de abrir la página. Un enlace HTTP por sí solo no inicia un servidor después de apagar la PC.

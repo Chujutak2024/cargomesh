@@ -1,29 +1,30 @@
 import { parseCatalogRecordV2 } from "@/shared/schemas/v2/catalog";
 import { portalRequest, PortalApiError } from "./api";
 import { parseRecords, validCarrierId, type PortalRecord } from "./records";
-import { carrierResources } from "./resources";
+import { carrierResources, resourcePath } from "./resources";
 import { serviceFleet } from "./fleet-model";
 
 /** Read-only bounded pagination; partial reads are identified, never reported as total fleet. */
-export async function readFleetResource(carrierId: string, key: string, signal: AbortSignal, fetcher: typeof fetch = fetch) {
+export async function readFleetResource(carrierId: string, key: string, signal: AbortSignal, fetcher: typeof fetch = fetch, parentId = "") {
   const resource = carrierResources.find(value => value.key === key);
-  if (!validCarrierId(carrierId) || !resource || resource.parent) throw new PortalApiError(400, "INVALID_API_PATH");
+  if (!validCarrierId(carrierId) || !resource || resource.parent && (resource.parent !== "service" || !validCarrierId(parentId))) throw new PortalApiError(400, "INVALID_API_PATH");
   const records: PortalRecord[] = [], offsets = new Set<number>();
-  let offset: number | null = 0;
+  let offset: number | null = 0; let partial = false;
   for (let page = 0; page < 10 && offset !== null; page++) {
     if (offsets.has(offset)) throw new PortalApiError(502, "INVALID_RESPONSE");
     offsets.add(offset);
-    const result = await portalRequest(`/api/v2/carriers/${encodeURIComponent(carrierId)}/${resource.path}?limit=100&offset=${offset}`, { signal }, fetcher);
+    const result = await portalRequest(resourcePath(carrierId, resource, parentId) + `?limit=100&offset=${offset}`, { signal }, fetcher);
     const parsed = parseRecords(resource, result.data, carrierId);
+    if (resource.parent === "service" && parsed.some(record => record.serviceId !== parentId)) throw new PortalApiError(502, "INVALID_RESPONSE");
     if (parsed.length > 100 || new Set(parsed.map(record => record.id)).size !== parsed.length
       || parsed.some(record => records.some(previous => previous.id === record.id))) throw new PortalApiError(502, "INVALID_RESPONSE");
-    records.push(...parsed); offset = result.meta?.nextOffset ?? null;
+    records.push(...parsed); partial ||= result.meta?.partial === true; offset = result.meta?.nextOffset ?? null;
   }
-  return { records, truncated: offset !== null };
+  return { records, truncated: partial || offset !== null };
 }
 export async function loadFleet(carrierId: string, signal: AbortSignal, fetcher: typeof fetch = fetch) {
   if (!validCarrierId(carrierId)) throw new PortalApiError(400, "INVALID_API_PATH");
-  const response = await portalRequest(`/api/v2/carriers/${encodeURIComponent(carrierId)}`, { signal }, fetcher);
+  const response = await portalRequest(`/api/v2/carrier-portal/carriers/${encodeURIComponent(carrierId)}`, { signal }, fetcher);
   let profile;
   try { profile = parseCatalogRecordV2("carriers", response.data); }
   catch { throw new PortalApiError(502, "INVALID_RESPONSE"); }

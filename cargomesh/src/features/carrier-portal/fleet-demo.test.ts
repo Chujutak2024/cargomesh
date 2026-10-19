@@ -9,17 +9,19 @@ test("legacy six-truck storage migrates without losing assignments or dates",()=
   const legacy={...createFleetDemo(),trips:createFleetDemo().trips.slice(0,6)};
   const saved=applyDemoCommand(legacy,{type:"assign",tripId:"trip-CM-204",driverId:"eq"},changeAt).state;
   const restored=decodeFleetDemo(JSON.stringify(saved))!;
-  assert.equal(restored.trips.length,12);
+  assert.equal(restored.trips.length,18);
   assert.deepEqual(restored.trips.slice(0,6),saved.trips);
   assert.equal(restored.trips.find(trip=>trip.id==="trip-CM-245")?.driverId,null,"The new tanker must not take an already assigned driver");
   assert.deepEqual(decodeFleetDemo(JSON.stringify(restored)),restored,"Migration is idempotent");
   assert.equal(decodeFleetDemo(JSON.stringify({...legacy,trips:legacy.trips.slice(1)})),null);
 });
-test("each truck has one regular driver; active assignments control the displayed profile",()=>{
+test("known regular drivers stay linked and new units do not invent a driver",()=>{
   const vehicles=demoFleetVehicles(createFleetDemo());
   assert.equal(new Set(fleetDrivers.map(driver=>driver.vehicleCode)).size,12);
-  assert.equal(new Set(vehicles.map(vehicle=>vehicle.driverProfile?.id)).size,12);
-  for(const vehicle of vehicles)assert.equal(vehicle.driverProfile?.vehicleCode,vehicle.code);
+  const known = vehicles.filter(vehicle=>vehicle.driverProfile);
+  assert.equal(new Set(known.map(vehicle=>vehicle.driverProfile!.id)).size,12);
+  for(const vehicle of known)assert.equal(vehicle.driverProfile?.vehicleCode,vehicle.code);
+  assert.equal(vehicles.filter(vehicle=>!vehicle.driverProfile).length,6);
   const next=applyDemoCommand(createFleetDemo(),{type:"assign",tripId:"trip-CM-204",driverId:"av"},changeAt).state;
   const assigned=demoFleetVehicles(next).find(vehicle=>vehicle.code==="CM-204")!;
   assert.equal(assigned.driverProfile?.id,"av");assert.equal(assigned.driverProfileRole,"assigned");
@@ -27,11 +29,11 @@ test("each truck has one regular driver; active assignments control the displaye
   const regular=demoFleetVehicles(released).find(vehicle=>vehicle.code==="CM-204")!;
   assert.equal(regular.driverProfile?.id,"dc");assert.equal(regular.driverProfileRole,"regular");
 });
-test("demo cards and pipeline share the same twelve vehicles and operating states", () => {
+test("demo cards and pipeline share eighteen vehicles without inventing activity for additions", () => {
   const state = createFleetDemo(), vehicles = demoFleetVehicles(state), summary = fleetSummary(vehicles, now);
-  assert.deepEqual([summary.total, summary.normal, summary.maintenance, summary.maintained], [12, 10, 2, 4]);
-  assert.equal(summary.annualPercent, 4 / 12 * 100);
-  assert.equal(state.trips.filter(trip => trip.stage === "UNASSIGNED").length, 5);
+  assert.deepEqual([summary.total, summary.normal, summary.maintenance, summary.maintained], [18, 16, 2, 4]);
+  assert.equal(summary.annualPercent, null, 'Unknown history of new units cannot imply no maintenance');
+  assert.equal(state.trips.filter(trip => trip.stage === "UNASSIGNED").length, 11);
   assert.equal(state.trips.filter(trip => trip.stage === "ASSIGNED").length, 1);
   assert.equal(state.trips.filter(trip => trip.stage === "EN_ROUTE").length, 6);
   assert.equal(vehicles.find(vehicle => vehicle.code === "CM-204")?.driver, null);

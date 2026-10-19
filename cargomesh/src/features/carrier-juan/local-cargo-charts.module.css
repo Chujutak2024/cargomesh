@@ -1,0 +1,25 @@
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:20px 0}
+.chartCard{min-width:0;background:linear-gradient(140deg,#f6fbfc,#fff);border:1px solid #d0e2e9;border-radius:10px;padding:15px}
+.chartCard:nth-child(2){background:linear-gradient(140deg,#f8f5fd,#fff);border-color:#e0d8ed}
+.charts .chartCard h3{font-size:12px;margin:0 0 13px;letter-spacing:0}
+.distribution{display:flex;align-items:center;gap:12px}
+.donut{position:relative;width:82px;height:82px;flex:none}
+.donut svg{width:100%;height:100%}
+.donut strong{position:absolute;inset:0;display:grid;place-items:center;font-size:20px}
+.distribution dl{margin:0;min-width:0;display:grid;gap:12px}
+.distribution dt{font-size:10px;color:var(--muted)}
+.distribution dd{font-size:12px;font-weight:700;margin:2px 0 0;overflow-wrap:anywhere}
+.charts .chartCard p{font-size:10px;margin:12px 0 0;color:var(--muted);line-height:1.4}
+.comparison{display:grid;gap:18px;padding:5px 0 4px}
+.comparison span{display:flex;justify-content:space-between;flex-wrap:wrap;gap:3px 8px;font-size:10px;margin-bottom:7px;color:var(--muted)}
+.comparison strong{color:var(--ink);font-size:11px}
+.comparison meter{appearance:none;display:block;width:100%;height:9px;background:#e6eaf2;border-radius:6px;border:0}
+.comparison meter::-webkit-meter-bar{border:0;border-radius:6px;background:#e6eaf2}
+.currentBar::-webkit-meter-optimum-value{background:linear-gradient(90deg,#13a6ab,#078397);border-radius:6px}
+.averageBar::-webkit-meter-optimum-value{background:linear-gradient(90deg,#b28cea,#7956be);border-radius:6px}
+.currentBar::-moz-meter-bar{background:#078397}.averageBar::-moz-meter-bar{background:#7956be}
+.donut svg{filter:drop-shadow(0 3px 5px #078b9119)}.donutArc{animation:arcReveal .9s ease-out both;transition:stroke-dasharray .5s ease}.chartCard{box-shadow:0 4px 12px #38576805}.comparison meter{height:12px;box-shadow:inset 0 1px 2px #27496308}.miniBars{height:65px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:15px;background:repeating-linear-gradient(to top,transparent 0,transparent 19px,#dce9ed70 20px,#dce9ed70 21px);border-bottom:1px solid #d7e6eb}.miniBars button{position:relative;border:0;background:transparent;padding:0 2px 15px!important;min-width:0;min-height:44px;display:flex;align-items:flex-end!important;justify-content:center;cursor:pointer;border-radius:3px!important}.miniBars button>span{width:65%;max-width:22px;border-radius:4px 4px 0 0;background:linear-gradient(#5ad6c8,#0a8e99);animation:barReveal .65s ease-out both;transform-origin:bottom}.miniBars button:nth-child(2)>span{animation-delay:.04s}.miniBars button:nth-child(3)>span{animation-delay:.08s}.miniBars button:nth-child(4)>span{animation-delay:.12s}.miniBars button:nth-child(5)>span{animation-delay:.16s}.miniBars button:nth-child(6)>span{animation-delay:.2s}.miniBars button:nth-child(7)>span{animation-delay:.24s}.miniBars [aria-pressed=true]>span{background:linear-gradient(#b799e6,#805cc2)}.miniBars button small{position:absolute;bottom:0;font-size:9px;color:#6e8b98}.miniBars button:focus-visible{outline:2px solid #3c95b5;outline-offset:2px}.miniBars button:hover{background:#edf8fa}.comparison meter{animation:barReveal .6s ease-out both;transform-origin:left;animation-name:meterReveal}
+@keyframes arcReveal{from{stroke-dasharray:0 251.33}}@keyframes barReveal{from{transform:scaleY(.05);opacity:.2}to{transform:scaleY(1);opacity:1}}@keyframes meterReveal{from{transform:scaleX(.03);opacity:.2}to{transform:scaleX(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){.donutArc,.miniBars button>span,.comparison meter{animation:none;transition:none}}
+@media(max-width:1250px){.chartCard{padding:14px}.distribution{gap:9px}.donut{width:70px;height:70px}.comparison{gap:14px}}
+@media(max-width:767px){.charts{grid-template-columns:minmax(0,1fr)}.chartCard{padding:16px}.donut{width:86px;height:86px}.distribution{gap:15px}.distribution dl{grid-template-columns:minmax(0,1fr)}.comparison span{font-size:11px}.comparison strong{font-size:12px}}

@@ -108,3 +108,15 @@ test("invalid model output and AWS failures fall back without logging user text"
   assert.equal(invalid.mode, "DETERMINISTIC");
   assert.equal(failed.mode, "DETERMINISTIC");
 });
+
+test("Bedrock cannot turn a help question into a facility or booking", async () => {
+  const config = conversationBedrockConfig({ CARGOMESH_BEDROCK_CONVERSATION_ENABLED: "true", CARGOMESH_BEDROCK_REGION: "us-east-1", CARGOMESH_BEDROCK_MODEL_ID: "test-model" });
+  const question = { ...input, text: "hi can you tell me to make a request" };
+  const response = await interpretConversationTurn(question, { config, invoke: async () => ({
+    output: { message: { role: "assistant", content: [{ text: JSON.stringify({ intent: "PROVIDE", fields: [{ field: "originFacilityId", value: "hi can you tell me to make a request" }] }) }] } },
+    usage: { inputTokens: 10, outputTokens: 10, totalTokens: 20 }, stopReason: "end_turn", metrics: { latencyMs: 10 }, $metadata: {},
+  }) });
+  assert.equal(response.mode, "DETERMINISTIC");
+  assert.equal(response.interpretation.intent, "HELP");
+  assert.deepEqual(response.interpretation.fields, []);
+});

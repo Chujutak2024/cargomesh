@@ -1,0 +1,238 @@
+{
+  "browser": "156.0.8078.4",
+  "checks": [
+    {
+      "id": "car-carrier",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "sunDirection": "0.569,0.167,-0.805",
+        "roadDistance": "0.000",
+        "roadMoving": "false",
+        "frames": "3",
+        "cameraX": "-7.685045792046028",
+        "cameraY": "1.909388842342711",
+        "cameraZ": "8.985592003007664",
+        "truckVariant": "articulated",
+        "truckDesign": "car-carrier",
+        "truckDetail": "cab-finished",
+        "triangles": "135692",
+        "drawCalls": "74",
+        "dpr": "1"
+      }
+    },
+    {
+      "id": "livestock",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "sunDirection": "0.569,0.167,-0.805",
+        "roadDistance": "0.000",
+        "roadMoving": "false",
+        "frames": "3",
+        "cameraX": "-7.685045792046028",
+        "cameraY": "1.909388842342711",
+        "cameraZ": "8.985592003007664",
+        "truckVariant": "articulated",
+        "truckDesign": "livestock",
+        "truckDetail": "cab-finished",
+        "triangles": "128340",
+        "drawCalls": "74",
+        "dpr": "1"
+      }
+    },
+    {
+      "id": "crane",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "sunDirection": "0.569,0.167,-0.805",
+        "roadDistance": "0.000",
+        "roadMoving": "false",
+        "frames": "3",
+        "cameraX": "-7.685045792046028",
+        "cameraY": "1.909388842342711",
+        "cameraZ": "8.985592003007664",
+        "truckVariant": "flatbed",
+        "truckDesign": "crane",
+        "truckDetail": "cab-finished",
+        "triangles": "130908",
+        "drawCalls": "74",
+        "dpr": "1"
+      }
+    },
+    {
+      "id": "refuse",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "sunDirection": "0.569,0.167,-0.805",
+        "roadDistance": "0.000",
+        "roadMoving": "false",
+        "frames": "3",
+        "cameraX": "-7.685045792046028",
+        "cameraY": "1.909388842342711",
+        "cameraZ": "8.985592003007664",
+        "truckVariant": "rigid",
+        "truckDesign": "refuse",
+        "truckDetail": "cab-finished",
+        "triangles": "103412",
+        "drawCalls": "74",
+        "dpr": "1"
+      }
+    },
+    {
+      "id": "bulk-silo",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "sunDirection": "0.569,0.167,-0.805",
+        "roadDistance": "0.000",
+        "roadMoving": "false",
+        "frames": "3",
+        "cameraX": "-7.685045792046028",
+        "cameraY": "1.909388842342711",
+        "cameraZ": "8.985592003007664",
+        "truckVariant": "tanker",
+        "truckDesign": "bulk-silo",
+        "truckDetail": "cab-finished",
+        "triangles": "131324",
+        "drawCalls": "74",
+        "dpr": "1"
+      }
+    },
+    {
+      "id": "car-carrier",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "sunDirection": "0.569,0.167,-0.805",
+        "roadDistance": "0.000",
+        "roadMoving": "false",
+        "frames": "3",
+        "cameraX": "-7.887837610864541",
+        "cameraY": "1.9281080871567275",
+        "cameraZ": "9.222702437318539",
+        "truckVariant": "articulated",
+        "truckDesign": "car-carrier",
+        "truckDetail": "cab-finished",
+        "triangles": "135564",
+        "drawCalls": "65",
+        "dpr": "1"
+      }
+    },
+    {
+      "id": "livestock",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "sunDirection": "0.569,0.167,-0.805",
+        "roadDistance": "0.000",
+        "roadMoving": "false",
+        "frames": "3",
+        "cameraX": "-7.887837610864541",
+        "cameraY": "1.9281080871567275",
+        "cameraZ": "9.222702437318539",
+        "truckVariant": "articulated",
+        "truckDesign": "livestock",
+        "truckDetail": "cab-finished",
+        "triangles": "128212",
+        "drawCalls": "65",
+        "dpr": "1"
+      }
+    },
+    {
+      "id": "crane",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "sunDirection": "0.569,0.167,-0.805",
+        "roadDistance": "0.000",
+        "roadMoving": "false",
+        "frames": "3",
+        "cameraX": "-7.887837610864541",
+        "cameraY": "1.9281080871567275",
+        "cameraZ": "9.222702437318539",
+        "truckVariant": "flatbed",
+        "truckDesign": "crane",
+        "truckDetail": "cab-finished",
+        "triangles": "130780",
+        "drawCalls": "65",
+        "dpr": "1"
+      }
+    },
+    {
+      "id": "refuse",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "sunDirection": "0.569,0.167,-0.805",
+        "roadDistance": "0.000",
+        "roadMoving": "false",
+        "frames": "3",
+        "cameraX": "-7.887837610864541",
+        "cameraY": "1.9281080871567275",
+        "cameraZ": "9.222702437318539",
+        "truckVariant": "rigid",
+        "truckDesign": "refuse",
+        "truckDetail": "cab-finished",
+        "triangles": "103284",
+        "drawCalls": "65",
+        "dpr": "1"
+      }
+    },
+    {
+      "id": "bulk-silo",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "sunDirection": "0.569,0.167,-0.805",
+        "roadDistance": "0.000",
+        "roadMoving": "false",
+        "frames": "3",
+        "cameraX": "-7.887837610864541",
+        "cameraY": "1.9281080871567275",
+        "cameraZ": "9.222702437318539",
+        "truckVariant": "tanker",
+        "truckDesign": "bulk-silo",
+        "truckDetail": "cab-finished",
+        "triangles": "131196",
+        "drawCalls": "65",
+        "dpr": "1"
+      }
+    }
+  ],
+  "errors": [],
+  "unexpectedRequests": [],
+  "pass": true
+}

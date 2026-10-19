@@ -3,6 +3,8 @@ import { test } from "node:test";
 import { exampleFleet, EXAMPLE_AS_OF, filterFleet, maintenanceDue, serviceFleet } from "./fleet-model";
 import { loadFleet, readFleetResource } from "./fleet-client";
 import type { PortalRecord } from "./records";
+import { mergeLocalFleet } from './fleet-local-additions';
+import { applyDemoCommand, createFleetDemo, decodeFleetDemo } from './fleet-demo';
 
 const carrierId = "00000000-0000-4000-8000-000000000001", serviceId = "00000000-0000-4000-8000-000000000002";
 const assetId = "00000000-0000-4000-8000-000000000003", now = Date.parse(EXAMPLE_AS_OF);
@@ -20,12 +22,35 @@ const profile = { ...nativeAsset, id: carrierId, carrierId: null, serviceId: nul
 
 test("local examples are explicit, distinct, finite and never native ids", () => {
   const examples = exampleFleet();
-  assert.equal(new Set(examples.map(value => value.id)).size, 12);
+  assert.equal(new Set(examples.map(value => value.id)).size, 18);
   assert.equal(new Set(examples.map(value => value.variant)).size, 10);
   for (const vehicle of examples) {
     assert.equal(vehicle.source, "EXAMPLE"); assert.ok(vehicle.id.startsWith("example-"));
     assert.ok(vehicle.engineDays.every(day => day.driving >= 0 && day.idle >= 0 && day.driving + day.idle <= 12));
   }
+});
+test('six additional local units preserve saved identities, records and twelve existing assignments', () => {
+  const defaults = exampleFleet(), original = defaults.slice(0,12);
+  const changed = applyDemoCommand(createFleetDemo(original), {type:'assign',tripId:'trip-CM-204',driverId:'dc'}, '2026-10-17T20:00:00Z').state;
+  const registered = {...defaults[12], id:'user-created-401', model:'My edited model', capacityKg:12345, status:'MAINTENANCE' as const};
+  const before = JSON.stringify(registered), inventory = mergeLocalFleet(defaults,[registered]);
+  assert.equal(inventory.length,18); assert.equal(inventory.find(v=>v.code==='CM-401'),registered);
+  assert.equal(JSON.stringify(registered),before);
+  const restored = decodeFleetDemo(JSON.stringify(changed),inventory)!;
+  assert.deepEqual(restored.trips.slice(0,12),changed.trips);
+  assert.equal(restored.trips.length,18);
+  assert.equal(restored.trips.find(t=>t.id==='trip-CM-401')?.vehicleId,registered.id);
+  assert.equal(restored.trips.find(t=>t.id==='trip-CM-401')?.stage,'UNASSIGNED');
+  assert.deepEqual(decodeFleetDemo(JSON.stringify(restored),inventory),restored);
+  assert.deepEqual(mergeLocalFleet(defaults,[registered]),inventory);
+});
+test('a saved plate conflict suppresses only the new default and preserves the user record unchanged', () => {
+  const defaults = exampleFleet(), saved = {...defaults[12], id:'my-existing-truck',code:'MY-UNIT',plate:'sim 013',model:'My own truck'};
+  const inventory = mergeLocalFleet(defaults,[saved]);
+  assert.equal(inventory.length,18); assert.equal(inventory.at(-1),saved);
+  assert.ok(!inventory.some(vehicle=>vehicle.id==='example-CM-401'));
+  assert.ok(inventory.some(vehicle=>vehicle.code==='CM-406'));
+  for(const unit of defaults.slice(12)){assert.equal(unit.driver,null);assert.equal(unit.journey,null);assert.equal(unit.coordinates,null);assert.equal(unit.speedKmh,null);}
 });
 test("fuel, maintenance, body and search filters compose with deterministic attention ordering", () => {
   const examples = exampleFleet();

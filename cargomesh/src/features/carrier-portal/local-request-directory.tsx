@@ -9,6 +9,7 @@ import type { LocalRequestEntry } from "./local-request-demo";
 import { truckLabel } from "./local-truck-preference";
 import { LocalRequestJourney } from "./local-request-journey";
 import { localRequestReference, localRequestState, localRequestStateLabel } from "./local-request-presentation";
+import { Button, SearchField, Select } from "@/components/ui";
 import portal from "./portal.module.css";
 import s from "./local-request-directory.module.css";
 import {useOperations} from "./use-operations";
@@ -40,8 +41,8 @@ export function LocalRequestDirectory({ record, truckVisual, entries, activeId, 
       <div><dt><CheckCircle2 size={18} aria-hidden="true"/>{t("Revisadas", "Reviewed")}</dt><dd>{entries.filter(entry => entry.record.draft.savedForReview).length}</dd><small>{t("Revisión completada", "Review completed")}</small></div>
     </dl>
     <div className={s.directoryHeading}><div><h2>{t("Directorio de solicitudes", "Request directory")}</h2><p>{t("Abre una solicitud para ver su ficha y continuar la revisión.", "Open a request to inspect its details and continue the review.")}</p></div></div>
-    <div className={s.filters}><label><span>{t("Buscar solicitud, ciudad o carga", "Search request, city or cargo")}</span><span className={s.searchInput}><Search size={17} aria-hidden="true"/><input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder={t("Ej. Lima o alimentos", "E.g. Lima or food")}/></span></label>
-      <label><span>{t("Estado de revisión", "Review state")}</span><select value={state} onChange={event => setState(event.target.value)}><option value="all">{t("Todos", "All")}</option>{["draft", "review", "ready","cancelled"].map(value => <option key={value} value={value}>{stateLabel(value)}</option>)}</select></label>
+    <div className={s.filters}><SearchField label={t("Buscar solicitud, ciudad o carga", "Search request, city or cargo")} value={search} onValueChange={setSearch} clearLabel={t("Limpiar búsqueda", "Clear search")} placeholder={t("Ej. Lima o alimentos", "E.g. Lima or food")} shortcut/>
+      <Select label={t("Estado de revisión", "Review state")} value={state} onChange={event => setState(event.target.value)}><option value="all">{t("Todos", "All")}</option>{["draft", "review", "ready","cancelled"].map(value => <option key={value} value={value}>{stateLabel(value)}</option>)}</Select>
       <span className={s.resultCount} role="status">{filtered.length} {t("de", "of")} {entries.length} {t("solicitudes", "requests")}</span>
     </div>
     <div className={s.requestGrid}>{filtered.map(entry => {
@@ -53,10 +54,10 @@ export function LocalRequestDirectory({ record, truckVisual, entries, activeId, 
         <div className={s.cargoPreview}><div><Package size={15} aria-hidden="true"/><p>{value.cargoDescription || t("Carga pendiente", "Cargo pending")}</p><small>{truckLabel(truck, locale)}</small></div>{/* Original illustrative visual, not an assigned truck. */}<img src={poster} width={120} height={78} alt="" loading="lazy"/></div>
         <dl className={s.cardFacts}><div><dt>{t("Peso total", "Total weight")}</dt><dd>{(value.quantity * value.unitWeightKg).toLocaleString(locale === "es" ? "es-PE" : "en-US")} kg</dd></div><div><dt>{t("Recogida", "Pickup")}</dt><dd>{dateLabel(value.pickupDate, locale, t)}</dd></div></dl>
         <div className={s.cardProgress}><span className={s.reviewState}>{stateLabel(status)}</span><span>{value.completedStep}/5</span><progress max={5} value={value.completedStep} aria-label={`${t("Pasos de", "Steps for")} ${localRequestReference(entry.id)}`}/></div>
-        <footer><button type="button" onClick={() => onOpen(entry.id)} aria-label={`${t("Abrir solicitud", "Open request")} ${localRequestReference(entry.id)}`}>{t("Abrir solicitud", "Open request")}<ArrowRight size={15} aria-hidden="true"/></button><button type="button" onClick={() => onRoute(entry.id)} aria-label={`${t("Ver ruta de", "View route for")} ${localRequestReference(entry.id)}`}>{t("Ver ruta", "View route")}<Truck size={15} aria-hidden="true"/></button></footer>
+        <footer><Button variant="secondary" type="button" onClick={() => onOpen(entry.id)} aria-label={`${t("Abrir solicitud", "Open request")} ${localRequestReference(entry.id)}`}>{t("Abrir solicitud", "Open request")}<ArrowRight size={15} aria-hidden="true"/></Button><Button variant="secondary" type="button" onClick={() => onRoute(entry.id)} aria-label={`${t("Ver ruta de", "View route for")} ${localRequestReference(entry.id)}`}>{t("Ver ruta", "View route")}<Truck size={15} aria-hidden="true"/></Button></footer>
       </article>;
     })}</div>
-    {!filtered.length ? <div className={`${portal.card} ${s.noResults}`}><Search size={24} aria-hidden="true"/><h2>{t("Sin coincidencias", "No matches")}</h2><p>{t("Prueba con otra ciudad, carga o estado de revisión.", "Try another city, cargo or review state.")}</p><button onClick={() => { setSearch(""); setState("all"); }}>{t("Limpiar filtros", "Clear filters")}</button></div> : null}
+    {!filtered.length ? <div className={`${portal.card} ${s.noResults}`}><Search size={24} aria-hidden="true"/><h2>{t("Sin coincidencias", "No matches")}</h2><p>{t("Prueba con otra ciudad, carga o estado de revisión.", "Try another city, cargo or review state.")}</p><Button variant="secondary" onClick={() => { setSearch(""); setState("all"); }}>{t("Limpiar filtros", "Clear filters")}</Button></div> : null}
   </div>;
   const checked = draft.completedStep, next = Math.min(checked, 4);
   const total = draft.quantity * draft.unitWeightKg;

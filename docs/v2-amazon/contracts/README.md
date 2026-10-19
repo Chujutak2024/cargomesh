@@ -8,3 +8,5 @@ Estos archivos definen el **comportamiento objetivo** de V2. Una capacidad contr
 4. [Límite V1/V2](./V1_BOUNDARY_AND_MIGRATION.md): qué se preserva como regresión y qué no se hereda como producto V2.
 
 Los modelos y diagramas editables están en [models/](../models/README.md). Los planes de trabajo y evidencias están en [delivery/](../delivery/README.md); ninguno sustituye estos contratos.
+
+5. [Revisión fronteriza y eventos de paso Carrier](./BORDER_REVIEW_AND_PASSAGE.md): revisión interna, procedencia, permisos y límites de autorización; GPS sigue como plan futuro.

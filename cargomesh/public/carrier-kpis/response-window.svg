@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="200" viewBox="0 0 240 200" fill="none">
+ <defs>
+  <linearGradient id="body" x1="114" y1="21" x2="205" y2="162" gradientUnits="userSpaceOnUse"><stop stop-color="#b0f1ed"/><stop offset=".55" stop-color="#56c2c4"/><stop offset="1" stop-color="#269baf"/></linearGradient>
+  <linearGradient id="rim" x1="79" y1="36" x2="176" y2="169" gradientUnits="userSpaceOnUse"><stop stop-color="#eafffc"/><stop offset=".55" stop-color="#b4ece7"/><stop offset="1" stop-color="#6ec9cb"/></linearGradient>
+  <linearGradient id="face" x1="94" y1="54" x2="161" y2="164" gradientUnits="userSpaceOnUse"><stop stop-color="#e0faf4"/><stop offset="1" stop-color="#a4e0df"/></linearGradient>
+  <filter id="shadow" x="41" y="151" width="185" height="52" filterUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="7"/></filter>
+ </defs>
+ <ellipse cx="137" cy="178" rx="78" ry="11" fill="#004655" opacity=".28" filter="url(#shadow)"/>
+ <g transform="rotate(-13 136 103)">
+  <path d="M126 29L143 24C178 14 207 43 207 85C207 127 182 165 151 174L134 179Z" fill="url(#body)"/>
+  <ellipse cx="128" cy="103" rx="61" ry="77" fill="url(#rim)"/>
+  <ellipse cx="128" cy="104" rx="51" ry="65" fill="url(#face)"/>
+  <path d="M88 71C96 50 111 38 127 36" stroke="#fff" stroke-opacity=".67" stroke-width="3" stroke-linecap="round"/>
+  <path d="M128 53V61M128 148V156M87 104H94M163 104H170" stroke="#5eafb6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M128 77V105L150 118" stroke="#258a98" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M127 77V103L149 116" stroke="#f2fffb" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <ellipse cx="128" cy="104" rx="6" ry="7" fill="#f2fffb"/>
+  <path d="M173 37C193 47 202 66 201 88" stroke="#d4fff5" stroke-opacity=".34" stroke-width="3" stroke-linecap="round"/>
+ </g>
+ <path d="M169 169L179 182Q181 186 176 186H146" fill="#64bfc5" opacity=".8"/>
+ <path d="M95 170L86 184H111" fill="#d8f6ef" opacity=".8"/>
+</svg>

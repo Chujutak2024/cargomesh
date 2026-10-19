@@ -2,6 +2,7 @@ import { FleetOutputsV2 } from "@/shared/schemas/v2/fleet";
 import { recordData, type PortalRecord } from "./records";
 import type { TruckVisualType } from "@/features/logistics-3d/truck-model";
 import { regularFleetDriver, type FleetDriver } from "./fleet-drivers";
+import { additionalLocalFleet } from './fleet-local-additions';
 
 export type FleetStatus = "AVAILABLE" | "IN_SERVICE" | "MAINTENANCE" | "OUT_OF_SERVICE";
 export type EngineDay = { date: string; driving: number; idle: number };
@@ -9,11 +10,13 @@ export type FleetZone = { id: string; name: string; cities: string[]; countryCod
 export type FleetJourney = { origin: string; destination: string; facility: string; departureAt: string; arrivalAt: string };
 export type FleetMaintenanceEvent = { id: string; kind: string; startsAt: string; endsAt: string; status: string };
 export type FleetVehicle = {
+  visual?: import("@/features/logistics-3d/asset-visual").AssetVisualReference | null;
   carrierId?:string;siteId?:string;modelYear?:number;photoDataUrl?:string|null;volumeM3?:number;insuranceUntil?:string;inspectionUntil?:string;
   id: string; code: string; source: "EXAMPLE" | "SERVICE"; status: FleetStatus;
   variant: TruckVisualType; model: string | null; plate: string | null; body: string;
   odometerKm: number | null; capacityKg: number; updatedAt: string;
-  driver: string | null; depot: string | null; location: string | null;
+  regularDriverId?:string|null;regularDriverProfile?:FleetDriver|null;
+  driverId?:string|null; driver: string | null; depot: string | null; location: string | null;
   driverProfile?: FleetDriver | null; driverProfileRole?: "assigned" | "regular" | null;
   coordinates: { lat: number; lng: number } | null;
   // Circulation cannot be inferred from IN_SERVICE, assignments or a last-known position.
@@ -99,7 +102,7 @@ export function serviceFleet(records: FleetRecords, now: number): FleetVehicle[]
     return [{ id: record.id, code: asset.code, source: "SERVICE" as const, status: asset.operatingStatus,
       variant: visualType(road.bodyType + " " + asset.equipmentType), model: [road.brand, road.model, road.variant].filter(Boolean).join(" ") || null,
       plate: road.plate, body: road.bodyType, odometerKm: road.odometerKm, capacityKg: asset.usefulCapacityKg,
-      updatedAt: record.updatedAt, driver: driver ? String(recordData(driver).fullName) : null,
+      updatedAt: record.updatedAt, driverId:driver?.id??null, driver: driver ? String(recordData(driver).fullName) : null,
       createdAt: "createdAt" in record && typeof record.createdAt === "string" ? record.createdAt : null,
       registeredAt: road.registeredAt, description: null, statusReason: road.conditionReason,
       statusChangedAt: null, tankLiters: null, consumptionLitersPer100Km: null, workingZones: null, journey: null, maintenanceHistory: null,
@@ -141,7 +144,7 @@ export function exampleFleet(): FleetVehicle[] {
     ["Chiclayo, Perú", "Trujillo, Perú"], ["Piura, Perú", "Chiclayo, Perú"], ["Callao, Perú", "Arequipa, Perú"],
     ["Ica, Perú","Lima, Perú"],["Lurín, Perú","Lima, Perú"],["Huancayo, Perú","Lima, Perú"],["Lima, Perú","Ica, Perú"],["Pucallpa, Perú","Huánuco, Perú"],["Cusco, Perú","Arequipa, Perú"]];
   const additionalDescriptions=["Cisterna de líquidos con escotillas y barandas de seguridad.","Mezclador de concreto para abastecimiento de obra.","Semirremolque de lona lateral para carga paletizada.","Cama baja para maquinaria y equipos de gran tamaño.","Unidad maderera con soportes de sujeción para troncos.","Semirremolque refrigerado para distribución en el corredor sur."];
-  return rows.map((row, index) => ({
+  const original: FleetVehicle[] = rows.map((row, index) => ({
     id: "example-" + row[0], code: row[0], variant: row[1], source: "EXAMPLE", status: row[2], model: models[index], body: row[3],
     driver: row[4], location: row[5], fuelPercent: row[6], odometerKm: row[7], conditionScore: row[8],
     driverProfile: regularFleetDriver(row[0]), driverProfileRole:"regular",
@@ -161,6 +164,7 @@ export function exampleFleet(): FleetVehicle[] {
       driving: [8.2, 8.5, 6.4, 4.8, 0, 0, 7.3, 8.1, 9.1, 5.9, 8.6, 0, 6.2, 7.8][(day + index) % 14],
       idle: [0.6, 0.4, 0.8, 0.2, 0, 0, 0.5][(day + index) % 7] })),
   }));
+  return [...original, ...additionalLocalFleet(EXAMPLE_AS_OF)];
 }
 
 export function remainingRangeKm(vehicle: FleetVehicle) {

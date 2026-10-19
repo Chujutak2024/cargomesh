@@ -1,3 +1,4 @@
+import {workspaceFetch} from "@/features/workspace-mode/workspace-fetch";
 import type {
   CreateFreightRequestV2Input,
   ErrorEnvelopeV2,
@@ -165,7 +166,7 @@ export function resolveIntakeOptionsSourceMode(): IntakeOptionsSourceMode {
 }
 
 export async function loadIntakeOptions(
-  fetcher: FetchLike = fetch,
+  fetcher: FetchLike = workspaceFetch,
   sourceMode: IntakeOptionsSourceMode = resolveIntakeOptionsSourceMode(),
 ): Promise<IntakeOptionsLoadResult> {
   if (sourceMode === "development-fixture") {
@@ -208,7 +209,7 @@ export async function loadIntakeOptions(
 export async function createFreightRequestV2(
   input: CreateFreightRequestV2Input,
   idempotencyKey: string,
-  fetcher: FetchLike = fetch,
+  fetcher: FetchLike = workspaceFetch,
 ) {
   const response = await fetcher("/api/v2/freight/requests", {
     method: "POST",
@@ -227,7 +228,31 @@ export async function createFreightRequestV2(
   );
 }
 
-export async function getFreightRequestV2(id: string, fetcher: FetchLike = fetch) {
+export async function reviseFreightRequestV2(
+  requestId: string,
+  expectedDraftVersion: number,
+  value: CreateFreightRequestV2Input,
+  idempotencyKey: string,
+  fetcher: FetchLike = workspaceFetch,
+) {
+  const response = await fetcher(`/api/v2/freight/requests/${encodeURIComponent(requestId)}/revisions`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
+    },
+    body: JSON.stringify({ expectedDraftVersion, value }),
+  });
+  return parseContract<FreightRequestV2Response>(
+    await requireOk(response),
+    "POST /api/v2/freight/requests/:id/revisions",
+    FreightRequestV2ResponseSchema,
+  );
+}
+
+export async function getFreightRequestV2(id: string, fetcher: FetchLike = workspaceFetch) {
   const response = await fetcher(`/api/v2/freight/requests/${encodeURIComponent(id)}`, {
     method: "GET",
     credentials: "same-origin",
@@ -244,7 +269,7 @@ export async function getFreightRequestV2(id: string, fetcher: FetchLike = fetch
 export async function getRoadServiceabilityV2(
   id: string,
   expectedDraftVersion: number,
-  fetcher: FetchLike = fetch,
+  fetcher: FetchLike = workspaceFetch,
 ) {
   const query = new URLSearchParams({ expectedDraftVersion: String(expectedDraftVersion) });
   const response = await fetcher(

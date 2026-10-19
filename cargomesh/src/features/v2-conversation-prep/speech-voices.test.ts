@@ -25,3 +25,13 @@ test("Google UK English Female is preferred for English replies when available",
   ];
   assert.equal(chosenSpeechVoice(englishVoices, "en-US", "")?.voiceURI, "google-female");
 });
+
+test("Zira is the default English voice when installed, while an explicit choice still wins", () => {
+  const englishVoices = [
+    { voiceURI: "device-en", name: "Microsoft English", lang: "en-US", localService: true },
+    { voiceURI: "google-female", name: "Google UK English Female", lang: "en-GB", localService: false },
+    { voiceURI: "zira", name: "Microsoft Zira Desktop", lang: "en-US", localService: true },
+  ];
+  assert.equal(chosenSpeechVoice(englishVoices, "en-US", "")?.voiceURI, "zira");
+  assert.equal(chosenSpeechVoice(englishVoices, "en-US", "google-female")?.voiceURI, "google-female");
+});

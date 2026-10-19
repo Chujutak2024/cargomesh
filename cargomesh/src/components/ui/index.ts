@@ -5,3 +5,5 @@ export { Dialog, type DialogProps } from "./dialog";
 export { Input, type InputProps } from "./input";
 export { Select, type SelectProps } from "./select";
 export { Textarea, type TextareaProps } from "./textarea";
+
+export { SearchField } from "./search-field";

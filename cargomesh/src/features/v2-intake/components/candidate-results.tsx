@@ -5,7 +5,7 @@ import type {
   EligibilityStatusV2,
   RoadServiceabilityEvaluationV2Data,
 } from "../contracts";
-import { formatProvenanceTimestamp } from "../provenance";
+import { formatProvenanceTimestamp, isProvenanceExpiredAtEvaluation } from "../provenance";
 import styles from "./v2-intake-components.module.css";
 
 type Translate = (spanish: string, english: string) => string;
@@ -27,10 +27,6 @@ export function CandidateResults({
         <ShieldAlert size={22} aria-hidden="true" />
         <div>
           <h3>{t("Cero candidatos para esta ruta y ventana", "Zero candidates for this route and window")}</h3>
-          <p>{t(
-            "La evaluación respondió sin servicios candidatos. Esto no autoriza inventar una ruta, precio u oferta.",
-            "The evaluation returned no candidate services. This does not authorize inventing a route, price, or offer.",
-          )}</p>
         </div>
       </section>
     );
@@ -72,6 +68,10 @@ export function CandidateResults({
                   <small>{t("Observado", "Observed")}: {formatProvenanceTimestamp(provenance.observedAt)} · {t("Vigente hasta", "Valid until")}: {formatProvenanceTimestamp(provenance.validUntil)}</small>
                 </span>
               </div>
+              {isProvenanceExpiredAtEvaluation(provenance.validUntil, evaluation.evaluatedAt) ? <p className={styles.provenanceWarning} role="note">
+                <ShieldAlert size={15} aria-hidden="true" />
+                {t("La vigencia de esta fuente terminó antes de la evaluación. Verifica evidencia actual antes de decidir; la elegibilidad mostrada proviene del servicio.", "This source expired before evaluation. Verify current evidence before deciding; the eligibility shown comes from the service.")}
+              </p> : null}
               <ul className={styles.reasons}>{candidate.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
               <Button
                 variant={selected ? "primary" : "secondary"}
