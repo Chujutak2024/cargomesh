@@ -1,15 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { Box3, Mesh, type MeshStandardMaterial } from 'three';
-import { truckDesigns } from './visual-catalog';
+import { familyDesign, truckDesigns, type TruckAppearance } from './visual-catalog';
 import { buildCargoMeshTruck, disposeCargoMeshTruck, truckVisualTypes } from './truck-model';
 import { buildDepot, disposeDepot } from './depot-model';
 import { depotTemplates } from './depot-templates';
-import { createDepotCoordinator } from './depot-coordinator';
+import { createDepotCoordinator, createDepotScenario } from './depot-coordinator';
 import { visualTripCircuit, visualTripPose } from './visual-trip-model';
 
-test('18 visual assemblies reuse all ten families with finite distinct geometry and bounded material batches', () => {
-  assert.equal(truckDesigns.length, 18); assert.equal(new Set(truckDesigns.map(design => design.id)).size, 18);
+test('23 visual designs reuse all ten families with finite distinct geometry and bounded material batches', () => {
+  assert.equal(truckDesigns.length, 23); assert.equal(new Set(truckDesigns.map(design => design.id)).size, 23);
   assert.deepEqual(new Set(truckDesigns.map(design => design.family)), new Set(truckVisualTypes));
   const signatures = new Set<string>();
   for (const design of truckDesigns) {
@@ -24,7 +25,42 @@ test('18 visual assemblies reuse all ten families with finite distinct geometry 
     assert.equal(model.userData.designId, design.id); assert.equal(model.userData.decorative, true);
     disposeCargoMeshTruck(model);
   }
-  assert.equal(signatures.size, 18, 'A paint change alone must not stand in for a new assembly');
+  assert.equal(signatures.size, 23, 'A paint change alone must not stand in for a new assembly');
+});
+test('five new body styles have distinct geometry even with identical paint and no fittings', () => {
+  const newDesigns = truckDesigns.filter(design => design.appearance.bodyStyle);
+  assert.deepEqual(newDesigns.map(design => design.id), ['car-carrier', 'livestock', 'crane', 'refuse', 'bulk-silo']);
+  const monochrome: TruckAppearance = { cab: '#808080', body: '#808080', accent: '#808080', fittings: [] };
+  const hashGeometry = (family: typeof truckVisualTypes[number], bodyStyle?: TruckAppearance['bodyStyle']) => {
+    const model = buildCargoMeshTruck(family, { appearance: { ...monochrome, bodyStyle }, cargoAccess: true });
+    const hash = createHash('sha256');
+    model.traverse(node => { if (node instanceof Mesh) { const positions = node.geometry.attributes.position.array; hash.update(Buffer.from(positions.buffer, positions.byteOffset, positions.byteLength)); } });
+    assert.ok(!bodyStyle || !model.children.some(part => part.name.startsWith('Cargo door')), 'Box cargo doors must not be added to specialist bodies');
+    disposeCargoMeshTruck(model); return hash.digest('hex');
+  };
+  const baseHashes = new Set(truckVisualTypes.map(family => hashGeometry(family)));
+  const newHashes = new Set<string>();
+  for (const design of newDesigns) {
+    const hash = hashGeometry(design.family, design.appearance.bodyStyle);
+    assert.ok(!baseHashes.has(hash), design.id); newHashes.add(hash);
+  }
+  assert.equal(newHashes.size, 5);
+  for (const family of truckVisualTypes) assert.equal(familyDesign(family).appearance.bodyStyle, undefined, 'Existing default bodies must remain unchanged');
+});
+test('specialist bodies cannot receive the pallet fixture, and rejected changes preserve state', () => {
+  const controller = createDepotCoordinator(); controller.advance(18000); controller.select('visual-truck-a'); controller.setPlaying(false);
+  const before = controller.getSnapshot();
+  for (const [asset, design] of [['visual-truck-a', 'car-carrier'], ['visual-truck-a', 'livestock'], ['visual-truck-d', 'crane']]) {
+    assert.throws(() => controller.setDesign(asset, design), /INCOMPATIBLE_VISUAL_CARGO/);
+    assert.strictEqual(controller.getSnapshot(), before);
+  }
+  const invalidScenario = createDepotScenario(); invalidScenario.vehicles[0].designId = 'car-carrier';
+  assert.throws(() => createDepotCoordinator(invalidScenario), /INCOMPATIBLE_VISUAL_CARGO/);
+  controller.setDesign('visual-truck-c', 'refuse');
+  const after = controller.getSnapshot();
+  assert.equal(after.vehicles[2].designId, 'refuse'); assert.equal(after.vehicles[2].reserved, true);
+  assert.equal(after.elapsedMs, before.elapsedMs); assert.equal(after.selectedAssetId, before.selectedAssetId); assert.equal(after.requestedPlay, false);
+  assert.deepEqual(after.eventIds, before.eventIds);
 });
 test('five depot templates have different physical layouts, bounded geometry and disposable ownership', () => {
   const signatures = new Set<string>();

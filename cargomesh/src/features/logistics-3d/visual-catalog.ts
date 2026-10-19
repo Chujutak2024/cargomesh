@@ -2,6 +2,7 @@ import type { TruckVisualType } from './truck-model';
 
 export type TruckAppearance = {
   cab: string; body: string; accent: string;
+  bodyStyle?: 'car-carrier' | 'livestock' | 'crane' | 'refuse' | 'bulk-silo';
   fittings?: readonly ('high-roof' | 'aero' | 'side-guards' | 'tail-lift' | 'headboard' | 'beacons' | 'cab-guard')[];
 };
 export type TruckDesign = {
@@ -27,6 +28,11 @@ export const truckDesigns: readonly TruckDesign[] = [
   { id: 'tanker-road', name: 'Road tanker', family: 'tanker', description: 'Existing cylindrical tank, walkways and side guards.', appearance: { cab: '#88394a', body: '#b9c7cc', accent: '#ddbd87', fittings: ['side-guards'] } },
   { id: 'mixer-drum', name: 'Concrete mixer', family: 'mixer', description: 'Existing drum, discharge chute and roof beacons.', appearance: { cab: '#e5d7ba', body: '#bd6139', accent: '#db9b50', fittings: ['beacons'] } },
   { id: 'lowloader-heavy', name: 'Low deck trailer', family: 'lowloader', description: 'Existing low bed and ramps with a protected tractor.', appearance: { cab: '#c69b36', body: '#c7a34d', accent: '#344a56', fittings: ['cab-guard', 'beacons'] } },
+  { id: 'car-carrier', name: 'Double-deck car carrier', family: 'articulated', description: 'Two open decks, four cars, braced uprights and folded loading ramps.', appearance: { cab: '#873248', body: '#a4b3bc', accent: '#e4bd62', bodyStyle: 'car-carrier' } },
+  { id: 'livestock', name: 'Ventilated livestock trailer', family: 'articulated', description: 'Two ventilated levels, open slats, reinforced posts and a rear ramp.', appearance: { cab: '#316453', body: '#d4d2b9', accent: '#b49550', bodyStyle: 'livestock' } },
+  { id: 'crane', name: 'Telescopic truck crane', family: 'flatbed', description: 'Telescopic boom, operator cab, hook, counterweight and stowed outriggers.', appearance: { cab: '#ba8c20', body: '#dfb342', accent: '#314c60', bodyStyle: 'crane', fittings: ['beacons'] } },
+  { id: 'refuse', name: 'Rear-loading refuse truck', family: 'rigid', description: 'Rounded compactor body, rear hopper, hydraulic rams and bin lifter.', appearance: { cab: '#e8e7dc', body: '#397b66', accent: '#db9638', bodyStyle: 'refuse', fittings: ['beacons'] } },
+  { id: 'bulk-silo', name: 'Three-hopper bulk silo', family: 'tanker', description: 'Sealed silo with three discharge cones, pressure pipework and a top walkway.', appearance: { cab: '#385e89', body: '#d5dce0', accent: '#d59c3f', bodyStyle: 'bulk-silo' } },
 ];
 export function truckDesign(id: string | null | undefined) { return truckDesigns.find(design => design.id === id); }
 export function familyDesign(family: TruckVisualType) { return truckDesigns.find(design => design.family === family)!; }

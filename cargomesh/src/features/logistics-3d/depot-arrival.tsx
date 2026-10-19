@@ -53,7 +53,7 @@ export default function DepotArrival({ context, coordinator }: { context: TruckI
     <p className={s.disclaimer}>{snapshot.vehicles.length} illustrative vehicles share one yard. This scene does not report live positions or availability.</p>
     <div className={s.designControls}>
       <label>Depot design<select aria-label="Depot design" value={snapshot.templateId} onChange={event => controller.setTemplate(event.target.value as DepotTemplateId)}>{depotTemplates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
-      {selected ? <label>Vehicle design<select aria-label="Vehicle design" value={selected.designId} onChange={event => controller.setDesign(selected.assetId, event.target.value)}>{truckDesigns.filter(design => design.family === selected.family).map(design => <option key={design.id} value={design.id}>{design.name}</option>)}</select></label> : null}
+      {selected ? <label>Vehicle design<select aria-label="Vehicle design" value={selected.designId} onChange={event => controller.setDesign(selected.assetId, event.target.value)}>{truckDesigns.filter(design => design.family === selected.family && (!selected.cargo || !design.appearance.bodyStyle)).map(design => <option key={design.id} value={design.id}>{design.name}</option>)}</select></label> : null}
       <p>{depotTemplate(snapshot.templateId).description} Visual layout only.</p>
     </div>
     <div className={s.layout}><div className={s.viewer}>

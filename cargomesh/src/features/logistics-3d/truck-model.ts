@@ -192,9 +192,120 @@ export function buildCargoMeshTruck(variant: TruckVisualType = "articulated", op
       add(new THREE.TubeGeometry(hose, 8, .025, 6, false), side === 1 ? "teal" : "red", [0, 0, 0]);
     }
   }
-  box([length + .04, .08, 1.46], [center, 1.075, 0], "alloy");
+  const bodyStyle = options.appearance?.bodyStyle;
+  if (bodyStyle !== 'bulk-silo') box([length + .04, .08, 1.46], [center, 1.075, 0], "alloy");
   box([length - .3, .17, .86], [center + .07, .82, 0], "dark");
-  if (variant === "tanker") {
+  if (bodyStyle === 'car-carrier') {
+    for (const deck of [1.22, 2.36]) {
+      for (const side of [-1, 1]) {
+        detailBox([length, .09, .22], [center, deck, side * .49], 'trailer');
+        detailBox([length, .08, .055], [center, deck + .13, side * .7], 'teal');
+        for (let rib = 0; rib < 21; rib++) detailBox([.055, .015, .23], [center - 2.32 + rib * .23, deck + .053, side * .49], 'dark');
+      }
+      for (const x of [.02, 2.05]) {
+        box([1.62, .24, .83], [x, deck + .3, 0], x < 1 ? 'paint' : 'teal', .09);
+        box([.83, .28, .72], [x + .06, deck + .53, 0], x < 1 ? 'paint' : 'teal', .07);
+        for (const side of [-1, 1]) {
+          detailBox([.62, .19, .015], [x + .06, deck + .54, side * .367], 'glass');
+          detailBox([.025, .2, .022], [x + .05, deck + .54, side * .38], 'dark');
+          for (const axle of [-.5, .5]) {
+            add(new THREE.CylinderGeometry(.13, .13, .105, 16), 'tyre', [x + axle, deck + .14, side * .4], [Math.PI / 2, 0, 0]);
+            add(new THREE.CylinderGeometry(.075, .075, .11, 12), 'alloy', [x + axle, deck + .14, side * .405], [Math.PI / 2, 0, 0]);
+          }
+          detailBox([.026, .065, .18], [x - .812, deck + .32, side * .25], 'lamp');
+          detailBox([.026, .06, .17], [x + .812, deck + .32, side * .25], 'red');
+          detailBox([.15, .022, .022], [x + .2, deck + .38, side * .429], 'alloy');
+        }
+        detailBox([.02, .2, .65], [x - .37, deck + .54, 0], 'glass');
+        detailBox([.02, .19, .65], [x + .49, deck + .54, 0], 'glass');
+      }
+    }
+    for (const side of [-1, 1]) {
+      for (const x of [-1.13, 1.02, 3.5]) detailBox([.08, 1.42, .08], [x, 1.94, side * .7], 'alloy');
+      for (const x of [-.08, 2.25]) pipe([[x - .9, 1.24, side * .7], [x + .85, 2.35, side * .7]], .025, 'alloy');
+      box([.13, .88, .42], [rear + .11, 1.66, side * .46], 'trailer', .012, [0, 0, -.12]);
+      for (let rung = 0; rung < 7; rung++) detailBox([.15, .025, .38], [rear + .14, 1.3 + rung * .11, side * .46], 'dark');
+    }
+  } else if (bodyStyle === 'livestock') {
+    box([length, .09, 1.44], [center, 1.95, 0], 'trailer');
+    box([length + .06, .1, 1.46], [center, 2.93, 0], 'trailer', .045);
+    for (const side of [-1, 1]) {
+      for (const height of [1.3, 1.53, 1.76, 2.12, 2.35, 2.58, 2.8]) detailBox([length, .13, .05], [center, height, side * .7], 'trailer');
+      for (let post = 0; post < 9; post++) detailBox([.065, 1.74, .075], [center - length / 2 + .06 + post * .603, 2.04, side * .73], 'alloy');
+      detailBox([length, .07, .035], [center, 1.18, side * .75], 'teal');
+      pipe([[rear + .1, 1.24, side * .59], [rear + .1, 2.82, side * .59]], .025, 'alloy');
+    }
+    box([.07, 1.7, 1.4], [center - length / 2, 2.02, 0], 'trailer');
+    for (const height of [1.25, 1.52, 1.79, 2.06, 2.33, 2.6, 2.86]) detailBox([.075, .12, 1.4], [rear + .035, height, 0], 'trailer');
+    for (const z of [-.64, 0, .64]) detailBox([.09, 1.76, .075], [rear + .07, 2.05, z], 'alloy');
+    for (const side of [-1, 1]) {
+      add(new THREE.CylinderGeometry(.045, .045, .26, 12), 'alloy', [rear + .09, 1.2, side * .45], [Math.PI / 2, 0, 0]);
+      box([.065, .26, .06], [rear + .13, 2.1, side * .35], 'dark', .008);
+    }
+  } else if (bodyStyle === 'crane') {
+    box([length, .14, 1.43], [center, 1.2, 0], 'trailer');
+    add(new THREE.CylinderGeometry(.46, .46, .19, 24), 'dark', [-.6, 1.38, 0]);
+    box([.74, .7, .76], [-.6, 1.78, -.12], 'trailer', .06);
+    box([.46, .55, .96], [-1.02, 1.69, -.07], 'dark', .045);
+    box([.64, .72, .52], [-.59, 1.86, .55], 'paint', .05);
+    detailBox([.035, .43, .44], [-.92, 1.98, .55], 'glass');
+    detailBox([.48, .43, .025], [-.59, 1.98, .824], 'glass');
+    detailBox([.03, .45, .035], [-.56, 1.98, .843], 'dark');
+    box([.52, .08, .6], [-.59, 2.25, .55], 'dark', .015);
+    for (const [span, x, height, depth] of [[2.7, .52, .43, .39], [2.22, 1.45, .32, .29], [1.53, 2.42, .23, .2]])
+      box([span, height, depth], [x, 2.14 + x * .075, -.12], 'trailer', .025, [0, 0, .075]);
+    add(new THREE.CylinderGeometry(.08, .08, 1.5, 12), 'alloy', [.1, 1.83, -.12], [0, 0, -1.04]);
+    pipe([[3.18, 2.48, -.12], [3.18, 1.67, -.12]], .014, 'dark');
+    add(new THREE.TorusGeometry(.095, .026, 6, 16, Math.PI * 1.65), 'alloy', [3.18, 1.57, -.12]);
+    for (const x of [-.85, 2.75]) {
+      box([.24, .21, 1.65], [x, 1.04, 0], 'dark', .02);
+      for (const side of [-1, 1]) {
+        box([.2, .33, .18], [x, .96, side * .76], 'trailer', .02);
+        box([.3, .07, .27], [x, .77, side * .76], 'dark', .01);
+      }
+    }
+    for (let panel = 0; panel < 8; panel++) detailBox([.025, .014, 1.26], [center - 1.5 + panel * .56, 1.28, 0], 'alloy');
+  } else if (bodyStyle === 'refuse') {
+    box([length - .65, 1.28, 1.35], [center - .32, 1.84, 0], 'trailer', .19);
+    box([.18, 1.1, 1.39], [center - 1.59, 1.84, 0], 'alloy', .035);
+    const hopper = new THREE.Shape();
+    hopper.moveTo(rear - 1.02, 1.18); hopper.lineTo(rear + .28, 1.18); hopper.lineTo(rear + .28, 1.91);
+    hopper.lineTo(rear - .22, 2.52); hopper.lineTo(rear - 1.02, 2.52); hopper.closePath();
+    add(new THREE.ExtrudeGeometry(hopper, { depth: 1.4, bevelEnabled: true, bevelSize: .035, bevelThickness: .025, bevelSegments: 1 }), 'trailer', [0, 0, -.7]);
+    box([.055, .62, 1.02], [rear + .315, 1.6, 0], 'dark', .025);
+    for (const side of [-1, 1]) {
+      detailBox([length - .7, .09, .035], [center - .25, 1.72, side * .7], 'teal');
+      add(new THREE.CylinderGeometry(.055, .07, .77, 12), 'alloy', [rear - .12, 1.85, side * .75], [0, 0, -.43]);
+      detailBox([.05, .43, .06], [rear + .37, 1.04, side * .35], 'alloy');
+      detailBox([.43, .06, .08], [rear + .54, .85, side * .35], 'alloy');
+      pipe([[rear + .36, 1.28, side * .66], [rear + .36, 1.81, side * .66]], .025, 'alloy');
+      for (let stripe = 0; stripe < 4; stripe++) detailBox([.08, .2, .035], [rear - .13 + stripe * .1, 2.15, side * .73], stripe % 2 ? 'dark' : 'amber', [0, 0, -.35]);
+    }
+    box([.14, .15, 1.36], [rear + .33, 1.99, 0], 'alloy', .02);
+  } else if (bodyStyle === 'bulk-silo') {
+    add(new THREE.CylinderGeometry(.55, .55, length - .35, 28), 'trailer', [center, 2.13, 0], [0, 0, Math.PI / 2]);
+    for (const end of [-1, 1]) {
+      const cap = new THREE.SphereGeometry(1, 20, 10); cap.scale(.19, .55, .55);
+      add(cap, 'trailer', [center + end * (length - .35) / 2, 2.13, 0]);
+    }
+    for (const x of [center - 1.4, center, center + 1.4]) {
+      add(new THREE.CylinderGeometry(.6, .13, .72, 18), 'trailer', [x, 1.41, 0]);
+      add(new THREE.CylinderGeometry(.09, .09, .17, 12), 'alloy', [x, .98, 0]);
+      pipe([[x, .99, 0], [x, .99, .66]], .065, 'alloy');
+      add(new THREE.TorusGeometry(.105, .018, 6, 16), 'red', [x, 1.08, .62], [Math.PI / 2, 0, 0]);
+      add(new THREE.CylinderGeometry(.17, .17, .075, 16), 'dark', [x, 2.72, 0]);
+      for (const side of [-1, 1]) detailBox([.13, .38, .1], [x, 1.05, side * .49], 'alloy');
+    }
+    for (const side of [-1, 1]) {
+      detailBox([length, .13, .13], [center, .95, side * .53], 'alloy');
+      pipe([[center - 1.4, 1.12, side * .69], [center + 1.6, 1.12, side * .69], [rear + .1, 1.4, side * .69]], .055, 'alloy');
+      detailBox([length - .3, .04, .04], [center, 3, side * .3], 'alloy');
+      for (const x of [center - 1.8, center, center + 1.8]) detailBox([.035, .29, .035], [x, 2.85, side * .3], 'alloy');
+    }
+    detailBox([length - .35, .055, .39], [center, 2.68, 0], 'alloy');
+    for (let rung = 0; rung < 8; rung++) detailBox([.045, .025, .47], [rear + .21, 1.27 + rung * .2, 0], 'alloy');
+    for (const side of [-1, 1]) pipe([[rear + .21, 1.23, side * .25], [rear + .21, 2.81, side * .25], [rear - .03, 2.91, side * .25]], .025, 'alloy');
+  } else if (variant === "tanker") {
     add(new THREE.CylinderGeometry(.66,.66,length-.4,32,1),"trailer",[center,1.89,0],[0,0,Math.PI/2]);
     for(const end of [-1,1]) {
       const cap=new THREE.SphereGeometry(1,24,12);cap.scale(.28,.66,.66);
@@ -433,8 +544,8 @@ export function buildCargoMeshTruck(variant: TruckVisualType = "articulated", op
     materials[name].customProgramCacheKey = () => "cargomesh-wheel-motion-v1";
     mesh.castShadow = name !== "glass"; mesh.receiveShadow = name !== "glass"; truck.add(mesh);
   }
-  truck.userData = { author: "CargoMesh local project", license: "original project asset", decorative: true, componentCount, variant, designId: options.designId, detailLevel: "cab-finished" };
-  if(options.cargoAccess&&["rigid","articulated","refrigerated","curtainsider"].includes(variant)){
+  truck.userData = { author: "CargoMesh local project", license: "original project asset", decorative: true, componentCount, variant, bodyStyle, designId: options.designId, detailLevel: "cab-finished" };
+  if(options.cargoAccess&&!bodyStyle&&["rigid","articulated","refrigerated","curtainsider"].includes(variant)){
     const doors:THREE.Group[]=[];
     for(const side of [-1,1]){
       const door=new THREE.Group();door.name=`Cargo door ${side}`;door.position.set(rear+.055,1.88,side*.66);
