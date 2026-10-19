@@ -1,6 +1,7 @@
 import type { TruckVisualType } from './truck-model';
 import { familyDesign, truckDesign } from './visual-catalog';
 import { depotTemplates, type DepotTemplateId } from './depot-templates';
+import type { DepotCameraState } from './depot-camera';
 
 export type YardPhase = 'loading' | 'waiting' | 'parked' | 'departing' | 'departed' | 'maintenance' | 'manoeuvring' | 'docking' | 'ready' | 'unknown';
 export type YardVehicle = {
@@ -93,12 +94,18 @@ export function createDepotCoordinator(input = createDepotScenario()) {
   scenario.events = [...events.values()].sort((a, b) => a.atMs - b.atMs || a.eventId.localeCompare(b.eventId));
   project(scenario, scenario.durationMs); // Validate every transition before a canvas can consume it.
   let time = 0;
+  let camera: DepotCameraState | null = null;
   let snapshot: YardSnapshot = { scenarioId: scenario.scenarioId, siteId: scenario.siteId, source: 'SIMULATED', elapsedMs: 0, ...project(scenario, 0), selectedAssetId: null, interior: false, requestedPlay: null, completed: false, focusInstant: true, templateId: 'distribution' };
   const listeners = new Set<() => void>();
   const update = (patch: Partial<YardSnapshot>) => { snapshot = { ...snapshot, ...patch }; listeners.forEach(listener => listener()); };
   return {
     getSnapshot: () => snapshot,
     getElapsedMs: () => time,
+    getCamera: () => camera ? { ...camera, position: [...camera.position] as DepotCameraState['position'], target: [...camera.target] as DepotCameraState['target'] } : null,
+    rememberCamera(value: DepotCameraState) {
+      if (![...value.position, ...value.target, value.zoom].every(Number.isFinite) || value.zoom < 3 || value.zoom > 100) throw new Error('INVALID_DEPOT_CAMERA');
+      camera = { ...value, position: [...value.position], target: [...value.target] };
+    },
     subscribe: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
     advance(deltaMs: number) {
       if (!Number.isFinite(deltaMs) || deltaMs < 0) throw new Error('INVALID_VISUAL_DELTA');

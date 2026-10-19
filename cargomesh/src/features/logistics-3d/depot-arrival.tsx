@@ -21,11 +21,12 @@ export default function DepotArrival({ context, coordinator }: { context: TruckI
   const preferredReduced = useReducedMotionPreference();
   const playing = (snapshot.requestedPlay ?? !preferredReduced) && !snapshot.completed;
   const reduced = preferredReduced && snapshot.requestedPlay !== true;
-  const [error, setError] = useState(false), [loaded, setLoaded] = useState(false), [retry, setRetry] = useState(0);
+  const [error, setError] = useState(false), [loadedTemplate, setLoadedTemplate] = useState<DepotTemplateId | null>(null), [retry, setRetry] = useState(0);
+  const loaded = loadedTemplate === snapshot.templateId;
   const [visible, setVisible] = useState(false), [hidden, setHidden] = useState(false), [clock, setClock] = useState<Date | null>(null);
   const host = useRef<HTMLDivElement>(null), controls = useRef<YardViewControls | null>(null);
   const receiveControls = useCallback((value: YardViewControls | null) => { controls.current = value; }, []);
-  const failed = useCallback(() => setError(true), []), ready = useCallback(() => setLoaded(true), []);
+  const failed = useCallback(() => setError(true), []), ready = useCallback(() => setLoadedTemplate(snapshot.templateId), [snapshot.templateId]);
   useEffect(() => {
     const observer = new IntersectionObserver(entries => setVisible(entries.some(entry => entry.isIntersecting)));
     if (host.current) observer.observe(host.current);
@@ -52,14 +53,14 @@ export default function DepotArrival({ context, coordinator }: { context: TruckI
     <header className={s.facility}><span className={s.brand}><Building2 size={23}/></span><div><h3>Depot operations</h3><p>{context.depot.name} · {context.depot.city}</p></div><span className={s.simulation}>Visual simulation</span></header>
     <p className={s.disclaimer}>{snapshot.vehicles.length} illustrative vehicles share one yard. This scene does not report live positions or availability.</p>
     <div className={s.designControls}>
-      <label>Depot design<select aria-label="Depot design" value={snapshot.templateId} onChange={event => controller.setTemplate(event.target.value as DepotTemplateId)}>{depotTemplates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
+      <label>Depot design · {depotTemplates.length} visual layouts<select aria-label="Depot design" value={snapshot.templateId} onChange={event => { setError(false); controller.setTemplate(event.target.value as DepotTemplateId); }}>{depotTemplates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
       {selected ? <label>Vehicle design<select aria-label="Vehicle design" value={selected.designId} onChange={event => controller.setDesign(selected.assetId, event.target.value)}>{truckDesigns.filter(design => design.family === selected.family && (!selected.cargo || !design.appearance.bodyStyle)).map(design => <option key={design.id} value={design.id}>{design.name}</option>)}</select></label> : null}
       <p>{depotTemplate(snapshot.templateId).description} Visual layout only.</p>
     </div>
     <div className={s.layout}><div className={s.viewer}>
       <div ref={host} className={s.stage} data-depot-state={error ? 'failed' : loaded ? 'ready' : 'loading'}>
         {!error && visible ? <DepotBoundary key={retry} failed={failed}><DepotYardScene controller={controller} color={context.depot.color} active={active} running={playing && active} reduced={reduced} night={getTruckEnvironment(clock ?? new Date(2000, 0, 1, 12)).night} onReady={ready} onFailure={failed} onControls={receiveControls}/></DepotBoundary> : null}
-        {error ? <div className={s.error} role="alert"><Building2 size={32}/><strong>The 3D view is unavailable</strong><p>The vehicle list and scenario state are still available.</p><button onClick={() => { setLoaded(false); setError(false); setRetry(value => value + 1); }}>Retry 3D view</button></div> : !loaded ? <div className={s.preparing} role="status">Preparing the depot…</div> : null}
+        {error ? <div className={s.error} role="alert"><Building2 size={32}/><strong>The 3D view is unavailable</strong><p>The vehicle list and scenario state are still available.</p><button onClick={() => { setLoadedTemplate(null); setError(false); setRetry(value => value + 1); }}>Retry 3D view</button></div> : !loaded ? <div className={s.preparing} role="status">Preparing the depot…</div> : null}
         {loaded && !error ? <div className={s.sceneLegend}><span className={s.dot}/>{selected ? selected.label : 'Site overview'}<span>·</span>{snapshot.interior ? 'Interior' : 'Exterior'}</div> : null}
       </div>
       <div className={s.toolbar} role="group" aria-label="Depot view controls">

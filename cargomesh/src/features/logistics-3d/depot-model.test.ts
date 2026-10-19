@@ -1,9 +1,92 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { Box3, Mesh, Raycaster, Vector3 } from "three";
+import { createHash } from 'node:crypto';
+import { Box3, Group, Mesh, MeshStandardMaterial, OrthographicCamera, Raycaster, Texture, Vector3 } from "three";
 import { buildDepot, disposeDepot } from "./depot-model";
 import { DEPOT_CYCLE_SECONDS, depotCyclePose as arrivalPose, loadingVehiclePose } from "./depot-cycle";
 import { buildDepotActors, animateDepotActors } from "./depot-actors";
+import { depotTemplates } from './depot-templates';
+import { depotOverview } from './depot-camera';
+
+function geometrySignature(root: Group) {
+  const hash = createHash('sha256'); let measured = 0; root.updateMatrixWorld(true);
+  root.traverse(node => { if (node instanceof Mesh) {
+    measured++; hash.update(JSON.stringify(node.matrixWorld.elements));
+    const positions = node.geometry.attributes.position.array;
+    hash.update(Buffer.from(positions.buffer, positions.byteOffset, positions.byteLength));
+  } });
+  assert.ok(measured > 0); return hash.digest('hex');
+}
+
+test('five original depot geometries remain byte-for-byte unchanged', () => {
+  const original = {
+    compact: '9c23d99b5bd862e939c6178e9305849e695e10c34ba111137d27cfaaec6346d8',
+    distribution: '9b832510fee5dc8626dce94a13f02c7de55acfc69c9ae341263ec141e4daf26b',
+    cold: 'e0852a67e90c98bbb93b8194a1e97d30681839ebb1ab6ea315c075102a573aa0',
+    workshop: 'c90f58dba0662aa5b9da21b0fa61aff21ace10420114e56e09c0802dec4b3b00',
+    transfer: '2c9211564d32865f1975ec02abb77780453d9329a4f60bae37a1e854561c2032',
+  };
+  for (const [id, signature] of Object.entries(original)) {
+    const depot = buildDepot('#147d88', id as keyof typeof original);
+    assert.equal(geometrySignature(depot.root), signature, id); disposeDepot(depot.root);
+  }
+});
+
+test('five new architectures differ from all originals in monochrome and contain actual structures', () => {
+  const structures = new Map([
+    ['cross-dock', ['Cross-dock sorting hall', 'Two-storey distribution control wing', 'Sorting mezzanine and conveyors']],
+    ['service-yard', ['Service workshop', 'Covered parking courts', 'Separate yard administration']],
+    ['cold-campus', ['Insulated cold storage', 'Three insulated chambers', 'Separate refrigeration plant']],
+    ['silo-terminal', ['Covered bulk bagging apron', 'Six-silo battery', 'Elevated conveyor bridge']],
+    ['urban-courtyard', ['Compact L-shaped dispatch hall', 'Two-level urban dispatch office', 'Urban roof terrace and courier court']],
+  ]);
+  const signatures = new Set<string>();
+  for (const template of depotTemplates) {
+    const depot = buildDepot('#808080', template.id);
+    depot.root.traverse(node => { if (node instanceof Mesh && node.material instanceof MeshStandardMaterial) node.material.color.set('#808080'); });
+    const signature = geometrySignature(depot.root);
+    assert.ok(!signatures.has(signature), template.id); signatures.add(signature);
+    for (const name of structures.get(template.id) ?? []) {
+      const structure = depot.root.getObjectByName(name); assert.ok(structure, name);
+      const size = new Box3().setFromObject(structure).getSize(new Vector3());
+      assert.ok(size.x > 1 && size.y > .1 && size.z > .5, name);
+    }
+    const hits = new Raycaster(new Vector3(3, 1.4, 4), new Vector3(0, 0, -1)).intersectObject(depot.root, true);
+    assert.ok(hits.length && hits[0].point.z < 1.2, 'The illustrative Bay 02 approach stays clear: ' + template.id);
+    disposeDepot(depot.root);
+  }
+  assert.equal(signatures.size, 10);
+});
+
+test('default overview contains every model corner on desktop and mobile, including the silo roof', () => {
+  for (const template of depotTemplates) {
+    const depot = buildDepot('#147d88', template.id), bounds = new Box3().setFromObject(depot.root);
+    for (const [width, height] of [[1050, 600], [342, 390]]) {
+      const frame = depotOverview(bounds, width, height);
+      const camera = new OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, .1, 180);
+      camera.position.copy(frame.position); camera.zoom = frame.zoom; camera.lookAt(frame.target); camera.updateProjectionMatrix(); camera.updateMatrixWorld(true);
+      for (const x of [bounds.min.x, bounds.max.x]) for (const y of [bounds.min.y, bounds.max.y]) for (const z of [bounds.min.z, bounds.max.z]) {
+        const corner = new Vector3(x, y, z).project(camera);
+        assert.ok(Math.abs(corner.x) <= .901 && Math.abs(corner.y) <= .901 && Math.abs(corner.z) < 1, `${template.id} at ${width}×${height}`);
+      }
+    }
+    disposeDepot(depot.root);
+  }
+});
+
+test('architecture cleanup releases shared materials, geometry and textures exactly once', () => {
+  for (const template of depotTemplates.slice(5)) {
+    const depot = buildDepot('#147d88', template.id), geometries = new Set(), materials = new Set<MeshStandardMaterial>(); let geometryDisposals = 0, materialDisposals = 0;
+    depot.root.traverse(node => { if (node instanceof Mesh) {
+      geometries.add(node.geometry); node.geometry.addEventListener('dispose', () => geometryDisposals++);
+      for (const material of Array.isArray(node.material) ? node.material : [node.material]) materials.add(material);
+    } });
+    const sharedTexture = new Texture(); let textureDisposals = 0; sharedTexture.addEventListener('dispose', () => textureDisposals++);
+    for (const material of materials) { material.bumpMap = sharedTexture; material.roughnessMap = sharedTexture; material.addEventListener('dispose', () => materialDisposals++); }
+    disposeDepot(depot.root); assert.equal(geometryDisposals, geometries.size, template.id); assert.equal(materialDisposals, materials.size, template.id);
+    assert.equal(textureDisposals, 1, template.id);
+  }
+});
 
 test("complete cycle stops at access and dock, loads before release and leaves through the exit", () => {
   const checkA=arrivalPose(6.1),checkB=arrivalPose(8.8);
