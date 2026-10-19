@@ -30,8 +30,8 @@
     max-inline-size: calc(100vw - 24px);
     overflow: auto;
     overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--cm-color-line-strong) transparent;
+    scrollbar-width: var(--cm-scrollbar-width, thin);
+    scrollbar-color: var(--cm-scrollbar-thumb, var(--cm-color-line-strong)) var(--cm-scrollbar-track, transparent);
   }
 
   :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size])::picker-icon {

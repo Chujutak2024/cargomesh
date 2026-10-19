@@ -1,3 +1,4 @@
+import {readRegularDrivers} from './regular-driver-client';
 import { CarrierPortalAccessListV2Schema } from '@/shared/schemas/v2/carrier-portal';
 import { FleetInputsV2 } from '@/shared/schemas/v2/fleet';
 import { parseCatalogRecordV2 } from '@/shared/schemas/v2/catalog';
@@ -12,10 +13,20 @@ export async function readFleetAccess(signal: AbortSignal, fetcher: typeof fetch
 }
 export async function readConnectedFleet(carrierId: string, signal: AbortSignal, fetcher: typeof fetch = fetch) {
   const keys = ['assets', 'services', 'depots', 'drivers', 'partners'] as const;
-  const rows = await Promise.all(keys.map(key => readFleetResource(carrierId, key, signal, fetcher)));
+  const optional=['vehicle-assignments','driver-assignments','executions','maintenances'] as const;
+  const [rows,details,regular]=await Promise.all([Promise.all(keys.map(key=>readFleetResource(carrierId,key,signal,fetcher))),
+    Promise.allSettled(optional.map(key=>readFleetResource(carrierId,key,signal,fetcher))),
+    Promise.allSettled([readRegularDrivers(carrierId,signal,fetcher)]).then(rows=>rows[0])]);
+  const denied=details.find(r=>r.status==='rejected'&&r.reason instanceof PortalApiError&&[401,403].includes(r.reason.status));
+  if(denied?.status==='rejected')throw denied.reason;
+  if(regular.status==='rejected'&&regular.reason instanceof PortalApiError&&[401,403].includes(regular.reason.status))throw regular.reason;
+  const operational=Object.fromEntries(optional.map((key,index)=>[key,details[index].status==='fulfilled'?details[index].value.records:[]])) as Record<typeof optional[number],PortalRecord[]>;
+  const visualGaps:string[]=optional.filter((key,index)=>details[index].status==='rejected'||details[index].status==='fulfilled'&&details[index].value.truncated);
+  const regularDriversUnavailable=regular.status==='rejected'||regular.value.truncated;
+  if(regularDriversUnavailable)visualGaps.push('regular-drivers');
   if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
   return { carrierId, assets: rows[0].records, services: rows[1].records, depots: rows[2].records,
-    drivers: rows[3].records, partners: rows[4].records, partial: rows.some(row => row.truncated), readAt: new Date().toISOString() };
+    drivers: rows[3].records, partners: rows[4].records, regularDrivers:regular.status==='fulfilled'?regular.value.records:[],regularDriversUnavailable,operational,visualGaps,partial: rows.some(row => row.truncated), readAt: new Date().toISOString() };
 }
 export function roadAssets(records: PortalRecord[], serviceId: string) {
   return records.filter(record => recordData(record).mode === 'ROAD' && recordData(record).serviceId === serviceId);

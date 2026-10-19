@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="200" viewBox="0 0 240 200" fill="none">
+<defs>
+ <linearGradient id="front" x1="70" y1="35" x2="170" y2="180" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fff4"/><stop offset="1" stop-color="#85dcd6"/></linearGradient>
+ <linearGradient id="side" x1="150" y1="45" x2="210" y2="180" gradientUnits="userSpaceOnUse"><stop stop-color="#85dcd6"/><stop offset="1" stop-color="#3aafba"/></linearGradient>
+ <filter id="blur"><feGaussianBlur stdDeviation="7"/></filter>
+</defs>
+<ellipse cx="137" cy="184" rx="75" ry="9" fill="#3aafba" opacity=".25" filter="url(#blur)"/>
+<path d="M130 27L193 52V108Q189 153 139 186L120 176L78 66Z" fill="url(#side)"/>
+<path d="M112 25L175 50V105Q172 148 122 181Q71 157 64 113V58Z" fill="url(#front)"/>
+<path d="M112 38L161 58V103Q158 137 121 165Q83 144 78 110V67Z" stroke="#e1fffa" stroke-width="3" opacity=".65"/>
+<path d="M97 100L115 120L144 82" stroke="#f1fffc" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M70 62L111 36" stroke="white" stroke-width="3" opacity=".65" stroke-linecap="round"/>
+<path d="M182 63V103Q181 136 150 164" stroke="#6ed2cf" stroke-width="3" opacity=".55" stroke-linecap="round"/>
+</svg>

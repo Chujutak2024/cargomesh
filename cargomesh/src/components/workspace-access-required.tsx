@@ -2,7 +2,7 @@ import { CARRIER_LOGIN_PATH } from "@/shared/schemas/v2/carrier-portal";
 import "./workspace-access-required.css";
 
 /** Signed-out access state. Shares the approved waiting illustration and palette. */
-export function WorkspaceAccessRequired() {
+export function WorkspaceAccessRequired({loginHref=CARRIER_LOGIN_PATH}:{loginHref?:string}={}) {
   return <div id="cm-access-proposal" className="cm-standalone">
     <section className="cm-screen" aria-label="Carrier workspace access">
       <header className="cm-header">
@@ -15,7 +15,7 @@ export function WorkspaceAccessRequired() {
           <p className="cm-eyebrow">BEFORE YOU CONTINUE</p>
           <h1>Oops!<br />Please sign in.</h1>
           <p className="cm-description">Sign in to access your carrier workspace and manage your operations.</p>
-          <a className="cm-login" href={CARRIER_LOGIN_PATH}>Sign in <span aria-hidden="true">→</span></a>
+          <a className="cm-login" href={loginHref}>Sign in <span aria-hidden="true">→</span></a>
         </div>
         <div className="cm-scene-wrap">
           <div className="cm-scene" role="img" aria-label="A waiting truck with packages and soft smoke">

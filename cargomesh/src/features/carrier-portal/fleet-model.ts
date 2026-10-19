@@ -10,11 +10,13 @@ export type FleetZone = { id: string; name: string; cities: string[]; countryCod
 export type FleetJourney = { origin: string; destination: string; facility: string; departureAt: string; arrivalAt: string };
 export type FleetMaintenanceEvent = { id: string; kind: string; startsAt: string; endsAt: string; status: string };
 export type FleetVehicle = {
+  visual?: import("@/features/logistics-3d/asset-visual").AssetVisualReference | null;
   carrierId?:string;siteId?:string;modelYear?:number;photoDataUrl?:string|null;volumeM3?:number;insuranceUntil?:string;inspectionUntil?:string;
   id: string; code: string; source: "EXAMPLE" | "SERVICE"; status: FleetStatus;
   variant: TruckVisualType; model: string | null; plate: string | null; body: string;
   odometerKm: number | null; capacityKg: number; updatedAt: string;
-  driver: string | null; depot: string | null; location: string | null;
+  regularDriverId?:string|null;regularDriverProfile?:FleetDriver|null;
+  driverId?:string|null; driver: string | null; depot: string | null; location: string | null;
   driverProfile?: FleetDriver | null; driverProfileRole?: "assigned" | "regular" | null;
   coordinates: { lat: number; lng: number } | null;
   // Circulation cannot be inferred from IN_SERVICE, assignments or a last-known position.
@@ -100,7 +102,7 @@ export function serviceFleet(records: FleetRecords, now: number): FleetVehicle[]
     return [{ id: record.id, code: asset.code, source: "SERVICE" as const, status: asset.operatingStatus,
       variant: visualType(road.bodyType + " " + asset.equipmentType), model: [road.brand, road.model, road.variant].filter(Boolean).join(" ") || null,
       plate: road.plate, body: road.bodyType, odometerKm: road.odometerKm, capacityKg: asset.usefulCapacityKg,
-      updatedAt: record.updatedAt, driver: driver ? String(recordData(driver).fullName) : null,
+      updatedAt: record.updatedAt, driverId:driver?.id??null, driver: driver ? String(recordData(driver).fullName) : null,
       createdAt: "createdAt" in record && typeof record.createdAt === "string" ? record.createdAt : null,
       registeredAt: road.registeredAt, description: null, statusReason: road.conditionReason,
       statusChangedAt: null, tankLiters: null, consumptionLitersPer100Km: null, workingZones: null, journey: null, maintenanceHistory: null,

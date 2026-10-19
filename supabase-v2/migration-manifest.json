@@ -479,6 +479,28 @@
       "dependencies": [
         "20261015055541"
       ]
+    },
+    {
+      "issue": "HAC-50",
+      "path": "supabase-v2/supabase/migrations/20261016165018_hac50_border_operations.sql",
+      "version": "20261016165018",
+      "sha256": "02262b8c192a18e8fc8455f93ae53fbad1c1cd153f43116485f4e1c73023cbe5",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261015055541"
+      ]
+    },
+    {
+      "issue": "HAC-50",
+      "path": "supabase-v2/supabase/migrations/20261019030218_hac50_regular_vehicle_drivers.sql",
+      "version": "20261019030218",
+      "sha256": "ebf0d0f52649adfaa8566f640662363be54bbccd5ca3c2fab1d6d1c4bd2912c2",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261010225539"
+      ]
     }
   ]
 }

@@ -22,7 +22,7 @@ from strands.bidi.types.media import AudioDelta
 from websockets.asyncio.server import ServerConnection, serve
 from websockets.exceptions import ConnectionClosed
 
-from strands_gemini_live import SYSTEM_PROMPT
+from cargomesh_voice_prompt import voice_prompt
 
 ISSUER = "cargomesh-web"
 AUDIENCE = "cargomesh-voice-gateway"
@@ -31,7 +31,7 @@ REGION = os.environ.get("AWS_REGION", "us-east-1")
 VOICE = "tiffany"
 MAX_AUDIO_FRAME = 8192
 MAX_SESSIONS = 2
-SESSION_SECONDS = 90
+SESSION_SECONDS = 240
 _used_grants: dict[str, int] = {}
 _slots = asyncio.Semaphore(MAX_SESSIONS)
 
@@ -62,10 +62,14 @@ def verify_grant(token: str, secret: str, now: int | None = None) -> dict[str, A
 
 
 class BrowserInput:
-    def __init__(self, socket: ServerConnection):
+    def __init__(self, socket: ServerConnection, opening: str | None = None):
         self.socket = socket
+        self.opening = opening
 
-    async def __call__(self) -> AudioDelta:
+    async def __call__(self) -> str | AudioDelta:
+        if self.opening is not None:
+            opening, self.opening = self.opening, None
+            return opening
         packet = await self.socket.recv()
         if not isinstance(packet, bytes) or not 0 < len(packet) <= MAX_AUDIO_FRAME or len(packet) % 2:
             raise ValueError("Expected a bounded 16-bit PCM audio frame")
@@ -114,7 +118,7 @@ async def handle(socket: ServerConnection, secret: str, profile: str | None) -> 
         envelope = json.loads(first)
         if not isinstance(envelope, dict) or envelope.get("type") != "auth" or not isinstance(envelope.get("token"), str):
             raise InvalidTokenError("Missing voice grant")
-        verify_grant(envelope["token"], secret)
+        claims = verify_grant(envelope["token"], secret)
     except (asyncio.TimeoutError, ValueError, InvalidTokenError, ConnectionClosed):
         await socket.close(code=1008, reason="Invalid voice session")
         return
@@ -126,14 +130,18 @@ async def handle(socket: ServerConnection, secret: str, profile: str | None) -> 
         session = boto3.Session(profile_name=profile, region_name=REGION) if profile else boto3.Session(region_name=REGION)
         agent = BidiAgent(
             model=BedrockNovaSonicModel(model_id=MODEL_ID, boto_session=session, voice=VOICE),
-            system_prompt=SYSTEM_PROMPT,
+            system_prompt=voice_prompt(claims),
         )
         try:
             await asyncio.wait_for(
-                agent.run(inputs=[BrowserInput(socket)], outputs=[BrowserOutput(socket)]),
+                agent.run(inputs=[BrowserInput(socket, "Brief me on this opportunity and ask if I want to prepare an offer." if claims.get("role") == "carrier" else "Tell me what offers arrived, which ranked option you recommend, and why." if claims.get("role") == "shipper_offers" else None)], outputs=[BrowserOutput(socket)]),
                 timeout=SESSION_SECONDS,
             )
-        except (asyncio.TimeoutError, ConnectionClosed):
+        except asyncio.TimeoutError:
+            agent.cancel()
+            if socket.state.name == "OPEN":
+                await socket.send(json.dumps({"type": "session_limit"}))
+        except ConnectionClosed:
             agent.cancel()
         except Exception:
             # Do not log audio, identity, token, prompt or provider payload.

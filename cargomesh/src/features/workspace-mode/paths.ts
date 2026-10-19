@@ -1,7 +1,9 @@
+import {clientHref} from '@/shared/navigation/workspaces';
 export const SHIPPER_DEMO_PREFIX = "/demo/shipper";
 const shipperRoots = ["/dashboard", "/requests", "/freight-request", "/facilities", "/bookings", "/tracking", "/history", "/organization", "/support", "/help"];
 export function isShipperDemoPath(pathname:string) { return pathname === SHIPPER_DEMO_PREFIX || pathname.startsWith(SHIPPER_DEMO_PREFIX + "/"); }
 export function workspaceHref(href:string,pathname:string) {
+ if(pathname==='/clients'||pathname.startsWith('/clients/'))return clientHref(href);
  if(!isShipperDemoPath(pathname)||!shipperRoots.some(root=>href===root||href.startsWith(root+"/")||href.startsWith(root+"?")||href.startsWith(root+"#")))return href;
  return SHIPPER_DEMO_PREFIX+href;
 }

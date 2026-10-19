@@ -72,3 +72,13 @@ Probar: pieza indivisible que no cabe, dos vehículos disponibles en la misma ve
 - [Reglamento Nacional de Vehículos de Perú](https://www.sutran.gob.pe/wp-content/uploads/2017/05/DS-058-2003-MTC-RNV.pdf): diferencia tara, capacidad de carga, peso bruto y ejes; verificar vigencia y corredor antes de usar cifras legales.
 - [Provías Nacional: autorizaciones especiales](https://www.gob.pe/institucion/pvn/pages/26690-registrarse-en-el-sistema-de-autorizaciones-especiales-de-provias-nacional): cargas especiales pueden requerir autorización.
 - [SUNAT: tránsito aduanero internacional CAN–ALADI](https://www.sunat.gob.pe/legislacion/procedim/despacho/transitoInt/procGeneral/despa-pg.27.htm): transportistas, unidades, pasos y documentación se verifican por régimen.
+
+## Conductor habitual y conductor del viaje — HAC-50, 18-oct-2026
+
+La preferencia administrativa de conductor habitual se conserva separada de `DriverAssignment`. Cada activo ROAD tiene `0..1` conductor habitual; un conductor puede ser habitual de varios activos, sin reservar su agenda. La relación exige Carrier y servicio coincidentes. No demuestra licencia compatible, disponibilidad, presencia o ejecución.
+
+ADMIN registra, sustituye o retira el vínculo con versión esperada e idempotencia SHA-256 de JSON canónico; las lecturas exigen una identidad Carrier autorizada. Los cambios quedan auditados. El conductor PRIMARY de una ejecución vigente confirmada tiene prioridad en la tarjeta; el habitual se conserva separado y no cambia por un relevo de viaje.
+
+El score visual Condition requiere una evaluación mecánica propia. No se obtiene del estado AVAILABLE, de reservas ni de un porcentaje arbitrario; sin evaluación, la interfaz indica Not assessed. Esta entrega no añade una fuente de inspecciones mecánicas.
+
+Implementación y límites: [conductor habitual y tarjetas](../delivery/HAC50_REGULAR_DRIVERS_2026-10-18.md).

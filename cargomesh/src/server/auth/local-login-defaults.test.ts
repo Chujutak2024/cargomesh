@@ -31,3 +31,19 @@ test("missing private configuration does not fabricate demo credentials", async 
   const response = await createLocalLoginDefaultsHandler({ enabled: true, production: false })(request());
   assert.equal(response.status, 503); assert.deepEqual(await response.json(), { ok: false });
 });
+
+test('Client login never receives the configured Carrier credentials',async()=>{
+ const clientRequest=request({Referer:'http://127.0.0.1:8080/login?returnTo=%2Fclients'});
+ const missing=await createLocalLoginDefaultsHandler(config)(clientRequest);assert.equal(missing.status,503);assert.doesNotMatch(await missing.text(),/test-fixture-password/);
+ const ready=await createLocalLoginDefaultsHandler({...config,clientEmail:'client@example.invalid',clientPassword:'client-only'})(clientRequest);
+ assert.deepEqual(await ready.json(),{email:'client@example.invalid',password:'client-only'});
+});
+
+test('the isolated fleet profile allows login defaults on 8083 only after explicit server opt-in',async()=>{
+ const r=request({Host:'127.0.0.1:8083',Referer:'http://127.0.0.1:8083/login?returnTo=%2Fcarriers%2Ffleet'},'http://localhost:8083/api/local/login-defaults');
+ assert.equal((await createLocalLoginDefaultsHandler(config)(r)).status,404);
+ assert.equal((await createLocalLoginDefaultsHandler({...config,scenario:true})(r)).status,200);
+ assert.equal((await createLocalLoginDefaultsHandler({...config,scenario:true,production:true})(r)).status,404);
+ const cross=request({Host:'127.0.0.1:8083',Referer:'http://127.0.0.1:8080/login'},'http://localhost:8083/api/local/login-defaults');
+ assert.equal((await createLocalLoginDefaultsHandler({...config,scenario:true})(cross)).status,403);
+});

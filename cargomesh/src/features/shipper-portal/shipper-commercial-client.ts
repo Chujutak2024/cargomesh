@@ -10,7 +10,7 @@ export async function refreshRequestCommercial(id:string,organizationId:string,s
  z.string().uuid().parse(id);z.string().uuid().parse(organizationId);
  const requestRow=FreightRequestV2ResponseSchema.parse(await request('/api/v2/freight/requests/'+id,signal,fetcher)).data;
  if(requestRow.id!==id||requestRow.organizationId!==organizationId)throw new ShipperApiError('INVALID_SCOPE','Request scope changed.',403,false);
- const groups=await Promise.all((['offers','ranking','decisions','bookings'] as const).map(async kind=>{
+ const groups=await Promise.all((['opportunities','offers','ranking','decisions','bookings'] as const).map(async kind=>{
   let offset:number|null=0;const rows:RecordV2[]=[],seen=new Set<number>(),ids=new Set<string>();
   for(let n=0;n<10&&offset!==null;n++){
    if(seen.has(offset))throw new ShipperApiError('INVALID_RESPONSE','Repeated page.',502,false);seen.add(offset);

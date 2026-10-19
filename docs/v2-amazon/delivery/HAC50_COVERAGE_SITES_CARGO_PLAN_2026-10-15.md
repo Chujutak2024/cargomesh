@@ -124,3 +124,11 @@ El laboratorio Google actual compara alternativas recibidas; el planificador com
 - Las migraciones nuevas y la aplicación remota se aprueban por su alcance concreto. Las pendientes de sedes/comercial continúan separadas de este plan.
 
 **Este documento no inicia la implementación.** El primer corte propuesto es cerrar y materializar el manifiesto de cobertura y el escenario; el frontend puede preparar sus pantallas en paralelo sobre estos contratos.
+
+## 9. Incremento autorizado — 16-oct: fronteras y plan GPS
+
+El usuario autorizó continuar con revisión fronteriza, después rutas Google reales y después reflejarlo en frontend. La implementación local de revisión/paso se describe en [HAC50_BORDER_OPERATIONS_2026-10-16.md](./HAC50_BORDER_OPERATIONS_2026-10-16.md); su contrato mantiene autorización aduanera UNKNOWN y distingue simulación de reporte Carrier.
+
+GPS queda documentado como integración futura en [HAC50_GPS_AND_POSITION_PROVENANCE_PLAN_2026-10-16.md](./HAC50_GPS_AND_POSITION_PROVENANCE_PLAN_2026-10-16.md). Se separan pérdida de posicionamiento y falta de transmisión, última posición observada y avance estimado. Un avance estimado no acredita llegada, entrega, custodia ni liberación fronteriza. No hay ingestión GPS live en este incremento.
+
+El seed actual 10/16/80/80 describe catálogo y ventanas de recursos; no materializa la distribución de presencia propuesta en §5 ni trayectorias/telemetría. La conexión visual sigue pendiente. Se conserva la congelación expresa de main y no se aplica DDL alojado con autorizaciones anteriores de otro alcance.

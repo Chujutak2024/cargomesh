@@ -31,3 +31,14 @@ test("connected writes preserve the real API destination and request options",as
   assert.equal(calls.length,1);assert.equal(calls[0].input,"/api/v2/freight/requests");assert.strictEqual(calls[0].init,init);
  });
 });
+
+test('explicit local Client preview isolates reads and blocks writes',async()=>{
+ const doc=Object.getOwnPropertyDescriptor(globalThis,'document');
+ Object.defineProperty(globalThis,'document',{configurable:true,value:{querySelector:()=>({})}});
+ try{await withBrowser('/clients/requests',async calls=>{
+  Object.assign(window.location,{hostname:'127.0.0.1',port:'8080'});
+  await workspaceFetch('/api/v2/intake/options');assert.equal(calls[0].input,'/api/demo/v2/intake/options');
+  for(const method of ['POST','PATCH','DELETE'])assert.equal((await workspaceFetch('/api/v2/freight/requests',{method})).status,409);
+  assert.equal(calls.length,1);
+ });}finally{if(doc)Object.defineProperty(globalThis,'document',doc);else Reflect.deleteProperty(globalThis,'document');}
+});

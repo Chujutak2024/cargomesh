@@ -19,3 +19,11 @@ test("only declared fixture reads succeed, without forwarding unknown data",asyn
   const absent=await demoResponse(new Request("http://localhost/api/demo/v2/carriers/secret"));assert.equal(absent.status,404);
  }finally{if(original===undefined)delete process.env.CM_ENABLE_DEMO;else process.env.CM_ENABLE_DEMO=original;}
 });
+
+// The HTTP fixture must expose the raw contract; browser normalization happens once.
+test('intake sample response is accepted by the browser contract parser',async()=>{
+ const {parseIntakeOptionsResponse}=await import('../../features/v2-intake/intake-options');
+ const previous=process.env.CM_ENABLE_DEMO;process.env.CM_ENABLE_DEMO='1';
+ try{const response=await demoResponse(new Request('http://localhost/api/demo/v2/intake/options'));assert.ok(parseIntakeOptionsResponse(await response.json()));}
+ finally{if(previous===undefined)delete process.env.CM_ENABLE_DEMO;else process.env.CM_ENABLE_DEMO=previous;}
+});

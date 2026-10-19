@@ -1,7 +1,7 @@
 export type FleetDriver = {
-  id:string; name:string; enabled:boolean; vehicleCode:string; photo:string;
-  licenseClass:string; licenseExpiresAt:string; experienceYears:number; joinedAt:string;
-  base:string; shift:string; specialties:string[]; completedTrips:number; punctualityPercent:number;
+  id:string; name:string; enabled:boolean|null; vehicleCode:string; photo:string|null;
+  licenseClass:string; licenseExpiresAt:string; experienceYears:number|null; joinedAt:string|null;
+  base:string|null; shift:string|null; specialties:string[]; completedTrips:number|null; punctualityPercent:number|null;
 };
 
 /** Local presentation data. Portraits are licensed stock photos, not the named people. */

@@ -99,19 +99,19 @@ try {
 
   // The real shared dialog owns its coordinator above Summary/Depot as well.
   await page.getByRole('button', { name: 'Open inspection dialog', exact: true }).click();
-  const dialog = page.getByRole('dialog'); await dialog.getByRole('button', { name: 'Ver sede 3D', exact: false }).click();
+  const dialog = page.getByRole('dialog'); await dialog.getByRole('button', { name: /Ver sede 3D|View depot in 3D/ }).click();
   let dialogRoot = await ready(dialog);
   await dialogRoot.getByRole('button', { name: 'Resume visualization', exact: true }).click();
   await page.waitForFunction(() => Number(document.querySelector('dialog canvas')?.dataset.depotTime) >= 700);
   await dialogRoot.getByRole('button', { name: /^Truck C/ }).click(); await pause(dialogRoot);
   const dialogBefore = await state(dialogRoot);
   for (let round = 0; round < 2; round++) {
-    await dialog.getByRole('button', { name: 'Volver al resumen', exact: true }).click();
-    await dialog.getByRole('button', { name: 'Ver sede 3D', exact: false }).click(); dialogRoot = await ready(dialog);
+    await dialog.getByRole('button', { name: /^(Volver al resumen|Back to summary)$/ }).click();
+    await dialog.getByRole('button', { name: /Ver sede 3D|View depot in 3D/ }).click(); dialogRoot = await ready(dialog);
     await assertRetained(dialogRoot, dialogBefore, `Inspection Summary/Depot round ${round + 1} retains clock, selection and pause`);
   }
   await page.screenshot({ path: path.join(out, 'inspection-retained.png'), fullPage: true });
-  await dialog.getByRole('button', { name: 'Cerrar resumen del camión', exact: true }).click();
+  await dialog.getByRole('button', { name: /^(Cerrar resumen del camión|Close truck summary)$/ }).click();
   root = await ready(page); await assertRetained(root, resumed, 'Closing a separate inspection preserves the studio state');
   if (record) {
     await root.getByRole('button', { name: 'Site overview', exact: true }).click();
