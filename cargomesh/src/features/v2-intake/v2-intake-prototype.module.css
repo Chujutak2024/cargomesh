@@ -140,10 +140,20 @@
 .errorSummary:focus { outline: 3px solid rgb(155 51 37 / 18%); outline-offset: 2px; }
 .errorSummary strong { font-size: 0.85rem; }
 .errorSummary span { font-size: 0.75rem; line-height: 1.45; }
-.footer { position: sticky; z-index: 4; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; border-top: 1px solid var(--cm-color-line); padding: 0.85rem 1.15rem; background: rgb(255 255 255 / 94%); box-shadow: 0 -0.5rem 1.4rem rgb(25 59 85 / 4%); backdrop-filter: blur(12px); }
+.footer { position: sticky; z-index: 4; bottom: var(--client-assistant-clearance, 0rem); display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; border-top: 1px solid var(--cm-color-line); padding: 0.85rem 1.15rem; background: rgb(255 255 255 / 94%); box-shadow: 0 -0.5rem 1.4rem rgb(25 59 85 / 4%); backdrop-filter: blur(12px); }
 .footerRight { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.55rem; }
 
 .summary { position: sticky; top: 5.8rem; }
+@container (max-width: 1050px) {
+  .workspace { grid-template-columns: minmax(0, 1fr); }
+  .summary { position: static; }
+  .hero { align-items: stretch; flex-direction: column; }
+  .heroActions { justify-content: flex-start; }
+  .facilityGrid, .contactGrid { grid-template-columns: minmax(0, 1fr); }
+  .unitGrid, .equipmentGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .windowGrid { grid-template-columns: minmax(0, 1fr); }
+  .windowArrow { transform: rotate(90deg); justify-self: center; }
+}
 .summary .cardHeader { grid-template-columns: auto minmax(0, 1fr); }
 .summaryRoute { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto minmax(0, 1fr); align-items: center; gap: 0.45rem; border-bottom: 1px solid var(--cm-color-line); padding: 0.85rem 1rem; background: linear-gradient(120deg, #f4fbfc, #f5f7ff); }
 .routeDot { width: 0.65rem; height: 0.65rem; border: 2px solid var(--cm-color-logistics); border-radius: 50%; background: white; box-shadow: 0 0 0 3px rgb(0 116 124 / 8%); }

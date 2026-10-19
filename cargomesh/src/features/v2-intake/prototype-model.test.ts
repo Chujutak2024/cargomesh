@@ -255,7 +255,7 @@ test("requirement toggling is deterministic and duplicate-free", () => {
 });
 
 test("the intake keeps provisional details in React memory and stores only the request ID for recovery", () => {
-  const source = fs.readFileSync(path.join(process.cwd(), "src/features/v2-intake/v2-intake-prototype.tsx"), "utf8");
+  const source = fs.readFileSync(path.join(process.cwd(), "src/features/v2-intake/intake-controller.ts"), "utf8");
   assert.doesNotMatch(source, /localStorage|autosave\s*\(/i);
   assert.match(source, /sessionStorage\.setItem\(CHAT_REQUEST_SESSION_KEY, roundTrip\.data\.id\)/);
   assert.doesNotMatch(source, /sessionStorage\.setItem\([^,]+,\s*(?:draft|JSON\.stringify|history)/i);

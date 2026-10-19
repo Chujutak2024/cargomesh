@@ -192,3 +192,5 @@
   .resolverSearch { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } .primary, .quickCard { transition: none; } .primary:hover, .quickCard:hover { transform: none; } }
+@container (max-width: 950px) { .layout, .detailGrid { grid-template-columns: minmax(0, 1fr); } }
+@container (max-width: 650px) { .hero { align-items: stretch; flex-direction: column; } .row { grid-template-columns: 1fr; gap: .35rem; } .metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } }

@@ -31,6 +31,8 @@ import { ContentMotion } from "@/features/product-motion/content-motion";
 import styles from "./app-shell.module.css";
 import navStyles from "@/features/carrier-navigation/carrier-navigation.module.css";
 import { lockDocumentScroll } from "@/shared/browser/scroll-lock";
+import { IntakeSessionProvider } from "@/features/v2-intake/intake-session";
+import { ClientAssistant } from "@/features/v2-intake/client-assistant";
 
 type ShellIdentity = { organizationName: string; displayName: string; role: string } | null;
 
@@ -40,6 +42,7 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobile, setMobile] = useState(false);
+  const [assistantDocked, setAssistantDocked] = useState(false);
   const sidebarId = useId();
   const sidebarTitleId = useId();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -145,7 +148,7 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
   }
 
   return (
-    <div className={`${navStyles.frame} ${styles.shell}`} data-collapsed={collapsed} data-open={open} data-cm-client-preview={preview?"true":undefined}>
+    <IntakeSessionProvider><div className={`${navStyles.frame} ${styles.shell}`} data-collapsed={collapsed} data-open={open} data-assistant-docked={assistantDocked} data-cm-client-preview={preview?"true":undefined}>
       <a className={navStyles.skip} href="#main-content">{t("Saltar al contenido", "Skip to content")}</a>
 
       <aside ref={sidebarRef} id={sidebarId} className={navStyles.sidebar} role={mobile && open ? "dialog" : undefined} aria-modal={mobile && open ? true : undefined} aria-labelledby={sidebarTitleId} inert={mobile && !open}>
@@ -202,10 +205,10 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
               <input name="q" type="search" placeholder={t("Buscar operación", "Search operation")} />
               <kbd>↵</kbd>
             </form>
-            <Link className={styles.assistantButton} href="/freight-request/new?assistant=open" aria-label={t("Abrir asistente CargoMesh", "Open CargoMesh assistant")}>
+            <button type="button" className={styles.assistantButton} onClick={() => window.dispatchEvent(new CustomEvent("cargomesh:open-assistant"))} aria-label={t("Abrir asistente CargoMesh", "Open CargoMesh assistant")}>
               <Bot size={17} aria-hidden="true" />
               <span>{t("Asistente", "Assistant")}</span>
-            </Link>
+            </button>
             <LanguageSwitcher compact />
             <div className={styles.avatar} aria-hidden="true">{initials}</div>
             <div className={styles.userCopy}>
@@ -228,6 +231,7 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
           <ContentMotion identity={pathname} className={styles.motionRegion}>{children}</ContentMotion>
         </main>
       </div>
-    </div>
+      <ClientAssistant onDockedChange={setAssistantDocked} />
+    </div></IntakeSessionProvider>
   );
 }
