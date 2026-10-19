@@ -2,6 +2,7 @@
 
 import {workspaceFetch} from "@/features/workspace-mode/workspace-fetch";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { Maximize2, Minimize2 } from "lucide-react";
 import type { FreightRequestV2Data, IntakeOptionsData, RoadServiceabilityEvaluationV2Data } from "./contracts";
 import type { PrototypeStep, V2IntakePrototypeDraft } from "./prototype-model";
 import { applyChatFieldsToDraft, validatePrototypeReview, validatePrototypeStep } from "./prototype-model";
@@ -95,6 +96,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const { locale, t } = useLocale();
   const launcherLabel = t("Preguntar a CargoMesh", "Ask CargoMesh");
   const [open, setOpen] = useState(presentation === "inline");
+  const [expanded, setExpanded] = useState(false);
+  const [newMessages, setNewMessages] = useState(false);
   const [text, setText] = useState("");
   const [history, setHistory] = useState<Message[]>([{ speaker: "assistant", text: GREETING_EN }]);
   const [announcement, setAnnouncement] = useState("");
@@ -121,7 +124,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const confirmationRef = useRef<{ review: DraftReview; requestId: string | null; version: number | null } | null>(null);
   const [choices, setChoices] = useState<Choice[]>([]);
   const [viewport, setViewport] = useState<{ height: number; keyboardInset: number } | null>(null);
-  const endRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const followLatestRef = useRef(true);
   const reviewRef = useRef<HTMLElement>(null);
   const voiceHistoryRef = useRef<Message[]>(history);
   const voiceDraftRef = useRef(draft);
@@ -161,8 +165,26 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const ask = (field: GuidedConversationField) => questionForField(field, voiceLanguage);
 
 
-  useEffect(() => { if (!voiceReviewOpen) endRef.current?.scrollIntoView({ block: "nearest" }); }, [history, choices, voiceReviewOpen]);
-  useEffect(() => { if (voiceReviewOpen) reviewRef.current?.scrollIntoView({ block: "start" }); }, [voiceReviewOpen]);
+  const scrollToLatest = () => {
+    const area = scrollAreaRef.current;
+    if (!area) return;
+    followLatestRef.current = true;
+    setNewMessages(false);
+    area.scrollTop = area.scrollHeight;
+  };
+  useEffect(() => {
+    const area = scrollAreaRef.current;
+    if (!area || voiceReviewOpen) return;
+    if (followLatestRef.current) area.scrollTop = area.scrollHeight;
+    else setNewMessages(true);
+  }, [history, choices, voiceReviewOpen]);
+  useEffect(() => {
+    const area = scrollAreaRef.current;
+    const review = reviewRef.current;
+    if (!voiceReviewOpen || !area || !review) return;
+    area.scrollTop += review.getBoundingClientRect().top - area.getBoundingClientRect().top;
+    followLatestRef.current = false;
+  }, [voiceReviewOpen]);
   useEffect(() => { voiceHistoryRef.current = history; }, [history]);
   useEffect(() => { voiceDraftRef.current = draft; }, [draft]);
   useEffect(() => { if (!busy) voiceSaveInFlightRef.current = false; }, [busy, request?.draftVersion, error]);
@@ -367,6 +389,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       return;
     }
     const value = gate.value;
+    followLatestRef.current = true;
+    setNewMessages(false);
     setSendNotice("");
     setFailedMessage("");
     if (voice.state === "listening" || voice.state === "requesting_permission") voice.stop();
@@ -511,10 +535,11 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     {presentation === "floating" ? <button ref={launcherRef} type="button" className={styles.launcher} onClick={() => open ? closePanel() : setOpen(true)} aria-label={launcherLabel + " — " + (open ? t("cerrar asistente", "close assistant") : t("abrir asistente", "open assistant"))} aria-expanded={open} aria-controls="v2-chat-panel">
       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M4 5.5h16v11H9l-5 3v-14Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M8 10h8M8 13h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>{launcherLabel}</span>
     </button> : null}
-    {open && <section id="v2-chat-panel" className={styles.panel} aria-label="ROAD freight conversation">
-      <header className={styles.header}><span className={styles.headerIcon} aria-hidden="true">CM</span><div className={styles.headerCopy}><strong>{t("Planifica con CargoMesh", "Plan with CargoMesh")}</strong></div>{presentation === "floating" ? <button type="button" className={styles.close} aria-label="Close CargoMesh assistant" onClick={closePanel}>×</button> : request ? <span className={styles.headerState}>{request.referenceCode} · v{request.draftVersion}</span> : null}</header>
+    {open && <section id="v2-chat-panel" className={styles.panel} data-expanded={expanded} aria-label="ROAD freight conversation">
+      <header className={styles.header}><span className={styles.headerIcon} aria-hidden="true">CM</span><div className={styles.headerCopy}><strong>{t("Planifica con CargoMesh", "Plan with CargoMesh")}</strong></div>{presentation === "floating" ? <button type="button" className={styles.close} aria-label="Close CargoMesh assistant" onClick={closePanel}>×</button> : <>{request && <span className={styles.headerState}>{request.referenceCode} · v{request.draftVersion}</span>}<button type="button" className={styles.expand} aria-label={expanded ? t("Reducir conversación", "Reduce conversation") : t("Ampliar conversación", "Expand conversation")} aria-pressed={expanded} onClick={() => setExpanded((current) => !current)}>{expanded ? <Minimize2 size={16} aria-hidden="true" /> : <Maximize2 size={16} aria-hidden="true" />}<span>{expanded ? t("Reducir", "Reduce") : t("Ampliar", "Expand")}</span></button></>}</header>
       <div className={styles.conversationContent}>
-      <div className={styles.scrollArea}>
+      <div className={styles.messagePane}>
+      <div ref={scrollAreaRef} className={styles.scrollArea} onScroll={(event) => { const area = event.currentTarget; const following = area.scrollHeight - area.scrollTop - area.clientHeight < 80; followLatestRef.current = following; if (following) setNewMessages(false); }}>
         <div className={styles.history} role="log" aria-live="off" aria-label="Conversation messages">
           {history.map((message, index) => <div key={index} className={message.speaker === "user" ? styles.userRow : styles.assistantRow}><p className={message.speaker === "user" ? styles.user : styles.assistant}><span className={styles.speaker}>{message.speaker === "user" ? "You" : "CargoMesh"}</span>{message.text}</p></div>)}
         </div>
@@ -554,7 +579,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         {workflowBusy && <p className={styles.loading} role="status">{t("Consultando datos actuales…", "Reading current records…")}</p>}
         {busy && <p className={styles.loading} role="status">{t("Guardando y consultando la solicitud…", "Saving and reading your request…")}</p>}
         {failedMessage && <button type="button" className={styles.retry} onClick={() => { setText(failedMessage); setFailedMessage(""); inputRef.current?.focus(); }}>{t("Reintentar mensaje", "Retry message")}</button>}
-        <div ref={endRef} />
+      </div>
+      {newMessages && <button type="button" className={styles.latest} onClick={scrollToLatest}>{t("Ver mensajes recientes", "View latest messages")}</button>}
       </div>
       <ChatStructuredSummary draft={draft} options={options} request={request} dirty={draftDirty} onEdit={onEdit} t={t} />
       </div>
