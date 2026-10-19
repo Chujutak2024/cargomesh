@@ -38,6 +38,7 @@
     "supabase/tests/31_v2_hac40_ltl_predeparture.test.sql",
     "supabase/tests/32_v2_hac40_uml_cardinalities.test.sql",
     "supabase/tests/33_v2_hac41_identity_channels.test.sql",
-    "supabase/tests/34_v2_hac45_carrier_portal.test.sql"
+    "supabase/tests/34_v2_hac45_carrier_portal.test.sql",
+    "supabase/tests/38_v2_hac50_request_projection.test.sql"
   ]
 }

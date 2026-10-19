@@ -27,6 +27,9 @@ export class PreparationService{
   const {opportunity:o,supersedes:f}=await this.references(actor,input.value);
   if(o.carrierId!==actor.carrierId||o.id!==input.value.opportunityId||input.value.assignmentIds.some(id=>!o.data.assignmentIds.includes(id))
     ||input.value.supersedesOfferId!==null&&(!f||f.id!==input.value.supersedesOfferId||f.carrierId!==o.carrierId||f.requestId!==o.requestId||f.organizationId!==o.organizationId||f.data.opportunityId!==o.id||f.data.planCandidateId!==o.data.planId))throw new V2DraftError('INVALID_PREPARATION_REFERENCES','Preparation references are outside the opportunity.',400);
+  if(input.value.requestVersion!=null&&o.data.requestBrief&&typeof o.data.requestBrief==='object'
+    &&'requestVersion' in o.data.requestBrief&&o.data.requestBrief.requestVersion!==input.value.requestVersion)
+    throw new V2DraftError('STALE_REQUEST','Preparation belongs to another request revision.',409);
   // State/deadline are checked only when issuing. An incomplete preparation never creates an offer.
   const result=await this.repository.save(actor,{key:idempotencyKey,payloadHash:preparationHash(input),...input}),record=this.record(actor,result.record);
   if(record.requestId!==o.requestId||record.organizationId!==o.organizationId||record.value.opportunityId!==o.id||record.value.supersedesOfferId!==input.value.supersedesOfferId)throw new V2DraftError('INVALID_PREPARATION_RESPONSE','Preparation scope mismatch.',502);

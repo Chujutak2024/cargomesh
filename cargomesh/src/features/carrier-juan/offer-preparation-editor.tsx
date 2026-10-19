@@ -5,11 +5,13 @@ import type {Opportunity,Offer} from '@/features/carrier-portal/commercial-model
 import {DataValue} from '@/features/carrier-portal/contract-form';
 import {portalErrorCopy,mutationReceipt} from '@/features/carrier-portal/api';
 import type {PreparationFields,PreparationEvidence,OfferPreparationRecord,OfferPreparationValue} from '@/shared/schemas/v2/offer-preparation';
-import {blankEvidence,buildOffer,quotedSummary} from './offers-model';
+import {blankEvidence,buildOffer,quotedSummary,canPrepareOffer} from './offers-model';
+import {opportunityRequestBrief} from './opportunity-request-brief';
+import {opportunityReference} from './opportunity-model';
 import {issueCarrierOffer,savePreparation} from './offers-client';
 import s from './operations.module.css';
 import p from './portal.module.css';
-type Review={body:ReturnType<typeof buildOffer>;opportunityVersion:number};
+type Review={body:ReturnType<typeof buildOffer>;opportunityVersion:number;requestVersion:number|null};
 export function PreparationEvidenceEditor({value,onChange,label}:{value:PreparationEvidence;onChange:(e:PreparationEvidence)=>void;label:string}){
  const set=(key:keyof PreparationEvidence,v:string)=>onChange({...value,[key]:v});
  return <fieldset><legend>{label}</legend><div className={s.fields}>{(['reference','provider','observedAt','validUntil'] as const).map(key=><label key={key}>{key==='observedAt'?'Observed at (explicit offset)':key==='validUntil'?'Evidence valid until (optional, explicit offset)':key==='reference'?'Evidence reference':'Evidence provider'}<input value={value[key]} maxLength={key==='reference'?500:key==='provider'?150:100} placeholder={key==='observedAt'||key==='validUntil'?'YYYY-MM-DDTHH:mm:ssZ or ±HH:mm':undefined} onChange={e=>set(key,e.target.value)}/></label>)}<label>Evidence provenance<select value={value.provenanceStatus} onChange={e=>set('provenanceStatus',e.target.value)}>{['UNKNOWN','SIMULATED','ESTIMATED','VERIFIED'].map(v=><option key={v}>{v}</option>)}</select></label></div></fieldset>;
@@ -22,7 +24,8 @@ export function OfferPreparationEditor({carrier,opportunity,supersedes,initial,i
  const receipt=useRef<ReturnType<typeof mutationReceipt>|null>(null),request=useRef<AbortController|null>(null),callback=useRef(onBusyChange);callback.current=onBusyChange;
  useEffect(()=>()=>{request.current?.abort();callback.current(false);},[]);
  const change=(key:keyof PreparationFields,value:unknown)=>{setFields(f=>({...f,[key]:value}));setReview(null);setError('');setMessage('');};
- const value:OfferPreparationValue={schemaVersion:'2.0',opportunityId:opportunity.id,assignmentIds:assignments,supersedesOfferId:supersedes?.id??null,fields};
+ const brief=opportunityRequestBrief(opportunity);
+ const value:OfferPreparationValue={schemaVersion:'2.0',opportunityId:opportunity.id,requestVersion:brief?.requestVersion??null,assignmentIds:assignments,supersedesOfferId:supersedes?.id??null,fields};
  const keep=useRef(onLocal);keep.current=onLocal;
  useEffect(()=>{keep.current(value);},[fields,assignments]);
  const total=quotedSummary(fields);
@@ -32,7 +35,8 @@ export function OfferPreparationEditor({carrier,opportunity,supersedes,initial,i
   catch(failure){if(!request.current.signal.aborted)setError(portalErrorCopy(failure,false)+' Preparation is still available in this editor.');}
   finally{if(!request.current.signal.aborted){setBusy(false);callback.current(false);}}
  };
- const emit=async()=>{if(!review||busy||!allowed||review.opportunityVersion!==opportunity.version)return;
+ const emit=async()=>{if(!review||busy||!allowed||review.opportunityVersion!==opportunity.version
+  ||review.requestVersion!==(brief?.requestVersion??null)||!canPrepareOffer(opportunity,carrier.role,Date.now()))return;
   const path='/api/v2/carriers/'+carrier.carrierId+'/opportunities/'+opportunity.id+'/offers';receipt.current=mutationReceipt(receipt.current,path,review.body,()=>crypto.randomUUID());request.current=new AbortController();setBusy(true);callback.current(true);setError('');
   try{const row=await issueCarrierOffer(carrier,opportunity,review.body,receipt.current.key,request.current.signal);if(!request.current.signal.aborted)onSaved(row);}
   catch(failure){if(!request.current.signal.aborted)setError(portalErrorCopy(failure,false)+' Your preparation is retained. Refresh the records before changing the action; an identical retry keeps the same emission key.');}
@@ -40,7 +44,9 @@ export function OfferPreparationEditor({carrier,opportunity,supersedes,initial,i
  };
  const invalid=(failure:unknown)=>failure instanceof Error&&'issues' in failure?'Review the required values, USD breakdown and explicit date offsets before issuance.':failure instanceof Error?failure.message:'Invalid offer.';
  return <section className={`${s.root} ${s.form}`} aria-label="Commercial preparation">
- <div className={s.header}><div><h3>{supersedes?'Prepare replacement offer':'Prepare Carrier offer'}</h3><p>Preparation is held in this workspace memory. It is not an issued offer, resource reservation or booking.</p></div><button disabled={busy} onClick={onClose}>Close preparation</button></div>
+ <div className={s.header}><div><h3>{supersedes?'Prepare replacement offer':'Prepare Carrier offer'}</h3><p>{cloudReady?'Save the preparation to resume it after reloading.':'Preparation stays in this workspace until persistent saving is available.'} Issuing an offer requires a separate confirmation and does not reserve equipment.</p></div><button disabled={busy} onClick={onClose}>Close preparation</button></div>
+ <p><strong>{opportunityReference(opportunity)}</strong> · Request revision {brief?.requestVersion??'Unavailable'} · Opportunity revision {opportunity.version}</p>
+ {brief?.planEligibility==='unknown'?<p className={s.hint}>This plan still requires review. Issuing a quote does not confirm coverage, vehicle or driver availability.</p>:null}
  {message?<p role="status" className={s.success}>{message}</p>:null}{error?<p role="alert" className={s.error}>{error}</p>:null}
  <p className={s.hint}>Dates must include Z or a UTC offset. Example format: YYYY-MM-DDTHH:mm:ss-05:00. Proposed dates, commercial validity and the customer's requested windows remain separate.</p>
  {review?<><h3>Review before issuing {supersedes?'a replacement':'an offer'}</h3><p>This confirmation sends a commercial offer with state RECEIVED. {supersedes?'The server replaces the previous offer atomically in one command.':''}</p><DataValue value={review.body} es={false}/><div className={s.row}><button disabled={busy} onClick={()=>setReview(null)}>Back to preparation</button><button className={s.primary} disabled={!allowed||busy||review.opportunityVersion!==opportunity.version} onClick={()=>void emit()}>{busy?'Sending…':supersedes?'Confirm and issue replacement':'Confirm and issue offer'}</button></div></>:<>
@@ -52,7 +58,7 @@ export function OfferPreparationEditor({carrier,opportunity,supersedes,initial,i
  <p role="status">{total?'Quoted net: USD '+(total.quoted/100).toFixed(2)+' · Declared total: '+(total.total===null?'Unknown':'USD '+(total.total/100).toFixed(2)):'Review monetary input.'}</p></fieldset>
  <fieldset disabled={busy}><legend>Calculation and operational evidence</legend><PreparationEvidenceEditor label="Manual Carrier source" value={fields.source} onChange={source=>change('source',source)}/>{fields.evidence.map((e,i)=><div key={i}><PreparationEvidenceEditor label={'Evidence '+(i+1)} value={e} onChange={ev=>change('evidence',fields.evidence.map((v,n)=>n===i?ev:v))}/><button onClick={()=>change('evidence',fields.evidence.filter((_,n)=>n!==i))}>Remove evidence</button></div>)}<button disabled={fields.evidence.length>=100} onClick={()=>change('evidence',[...fields.evidence,blankEvidence(carrier.carrierName)])}>Add evidence</button></fieldset>
  <fieldset disabled={busy}><legend>Commercial terms</legend>{fields.commercialTerms.map((term,i)=><div className={s.fields} key={i}><label>Term code<input value={term.code} maxLength={2000} onChange={e=>change('commercialTerms',fields.commercialTerms.map((v,n)=>n===i?{...v,code:e.target.value}:v))}/></label><label>Term description<textarea value={term.description} maxLength={2000} onChange={e=>change('commercialTerms',fields.commercialTerms.map((v,n)=>n===i?{...v,description:e.target.value}:v))}/></label><button onClick={()=>change('commercialTerms',fields.commercialTerms.filter((_,n)=>n!==i))}>Remove term</button></div>)}<button disabled={fields.commercialTerms.length>=100} onClick={()=>change('commercialTerms',[...fields.commercialTerms,{code:'',description:''}])}>Add commercial term</button></fieldset>
- <div className={s.row}><button disabled={busy} onClick={()=>{onLocal(value);setMessage('Preparation kept locally in this tab only. It has not been saved to Supabase or issued.');}}>Keep preparation in this tab</button><button disabled={!cloudReady||!allowed||busy} onClick={()=>void saveCloud()}>Save persistent preparation</button><button className={s.primary} disabled={!allowed||busy} onClick={()=>{try{const body=buildOffer(opportunity,assignments,supersedes,fields,new Date().toISOString());setError('');setReview({body,opportunityVersion:opportunity.version});}catch(failure){setError(invalid(failure));}}}>Review {supersedes?'replacement':'offer'} for issuance</button></div>
+ <div className={s.row}><button disabled={busy} onClick={()=>{onLocal(value);setMessage('Preparation kept locally in this tab only. It has not been saved to Supabase or issued.');}}>Keep preparation in this tab</button><button disabled={!cloudReady||!allowed||busy} onClick={()=>void saveCloud()}>Save persistent preparation</button><button className={s.primary} disabled={!allowed||busy} onClick={()=>{try{const body=buildOffer(opportunity,assignments,supersedes,fields,new Date().toISOString());setError('');setReview({body,opportunityVersion:opportunity.version,requestVersion:brief?.requestVersion??null});}catch(failure){setError(invalid(failure));}}}>Review {supersedes?'replacement':'offer'} for issuance</button></div>
  {!cloudReady?<p>Persistent preparation is unavailable or pending verification. Local preparation lasts only while this workspace remains open.</p>:<p>Saving preparation does not issue it. Persistent revision: {saved?.version??'Not saved'}.</p>}
  </>}
  </section>;
