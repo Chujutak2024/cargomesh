@@ -465,6 +465,7 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
               disabled={number > maxVisited}
               key={label}
               type="button"
+              aria-label={t(`Paso ${number}: ${label}`, `Step ${number}: ${label}`)}
               aria-current={active ? "step" : undefined}
               onClick={() => {
                 if (number === 4) { enterReview(); return; }
@@ -498,7 +499,7 @@ export function V2IntakePrototype({embedded=false,onPersisted,onEvaluation}:{emb
               <div className={styles.footerRight}>
                 {step > 1 ? <Button variant="secondary" type="button" onClick={() => { setStep((step - 1) as PrototypeStep); setIssues([]); }}><ArrowLeft size={16} aria-hidden="true" />{t("Anterior", "Back")}</Button> : null}
                 {step < 4 ? <Button type="button" onClick={goNext}>{t("Continuar", "Continue")}<ArrowRight size={16} aria-hidden="true" /></Button> : (
-                  <Button variant="accent" type="button" isLoading={["creating", "revising", "reading", "evaluating"].includes(submitPhase)} loadingLabel={phaseLabel(submitPhase, t)} onClick={createDraftAndEvaluate}>
+                  <Button variant={embedded ? "accent" : "primary"} type="button" isLoading={["creating", "revising", "reading", "evaluating"].includes(submitPhase)} loadingLabel={phaseLabel(submitPhase, t)} onClick={createDraftAndEvaluate}>
                     <ClipboardCheck size={16} aria-hidden="true" />{request && dirtyAfterCreate ? t("Guardar revisión y reevaluar", "Save revision & reevaluate") : request ? t("Consultar evaluación", "Refresh evaluation") : t("Crear DRAFT y evaluar", "Create DRAFT & evaluate")}
                   </Button>
                 )}

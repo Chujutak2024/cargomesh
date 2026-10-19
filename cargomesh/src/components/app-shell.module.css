@@ -3,6 +3,8 @@
   font-family: var(--cm-font-sans);
   /* Carrier-aligned presentation tokens, scoped to the shipper workspace. */
   --cm-color-canvas: #e8eff4;
+  --cm-color-surface-subtle: #edf4f8;
+  --cm-color-surface-tint: #f1f8fb;
   --cm-color-primary: #185be7;
   --cm-color-primary-hover: #124cc6;
 }
