@@ -92,6 +92,9 @@ jobs:
           node-version: 24.20.0
           package-manager-cache: false
 
+      - name: Verify local workflow fixture adapter
+        run: python3 scripts/test_hac40_workflow_local_fixture.py
+
       - name: Run V2 local profile (Supabase CLI 2.117.0 via npx)
         run: python3 supabase-v2/gate.py v2 --evidence-dir "$RUNNER_TEMP/hac29-v2"
 

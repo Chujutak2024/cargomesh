@@ -22,6 +22,7 @@ import {inspectFleet} from "./truck-inspection-model";
 import { Button, SearchField, Select } from "@/components/ui";
 import { truckDesigns } from "@/features/logistics-3d/visual-catalog";
 import {VehicleCard,VehicleDetail,PhotoCredits} from "./fleet-presentation";
+import { truckDesigns } from "@/features/logistics-3d/visual-catalog";
 import s from "./fleet.module.css";
 
 const filters: { id: FleetFilter; es: string; en: string }[] = [

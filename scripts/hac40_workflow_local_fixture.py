@@ -15,6 +15,18 @@ def sql(query):
 
 def literal(value):return "'"+value.replace("'","''")+"'"
 
+def fixture_setup_sql(source):
+ """Keep native fixture setup, excluding pgTAP assertions and later hold tests."""
+ source=source[:source.index("select pg_temp.save('hold'")]
+ return '\n'.join(line for line in source.splitlines() if not line.lstrip().startswith(
+  ('select ok(', 'select is(', 'select no_plan(', 'select throws_ok(')))
+
+def fixture_record_ids(refs):
+ # Carrier command envelopes are not records; their underlying IDs already have
+ # named fixture entries. Only direct IDs belong in the scoped cleanup list.
+ return list(dict.fromkeys(value['id'] for value in refs.values()
+  if isinstance(value,dict) and isinstance(value.get('id'),str)))
+
 def prepare():
  check=sql(f"select count(*) from private.v2_catalog_grants where auth_user_id='{USER}' and permission='CATALOG_ADMIN';select count(*) from public.transport_assets where code='WORKFLOW_QA';")
  assert check.returncode==0 and check.stdout.split()==['0','0'],'Fixture collision; refusing overwrite.'
@@ -25,15 +37,14 @@ def prepare():
  link=sql(f"select count(*) from public.carrier_service_cargo_categories where carrier_service_id='{SERVICE}' and cargo_category_id='c0000000-0000-0000-0000-000000000001';")
  previous['categoryLink']=link.stdout.strip()=='1'
  source=(ROOT/'supabase/tests/22_v2_hac40_workflow.test.sql').read_text(encoding='utf-8')
- source=source[:source.index("select pg_temp.save('hold'")]
- source='\n'.join(line for line in source.splitlines() if not line.startswith(('select ok(','select is(','select no_plan(')))
+ source=fixture_setup_sql(source)
  source+="\nreset role;select 'HAC40_FIXTURE:'||jsonb_object_agg(name,value)::text from refs;commit;"
  result=sql(source);assert result.returncode==0,result.stderr
  refs=json.loads(next(line.split('HAC40_FIXTURE:',1)[1] for line in result.stdout.splitlines() if line.startswith('HAC40_FIXTURE:')))
  return {'refs':refs,'previous':previous}
 
 def cleanup(state):
- refs=state['refs'];q=refs['request']['id'];ids=','.join(literal(v['id']) for v in refs.values())
+ refs=state['refs'];q=refs['request']['id'];ids=','.join(literal(value) for value in fixture_record_ids(refs))
  workflow=['execution_events','incident_updates','operational_incidents','v2_bookings','selection_decisions','v2_rankings','v2_carrier_offers','carrier_opportunities','transport_plan_candidates','route_plans','route_conditions','route_resource_limits','route_corridors','logistics_nodes','route_planning_policies','scoring_policies']
  statements=['begin;']
  for table in workflow:statements.append(f'alter table public.{table} disable trigger workflow_guard;')
