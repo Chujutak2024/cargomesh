@@ -22,3 +22,9 @@ export function createAssignedDemoHandler(config:AssignedDemoConfig,deps:{startC
   }catch{return json({ok:false,code:'DEMO_SESSION_UNAVAILABLE'},503);}
  };
 }
+
+/** A voice preview grant is conversation-only and never carries a business actor. */
+export function assignedVoicePreviewAllowed(config:AssignedDemoConfig,request:Request,preview:boolean){
+ return preview&&assignedDemoAllowed(config,request.headers.get('host'))&&hasSessionOrigin(request)
+  &&request.headers.get('origin')===config.origin&&new URL(request.url).protocol==='https:';
+}

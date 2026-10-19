@@ -1,3 +1,5 @@
+import {assignedDemoConfig} from '@/server/auth/assigned-demo';
+import {assignedVoicePreviewAllowed} from '@/server/auth/assigned-demo-policy';
 import { randomUUID } from "node:crypto";
 import { SignJWT } from "jose";
 import { NextResponse } from "next/server";
@@ -64,7 +66,9 @@ export async function POST(request: Request) {
     && process.env.CARGOMESH_NOVA_DEMO_VOICE === "true"
     && localHosts.includes(new URL(request.url).hostname)
     && localHosts.includes(new URL(request.headers.get("origin") ?? "").hostname);
-  if (preview && (!localPreview || carrierScope || offerRequestId) || carrierScope && offerRequestId) {
+  const hostedPreview=assignedVoicePreviewAllowed(assignedDemoConfig(),request,preview);
+  const voicePreview=localPreview||hostedPreview;
+  if (preview && (!voicePreview || carrierScope || offerRequestId) || carrierScope && offerRequestId) {
     return NextResponse.json({ error: "VOICE_UNAVAILABLE" }, { status: 403 });
   }
   let identity: { userId: string; organizationId: string; memberId: string };
@@ -88,8 +92,9 @@ export async function POST(request: Request) {
     } catch {
       return NextResponse.json({ error: "FORBIDDEN_VOICE_SCOPE" }, { status: 403 });
     }
-  } else if (localPreview) {
-    identity = { userId: "local-voice-preview", organizationId: "synthetic-preview", memberId: "local-voice-preview" };
+  } else if (voicePreview) {
+    const profile=hostedPreview?"hosted-demo-voice":"local-voice-preview";
+    identity = { userId: profile, organizationId: "synthetic-preview", memberId: profile };
   } else {
     try {
       identity = await requireAuthenticatedMember();
@@ -135,7 +140,7 @@ export async function POST(request: Request) {
     voiceContext: voiceContext.slice(offerRequestId ? -6 : -12).map((turn) => turn.slice(0, offerRequestId ? 160 : 180)) };
   if (!carrierScope && !offerRequestId) {
     try {
-      const facilities = localPreview
+      const facilities = voicePreview
         ? (await import("@/features/v2-intake/fixtures/intake-options.fixture")).INTAKE_OPTIONS_FIXTURE.data.facilities
             .map((facility) => ({ city: facility.city, countryCode: facility.countryCode }))
         : await (await (await import("@/server/modules/intake/infrastructure/supabase-intake-options-repository"))
@@ -150,7 +155,7 @@ export async function POST(request: Request) {
       voiceScope = { ...voiceScope, facilityCatalog: { complete: false, locations: [] } };
     }
   }
-  const token = await new SignJWT({ organizationId: identity.organizationId, memberId: identity.memberId, preview: localPreview, ...voiceScope })
+  const token = await new SignJWT({ organizationId: identity.organizationId, memberId: identity.memberId, preview: voicePreview, ...voiceScope })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuer(ISSUER)
     .setAudience(AUDIENCE)

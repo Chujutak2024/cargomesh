@@ -21,3 +21,9 @@ Pruebas en assigned-demo-policy.test.ts incluidas en test:release y test:carrier
 ## Voz
 
 Gateway de Axel comprobado por /healthz 200. CARGOMESH_VOICE_WS_URL y CARGOMESH_VOICE_BRIDGE_SECRET corresponden al servidor; NEXT_PUBLIC_CARGOMESH_NOVA_VOICE_PREVIEW requiere rebuild. El perfil visual Cliente no sustituye requireAuthenticatedMember. Una conversación con pedidos reales queda pendiente de una cuenta Cliente V2 y su membresía.
+
+## Ampliación autorizada: prueba Nova desde Cliente
+
+Cristhian solicita entrar a Nova en Vercel y confirma que el equipo hará la prueba de micrófono. El perfil visual puede obtener un grant de voz preview, corto y firmado, solo desde el origen demo explícito. Usa identidad synthetic-preview y catálogo de ejemplo, sin leer organización/solicitudes ni autorizar pedidos. Rechaza scopes de Carrier/oferta junto con preview. La respuesta del catálogo demo identifica su procedencia para que el formulario active su modo de conversación sin persistencia. El gateway existente no expone herramientas comerciales.
+
+No se afirma conversación validada: el equipo realizará la prueba. El acceso conectado que persiste pedidos sigue requiriendo membresía Cliente V2.

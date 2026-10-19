@@ -33,7 +33,7 @@ export class V2IntakeApiError extends Error {
 export type IntakeOptionsLoadResult = {
   options: ReturnType<typeof getIntakeOptionsFixture>;
   source: "api" | "fixture";
-  fixtureReason: "EXPLICIT_DEVELOPMENT_FIXTURE" | null;
+  fixtureReason: "EXPLICIT_DEVELOPMENT_FIXTURE" | "EXPLICIT_VISUAL_DEMO" | null;
 };
 
 export type IntakeOptionsSourceMode = "api" | "development-fixture";
@@ -194,7 +194,8 @@ export async function loadIntakeOptions(
         retryable: false,
       });
     }
-    return { options: parsed, source: "api", fixtureReason: null };
+    const visualDemo=response.headers.get("X-CargoMesh-Data-Source")==="fixture";
+    return { options: parsed, source: visualDemo?"fixture":"api", fixtureReason: visualDemo?"EXPLICIT_VISUAL_DEMO":null };
   } catch (error) {
     if (error instanceof V2IntakeApiError) throw error;
     throw new V2IntakeApiError({

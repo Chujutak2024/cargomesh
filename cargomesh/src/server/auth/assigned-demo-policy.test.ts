@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {assignedDemoAllowed,createAssignedDemoHandler,syntheticDemoEmail,syntheticCarrierAccess} from './assigned-demo-policy';
+import {assignedDemoAllowed,createAssignedDemoHandler,syntheticDemoEmail,syntheticCarrierAccess,assignedVoicePreviewAllowed} from './assigned-demo-policy';
 const origin='https://demo.example.test';
 const config={enabled:true,origin,secret:'demo-test-secret-at-least-thirty-two-characters',carrierEmail:'hac45-demo@example.invalid',carrierPassword:'test-only-not-a-real-secret'};
 function request(body:unknown={workspace:'carrier'},headers:Record<string,string>={}){return new Request(origin+'/api/auth/demo-session',{method:'POST',headers:{host:'demo.example.test',origin,'content-type':'application/json','sec-fetch-site':'same-origin',...headers},body:JSON.stringify(body)});}
@@ -45,4 +45,13 @@ test('failed auth or unavailable backend never produces a successful session res
 test('only named synthetic carriers can become the predefined Carrier session',()=>{
  assert.ok(syntheticDemoEmail(config.carrierEmail));assert.ok(syntheticCarrierAccess([{carrierName:'[SYNTHETIC] Test road'}]));
  for(const value of [null,[],[{}],[{carrierName:'Real customer carrier'}],[{carrierName:'[SYNTHETIC] Test'},{carrierName:'Real carrier'}]])assert.equal(syntheticCarrierAccess(value),false);
+});
+
+test('hosted voice preview needs explicit preview scope and the same opted-in HTTPS origin',()=>{
+ assert.equal(assignedVoicePreviewAllowed(config,request(),true),true);
+ assert.equal(assignedVoicePreviewAllowed(config,request(),false),false);
+ assert.equal(assignedVoicePreviewAllowed({...config,enabled:false},request(),true),false);
+ assert.equal(assignedVoicePreviewAllowed(config,request(undefined,{origin:'https://other.test'}),true),false);
+ assert.equal(assignedVoicePreviewAllowed(config,request(undefined,{'sec-fetch-site':'cross-site'}),true),false);
+ assert.equal(assignedVoicePreviewAllowed(config,request(undefined,{host:'other.test'}),true),false);
 });
