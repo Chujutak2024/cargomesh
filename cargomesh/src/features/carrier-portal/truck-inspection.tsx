@@ -11,6 +11,7 @@ import type { TruckInspectionContext } from "./truck-inspection-model";
 import s from "./truck-inspection.module.css";
 import { journeySnapshot } from "./journey-model";
 import { createDepotCoordinator } from "@/features/logistics-3d/depot-coordinator";
+import { truckDesigns } from "@/features/logistics-3d/visual-catalog";
 const DepotArrival = dynamic(() => import("@/features/logistics-3d/depot-arrival"), { ssr: false, loading: () => <div className={s.loading} role="status">Preparando la sede 3D…</div> });
 const RouteNavigation3D=dynamic(()=>import("@/features/logistics-3d/route-navigation-3d"),{ssr:false,loading:()=> <div className={s.loading} role="status">Preparando el recorrido 3D…</div>});
 
@@ -44,7 +45,7 @@ export function TruckInspection({ context, onClose }: { context: TruckInspection
         <button onClick={() => setView("route")}><span className={s.actionIcon}><Route size={23}/></span><span><strong>Ver ruta</strong><small>Explorar el mapa ampliado</small></span><ArrowRight size={18}/></button>
         <button onClick={() => setView("depot")}><span className={s.actionIcon}><Building2 size={23}/></span><span><strong>Ver sede 3D</strong><small>Llegada, carga y salida</small></span><ArrowRight size={18}/></button>
       </div>
-      <a className={s.detailLink} href="/vehicle-designs" target="_blank" rel="noopener noreferrer">3D design studio · 18 designs <ArrowRight size={15}/></a>
+      <a className={s.detailLink} href="/vehicle-designs" target="_blank" rel="noopener noreferrer">3D design studio · {truckDesigns.length} designs <ArrowRight size={15}/></a>
       {context.detailHref ? <a className={s.detailLink} href={context.detailHref} onClick={onClose}>Abrir ficha completa <ArrowRight size={15}/></a> : null}
     </div> : view === "route" ? <div className={s.route}>
       <div className={s.routeTop}><p><MapPin size={17}/><strong>{context.origin}</strong><ArrowRight size={17}/><strong>{context.destination}</strong></p><div>{presentation.distanceKm !== null ? <span>{presentation.distanceKm.toLocaleString("es-PE")} km</span> : null}{presentation.estimatedTransitHours !== null ? <span>{presentation.estimatedTransitHours.toLocaleString("es-PE")} h</span> : null}<button className={s.view3d} onClick={()=>setView("route3d")}><Navigation size={16}/>Vista 3D</button></div></div>

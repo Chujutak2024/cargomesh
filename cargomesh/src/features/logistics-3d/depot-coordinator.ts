@@ -78,6 +78,7 @@ export function createDepotCoordinator(input = createDepotScenario()) {
   for (const vehicle of scenario.vehicles) {
     if (vehicleIds.has(vehicle.assetId)) throw new Error('DUPLICATE_VISUAL_ASSET');
     if (truckDesign(vehicle.designId)?.family !== vehicle.family) throw new Error('INVALID_VISUAL_DESIGN');
+    if (vehicle.cargo && truckDesign(vehicle.designId)?.appearance.bodyStyle) throw new Error('INCOMPATIBLE_VISUAL_CARGO');
     if (vehicle.visitor && vehicle.visitor.authorized !== true) throw new Error('UNAUTHORIZED_VISITOR');
     if (vehicle.resourceCode && resources.has(vehicle.resourceCode)) throw new Error('VISUAL_BAY_OCCUPIED');
     if (vehicle.phase === 'unknown' && vehicle.resourceCode) throw new Error('UNKNOWN_LOCATION_HAS_NO_BAY');
@@ -120,6 +121,7 @@ export function createDepotCoordinator(input = createDepotScenario()) {
     setDesign(assetId: string, designId: string) {
       const vehicle = scenario.vehicles.find(item => item.assetId === assetId), design = truckDesign(designId);
       if (!vehicle || !design || design.family !== vehicle.family) throw new Error('INVALID_VISUAL_DESIGN');
+      if (vehicle.cargo && design.appearance.bodyStyle) throw new Error('INCOMPATIBLE_VISUAL_CARGO');
       vehicle.designId = designId;
       update({ ...project(scenario, time) });
     },
