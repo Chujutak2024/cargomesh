@@ -8,7 +8,7 @@ import type {Opportunity} from '@/features/carrier-portal/commercial-model';
 import {portalErrorCopy} from '@/features/carrier-portal/api';
 import {canPrepareOffer} from './offers-model';
 import {CarrierKpis} from './carrier-kpis';
-import {OpportunityRecord,shortRequestReference} from './opportunity-record';
+import {OpportunityRecord,OpportunityChecks,OpportunityTruck,shortRequestReference} from './opportunity-record';
 import sheet from './opportunity-record.module.css';
 import {readOpportunities} from './opportunity-client';
 import {canRespondOpportunity,opportunityFacts,opportunityIdFromHash,opportunityLabel,displayOpportunityDate} from './opportunity-model';
@@ -61,16 +61,16 @@ export function ConnectedOpportunities({carrier,active=true,routeHash,refreshTok
    <nav className={sheet.back} aria-label="Request breadcrumb"><button disabled={busy} onClick={back}><ArrowLeft size={14}/>Requests</button><ChevronRight size={13} aria-hidden="true"/><strong>{row?shortRequestReference(row):'Request detail'}</strong></nav>
    {loadingDetail?<p role="status">Reading the current opportunity revision…</p>:detailError?<p role="alert">{detailError} <button disabled={busy} onClick={retry}>Refresh detail</button></p>:row&&facts?<div className={sheet.layout}>
     <OpportunityRecord row={row} headingRef={heading} busy={busy} onRefresh={retry}/>
-    <aside className={`${p.card} ${sheet.response}`} aria-label="Carrier review response"><h2 className={sheet.responseTitle}><Users size={18} aria-hidden="true"/>Carrier response</h2><section className={sheet.responseSection}><h3><CalendarDays size={18} aria-hidden="true"/>Review request</h3><p>Accept to start reviewing, or decline. This does not quote or reserve a vehicle.</p><p className={sheet.deadline}><strong>Respond by</strong><br/>{displayOpportunityDate(row.data.responseDeadline)}</p>
+    <div className={sheet.sideColumn}><aside className={`${p.card} ${sheet.response}`} aria-label="Carrier review response"><h2 className={sheet.responseTitle}><Users size={18} aria-hidden="true"/>Carrier response</h2><section className={sheet.responseSection}><h3><CalendarDays size={18} aria-hidden="true"/>Review request</h3><p>Accept to start reviewing, or decline. This does not quote or reserve a vehicle.</p><p className={sheet.deadline}><strong>Respond by</strong><br/>{displayOpportunityDate(row.data.responseDeadline)}</p>
      {Date.parse(row.data.responseDeadline)<=now?<p role="status">The response deadline has passed.</p>:null}
      {!allowed&&!busy?<p>Responses require an allowed Carrier role, a complete read, an open response window and a current opportunity state.</p>:null}
      <div className={sheet.actions}><button className={p.primary} disabled={!allowed||busy||row.status==='ACCEPTED'} onClick={()=>setResponse('ACCEPTED')}>Accept for review<ArrowRight size={16} aria-hidden="true"/></button><button disabled={!allowed||busy} onClick={()=>setResponse('DECLINED')}>Decline</button></div>
      {response&&(allowed||busy)?<OpportunityResponseForm key={row.id+row.version+response} carrier={carrier} row={row} response={response} allowed={allowed} onBusyChange={changeBusy} onClose={()=>setResponse(null)} onSaved={saved=>{setDetail(saved);setResponse(null);setMessage(opportunityLabel(saved.status)+' saved — revision '+saved.version);retry();onSaved?.();}}/>:null}
-     </section><section className={sheet.responseSection}><h3><Tag size={18} aria-hidden="true"/>Offer preparation</h3><div className={sheet.actions}>
+     <OpportunityChecks row={row}/></section><section className={sheet.responseSection}><h3><Tag size={18} aria-hidden="true"/>Offer preparation</h3><div className={sheet.actions}>
       <button disabled={busy||!current||current.partial||!!error||!canPrepareOffer(row,carrier.role,now)} onClick={()=>navigateJuanHash('#/desk/prepare/'+row.id)}><CirclePlus size={17} aria-hidden="true"/>Prepare offer</button>
       <button disabled={busy} onClick={()=>navigateJuanHash('#/desk/opportunity/'+row.id)}><Clock3 size={17} aria-hidden="true"/>View offers &amp; version history</button>
      </div></section>
-    </aside>
+    </aside><OpportunityTruck/></div>
    </div>:null}
   </>:current?<>
    <div className={filters.directoryFilters}>

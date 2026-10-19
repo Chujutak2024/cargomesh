@@ -56,3 +56,23 @@ Archivos: opportunity-record.tsx, opportunity-record.module.css, connected-oppor
 Comprobación focal: compilador TypeScript instalado PASS tras el cambio de estructura. Navegador integrado móvil muestra la ficha reagrupada; escritorio y uso general siguen para el usuario/el 21. Sin suites generales, acciones comerciales, DDL ni cambios de autenticación. Captura: request-sheet-proportions.png. Respaldo: before-sheet-proportions/.
 
 No se reintenta push en este ajuste: las dos subidas del corte e6c7646 fallaron por curl 55 y HTTP 408. Conservar los commits locales para compartir cuando se recupere la conexión; nunca force push.
+
+# Simplificación de contenido de la ficha — 19-oct-2026
+
+Solicitud del usuario: eliminar el rótulo de solo lectura y el texto sintético de Inbox; revisar si son necesarios los bloques informativos; colocar el camión bajo Carrier response con igual ancho; evitar el árbol de referencias técnicas.
+
+## Cambios
+
+- Retirado el rótulo visible Customer request · read only; la ficha sigue siendo de lectura y conserva su nombre accesible.
+- No se muestra la descripción de prueba que empieza por `[SIMULATED] Inbox` en esta ficha. Descripciones de carga reales se conservan; el dato original no se modifica y la procedencia sintética sigue identificada en el contexto Carrier/categoría existentes.
+- Retirados del detalle el bloque de recursos/ventanas técnicas y el video How review leads to an offer. El asset y la fuente HyperFrames se conservan para otro uso, sin reproducirse ni cargarse aquí. Las ventanas de recojo/entrega del pedido siguen visibles.
+- Las comprobaciones del plan siguen siendo necesarias para no presentar capacidad/cobertura desconocida como confirmada: aviso breve en respuesta Carrier y motivos legibles desplegables con Motion. Una ineligibilidad sigue rotulada como tal.
+- Nota de ubicación reducida a una línea: solo ciudades, sin direcciones/contactos compartidos. No se cambian los permisos del snapshot.
+- Eliminado el árbol JSON de referencias, bindings, cargo y ubicaciones duplicados. En el pie hay Record IDs con solo request ID y opportunity ID, seleccionables para soporte.
+- Ilustración 3D visible debajo de Carrier response en la misma columna/ancho, con referencia explícita de que no es un vehículo asignado. El componente existente conserva pausa, controles, preferencia reducida y suspensión fuera de vista.
+
+## Evidencia y límites
+
+`node node_modules/typescript/bin/tsc --noEmit`: PASS. Lectura de la ficha real en IAB móvil confirmó la ausencia de los bloques retirados y el orden respuesta → ilustración. Sin acciones comerciales, escrituras de base, cambios de rutas/auth/Vercel/main, nuevo render ni suites generales. No certifica escritorio o flujo comercial completo; revisión del equipo sigue el 21.
+
+Archivos: opportunity-record.tsx, opportunity-record.module.css y connected-opportunities.tsx. Respaldo before-sheet-cleanup/. Captura request-sheet-cleanup.png. Los cambios se guardan en la rama registrada; la subida sigue pendiente por los dos errores de red previos, sin force push.

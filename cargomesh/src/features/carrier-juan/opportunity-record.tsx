@@ -1,9 +1,8 @@
 "use client";
 import {useState,type ReactNode,type Ref} from 'react';
 import {motion} from 'motion/react';
-import {ArrowLeftRight,ArrowRight,CalendarDays,ChevronDown,Clock3,Database,FileText,Info,MapPin,Package,RefreshCw,ShieldAlert,Tag,Truck,Weight} from 'lucide-react';
+import {ArrowLeftRight,ArrowRight,CalendarDays,ChevronDown,Clock3,FileText,Info,MapPin,Package,RefreshCw,ShieldAlert,Tag,Truck,Weight} from 'lucide-react';
 import type {Opportunity} from '@/features/carrier-portal/commercial-model';
-import {DataValue} from '@/features/carrier-portal/contract-form';
 import {CargoSpecificationV2Schema} from '@/shared/schemas/v2/freight-request';
 import {LogisticsTruck} from '@/features/logistics-3d/logistics-truck';
 import {PRODUCT_MOTION} from '@/features/product-motion/content-motion';
@@ -47,11 +46,12 @@ function Disclosure({title,children,icon:Icon=FileText}:{title:string;children:R
 
 export function OpportunityRecord({row,headingRef,busy,onRefresh}:{row:Opportunity;headingRef:Ref<HTMLHeadingElement>;busy:boolean;onRefresh:()=>void}){
  const f=opportunityFacts(row),brief=f.brief,cargo=CargoSpecificationV2Schema.safeParse(row.data.cargoSpecification);
- const checks=[...new Set([...(brief?.pendingRequirements??[]),...(brief?.exclusionReasons??[])])];
  const c=cargo.success?cargo.data:null;
+ // This local seed label is not a cargo description. Preserve actual descriptions.
+ const description=/^\[SIMULATED\]\s*Inbox(?:\s|$)/.test(f.description)?null:f.description;
  return <article className={s.record} data-opportunity-record aria-label="Read-only customer request">
   <header className={s.header}>
-   <div className={s.identity}><div><span className={s.eyebrow}>Customer request · read only</span><h2 ref={headingRef} tabIndex={-1}>{shortRequestReference(row)}</h2><p className={s.received}>Received {day(row.data.sentAt)} · {time(row.data.sentAt)} UTC · revision {row.version}</p></div><span className={s.status}><Clock3 size={14} aria-hidden="true"/>{opportunityLabel(row.status)}</span></div>
+   <div className={s.identity}><div><h2 ref={headingRef} tabIndex={-1}>{shortRequestReference(row)}</h2><p className={s.received}>Received {day(row.data.sentAt)} · {time(row.data.sentAt)} UTC · revision {row.version}</p></div><span className={s.status}><Clock3 size={14} aria-hidden="true"/>{opportunityLabel(row.status)}</span></div>
    <div className={s.route} aria-label="Requested route"><div className={s.stop}><span className={s.pin}><MapPin size={22} aria-hidden="true"/></span><div><small>Pickup city</small><strong>{f.origin}</strong></div></div><div className={s.routeLine}><ArrowRight size={18} aria-hidden="true"/></div><div className={s.stop}><span className={s.pin}><MapPin size={22} aria-hidden="true"/></span><div><small>Delivery city</small><strong>{f.destination}</strong></div></div></div>
   </header>
   <div className={s.body}>
@@ -67,32 +67,30 @@ export function OpportunityRecord({row,headingRef,busy,onRefresh}:{row:Opportuni
      <Field label="Preferred equipment">{brief?.preferredEquipment?friendly(brief.preferredEquipment):'No preference recorded'}</Field>
     </dl></section>
    </div>
-   <section className={`${s.group} ${s.cargoSummary}`}><h3><Package size={19} aria-hidden="true"/>Cargo summary</h3><p className={s.description}>{f.description}</p>
+   <section className={`${s.group} ${s.cargoSummary}`}><h3><Package size={19} aria-hidden="true"/>Cargo summary</h3>{description?<p className={s.description}>{description}</p>:null}
     <dl className={`${s.fields} ${s.cargoTotals}`}><Field label="Total weight" icon={Weight}>{amount(f.weightKg,'kg')}</Field><Field label="Total volume" icon={Package}>{amount(f.volumeM3,'m³')}</Field><Field label="Category" icon={Tag}>{friendly(row.data.cargoSpecification.categoryCode)}</Field><Field label="Can be split" icon={ArrowLeftRight}>{c?(c.divisible?'Yes':'No'):'Not provided'}</Field></dl>
    </section>
    <section className={`${s.group} ${s.packagePanel}`}><h3><Package size={19} aria-hidden="true"/>Packages and handling</h3>
     {c?<><div className={s.tableWrap}><table><caption className={s.srOnly}>Packages and handling</caption><thead><tr><th>Package</th><th>Qty</th><th>Weight / unit</th><th>Volume / unit</th><th>Size (cm)</th><th>Handling</th></tr></thead><tbody>{c.units.map((unit,i)=><tr key={i}><td>{friendly(unit.packageType)}</td><td>{unit.quantity}</td><td>{amount(unit.weightPerUnitKg,'kg')}</td><td>{amount(unit.volumePerUnitM3,'m³')}</td><td>{unit.dimensionsCm.length} × {unit.dimensionsCm.width} × {unit.dimensionsCm.height}</td><td>{unit.stackable?'Stackable':'Do not stack'}{unit.indivisible?' · Keep whole':''}</td></tr>)}</tbody></table></div>
-    <p className={`${s.hint} ${s.requirements}`}><ShieldAlert size={15} aria-hidden="true"/><span><strong>Requirements: </strong>{c.requirements.length?c.requirements.map(friendly).join(' · '):'None recorded'}{c.temperatureRange?' · '+c.temperatureRange.minCelsius+' to '+c.temperatureRange.maxCelsius+' °C':''}</span></p></>:<p className={s.hint}>Package details need review. The original record is available in technical references.</p>}
-   {brief&&brief.planEligibility!=='eligible'?<section className={s.checks} aria-label="Operational checks"><h3><ShieldAlert size={16} aria-hidden="true"/>{brief.planEligibility==='ineligible'?'Transport plan not eligible':'Operational checks pending'}</h3><p>Coverage and capacity are not confirmed.</p>{checks.length?<ul>{checks.map(code=><li key={code}>{checkLabel(code)}</li>)}</ul>:null}</section>:null}
-   <p className={`${s.hint} ${s.privacy}`}><Info size={14} aria-hidden="true"/><span>City-level information only. Exact addresses and operational contacts are withheld in this opportunity.</span></p>
-   <Disclosure title="Planned resources and timing" icon={CalendarDays}>
-    {f.resourceWindows.length?<dl className={s.fields}>{f.resourceWindows.map((item,i)=><Field key={item.id} label={'Resource window '+(i+1)}><WindowValue value={item.window}/></Field>)}</dl>:<p>No resource windows provided.</p>}
-    <p className={s.hint}>These planning windows do not replace pickup or delivery times, or confirm a reservation.</p>
-    <details><summary>Legs, equipment and bindings</summary><DataValue value={row.data.assignmentSnapshots} es={false}/></details>
-   </Disclosure>
-   <Disclosure title="How review leads to an offer">
-    <video className={s.explainer} controls playsInline preload="none" poster="/carrier-media/request-review-flow-poster.png" aria-label="Illustrative request review and offer preparation sequence"><source src="/carrier-media/request-review-flow.mp4" type="video/mp4"/>Request received → Carrier review → Offer preparation.</video>
-    <p className={s.hint}>Illustrative workflow. Accepting for review creates neither an offer nor a vehicle reservation. The customer still chooses the offer.</p>
-   </Disclosure>
-   <Disclosure title="Optional truck illustration" icon={Truck}>
-    <div className={s.truck}><LogisticsTruck compact label="Illustrative reference truck" caption="Reference illustration — no assigned vehicle implied"/></div>
-   </Disclosure>
-   <Disclosure title="Technical references · full IDs and original data" icon={Database}>
-    <p className={s.hint}>The short heading is a display reference. Original IDs and request code are unchanged.</p>
-    <DataValue value={{requestCode:brief?.requestCode,requestId:row.requestId,opportunityId:row.id,customerRef:brief?.customerRef,opportunityVersion:row.version,requestVersion:brief?.requestVersion,responseChannel:row.data.responseChannel,sentAt:row.data.sentAt,checks,origin:row.data.origin,destination:row.data.destination,cargoSpecification:row.data.cargoSpecification}} es={false}/>
-   </Disclosure>
-  <footer className={s.footer}><small>Updated {day(row.updatedAt)} · {time(row.updatedAt)} UTC · revision {row.version}</small><button disabled={busy} onClick={onRefresh}><RefreshCw size={14} aria-hidden="true"/>Refresh</button></footer>
+    <p className={`${s.hint} ${s.requirements}`}><ShieldAlert size={15} aria-hidden="true"/><span><strong>Requirements: </strong>{c.requirements.length?c.requirements.map(friendly).join(' · '):'None recorded'}{c.temperatureRange?' · '+c.temperatureRange.minCelsius+' to '+c.temperatureRange.maxCelsius+' °C':''}</span></p></>:<p className={s.hint}>Package details need review before preparing an offer.</p>}
+   <p className={s.locationNote}><Info size={12} aria-hidden="true"/>City-level locations · exact addresses and contacts not shared</p>
+  <footer className={s.footer}><small>Updated {day(row.updatedAt)} · {time(row.updatedAt)} UTC · revision {row.version}</small><details className={s.references}><summary>Record IDs</summary><dl><Field label="Request ID"><code>{row.requestId}</code></Field><Field label="Opportunity ID"><code>{row.id}</code></Field></dl></details><button disabled={busy} onClick={onRefresh}><RefreshCw size={14} aria-hidden="true"/>Refresh</button></footer>
    </section>
   </div>
  </article>;
+}
+
+/** Operational uncertainty stays visible; the supporting checks are secondary. */
+export function OpportunityChecks({row}:{row:Opportunity}){
+ const brief=opportunityFacts(row).brief;
+ if(!brief||brief.planEligibility==='eligible')return null;
+ const checks=[...new Set([...brief.pendingRequirements,...brief.exclusionReasons])];
+ return <div className={s.checkSummary}>
+  <p className={s.checkNote} role={brief.planEligibility==='ineligible'?'alert':undefined}><ShieldAlert size={14} aria-hidden="true"/>{brief.planEligibility==='ineligible'?'Transport plan not eligible':'Coverage and capacity not confirmed'}</p>
+  {checks.length?<Disclosure title={checks.length+' checks to review'} icon={ShieldAlert}><ul className={s.checkList}>{checks.map(code=><li key={code}>{checkLabel(code)}</li>)}</ul></Disclosure>:null}
+ </div>;
+}
+
+export function OpportunityTruck(){
+ return <section className={s.illustration} aria-label="Reference truck illustration"><h3><Truck size={17} aria-hidden="true"/>Truck illustration</h3><LogisticsTruck compact caption="Reference model · no vehicle assigned"/></section>;
 }
