@@ -42,3 +42,28 @@ test('explicit local Client preview isolates reads and blocks writes',async()=>{
   assert.equal(calls.length,1);
  });}finally{if(doc)Object.defineProperty(globalThis,'document',doc);else Reflect.deleteProperty(globalThis,'document');}
 });
+
+
+test('hosted assigned Client preview blocks writes and uses only fixture reads',async()=>{
+ const doc=Object.getOwnPropertyDescriptor(globalThis,'document');
+ Object.defineProperty(globalThis,'document',{configurable:true,value:{querySelector:()=>({})}});
+ try{await withBrowser('/clients/freight-request/new',async calls=>{
+  Object.assign(window.location,{hostname:'demo.example.test',port:'',origin:'https://demo.example.test'});
+  for(const input of ['/api/v2/intake/options',new URL('https://demo.example.test/api/v2/intake/options'),new Request('https://demo.example.test/api/v2/intake/options')])await workspaceFetch(input);
+  assert.equal(calls.length,3);
+  for(const call of calls)assert.match(call.input instanceof Request?call.input.url:String(call.input),/\/api\/demo\/v2\/intake\/options$/);
+  for(const method of ['POST','PATCH','DELETE'])assert.equal((await workspaceFetch('/api/v2/freight/requests',{method})).status,409);
+  assert.equal(calls.length,3);
+ });}finally{if(doc)Object.defineProperty(globalThis,'document',doc);else Reflect.deleteProperty(globalThis,'document');}
+});
+
+test('a connected hosted Client without the server preview marker keeps its normal API',async()=>{
+ const doc=Object.getOwnPropertyDescriptor(globalThis,'document');
+ Object.defineProperty(globalThis,'document',{configurable:true,value:{querySelector:()=>null}});
+ try{await withBrowser('/clients/requests',async calls=>{
+  Object.assign(window.location,{hostname:'demo.example.test',port:''});
+  const init={method:'POST',body:'{}'};
+  await workspaceFetch('/api/v2/freight/requests',init);
+  assert.equal(calls[0].input,'/api/v2/freight/requests');assert.strictEqual(calls[0].init,init);
+ });}finally{if(doc)Object.defineProperty(globalThis,'document',doc);else Reflect.deleteProperty(globalThis,'document');}
+});
