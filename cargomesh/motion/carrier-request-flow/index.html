@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=1280, height=480">
+<script src="assets/gsap.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0}html,body{width:1280px;height:480px;overflow:hidden;background:#edf3f9;color:#163349;font-family:Arial,sans-serif}
+#review-flow{width:1280px;height:480px}.scene-content{width:100%;height:100%;padding:38px 48px;display:flex;flex-direction:column;gap:26px}
+.eyebrow{font-size:18px;color:#00747c;letter-spacing:3px;text-transform:uppercase;font-weight:700}h1{font-size:60px;line-height:1.1;letter-spacing:-2px}
+.steps{display:flex;align-items:center;gap:18px;width:100%}.step{flex:1;min-width:0;background:#fff;border:1px solid #c3d3e2;border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:9px}
+.number{font-size:18px;font-weight:700;color:#00747c}.step h2{font-size:27px;letter-spacing:-.5px}.step p{font-size:20px;color:#4d657b;line-height:1.3}.arrow{font-size:34px;color:#00747c}.footnote{font-size:21px;color:#4d657b}.rule{height:3px;background:#00747c;width:72px}
+</style></head><body>
+<div id="review-flow" data-composition-id="review-flow" data-start="0" data-duration="6" data-width="1280" data-height="480">
+<div id="scene" class="clip scene-content" data-start="0" data-duration="6" data-track-index="0">
+<div class="eyebrow">CargoMesh · Carrier workflow</div><h1>From request to offer</h1>
+<div class="steps"><div id="received" class="step"><span class="number">01 / RECEIVED</span><h2>Customer request</h2><p>Cargo, route and timing</p></div><span id="arrow-one" class="arrow">→</span><div id="review" class="step"><span class="number">02 / REVIEW</span><h2>Carrier review</h2><p>Check requirements</p></div><span id="arrow-two" class="arrow">→</span><div id="offer" class="step"><span class="number">03 / PREPARE</span><h2>Carrier offer</h2><p>Price and conditions</p></div></div>
+<div id="rule" class="rule" data-layout-ignore></div><p class="footnote">Review does not reserve a truck. The customer chooses the offer.</p>
+</div></div>
+<script>
+window.__timelines=window.__timelines||{};
+const tl=gsap.timeline({paused:true});
+tl.from('.eyebrow',{opacity:0,x:-10,duration:.4,ease:'power2.out'},.12)
+ .from('h1',{opacity:0,y:12,duration:.5,ease:'power3.out'},.2)
+ .from('#received',{opacity:0,x:-16,duration:.5,ease:'power2.out'},.45)
+ .from('#arrow-one',{opacity:0,scale:.85,duration:.4,ease:'sine.out'},1.05)
+ .from('#review',{opacity:0,y:14,duration:.5,ease:'power3.out'},1.2)
+ .from('#arrow-two',{opacity:0,scale:.85,duration:.4,ease:'sine.out'},1.85)
+ .from('#offer',{opacity:0,x:16,duration:.5,ease:'power2.out'},2)
+ .from('#rule',{scaleX:0,transformOrigin:'left',duration:.45,ease:'sine.out'},2.55)
+ .from('.footnote',{opacity:0,y:6,duration:.5,ease:'power3.out'},2.65);
+window.__timelines['review-flow']=tl;
+</script></body></html>
