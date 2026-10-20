@@ -1,5 +1,5 @@
 import {hasSessionOrigin} from './session-origin';
-export type AssignedDemoConfig={enabled:boolean;origin?:string;secret?:string;carrierEmail?:string;carrierPassword?:string};
+export type AssignedDemoConfig={enabled:boolean;origin?:string;secret?:string;carrierEmail?:string;carrierPassword?:string;clientOrganizationId?:string};
 /** Explicitly scoped demo origin. No deployment or forwarded host enables this by itself. */
 export function assignedDemoAllowed(config:AssignedDemoConfig,host:string|null){
  if(!config.enabled||!config.origin||!config.secret||config.secret.length<32)return false;
@@ -12,7 +12,13 @@ export function assignedCarrierPreviewAllowed(config:AssignedDemoConfig,host:str
  return assignedDemoAllowed(config,host)&&syntheticDemoEmail(config.carrierEmail)
   &&email===config.carrierEmail&&syntheticCarrierAccess(access);
 }
-export function createAssignedDemoHandler(config:AssignedDemoConfig,deps:{startClient:(secret:string)=>Promise<void>;startCarrier:(email:string,password:string)=>Promise<boolean>}){
+export function syntheticClientAccess(row:unknown,organizationId:string){
+ if(!row||typeof row!=='object')return false;
+ const member=row as {organization_id?:string;role?:string;status?:string;organizations?:{name?:string;status?:string}};
+ return member.organization_id===organizationId&&member.role==='SUPERVISOR'&&member.status==='ACTIVE'
+  &&member.organizations?.status==='ACTIVE'&&/^\[SYNTHETIC\]/i.test(member.organizations?.name??'');
+}
+export function createAssignedDemoHandler(config:AssignedDemoConfig,deps:{startClient:(secret:string)=>Promise<void>;startCarrier:(email:string,password:string)=>Promise<boolean>;startConnectedClient?:(email:string,password:string,organizationId:string)=>Promise<boolean>}){
  const json=(value:unknown,status=200)=>Response.json(value,{status,headers:{'Cache-Control':'no-store, private','X-Content-Type-Options':'nosniff','Vary':'Origin, Cookie'}});
  return async(request:Request)=>{
   if(!assignedDemoAllowed(config,request.headers.get('host')))return json({ok:false,code:'DEMO_DISABLED'},404);
@@ -20,7 +26,14 @@ export function createAssignedDemoHandler(config:AssignedDemoConfig,deps:{startC
   const input=await request.json().catch(()=>null);
   if(!input||Object.keys(input).length!==1||!['client','carrier'].includes(input.workspace))return json({ok:false,code:'INVALID_DEMO_WORKSPACE'},400);
   try{
-   if(input.workspace==='client'){await deps.startClient(config.secret!);return json({ok:true,destination:'/clients'});}
+   if(input.workspace==='client'){
+    if(config.clientOrganizationId){
+     if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(config.clientOrganizationId)
+      ||!syntheticDemoEmail(config.carrierEmail)||!config.carrierPassword||!deps.startConnectedClient
+      ||!await deps.startConnectedClient(config.carrierEmail!,config.carrierPassword,config.clientOrganizationId))return json({ok:false,code:'DEMO_ACCOUNT_UNAVAILABLE'},503);
+    }else await deps.startClient(config.secret!);
+    return json({ok:true,destination:'/clients'});
+   }
    if(!syntheticDemoEmail(config.carrierEmail)||!config.carrierPassword)return json({ok:false,code:'DEMO_ACCOUNT_UNAVAILABLE'},503);
    if(!await deps.startCarrier(config.carrierEmail!,config.carrierPassword))return json({ok:false,code:'DEMO_ACCOUNT_UNAVAILABLE'},503);
    return json({ok:true,destination:'/carriers'});

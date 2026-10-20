@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {assignedCarrierPreviewAllowed,assignedDemoAllowed,createAssignedDemoHandler,syntheticDemoEmail,syntheticCarrierAccess,assignedVoicePreviewAllowed} from './assigned-demo-policy';
+import {assignedCarrierPreviewAllowed,assignedDemoAllowed,createAssignedDemoHandler,syntheticDemoEmail,syntheticCarrierAccess,syntheticClientAccess,assignedVoicePreviewAllowed} from './assigned-demo-policy';
 const origin='https://demo.example.test';
 const config={enabled:true,origin,secret:'demo-test-secret-at-least-thirty-two-characters',carrierEmail:'hac45-demo@example.invalid',carrierPassword:'test-only-not-a-real-secret'};
 function request(body:unknown={workspace:'carrier'},headers:Record<string,string>={}){return new Request(origin+'/api/auth/demo-session',{method:'POST',headers:{host:'demo.example.test',origin,'content-type':'application/json','sec-fetch-site':'same-origin',...headers},body:JSON.stringify(body)});}
@@ -67,4 +67,24 @@ test('cross-workspace visual demo requires exact configured synthetic identity a
  assert.equal(assignedCarrierPreviewAllowed(scoped,'demo.example.test',scoped.carrierEmail,[]),false);
  assert.equal(assignedCarrierPreviewAllowed(scoped,'demo.example.test',scoped.carrierEmail,[{carrierName:'Real Carrier'}]),false);
  assert.equal(assignedCarrierPreviewAllowed({...scoped,carrierEmail:'person@example.com'},'demo.example.test','person@example.com',access),false);
+});
+
+const demoOrganization='52000000-0000-4000-8000-000000000001';
+test('connected Client entry uses fixed server identity and organization, never visual fallback',async()=>{
+ let calls=0;
+ const handler=createAssignedDemoHandler({...config,clientOrganizationId:demoOrganization},{startClient:async()=>assert.fail('visual fallback'),startCarrier:async()=>assert.fail('wrong branch'),startConnectedClient:async(email,password,organizationId)=>{calls++;assert.equal(email,config.carrierEmail);assert.equal(password,config.carrierPassword);assert.equal(organizationId,demoOrganization);return true;}});
+ const result=await handler(request({workspace:'client'}));assert.equal(result.status,200);assert.equal(calls,1);
+ assert.deepEqual(await result.json(),{ok:true,destination:'/clients'});
+});
+test('native demo configuration fails closed on missing dependency, bad organization or denied membership',async()=>{
+ for(const organization of [demoOrganization,'not-an-id'])for(const startConnectedClient of [undefined,async()=>false,async()=>{throw Error('private diagnostic');}]){
+ const handler=createAssignedDemoHandler({...config,clientOrganizationId:organization},{startClient:async()=>assert.fail('visual fallback'),startCarrier:async()=>true,startConnectedClient});
+ const result=await handler(request({workspace:'client'}));assert.equal(result.status,503);assert.doesNotMatch(await result.text(),/private diagnostic/);
+ }
+});
+test('automatic native demo requires exact synthetic company and operational Supervisor, never Owner',()=>{
+ const member={organization_id:demoOrganization,role:'SUPERVISOR',status:'ACTIVE',organizations:{name:'[SYNTHETIC] Test Company',status:'ACTIVE'}};
+ assert.equal(syntheticClientAccess(member,demoOrganization),true);
+ for(const delta of [{organization_id:'another-company'},{role:'OWNER'},{role:'REQUESTER'},{status:'INACTIVE'},{organizations:{name:'Real company',status:'ACTIVE'}},{organizations:{name:'[SYNTHETIC] Test',status:'INACTIVE'}}])assert.equal(syntheticClientAccess({...member,...delta},demoOrganization),false);
+ assert.equal(syntheticClientAccess(null,demoOrganization),false);
 });
