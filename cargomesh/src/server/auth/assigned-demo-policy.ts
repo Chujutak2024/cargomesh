@@ -7,6 +7,11 @@ export function assignedDemoAllowed(config:AssignedDemoConfig,host:string|null){
 }
 export function syntheticDemoEmail(email:string|undefined){return !!email&&/^(hac\d+[-_]|qa-v2-|demo)/i.test(email)&&/\.(invalid|test)$/.test(email);}
 export function syntheticCarrierAccess(rows:unknown){return Array.isArray(rows)&&rows.length>0&&rows.every(row=>row&&typeof row.carrierName==='string'&&/^\[SYNTHETIC\]/i.test(row.carrierName));}
+/** A configured synthetic Carrier may also view Client demo data; no business membership is granted. */
+export function assignedCarrierPreviewAllowed(config:AssignedDemoConfig,host:string|null,email:string|undefined,access:unknown){
+ return assignedDemoAllowed(config,host)&&syntheticDemoEmail(config.carrierEmail)
+  &&email===config.carrierEmail&&syntheticCarrierAccess(access);
+}
 export function createAssignedDemoHandler(config:AssignedDemoConfig,deps:{startClient:(secret:string)=>Promise<void>;startCarrier:(email:string,password:string)=>Promise<boolean>}){
  const json=(value:unknown,status=200)=>Response.json(value,{status,headers:{'Cache-Control':'no-store, private','X-Content-Type-Options':'nosniff','Vary':'Origin, Cookie'}});
  return async(request:Request)=>{
