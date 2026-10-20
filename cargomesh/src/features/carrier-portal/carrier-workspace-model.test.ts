@@ -24,9 +24,9 @@ test('demo requires an explicit exact query value and the server capability',()=
 test('connected menu has no customer editor or duplicate vehicle registration; demo retains both',()=>{
   const items=(demoMode:boolean)=>carrierNavigation({locale:'en',workspaceHref:'/v2-workspace',towerHref:'/v2-workspace#/tower',editRequest:true,demoMode}).flatMap(group=>group.items);
   assert.ok(!items(false).some(item=>item.id==='request'||item.id==='register'));
-  assert.equal(items(false).find(item=>item.id==='desk')?.label,'Offers');
+  assert.equal(items(false).find(item=>item.id==='commercial')?.label,'Commercial');
+  assert.ok(!items(false).some(item=>item.id==='desk'||item.id==='pipeline'));
   assert.equal(items(false).find(item=>item.id==='orders')?.href,'/v2-workspace#/orders');
-  assert.ok(items(false).some(item=>item.id==='pipeline'));
   assert.ok(!items(true).some(item=>item.id==='orders'||item.id==='pipeline'));
   assert.ok(items(true).some(item=>item.id==='request'));
 });

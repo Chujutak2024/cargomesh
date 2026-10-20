@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ACESFilmicToneMapping, Color, Group, MathUtils, OrthographicCamera, PMREMGenerator, SRGBColorSpace, Vector3 } from 'three';
+import { ACESFilmicToneMapping, Box3, Color, Group, MathUtils, OrthographicCamera, PMREMGenerator, SRGBColorSpace, Vector3 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildDepot, disposeDepot } from './depot-model';
@@ -10,6 +10,7 @@ import { buildCargoMeshTruck, disposeCargoMeshTruck, setTruckCargoAccess, setTru
 import { depotYardPose } from './depot-yard-pose';
 import type { DepotCoordinator } from './depot-coordinator';
 import { truckDesign } from './visual-catalog';
+import { depotOverview } from './depot-camera';
 
 export type YardViewControls = { zoom: (factor: number) => void; overview: () => void };
 type Props = {
@@ -38,6 +39,7 @@ function Yard({ controller, color, active, running, reduced, night, onReady, onF
     }
     return { depot, actors, trucks, payloads };
   }, [controller, color, templateId, designKey]);
+  const overviewFrame = useMemo(() => depotOverview(new Box3().setFromObject(world.depot.root), size.width, size.height), [world, size.width, size.height]);
   useEffect(() => {
     const { depot, actors, trucks, payloads } = world;
     invalidate(); onReady();
@@ -52,6 +54,11 @@ function Yard({ controller, color, active, running, reduced, night, onReady, onF
   useEffect(() => {
     const controls = new OrbitControls(camera, gl.domElement); orbit.current = controls;
     controls.target.set(0, 0, 1); controls.enablePan = true; controls.enableDamping = !reduced;
+    const saved = controller.getCamera();
+    if (saved) {
+      camera.position.fromArray(saved.position); controls.target.fromArray(saved.target); camera.zoom = saved.zoom;
+      camera.updateProjectionMatrix(); guided.current = saved.guided; focusKey.current = saved.focusKey;
+    }
     controls.minZoom = 3; controls.maxZoom = 100; controls.minPolarAngle = .08; controls.maxPolarAngle = Math.PI / 2 - .03;
     controls.dampingFactor = .12; controls.rotateSpeed = .6; controls.zoomSpeed = .7;
     const change = () => invalidate(), manual = () => { guided.current = false; invalidate(); };
@@ -70,7 +77,9 @@ function Yard({ controller, color, active, running, reduced, night, onReady, onF
     node.setAttribute('aria-label', 'Interactive depot. Drag to orbit, scroll to zoom. Arrow keys rotate; Home returns to overview.');
     node.addEventListener('keydown', key); node.addEventListener('webglcontextlost', onFailure);
     controls.addEventListener('start', manual); controls.addEventListener('change', change); onControls({ zoom, overview });
-    return () => { onControls(null); node.removeEventListener('keydown', key); node.removeEventListener('webglcontextlost', onFailure); controls.removeEventListener('start', manual); controls.removeEventListener('change', change); controls.dispose(); orbit.current = null; };
+    return () => {
+      onControls(null); node.removeEventListener('keydown', key); node.removeEventListener('webglcontextlost', onFailure); controls.removeEventListener('start', manual); controls.removeEventListener('change', change); controls.dispose(); orbit.current = null;
+    };
   }, [camera, gl, controller, reduced, invalidate, onControls, onFailure]);
   useEffect(() => controller.subscribe(() => invalidate()), [controller, invalidate]);
   useEffect(() => {
@@ -103,7 +112,7 @@ function Yard({ controller, color, active, running, reduced, night, onReady, onF
     const open = bayTruck && ['loading', 'docking', 'ready'].includes(bayTruck.phase) ? 1 : 0;
     world.depot.shutters[1].scale.y = 1 - open * .96; world.depot.shutters[1].position.y = .35 + 2.28 * open * .96;
     world.depot.barrier.rotation.x = time >= 43500 && time < 56000 ? -Math.PI / 2 : 0;
-    world.depot.exitBarrier.rotation.x = time < 8000 || time >= 22000 && time < 40000 ? -Math.PI / 2 : 0;
+    world.depot.exitBarrier.rotation.x = snapshot.vehicles.length && (time < 8000 || time >= 22000 && time < 40000) ? -Math.PI / 2 : 0;
     const selected = snapshot.vehicles.find(v => v.assetId === snapshot.selectedAssetId);
     const focused = selected && !['unknown', 'departed'].includes(selected.phase);
     const nextFocusKey = `${snapshot.selectedAssetId}:${snapshot.interior}:${size.width}:${size.height}`;
@@ -111,13 +120,15 @@ function Yard({ controller, color, active, running, reduced, night, onReady, onF
     if (guided.current) {
       const target = focusTarget.current;
       if (focused) target.copy(depotYardPose(selected, time).position).setY(.9);
-      else target.set(snapshot.interior ? 2 : 0, .6, snapshot.interior ? -1 : 1);
-      focusPosition.current.copy(target).add(new Vector3(-24, 25, 30));
+      else target.copy(overviewFrame.target);
+      if (focused) focusPosition.current.copy(target).add(new Vector3(-24, 25, 30));
+      else focusPosition.current.copy(overviewFrame.position);
       const blend = reduced || !running || snapshot.focusInstant ? 1 : 1 - Math.exp(-Math.min(delta, .05) * 7);
       camera.position.lerp(focusPosition.current, blend); orbit.current?.target.lerp(target, blend);
-      if (camera instanceof OrthographicCamera) { const zoom = Math.min(size.width / (focused ? 17 : snapshot.interior ? 37 : 49), size.height / (focused ? 14 : 35)); camera.zoom = MathUtils.lerp(camera.zoom, Math.max(3, zoom), blend); camera.updateProjectionMatrix(); }
+      if (camera instanceof OrthographicCamera) { const zoom = focused ? Math.max(3, Math.min(size.width / 17, size.height / 14)) : overviewFrame.zoom; camera.zoom = MathUtils.lerp(camera.zoom, zoom, blend); camera.updateProjectionMatrix(); }
     }
     orbit.current?.update(Math.min(delta, .05));
+    if (orbit.current) controller.rememberCamera({ position: camera.position.toArray(), target: orbit.current.target.toArray(), zoom: camera.zoom, guided: guided.current, focusKey: focusKey.current });
     // R3F owns rendering/resizing. Metrics describe the last completed frame.
     Object.assign(gl.domElement.dataset, {
       depotInstance: world.depot.root.uuid, depotTime: time.toFixed(0), depotSelected: snapshot.selectedAssetId ?? '',
@@ -126,6 +137,8 @@ function Yard({ controller, color, active, running, reduced, night, onReady, onF
       geometries: String(gl.info.memory.geometries), textures: String(gl.info.memory.textures), dpr: String(gl.getPixelRatio()),
       cameraMode: focused ? 'selected' : 'overview', depotRoof: String(world.depot.roof.visible), motion: running ? 'running' : 'paused',
       depotTemplate: templateId, depotDesigns: snapshot.vehicles.map(vehicle => vehicle.designId).join(','),
+      cameraX: String(camera.position.x), cameraY: String(camera.position.y), cameraZ: String(camera.position.z), cameraZoom: String(camera.zoom),
+      targetX: String(orbit.current?.target.x), targetY: String(orbit.current?.target.y), targetZ: String(orbit.current?.target.z),
     });
   });
   return <>

@@ -1,6 +1,7 @@
 import type { TruckVisualType } from './truck-model';
-import { familyDesign, truckDesign } from './visual-catalog';
+import { familyDesign, truckDesign, truckDesigns, truckBody, compatibleTruckDesign, type TruckBody } from './visual-catalog';
 import { depotTemplates, type DepotTemplateId } from './depot-templates';
+import type { DepotCameraState } from './depot-camera';
 
 export type YardPhase = 'loading' | 'waiting' | 'parked' | 'departing' | 'departed' | 'maintenance' | 'manoeuvring' | 'docking' | 'ready' | 'unknown';
 export type YardVehicle = {
@@ -8,7 +9,7 @@ export type YardVehicle = {
   resourceCode: string | null; reserved: boolean;
   motion: 'loader-a' | 'queue-b' | 'exit-d' | null;
   slot: [number, number, number];
-  cargo: 'PALLETS' | null; tripId: string | null; designId?: string;
+  cargo: 'PALLETS' | null; tripId: string | null; designId?: string; body?: TruckBody;
   visitor?: { visitId: string; authorized: true };
 };
 export type YardEvent = { eventId: string; atMs: number; assetId: string; phase: YardPhase; resourceCode: string | null; message: string };
@@ -73,12 +74,17 @@ function project(scenario: YardScenario, elapsedMs: number) {
 /** In-memory visual state owned above the views. No storage, network or reservations. */
 export function createDepotCoordinator(input = createDepotScenario()) {
   if (input.source !== 'SIMULATED' || !Number.isFinite(input.durationMs) || input.durationMs <= 0) throw new Error('INVALID_VISUAL_SCENARIO');
-  const scenario: YardScenario = { ...input, vehicles: input.vehicles.map(v => ({ ...v, designId: v.designId ?? familyDesign(v.family).id, slot: [...v.slot], visitor: v.visitor ? { ...v.visitor } : undefined })), events: [] };
+  const scenario: YardScenario = { ...input, vehicles: input.vehicles.map(v => {
+    const body = v.body ?? truckBody(familyDesign(v.family));
+    const designId = v.designId ?? truckDesigns.find(design => compatibleTruckDesign(design, v.family, body))?.id;
+    return { ...v, body, designId, slot: [...v.slot], visitor: v.visitor ? { ...v.visitor } : undefined };
+  }), events: [] };
   const vehicleIds = new Set<string>(), resources = new Set<string>(), events = new Map<string, YardEvent>();
   for (const vehicle of scenario.vehicles) {
     if (vehicleIds.has(vehicle.assetId)) throw new Error('DUPLICATE_VISUAL_ASSET');
     if (truckDesign(vehicle.designId)?.family !== vehicle.family) throw new Error('INVALID_VISUAL_DESIGN');
     if (vehicle.cargo && truckDesign(vehicle.designId)?.appearance.bodyStyle) throw new Error('INCOMPATIBLE_VISUAL_CARGO');
+    if (truckBody(truckDesign(vehicle.designId)!) !== vehicle.body) throw new Error('INCOMPATIBLE_VISUAL_BODY');
     if (vehicle.visitor && vehicle.visitor.authorized !== true) throw new Error('UNAUTHORIZED_VISITOR');
     if (vehicle.resourceCode && resources.has(vehicle.resourceCode)) throw new Error('VISUAL_BAY_OCCUPIED');
     if (vehicle.phase === 'unknown' && vehicle.resourceCode) throw new Error('UNKNOWN_LOCATION_HAS_NO_BAY');
@@ -93,12 +99,18 @@ export function createDepotCoordinator(input = createDepotScenario()) {
   scenario.events = [...events.values()].sort((a, b) => a.atMs - b.atMs || a.eventId.localeCompare(b.eventId));
   project(scenario, scenario.durationMs); // Validate every transition before a canvas can consume it.
   let time = 0;
+  let camera: DepotCameraState | null = null;
   let snapshot: YardSnapshot = { scenarioId: scenario.scenarioId, siteId: scenario.siteId, source: 'SIMULATED', elapsedMs: 0, ...project(scenario, 0), selectedAssetId: null, interior: false, requestedPlay: null, completed: false, focusInstant: true, templateId: 'distribution' };
   const listeners = new Set<() => void>();
   const update = (patch: Partial<YardSnapshot>) => { snapshot = { ...snapshot, ...patch }; listeners.forEach(listener => listener()); };
   return {
     getSnapshot: () => snapshot,
     getElapsedMs: () => time,
+    getCamera: () => camera ? { ...camera, position: [...camera.position] as DepotCameraState['position'], target: [...camera.target] as DepotCameraState['target'] } : null,
+    rememberCamera(value: DepotCameraState) {
+      if (![...value.position, ...value.target, value.zoom].every(Number.isFinite) || value.zoom < 3 || value.zoom > 100) throw new Error('INVALID_DEPOT_CAMERA');
+      camera = { ...value, position: [...value.position], target: [...value.target] };
+    },
     subscribe: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
     advance(deltaMs: number) {
       if (!Number.isFinite(deltaMs) || deltaMs < 0) throw new Error('INVALID_VISUAL_DELTA');
@@ -122,6 +134,7 @@ export function createDepotCoordinator(input = createDepotScenario()) {
       const vehicle = scenario.vehicles.find(item => item.assetId === assetId), design = truckDesign(designId);
       if (!vehicle || !design || design.family !== vehicle.family) throw new Error('INVALID_VISUAL_DESIGN');
       if (vehicle.cargo && design.appearance.bodyStyle) throw new Error('INCOMPATIBLE_VISUAL_CARGO');
+      if (truckBody(design) !== vehicle.body) throw new Error('INCOMPATIBLE_VISUAL_BODY');
       vehicle.designId = designId;
       update({ ...project(scenario, time) });
     },

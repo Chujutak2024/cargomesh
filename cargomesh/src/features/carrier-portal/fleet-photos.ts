@@ -42,6 +42,7 @@ export const fleetPhotos = {
 export function fleetReferencePhoto(vehicle: FleetVehicle) {
   if(vehicle.photoDataUrl)return {...fleetPhotos[vehicle.variant],src:vehicle.photoDataUrl,es:"Foto del camión",en:"Truck photo"};
   if(vehicle.source === "SERVICE" && vehicle.visual) return {...fleetPhotos[vehicle.variant], src:vehicle.visual.poster, position:"50% 50%", es:"Modelo 3D de referencia", en:"3D model reference"};
+  if(vehicle.source === "SERVICE") return {...fleetPhotos[vehicle.variant], src:'/v2-workspace/trucks/reference.svg', es:'Sin modelo específico', en:'No specific model'};
   // The alternate is an example's presentation choice, not a service-record photo.
   return vehicle.source === "EXAMPLE" && vehicle.code === "CM-212"
     ? fleetPhotos.articulatedAlternate : fleetPhotos[vehicle.variant];
