@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "2.0",
+  "scenario": "v2-client-base",
+  "synthetic": true,
+  "clock": "2026-10-19T12:00:00Z",
+  "planningHorizon": {"startsAt": "2026-10-19T12:00:00Z", "endsAt": "2026-11-02T12:00:00Z"},
+  "carrierCatalog": "supabase/scenarios/v2-carrier-fleet-80",
+  "commercialSeedOwner": "HAC-54 / Luis; separate file, not included here",
+  "organizations": [
+    {"id":"52000000-0000-4000-8000-000000000001","code":"HAC52_PE","name":"[SYNTHETIC] Pacific Produce","countryCode":"PE","timezone":"America/Lima","memberId":"52020000-0000-4000-8000-000000000001","email":"hac52-client-pe@example.invalid","profileId":"52040000-0000-4000-8000-000000000001","preferenceId":"52050000-0000-4000-8000-000000000001"},
+    {"id":"52000000-0000-4000-8000-000000000002","code":"HAC52_BO","name":"[SYNTHETIC] Altiplano Supply","countryCode":"BO","timezone":"America/La_Paz","memberId":"52020000-0000-4000-8000-000000000002","email":"hac52-client-bo@example.invalid","profileId":"52040000-0000-4000-8000-000000000002","preferenceId":"52050000-0000-4000-8000-000000000002"},
+    {"id":"52000000-0000-4000-8000-000000000003","code":"HAC52_CL","name":"[SYNTHETIC] Southern Distribution","countryCode":"CL","timezone":"America/Santiago","memberId":"52020000-0000-4000-8000-000000000003","email":"hac52-client-cl@example.invalid","profileId":"52040000-0000-4000-8000-000000000003","preferenceId":"52050000-0000-4000-8000-000000000003"}
+  ],
+  "facilities": [
+    {"id":"52010000-0000-4000-8000-000000000001","organizationId":"52000000-0000-4000-8000-000000000001","code":"PE_LIMA","name":"[SYNTHETIC] Lima pickup warehouse","countryCode":"PE","region":"Lima","city":"Lima","address":"Fictional Pacific Avenue 101","lat":-12.0464,"lng":-77.0428,"timezone":"America/Lima","hoursKnown":true},
+    {"id":"52010000-0000-4000-8000-000000000002","organizationId":"52000000-0000-4000-8000-000000000001","code":"PE_AREQUIPA","name":"[SYNTHETIC] Arequipa distribution center","countryCode":"PE","region":"Arequipa","city":"Arequipa","address":"Fictional Volcano Avenue 202","lat":-16.4090,"lng":-71.5375,"timezone":"America/Lima","hoursKnown":true},
+    {"id":"52010000-0000-4000-8000-000000000003","organizationId":"52000000-0000-4000-8000-000000000001","code":"PE_TACNA","name":"[SYNTHETIC] Tacna delivery address","countryCode":"PE","region":"Tacna","city":"Tacna","address":"Fictional Southern Street 303","lat":-18.0146,"lng":-70.2536,"timezone":"America/Lima","hoursKnown":false},
+    {"id":"52010000-0000-4000-8000-000000000004","organizationId":"52000000-0000-4000-8000-000000000002","code":"BO_LAPAZ","name":"[SYNTHETIC] La Paz pickup warehouse","countryCode":"BO","region":"La Paz","city":"La Paz","address":"Fictional Altiplano Avenue 404","lat":-16.4897,"lng":-68.1193,"timezone":"America/La_Paz","hoursKnown":true},
+    {"id":"52010000-0000-4000-8000-000000000005","organizationId":"52000000-0000-4000-8000-000000000002","code":"BO_ORURO","name":"[SYNTHETIC] Oruro distribution center","countryCode":"BO","region":"Oruro","city":"Oruro","address":"Fictional Plateau Street 505","lat":-17.9647,"lng":-67.1060,"timezone":"America/La_Paz","hoursKnown":true},
+    {"id":"52010000-0000-4000-8000-000000000006","organizationId":"52000000-0000-4000-8000-000000000002","code":"BO_SANTACRUZ","name":"[SYNTHETIC] Santa Cruz delivery address","countryCode":"BO","region":"Santa Cruz","city":"Santa Cruz de la Sierra","address":"Fictional Eastern Avenue 606","lat":-17.7833,"lng":-63.1821,"timezone":"America/La_Paz","hoursKnown":true},
+    {"id":"52010000-0000-4000-8000-000000000007","organizationId":"52000000-0000-4000-8000-000000000003","code":"CL_ARICA","name":"[SYNTHETIC] Arica pickup warehouse","countryCode":"CL","region":"Arica y Parinacota","city":"Arica","address":"Fictional Desert Street 707","lat":-18.4783,"lng":-70.3126,"timezone":"America/Santiago","hoursKnown":true},
+    {"id":"52010000-0000-4000-8000-000000000008","organizationId":"52000000-0000-4000-8000-000000000003","code":"CL_IQUIQUE","name":"[SYNTHETIC] Iquique delivery address","countryCode":"CL","region":"Tarapaca","city":"Iquique","address":"Fictional Coastal Avenue 808","lat":-20.2307,"lng":-70.1357,"timezone":"America/Santiago","hoursKnown":true}
+  ]
+}
