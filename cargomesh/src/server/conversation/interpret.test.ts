@@ -120,3 +120,10 @@ test("Bedrock cannot turn a help question into a facility or booking", async () 
   assert.equal(response.interpretation.intent, "HELP");
   assert.deepEqual(response.interpretation.fields, []);
 });
+
+test("long multi-detail input always respects the published response contract", async () => {
+ const {InterpretationResponseSchema}=await import("@/features/v2-conversation-prep/interpretation");
+ const result=await interpretConversationTurn({schemaVersion:"2.0",currentField:"originFacilityId",text:"Quiero crear un pedido de prueba: una caja de insumos de carga general, 100 kg, 1 m³, dimensiones 100 × 100 × 100 cm. Recojo en la sede de Lima y entrega en la sede de Arequipa de Pacific Produce. Mantener seco, no apilar y conservar la caja entera. Recojo el 22 de octubre de 2026 de 08:00 a 10:00, entrega el 23 de octubre de 2026 de 08:00 a 13:00, hora de Perú."},{config:conversationBedrockConfig({})});
+ assert.equal(InterpretationResponseSchema.safeParse(result).success,true);
+ assert.equal(result.interpretation.fields.some(f=>f.field==="destinationFacilityId"&&f.value==="10:00"),false);
+});
