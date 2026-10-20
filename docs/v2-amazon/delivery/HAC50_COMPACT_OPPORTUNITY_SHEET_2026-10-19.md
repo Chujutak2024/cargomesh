@@ -99,3 +99,8 @@ Usuario solicita implementar su nueva referencia y cumplir el patrón atomizado 
 - Footer contiene solo Updated sin versión, sin Refresh duplicado. El refresco del shell sigue vigente.
 
 Sin revisión posterior, pruebas, compilación, capturas, nuevos renders ni comprobación de navegador por instrucción expresa vigente del usuario. Tampoco acciones comerciales, DDL/auth/rutas, push o Vercel/main. Cambios aplicados, aún sin certificación visual/funcional de este corte. Respaldo before-record-pattern/.
+
+### Densidad de escritorio reducida — 20-oct-2026
+El usuario considera demasiado grande la escala anterior. Se reduce solo la ficha de oportunidad: título 24 px (22 móvil), secciones 16 px, cuerpo 13 px, etiquetas 12 px, valores destacados 16 px y ciudades 22 px. Padding de tarjetas 14 px, separaciones 12 px, trayecto/pines/iconos más pequeños y preview 210 px en escritorio. Botones conservan el átomo compartido y altura de interacción de 44 px, con texto de 12 px. Se modifica la escala declarada y reglas existentes, sin zoom ni transformaciones globales ni bloques CSS de compensación.
+
+Sin cambios de datos, estructura, contratos, permisos, acciones, rutas o navegación. No se ejecutan pruebas, compilación, revisión ni capturas por la instrucción vigente del usuario. Aplicación local sin certificar el resultado final. Respaldo before-record-density-20261020/. Push pendiente por el bloqueo de red previo, sin nuevo intento ni despliegue.
