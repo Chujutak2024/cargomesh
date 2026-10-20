@@ -54,6 +54,20 @@ freightRequestsRouter.post("/", async (c) => {
   } catch (error) { return v2Error(c, error); }
 });
 
+freightRequestsRouter.get("/:id/cargo-readiness", async (c) => {
+  c.header("Cache-Control", "private, no-store");
+  try {
+    const [{ v2DraftRepository }, { getCargoReadinessV2 }, { z }] = await Promise.all([
+      import("@/server/modules/freight-requests/infrastructure/supabase-draft-repository"),
+      import("@/server/modules/freight-requests/application/cargo-readiness"),
+      import("zod"),
+    ]);
+    const expected = z.coerce.number().int().positive().optional().parse(c.req.query("expectedDraftVersion"));
+    return c.json(await getCargoReadinessV2(c.req.param("id"), expected,
+      c.get("member"), await v2DraftRepository()));
+  } catch (error) { return v2Error(c, error); }
+});
+
 freightRequestsRouter.get("/:id/serviceability", async (c) => {
   try {
     const [{ v2DraftRepository }, { createV2ServerSupabaseClient },

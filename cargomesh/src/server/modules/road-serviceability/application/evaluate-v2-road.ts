@@ -5,7 +5,7 @@ import { RoadServiceabilityEvaluationV2ResponseSchema, type RoadCandidateV2 } fr
 import { ResourceEvidenceRequirementCodesV2 } from "@/shared/schemas/v2/intake-options";
 import { V2DraftError, getV2Draft, type V2Actor, type V2DraftRepository } from
   "@/server/modules/freight-requests/application/draft-service";
-import { evaluateRoad, type RoadService, type Status } from "../domain/evaluate-road";
+import { evaluateRoad, fitsUprightDimensions, type RoadService, type Status } from "../domain/evaluate-road";
 
 export interface RoadCatalogRepository {
   listRoadServices(): Promise<RoadService[]>;
@@ -59,6 +59,7 @@ export async function evaluateV2RoadByRequestId(
     totalVolumeM3: Math.max(request.cargoSpecification.totalVolumeM3, unitTotals.volumeM3),
     indivisibleUnits: request.cargoSpecification.units.filter((unit) => unit.indivisible)
       .map((unit) => ({ weightKg: unit.weightPerUnitKg, volumeM3: unit.volumePerUnitM3 })),
+    unitDimensionsCm: request.cargoSpecification.units.map((unit) => unit.dimensionsCm),
     requiredEquipmentCode: request.requiredEquipment,
     serviceClass: request.serviceType ?? "FTL",
     requiredCertifications: request.cargoSpecification.requirements.filter((code) =>
@@ -82,18 +83,22 @@ export async function evaluateV2RoadByRequestId(
     const deliveryArea = service.areas.find((item) => item.id === delivery.includedIds[0]);
     const capacityReason = capacity.reason ?? "CAPACITY_WINDOW_VERIFIED";
     const hardCapacityFailure = ["EQUIPMENT_MISMATCH", "CARGO_CATEGORY_UNSUPPORTED",
-      "OVER_CAPACITY", "INDIVISIBLE_UNIT_OVER_CAPACITY"].includes(capacityReason);
+      "OVER_CAPACITY", "INDIVISIBLE_UNIT_OVER_CAPACITY", "UNIT_DIMENSIONS_EXCEEDED"].includes(capacityReason);
     const cargoStatus: Status = cargo.status === "ineligible" || requirements.status === "ineligible"
       || hardCapacityFailure
       ? "ineligible" : cargo.status === "unknown" || requirements.status === "unknown"
+        || capacityReason === "VEHICLE_DIMENSIONS_UNKNOWN"
         || !source || source.cargoCategoryCodes === null
         || source.maxWeightKg === null || source.maxVolumeM3 === null
         || (request.requiredEquipment && !source.equipmentCode)
           ? "unknown" : "eligible";
-    const indivisibleFit = !source || source.maxWeightKg === null || source.maxVolumeM3 === null
+    const indivisibleFit = capacityReason === "VEHICLE_DIMENSIONS_UNKNOWN"
+      || !source || !source.usableDimensionsCm
+      || source.maxWeightKg === null || source.maxVolumeM3 === null
       ? null : request.cargoSpecification.units.filter((unit) => unit.indivisible)
         .every((unit) => unit.weightPerUnitKg <= source.maxWeightKg!
-          && unit.volumePerUnitM3 <= source.maxVolumeM3!);
+          && unit.volumePerUnitM3 <= source.maxVolumeM3!
+          && fitsUprightDimensions(unit.dimensionsCm, source.usableDimensionsCm!));
     return {
       candidateId: `road:${service.id}`,
       status: candidate.status,
@@ -122,7 +127,8 @@ export async function evaluateV2RoadByRequestId(
           requiredEquipment: request.requiredEquipment,
           indivisibleUnitsFit: indivisibleFit,
           reasonCode: cargo.reason ?? requirements.reason
-            ?? (hardCapacityFailure ? capacityReason : "CARGO_AND_EQUIPMENT_CHECKED"),
+            ?? (hardCapacityFailure || capacityReason === "VEHICLE_DIMENSIONS_UNKNOWN"
+              ? capacityReason : "CARGO_AND_EQUIPMENT_CHECKED"),
         },
         capacityWindow: {
           status: capacity.status,

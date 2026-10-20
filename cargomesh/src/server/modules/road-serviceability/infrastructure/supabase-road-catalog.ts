@@ -11,6 +11,16 @@ function rows<T>(result: QueryRows<T>): T[] {
   return result.data ?? [];
 }
 
+const UsableDimensionsSchema = z.object({
+  length: z.number().finite().positive(), width: z.number().finite().positive(),
+  height: z.number().finite().positive(),
+});
+
+function usableDimensions(value: unknown) {
+  const parsed = UsableDimensionsSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
 function windows(value: unknown): Window[] | null {
   const parsed = TimeWindowV2Schema.array().safeParse(value);
   return parsed.success ? parsed.data : null;
@@ -36,7 +46,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
     db.from("service_areas").select("*").in("carrier_service_id", serviceIds),
     db.from("service_lanes").select("*").in("carrier_service_id", serviceIds),
     db.from("transport_assets")
-      .select("id,carrier_id,carrier_service_id,equipment_code,asset_role,max_weight_kg,max_volume_m3,active,fleet_managed,evidence,fulfilment_source,fulfilment_partner_id")
+      .select("id,carrier_id,carrier_service_id,equipment_code,asset_role,max_weight_kg,max_volume_m3,usable_dimensions,active,fleet_managed,evidence,fulfilment_source,fulfilment_partner_id")
       .in("carrier_service_id", serviceIds).eq("active", true),
     db.from("capacity_pools")
       .select("id,carrier_id,carrier_service_id,equipment_code,max_weight_kg,max_volume_m3,supported_cargo_category_ids,active,starts_at,ends_at,evidence,fulfilment_source,fulfilment_partner_id")
@@ -163,6 +173,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
                 } : {}) }];
             }),
             maxWeightKg: asset.max_weight_kg, maxVolumeM3: asset.max_volume_m3,
+            usableDimensionsCm: usableDimensions(asset.usable_dimensions),
             ...(asset.fleet_managed ? {
               sourceEvidenceAvailable: Boolean(asset.evidence && (asset.fulfilment_source !== "PARTNER"
                 || (asset.fulfilment_partner_id && partners.get(asset.fulfilment_partner_id)?.status === "ACTIVE"))),
@@ -189,6 +200,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
                 .filter((code): code is string => Boolean(code)) : null,
             cargoCapabilities: null,
             maxWeightKg: pool.max_weight_kg, maxVolumeM3: pool.max_volume_m3,
+            usableDimensionsCm: null,
             sourceWindow: pool.starts_at && pool.ends_at ? { startsAt: pool.starts_at, endsAt: pool.ends_at } : null,
             sourceEvidenceAvailable: Boolean(pool.evidence && pool.fulfilment_source && (pool.fulfilment_source !== "PARTNER"
               || (pool.fulfilment_partner_id && partners.get(pool.fulfilment_partner_id)?.status === "ACTIVE"
