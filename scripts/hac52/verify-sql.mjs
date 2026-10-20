@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {ROOT,sql} from './provision-local.mjs';
 try{
- const result=sql(await fs.readFile(path.join(ROOT,'supabase/tests/hac52_client_context.test.sql'),'utf8'));
+ const result=sql(await fs.readFile(path.join(ROOT,'supabase/tests/38_v2_hac52_client_context.test.sql'),'utf8'));
  const lines=result.split(/\r?\n/).filter(line=>/^(not ok|ok |1\.\.|#)/.test(line));
  console.log(lines.join('\n'));
  if(process.argv[2])await fs.writeFile(process.argv[2],lines.join('\n')+'\n');

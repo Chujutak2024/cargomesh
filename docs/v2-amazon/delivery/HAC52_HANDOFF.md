@@ -85,9 +85,12 @@ positive controls in the same transaction. No full release suite was run.
 
 ## Exact hosted prerequisites — not applied
 
-1. Review/apply these additive migrations in order after the existing chain:
-   `20261020000100_hac52_facility_civil_hours.sql`,
-   `20261020000200_hac52_client_action_confirmations.sql`.
+1. Reconcile the documented hosted baseline and review the complete ordered
+   migration package in [HAC52_HOSTED_ROLLOUT_PLAN.md](./HAC52_HOSTED_ROLLOUT_PLAN.md):
+   five main migrations after the last documented 27-entry deployment, followed
+   by `20261020000100_hac52_facility_civil_hours.sql` and
+   `20261020000200_hac52_client_action_confirmations.sql`. The live hosted ledger
+   remains unknown; no hosted connection or application is part of HAC-52.
 2. Administrator provisions the approved synthetic Client account, isolated
    organization and active member via an authorized hosted procedure. No hosted
    Auth credential or provisioning command is supplied by this task.
@@ -134,3 +137,65 @@ Carrier agenda/Depot edit. HAC-51 still contains `2bcb1ba`, with preserved head
 `c9cd7bb0f686299920b017a4a15dfaf129c7fa5a`; it is not integrated in main.
 The original checkout retains its original branch and its two pre-existing
 untracked Devpost files. Logs, private access and backups stay outside the repo.
+
+## CI manifest and pgTAP correction — October 20
+
+The [actual failed CI run](https://github.com/Chujutak2024/cargomesh/actions/runs/39363133775)
+at `5d83990490a077433fa97288756e242e71f31a95` had both database jobs **failed**, not
+pending: `RuntimeError: Every V2 migration must be manifested` at `gate.py:83`.
+The application job passed. Both gate actions call the same manifest validation.
+
+The two HAC-52 migration entries are now appended with canonical file hashes,
+schema type, `v2-clean` profile and preceding dependencies. Every pre-existing
+manifest entry remains identical. No migration or gate implementation changed.
+The renamed `supabase/tests/38_v2_hac52_client_context.test.sql` is explicitly
+registered in `supabase-v2/test-profiles.json`; `gate.py` uses this list, not a glob.
+The focused runner uses the new path. Its fixture now creates its own distinct
+Auth subjects without credentials, organizations, memberships, Facilities and
+preference inside the rollback transaction. It needs neither the task bank marker
+nor its private seed/access file. All existing authorization/confirmation cases
+remain, under `authenticated` with synthetic JWT claims and positive controls.
+
+The user explicitly requested the complete native V2 and V1 profiles for this
+correction. They ran in a task-owned Docker-in-Docker daemon named
+`hac52-ci-gate-daemon`, with no published host ports. The repository was mounted
+at `/workspace`; external evidence was mounted at `/evidence`. Thus the gate's
+fixed container names resolve only inside the new daemon, not to the existing
+same-named banks on the host. The original gate source SHA-256 is
+`7a5190b0684a2176b7bb29c1628e93cca3d4f86bad8f24f0f87527ff906c61ac`.
+
+Exact native commands, run from `/workspace` in that daemon with Python 3.12.15
+and the gate-pinned Supabase CLI **2.117.0**:
+
+```text
+python3 supabase-v2/gate.py v2 --evidence-dir /evidence/v2-complete
+python3 supabase-v2/gate.py v1 --evidence-dir /evidence/v1-complete
+```
+
+| Actual local result | Evidence/output |
+| --- | --- |
+| V2 gate exit 0 | 34 migrations; `Files=29, Tests=1053`, `Result: PASS`; test 38 explicitly reports `ok` |
+| HAC-52 focused SQL exit 0 | 30/30 checks, transaction rolled back |
+| V1 gate exit 0 | `Files=9, Tests=183`, `Result: PASS` |
+| Frozen baseline drift | PASS; normalized schema SHA-256 `b5e07dec38cf8e9ec99315ec5859b874f469d99970156c47ded1aeaa62d86e73` |
+| V1 fixture exclusion | 9/9 positive/negative controls PASS |
+| Concurrency | All five native request/catalog/fleet/crew/workflow race scripts exit 0 |
+| Guarded cleanup | Public backup and FK audit precede cleanup; all ten asserted scenario tables have zero rows; reference categories remain |
+
+Full logs/backups are outside Git at
+`C:\Users\Usuario\Documents\Proyectos\hac52-evidence\ci-fix\`:
+`v2-complete/`, `v1-complete/`, their console/exit files and `focused-pgtap.log`.
+The first two CLI-install attempts were interrupted while a public npm download
+was stalled; their failed evidence remains in `v2/` and `v2-retry/`. The exact
+official package was verified against npm SHA-512 integrity and the partial npm
+installation was replaced from that cache. TLS verification stayed enabled.
+The successful profiles above include their own CLI-version checks and full
+native execution; interrupted attempts are not counted as PASS.
+
+Coverage limit for the integrator/HAC-50 owner: existing suites 35–37 are outside
+the current explicit V2 profile and require their own scenarios. This correction
+does not change their tests, fixture requirements or Carrier implementation.
+The complete offline hosted candidate delta, seed/account procedure and
+backup/rollback plan is in [HAC52_HOSTED_ROLLOUT_PLAN.md](./HAC52_HOSTED_ROLLOUT_PLAN.md).
+Live CI results for the pushed correction belong to its exact PR head and are
+recorded in PR #132 after the jobs finish; local PASS is not a CI claim.
