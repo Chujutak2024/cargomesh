@@ -1,5 +1,7 @@
 # HAC-54 — current-main integration and October 21 local preparation
 
+Subsequent user-authorized [local OWNER fixture and native correction](../../../supabase/scenarios/v2-hac54-local-owner/README.md) resolves the QA currency/context blocker below: organization version 2/USD, OWNER and SUPERVISOR context reads 200, existing seam runner exit 0. Historical observations at `edd1967` remain below. Google Maps and human acceptance remain pending.
+
 Owner: Luis. Branch `codex/v2-client-commercial-operations`, draft PR [#133](https://github.com/Chujutak2024/cargomesh/pull/133), target `main`. This follow-up preserves H0–H4 and the October 19 schedule. **It does not certify human CP-L1–L4 acceptance, whole-issue completion, deployment, live GPS or a working Google Maps provider.**
 
 ## Current approved main / environment
@@ -71,6 +73,6 @@ Local screenshot: `C:/Users/holap/Documents/Codex/HAC54-evidence-20261020/oct21-
 
 For immediate viewing: `/clients/bookings`, manual comparison `/clients/requests/8671391b-89a8-44c0-9e14-b99c5af26bc7`, planned tracking `/clients/tracking/4263816c-7646-4424-80a0-6b718e91415d`. For already-reported synthetic transit today use the unchanged October 20 case `/clients/tracking/fb4e98b8-9a8b-424e-901f-908d84d6bd2f`.
 
-Remaining: Google referrer authorization; QA organization currency/OWNER dependency; grouped human CP-L1–L4, form/chat and Carrier end-to-end acceptance on October 21; authorized final gate/integration. HAC-54 stays **In Progress** and PR #133 stays incremental/draft. This report supersedes the earlier *local migration gap* and *no fresh October 21 recipe* caveats only at this new cut; it does not rewrite historical evidence or certify hosted state.
+Remaining at `edd1967`: Google referrer authorization; QA organization currency/OWNER dependency (subsequently resolved locally as linked above); grouped human CP-L1–L4, form/chat and Carrier end-to-end acceptance on October 21; authorized final gate/integration. HAC-54 stays **In Progress** and PR #133 stays incremental/draft. This report supersedes the earlier *local migration gap* and *no fresh October 21 recipe* caveats only at this new cut; it does not rewrite historical evidence or certify hosted state.
 
 Material blockers and native constraint corrections are also recorded in the [friction log](./friction-logs/HAC54_OCT21_PROVIDER_AND_CONTEXT_2026-10-20.md).

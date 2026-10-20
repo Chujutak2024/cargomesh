@@ -8,6 +8,8 @@ The configured browser key loads Google's script but Google reports `RefererNotA
 
 ## Shared Client context vs historical QA bank
 
+**Subsequently resolved locally with explicit user authorization:** a separate [synthetic OWNER](../../../../supabase/scenarios/v2-hac54-local-owner/README.md) performed the native versioned/confirmed correction, version 1 → 2/USD. Both existing SUPERVISOR and OWNER context reads now return 200; seam runner exits 0. No existing member was promoted. The initial denial below remains accurate historical evidence, not a current local blocker. Hosted/base-data behavior is not certified by this correction.
+
 Cookie-authenticated `GET /api/v2/client-context?limit=25&offset=0` returns 400 `VALIDATION_ERROR` on `value.defaultCurrency`. Historical QA A organization metadata is PEN; the current Organization V2 schema requires USD. A current-version `organization.revise` proposal for that exact synthetic organization returns 403 `FORBIDDEN_TENANT`: its only active synthetic member is SUPERVISOR, while the native confirmation contract requires OWNER. No proposal was persisted, role was granted, SQL repair was forced or schema was relaxed.
 
 The independent intake options, Facilities list, DRAFT POST/replay/GET, cargo-readiness and commercial refresh remain usable. The seam runner explicitly prints the context blocker and exits 2, never disguising it as a successful integrated response. Resolution belongs to a coordinated authorized-owner / base-data correction with HAC-52; no silent edit to Jean's seed. It is unrelated to Google or Carrier quote prices.
