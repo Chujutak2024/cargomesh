@@ -57,6 +57,49 @@ reserved ranges and actual bind probes confirmed 64620–64629 and app port 5958
 available. The bank uses 64621/64622. No reservation, firewall, TLS setting or other
 bank was changed.
 
-Linear is not connected in this session. The current task prompt supplies the
-approved branch and October 19 plan; no issue state or content has been changed.
+Linear became connected during H2. HAC-52 and HAC-51 were read; the registered
+branch and current October 19 plan agree with this task. No issue state or
+content has been changed.
 Human CP-J1..J3 validation remains scheduled for October 21.
+
+## H2 connected editors
+
+Open `/clients/facilities` to list, create, select details and revise addresses,
+coordinates, local hours and restrictions. A copied `?facility=UUID` opens the
+same saved detail after a reload. Open `/clients/organization` to revise the
+organization, create/revise cargo profiles with unit templates, and manage the
+existing organization transport preferences. All controls reuse
+`components/ui`; the shell, sidebar, shared filters and assistant files are
+unchanged. Preview pages remain separate. No persisted operation falls back to
+fixtures after an error.
+
+Creation/revision keys are retained when a command is retried after a network
+failure. Invalid fields retain input; stale versions retain input and provide
+**Reload latest (discard edits)**. The next save uses the reloaded version.
+Code conflicts remain editable. Lists consume offset pagination, including the
+valid empty case. Role restrictions are reflected in the controls and enforced
+again by existing database commands/RLS.
+
+New migration: `20261020000100_hac52_facility_civil_hours.sql`. It replaces only
+the Facility validator implementation while preserving its OID, existing CHECK
+constraint, command and grants. It accepts closing at 24:00, validates IANA names,
+disallows overlap, and retains restriction validation. No historical migration
+or request-planning/Carrier Depot implementation was changed.
+
+Executed evidence:
+
+- `pnpm --dir cargomesh typecheck`: exit 0 after the connected editors.
+- From `cargomesh/`: `node --conditions=react-server --import tsx --test src/features/shipper-portal/client-settings-api.test.ts src/server/modules/facilities/application/facility-service.test.ts src/server/modules/organizations/application/organization-service.test.ts`: 9 passed, 0 failed.
+- `node scripts/hac52/verify-h2.mjs C:\Users\Usuario\Documents\Proyectos\hac52-evidence\h2-http.json`: 13 passed, exit 0 against real local HTTP/API/SQL.
+- The HTTP checks include create/replay, payload conflict, invalid coordinates,
+  revision, stale-version 409, re-read of midnight hours, active-only intake,
+  cargo unit persistence and organization revision/readback.
+- Retained inactive controls: Facility `445a6a7a-c888-40c0-b66c-7361ef16d0c1`,
+  profile `4141c03e-86bb-4470-a880-4014e6300c72`. They are outside the H3 manifest
+  and are not commercial seed data; no cleanup deletion was performed.
+
+Hosted prerequisites for H2: review/apply the new migration after the existing
+chain, deploy the connected pages and provision Client membership as above.
+No hosted migration or seed was executed. Build and the H3 adapter/seed checks
+are recorded with the final implementation cut. Human validation is pending
+October 21; HTTP checks are technical verification only.

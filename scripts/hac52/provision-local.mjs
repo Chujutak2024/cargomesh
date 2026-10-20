@@ -43,6 +43,7 @@ export async function provision(bankDir, accessFile) {
   await fs.cp(path.join(ROOT,'supabase-v2/supabase/migrations'),path.join(configDir,'migrations'),{recursive:true});
   console.log('Starting own HAC-52 local bank on API 64621 / DB 64622. CLI credentials are suppressed.');
   command('supabase',['start','--workdir',bankDir,'-x','realtime,storage-api,imgproxy,studio,mailpit,edge-runtime,logflare,vector,supavisor']);
+  command('supabase',['migration','up','--local','--workdir',bankDir]);
   const status = JSON.parse(command('supabase',['status','--workdir',bankDir,'-o','json']));
   if (status.API_URL !== API || !status.ANON_KEY) throw new Error('Unexpected local bank endpoint.');
   sql("comment on database postgres is 'LOCAL_ONLY:HAC52_CLIENT_BASE';");

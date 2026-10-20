@@ -171,5 +171,7 @@ data is needed; HAC-54 supplies its own 12 requests in a separate file.
 The H0 publication requires no hosted migration or configuration. H1–H3 must
 append exact local commands, new migration filenames, test evidence and deployment
 prerequisites. Hosted rollout remains an integrator action after separate approval.
-Linear issue contents could not yet be read through a connected integration;
-the branch and current plan above come from the user's explicit task request.
+Linear HAC-52 was retrieved after the integration became available. Its current
+October 19 plan and registered branch/manifests agree with the user request;
+status remains `In Progress`. HAC-51 was also read: C1–C6 remain dependent local
+work, not an acceptance prerequisite for this identity/Facility increment.
