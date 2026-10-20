@@ -12,7 +12,7 @@ Branch: `codex/v2-client-identity-facilities`. No synchronization merge was need
 Open http://127.0.0.1:59580/api/local/hac52/client-session and press **Open
 connected Client workspace**, then `/clients/facilities` or
 `/clients/organization`. [Startup and earlier checks](HAC52_LOCAL_DELIVERY.md).
-The PE account is usable. Local technical verification is distinct from human
+All three PE/BO/CL accounts have verified connected access. Local technical verification is distinct from human
 CP-J1..J3 validation on October 21; no human PASS is claimed.
 
 ## Seed and consumer boundary
@@ -99,26 +99,32 @@ positive controls in the same transaction. No full release suite was run.
 5. Juan wires confirmed assistant actions; Luis supplies commercial relations
    and verifies the existing Carrier catalog. No fleet duplication is required.
 
-## Blocked local access recovery
+## Authorized local access recovery — completed
 
 PE connected access remains usable. A provisioning rerun during H3 overwrote the
 private file's BO/CL entries while preserving PE. Organization/membership/business
 rows were not lost. The corrected provisioner preserves the existing object
 (`...old`) before writing its own fields.
 
-Automatic approval review rejected recovery of those two credentials because it
-administers local credentials with a local service-role key and stores passwords,
-conflicting with the general no-secrets rule. No recovery action was executed or
-worked around. Explicit user authorization is pending for exactly the two owned
-synthetic BO/CL accounts and the private file outside Git.
+Automatic approval review initially rejected recovery under the general
+no-secrets rule. The user then explicitly authorized restoring only the two
+owned BO/CL identities by exact IDs, keeping PE unchanged and saving new
+passwords only in the private file outside Git. That authorization was executed;
+the earlier rejection was not bypassed.
 
-Prepared action: `scripts/hac52/recover-owned-access.mjs`.
-`--check` passed: two exact owned synthetic identities verified; no password
-change, private-file write or service-key access. The mutating
-`--recover-owned-bo-cl` mode remains **BLOCKED pending user authorization**.
-After approval, execute it and rerun the seed provisioner to verify retained
-access entries. Until then, repeated BO/CL Auth provisioning is not certified;
-SQL seed replay is verified. PR remains an incremental draft pending this step.
+`scripts/hac52/recover-owned-access.mjs` now checks exact Auth/member/organization
+IDs, the project marker, API 64621 and DB 64622 before updating BO/CL. It compares
+all non-target Auth rows and all non-target private access entries before/after.
+The recovery passed, as did PE/BO/CL login/isolation verification: **3/3 accounts,
+35/35 checks**. PE credentials, membership, private entry and other Auth rows
+remained unchanged. Passwords, service keys, JWTs and cookies were not included in
+logs, reports or commits. The service key existed only in server process memory.
+
+Exact commands, IDs and actual outcomes are in
+[the access recovery record](HAC52_ACCESS_RECOVERY.md). Full provisioning was not
+rerun during this narrow recovery; existing SQL replay evidence still applies.
+This local access blocker is resolved. The PR can be marked Ready for review
+with the integrator requested; human validation remains pending October 21.
 
 ## Preserved scope
 

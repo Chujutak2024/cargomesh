@@ -33,5 +33,5 @@ compares full row hashes before/after two executions, alongside manifest counts.
 
 There is no destructive cleanup. Retain the bank for October 21. Any later
 cleanup requires explicit IDs, backups, counts and FK review. Logs/access files
-stay outside Git. The current BO/CL access-recovery limitation is documented in
-[the handoff](../../../docs/v2-amazon/delivery/HAC52_HANDOFF.md).
+stay outside Git. The completed BO/CL recovery and verified three-account access
+are documented in [the handoff](../../../docs/v2-amazon/delivery/HAC52_HANDOFF.md).

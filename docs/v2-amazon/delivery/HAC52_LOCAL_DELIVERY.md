@@ -105,4 +105,4 @@ are recorded with the final implementation cut. Human validation is pending
 October 21; HTTP checks are technical verification only.
 
 H3 seed, assistant contracts, final build evidence, exact hosted prerequisites
-and pending BO/CL access recovery are recorded in [the handoff](HAC52_HANDOFF.md).
+and completed authorized BO/CL access recovery are recorded in [the handoff](HAC52_HANDOFF.md).
