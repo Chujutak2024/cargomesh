@@ -6,6 +6,10 @@ import { WorkflowServiceV2 } from "@/server/modules/workflow/application/workflo
 import { workflowRepositoryV2 } from "@/server/modules/workflow/infrastructure/supabase-workflow-repository";
 import { FacilityServiceV2 } from "@/server/modules/facilities/application/facility-service";
 import { facilityRepositoryV2 } from "@/server/modules/facilities/infrastructure/supabase-facility-repository";
+import { CatalogServiceV2 } from "@/server/modules/catalog/application/catalog-service";
+import { catalogRepositoryV2 } from "@/server/modules/catalog/infrastructure/supabase-catalog-repository";
+import { commercialCatalogReferences, readCommercialCatalog } from "@/features/shipper-portal/commercial-catalog";
+import type { WorkflowRecordV2 } from "@/features/shipper-portal/shipper-model";
 import { V2DraftError } from "@/server/modules/freight-requests/application/draft-service";
 import { readWorkspaceRequest, type WorkspaceWorkflowKind } from "./workspace-server";
 import { collectOperationsPages, operationsReadIssues, OperationsReadContractError } from "./operations-collection";
@@ -17,6 +21,12 @@ export async function operationsReader(expectedOrganizationId?: string) {
     throw new V2DraftError("FORBIDDEN_TENANT", "Request and active organization differ.", 403);
   }
   return {
+    async commercialCatalog(workflow: Record<string, WorkflowRecordV2[]>) {
+      const refs = commercialCatalogReferences(workflow);
+      const service = new CatalogServiceV2(await catalogRepositoryV2());
+      return readCommercialCatalog(refs.carrierIds, refs.serviceRefs, async ref => (await service.get(actor, ref.kind,
+        { carrierId: ref.carrierId, serviceId: null }, ref.id)).data);
+    },
     async requests(offset = 0) {
       const service = new RequestLifecycleServiceV2(await requestLifecycleRepositoryV2());
       return collectOperationsPages(page => service.list(actor, page), record => {
@@ -52,6 +62,8 @@ export async function readOperationsRequestFlow(id: string) {
   const kinds: WorkspaceWorkflowKind[] = ["routes", "plans", "opportunities", "offers", "ranking", "decisions", "bookings", "executions", "incidents"];
   const values = await Promise.all(kinds.map(kind => reader.workflow(kind, request.id)));
   const collections = Object.fromEntries(kinds.map((kind, index) => [kind, values[index]]));
-  return { request, workflow: Object.fromEntries(kinds.map((kind, index) => [kind, values[index].data])),
+  const workflow = Object.fromEntries(kinds.map((kind, index) => [kind, values[index].data]));
+  const catalog = await reader.commercialCatalog(workflow);
+  return { request, workflow, catalog,
     issues: operationsReadIssues(collections) };
 }

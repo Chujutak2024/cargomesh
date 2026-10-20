@@ -19,3 +19,11 @@ Luis implemented native paginated reads, explicit partial/unavailable results, t
 Juan publishes a real saved request and the shared component contract; Jean/Cristhian integrate the identity/base contracts and resolve the intended authorized environment; Luis validates the same request/organization in Operations and corrects his own defects. Cristhian's integration role does not transfer Luis's implementation work. Shared commercial SQL/schema editor agreement remains required before those files are changed.
 
 Close this friction only with a traceable real-member request handoff and environment evidence, followed by the scheduled CP-L1 result. A PR, HTTP 200, fixture or screenshot alone is not closure. No separate QA owner or auxiliary branch is introduced.
+
+## H2 construction follow-up — October 20
+
+Independent construction continued; see [H2 delivery](../HAC54_H2_COMMERCIAL_INCREMENT.md). A named person's manually prepared ID is **not** a prerequisite for implementing or testing the native Client adapters. The same-request acceptance against the new intake remains a scheduled integration check; Luis can use authorized existing data or create a request through the existing native flow once actual member access is available.
+
+The local app returned 307 to login, Supabase is configured at `127.0.0.1`, and no Client-specific local credentials/QA credential settings were configured. Therefore no authenticated two-actor transaction is claimed. No passwords/accounts or base/commercial seeds were changed to hide that gap.
+
+Catalog attribution/channel reads and native opportunity creation required no shared SQL/schema/Carrier edits. The concrete new shared seam is voice: its server session route loads offers/ranking without request/plans/opportunities. The Client-owned explanation helper now refuses a recommendation for that incomplete legacy context. The complete Client context is checked; extending Juan's authenticated voice adapter needs coordinated ownership and subsequent audio/runtime validation, not a competing chatbot or untrusted browser facts.

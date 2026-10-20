@@ -17,5 +17,5 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
   });
   return <div className={styles.page}><OperationsNavigation detail/><OperationsReadNotice issues={flow.issues}/>
     <RequestWorkspace key={`${flow.request.id}-${Date.now()}`} initialRequest={flow.request}
-      initialWorkflow={flow.workflow as Record<string, WorkflowRecordV2[]>} readIncomplete={flow.issues.length > 0}/></div>;
+      initialWorkflow={flow.workflow as Record<string, WorkflowRecordV2[]>} initialCatalog={flow.catalog} readIncomplete={flow.issues.length > 0}/></div>;
 }

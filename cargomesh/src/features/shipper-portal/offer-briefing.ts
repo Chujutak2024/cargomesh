@@ -1,14 +1,15 @@
 import type { WorkflowRecordV2 } from "./shipper-model";
-import { offerAvailability, optionAvailability } from "./commercial-view";
+import { inspectOffer, inspectRankedOption, type CommercialContext } from "./commercial-context";
 
 type Offer = Extract<WorkflowRecordV2, { kind: "offers" }>;
 type Ranking = Extract<WorkflowRecordV2, { kind: "ranking" }>;
 
-export function buildOfferBriefing(offers: Offer[], ranking: Ranking | null, now = Date.now()) {
-  const current = offers.filter((offer) => offerAvailability(offer, now) === "AVAILABLE");
-  const availableOptions = [...(ranking?.data.options ?? [])]
+export function buildOfferBriefing(offers: Offer[], ranking: Ranking | null, now = Date.now(), context?: CommercialContext) {
+  // Legacy voice callers load only offers/ranking. Do not let missing joins become a recommendation.
+  const current = context ? offers.filter((offer) => inspectOffer(offer, context, now).current) : [];
+  const availableOptions = [...(context ? ranking?.data.options ?? [] : [])]
     .sort((a, b) => a.position - b.position)
-    .filter((option) => optionAvailability(option, offers, now).available)
+    .filter((option) => context && inspectRankedOption(option, context, now).available)
     .flatMap((option) => {
       const matching = option.offerIds.map((id) => offers.find((offer) => offer.id === id));
       if (matching.some((offer) => !offer)) return [];
@@ -20,7 +21,9 @@ export function buildOfferBriefing(offers: Offer[], ranking: Ranking | null, now
     });
   const options = availableOptions.slice(0, 3);
   const recommended = options[0] ?? null;
-  const script = !current.length
+  const script = !context && offers.length
+    ? "Offer records were loaded, but the complete request, plan and opportunity references are not available in this voice context. I cannot verify eligibility, recommend or book a plan. Review the current commercial details on screen."
+    : !current.length
     ? "There are no current carrier offers for this request yet. I cannot recommend or book a plan."
     : !recommended
       ? `${current.length} current carrier offer${current.length === 1 ? " has" : "s have"} arrived. There is no current, complete ranked plan to recommend yet. Review the offer terms on screen; no booking has been made.`

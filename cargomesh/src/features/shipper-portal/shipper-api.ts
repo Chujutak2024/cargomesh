@@ -1,7 +1,7 @@
 import {workspaceFetch} from "@/features/workspace-mode/workspace-fetch";
 import { z } from "zod";
 import { FreightRequestV2ResponseSchema, type CreateFreightRequestV2Input } from "@/shared/schemas/v2/freight-request";
-import { WorkflowRecordV2Schema } from "@/shared/schemas/v2/workflow";
+import { WorkflowRecordV2Schema, WorkflowInputsV2 } from "@/shared/schemas/v2/workflow";
 import { LocationCandidateV2Schema, LocationConfirmationInputV2Schema, LocationResolutionInputV2Schema,
   LocationResolutionV2Schema } from "@/shared/schemas/v2/location-resolution";
 
@@ -88,6 +88,23 @@ export async function authorizeBooking(input: { decisionId: string; offerId: str
     }),
   }, fetcher);
   return WorkflowResponseSchema.parse(body).data;
+}
+
+export async function requestCarrierOffer(requestId: string, value: z.infer<(typeof WorkflowInputsV2)["opportunities.create"]>,
+  idempotencyKey: string, fetcher: FetchLike = workspaceFetch) {
+  const input = WorkflowInputsV2["opportunities.create"].parse(value);
+  const body = await requestJson(`/api/v2/freight/requests/${encodeURIComponent(z.string().uuid().parse(requestId))}/opportunities`, {
+    method: "POST", headers: { "Idempotency-Key": z.string().uuid().parse(idempotencyKey) }, body: JSON.stringify(input),
+  }, fetcher);
+  const record = WorkflowResponseSchema.parse(body).data;
+  if (record.kind !== "opportunities" || record.requestId !== requestId || record.carrierId !== input.carrierId
+    || record.data.carrierId !== input.carrierId || record.data.responseChannel !== input.responseChannel
+    || Date.parse(record.data.responseDeadline) !== Date.parse(input.responseDeadline)
+    || record.data.planId !== input.planId || record.data.assignmentIds.length !== input.assignmentIds.length
+    || record.data.assignmentIds.some(id => !input.assignmentIds.includes(id))) {
+    throw new ShipperApiError("INVALID_SCOPE", "Opportunity response does not match the requested context.", 502, false);
+  }
+  return record;
 }
 
 export async function resolveLocation(query: z.infer<typeof LocationResolutionInputV2Schema>["query"], fetcher: FetchLike = workspaceFetch) {

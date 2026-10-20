@@ -14,6 +14,7 @@ export function offerAvailability(offer: Offer, now = Date.now()) {
   if (!Number.isFinite(startsAt) || !Number.isFinite(endsAt) || startsAt >= endsAt) return "INVALID" as const;
   if (endsAt <= now) return "EXPIRED" as const;
   if (startsAt > now) return "NOT_STARTED" as const;
+  if (offer.data.issuedAt && Date.parse(offer.data.issuedAt) > now) return "NOT_STARTED" as const;
   return "AVAILABLE" as const;
 }
 
