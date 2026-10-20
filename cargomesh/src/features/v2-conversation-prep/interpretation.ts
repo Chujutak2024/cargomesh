@@ -118,7 +118,7 @@ export function interpretDeterministically(input: InterpretationRequest): Interp
   }
   if (relativeDay && /^(?:mejor|better|instead|hazlo|make it)\b/i.test(text)) return { intent: "CORRECT", fields: [], acknowledgment: "Please confirm the exact pickup and delivery dates and times. I have not changed the saved windows." };
   const fields: Interpretation["fields"] = [];
-  const route = /\b(?:from|desde|de)\s+(.+?)\s+(?:to|hasta|a)\s+(.+?)(?=\s+(?:el\s+pr[oó]ximo|el\s+(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)|next\s+|on\s+|this\s+)|[,.]|$)/i.exec(text);
+  const route = /\b(?:from|desde|de)\s+([^,.;:\d]{1,80}?)\s+(?:to|hasta|a)\s+([^,.;:\d]{1,80}?)(?=\s+(?:el\s+pr[oó]ximo|el\s+(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)|next\s+|on\s+|this\s+)|[,.]|$)/i.exec(text);
   if (route) {
     fields.push({ field: "originFacilityId", value: route[1].trim().replace(/^(?:nuestra|nuestro|our)\s+(?:sede|facility)\s+(?:de|in|at)\s+/i, "") });
     fields.push({ field: "destinationFacilityId", value: route[2].trim() });
@@ -153,5 +153,5 @@ export function interpretDeterministically(input: InterpretationRequest): Interp
       && !/\b(?:hello|hola|how|what|why|can|could|tell|feel|help|c[oó]mo|qu[eé]|puedes|dime|ayuda)\b/i.test(cleaned);
     if (!location || plausibleLocation) fields.push({ field: input.currentField, value: cleaned });
   }
-  return { intent: "PROVIDE", fields, ...(relativeDay ? { acknowledgment: "I can capture the route and cargo, but I need exact pickup and delivery dates and times before saving." } : {}) };
+  return { intent: "PROVIDE", fields: fields.filter(({value}) => value.length > 0 && value.length <= 200).slice(0, 12), ...(relativeDay ? { acknowledgment: "I can capture the route and cargo, but I need exact pickup and delivery dates and times before saving." } : {}) };
 }
