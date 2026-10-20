@@ -84,3 +84,18 @@ Retirado el párrafo explicativo de Review request y el desplegable/lista de cua
 LogisticsTruck admite minimalControls, activado exclusivamente en esta ficha: sin badge 3D, controles de avance/giro automático ni caption. Conserva giro manual, centrado, descarga y cambio de iluminación. En este modo se detienen avance y giro automáticos, para no dejar una animación sin control de pausa. Los consumidores existentes conservan por defecto todos sus controles.
 
 El usuario ordena no hacer revisión al culminar estos ajustes visuales. La compilación ya había terminado correctamente antes de esa instrucción; no se ejecutan más pruebas, capturas ni revisión posterior. La navegación del IAB solo se recargó, sin certificar el resultado final. Sin acciones comerciales, DB, auth/rutas, push ni Vercel/main. Respaldo before-response-minimal/.
+
+## Patrón final de ficha y jerarquía tipográfica — 19-oct-2026
+
+Usuario solicita implementar su nueva referencia y cumplir el patrón atomizado y una jerarquía tipográfica definida. Implementación sobre la misma ruta y estado comercial, sin nueva pantalla ni cambio de backend.
+
+- Reutiliza Button y Badge compartidos. La ficha compone SheetSection/Field/HandlingRequirements como piezas de presentación; no duplica reglas de dominio.
+- Escala local conectada al token global de título: 28–32 px título, 18 px encabezados de sección, 14 px cuerpo/valores, 12 px etiquetas/metadata, 20 px fechas/totales destacados y 28 px ciudades. Se eliminan las reglas acumuladas de 10/11 px del detalle. Mantiene tokens compartidos de control, radios, superficies y foco; azul de Carrier restringido a esta ficha.
+- Cabecera con referencia/recepción sin versión visible. Estado y menú nativo de información: IDs y versiones, cierre con Escape y salida de foco. No hay tabla técnica en el pie.
+- Horario y contexto conservan datos; versión del pedido queda en menú. Trayecto contiene una única nota de precisión/privacidad, sin repetirla bajo bultos.
+- Requisitos globales y de manipulación se presentan como badges, derivados del registro. Si solo algunos bultos no admiten apilado/división, la etiqueta lo especifica; no se generaliza a toda la carga. No se alteran datos sintéticos persistidos.
+- Carrier response y Offer preparation son tarjetas hermanas, con botones atómicos. Plazo de respuesta con America/Lima/Peru y equivalente UTC, sin cambiar el instante ni las guardas de vencimiento. Respuesta, preparación e historial conservan handlers, permisos, estado de envío e idempotencia existentes.
+- Truck preview elimina la barra de controles, descarga e iluminación solo en esta ficha. Mantiene arrastre/teclado y un reset discreto visible al hover/foco (siempre visible en táctil). El nuevo previewOnly es opcional y su default false conserva otros consumidores. No hay avance/giro automático sin controles. No afirma un camión asignado.
+- Footer contiene solo Updated sin versión, sin Refresh duplicado. El refresco del shell sigue vigente.
+
+Sin revisión posterior, pruebas, compilación, capturas, nuevos renders ni comprobación de navegador por instrucción expresa vigente del usuario. Tampoco acciones comerciales, DDL/auth/rutas, push o Vercel/main. Cambios aplicados, aún sin certificación visual/funcional de este corte. Respaldo before-record-pattern/.
