@@ -1,11 +1,24 @@
 .shell {
   color-scheme: light;
   font-family: var(--cm-font-sans);
+  /* Carrier-aligned presentation tokens, scoped to the shipper workspace. */
+  --cm-color-canvas: #e8eff4;
+  --cm-color-surface-subtle: #edf4f8;
+  --cm-color-surface-tint: #f1f8fb;
+  --cm-color-primary: #185be7;
+  --cm-color-primary-hover: #124cc6;
+  --client-assistant-clearance: 5.5rem;
 }
+.shell:has([data-chat-open="true"]) { --client-assistant-clearance: 0rem; }
 
 .contentColumn {
   min-width: 0;
+  container-type: inline-size;
+  transition: margin-right var(--cm-motion-panel) var(--cm-motion-ease);
 }
+
+@media (min-width: 1200px) { .shell[data-assistant-docked="true"] .contentColumn { margin-right: 27rem; } }
+@media (prefers-reduced-motion: reduce) { .contentColumn { transition: none; } }
 
 .topbar {
   position: sticky;
@@ -47,6 +60,7 @@
 .topbarActions {
   display: flex;
   min-width: 0;
+  flex-shrink: 0;
   align-items: center;
   gap: 0.5rem;
   margin-left: auto;
@@ -128,7 +142,7 @@
 }
 
 .signOut button:hover, .signOutLink:hover { border-color: var(--cm-color-line-strong); background: var(--cm-color-selected); }
-.main { min-width: 0; min-height: calc(100dvh - 4.75rem); padding: 1.75rem clamp(1rem, 2.5vw, 2.75rem) 4rem; background: var(--cm-color-canvas); }
+.main { min-width: 0; min-height: calc(100dvh - 4.75rem); padding: 1.75rem clamp(1rem, 2.5vw, 2.75rem) calc(4rem + var(--client-assistant-clearance)); background: linear-gradient(180deg, #eef5fa 0, var(--cm-color-canvas) 24rem); }
 .motionRegion { min-width: 0; }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 .shell :is(button, a, input, select):focus-visible { outline: 3px solid color-mix(in srgb, var(--cm-color-focus) 34%, transparent); outline-offset: 2px; }
@@ -138,10 +152,13 @@
 }
 
 @media (min-width: 1200px) { .search { display: flex; } }
+@container (max-width: 1000px) { .search { display: none; } }
+@container (max-width: 750px) { .userCopy { display: none; } .contextSubtitle { display: none; } }
+@container (max-width: 600px) { .avatar { display: none; } }
 
 @media (max-width: 767px) {
   .topbar { gap: 0.45rem; padding-inline: 0.8rem; }
-  .main { padding: 1.25rem 0.9rem 4rem; }
+  .main { padding: 1.25rem 0.9rem calc(4rem + var(--client-assistant-clearance)); }
   .contextSubtitle { display: none; }
   .assistantButton { min-width: 2.7rem; padding: 0; }
   .assistantButton span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }

@@ -1,23 +1,20 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import {workspaceHref} from "@/features/workspace-mode/paths";
-import { useRouter } from "next/navigation";
 import { ArrowUpRight, MessageSquareText } from "lucide-react";
 import { useLocale } from "@/features/i18n/locale-provider";
 import styles from "./conversation-entry.module.css";
 
-/** A handoff of unsent text only. The intake owns the sole editable draft. */
+/** Opens the workspace copilot; the form and chat share the same session. */
 export function ConversationEntry() {
-  const router = useRouter();
   const { t } = useLocale();
   const [message, setMessage] = useState("");
   function continueToIntake(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const value = message.trim();
     if (!value) return;
-    window.sessionStorage.setItem("cargomesh-v2-chat-seed-v1", value.slice(0, 1000));
-    router.push(workspaceHref("/freight-request/new?assistant=open",window.location.pathname));
+    window.dispatchEvent(new CustomEvent("cargomesh:assistant-message", { detail: { text: value.slice(0, 1000) } }));
+    setMessage("");
   }
   return <section className={styles.entry} aria-label={t("Asistente de solicitudes", "Request copilot")}>
     <div className={styles.copy}><span className={styles.eyebrow}>{t("ASISTENTE DE SOLICITUDES", "REQUEST COPILOT")}</span>

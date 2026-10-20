@@ -255,11 +255,29 @@ test("requirement toggling is deterministic and duplicate-free", () => {
 });
 
 test("the intake keeps provisional details in React memory and stores only the request ID for recovery", () => {
-  const source = fs.readFileSync(path.join(process.cwd(), "src/features/v2-intake/v2-intake-prototype.tsx"), "utf8");
+  const source = fs.readFileSync(path.join(process.cwd(), "src/features/v2-intake/intake-controller.ts"), "utf8");
   assert.doesNotMatch(source, /localStorage|autosave\s*\(/i);
   assert.match(source, /sessionStorage\.setItem\(CHAT_REQUEST_SESSION_KEY, roundTrip\.data\.id\)/);
   assert.doesNotMatch(source, /sessionStorage\.setItem\([^,]+,\s*(?:draft|JSON\.stringify|history)/i);
   assert.match(source, /createFreightRequestV2\(payload/);
   assert.match(source, /getFreightRequestV2\(created\.id\)/);
   assert.match(source, /getRoadServiceabilityV2\(roundTrip\.data\.id, roundTrip\.data\.draftVersion\)/);
+});
+
+test("intake actions stay in flow rather than covering fields inside the clipped card", () => {
+  const css = fs.readFileSync(path.join(process.cwd(), "src/features/v2-intake/v2-intake-prototype.module.css"), "utf8");
+  const footer = css.match(/\.footer\s*\{([^}]+)\}/)?.[1];
+  assert.ok(footer);
+  assert.match(footer, /display:\s*flex/);
+  assert.doesNotMatch(footer, /position:\s*(?:sticky|fixed|absolute)|\bbottom:/);
+});
+
+test("intake and facility layouts respond to their available container, including a docked assistant", () => {
+  const intake = fs.readFileSync(path.join(process.cwd(), "src/features/v2-intake/v2-intake-prototype.module.css"), "utf8");
+  const picker = fs.readFileSync(path.join(process.cwd(), "src/features/v2-intake/components/facility-picker.module.css"), "utf8");
+  assert.match(intake, /container:\s*intake\s*\/\s*inline-size/);
+  for (const width of [1150, 820, 680]) assert.ok(intake.includes(`@container intake (max-width: ${width}px)`));
+  assert.match(picker, /container:\s*facility\s*\/\s*inline-size/);
+  assert.match(picker, /@container facility \(max-width: 330px\)/);
+  assert.match(picker, /overflow-wrap:\s*anywhere/);
 });

@@ -525,6 +525,28 @@
       ]
     },
     {
+      "issue": "HAC-52",
+      "path": "supabase-v2/supabase/migrations/20261020000100_hac52_facility_civil_hours.sql",
+      "version": "20261020000100",
+      "sha256": "4dd85f6d3b993877ad88ddeff46cb583e3b6c3068a783b35bb6bcda6f2e2f9b8",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261019030218"
+      ]
+    },
+    {
+      "issue": "HAC-52",
+      "path": "supabase-v2/supabase/migrations/20261020000200_hac52_client_action_confirmations.sql",
+      "version": "20261020000200",
+      "sha256": "be921a2e221047b55062651ed4535420f4c6dbf31f2eaeb78a0af45e6e5aec77",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261020000100"
+      ]
+    },
+    {
       "issue": "HAC-50",
       "path": "supabase-v2/supabase/migrations/20261020150746_hac50_facility_visual_references.sql",
       "version": "20261020150746",

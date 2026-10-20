@@ -45,10 +45,12 @@ async function facilityVisualService(){
  return new FacilityVisualService(await facilityVisualRepository());
 }
 facilitiesRouter.get('/:id/visual-reference',async c=>{
+ c.header('Cache-Control','no-store, private');c.header('Vary','Cookie, Authorization');
  try{return c.json(await (await facilityVisualService()).get(c.get('member'),c.req.param('id')));}
  catch(error){return v2Error(c,error);}
 });
 facilitiesRouter.post('/:id/visual-reference',async c=>{
+ c.header('Cache-Control','no-store, private');c.header('Vary','Cookie, Authorization');
  try{
   const {hasSessionOrigin}=await import('@/server/auth/session-origin');
   if(!c.req.header('Authorization')&&!hasSessionOrigin(c.req.raw))throw new V2DraftError('FORBIDDEN_ORIGIN','Same-origin save required.',403);

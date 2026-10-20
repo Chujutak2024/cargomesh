@@ -1,8 +1,10 @@
 "use client";
 
 import {workspaceFetch} from "@/features/workspace-mode/workspace-fetch";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { ArrowUp, ChevronDown, GripVertical, MessageSquareText, Mic, PanelRightClose, PanelRightOpen, Sparkles, SquarePen, X } from "lucide-react";
+import { useFloatingChat } from "./use-floating-chat";
+import { lockDocumentScroll } from "@/shared/browser/scroll-lock";
 import type { FreightRequestV2Data, IntakeOptionsData, RoadServiceabilityEvaluationV2Data } from "./contracts";
 import type { PrototypeStep, V2IntakePrototypeDraft } from "./prototype-model";
 import { applyChatFieldsToDraft, validatePrototypeReview, validatePrototypeStep } from "./prototype-model";
@@ -74,7 +76,7 @@ function reviewRows(draft: V2IntakePrototypeDraft, options: IntakeOptionsData) {
       ? locationName(String(value), options) : Array.isArray(value) ? value.join(", ") : typeof value === "boolean" ? value ? "Yes" : "No" : String(value) }));
 }
 
-export function ConversationChat({ draft, options, optionsSource = "api", request, evaluation, error = null, draftDirty = false, busy, presentation = "floating", canRevise = false, onFields, onSave, onRead, onEvaluate, onEdit, onReload, onStartOver }: {
+export function ConversationChat({ draft, options, optionsSource = "api", request, evaluation, error = null, draftDirty = false, busy, presentation = "floating", canRevise = false, catalogStatus = "ready", catalogError, onRetryCatalog, onDockedChange, onFields, onSave, onRead, onEvaluate, onEdit, onReload, onStartOver }: {
   draft: V2IntakePrototypeDraft;
   options: IntakeOptionsData;
   optionsSource?: "api" | "fixture";
@@ -83,7 +85,11 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   error?: V2IntakeApiError | null;
   draftDirty?: boolean;
   busy: boolean;
-  presentation?: "floating" | "inline";
+  presentation?: "floating" | "inline" | "workspace";
+  catalogStatus?: "ready" | "loading" | "error" | "empty";
+  catalogError?: string;
+  onRetryCatalog?: () => void;
+  onDockedChange?: (docked: boolean) => void;
   canRevise?: boolean;
   onFields: (fields: ReadonlyArray<{ field: ConversationField; value: string }>) => void;
   onSave: () => void;
@@ -96,7 +102,16 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const { locale, t } = useLocale();
   const launcherLabel = t("Preguntar a CargoMesh", "Ask CargoMesh");
   const [open, setOpen] = useState(presentation === "inline");
-  const [expanded, setExpanded] = useState(false);
+  const [surfaceMode, setSurfaceMode] = useState<"sidebar" | "detached">("sidebar");
+  const [launcherExpanded, setLauncherExpanded] = useState(false);
+  const [mobile, setMobile] = useState(false);
+  const [conversationEpoch, setConversationEpoch] = useState(0);
+  const launcherPosition = useFloatingChat();
+  const detachedPosition = useFloatingChat(open);
+  const panelRef = useRef<HTMLElement>(null);
+  const launcherInputRef = useRef<HTMLInputElement>(null);
+  const incomingRef = useRef<(value: string) => void>(() => {});
+  const sendInFlightRef = useRef(false);
   const [newMessages, setNewMessages] = useState(false);
   const [text, setText] = useState("");
   const [history, setHistory] = useState<Message[]>([{ speaker: "assistant", text: GREETING_EN }]);
@@ -125,6 +140,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const [choices, setChoices] = useState<Choice[]>([]);
   const [viewport, setViewport] = useState<{ height: number; keyboardInset: number } | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const scrollMetricsRef = useRef<{ height: number; contentHeight: number } | null>(null);
   const followLatestRef = useRef(true);
   const reviewRef = useRef<HTMLElement>(null);
   const voiceHistoryRef = useRef<Message[]>(history);
@@ -157,10 +173,27 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     }
   }, []);
   useEffect(() => {
-    const openAssistant = () => setOpen(true);
+    const openAssistant = () => { setOpen(true); setLauncherExpanded(false); };
+    const receiveMessage = (event: Event) => {
+      const value = (event as CustomEvent<{ text?: string }>).detail?.text;
+      if (typeof value === "string" && value.trim()) incomingRef.current(value.slice(0, 1000));
+    };
     window.addEventListener("cargomesh:open-assistant", openAssistant);
-    return () => window.removeEventListener("cargomesh:open-assistant", openAssistant);
+    window.addEventListener("cargomesh:assistant-message", receiveMessage);
+    return () => { window.removeEventListener("cargomesh:open-assistant", openAssistant); window.removeEventListener("cargomesh:assistant-message", receiveMessage); };
   }, []);
+  incomingRef.current = (value) => { setText(value); void send(value); };
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const update = () => setMobile(media.matches);
+    update(); media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  useEffect(() => {
+    onDockedChange?.(open && surfaceMode === "sidebar" && presentation === "workspace");
+    return () => onDockedChange?.(false);
+  }, [open, surfaceMode, presentation, onDockedChange]);
+  useEffect(() => { if (launcherExpanded && !open) launcherInputRef.current?.focus(); }, [launcherExpanded, open]);
   const nextField = missingField(draft);
   const ask = (field: GuidedConversationField) => questionForField(field, voiceLanguage);
 
@@ -172,11 +205,24 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     setNewMessages(false);
     area.scrollTop = area.scrollHeight;
   };
+  useLayoutEffect(() => {
+    const area = scrollAreaRef.current;
+    if (!open || !area) return;
+    const preserveReadingPosition = () => {
+      if (followLatestRef.current) area.scrollTop = area.scrollHeight;
+      scrollMetricsRef.current = { height: area.clientHeight, contentHeight: area.scrollHeight };
+    };
+    preserveReadingPosition();
+    const observer = new ResizeObserver(preserveReadingPosition);
+    observer.observe(area);
+    return () => observer.disconnect();
+  }, [open, surfaceMode]);
   useEffect(() => {
     const area = scrollAreaRef.current;
     if (!area || voiceReviewOpen) return;
     if (followLatestRef.current) area.scrollTop = area.scrollHeight;
     else setNewMessages(true);
+    scrollMetricsRef.current = { height: area.clientHeight, contentHeight: area.scrollHeight };
   }, [history, choices, voiceReviewOpen]);
   useEffect(() => {
     const area = scrollAreaRef.current;
@@ -191,12 +237,12 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   useEffect(() => {
     const index = history.length - 1;
     const latest = history[index];
-    if (novaVoiceEnabled || !audioReplies || !latest || latest.speaker !== "assistant" || index <= lastSpokenMessage.current || latest.text.endsWith("…") || busy || interpretationBusy) return;
+    if (!open || novaVoiceEnabled || !audioReplies || !latest || latest.speaker !== "assistant" || index <= lastSpokenMessage.current || latest.text.endsWith("…") || busy || interpretationBusy) return;
     lastSpokenMessage.current = index;
     voice.finishProcessing();
     voice.readResponse(latest.text);
-  }, [history, busy, interpretationBusy, audioReplies]);
-  useEffect(() => { if (open && presentation === "floating") inputRef.current?.focus(); }, [open, presentation]);
+  }, [history, busy, interpretationBusy, audioReplies, open]);
+  useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
   useEffect(() => {
     const confirmation = confirmationRef.current;
     if (awaitingConfirmation && confirmation && (!canApproveDraftReview(confirmation.review, draft)
@@ -216,14 +262,22 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     return () => { visual.removeEventListener("resize", update); visual.removeEventListener("scroll", update); };
   }, [open]);
   useEffect(() => {
-    if (!open || presentation === "inline") return;
+    if (!open) return;
+    const releaseScroll = mobile ? lockDocumentScroll(document) : () => {};
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      closePanel();
+      if (event.defaultPrevented) return;
+      if (event.key === "Escape") { event.preventDefault(); closePanel(); return; }
+      if (event.key === "Tab" && mobile) {
+        const controls = panelRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), summary, a[href], [tabindex="0"]');
+        if (!controls?.length) return;
+        const visible = [...controls].filter((element) => element.getClientRects().length > 0);
+        const first = visible[0], last = visible.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
     }
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    return () => { releaseScroll(); document.removeEventListener("keydown", onKeyDown); };
   });
   useEffect(() => {
     if (!request) return;
@@ -308,12 +362,29 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     if (voice.state === "listening" || voice.state === "requesting_permission") voice.stop();
     voice.stopResponse();
     setOpen(false);
-    launcherRef.current?.focus();
+    setLauncherExpanded(false);
+    requestAnimationFrame(() => launcherRef.current?.focus());
+  }
+
+  function startNewChat() {
+    if (busy || interpretationBusy || workflowBusy || voiceInterpretPending || sendInFlightRef.current) return;
+    voice.stop(); voice.stopResponse();
+    const greeting: Message[] = [{ speaker: "assistant", text: GREETING_EN }];
+    voiceHistoryRef.current = greeting;
+    setHistory(greeting); setText(""); setChoices([]); setFailedMessage(""); setSendNotice("");
+    setAwaitingConfirmation(false); confirmationRef.current = null;
+    setVoiceReviewOpen(false); setVoiceReviewNotice(""); setNewMessages(false);
+    appliedVoiceTurnsRef.current.clear(); processedVoiceCommandsRef.current.clear();
+    failedAttempts.current = 0; previousHelpTopic.current = null; lastSpokenMessage.current = 0;
+    followLatestRef.current = true;
+    setConversationEpoch((epoch) => epoch + 1);
+    setAnnouncement(t("Nueva conversación. Los datos de tu solicitud se conservan.", "New conversation. Your request details are preserved."));
+    inputRef.current?.focus();
   }
 
   function goToFormStep(step: PrototypeStep) {
     onEdit?.(step);
-    if (presentation === "floating") closePanel();
+    if (mobile || presentation === "floating") closePanel();
     window.setTimeout(() => {
       const heading = document.getElementById(`prototype-step-${step}`);
       heading?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -382,8 +453,20 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     }
   }
 
-  async function send() {
-    const gate = chatSendGate(text, busy || interpretationBusy || workflowBusy, voice.speaking);
+  async function send(value = text) {
+    setOpen(true); setLauncherExpanded(false);
+    if (catalogStatus !== "ready") {
+      setText(value);
+      setSendNotice(t("Espera a que estén disponibles los datos de tu organización para enviar el mensaje.", "Wait for your organization's catalog before sending this message."));
+      return;
+    }
+    if (sendInFlightRef.current) return;
+    sendInFlightRef.current = true;
+    try { await processMessage(value); } finally { sendInFlightRef.current = false; }
+  }
+
+  async function processMessage(submitted: string) {
+    const gate = chatSendGate(submitted, busy || interpretationBusy || workflowBusy, voice.speaking);
     if (gate.kind === "wait") {
       if (gate.notice) setSendNotice(gate.notice);
       return;
@@ -531,15 +614,42 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     }
   }
 
-  return <aside className={styles.shell} data-presentation={presentation} aria-label="CargoMesh ROAD assistant" style={viewport ? { "--chat-visual-height": `${viewport.height}px`, "--chat-keyboard-inset": `${viewport.keyboardInset}px` } as CSSProperties : undefined}>
-    {presentation === "floating" ? <button ref={launcherRef} type="button" className={styles.launcher} onClick={() => open ? closePanel() : setOpen(true)} aria-label={launcherLabel + " — " + (open ? t("cerrar asistente", "close assistant") : t("abrir asistente", "open assistant"))} aria-expanded={open} aria-controls="v2-chat-panel">
-      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M4 5.5h16v11H9l-5 3v-14Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M8 10h8M8 13h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg><span>{launcherLabel}</span>
-    </button> : null}
-    {open && <section id="v2-chat-panel" className={styles.panel} data-expanded={expanded} aria-label="ROAD freight conversation">
-      <header className={styles.header}><span className={styles.headerIcon} aria-hidden="true">CM</span><div className={styles.headerCopy}><strong>{t("Planifica con CargoMesh", "Plan with CargoMesh")}</strong></div>{presentation === "floating" ? <button type="button" className={styles.close} aria-label="Close CargoMesh assistant" onClick={closePanel}>×</button> : <>{request && <span className={styles.headerState}>{request.referenceCode} · v{request.draftVersion}</span>}<button type="button" className={styles.expand} aria-label={expanded ? t("Reducir conversación", "Reduce conversation") : t("Ampliar conversación", "Expand conversation")} aria-pressed={expanded} onClick={() => setExpanded((current) => !current)}>{expanded ? <Minimize2 size={16} aria-hidden="true" /> : <Maximize2 size={16} aria-hidden="true" />}<span>{expanded ? t("Reducir", "Reduce") : t("Ampliar", "Expand")}</span></button></>}</header>
+  return <aside className={styles.shell} data-presentation={presentation} data-chat-open={open} aria-label="CargoMesh ROAD assistant" style={viewport ? { "--chat-visual-height": `${viewport.height}px`, "--chat-keyboard-inset": `${viewport.keyboardInset}px` } as CSSProperties : undefined}>
+    <div className={styles.launcherPosition} ref={launcherPosition.ref} style={launcherPosition.style} hidden={open}>
+      <button type="button" className={styles.dragHandle} {...launcherPosition.handle} aria-label={t("Mover asistente. Usa las flechas; Inicio restaura la posición.", "Move assistant. Use arrow keys; Home resets its position.")} title={t("Arrastra para mover", "Drag to move")}><GripVertical size={18} aria-hidden="true" /></button>
+      {launcherExpanded ? <form className={styles.launcherComposer} onSubmit={(event) => { event.preventDefault(); void send(); }}>
+        <span className={styles.rainbowMark} aria-hidden="true"><Sparkles size={17}/></span>
+        <label className={styles.srOnly} htmlFor="assistant-launcher-text">{t("Mensaje para CargoMesh", "Message CargoMesh")}</label>
+        <input id="assistant-launcher-text" ref={launcherInputRef} value={text} onChange={(event) => setText(event.target.value)} maxLength={1000} placeholder={t("¿Qué necesitas transportar?", "What do you need to ship?")} autoComplete="off" onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); setLauncherExpanded(false); requestAnimationFrame(() => launcherRef.current?.focus()); } }} />
+        <button type="button" className={styles.launcherAction} title={t("Abrir panel", "Open sidebar")} aria-label={t("Abrir panel del asistente", "Open assistant sidebar")} onClick={() => { setOpen(true); setLauncherExpanded(false); }}><PanelRightOpen size={18}/></button>
+        <button type="button" className={styles.launcherAction} title={t("Hablar con CargoMesh", "Talk to CargoMesh")} aria-label={t("Hablar con CargoMesh", "Talk to CargoMesh")} onClick={() => { setOpen(true); setLauncherExpanded(false); if (!novaVoiceEnabled && catalogStatus === "ready") voice.start(); }}><Mic size={18}/></button>
+        <button type="submit" className={styles.launcherSend} disabled={!text.trim() || busy || interpretationBusy || workflowBusy} aria-label={t("Enviar mensaje y abrir panel", "Send message and open sidebar")}><ArrowUp size={18}/></button>
+      </form> : <button ref={launcherRef} type="button" className={styles.launcher} onClick={() => setLauncherExpanded(true)} aria-label={launcherLabel} aria-expanded={false} aria-controls="v2-chat-panel"><span className={styles.rainbowMark} aria-hidden="true"><Sparkles size={17}/></span><span>{t("Pregunta, crea, planifica", "Ask, create, plan")}</span></button>}
+    </div>
+    {open && <div className={styles.panelPosition} data-mode={surfaceMode} ref={detachedPosition.ref} style={surfaceMode === "detached" && !mobile ? detachedPosition.style : undefined}>
+    <section ref={panelRef} id="v2-chat-panel" className={styles.panel} role={mobile ? "dialog" : undefined} aria-modal={mobile ? true : undefined} aria-labelledby="v2-chat-title">
+      <header className={styles.header}>
+        {surfaceMode === "detached" && !mobile ? <button type="button" className={styles.panelGrip} {...detachedPosition.handle} aria-label={t("Mover ventana del chat", "Move chat window")} title={t("Arrastra para mover", "Drag to move")}><GripVertical size={16}/></button> : null}
+        <span className={styles.rainbowMark} aria-hidden="true"><Sparkles size={18}/></span>
+        <div className={styles.headerCopy}><strong id="v2-chat-title">CargoMesh <span>Copilot</span></strong><small>{t("Tu asistente de transporte", "Your freight assistant")}</small></div>
+        <div className={styles.headerActions}>
+          <button type="button" className={styles.iconButton} onClick={startNewChat} disabled={busy || interpretationBusy || workflowBusy || voiceInterpretPending} aria-label={t("Nueva conversación", "Start new chat")} title={t("Nueva conversación · conserva tu solicitud", "Start new chat · keeps your request")}><SquarePen size={18}/></button>
+          <button type="button" className={styles.iconButton} onClick={() => setSurfaceMode((mode) => mode === "sidebar" ? "detached" : "sidebar")} aria-label={surfaceMode === "sidebar" ? t("Desacoplar del panel lateral", "Detach from sidebar") : t("Acoplar al panel lateral", "Dock to sidebar")} title={surfaceMode === "sidebar" ? t("Desacoplar del panel lateral", "Detach from sidebar") : t("Acoplar al panel lateral", "Dock to sidebar")}>{surfaceMode === "sidebar" ? <PanelRightClose size={18}/> : <PanelRightOpen size={18}/>}</button>
+          <button type="button" className={styles.iconButton} aria-label={t("Cerrar asistente", "Close assistant")} title={t("Cerrar asistente", "Close assistant")} onClick={closePanel}><X size={19}/></button>
+        </div>
+      </header>
+      <ChatStructuredSummary draft={draft} options={options} request={request} dirty={draftDirty} onEdit={onEdit ? goToFormStep : undefined} t={t} />
+      {catalogStatus !== "ready" && <div className={styles.catalogNotice} role="status"><strong>{catalogStatus === "loading" ? t("Preparando los datos de tu organización…", "Loading your organization's catalog…") : t("No se pudo preparar el asistente", "The assistant needs your catalog")}</strong>{catalogError && <span>{catalogError}</span>}{catalogStatus === "empty" && <span>{t("Faltan sedes u opciones compatibles. Revisa el catálogo de tu organización.", "Facilities or supported options are missing. Review your organization's catalog.")}</span>}{catalogStatus !== "loading" && onRetryCatalog && <button type="button" onClick={onRetryCatalog}>{t("Reintentar", "Retry")}</button>}</div>}
       <div className={styles.conversationContent}>
       <div className={styles.messagePane}>
-      <div ref={scrollAreaRef} className={styles.scrollArea} onScroll={(event) => { const area = event.currentTarget; const following = area.scrollHeight - area.scrollTop - area.clientHeight < 80; followLatestRef.current = following; if (following) setNewMessages(false); }}>
+      <div ref={scrollAreaRef} className={styles.scrollArea} onScroll={(event) => {
+        const area = event.currentTarget;
+        const following = area.scrollHeight - area.scrollTop - area.clientHeight < 80;
+        const metrics = scrollMetricsRef.current;
+        // Resizing the summary or docking is not a user decision to stop following.
+        if (following || !metrics || (metrics.height === area.clientHeight && metrics.contentHeight === area.scrollHeight)) followLatestRef.current = following;
+        if (following) setNewMessages(false);
+      }}>
         <div className={styles.history} role="log" aria-live="off" aria-label="Conversation messages">
           {history.map((message, index) => <div key={index} className={message.speaker === "user" ? styles.userRow : styles.assistantRow}><p className={message.speaker === "user" ? styles.user : styles.assistant}><span className={styles.speaker}>{message.speaker === "user" ? "You" : "CargoMesh"}</span>{message.text}</p></div>)}
         </div>
@@ -582,7 +692,6 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       </div>
       {newMessages && <button type="button" className={styles.latest} onClick={scrollToLatest}>{t("Ver mensajes recientes", "View latest messages")}</button>}
       </div>
-      <ChatStructuredSummary draft={draft} options={options} request={request} dirty={draftDirty} onEdit={onEdit} t={t} />
       </div>
       <div className={styles.composerDock}>
         {!novaVoiceEnabled && (voice.message || voice.state === "unsupported") && <p className={styles.voiceStatus} role="status">{voice.message || "Speech recognition is unavailable here. You can type every step."}</p>}
@@ -592,11 +701,11 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
           <input ref={inputRef} id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder={t("Describe tu carga o corrige un dato…", "Describe cargo or correct a detail…")} autoComplete="off" disabled={busy || interpretationBusy || workflowBusy} />
           {!novaVoiceEnabled && (voice.state === "listening" || voice.state === "requesting_permission")
             ? <button type="button" className={styles.micActive} aria-label="Stop listening" title="Stop listening" onClick={voice.stop}>■</button>
-            : !novaVoiceEnabled && <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing" || voice.speaking || busy || interpretationBusy || workflowBusy} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>}
+            : !novaVoiceEnabled && <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={catalogStatus !== "ready" || voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing" || voice.speaking || busy || interpretationBusy || workflowBusy} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>}
           <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || workflowBusy}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
-        {novaVoiceEnabled && <>
-          <NovaVoicePreview preview={optionsSource === "fixture"} voiceContext={recentVoiceContext(history)} onTurn={(update) => {
+        {novaVoiceEnabled && catalogStatus === "ready" && <>
+          <NovaVoicePreview key={conversationEpoch} preview={optionsSource === "fixture"} voiceContext={recentVoiceContext(history)} onTurn={(update) => {
             const nextHistory = applyVoiceTranscript(voiceHistoryRef.current, update);
             voiceHistoryRef.current = nextHistory;
             setHistory(nextHistory);
@@ -632,23 +741,25 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         </>}
         {!novaVoiceEnabled && <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button><label>Voice <select aria-label="Voice for spoken replies" value={voice.selectedVoiceURI} onChange={(event) => voice.setSelectedVoiceURI(event.target.value)}><option value="">Automatic · Zira preferred</option>{voice.availableVoices.map((option) => <option key={option.voiceURI} value={option.voiceURI}>{option.name} ({option.lang}){option.localService ? " · device" : ""}</option>)}</select></label><label>Pace <select aria-label="Voice pace" value={voiceRate} onChange={(event) => setVoiceRate(Number(event.target.value))}><option value={0.88}>Relaxed</option><option value={0.96}>Natural</option><option value={1.06}>Brisk</option></select></label><button type="button" onClick={() => voice.readResponse("Hello, I'm CargoMesh. Tell me what you need to ship, and I'll help you step by step.")} disabled={voice.speaking}>Test voice</button></div>}
       </div>
-    </section>}
+    </section></div>}
   </aside>;
 }
 
 function ChatStructuredSummary({ draft, options, request, dirty, onEdit, t }: { draft: V2IntakePrototypeDraft; options: IntakeOptionsData; request: FreightRequestV2Data | null; dirty: boolean; onEdit?: (step: PrototypeStep) => void; t: (es: string, en: string) => string }) {
   const rows: Array<{ label: string; value: string; step: PrototypeStep }> = [
-    { label: t("Origen", "Origin"), value: locationName(draft.originFacilityId, options), step: 1 },
-    { label: t("Destino", "Destination"), value: locationName(draft.destinationFacilityId, options), step: 1 },
+    { label: t("Origen", "Origin"), value: draft.originFacilityId ? locationName(draft.originFacilityId, options) : t("Por elegir", "Choose a facility"), step: 1 },
+    { label: t("Destino", "Destination"), value: draft.destinationFacilityId ? locationName(draft.destinationFacilityId, options) : t("Por elegir", "Choose a facility"), step: 1 },
     { label: t("Carga", "Cargo"), value: draft.unitQuantity ? `${draft.unitQuantity} × ${draft.packaging || "—"} · ${draft.categoryCode || t("categoría pendiente", "category pending")}` : t("Por definir", "Not specified"), step: 2 },
     { label: t("Retiro", "Pickup"), value: draft.pickupWindowStartsAt || t("Por definir", "Not specified"), step: 3 },
     { label: t("Entrega", "Delivery"), value: draft.deliveryWindowStartsAt || t("Por definir", "Not specified"), step: 3 },
     { label: t("Equipo", "Equipment"), value: draft.requiredEquipment || t("Por definir", "Not specified"), step: 3 },
   ];
   const validation = validatePrototypeReview(draft);
-  return <section className={styles.structuredSummary} aria-label={t("Resumen editable de la solicitud", "Editable request summary")}>
-    <div className={styles.summaryHead}><span>{t("BORRADOR COMPARTIDO", "SHARED DRAFT")}</span><strong>{request ? `${request.referenceCode} · v${request.draftVersion}` : t("Aún sin guardar", "Not saved yet")}</strong><p>{dirty ? t("Cambios locales pendientes", "Local changes pending") : request ? t("Datos recuperados del servidor", "Loaded from server") : t("Chat y formulario usan los mismos datos", "Chat and form use the same data")}</p></div>
+  const completed = [draft.originFacilityId, draft.destinationFacilityId, draft.unitQuantity && draft.categoryCode, draft.pickupWindowStartsAt, draft.deliveryWindowStartsAt, draft.requiredEquipment].filter(Boolean).length;
+  return <details className={styles.structuredSummary}>
+    <summary><span className={styles.draftIcon} aria-hidden="true"><MessageSquareText size={17}/></span><span className={styles.draftLabel}><strong>{t("Borrador compartido", "Shared draft")}</strong><small>{dirty ? t("Cambios sin guardar", "Unsaved changes") : request ? t(`Guardado · versión ${request.draftVersion}`, `Saved · version ${request.draftVersion}`) : t("Aún sin guardar", "Not saved yet")}</small></span><span className={styles.draftCount} aria-label={t(`${completed} de 6 datos principales`, `${completed} of 6 main details`)}>{completed}/6</span><ChevronDown size={16} aria-hidden="true" /></summary>
+    {request && <p className={styles.summaryReference}>{request.referenceCode}</p>}
     <dl>{rows.map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd>{onEdit ? <button type="button" onClick={() => onEdit(row.step)} aria-label={`${t("Editar", "Edit")} ${row.label}`}>{t("Editar", "Edit")}</button> : null}</div>)}</dl>
     <p className={styles.summaryStatus}>{validation.valid ? t("Listo para revisión humana; no hay booking automático.", "Ready for human review; no automatic booking.") : t(`${validation.issues.length} dato(s) pendiente(s) antes de guardar.`, `${validation.issues.length} detail(s) needed before saving.`)}</p>
-  </section>;
+  </details>;
 }
