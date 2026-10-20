@@ -1,8 +1,9 @@
-import { truckDesign, familyDesign } from './visual-catalog';
+import { truckDesign, truckDesigns, compatibleTruckDesign, type TruckBody } from './visual-catalog';
 import type { TruckVisualType } from './truck-model';
 
 export type AssetVisualReference = {
   family: TruckVisualType;
+  body: TruckBody;
   designId: string;
   name: string;
   poster: string;
@@ -13,23 +14,40 @@ export type AssetVisualReference = {
 export function associateAssetVisual(input: {
   equipmentType: string; bodyType: string; modelName?: string | null; designHint?: string | null;
 }): AssetVisualReference | null {
-  const text = `${input.bodyType} ${input.equipmentType} ${input.modelName ?? ''}`.toLowerCase();
-  let family: TruckVisualType | null = null;
-  if (/reefer|refriger|cold/.test(text)) family = 'refrigerated';
-  else if (/curtain|lona/.test(text)) family = 'curtainsider';
-  else if (/low.?loader|low.?bed|cama baja/.test(text)) family = 'lowloader';
-  else if (/tank|cisterna/.test(text)) family = 'tanker';
-  else if (/mixer|mezclador/.test(text)) family = 'mixer';
-  else if (/logging|maderero|timber/.test(text)) family = 'logging';
-  else if (/tipper|dump|volquete/.test(text)) family = 'tipper';
-  else if (/flat|platform|plataforma/.test(text)) family = 'flatbed';
-  else if (/tractor|articul|semi|trailer/.test(text)) family = 'articulated';
-  else if (/rigid|rígido|box/.test(text)) family = 'rigid';
-  if (!family) return null;
+  // Explicit body/equipment fields are authoritative; commercial names are not.
+  const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase().replace(/[ -]+/g, '_');
+  const equipment = normalize(input.equipmentType), body = bodies[normalize(input.bodyType)];
+  if (!body) return null;
+  const candidate = truckDesigns.find(design => {
+    if (!allowedEquipment[design.family].includes(equipment)) return false;
+    if (body === 'box' && equipment === 'TRACTOR_TRAILER' && design.family !== 'articulated') return false;
+    if (body === 'box' && equipment === 'BOX_TRUCK' && design.family !== 'rigid') return false;
+    return compatibleTruckDesign(design, design.family, body);
+  });
+  if (!candidate) return null;
+  const family = candidate.family;
   const hint = truckDesign(input.designHint);
-  const recorded = hint?.family === family ? hint : null;
-  const design = recorded ?? familyDesign(family);
-  return { family, designId: design.id, name: design.name,
-    poster: `/v2-workspace/trucks/${family}-3d.png`,
+  const recorded = hint && compatibleTruckDesign(hint, family, body) ? hint : null;
+  const design = recorded ?? candidate;
+  return { family, body, designId: design.id, name: design.name,
+    poster: design.appearance.bodyStyle ? '/v2-workspace/trucks/reference.svg' : `/v2-workspace/trucks/${family}-3d.png`,
     source: recorded ? 'RECORDED_DESIGN' : 'EQUIPMENT_REFERENCE' };
 }
+
+const bodies: Record<string, TruckBody> = {
+  BOX: 'box', DRY_BOX: 'box', CAJA_SECA: 'box', FURGON: 'box',
+  REEFER: 'refrigerated', REFRIGERATED: 'refrigerated', REFRIGERADO: 'refrigerated',
+  CURTAINSIDER: 'curtainsider', CURTAIN: 'curtainsider', LONA_LATERAL: 'curtainsider',
+  PLATFORM: 'flatbed', FLATBED: 'flatbed', PLATAFORMA: 'flatbed',
+  LOWLOADER: 'lowloader', LOW_BED: 'lowloader', CAMA_BAJA: 'lowloader',
+  TANKER: 'tanker', CISTERNA: 'tanker', MIXER: 'mixer', MEZCLADOR: 'mixer',
+  LOGGING: 'logging', TIMBER: 'logging', MADERERO: 'logging', TIPPER: 'tipper', VOLQUETE: 'tipper',
+  CAR_CARRIER: 'car-carrier', PORTAVEHICULOS: 'car-carrier', LIVESTOCK: 'livestock', GANADERO: 'livestock',
+  CRANE: 'crane', GRUA: 'crane', REFUSE: 'refuse', RECOLECTOR: 'refuse', BULK_SILO: 'bulk-silo', SILO: 'bulk-silo',
+};
+const allowedEquipment: Record<TruckVisualType, readonly string[]> = {
+  rigid: ['BOX_TRUCK', 'OTHER'], articulated: ['TRACTOR_TRAILER', 'OTHER'],
+  refrigerated: ['REEFER_TRUCK', 'TRACTOR_TRAILER', 'OTHER'], curtainsider: ['TRACTOR_TRAILER', 'OTHER'],
+  flatbed: ['FLATBED', 'FLATBED_TRUCK', 'OTHER'], lowloader: ['TRACTOR_TRAILER', 'OTHER'],
+  tanker: ['TANKER_TRUCK', 'OTHER'], mixer: ['OTHER'], logging: ['FLATBED', 'OTHER'], tipper: ['OTHER'],
+};

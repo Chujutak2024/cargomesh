@@ -8,14 +8,14 @@ import { createDepotCoordinator, yardPhaseLabels, type DepotCoordinator } from '
 import type { YardViewControls } from './depot-yard-scene';
 import { getTruckEnvironment } from './truck-environment';
 import { depotTemplate, depotTemplates, type DepotTemplateId } from './depot-templates';
-import { truckDesigns } from './visual-catalog';
+import { truckDesigns, compatibleTruckDesign, familyDesign, truckBody } from './visual-catalog';
 import s from './depot.module.css';
 const DepotYardScene = dynamic(() => import('./depot-yard-scene'), { ssr: false, loading: () => null });
 class DepotBoundary extends Component<{ children: ReactNode; failed: () => void }, { error: boolean }> {
   state = { error: false }; static getDerivedStateFromError() { return { error: true }; }
   componentDidCatch() { this.props.failed(); } render() { return this.state.error ? null : this.props.children; }
 }
-export default function DepotArrival({ context, coordinator }: { context: TruckInspectionContext; coordinator?: DepotCoordinator }) {
+export default function DepotArrival({ context, coordinator, referenceOnly = false }: { context: Pick<TruckInspectionContext, 'depot'>; coordinator?: DepotCoordinator; referenceOnly?: boolean }) {
   const [local] = useState(createDepotCoordinator), controller = coordinator ?? local;
   const snapshot = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
   const preferredReduced = useReducedMotionPreference();
@@ -50,33 +50,33 @@ export default function DepotArrival({ context, coordinator }: { context: TruckI
     { label: 'Location unknown', vehicles: snapshot.vehicles.filter(v => v.phase === 'unknown') },
   ];
   return <section className={s.root} aria-label="Depot visual simulation" data-depot-time={snapshot.elapsedMs} data-scenario-id={snapshot.scenarioId}>
-    <header className={s.facility}><span className={s.brand}><Building2 size={23}/></span><div><h3>Depot operations</h3><p>{context.depot.name} · {context.depot.city}</p></div><span className={s.simulation}>Visual simulation</span></header>
-    <p className={s.disclaimer}>{snapshot.vehicles.length} illustrative vehicles share one yard. This scene does not report live positions or availability.</p>
-    <div className={s.designControls}>
+    <header className={s.facility}><span className={s.brand}><Building2 size={23}/></span><div><h3>{referenceOnly ? 'Facility architecture' : 'Depot operations'}</h3><p>{context.depot.name} · {context.depot.city}</p></div><span className={s.simulation}>{referenceOnly ? 'Visual reference' : 'Visual simulation'}</span></header>
+    <p className={s.disclaimer}>{referenceOnly ? 'Explicit architectural reference. No coverage, capacity, inventory, availability or vehicle presence is implied.' : `${snapshot.vehicles.length} illustrative vehicles share one yard. This scene does not report live positions or availability.`}</p>
+    {referenceOnly ? <p>{depotTemplate(snapshot.templateId).name} · {depotTemplate(snapshot.templateId).description}</p> : <div className={s.designControls}>
       <label>Depot design · {depotTemplates.length} visual layouts<select aria-label="Depot design" value={snapshot.templateId} onChange={event => { setError(false); controller.setTemplate(event.target.value as DepotTemplateId); }}>{depotTemplates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
-      {selected ? <label>Vehicle design<select aria-label="Vehicle design" value={selected.designId} onChange={event => controller.setDesign(selected.assetId, event.target.value)}>{truckDesigns.filter(design => design.family === selected.family && (!selected.cargo || !design.appearance.bodyStyle)).map(design => <option key={design.id} value={design.id}>{design.name}</option>)}</select></label> : null}
+      {selected ? <label>Vehicle design<select aria-label="Vehicle design" value={selected.designId} onChange={event => controller.setDesign(selected.assetId, event.target.value)}>{truckDesigns.filter(design => compatibleTruckDesign(design, selected.family, selected.body ?? truckBody(familyDesign(selected.family))) && (!selected.cargo || !design.appearance.bodyStyle)).map(design => <option key={design.id} value={design.id}>{design.name}</option>)}</select></label> : null}
       <p>{depotTemplate(snapshot.templateId).description} Visual layout only.</p>
-    </div>
-    <div className={s.layout}><div className={s.viewer}>
+    </div>}
+    <div className={referenceOnly ? s.referenceLayout : s.layout}><div className={s.viewer}>
       <div ref={host} className={s.stage} data-depot-state={error ? 'failed' : loaded ? 'ready' : 'loading'}>
         {!error && visible ? <DepotBoundary key={retry} failed={failed}><DepotYardScene controller={controller} color={context.depot.color} active={active} running={playing && active} reduced={reduced} night={getTruckEnvironment(clock ?? new Date(2000, 0, 1, 12)).night} onReady={ready} onFailure={failed} onControls={receiveControls}/></DepotBoundary> : null}
-        {error ? <div className={s.error} role="alert"><Building2 size={32}/><strong>The 3D view is unavailable</strong><p>The vehicle list and scenario state are still available.</p><button onClick={() => { setLoadedTemplate(null); setError(false); setRetry(value => value + 1); }}>Retry 3D view</button></div> : !loaded ? <div className={s.preparing} role="status">Preparing the depot…</div> : null}
+        {error ? <div className={s.error} role="alert"><Building2 size={32}/><strong>The 3D view is unavailable</strong><p>{referenceOnly ? 'The facility details and explicit reference are still available.' : 'The vehicle list and scenario state are still available.'}</p><button onClick={() => { setLoadedTemplate(null); setError(false); setRetry(value => value + 1); }}>Retry 3D view</button></div> : !loaded ? <div className={s.preparing} role="status">{referenceOnly ? 'Preparing the facility…' : 'Preparing the depot…'}</div> : null}
         {loaded && !error ? <div className={s.sceneLegend}><span className={s.dot}/>{selected ? selected.label : 'Site overview'}<span>·</span>{snapshot.interior ? 'Interior' : 'Exterior'}</div> : null}
       </div>
       <div className={s.toolbar} role="group" aria-label="Depot view controls">
-        <button className={s.playback} disabled={snapshot.completed} aria-pressed={playing} onClick={() => controller.setPlaying(!playing)}>{playing ? <Pause size={16}/> : <Play size={16}/>} {snapshot.completed ? 'Scenario complete' : playing ? 'Pause visualization' : 'Resume visualization'}</button>
+        {!referenceOnly ? <button className={s.playback} disabled={snapshot.completed} aria-pressed={playing} onClick={() => controller.setPlaying(!playing)}>{playing ? <Pause size={16}/> : <Play size={16}/>} {snapshot.completed ? 'Scenario complete' : playing ? 'Pause visualization' : 'Resume visualization'}</button> : null}
         <button onClick={() => { controller.select(null); controls.current?.overview(); }} aria-label="Site overview" title="Site overview"><RotateCcw size={17}/></button>
         <button disabled={!loaded || error} onClick={() => controls.current?.zoom(1.2)} aria-label="Zoom in" title="Zoom in"><ZoomIn size={17}/></button>
         <button disabled={!loaded || error} onClick={() => controls.current?.zoom(1 / 1.2)} aria-label="Zoom out" title="Zoom out"><ZoomOut size={17}/></button>
         <button aria-pressed={snapshot.interior} onClick={() => controller.setInterior(!snapshot.interior)}><Warehouse size={17}/>{snapshot.interior ? 'Exterior' : 'Interior'}</button>
       </div>
-      <p className={s.playbackNote}>Playback only affects this visualization. Leaving this view keeps its state.</p>
-    </div><aside className={s.roster} aria-label="Depot vehicle list">
+      <p className={s.playbackNote}>{referenceOnly ? 'Drag to orbit; scroll to zoom. The architecture is illustrative and does not alter the recorded location.' : 'Playback only affects this visualization. Leaving this view keeps its state.'}</p>
+    </div>{!referenceOnly ? <aside className={s.roster} aria-label="Depot vehicle list">
       <div className={s.rosterHeading}><h4>Vehicles</h4><span>{snapshot.vehicles.length}</span></div>
       {snapshot.vehicles.length === 0 ? <p className={s.empty}>No vehicles in this visual scenario.</p> : groups.filter(group => group.vehicles.length).map(group => <div key={group.label} className={s.group}><h5>{group.label}<span>{group.vehicles.length}</span></h5><ul>{group.vehicles.map(vehicle => <li key={vehicle.assetId}><button className={s.vehicle} data-phase={vehicle.phase} aria-pressed={snapshot.selectedAssetId === vehicle.assetId} onClick={event => controller.select(snapshot.selectedAssetId === vehicle.assetId ? null : vehicle.assetId, event.detail === 0)}>
         <span className={s.vehicleIcon}>{vehicle.phase === 'maintenance' ? <Wrench size={19}/> : <Truck size={19}/>}</span><span className={s.vehicleText}><strong>{vehicle.label}<small>{vehicle.family}</small></strong><span>{yardPhaseLabels[vehicle.phase]}{vehicle.reserved ? ' · Reserved' : ''}</span><small>{vehicle.resourceCode ? vehicle.resourceCode.replace('_', ' ') : vehicle.phase === 'unknown' ? 'Not placed in the yard' : vehicle.phase === 'parked' ? 'Parking area · No task' : vehicle.phase === 'waiting' ? 'Queue · Bay 02 next' : vehicle.phase === 'departed' ? 'Outside the yard' : 'Yard lane'}</small></span><Eye className={s.focusIcon} size={15}/>
       </button></li>)}</ul></div>)}
-    </aside></div>
-    <div className={s.event} role="status" aria-live="polite"><span className={s.dot}/><p>{snapshot.lastEvent}</p></div>
+    </aside> : null}</div>
+    {!referenceOnly ? <div className={s.event} role="status" aria-live="polite"><span className={s.dot}/><p>{snapshot.lastEvent}</p></div> : null}
   </section>;
 }

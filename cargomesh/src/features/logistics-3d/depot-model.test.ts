@@ -18,13 +18,18 @@ function geometrySignature(root: Group) {
   assert.ok(measured > 0); return hash.digest('hex');
 }
 
-test('five original depot geometries remain byte-for-byte unchanged', () => {
+test('ten existing depot geometries remain byte-for-byte unchanged', () => {
   const original = {
     compact: '9c23d99b5bd862e939c6178e9305849e695e10c34ba111137d27cfaaec6346d8',
     distribution: '9b832510fee5dc8626dce94a13f02c7de55acfc69c9ae341263ec141e4daf26b',
     cold: 'e0852a67e90c98bbb93b8194a1e97d30681839ebb1ab6ea315c075102a573aa0',
     workshop: 'c90f58dba0662aa5b9da21b0fa61aff21ace10420114e56e09c0802dec4b3b00',
     transfer: '2c9211564d32865f1975ec02abb77780453d9329a4f60bae37a1e854561c2032',
+    'cross-dock': '131c028c2ed8980aa0bc3430b978e0c0ea2abbdb88e3c51d06d431560e467702',
+    'service-yard': '5689898a8ace66010d918c4da8a62dd4e9eea989d62ddde70d13cef46e476839',
+    'cold-campus': '3691daa07d7b741ef6a77265bbb58baac6fe24e54c14a156ed87264b1f0043df',
+    'silo-terminal': 'f7874a5d6fa4f78a34e56a16938b683fdb9ba541ebf815b988df8cce89811313',
+    'urban-courtyard': 'fbf10617bfe0c6247bac3cfd4b958fef04e90f12d14c3f88dfadc02c0ca7bd26',
   };
   for (const [id, signature] of Object.entries(original)) {
     const depot = buildDepot('#147d88', id as keyof typeof original);
@@ -39,6 +44,11 @@ test('five new architectures differ from all originals in monochrome and contain
     ['cold-campus', ['Insulated cold storage', 'Three insulated chambers', 'Separate refrigeration plant']],
     ['silo-terminal', ['Covered bulk bagging apron', 'Six-silo battery', 'Elevated conveyor bridge']],
     ['urban-courtyard', ['Compact L-shaped dispatch hall', 'Two-level urban dispatch office', 'Urban roof terrace and courier court']],
+    ['industrial-plant', ['Industrial production hall', 'Separate industrial warehouse', 'Industrial loading gantry']],
+    ['agricultural-hub', ['Open agricultural crop sheds', 'Crop reception and weighbridge', 'Produce classification line']],
+    ['retail-store', ['Retail rear receiving warehouse', 'Glazed supermarket sales floor', 'Retail sales aisles and checkouts']],
+    ['pharmaceutical-centre', ['Controlled pharmaceutical receiving', 'Separated pharmaceutical storage rooms', 'Glazed controlled access corridor']],
+    ['fulfilment-centre', ['Fulfilment picking aisles', 'Elevated order packing stations', 'Parcel sorting and dispatch conveyors']],
   ]);
   const signatures = new Set<string>();
   for (const template of depotTemplates) {
@@ -55,7 +65,7 @@ test('five new architectures differ from all originals in monochrome and contain
     assert.ok(hits.length && hits[0].point.z < 1.2, 'The illustrative Bay 02 approach stays clear: ' + template.id);
     disposeDepot(depot.root);
   }
-  assert.equal(signatures.size, 10);
+  assert.equal(signatures.size, 15);
 });
 
 test('default overview contains every model corner on desktop and mobile, including the silo roof', () => {
@@ -72,6 +82,18 @@ test('default overview contains every model corner on desktop and mobile, includ
     }
     disposeDepot(depot.root);
   }
+});
+
+test('retail reception is behind the sales floor, opposite its public entrance', () => {
+  const depot = buildDepot('#147d88', 'retail-store');
+  const sales = new Box3().setFromObject(depot.root.getObjectByName('Glazed supermarket sales floor')!);
+  const receiving = new Box3().setFromObject(depot.root.getObjectByName('Retail rear receiving warehouse')!);
+  const entrance = depot.root.getObjectByName('Public retail entrance')!;
+  const door = new Box3().setFromObject(entrance).getCenter(new Vector3());
+  assert.ok(receiving.min.z >= sales.max.z - .02, 'Receiving occupies the opposite end of the sales floor');
+  assert.ok(depot.shutters.every(shutter => shutter.position.z > sales.max.z));
+  assert.ok(door.z < sales.getCenter(new Vector3()).z, 'Public entrance faces away from loading docks');
+  disposeDepot(depot.root);
 });
 
 test('architecture cleanup releases shared materials, geometry and textures exactly once', () => {

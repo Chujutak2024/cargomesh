@@ -112,7 +112,7 @@ function Yard({ controller, color, active, running, reduced, night, onReady, onF
     const open = bayTruck && ['loading', 'docking', 'ready'].includes(bayTruck.phase) ? 1 : 0;
     world.depot.shutters[1].scale.y = 1 - open * .96; world.depot.shutters[1].position.y = .35 + 2.28 * open * .96;
     world.depot.barrier.rotation.x = time >= 43500 && time < 56000 ? -Math.PI / 2 : 0;
-    world.depot.exitBarrier.rotation.x = time < 8000 || time >= 22000 && time < 40000 ? -Math.PI / 2 : 0;
+    world.depot.exitBarrier.rotation.x = snapshot.vehicles.length && (time < 8000 || time >= 22000 && time < 40000) ? -Math.PI / 2 : 0;
     const selected = snapshot.vehicles.find(v => v.assetId === snapshot.selectedAssetId);
     const focused = selected && !['unknown', 'departed'].includes(selected.phase);
     const nextFocusKey = `${snapshot.selectedAssetId}:${snapshot.interior}:${size.width}:${size.height}`;

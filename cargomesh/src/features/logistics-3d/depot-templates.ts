@@ -9,6 +9,11 @@ export const depotTemplates = [
   { id: 'cold-campus', name: 'Refrigerated logistics campus', description: 'Three insulated chambers, enclosed dock shelters and a separate refrigeration plant.', depth: 8, bays: 3, roof: '#d5e3e7', wall: '#eef2ed', feature: 'cold-campus' },
   { id: 'silo-terminal', name: 'Bulk cargo silo terminal', description: 'Six elevated silos, discharge cones, a conveyor bridge and a covered bagging apron.', depth: 8, bays: 3, roof: '#637c82', wall: '#d7ded9', feature: 'silo-terminal' },
   { id: 'urban-courtyard', name: 'Compact urban distribution base', description: 'An L-shaped dispatch building, two-storey offices, roof terrace and courier courtyard.', depth: 4.5, bays: 3, roof: '#485d60', wall: '#e4d8c4', feature: 'urban-courtyard' },
+  { id: 'industrial-plant', name: 'Industrial plant', description: 'Production hall with machinery, exhaust stacks, separate warehouse and loading apron.', depth: 8, bays: 3, roof: '#527080', wall: '#d5d8d0', feature: 'industrial-plant' },
+  { id: 'agricultural-hub', name: 'Agricultural collection centre', description: 'Open crop sheds, reception hoppers, weighing deck and a produce sorting line.', depth: 7, bays: 3, roof: '#9b6547', wall: '#e4d5ac', feature: 'agricultural-hub' },
+  { id: 'retail-store', name: 'Retail store and rear reception', description: 'Glazed shop entrance, sales aisles and a separate rear receiving warehouse.', depth: 6, bays: 3, roof: '#66766b', wall: '#e5dbc8', feature: 'retail-store' },
+  { id: 'pharmaceutical-centre', name: 'Pharmaceutical centre', description: 'Controlled receiving vestibules, separated storage rooms and a glazed inspection corridor.', depth: 8, bays: 3, roof: '#6e909d', wall: '#e5eeeb', feature: 'pharmaceutical-centre' },
+  { id: 'fulfilment-centre', name: 'Order fulfilment centre', description: 'Picking aisles, elevated packing stations, sorting conveyors and dispatch lanes.', depth: 8, bays: 3, roof: '#465c78', wall: '#dddcd5', feature: 'fulfilment-centre' },
 ] as const;
 export type DepotTemplateId = typeof depotTemplates[number]['id'];
 export function depotTemplate(id: DepotTemplateId) { return depotTemplates.find(template => template.id === id)!; }

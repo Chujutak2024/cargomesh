@@ -210,6 +210,91 @@ export function buildDepot(color = "#0a9292", templateId: DepotTemplateId = 'dis
       box('dark', 4.4, 6.3, -5.2, 14.3, .35, .9, conveyor); railing(4.4, 6.5, -4.65, 14.3, conveyor);
       for (const x of [-2.4, 2.8, 8.2, 11.3]) { cylinder('steel', x, 3.35, -5.2, .07, 6.1, conveyor); box('gold', x, 6.3, -5.2, .08, .05, 1.1, conveyor); }
       box('wall', 11, 2.65, -4.5, 2.5, 4.9, 4, conveyor); box('roof', 11, 5.18, -4.5, 2.8, .16, 4.3, roof);
+    } else if (template.feature === 'industrial-plant') {
+      const production = building('Industrial production hall'); hall(production, 8, 4.8);
+      for (let i = 0; i < 3; i++) dock(i, -1 + i * 4, 1);
+      for (const x of [-.6, 4.8]) for (const z of [-4.8, -2.4]) {
+        box('steel', x, 1.2, z, 2.6, 1.6, 1.2, production); box('accent', x, 1.95, z, 1.8, .3, .9, production);
+        cylinder('gold', x + .8, 2.25, z, .13, .4, production);
+        box('dark', x - .8, 1.55, z + .63, .45, .4, .04, production);
+      }
+      for (const side of [-1, 1]) add(new BoxGeometry(6.35, .18, 8.5), 'roof', 3 + side * 3.05, 5.3, -3, roof, [0, 0, -side * .17]);
+      for (const x of [1.2, 4.8]) { cylinder('steel', x, 5.4, -6, .3, 3.8, roof); cylinder('dark', x, 7.35, -6, .38, .12, roof); }
+      const warehouse = building('Separate industrial warehouse');
+      box('wall', -5.5, 1.9, -4.6, 4.4, 3.3, 6.4, warehouse); box('dark', -5.5, 1.5, -1.36, 2.6, 2.5, .06, warehouse);
+      box('roof', -5.5, 3.7, -4.6, 4.7, .2, 6.7, roof);
+      const loading = building('Industrial loading gantry');
+      for (const x of [9.7, 12.2]) cylinder('gold', x, 2.3, -3.8, .12, 4.1, loading);
+      box('steel', 10.95, 4.4, -3.8, 3, .35, .5, loading); box('dark', 10.95, 3.75, -3.8, .15, 1, .15, loading);
+    } else if (template.feature === 'agricultural-hub') {
+      const sheds = building('Open agricultural crop sheds');
+      for (const x of [-5.4, 7.1]) {
+        for (const dx of [-1.9, 1.9]) for (const z of [-7, -2]) box('wood', x + dx, 1.8, z, .16, 3, .16, sheds);
+        box('wall', x, .65, -7.2, 4.2, .8, .15, sheds);
+        for (const side of [-1, 1]) add(new BoxGeometry(2.25, .12, 5.8), 'roof', x + side * 1.05, 3.7, -4.5, roof, [0, 0, -side * .22]);
+        for (const z of [-6.2, -4.5]) for (const dx of [-1.1, .8]) {
+          box('wood', x + dx, .7, z, 1.35, .75, 1.2, sheds);
+          for (let j = 0; j < 3; j++) add(new SphereGeometry(.18, 7, 5), 'green', x + dx - .4 + j * .4, 1.15, z, sheds);
+        }
+      }
+      const receiving = building('Crop reception and weighbridge');
+      for (let i = 0; i < 3; i++) { dock(i, -1 + i * 4, 1); box('wood', -1 + i * 4, 2.75, .1, 2.5, .2, 2.8, receiving); }
+      box('steel', 3, .38, -2.7, 2.3, .2, 4.7, receiving);
+      for (const z of [-5.4, -2.6]) { add(new CylinderGeometry(.8, .25, 1.1, 8), 'gold', 3, 1.4, z, receiving); cylinder('steel', 3, .65, z, .12, .8, receiving); }
+      const sorting = building('Produce classification line');
+      box('wall', 1.2, 1.35, -7.4, 5.2, 2.1, 1.5, sorting); box('glass', 1.2, 1.6, -6.62, 4.7, .9, .05, sorting);
+      box('roof', 1.2, 2.5, -7.4, 5.6, .15, 1.9, roof);
+      for (let x = -.7; x < 3.5; x += .35) add(new CylinderGeometry(.07, .07, 1.05, 8), 'steel', x, .95, -5.9, sorting, [Math.PI / 2, 0, 0]);
+    } else if (template.feature === 'retail-store') {
+      const receiving = building('Retail rear receiving warehouse'); hall(receiving, 3.5, 3.4);
+      for (let i = 0; i < 3; i++) dock(i, -1 + i * 4, 1);
+      box('roof', 3, 3.55, -.75, 12.5, .2, 3.9, roof);
+      const store = building('Glazed supermarket sales floor');
+      box('concrete', 3, .3, -5.25, 12, .2, 5.3, store);
+      for (const x of [-3, 9]) box('glass', x, 2.15, -5.25, .08, 3.7, 5.3, store);
+      box('glass', 3, 2.15, -7.9, 12, 3.7, .08, store);
+      for (let x = -2.5; x < 9; x += 1.4) box('white', x, 2.15, -7.96, .07, 3.75, .08, store);
+      box('roof', 3, 4.2, -5.25, 12.4, .25, 5.7, roof);
+      const entrance = building('Public retail entrance');
+      box('accent', 3, 3.3, -8.04, 7, .55, .16, entrance);
+      for (const x of [1.8, 4.2]) box('steel', x, 1.65, -8.04, .08, 2.7, .12, entrance);
+      box('glass', 3, 1.65, -8.02, 2.3, 2.7, .08, entrance);
+      box('roof', 3, 3, -8.25, 7.5, .15, 1.2, roof);
+      box('concrete', 3, .22, -8.45, 13, .08, .8);
+      box('concrete', -7.4, .22, -.4, 1.2, .08, 17);
+      const aisles = building('Retail sales aisles and checkouts');
+      for (const x of [-.8, 3, 6.8]) for (const z of [-6.2, -4.2]) { box('steel', x, .95, z, .65, 1.2, 1.4, aisles); for (const y of [.6, 1, 1.4]) box('gold', x, y, z, .85, .05, 1.5, aisles); }
+      for (const x of [0, 6]) { box('accent', x, .8, -7.2, 1.2, .9, .65, aisles); box('dark', x, 1.45, -7.2, .35, .4, .08, aisles); }
+    } else if (template.feature === 'pharmaceutical-centre') {
+      const receiving = building('Controlled pharmaceutical receiving'); hall(receiving, 8, 4);
+      for (let i = 0; i < 3; i++) dock(i, -1 + i * 4, 1, false, true);
+      box('roof', 3, 4.15, -3, 12.5, .25, 8.4, roof);
+      const rooms = building('Separated pharmaceutical storage rooms');
+      for (const x of [-1, 3, 7]) {
+        for (const dx of [-1.7, 1.7]) box('wall', x + dx, 1.95, -4.7, .18, 3.2, 4.3, rooms);
+        box('glass', x, 1.9, -2.5, 3.3, 3, .1, rooms); box('accent', x, 1.5, -2.42, .85, 2.2, .07, rooms);
+        for (const z of [-4, -5.7]) { box('steel', x, 1.5, z, 2.4, 2.4, .65, rooms); for (const y of [.7, 1.5, 2.3]) box('white', x, y, z, 2.5, .06, .7, rooms); }
+      }
+      const corridor = building('Glazed controlled access corridor');
+      box('glass', -5.2, 1.8, -3.1, 3.5, 3, 7.8, corridor); box('roof', -5.2, 3.5, -3.1, 3.9, .22, 8.2, roof);
+      for (const z of [-6.4, -3.1, .6]) box('white', -7, 1.8, z, .1, 3.2, .12, corridor);
+      box('dark', -5.2, 1.45, .9, 1.3, 2.3, .12, corridor);
+      for (const x of [0, 6]) { box('steel', x, 4.65, -4.5, 3.3, .75, 2, roof); for (let z = -5.2; z < -3.6; z += .3) box('dark', x, 5.04, z, 3, .03, .08, roof); }
+    } else if (template.feature === 'fulfilment-centre') {
+      const picking = building('Fulfilment picking aisles'); hall(picking, 8, 4.6);
+      for (let i = 0; i < 3; i++) dock(i, -1 + i * 4, 1);
+      for (const x of [-1.4, 1.1, 6.5]) for (const z of [-5.8, -3.4]) {
+        for (const dx of [-.7, .7]) box('steel', x + dx, 1.9, z, .07, 3, 1.3, picking);
+        for (const y of [.7, 1.6, 2.5]) { box('accent', x, y, z, 1.5, .07, 1.2, picking); for (const dx of [-.38, .38]) box('box', x + dx, y + .3, z, .6, .5, .9, picking); }
+      }
+      const mezzanine = building('Elevated order packing stations');
+      box('wall', -5.3, 2.7, -4.1, 4.2, 4.8, 6.3, mezzanine); box('glass', -5.3, 3.9, -.9, 3.7, 1.4, .08, mezzanine);
+      box('roof', -5.3, 5.25, -4.1, 4.6, .2, 6.7, roof);
+      for (const z of [-5.5, -3, -1.4]) { box('steel', -5.2, 2.95, z, 2.7, .14, 1, mezzanine); box('dark', -6, 3.3, z, .4, .6, .05, mezzanine); }
+      const sorting = building('Parcel sorting and dispatch conveyors');
+      for (let z = -6; z < .2; z += .34) add(new CylinderGeometry(.065, .065, 1, 8), 'steel', 3.5, 1, z, sorting, [0, 0, Math.PI / 2]);
+      for (const x of [-1, 3, 7]) { box('gold', x, .95, -.8, 2.2, .08, .8, sorting); box('box', x, 1.25, -.8, .7, .5, .6, sorting); }
+      for (const x of [-.5, 3, 6.5]) { box('roof', x, 4.8, -3, 3.55, .2, 8.4, roof); box('glass', x, 4.95, -3, .8, .08, 6.5, roof); }
     } else if (template.feature === 'urban-courtyard') {
       const dispatch = building('Compact L-shaped dispatch hall'); hall(dispatch, 4.5, 3.35);
       for (let i = 0; i < 3; i++) dock(i, -1 + i * 4, 1);
