@@ -33,3 +33,17 @@ Solicitada autorización específica para llevar este hotfix nuevo a main y conf
 Una vez autorizado: publicar por PR/gates; añadir la variable privada del proyecto sin exponer su valor; nuevo build; comprobar Carrier→Cliente→Carrier y mapa. La restricción HTTP referrer/API/billing del proveedor, si aparece tras cargar la clave, se diagnostica separadamente; no hay evidencia todavía de ese fallo.
 
 No despliegue ni cambio de Vercel aplicado durante la preparación. El mapa no se arregla por volver a desplegar el mismo build sin la variable.
+
+
+## Activación autorizada — continuación del 20 octubre
+
+Cristhian autoriza este arreglo y configuración de Maps en Production mediante
+«Configuralo pe xd», en respuesta a la solicitud específica de publicar el hotfix
+en main y configurar la clave existente local. La sección de preparación anterior
+describe el estado previo a esta autorización.
+
+La variable se creó únicamente para Production y se verificaron sus metadatos;
+no se imprimió su valor. Root Directory, alias y rama de producción no cambiaron.
+La publicación se realiza por PR y gate actual. El render del mapa y el acceso
+cruzado quedan pendientes del nuevo build; no se afirman comprobados por guardar
+la variable. No se activan cuentas ni escrituras de Cliente con este arreglo.
