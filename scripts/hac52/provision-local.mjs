@@ -51,7 +51,7 @@ export async function provision(bankDir, accessFile) {
   if (old && (old.profile !== 'hac52-client' || old.url !== API)) throw new Error('Foreign private access file.');
   const password = old?.password ?? randomBytes(30).toString('base64url');
   const email = 'hac52-client-pe@example.invalid';
-  const account = {profile:'hac52-client',url:API,appOrigin:APP,anonKey:status.ANON_KEY,email,password};
+  const account = {...old,profile:'hac52-client',url:API,appOrigin:APP,anonKey:status.ANON_KEY,email,password};
   // Save before signup so a restart can reuse the same local credential, never rotate it implicitly.
   await privateFile(accessFile,account);
   const headers = {apikey:status.ANON_KEY,'Content-Type':'application/json'};
