@@ -13,6 +13,7 @@ import type { WorkflowRecordV2 } from "@/features/shipper-portal/shipper-model";
 import { V2DraftError } from "@/server/modules/freight-requests/application/draft-service";
 import { readWorkspaceRequest, type WorkspaceWorkflowKind } from "./workspace-server";
 import { collectOperationsPages, operationsReadIssues, OperationsReadContractError } from "./operations-collection";
+import { readRequestChildren } from "./request-workflow";
 
 /** Client-owned reads; leaves the shared identity/Facilities helper and Carrier wrappers untouched. */
 export async function operationsReader(expectedOrganizationId?: string) {
@@ -33,10 +34,10 @@ export async function operationsReader(expectedOrganizationId?: string) {
         if (record.organizationId !== actor.organizationId) throw new V2DraftError("FORBIDDEN_TENANT", "Request scope mismatch.", 403);
       }, offset);
     },
-    async workflow(kind: WorkspaceWorkflowKind, requestId: string | null = null) {
+    async workflow(kind: WorkspaceWorkflowKind, requestId: string | null = null, parentId: string | null = null) {
       const service = new WorkflowServiceV2(await workflowRepositoryV2());
       return collectOperationsPages(async page => {
-        const response = await service.read(actor, kind, { requestId, carrierId: null, parentId: null, id: null }, page);
+        const response = await service.read(actor, kind, { requestId, carrierId: null, parentId, id: null }, page);
         if (!Array.isArray(response.data)) throw new OperationsReadContractError("Expected a collection.");
         return { data: response.data, meta: response.meta };
       }, record => {
@@ -59,10 +60,16 @@ export async function readOperationsRequestFlow(id: string) {
   // Read the exact authorized request before any commercial collection. 401/403/404 remain errors.
   const request = await readWorkspaceRequest(id);
   const reader = await operationsReader(request.organizationId);
-  const kinds: WorkspaceWorkflowKind[] = ["routes", "plans", "opportunities", "offers", "ranking", "decisions", "bookings", "executions", "incidents"];
+  const kinds: WorkspaceWorkflowKind[] = ["routes", "plans", "opportunities", "offers", "ranking", "decisions", "bookings"];
   const values = await Promise.all(kinds.map(kind => reader.workflow(kind, request.id)));
   const collections = Object.fromEntries(kinds.map((kind, index) => [kind, values[index]]));
   const workflow = Object.fromEntries(kinds.map((kind, index) => [kind, values[index].data]));
+  collections.executions = await readRequestChildren("executions", workflow.bookings, request.organizationId, request.id,
+    (kind, parentId) => reader.workflow(kind, null, parentId));
+  workflow.executions = collections.executions.data;
+  collections.incidents = await readRequestChildren("incidents", workflow.executions, request.organizationId, request.id,
+    (kind, parentId) => reader.workflow(kind, null, parentId));
+  workflow.incidents = collections.incidents.data;
   const catalog = await reader.commercialCatalog(workflow);
   return { request, workflow, catalog,
     issues: operationsReadIssues(collections) };

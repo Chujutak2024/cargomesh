@@ -6,9 +6,11 @@ type Booking = Extract<WorkflowRecordV2, { kind: "bookings" }>;
 type Decision = Extract<WorkflowRecordV2, { kind: "decisions" }>;
 
 export function offerAvailability(offer: Offer, now = Date.now()) {
-  if (offer.data.status === "WITHDRAWN") return "WITHDRAWN" as const;
-  if (offer.data.status === "SUPERSEDED") return "SUPERSEDED" as const;
-  if (offer.data.status !== "RECEIVED") return "INVALID" as const;
+  // Native transitions update the envelope while preserving the issuer's original data snapshot.
+  const status = offer.status ?? offer.data.status;
+  if (status === "WITHDRAWN") return "WITHDRAWN" as const;
+  if (status === "SUPERSEDED") return "SUPERSEDED" as const;
+  if (status !== "RECEIVED") return "INVALID" as const;
   const startsAt = Date.parse(offer.data.validity.startsAt);
   const endsAt = Date.parse(offer.data.validity.endsAt);
   if (!Number.isFinite(startsAt) || !Number.isFinite(endsAt) || startsAt >= endsAt) return "INVALID" as const;

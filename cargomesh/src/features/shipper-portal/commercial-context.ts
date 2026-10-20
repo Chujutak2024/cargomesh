@@ -18,9 +18,10 @@ const sameIds = (a: string[], b: string[]) => new Set(a).size === a.length && ne
 export function inspectOffer(offer: Offer, context: CommercialContext, now = Date.now()) {
   const reasons: string[] = [];
   const raw = Object.fromEntries(Object.keys(CarrierOfferV2Schema.innerType().shape).map(key => [key, offer.data[key]]));
+  raw.status = offer.status;
   if (!CarrierOfferV2Schema.safeParse(raw).success) reasons.push("OFFER_CONTRACT_INVALID");
   if (!inRequest(offer, context.request) || offer.data.id !== offer.id || offer.data.requestId !== offer.requestId
-    || offer.data.carrierId !== offer.carrierId || offer.status !== offer.data.status) reasons.push("OFFER_SCOPE_MISMATCH");
+    || offer.data.carrierId !== offer.carrierId) reasons.push("OFFER_SCOPE_MISMATCH");
   const plan = context.plans.find(row => row.id === offer.data.planCandidateId);
   const opportunity = context.opportunities.find(row => row.id === offer.data.opportunityId);
   if (!plan) reasons.push("PLAN_NOT_LOADED");

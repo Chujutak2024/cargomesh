@@ -83,3 +83,12 @@ test("an otherwise valid quote cannot use another tenant's ranking or opportunit
     assert.equal(inspectRankedOption(context.ranking!.data.options[0], context, now).available, false);
   }
 });
+test("native envelope supersession/withdrawal is authoritative over the immutable issuer snapshot", () => {
+  for (const status of ["SUPERSEDED", "WITHDRAWN"] as const) {
+    const context = commercialFixture(), offer = context.offers[0]; offer.status = status; offer.version++;
+    assert.equal(offer.data.status, "RECEIVED");
+    const inspected = inspectOffer(offer, context, now);
+    assert.equal(inspected.linked, true); assert.equal(inspected.current, false); assert.ok(inspected.reasons.includes(status));
+    assert.equal(buildOfferBriefing(context.offers, context.ranking, now, context).recommended, null);
+  }
+});
