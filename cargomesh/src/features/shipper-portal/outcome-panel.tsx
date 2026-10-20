@@ -19,7 +19,7 @@ export function OutcomePanel({ requests, offers, bookings, incidents, t, localeT
 }) {
   const requestById = new Map(requests.map((request) => [request.id, request]));
   const items = [
-    ...offers.filter((offer) => offer.data.status === "WITHDRAWN").map((offer) => ({ key: `offer-${offer.id}`, at: offer.updatedAt, requestId: offer.requestId,
+    ...offers.filter((offer) => offer.status === "WITHDRAWN").map((offer) => ({ key: `offer-${offer.id}`, at: offer.updatedAt, requestId: offer.requestId,
       title: t("Oferta retirada", "Offer withdrawn"), detail: `${offer.data.carrierReference} · ${t("Ya no puede seleccionarse ni reservarse.", "It can no longer be selected or booked.")}`,
       reason: auditNote(offer.data.withdrawal) ?? t("Motivo no proporcionado en este registro.", "Reason not provided in this record."), tone: "warning",
       recoveryHref: "/support", recoveryLabel: t("Consultar alternativas", "Ask about alternatives") })),

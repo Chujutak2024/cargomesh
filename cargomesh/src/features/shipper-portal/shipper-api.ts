@@ -1,7 +1,8 @@
 import {workspaceFetch} from "@/features/workspace-mode/workspace-fetch";
 import { z } from "zod";
 import { FreightRequestV2ResponseSchema, type CreateFreightRequestV2Input } from "@/shared/schemas/v2/freight-request";
-import { WorkflowRecordV2Schema } from "@/shared/schemas/v2/workflow";
+import { WorkflowRecordV2Schema, WorkflowInputsV2 } from "@/shared/schemas/v2/workflow";
+import { commercialIntent, type CommercialIntent } from "./commercial-intent";
 import { LocationCandidateV2Schema, LocationConfirmationInputV2Schema, LocationResolutionInputV2Schema,
   LocationResolutionV2Schema } from "@/shared/schemas/v2/location-resolution";
 
@@ -43,6 +44,20 @@ function idempotencyHeaders() {
   return { "Idempotency-Key": crypto.randomUUID() };
 }
 
+async function currentWorkflow(body: unknown, fetcher: FetchLike) {
+  const response = WorkflowResponseSchema.parse(body);
+  // Native receipts retain the original result snapshot, including pre-migration projections.
+  // A replay proves identity, not current status. Re-read its exact authorized resource.
+  if (!response.meta.idempotentReplay) return response.data;
+  const current = await requestJson(`/api/v2/${response.data.kind}/${encodeURIComponent(response.data.id)}`, { method: "GET", cache: "no-store" }, fetcher);
+  const record = z.object({schemaVersion:z.literal("2.0"),data:WorkflowRecordV2Schema}).parse(current).data;
+  if (record.id !== response.data.id || record.kind !== response.data.kind || record.organizationId !== response.data.organizationId
+    || record.requestId !== response.data.requestId || record.carrierId !== response.data.carrierId) {
+    throw new ShipperApiError("INVALID_SCOPE", "Replayed resource scope changed.", 502, false);
+  }
+  return record;
+}
+
 export async function reviseFreightRequest(id: string, expectedDraftVersion: number, value: CreateFreightRequestV2Input,
   fetcher: FetchLike = workspaceFetch) {
   const body = await requestJson(`/api/v2/freight/requests/${encodeURIComponent(id)}/revisions`, {
@@ -65,29 +80,56 @@ export async function selectCommercialOption(input: {
   consideredOfferIds: string[];
   policyId: string | null;
   rationale: string;
+  intent?: CommercialIntent;
 }, fetcher: FetchLike = workspaceFetch) {
-  const now = new Date().toISOString();
+  const intent = commercialIntent(input.intent);
   const body = await requestJson(`/api/v2/freight/requests/${encodeURIComponent(input.requestId)}/decisions`, {
-    method: "POST", headers: idempotencyHeaders(), body: JSON.stringify({
+    method: "POST", headers: { "Idempotency-Key": intent.idempotencyKey }, body: JSON.stringify(WorkflowInputsV2["decisions.create"].parse({
       schemaVersion: "2.0", planId: input.planId, selectedOfferIds: input.offerIds,
       consideredOfferIds: input.consideredOfferIds, policyId: input.policyId, rationale: input.rationale,
-      evidence: [{ reference: "SHIPPER_WEB_EXPLICIT_SELECTION", provider: "CargoMesh Web", observedAt: now,
+      evidence: [{ reference: "SHIPPER_WEB_EXPLICIT_SELECTION", provider: "CargoMesh Web", observedAt: intent.observedAt,
         validUntil: null, provenanceStatus: "VERIFIED" }],
-    }),
+    })),
   }, fetcher);
-  return WorkflowResponseSchema.parse(body).data;
+  const record = await currentWorkflow(body, fetcher);
+  if (record.kind !== "decisions" || record.requestId !== input.requestId || record.data.planId !== input.planId
+    || record.data.selectedOfferIds.length !== input.offerIds.length || record.data.selectedOfferIds.some(id => !input.offerIds.includes(id))) {
+    throw new ShipperApiError("INVALID_SCOPE", "Decision response does not match the explicit selection.", 502, false);
+  }
+  return record;
 }
 
-export async function authorizeBooking(input: { decisionId: string; offerId: string; idempotencyKey?: string }, fetcher: FetchLike = workspaceFetch) {
-  const now = new Date().toISOString();
+export async function authorizeBooking(input: { decisionId: string; offerId: string; intent?: CommercialIntent }, fetcher: FetchLike = workspaceFetch) {
+  const intent = commercialIntent(input.intent);
   const body = await requestJson("/api/v2/bookings", {
-    method: "POST", headers: { "Idempotency-Key": input.idempotencyKey ?? crypto.randomUUID() }, body: JSON.stringify({
+    method: "POST", headers: { "Idempotency-Key": intent.idempotencyKey }, body: JSON.stringify(WorkflowInputsV2["bookings.create"].parse({
       schemaVersion: "2.0", decisionId: input.decisionId, offerId: input.offerId, authorization: "AUTHORIZE",
-      evidence: { reference: "SHIPPER_WEB_EXPLICIT_BOOKING_CONSENT", provider: "CargoMesh Web", observedAt: now,
+      evidence: { reference: "SHIPPER_WEB_EXPLICIT_BOOKING_CONSENT", provider: "CargoMesh Web", observedAt: intent.observedAt,
         validUntil: null, provenanceStatus: "VERIFIED" },
-    }),
+    })),
   }, fetcher);
-  return WorkflowResponseSchema.parse(body).data;
+  const record = await currentWorkflow(body, fetcher);
+  if (record.kind !== "bookings" || record.data.decisionId !== input.decisionId || record.data.offerId !== input.offerId) {
+    throw new ShipperApiError("INVALID_SCOPE", "Booking response does not identify the authorized decision and offer.", 502, false);
+  }
+  return record;
+}
+
+export async function requestCarrierOffer(requestId: string, value: z.infer<(typeof WorkflowInputsV2)["opportunities.create"]>,
+  idempotencyKey: string, fetcher: FetchLike = workspaceFetch) {
+  const input = WorkflowInputsV2["opportunities.create"].parse(value);
+  const body = await requestJson(`/api/v2/freight/requests/${encodeURIComponent(z.string().uuid().parse(requestId))}/opportunities`, {
+    method: "POST", headers: { "Idempotency-Key": z.string().uuid().parse(idempotencyKey) }, body: JSON.stringify(input),
+  }, fetcher);
+  const record = WorkflowResponseSchema.parse(body).data;
+  if (record.kind !== "opportunities" || record.requestId !== requestId || record.carrierId !== input.carrierId
+    || record.data.carrierId !== input.carrierId || record.data.responseChannel !== input.responseChannel
+    || Date.parse(record.data.responseDeadline) !== Date.parse(input.responseDeadline)
+    || record.data.planId !== input.planId || record.data.assignmentIds.length !== input.assignmentIds.length
+    || record.data.assignmentIds.some(id => !input.assignmentIds.includes(id))) {
+    throw new ShipperApiError("INVALID_SCOPE", "Opportunity response does not match the requested context.", 502, false);
+  }
+  return record;
 }
 
 export async function resolveLocation(query: z.infer<typeof LocationResolutionInputV2Schema>["query"], fetcher: FetchLike = workspaceFetch) {

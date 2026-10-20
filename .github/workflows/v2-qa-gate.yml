@@ -49,6 +49,9 @@ jobs:
       - name: Run release test chain
         run: pnpm test:release
 
+      - name: Verify client operations read and navigation contracts
+        run: pnpm test:client-operations
+
       - name: Verify V2 conversation and workflow chat contracts
         run: pnpm test:v2-conversation && pnpm test:v2-chat-workflow
 

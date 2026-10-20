@@ -5,22 +5,22 @@ import { buildTrackingJourney, type ExecutionEvent, type Incident, type JourneyS
 import { provenanceName, stageName, trackingStatus, type TrackingListItem, type TrackingTranslate } from "./tracking-presentation";
 import s from "./tracking-experience.module.css";
 
-export function TrackingOverviewCard({ execution, booking, events, incidents, reference, corridor, t, tag }: TrackingListItem & { t: TrackingTranslate; tag: string }) {
+export function TrackingOverviewCard({ execution, booking, events, incidents, reference, corridor, eventsComplete=true,incidentsComplete=true,queryString="",t, tag }: TrackingListItem & { t: TrackingTranslate; tag: string; queryString?:string }) {
   const journey = buildTrackingJourney(execution, booking, events, incidents);
   const status = trackingStatus(execution, booking, events, incidents, t);
   return <article className={s.overviewCard}>
     <div className={s.overviewTop}><span className={s.overviewIcon}><Truck size={20} aria-hidden="true"/></span><div className={s.reference}><small>{t("Transporte", "Transport")}</small><h2 title={reference}>{reference}</h2></div></div>
     <p className={s.corridor}>{corridor}</p>
-    <div className={s.badgeRow}><span className={s.statePill} data-state={status.tone}>{status.label}</span>{journey.openIncidents > 0 && <span className={s.statePill} data-state="blocked"><AlertTriangle size={13} aria-hidden="true"/>{journey.openIncidents} {t("activa(s)", "active")}</span>}</div>
+    <div className={s.badgeRow}><span className={s.statePill} data-state={status.tone}>{status.label}</span>{!eventsComplete||!incidentsComplete?<span className={s.statePill} data-state="unknown">{t("Lectura incompleta","Incomplete read")}</span>:null}{journey.openIncidents > 0 && <span className={s.statePill} data-state="blocked"><AlertTriangle size={13} aria-hidden="true"/>{journey.openIncidents} {t("activa(s)", "active")}</span>}</div>
     <div className={s.miniJourney} aria-label={t("Hitos reportados", "Reported milestones")}>
       {(["booking", "departure", "transit", "delivery"] as JourneyStageKey[]).map((key) => { const stage = journey.stages.find((item) => item.key === key)!; return <div className={s.miniStep} data-state={stage.state} key={key}><span>{key === journey.lastReportedStage ? <Truck size={13} aria-hidden="true"/> : stage.state === "completed" ? <Check size={13} aria-hidden="true"/> : null}</span><small>{stageName(key, t)}</small></div>; })}
     </div>
     <div className={s.overviewFoot}><span><MapPin size={14} aria-hidden="true"/>{journey.lastKnownPosition?.label ?? t("Ubicación no reportada", "Location not reported")}</span><time dateTime={journey.lastUpdatedAt ?? undefined}>{formatDateTime(journey.lastUpdatedAt, tag)}</time></div>
-    <Link className={s.actionLink} href={`/tracking/${execution.id}`}>{t("Abrir seguimiento", "Open tracking")}<ArrowRight size={16} aria-hidden="true"/></Link>
+    <Link className={s.actionLink} href={`/tracking/${execution.id}${queryString}`}>{t("Abrir seguimiento", "Open tracking")}<ArrowRight size={16} aria-hidden="true"/></Link>
   </article>;
 }
 
-export function TrackingEventsPanel({ events, t, tag, locale }: { events: ExecutionEvent[]; t: TrackingTranslate; tag: string; locale: "es" | "en" }) {
+export function TrackingEventsPanel({ events, t, tag, locale,complete=true }: { events: ExecutionEvent[]; t: TrackingTranslate; tag: string; locale: "es" | "en";complete?:boolean }) {
   const ordered = [...events].sort((a, b) => Date.parse(b.data.at) - Date.parse(a.data.at));
   const renderEvent = (event: ExecutionEvent) => <li key={event.id}><span className={s.eventDot}/><div className={s.eventContent}>
     <div className={s.eventTop}><strong>{executionActionLabel(event.data.action, locale)}</strong><time dateTime={event.data.at}>{formatDateTime(event.data.at, tag)}</time></div>
@@ -29,14 +29,16 @@ export function TrackingEventsPanel({ events, t, tag, locale }: { events: Execut
     <details className={s.evidence}><summary>{t("Ver evidencia", "View evidence")}</summary><dl><div><dt>{t("Referencia", "Reference")}</dt><dd>{event.data.evidence.reference}</dd></div><div><dt>{t("Observada", "Observed")}</dt><dd>{formatDateTime(event.data.evidence.observedAt, tag)}</dd></div><div><dt>{t("Estado del registro", "Record state")}</dt><dd>{event.status}</dd></div></dl></details>
   </div></li>;
   return <section className={s.panel} aria-labelledby="tracking-events-title"><div className={s.panelHeading}><h2 id="tracking-events-title">{t("Actividad del transporte", "Transport activity")}</h2><span className={s.metaBadge}>{events.length}</span></div>
-    {ordered.length ? <><ol className={s.eventList}>{ordered.slice(0, 6).map(renderEvent)}</ol>{ordered.length > 6 && <details className={s.olderEvents}><summary>{t("Ver eventos anteriores", "View earlier events")} ({ordered.length - 6})</summary><ol className={s.eventList}>{ordered.slice(6).map(renderEvent)}</ol></details>}</> : <div className={s.empty}><CircleHelp size={24} aria-hidden="true"/><strong>{t("Esperando el primer evento", "Waiting for the first event")}</strong><p>{t("Aquí aparecerán los reportes de salida, posición y entrega del transportista.", "Carrier departure, position and delivery reports will appear here.")}</p></div>}
+    {!complete?<p className={s.visualNote} role="status">{t("No se pudo verificar la cronología completa. Reintenta la lectura superior.","The complete timeline could not be verified. Retry the read above.")}</p>:null}
+    {ordered.length ? <><ol className={s.eventList}>{ordered.slice(0, 6).map(renderEvent)}</ol>{ordered.length > 6 && <details className={s.olderEvents}><summary>{t("Ver eventos anteriores", "View earlier events")} ({ordered.length - 6})</summary><ol className={s.eventList}>{ordered.slice(6).map(renderEvent)}</ol></details>}</> : complete?<div className={s.empty}><CircleHelp size={24} aria-hidden="true"/><strong>{t("Esperando el primer evento", "Waiting for the first event")}</strong><p>{t("Aquí aparecerán los reportes de salida, posición y entrega del transportista.", "Carrier departure, position and delivery reports will appear here.")}</p></div>:null}
   </section>;
 }
 
-export function TrackingIncidentsPanel({ incidents, t, tag }: { incidents: Incident[]; t: TrackingTranslate; tag: string }) {
+export function TrackingIncidentsPanel({ incidents, t, tag,complete=true }: { incidents: Incident[]; t: TrackingTranslate; tag: string;complete?:boolean }) {
   const active = incidents.filter((item) => item.data.status === "OPEN").length;
   const ordered = [...incidents].sort((a, b) => Number(b.data.status === "OPEN") - Number(a.data.status === "OPEN") || Date.parse(b.data.occurredAt) - Date.parse(a.data.occurredAt));
-  return <section className={s.panel} aria-labelledby="tracking-incidents-title"><div className={s.panelHeading}><h2 id="tracking-incidents-title">{t("Incidencias", "Incidents")}</h2><span className={s.statePill} data-state={active ? "blocked" : "completed"}>{active} {active === 1 ? t("activa", "active") : t("activas", "active")}</span></div>
+  return <section className={s.panel} aria-labelledby="tracking-incidents-title"><div className={s.panelHeading}><h2 id="tracking-incidents-title">{t("Incidencias", "Incidents")}</h2><span className={s.statePill} data-state={!complete?"unknown":active ? "blocked" : "completed"}>{!complete?t("Sin verificar","Unverified"):`${active} ${active===1?t("activa","active"):t("activas","active")}`}</span></div>
+    {!complete?<p className={s.visualNote} role="status">{t("Lectura incompleta. No se puede afirmar que no existan otras incidencias.","Incomplete read. Other incidents cannot be ruled out.")}</p>:null}
     {ordered.length ? <div className={s.incidentList}>{ordered.map((incident) => {
       const resolved = incident.data.status === "RESOLVED";
       return <article className={s.incident} data-tone={resolved ? "resolved" : incident.data.severity === "CRITICAL" ? "danger" : "warning"} key={incident.id}>
@@ -46,6 +48,6 @@ export function TrackingIncidentsPanel({ incidents, t, tag }: { incidents: Incid
         <details className={s.evidence}><summary>{t("Origen del reporte", "Report source")}</summary><p>{incident.data.kind}</p>{incident.data.evidence.map((evidence, index) => <p key={index}>{provenanceName(evidence.provenanceStatus, t)} · {evidence.provider}<br/>{evidence.reference}<br/>{formatDateTime(evidence.observedAt, tag)}</p>)}</details>
         {!resolved && <Link href="/support">{t("Consultar con soporte", "Contact support")}<ArrowRight size={14} aria-hidden="true"/></Link>}
       </article>;
-    })}</div> : <div className={s.quietState}><ShieldCheck size={27} aria-hidden="true"/><strong>{t("Sin incidencias reportadas", "No incidents reported")}</strong><p>{t("Las alertas del transportista aparecerán aquí.", "Carrier alerts will appear here.")}</p></div>}
+    })}</div> : complete?<div className={s.quietState}><ShieldCheck size={27} aria-hidden="true"/><strong>{t("Sin incidencias reportadas", "No incidents reported")}</strong><p>{t("Las alertas del transportista aparecerán aquí.", "Carrier alerts will appear here.")}</p></div>:null}
   </section>;
 }

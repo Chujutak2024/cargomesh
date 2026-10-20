@@ -6,14 +6,17 @@ type Booking = Extract<WorkflowRecordV2, { kind: "bookings" }>;
 type Decision = Extract<WorkflowRecordV2, { kind: "decisions" }>;
 
 export function offerAvailability(offer: Offer, now = Date.now()) {
-  if (offer.data.status === "WITHDRAWN") return "WITHDRAWN" as const;
-  if (offer.data.status === "SUPERSEDED") return "SUPERSEDED" as const;
-  if (offer.data.status !== "RECEIVED") return "INVALID" as const;
+  // Native transitions update the envelope while preserving the issuer's original data snapshot.
+  const status = offer.status ?? offer.data.status;
+  if (status === "WITHDRAWN") return "WITHDRAWN" as const;
+  if (status === "SUPERSEDED") return "SUPERSEDED" as const;
+  if (status !== "RECEIVED") return "INVALID" as const;
   const startsAt = Date.parse(offer.data.validity.startsAt);
   const endsAt = Date.parse(offer.data.validity.endsAt);
   if (!Number.isFinite(startsAt) || !Number.isFinite(endsAt) || startsAt >= endsAt) return "INVALID" as const;
   if (endsAt <= now) return "EXPIRED" as const;
   if (startsAt > now) return "NOT_STARTED" as const;
+  if (offer.data.issuedAt && Date.parse(offer.data.issuedAt) > now) return "NOT_STARTED" as const;
   return "AVAILABLE" as const;
 }
 
@@ -41,11 +44,12 @@ export function money(amount: number, currency: string, locale: string) {
 }
 
 export function resolveBookingOffer(booking: Booking, decisions: Decision[], offers: Offer[]) {
-  if (typeof booking.data.offerId === "string") return offers.find((offer) => offer.id === booking.data.offerId
-    && offer.requestId === booking.requestId) ?? null;
-  const decision = decisions.find((item) => item.id === booking.data.decisionId && item.requestId === booking.requestId);
+  if (!booking.organizationId || !booking.requestId || !booking.carrierId) return null;
+  const decision = decisions.find((item) => item.id === booking.data.decisionId && item.requestId === booking.requestId
+    && item.organizationId === booking.organizationId);
   if (!decision) return null;
   const candidates = offers.filter((offer) => decision.data.selectedOfferIds.includes(offer.id)
-    && offer.carrierId === booking.carrierId && offer.requestId === booking.requestId);
+    && offer.organizationId === booking.organizationId && offer.carrierId === booking.carrierId && offer.requestId === booking.requestId);
+  if (typeof booking.data.offerId === "string") return candidates.find(offer => offer.id === booking.data.offerId) ?? null;
   return candidates.length === 1 ? candidates[0] : null;
 }

@@ -30,12 +30,19 @@ test("booking retry excludes an offer already authorized by this decision", () =
 
 test("booking price is linked only when persisted decision and carrier identify one offer", () => {
   const carrierId = "10000000-0000-4000-8000-000000000002";
-  const first = { ...offer, carrierId };
-  const booking = { carrierId, data: { decisionId: "decision-1" } } as unknown as Extract<WorkflowRecordV2, { kind: "bookings" }>;
-  const decision = { id: "decision-1", data: { selectedOfferIds: [id] } } as Extract<WorkflowRecordV2, { kind: "decisions" }>;
+  const first = { ...offer, carrierId, organizationId: id, requestId: id };
+  const booking = { carrierId, organizationId: id, requestId: id, data: { decisionId: "decision-1" } } as unknown as Extract<WorkflowRecordV2, { kind: "bookings" }>;
+  const decision = { id: "decision-1", organizationId: id, requestId: id, data: { selectedOfferIds: [id] } } as Extract<WorkflowRecordV2, { kind: "decisions" }>;
   assert.equal(resolveBookingOffer(booking, [decision], [first])?.id, id);
   const another = { ...first, id: "10000000-0000-4000-8000-000000000003" };
   const twoOffers = { ...decision, data: { ...decision.data, selectedOfferIds: [id, another.id] } };
   assert.equal(resolveBookingOffer(booking, [twoOffers], [first, another]), null);
   assert.equal(resolveBookingOffer(booking, [], [first]), null);
+  const direct = { ...booking, data: { ...booking.data, offerId: id } };
+  assert.equal(resolveBookingOffer(direct, [decision], [first])?.id, id);
+  assert.equal(resolveBookingOffer(direct, [], [first]), null);
+  for (const patch of [{organizationId: "foreign"}, {requestId: "foreign"}, {carrierId: "foreign"}]) {
+    assert.equal(resolveBookingOffer(direct,[decision],[{...first,...patch}]),null);
+  }
+  assert.equal(resolveBookingOffer(direct,[{...decision,organizationId:"foreign"}],[first]),null);
 });

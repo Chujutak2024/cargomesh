@@ -1,7 +1,7 @@
 import { buildTrackingJourney, type Booking, type Execution, type ExecutionEvent, type Incident, type JourneyStageKey, type JourneyStageState } from "./tracking-journey";
 
 export type TrackingTranslate = (es: string, en: string) => string;
-export type TrackingListItem = { execution: Execution; booking: Booking | null; events: ExecutionEvent[]; incidents: Incident[]; reference: string; corridor: string };
+export type TrackingListItem = { execution: Execution; booking: Booking | null; events: ExecutionEvent[]; incidents: Incident[]; reference: string; corridor: string; eventsComplete?:boolean; incidentsComplete?:boolean };
 export type TrackingFilter = "all" | "active" | "attention" | "completed";
 
 export function stageName(key: JourneyStageKey, t: TrackingTranslate) {
@@ -28,7 +28,7 @@ export function trackingStatus(execution: Execution, booking: Booking | null, ev
   if (journey.criticalOpen) return { label: t("Requiere atención", "Needs attention"), tone: "blocked" };
   if (journey.lastReportedStage === "transit") return { label: t("En tránsito", "In transit"), tone: "current" };
   if (journey.lastReportedStage === "departure" || execution.status === "IN_PROGRESS") return { label: t("Transporte iniciado", "Transport started"), tone: "current" };
-  if (execution.status === "CREATED") return { label: t("Por iniciar", "Awaiting departure"), tone: "future" };
+  if (execution.status === "CREATED" || execution.status === "PLANNED") return { label: t("Por iniciar", "Awaiting departure"), tone: "future" };
   return { label: t("Estado por verificar", "Status unverified"), tone: "unknown" };
 }
 export function matchesTrackingFilter(item: TrackingListItem, filter: TrackingFilter) {
@@ -36,7 +36,7 @@ export function matchesTrackingFilter(item: TrackingListItem, filter: TrackingFi
   if (filter === "attention") return journey.openIncidents > 0 || journey.cancelled || journey.bookingBlocked;
   if (filter === "completed") return journey.completed && !journey.cancelled;
   if (filter === "active") return !journey.completed && !journey.cancelled && !journey.bookingBlocked
-    && (item.execution.status === "CREATED" || item.execution.status === "IN_PROGRESS"
+    && (item.execution.status === "CREATED" || item.execution.status === "PLANNED" || item.execution.status === "IN_PROGRESS"
       || journey.lastReportedStage === "departure" || journey.lastReportedStage === "transit");
   return true;
 }
