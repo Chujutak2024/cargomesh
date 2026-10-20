@@ -1,5 +1,7 @@
 # HAC-54 H4 — connected tracking and local commercial cases
 
+Subsequent [October 20 current-main / October 21 preparation follow-up](./HAC54_OCT21_PREPARATION_2026-10-20.md) adds a separate dated recipe, updates the local migration ledger and identifies the exact Google referrer / QA organization blockers. Historical H4 results and timestamps below remain unchanged.
+
 Owner: Luis. Registered branch: `codex/v2-client-commercial-operations`; existing draft PR #133 targets `main`. Parent cut: H3 `fc73da930a498a6c40cb72dfb195eb60690d9824`. This is an implementation and focused local-verification increment, **not whole-issue completion, human CP-L4 acceptance, integration or deployment**. October 21 joint validation remains pending under the current October 19 plan.
 
 ## Implemented / defects corrected
