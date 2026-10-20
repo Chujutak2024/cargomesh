@@ -37,3 +37,22 @@ facilitiesRouter.post("/:id/revisions", async (c) => {
       c.req.header("Idempotency-Key")));
   } catch (error) { return v2Error(c, error); }
 });
+
+async function facilityVisualService(){
+ const [{FacilityVisualService},{facilityVisualRepository}]=await Promise.all([
+  import('@/server/modules/facilities/application/facility-visual-service'),
+  import('@/server/modules/facilities/infrastructure/facility-visual-repository')]);
+ return new FacilityVisualService(await facilityVisualRepository());
+}
+facilitiesRouter.get('/:id/visual-reference',async c=>{
+ try{return c.json(await (await facilityVisualService()).get(c.get('member'),c.req.param('id')));}
+ catch(error){return v2Error(c,error);}
+});
+facilitiesRouter.post('/:id/visual-reference',async c=>{
+ try{
+  const {hasSessionOrigin}=await import('@/server/auth/session-origin');
+  if(!c.req.header('Authorization')&&!hasSessionOrigin(c.req.raw))throw new V2DraftError('FORBIDDEN_ORIGIN','Same-origin save required.',403);
+  const body=await c.req.json().catch(()=>{throw new V2DraftError('VALIDATION_ERROR','JSON body required.',400);});
+  return c.json(await (await facilityVisualService()).save(c.get('member'),c.req.param('id'),body,c.req.header('Idempotency-Key')));
+ }catch(error){return v2Error(c,error);}
+});
