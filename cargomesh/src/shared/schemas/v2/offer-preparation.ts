@@ -11,6 +11,7 @@ export const PreparationFieldsV2Schema=z.object({carrierReference:z.string().max
  breakdown:z.array(z.object({kind:component.kind,treatment:component.treatment,amount:Short,observedAt:Short,details:z.string().max(1000),source:PreparationEvidenceV2Schema}).strict()).max(100),
  commercialTerms:z.array(z.object({code:Text,description:Text}).strict()).max(100)}).strict();
 export const OfferPreparationValueV2Schema=z.object({schemaVersion:z.literal('2.0'),opportunityId:Id,
+ requestVersion:z.number().int().positive().nullable().optional(),
  assignmentIds:z.array(Id).max(100).refine(v=>new Set(v).size===v.length,'Duplicate assignments.'),supersedesOfferId:Id.nullable(),fields:PreparationFieldsV2Schema}).strict();
 export const SaveOfferPreparationV2Schema=z.object({expectedVersion:z.number().int().nonnegative(),value:OfferPreparationValueV2Schema}).strict();
 export const OfferPreparationRecordV2Schema=z.object({id:Id,carrierId:Id,operatorId:Id,userId:Id,organizationId:Id,requestId:Id,

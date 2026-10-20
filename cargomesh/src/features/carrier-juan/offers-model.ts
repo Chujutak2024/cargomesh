@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {opportunityRequestBrief} from './opportunity-request-brief';
 import {WorkflowInputsV2} from '@/shared/schemas/v2/workflow';
 import {CommercialEvidenceV2Schema} from '@/shared/schemas/v2/commercial';
 import {PreparationFieldsV2Schema,type PreparationFields,type PreparationEvidence} from '@/shared/schemas/v2/offer-preparation';
@@ -22,13 +23,20 @@ export function quotedSummary(fields:PreparationFields){
   return {quoted,total:fields.price.trim()?usdCents(fields.price):null,other};
  }catch{return null;}
 }
-export function canPrepareOffer(o:Opportunity,role:CarrierPortalRole,now:number){return canCarrierAction(role,'offers.create',o.status)&&Date.parse(o.data.responseDeadline)>now;}
+export function canPrepareOffer(o:Opportunity,role:CarrierPortalRole,now:number){
+ const brief=opportunityRequestBrief(o);
+ return (o.data.requestBrief===undefined||brief?.canReview===true)&&Number.isFinite(now)
+  &&canCarrierAction(role,'offers.create',o.status)&&Date.parse(o.data.responseDeadline)>now;
+}
+export function offerRequestVersion(f:Offer){const v=f.data.requestVersion;return typeof v==='number'&&Number.isSafeInteger(v)&&v>0?v:null;}
 export function canChangeOffer(f:Offer,o:Opportunity|undefined,snapshot:CommercialSnapshot,role:CarrierPortalRole,now:number,replace=false){
  const referenced=snapshot.bookings.some(b=>b.carrierId===f.carrierId&&b.organizationId===f.organizationId&&b.requestId===f.requestId&&b.data.offerId===f.id&&!['CANCELLED','REJECTED'].includes(b.status));
  return !snapshot.partial&&!referenced&&f.status==='RECEIVED'&&canCarrierAction(role,replace?'offers.supersede':'offers.withdraw',f.status)
   &&(!replace||!!o&&canPrepareOffer(o,role,now));
 }
 export function buildOffer(o:Opportunity,assignmentIds:string[],supersedes:Offer|null,fields:PreparationFields,issuedAt:string){
+ const brief=opportunityRequestBrief(o);
+ if(o.data.requestBrief!==undefined&&!brief?.canReview)throw new Error('The request changed, closed or requires a new eligible plan. Refresh before preparing an offer.');
  const f=PreparationFieldsV2Schema.parse(fields),source=evidenceValue(f.source);
  const breakdown=f.breakdown.map(cost=>({...cost,amount:cost.amount.trim()?{amount:usdCents(cost.amount)/100,currency:'USD'}:null,source:evidenceValue(cost.source),observedAt:explicitInstant(cost.observedAt),details:cost.details.trim()||null}));
  const number=(value:string)=>value.trim()?z.coerce.number().finite().nonnegative().parse(value):null;
@@ -55,5 +63,7 @@ export function offerRelations(f:Offer,o:Opportunity|null){
 export function validateIssuedOffer(f:Offer,o:Opportunity,body:ReturnType<typeof buildOffer>){
  if(!offerRelations(f,o)||f.status!=='RECEIVED'||f.data.source.channel!=='MANUAL'||f.data.supersedesOfferId!==body.supersedesOfferId||f.data.planCandidateId!==body.planCandidateId
   ||JSON.stringify([...f.data.coveredAssignmentIds].sort())!==JSON.stringify([...body.coveredAssignmentIds].sort())||JSON.stringify([...f.data.coveredServiceIds].sort())!==JSON.stringify([...body.coveredServiceIds].sort()))throw new Error('INVALID_COMMERCIAL_SCOPE');
+ const brief=opportunityRequestBrief(o);
+ if(brief&&offerRequestVersion(f)!==brief.requestVersion)throw new Error('INVALID_OFFER_REQUEST_VERSION');
  return f;
 }

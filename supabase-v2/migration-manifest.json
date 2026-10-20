@@ -501,6 +501,28 @@
       "dependencies": [
         "20261010225539"
       ]
+    },
+    {
+      "issue": "HAC-50",
+      "path": "supabase-v2/supabase/migrations/20261019190034_hac50_carrier_request_projection.sql",
+      "version": "20261019190034",
+      "sha256": "d02cfd22731efc75e9e5d4ee09a420c3016f7113aee119d37f85cd69bbb93f3a",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261015122904"
+      ]
+    },
+    {
+      "issue": "HAC-50",
+      "path": "supabase-v2/supabase/migrations/20261019202113_hac50_offer_preparations_request_version.sql",
+      "version": "20261019202113",
+      "sha256": "2a014421aee6f22e4a7f6b90edb3f0cb3c91ca998fe881e214346c2ca2fdc086",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261019190034"
+      ]
     }
   ]
 }
