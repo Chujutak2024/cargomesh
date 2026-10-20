@@ -38,9 +38,11 @@ async function resolveAuthenticatedMember(
 
   let memberQuery = supabase
     .from("organization_members")
-    .select("id, organization_id, role, status")
+    .select("id, organization_id, role, status, organizations!inner(status)")
     .eq("auth_user_id", user.id)
-    .eq("status", "ACTIVE");
+    .eq("status", "ACTIVE")
+    .eq("organizations.status", "ACTIVE")
+    .order("organization_id");
 
   if (organizationId) {
     memberQuery = memberQuery.eq("organization_id", organizationId);

@@ -2,6 +2,26 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createDepotCoordinator, createDepotScenario } from './depot-coordinator';
 import { depotYardPose } from './depot-yard-pose';
+import { depotTemplates } from './depot-templates';
+
+test('camera retention does not publish frame snapshots or change clock, selection and pause', () => {
+  const controller = createDepotCoordinator(); controller.advance(1234); controller.select('visual-truck-c'); controller.setPlaying(false);
+  let published = 0; const unsubscribe = controller.subscribe(() => published++);
+  const pose = { position: [-12, 24, 30] as [number, number, number], target: [1, .5, 2] as [number, number, number], zoom: 18, guided: false, focusKey: 'visual-truck-c:false:1000:600' };
+  controller.rememberCamera(pose); assert.equal(published, 0);
+  pose.position[0] = 99; assert.equal(controller.getCamera()!.position[0], -12);
+  const returned = controller.getCamera()!; returned.target[0] = 999; assert.equal(controller.getCamera()!.target[0], 1);
+  const before = controller.getSnapshot(), camera = controller.getCamera();
+  for (const template of depotTemplates) {
+    controller.setTemplate(template.id); const after = controller.getSnapshot();
+    assert.deepEqual(controller.getCamera(), camera); assert.equal(after.elapsedMs, before.elapsedMs);
+    assert.equal(after.selectedAssetId, before.selectedAssetId); assert.equal(after.requestedPlay, false);
+    assert.deepEqual(after.vehicles, before.vehicles); assert.deepEqual(after.eventIds, before.eventIds);
+  }
+  assert.throws(() => controller.rememberCamera({ ...pose, zoom: NaN }), /INVALID_DEPOT_CAMERA/);
+  assert.throws(() => controller.rememberCamera({ ...pose, zoom: 0 }), /INVALID_DEPOT_CAMERA/);
+  assert.deepEqual(controller.getCamera(), camera); unsubscribe();
+});
 
 test('five trucks start with separate loading, waiting, reserved parking, departure and maintenance', () => {
   const state = createDepotCoordinator().getSnapshot();

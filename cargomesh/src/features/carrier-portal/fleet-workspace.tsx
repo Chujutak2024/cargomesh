@@ -20,8 +20,9 @@ import {vehicleCarrierId} from "./operations-model";
 import {TruckInspection} from "./truck-inspection";
 import {inspectFleet} from "./truck-inspection-model";
 import { Button, SearchField, Select } from "@/components/ui";
-import {VehicleCard,VehicleDetail,PhotoCredits} from "./fleet-presentation";
 import { truckDesigns } from "@/features/logistics-3d/visual-catalog";
+import { depotTemplates } from "@/features/logistics-3d/depot-templates";
+import {VehicleCard,VehicleDetail,PhotoCredits} from "./fleet-presentation";
 import s from "./fleet.module.css";
 
 const filters: { id: FleetFilter; es: string; en: string }[] = [
@@ -100,5 +101,5 @@ export function FleetWorkspace({carrierContext,demoOnly=false,demoAvailable=fals
  const [route,setRoute]=useState<{demo:boolean;section:string}|null>(null);
  useEffect(()=>{const sync=()=>{const parts=window.location.hash.replace(/^#\//,'').split('/');const explicit=parts[1]==='demo'||parts[1]==='service';setRoute({demo:parts[1]==='demo',section:parts[explicit?2:1]||'vehicles'});};sync();window.addEventListener('hashchange',sync);return()=>window.removeEventListener('hashchange',sync);},[]);
  if(!route)return <p role="status">Opening fleet…</p>;
- return <><div className={s.sourceBar}><a href="/vehicle-designs" target="_blank" rel="noopener noreferrer">3D design studio · {truckDesigns.length} truck designs / 5 depot layouts</a></div>{demoOnly?<DemoFleetWorkspace/>:<ConnectedFleet demoAvailable={demoAvailable} carrierContext={carrierContext} register={route.section==='register'} section={route.section} onNavigate={next=>{window.location.hash='/fleet/service/'+next;}}/>}</>;
+ return <><div className={s.sourceBar}><a href="/vehicle-designs" target="_blank" rel="noopener noreferrer">3D design studio · {truckDesigns.length} truck designs / {depotTemplates.length} depot layouts</a></div>{demoOnly?<DemoFleetWorkspace/>:<ConnectedFleet demoAvailable={demoAvailable} carrierContext={carrierContext} register={route.section==='register'} section={route.section} onNavigate={next=>{window.location.hash='/fleet/service/'+next;}}/>}</>;
 }

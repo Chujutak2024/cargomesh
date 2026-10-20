@@ -1,0 +1,272 @@
+{
+  "source": "SIMULATED",
+  "fixture": "depot-five-trucks-v1",
+  "viewport": {
+    "width": 1440,
+    "height": 1100
+  },
+  "browser": "156.0.8078.4",
+  "recorded": false,
+  "checks": [
+    {
+      "label": "Yard → Scenario summary → Yard retains clock, selection and pause",
+      "before": {
+        "clock": 825,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1",
+        "camera": [
+          -37.61877,
+          25.9,
+          23.51117,
+          -10.2,
+          0.9,
+          -3.4,
+          52.8
+        ]
+      },
+      "after": {
+        "clock": 825,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1",
+        "camera": [
+          -37.61877,
+          25.9,
+          23.51117,
+          -10.2,
+          0.9,
+          -3.4,
+          52.8
+        ]
+      }
+    },
+    {
+      "label": "Yard → Truck designs → Yard retains clock, selection and pause",
+      "before": {
+        "clock": 825,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1",
+        "camera": [
+          -37.61877,
+          25.9,
+          23.51117,
+          -10.2,
+          0.9,
+          -3.4,
+          52.8
+        ]
+      },
+      "after": {
+        "clock": 825,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1",
+        "camera": [
+          -37.61877,
+          25.9,
+          23.51117,
+          -10.2,
+          0.9,
+          -3.4,
+          52.8
+        ]
+      }
+    },
+    {
+      "label": "Yard → Scenic trip → Yard retains clock, selection and pause",
+      "before": {
+        "clock": 825,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1",
+        "camera": [
+          -37.61877,
+          25.9,
+          23.51117,
+          -10.2,
+          0.9,
+          -3.4,
+          52.8
+        ]
+      },
+      "after": {
+        "clock": 825,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1",
+        "camera": [
+          -37.61877,
+          25.9,
+          23.51117,
+          -10.2,
+          0.9,
+          -3.4,
+          52.8
+        ]
+      }
+    },
+    {
+      "label": "Explicit resume advances the retained clock",
+      "before": {
+        "clock": 825,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1",
+        "camera": [
+          -37.61877,
+          25.9,
+          23.51117,
+          -10.2,
+          0.9,
+          -3.4,
+          52.8
+        ]
+      },
+      "after": {
+        "clock": 1393,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1",
+        "camera": [
+          -37.61877,
+          25.9,
+          23.51117,
+          -10.2,
+          0.9,
+          -3.4,
+          52.8
+        ]
+      }
+    },
+    {
+      "label": "Inspection Summary/Depot round 1 retains clock, selection and pause",
+      "before": {
+        "clock": 827,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1",
+        "camera": [
+          -34.2,
+          25.9,
+          26.6,
+          -10.2,
+          0.9,
+          -3.4,
+          44
+        ]
+      },
+      "after": {
+        "clock": 827,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1",
+        "camera": [
+          -34.2,
+          25.9,
+          26.6,
+          -10.2,
+          0.9,
+          -3.4,
+          44
+        ]
+      }
+    },
+    {
+      "label": "Inspection Summary/Depot round 2 retains clock, selection and pause",
+      "before": {
+        "clock": 827,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1",
+        "camera": [
+          -34.2,
+          25.9,
+          26.6,
+          -10.2,
+          0.9,
+          -3.4,
+          44
+        ]
+      },
+      "after": {
+        "clock": 827,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1",
+        "camera": [
+          -34.2,
+          25.9,
+          26.6,
+          -10.2,
+          0.9,
+          -3.4,
+          44
+        ]
+      }
+    },
+    {
+      "label": "Closing a separate inspection preserves the studio state",
+      "before": {
+        "clock": 1393,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1",
+        "camera": [
+          -37.61877,
+          25.9,
+          23.51117,
+          -10.2,
+          0.9,
+          -3.4,
+          52.8
+        ]
+      },
+      "after": {
+        "clock": 1393,
+        "selected": "visual-truck-c",
+        "paused": true,
+        "scenario": "depot-five-trucks-v1",
+        "camera": [
+          -37.61877,
+          25.9,
+          23.51117,
+          -10.2,
+          0.9,
+          -3.4,
+          52.8
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "unexpectedRequests": [],
+  "renderer": {
+    "engine": "three.js r186",
+    "depotInstance": "0e19b38e-335b-46a3-ada3-324e987ab094",
+    "depotTime": "1393",
+    "depotSelected": "visual-truck-c",
+    "depotVehicles": "5",
+    "frames": "2",
+    "drawCalls": "266",
+    "triangles": "272434",
+    "geometries": "200",
+    "textures": "7",
+    "dpr": "1",
+    "cameraMode": "selected",
+    "depotRoof": "true",
+    "motion": "paused",
+    "depotTemplate": "cross-dock",
+    "depotDesigns": "articulated-box,refrigerated-linehaul,rigid-city,flatbed-deck,tipper-site",
+    "cameraX": "-37.61877347916037",
+    "cameraY": "25.9",
+    "cameraZ": "23.511166100681926",
+    "cameraZoom": "52.8",
+    "targetX": "-10.2",
+    "targetY": "0.9",
+    "targetZ": "-3.3999999999999995",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 2060 (0x00001F08) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+  },
+  "pass": true
+}

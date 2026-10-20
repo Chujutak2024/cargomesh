@@ -8,6 +8,13 @@ export type TruckAppearance = {
 export type TruckDesign = {
   id: string; name: string; family: TruckVisualType; description: string; appearance: TruckAppearance;
 };
+export type TruckBody = Exclude<TruckVisualType, 'rigid' | 'articulated'> | 'box' | NonNullable<TruckAppearance['bodyStyle']>;
+export function truckBody(design: TruckDesign): TruckBody {
+  return design.appearance.bodyStyle ?? (design.family === 'rigid' || design.family === 'articulated' ? 'box' : design.family);
+}
+export function compatibleTruckDesign(design: TruckDesign, family: TruckVisualType, body: TruckBody) {
+  return design.family === family && truckBody(design) === body;
+}
 /** Original visual assemblies, not assets, capacities or availability records. */
 export const truckDesigns: readonly TruckDesign[] = [
   { id: 'rigid-city', name: 'City box', family: 'rigid', description: 'Compact cab, closed box and amber roof markers.', appearance: { cab: '#b23838', body: '#e9e2d4', accent: '#edb851', fittings: ['beacons'] } },

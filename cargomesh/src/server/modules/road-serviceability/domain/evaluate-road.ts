@@ -1,5 +1,7 @@
 /** Pure ROAD eligibility policy; no database, HTTP, or MCP dependencies. */
 
+export type DimensionsCm = { length: number; width: number; height: number };
+
 export type Status = "eligible" | "ineligible" | "unknown";
 export type Location = { countryCode: string; regionCode?: string | null; city?: string | null; postalCode?: string | null };
 export type Window = { startsAt: string; endsAt: string };
@@ -16,6 +18,8 @@ export type RoadRequest = {
   totalWeightKg: number;
   totalVolumeM3: number;
   indivisibleUnits?: Array<{ weightKg: number; volumeM3: number }>;
+  /** Envelope of each package; quantities affect totals, not individual fit. */
+  unitDimensionsCm?: DimensionsCm[];
   requiredEquipmentCode?: string | null;
   requiredCertifications?: string[];
   temperatureRange?: { minCelsius: number; maxCelsius: number } | null;
@@ -73,6 +77,8 @@ export type Capacity = {
   }> | null;
   maxWeightKg: number | null;
   maxVolumeM3: number | null;
+  /** Usable envelope in cm, not external vehicle dimensions. */
+  usableDimensionsCm?: DimensionsCm | null;
   /** Published fleet evidence is checked independently from a calendar slot. */
   sourceWindow?: Window | null;
   sourceEvidenceAvailable?: boolean;
@@ -224,6 +230,13 @@ function laneCheck(lanes: Lane[], pickupIds: string[], deliveryIds: string[], wi
     : { status: "ineligible", reason: "NO_DIRECTED_LANE" };
 }
 
+/** Axis-aligned upright fit; no tilting, packing, loading-door or axle-load claim. */
+export function fitsUprightDimensions(unit: DimensionsCm, usable: DimensionsCm): boolean {
+  return unit.height <= usable.height
+    && ((unit.length <= usable.length && unit.width <= usable.width)
+      || (unit.width <= usable.length && unit.length <= usable.width));
+}
+
 function capacityCheck(capacity: Capacity, request: RoadRequest): Check {
   if (capacity.role !== "CARRIER") return { status: "ineligible", reason: "NOT_CARRYING_CAPACITY" };
   const cargoCapability = capacity.cargoCapabilities?.find(item => item.categoryCode === request.cargoCategoryCode);
@@ -257,6 +270,16 @@ function capacityCheck(capacity: Capacity, request: RoadRequest): Check {
     (capacity.maxWeightKg !== null && capacity.maxWeightKg < unit.weightKg)
     || (capacity.maxVolumeM3 !== null && capacity.maxVolumeM3 < unit.volumeM3))) {
     return { status: "ineligible", reason: "INDIVISIBLE_UNIT_OVER_CAPACITY" };
+  }
+  if (request.unitDimensionsCm?.length) {
+    const usable = capacity.usableDimensionsCm;
+    if (!usable || ![usable.length, usable.width, usable.height]
+      .every((value) => Number.isFinite(value) && value > 0)) {
+      return { status: "unknown", reason: "VEHICLE_DIMENSIONS_UNKNOWN" };
+    }
+    if (request.unitDimensionsCm.some((unit) => !fitsUprightDimensions(unit, usable))) {
+      return { status: "ineligible", reason: "UNIT_DIMENSIONS_EXCEEDED" };
+    }
   }
   if (capacity.cargoCategoryCodes === null) return { status: "unknown", reason: "CARGO_COMPATIBILITY_UNKNOWN" };
   if (capacity.maxWeightKg === null || capacity.maxVolumeM3 === null) {
@@ -373,7 +396,9 @@ export function evaluateRoad(request: RoadRequest, services: RoadService[]) {
     throw new Error("INCONSISTENT_OPERATION_WINDOW");
   }
   if (!Number.isFinite(request.totalWeightKg) || request.totalWeightKg <= 0
-    || !Number.isFinite(request.totalVolumeM3) || request.totalVolumeM3 <= 0) {
+    || !Number.isFinite(request.totalVolumeM3) || request.totalVolumeM3 <= 0
+    || request.unitDimensionsCm?.some((unit) => ![unit.length, unit.width, unit.height]
+      .every((value) => Number.isFinite(value) && value > 0))) {
     throw new Error("INVALID_CARGO_DIMENSIONS");
   }
   const candidates: Candidate[] = services.filter((service) => service.active && service.mode === "ROAD"

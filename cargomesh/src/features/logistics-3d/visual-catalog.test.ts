@@ -56,13 +56,17 @@ test('specialist bodies cannot receive the pallet fixture, and rejected changes 
   }
   const invalidScenario = createDepotScenario(); invalidScenario.vehicles[0].designId = 'car-carrier';
   assert.throws(() => createDepotCoordinator(invalidScenario), /INCOMPATIBLE_VISUAL_CARGO/);
-  controller.setDesign('visual-truck-c', 'refuse');
-  const after = controller.getSnapshot();
+  assert.throws(() => controller.setDesign('visual-truck-c', 'refuse'), /INCOMPATIBLE_VISUAL_BODY/);
+  assert.strictEqual(controller.getSnapshot(), before);
+  const specialist = createDepotScenario(); specialist.vehicles[2].body = 'refuse'; specialist.vehicles[2].designId = 'refuse';
+  const specialised = createDepotCoordinator(specialist); specialised.advance(before.elapsedMs); specialised.select(before.selectedAssetId); specialised.setPlaying(false);
+  const after = specialised.getSnapshot();
   assert.equal(after.vehicles[2].designId, 'refuse'); assert.equal(after.vehicles[2].reserved, true);
   assert.equal(after.elapsedMs, before.elapsedMs); assert.equal(after.selectedAssetId, before.selectedAssetId); assert.equal(after.requestedPlay, false);
   assert.deepEqual(after.eventIds, before.eventIds);
 });
-test('five depot templates have different physical layouts, bounded geometry and disposable ownership', () => {
+test('fifteen depot templates have different physical layouts, bounded geometry and disposable ownership', () => {
+  assert.equal(depotTemplates.length, 15); assert.equal(new Set(depotTemplates.map(template => template.id)).size, 15);
   const signatures = new Set<string>();
   for (const template of depotTemplates) {
     const depot = buildDepot('#147d88', template.id); let triangles = 0, meshes = 0, disposed = 0;
@@ -70,10 +74,10 @@ test('five depot templates have different physical layouts, bounded geometry and
     const bounds = new Box3().setFromObject(depot.root);
     signatures.add(`${triangles}:${bounds.max.y}:${template.depth}`);
     assert.equal(depot.shutters.length, template.bays); assert.equal(depot.root.userData.templateId, template.id);
-    assert.ok(meshes < 36 && triangles < 35000, template.id); assert.ok(depot.roof.children.length);
+    assert.ok(meshes < 48 && triangles < 35000, template.id); assert.ok(depot.roof.children.length);
     disposeDepot(depot.root); assert.equal(disposed, meshes);
   }
-  assert.equal(signatures.size, 5);
+  assert.equal(signatures.size, 15);
 });
 test('changing visual layout or same-family assembly preserves events, positions, identity, reservation and clock', () => {
   const controller = createDepotCoordinator(); controller.advance(18000); controller.select('visual-truck-a'); controller.setInterior(true); controller.setPlaying(false);

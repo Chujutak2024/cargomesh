@@ -1,3 +1,4 @@
+-- Offer readback contains server-owned request metadata; omit it when constructing a new command.
 -- Synthetic fixtures, real authenticated native commands; all changes roll back.
 begin;
 create extension if not exists pgtap with schema extensions;
@@ -94,7 +95,7 @@ select is((select value->>'status' from refs where name='plan-b'),'eligible','re
 insert into refs select 'assignment-b',jsonb_build_object('id',value#>>'{data,assignments,0,id}') from refs where name='plan-b';
 insert into refs values('opportunity-b',pg_temp.wb('opportunities.create',jsonb_build_object('schemaVersion','2.0','planId',pg_temp.id('plan-b'),'carrierId','c2340000-0000-4000-8000-000000000001','assignmentIds',jsonb_build_array(pg_temp.id('assignment-b')),'responseDeadline',now()+interval '2 hours','responseChannel','MANUAL'),pg_temp.ctx(pg_temp.id('request-b'))));
 set local "request.jwt.claims"='{"sub":"c2310000-0000-4000-8000-000000000001","role":"authenticated"}';
-insert into refs values('offer-b',pg_temp.w('offers.create',(select value->'data' from refs where name='offer')-'id'-'requestId'-'opportunityId'-'carrierId'-'status'-'offerVersion'||jsonb_build_object('schemaVersion','2.0','planCandidateId',pg_temp.id('plan-b'),'coveredAssignmentIds',jsonb_build_array(pg_temp.id('assignment-b')),'source',jsonb_build_object('channel','MANUAL','evidence',pg_temp.ev())),pg_temp.ctx(null,'c2340000-0000-4000-8000-000000000001',pg_temp.id('opportunity-b'))));
+insert into refs values('offer-b',pg_temp.w('offers.create',(select value->'data' from refs where name='offer')-'id'-'requestId'-'opportunityId'-'carrierId'-'status'-'offerVersion'-'requestVersion'-'requestCode'||jsonb_build_object('schemaVersion','2.0','planCandidateId',pg_temp.id('plan-b'),'coveredAssignmentIds',jsonb_build_array(pg_temp.id('assignment-b')),'source',jsonb_build_object('channel','MANUAL','evidence',pg_temp.ev())),pg_temp.ctx(null,'c2340000-0000-4000-8000-000000000001',pg_temp.id('opportunity-b'))));
 set local "request.jwt.claims"='{"sub":"c2310000-0000-4000-8000-000000000002","role":"authenticated"}';
 insert into refs values('decision-b',pg_temp.wb('decisions.create',jsonb_build_object('schemaVersion','2.0','planId',pg_temp.id('plan-b'),'selectedOfferIds',jsonb_build_array(pg_temp.id('offer-b')),'rationale','QA authorized second tenant','policyId',pg_temp.id('scorepolicy'),'consideredOfferIds',jsonb_build_array(pg_temp.id('offer-b')),'evidence',jsonb_build_array(pg_temp.ev())),pg_temp.ctx(pg_temp.id('request-b'))));
 insert into refs values('booking-b',pg_temp.wb('bookings.create',jsonb_build_object('schemaVersion','2.0','decisionId',pg_temp.id('decision-b'),'offerId',pg_temp.id('offer-b'),'authorization','AUTHORIZE','evidence',pg_temp.ev())));

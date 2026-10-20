@@ -3,6 +3,7 @@ import {
   StandardCargoCategoryCodesV2,
   IntakeOptionsV2ResponseSchema,
   ResourceEvidenceRequirementCodesV2,
+  PackagingOptionsV2, RequirementOptionsV2, canonicalRoadRecommendationsV2,
   type IntakeOptionsV2Response,
 } from "@/shared/schemas/v2/intake-options";
 
@@ -46,22 +47,6 @@ export interface IntakeOptionsRepository {
 const CATEGORY_CODES: readonly string[] = StandardCargoCategoryCodesV2;
 const RESOURCE_EVIDENCE_CODES = new Set<string>(ResourceEvidenceRequirementCodesV2);
 
-/** Versioned capture choices. They do not assert carrier support or availability. */
-const PACKAGING_OPTIONS = [
-  { code: "PALLET", labelEs: "Pallet", labelEn: "Pallet" },
-  { code: "BOX", labelEs: "Caja", labelEn: "Box" },
-  { code: "CRATE", labelEs: "Cajón", labelEn: "Crate" },
-  { code: "DRUM", labelEs: "Tambor", labelEn: "Drum" },
-  { code: "BULK", labelEs: "Granel", labelEn: "Bulk" },
-] as const;
-
-const REQUIREMENT_OPTIONS = [
-  { code: "TEMP_CONTROLLED", labelEs: "Temperatura controlada", labelEn: "Temperature controlled" },
-  { code: "SECURITY_SEAL", labelEs: "Sello de seguridad", labelEn: "Security seal" },
-  { code: "FRAGILE", labelEs: "Carga frágil", labelEn: "Fragile cargo" },
-  { code: "HAZARDOUS", labelEs: "Material peligroso", labelEn: "Hazardous material" },
-] as const;
-
 export async function getIntakeOptions(
   actor: IntakeActor,
   repository: IntakeOptionsRepository,
@@ -101,7 +86,7 @@ export async function getIntakeOptions(
           recommendedEntryMethods: category.recommended_entry_methods,
           intakeSpecificationSchema: category.intake_specification_schema,
           suggestedRequirements: category.suggested_requirements,
-          recommendedVehicleClasses: category.recommended_vehicle_classes,
+          recommendedVehicleClasses: canonicalRoadRecommendationsV2(category.recommended_vehicle_classes),
         },
       })).sort((a, b) => {
         const ai = CATEGORY_CODES.indexOf(a.code), bi = CATEGORY_CODES.indexOf(b.code);
@@ -109,10 +94,10 @@ export async function getIntakeOptions(
           || a.code.localeCompare(b.code);
       }),
       equipmentOptions: equipmentOptions.sort((a, b) => a.code.localeCompare(b.code)),
-      packagingOptions: PACKAGING_OPTIONS.map((option) => ({
+      packagingOptions: PackagingOptionsV2.map((option) => ({
         ...option, verification: "CAPTURE_ONLY" as const,
       })),
-      requirementOptions: REQUIREMENT_OPTIONS.map((option) => ({
+      requirementOptions: RequirementOptionsV2.map((option) => ({
         ...option,
         verification: RESOURCE_EVIDENCE_CODES.has(option.code)
           ? "RESOURCE_EVIDENCE" as const : "REQUIRES_REVIEW" as const,

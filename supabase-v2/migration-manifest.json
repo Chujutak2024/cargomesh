@@ -501,6 +501,61 @@
       "dependencies": [
         "20261010225539"
       ]
+    },
+    {
+      "issue": "HAC-50",
+      "path": "supabase-v2/supabase/migrations/20261019190034_hac50_carrier_request_projection.sql",
+      "version": "20261019190034",
+      "sha256": "d02cfd22731efc75e9e5d4ee09a420c3016f7113aee119d37f85cd69bbb93f3a",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261015122904"
+      ]
+    },
+    {
+      "issue": "HAC-50",
+      "path": "supabase-v2/supabase/migrations/20261019202113_hac50_offer_preparations_request_version.sql",
+      "version": "20261019202113",
+      "sha256": "2a014421aee6f22e4a7f6b90edb3f0cb3c91ca998fe881e214346c2ca2fdc086",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261019190034"
+      ]
+    },
+    {
+      "issue": "HAC-52",
+      "path": "supabase-v2/supabase/migrations/20261020000100_hac52_facility_civil_hours.sql",
+      "version": "20261020000100",
+      "sha256": "4dd85f6d3b993877ad88ddeff46cb583e3b6c3068a783b35bb6bcda6f2e2f9b8",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261019030218"
+      ]
+    },
+    {
+      "issue": "HAC-52",
+      "path": "supabase-v2/supabase/migrations/20261020000200_hac52_client_action_confirmations.sql",
+      "version": "20261020000200",
+      "sha256": "be921a2e221047b55062651ed4535420f4c6dbf31f2eaeb78a0af45e6e5aec77",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261020000100"
+      ]
+    },
+    {
+      "issue": "HAC-50",
+      "path": "supabase-v2/supabase/migrations/20261020150746_hac50_facility_visual_references.sql",
+      "version": "20261020150746",
+      "sha256": "3d83cdab2c040c9bbefbb5aee9397e5556ef0ef0f0a76ed5e05303f9d8f63b29",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004012929"
+      ]
     }
   ]
 }

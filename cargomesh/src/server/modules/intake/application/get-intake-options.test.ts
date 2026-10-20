@@ -54,7 +54,22 @@ describe("V2 intake options application service", () => {
       ["SECURITY_SEAL", "RESOURCE_EVIDENCE"],
       ["FRAGILE", "REQUIRES_REVIEW"],
       ["HAZARDOUS", "REQUIRES_REVIEW"],
+      ["KEEP_DRY", "REQUIRES_REVIEW"],
+      ["FOOD_GRADE", "REQUIRES_REVIEW"],
+      ["HIGH_VALUE", "REQUIRES_REVIEW"],
+      ["OVERSIZED", "REQUIRES_REVIEW"],
+      ["TANK_COMPATIBILITY", "REQUIRES_REVIEW"],
     ]);
+  });
+
+  it("normalizes equivalent equipment hints without inventing specialized support", async () => {
+    const repo = repository();
+    repo.listActiveCargoCategories = async () => [{ ...category("CHEMICAL", 0),
+      recommended_vehicle_classes: ["REFRIGERATED_TRUCK", "REEFER_TRUCK", "HAZMAT_TRUCK", "SECURE_BOX_TRUCK"],
+    }];
+    const result = await getIntakeOptions(actor, repo);
+    assert.deepEqual(result.data.cargoCategories[0]!.guidance.recommendedVehicleClasses, ["REEFER_TRUCK"]);
+    assert.deepEqual(result.data.cargoCategories[0]!.guidance.suggestedRequirements, {});
   });
 
   it("fails closed if the repository returns another tenant's facility", async () => {

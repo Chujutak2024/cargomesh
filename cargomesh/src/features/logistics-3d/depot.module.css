@@ -9,3 +9,5 @@
 .toolbar button:active,.vehicle:active,.error button:active{transform:scale(.98)}
 @media(max-width:760px){.toolbar .playback{flex:1 0 100%}}
 .designControls{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin:0 0 20px}.designControls label{display:grid;gap:7px;font-size:11px;color:#526e7c;min-width:200px}.designControls select{min-height:42px;border:1px solid #c7dade;background:#fff;color:#244455;border-radius:8px;padding:8px;font:inherit;font-size:13px}.designControls select:focus-visible{outline:3px solid #16848b;outline-offset:3px}.designControls p{font-size:11px;line-height:1.6;max-width:48ch;margin:0 0 5px;color:#526e7c}@media(max-width:760px){.designControls{gap:10px}.designControls label{min-width:0;flex:1 0 100%}}
+
+.referenceLayout{display:grid;grid-template-columns:minmax(0,1fr)}
