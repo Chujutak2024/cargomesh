@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {assignedDemoAllowed,createAssignedDemoHandler,syntheticDemoEmail,syntheticCarrierAccess,assignedVoicePreviewAllowed} from './assigned-demo-policy';
+import {assignedCarrierPreviewAllowed,assignedDemoAllowed,createAssignedDemoHandler,syntheticDemoEmail,syntheticCarrierAccess,assignedVoicePreviewAllowed} from './assigned-demo-policy';
 const origin='https://demo.example.test';
 const config={enabled:true,origin,secret:'demo-test-secret-at-least-thirty-two-characters',carrierEmail:'hac45-demo@example.invalid',carrierPassword:'test-only-not-a-real-secret'};
 function request(body:unknown={workspace:'carrier'},headers:Record<string,string>={}){return new Request(origin+'/api/auth/demo-session',{method:'POST',headers:{host:'demo.example.test',origin,'content-type':'application/json','sec-fetch-site':'same-origin',...headers},body:JSON.stringify(body)});}
@@ -54,4 +54,17 @@ test('hosted voice preview needs explicit preview scope and the same opted-in HT
  assert.equal(assignedVoicePreviewAllowed(config,request(undefined,{origin:'https://other.test'}),true),false);
  assert.equal(assignedVoicePreviewAllowed(config,request(undefined,{'sec-fetch-site':'cross-site'}),true),false);
  assert.equal(assignedVoicePreviewAllowed(config,request(undefined,{host:'other.test'}),true),false);
+});
+
+test('cross-workspace visual demo requires exact configured synthetic identity and access', () => {
+ const scoped={enabled:true,origin:'https://demo.example.test',secret:'s'.repeat(32),carrierEmail:'demo-carrier@example.test'};
+ const access=[{carrierName:'[SYNTHETIC] Demo Carrier'}];
+ assert.equal(assignedCarrierPreviewAllowed(scoped,'demo.example.test',scoped.carrierEmail,access),true);
+ assert.equal(assignedCarrierPreviewAllowed({...scoped,enabled:false},'demo.example.test',scoped.carrierEmail,access),false);
+ assert.equal(assignedCarrierPreviewAllowed(scoped,'other.example.test',scoped.carrierEmail,access),false);
+ assert.equal(assignedCarrierPreviewAllowed(scoped,'demo.example.test','other@example.test',access),false);
+ assert.equal(assignedCarrierPreviewAllowed(scoped,'demo.example.test',undefined,access),false);
+ assert.equal(assignedCarrierPreviewAllowed(scoped,'demo.example.test',scoped.carrierEmail,[]),false);
+ assert.equal(assignedCarrierPreviewAllowed(scoped,'demo.example.test',scoped.carrierEmail,[{carrierName:'Real Carrier'}]),false);
+ assert.equal(assignedCarrierPreviewAllowed({...scoped,carrierEmail:'person@example.com'},'demo.example.test','person@example.com',access),false);
 });

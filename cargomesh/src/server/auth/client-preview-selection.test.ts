@@ -15,3 +15,15 @@ test('Carrier-only membership denial and outages never become visual authorizati
   assert.equal(await useClientPreview(async () => { throw new Error('FORBIDDEN: Client membership'); }, preview), false);
   await assert.rejects(useClientPreview(async () => { throw new Error('DATABASE_UNAVAILABLE'); }, preview), /DATABASE_UNAVAILABLE/);
 });
+
+test('configured Carrier can view the explicit Client demo without replacing a native Client', async () => {
+  let assignedReads = 0;
+  const assigned = async () => { assignedReads++; return true; };
+  assert.equal(await useClientPreview(async () => { throw new Error('FORBIDDEN: Client membership'); }, async () => false, assigned), true);
+  assert.equal(assignedReads, 1);
+  assert.equal(await useClientPreview(async () => ({}), async () => true, assigned), false);
+  assert.equal(assignedReads, 1);
+  await assert.rejects(useClientPreview(async () => { throw new Error('DATABASE_UNAVAILABLE'); }, async () => true, assigned), /DATABASE_UNAVAILABLE/);
+  assert.equal(assignedReads, 1);
+  assert.equal(await useClientPreview(async () => { throw new Error('FORBIDDEN: Client membership'); }, async () => true, async () => false), false);
+});
