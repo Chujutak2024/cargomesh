@@ -1,0 +1,564 @@
+{
+  "source": "SIMULATED",
+  "browser": "156.0.8078.4",
+  "checks": [
+    {
+      "label": "Architecture/framing",
+      "id": "industrial-plant",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "depotInstance": "188c5b2c-70d1-449d-8d16-58a79b3cba40",
+        "depotTime": "0",
+        "depotSelected": "",
+        "depotVehicles": "5",
+        "frames": "5",
+        "drawCalls": "396",
+        "triangles": "386206",
+        "geometries": "205",
+        "textures": "9",
+        "dpr": "1",
+        "cameraMode": "overview",
+        "depotRoof": "true",
+        "motion": "paused",
+        "depotTemplate": "industrial-plant",
+        "depotDesigns": "articulated-box,refrigerated-linehaul,rigid-city,flatbed-deck,tipper-site",
+        "cameraX": "-24",
+        "cameraY": "28.39499992132187",
+        "cameraZ": "31",
+        "cameraZoom": "17.733894406702394",
+        "targetX": "0",
+        "targetY": "3.3949999213218693",
+        "targetZ": "1"
+      }
+    },
+    {
+      "label": "Architecture/framing",
+      "id": "agricultural-hub",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "depotInstance": "2656bbab-fa37-4dd7-b7f0-ce38868c5863",
+        "depotTime": "0",
+        "depotSelected": "",
+        "depotVehicles": "5",
+        "frames": "8",
+        "drawCalls": "387",
+        "triangles": "387830",
+        "geometries": "201",
+        "textures": "9",
+        "dpr": "1",
+        "cameraMode": "overview",
+        "depotRoof": "true",
+        "motion": "paused",
+        "depotTemplate": "agricultural-hub",
+        "depotDesigns": "articulated-box,refrigerated-linehaul,rigid-city,flatbed-deck,tipper-site",
+        "cameraX": "-24",
+        "cameraY": "26.69203108549118",
+        "cameraZ": "31",
+        "cameraZoom": "19.516023127719556",
+        "targetX": "0",
+        "targetY": "1.6920310854911802",
+        "targetZ": "0.9999999999999999"
+      }
+    },
+    {
+      "label": "Architecture/framing",
+      "id": "retail-store",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "depotInstance": "ce5021a7-3380-4a80-a90d-3182dd5c33db",
+        "depotTime": "0",
+        "depotSelected": "",
+        "depotVehicles": "5",
+        "frames": "11",
+        "drawCalls": "394",
+        "triangles": "386150",
+        "geometries": "204",
+        "textures": "9",
+        "dpr": "1",
+        "cameraMode": "overview",
+        "depotRoof": "true",
+        "motion": "paused",
+        "depotTemplate": "retail-store",
+        "depotDesigns": "articulated-box,refrigerated-linehaul,rigid-city,flatbed-deck,tipper-site",
+        "cameraX": "-24",
+        "cameraY": "26.852499902248383",
+        "cameraZ": "31",
+        "cameraZoom": "19.33295316218557",
+        "targetX": "0",
+        "targetY": "1.8524999022483826",
+        "targetZ": "1"
+      }
+    },
+    {
+      "label": "Architecture/framing",
+      "id": "pharmaceutical-centre",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "depotInstance": "8ba0ae0e-6707-4b00-bbd1-e6aa1025c0de",
+        "depotTime": "0",
+        "depotSelected": "",
+        "depotVehicles": "5",
+        "frames": "14",
+        "drawCalls": "396",
+        "triangles": "386606",
+        "geometries": "205",
+        "textures": "9",
+        "dpr": "1",
+        "cameraMode": "overview",
+        "depotRoof": "true",
+        "motion": "paused",
+        "depotTemplate": "pharmaceutical-centre",
+        "depotDesigns": "articulated-box,refrigerated-linehaul,rigid-city,flatbed-deck,tipper-site",
+        "cameraX": "-24",
+        "cameraY": "27.217499911785126",
+        "cameraZ": "31",
+        "cameraZoom": "18.929068606353677",
+        "targetX": "0",
+        "targetY": "2.2174999117851257",
+        "targetZ": "1"
+      }
+    },
+    {
+      "label": "Architecture/framing",
+      "id": "fulfilment-centre",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "depotInstance": "e7c5d525-9b02-4a43-a32a-8d31841b394c",
+        "depotTime": "0",
+        "depotSelected": "",
+        "depotVehicles": "5",
+        "frames": "17",
+        "drawCalls": "396",
+        "triangles": "388254",
+        "geometries": "205",
+        "textures": "9",
+        "dpr": "1",
+        "cameraMode": "overview",
+        "depotRoof": "true",
+        "motion": "paused",
+        "depotTemplate": "fulfilment-centre",
+        "depotDesigns": "articulated-box,refrigerated-linehaul,rigid-city,flatbed-deck,tipper-site",
+        "cameraX": "-24",
+        "cameraY": "27.3649999499321",
+        "cameraZ": "31",
+        "cameraZoom": "18.770602452852714",
+        "targetX": "0",
+        "targetY": "2.3649999499320984",
+        "targetZ": "1"
+      }
+    },
+    {
+      "label": "Architecture/framing",
+      "id": "industrial-plant",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "depotInstance": "30d6f7f7-7751-45e8-86e3-ca060ceba652",
+        "depotTime": "0",
+        "depotSelected": "",
+        "depotVehicles": "5",
+        "frames": "23",
+        "drawCalls": "396",
+        "triangles": "386206",
+        "geometries": "205",
+        "textures": "9",
+        "dpr": "1",
+        "cameraMode": "overview",
+        "depotRoof": "true",
+        "motion": "paused",
+        "depotTemplate": "industrial-plant",
+        "depotDesigns": "articulated-box,refrigerated-linehaul,rigid-city,flatbed-deck,tipper-site",
+        "cameraX": "-24",
+        "cameraY": "28.39499992132187",
+        "cameraZ": "31",
+        "cameraZoom": "6.591451420886755",
+        "targetX": "0",
+        "targetY": "3.3949999213218693",
+        "targetZ": "1"
+      }
+    },
+    {
+      "label": "Architecture/framing",
+      "id": "agricultural-hub",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "depotInstance": "0db51d06-fb51-4862-90cc-98da9a1a4a4e",
+        "depotTime": "0",
+        "depotSelected": "",
+        "depotVehicles": "5",
+        "frames": "28",
+        "drawCalls": "387",
+        "triangles": "387830",
+        "geometries": "201",
+        "textures": "9",
+        "dpr": "1",
+        "cameraMode": "overview",
+        "depotRoof": "true",
+        "motion": "paused",
+        "depotTemplate": "agricultural-hub",
+        "depotDesigns": "articulated-box,refrigerated-linehaul,rigid-city,flatbed-deck,tipper-site",
+        "cameraX": "-24",
+        "cameraY": "26.69203108549118",
+        "cameraZ": "31",
+        "cameraZoom": "6.591451420886755",
+        "targetX": "0",
+        "targetY": "1.6920310854911802",
+        "targetZ": "0.9999999999999999"
+      }
+    },
+    {
+      "label": "Architecture/framing",
+      "id": "retail-store",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "depotInstance": "8e00a318-17f7-4491-8924-2a3393892236",
+        "depotTime": "0",
+        "depotSelected": "",
+        "depotVehicles": "5",
+        "frames": "31",
+        "drawCalls": "394",
+        "triangles": "386150",
+        "geometries": "204",
+        "textures": "9",
+        "dpr": "1",
+        "cameraMode": "overview",
+        "depotRoof": "true",
+        "motion": "paused",
+        "depotTemplate": "retail-store",
+        "depotDesigns": "articulated-box,refrigerated-linehaul,rigid-city,flatbed-deck,tipper-site",
+        "cameraX": "-24",
+        "cameraY": "26.852499902248383",
+        "cameraZ": "31",
+        "cameraZoom": "6.591451420886755",
+        "targetX": "0",
+        "targetY": "1.8524999022483826",
+        "targetZ": "1"
+      }
+    },
+    {
+      "label": "Architecture/framing",
+      "id": "pharmaceutical-centre",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "depotInstance": "474dc510-431a-4146-9332-f0084768a7a4",
+        "depotTime": "0",
+        "depotSelected": "",
+        "depotVehicles": "5",
+        "frames": "34",
+        "drawCalls": "396",
+        "triangles": "386606",
+        "geometries": "205",
+        "textures": "9",
+        "dpr": "1",
+        "cameraMode": "overview",
+        "depotRoof": "true",
+        "motion": "paused",
+        "depotTemplate": "pharmaceutical-centre",
+        "depotDesigns": "articulated-box,refrigerated-linehaul,rigid-city,flatbed-deck,tipper-site",
+        "cameraX": "-24",
+        "cameraY": "27.217499911785126",
+        "cameraZ": "31",
+        "cameraZoom": "6.591451420886755",
+        "targetX": "0",
+        "targetY": "2.2174999117851257",
+        "targetZ": "1"
+      }
+    },
+    {
+      "label": "Architecture/framing",
+      "id": "fulfilment-centre",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "depotInstance": "8ca3533c-dc91-4bc4-be67-c54a584860f3",
+        "depotTime": "0",
+        "depotSelected": "",
+        "depotVehicles": "5",
+        "frames": "37",
+        "drawCalls": "396",
+        "triangles": "388254",
+        "geometries": "205",
+        "textures": "9",
+        "dpr": "1",
+        "cameraMode": "overview",
+        "depotRoof": "true",
+        "motion": "paused",
+        "depotTemplate": "fulfilment-centre",
+        "depotDesigns": "articulated-box,refrigerated-linehaul,rigid-city,flatbed-deck,tipper-site",
+        "cameraX": "-24",
+        "cameraY": "27.3649999499321",
+        "cameraZ": "31",
+        "cameraZoom": "6.591451420886754",
+        "targetX": "0",
+        "targetY": "2.3649999499320984",
+        "targetZ": "1"
+      }
+    },
+    {
+      "label": "Two complete fifteen-design cycles",
+      "resources": [
+        {
+          "engine": "three.js r186",
+          "depotInstance": "d4eba5ff-8884-4c69-a46c-93cce6338e9e",
+          "depotTime": "0",
+          "depotSelected": "",
+          "depotVehicles": "5",
+          "frames": "95",
+          "drawCalls": "396",
+          "triangles": "386206",
+          "geometries": "205",
+          "textures": "9",
+          "dpr": "1",
+          "cameraMode": "overview",
+          "depotRoof": "true",
+          "motion": "paused",
+          "depotTemplate": "industrial-plant",
+          "depotDesigns": "articulated-box,refrigerated-linehaul,rigid-city,flatbed-deck,tipper-site",
+          "cameraX": "-24",
+          "cameraY": "28.39499992132187",
+          "cameraZ": "31",
+          "cameraZoom": "17.733894406702394",
+          "targetX": "0",
+          "targetY": "3.3949999213218693",
+          "targetZ": "1"
+        },
+        {
+          "engine": "three.js r186",
+          "depotInstance": "fd0a4d0f-36d4-4af3-b5c5-336354efb81b",
+          "depotTime": "0",
+          "depotSelected": "",
+          "depotVehicles": "5",
+          "frames": "142",
+          "drawCalls": "396",
+          "triangles": "386206",
+          "geometries": "205",
+          "textures": "9",
+          "dpr": "1",
+          "cameraMode": "overview",
+          "depotRoof": "true",
+          "motion": "paused",
+          "depotTemplate": "industrial-plant",
+          "depotDesigns": "articulated-box,refrigerated-linehaul,rigid-city,flatbed-deck,tipper-site",
+          "cameraX": "-24",
+          "cameraY": "28.39499992132187",
+          "cameraZ": "31",
+          "cameraZoom": "17.733894406702394",
+          "targetX": "0",
+          "targetY": "3.3949999213218693",
+          "targetZ": "1"
+        }
+      ]
+    },
+    {
+      "label": "Box vehicles never offer refuse or livestock designs"
+    },
+    {
+      "label": "WebGL fallback/retry retains state",
+      "before": {
+        "time": "0",
+        "selected": "visual-truck-a",
+        "motion": "paused",
+        "template": "industrial-plant",
+        "camera": [
+          -21,
+          25.9,
+          33.7,
+          3,
+          0.9,
+          3.7,
+          44
+        ]
+      },
+      "after": {
+        "time": "0",
+        "selected": "visual-truck-a",
+        "motion": "paused",
+        "template": "industrial-plant",
+        "camera": [
+          -21,
+          25.9,
+          33.7,
+          3,
+          0.9,
+          3.7,
+          44
+        ]
+      }
+    },
+    {
+      "label": "Pickup, delivery and studio views retain separate cameras, selected endpoint and pause",
+      "pickup": {
+        "time": "0",
+        "selected": "",
+        "motion": "paused",
+        "template": "industrial-plant",
+        "camera": [
+          -27.41877,
+          28.395,
+          27.91117,
+          0,
+          3.395,
+          1,
+          21.28067
+        ]
+      },
+      "delivery": {
+        "time": "0",
+        "selected": "",
+        "motion": "paused",
+        "template": "pharmaceutical-centre",
+        "camera": [
+          -20.23604,
+          27.2175,
+          33.65735,
+          0,
+          2.2175,
+          1,
+          22.71488
+        ]
+      }
+    },
+    {
+      "label": "WebGL fallback/retry retains state",
+      "before": {
+        "time": "0",
+        "selected": "",
+        "motion": "paused",
+        "template": "pharmaceutical-centre",
+        "camera": [
+          -20.23604,
+          27.2175,
+          33.65735,
+          0,
+          2.2175,
+          1,
+          22.71488
+        ]
+      },
+      "after": {
+        "time": "0",
+        "selected": "",
+        "motion": "paused",
+        "template": "pharmaceutical-centre",
+        "camera": [
+          -20.23604,
+          27.2175,
+          33.65735,
+          0,
+          2.2175,
+          1,
+          22.71488
+        ]
+      }
+    },
+    {
+      "label": "Client preparation/reference-only scene",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "depotInstance": "669723f2-fdbe-4231-acf2-b7eafa1e4238",
+        "depotTime": "0",
+        "depotSelected": "",
+        "depotVehicles": "0",
+        "frames": "2",
+        "drawCalls": "69",
+        "triangles": "9988",
+        "geometries": "35",
+        "textures": "5",
+        "dpr": "1",
+        "cameraMode": "overview",
+        "depotRoof": "true",
+        "motion": "paused",
+        "depotTemplate": "pharmaceutical-centre",
+        "depotDesigns": "",
+        "cameraX": "-20.23604104182521",
+        "cameraY": "27.217499911785126",
+        "cameraZ": "33.65735205055005",
+        "cameraZoom": "22.714882327624412",
+        "targetX": "0",
+        "targetY": "2.2174999117851257",
+        "targetZ": "1"
+      }
+    },
+    {
+      "label": "Client preparation/reference-only scene",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "engine": "three.js r186",
+        "depotInstance": "669723f2-fdbe-4231-acf2-b7eafa1e4238",
+        "depotTime": "0",
+        "depotSelected": "",
+        "depotVehicles": "0",
+        "frames": "7",
+        "drawCalls": "69",
+        "triangles": "9988",
+        "geometries": "35",
+        "textures": "5",
+        "dpr": "1",
+        "cameraMode": "overview",
+        "depotRoof": "true",
+        "motion": "paused",
+        "depotTemplate": "pharmaceutical-centre",
+        "depotDesigns": "",
+        "cameraX": "-24",
+        "cameraY": "27.217499911785126",
+        "cameraZ": "31",
+        "cameraZoom": "6.591451420886755",
+        "targetX": "0",
+        "targetY": "2.2174999117851257",
+        "targetZ": "1"
+      }
+    },
+    {
+      "label": "Existing FacilityDirectory consumes explicit references"
+    }
+  ],
+  "errors": [],
+  "unexpectedRequests": [],
+  "loadingObserved": true,
+  "pass": true
+}

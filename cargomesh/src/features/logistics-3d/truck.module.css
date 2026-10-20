@@ -11,3 +11,9 @@
 @media(max-width:767px){.road .stage,.road.compact .stage{height:260px}}
 @media(max-width:767px){.thumbnail .stage{height:120px}}
 .inspect{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1px solid #bddce3;background:#f0f9fa;border-radius:9px;min-height:32px;padding:5px 9px;font-size:11px;color:#146d7b;cursor:pointer}.inspect:hover{background:#dff1f3}.inspect:focus-visible{outline:3px solid #267bd0;outline-offset:3px}@media(max-width:767px){.inspect{min-height:44px}}
+
+/* Optional record preview: drag/keyboard interaction with one discreet reset. */
+.figure .previewReset{position:absolute;z-index:4;top:10px;right:10px;width:36px;min-width:36px;height:36px;min-height:36px;padding:7px;border:1px solid #c5dce4;border-radius:8px;background:#ffffffed;color:#163349;opacity:0;pointer-events:none;transition:opacity var(--cm-motion-interaction,160ms) var(--cm-motion-ease,ease)}
+.stage:hover .previewReset,.stage:focus-within .previewReset,.figure .previewReset:focus-visible{opacity:1;pointer-events:auto}.figure .previewReset:focus-visible{outline:3px solid #267bd0;outline-offset:2px}
+@media(hover:none){.figure .previewReset{opacity:1;pointer-events:auto}}
+@media(prefers-reduced-motion:reduce){.figure .previewReset{transition:none}}

@@ -3,7 +3,7 @@
 import {usePathname} from 'next/navigation';
 import {CarrierLink} from './carrier-link';
 import {carrierHashFromPath} from '@/shared/navigation/workspaces';
-import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Activity, Building2, ClipboardCheck, CircleHelp, ChevronRight, LayoutDashboard, Menu, Package, PanelLeftClose, PanelLeftOpen, Plus, Route, Truck, UserRound, X } from 'lucide-react';
 import { carrierActiveItem, carrierNavigation, type CarrierNavIcon } from './navigation-model';
 import s from './carrier-navigation.module.css';
@@ -33,7 +33,9 @@ export function CarrierNavigation({ children, current, locale, workspaceHref = '
 }) {
   const pathname=usePathname();
   const [collapsed, setCollapsed] = useState(false), [open, setOpen] = useState(false), [mobile, setMobile] = useState(false), [hash, setHash] = useState('');
-  const sidebarId = useId(), titleId = useId();
+  // One navigation landmark per workspace document; IDs must match across SSR/hydration.
+  const sidebarId = demoMode ? 'carrier-demo-sidebar' : 'carrier-sidebar';
+  const titleId = sidebarId + '-title';
   const sidebar = useRef<HTMLElement>(null), closeButton = useRef<HTMLButtonElement>(null), trigger = useRef<HTMLElement | null>(null);
   const wasOpen = useRef(false);
   const t = (es: string, en: string) => locale === 'es' ? es : en;

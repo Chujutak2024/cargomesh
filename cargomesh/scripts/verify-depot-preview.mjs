@@ -64,7 +64,7 @@ try {
     await page.waitForFunction(() => [...document.querySelectorAll('canvas')].some(canvas => canvas.dataset.motion === 'paused' || canvas.dataset.motion === 'running'));
     return root;
   };
-  const state = root => root.locator('canvas').evaluate(canvas => ({ clock: Number(canvas.dataset.depotTime), selected: canvas.dataset.depotSelected, paused: canvas.dataset.motion === 'paused', scenario: canvas.closest('[data-scenario-id]')?.getAttribute('data-scenario-id') }));
+  const state = root => root.locator('canvas').evaluate(canvas => ({ clock: Number(canvas.dataset.depotTime), selected: canvas.dataset.depotSelected, paused: canvas.dataset.motion === 'paused', scenario: canvas.closest('[data-scenario-id]')?.getAttribute('data-scenario-id'), camera: ['cameraX','cameraY','cameraZ','targetX','targetY','targetZ','cameraZoom'].map(key => Number(Number(canvas.dataset[key]).toFixed(5))) }));
   const pause = async root => {
     await root.getByRole('button', { name: 'Pause visualization', exact: true }).click();
     await page.waitForFunction(() => [...document.querySelectorAll('canvas')].some(canvas => canvas.dataset.motion === 'paused'));
@@ -83,13 +83,16 @@ try {
   await root.getByRole('button', { name: 'Resume visualization', exact: true }).click();
   await page.waitForFunction(() => Number(document.querySelector('canvas')?.dataset.depotTime) >= 700);
   await root.getByRole('button', { name: /^Truck C/ }).click(); await pause(root);
+  const zoomBefore = Number(await root.locator('canvas').getAttribute('data-camera-zoom'));
+  await root.locator('canvas').focus(); await page.keyboard.press('ArrowLeft'); await page.keyboard.press('Equal');
+  await page.waitForFunction(zoom => Number(document.querySelector('canvas')?.dataset.cameraZoom) > zoom, zoomBefore);
   const before = await state(root); assert.equal(before.selected, 'visual-truck-c'); assert.equal(before.paused, true);
   for (const view of ['Scenario summary', 'Truck designs', 'Scenic trip']) {
     await page.getByRole('button', { name: view, exact: true }).click();
     if (view === 'Scenario summary') assert.equal(parseFloat(await page.locator('[data-retained-time]').textContent()), before.clock);
     else if (view === 'Scenic trip') await page.getByRole('heading', { name: 'No trip to preview' }).waitFor();
     else await page.getByRole('heading', { name: 'Truck designs', exact: true }).waitFor();
-    await page.getByRole('button', { name: 'Yard', exact: true }).click(); root = await ready(page);
+    await page.getByRole('button', { name: 'Depot designs', exact: true }).click(); root = await ready(page);
     await assertRetained(root, before, 'Yard → ' + view + ' → Yard retains clock, selection and pause');
   }
   await root.getByRole('button', { name: 'Resume visualization', exact: true }).click();
@@ -99,19 +102,19 @@ try {
 
   // The real shared dialog owns its coordinator above Summary/Depot as well.
   await page.getByRole('button', { name: 'Open inspection dialog', exact: true }).click();
-  const dialog = page.getByRole('dialog'); await dialog.getByRole('button', { name: 'Ver sede 3D', exact: false }).click();
+  const dialog = page.getByRole('dialog'); await dialog.getByRole('button', { name: /Ver sede 3D|View depot in 3D/ }).click();
   let dialogRoot = await ready(dialog);
   await dialogRoot.getByRole('button', { name: 'Resume visualization', exact: true }).click();
   await page.waitForFunction(() => Number(document.querySelector('dialog canvas')?.dataset.depotTime) >= 700);
   await dialogRoot.getByRole('button', { name: /^Truck C/ }).click(); await pause(dialogRoot);
   const dialogBefore = await state(dialogRoot);
   for (let round = 0; round < 2; round++) {
-    await dialog.getByRole('button', { name: 'Volver al resumen', exact: true }).click();
-    await dialog.getByRole('button', { name: 'Ver sede 3D', exact: false }).click(); dialogRoot = await ready(dialog);
+    await dialog.getByRole('button', { name: /^(Volver al resumen|Back to summary)$/ }).click();
+    await dialog.getByRole('button', { name: /Ver sede 3D|View depot in 3D/ }).click(); dialogRoot = await ready(dialog);
     await assertRetained(dialogRoot, dialogBefore, `Inspection Summary/Depot round ${round + 1} retains clock, selection and pause`);
   }
   await page.screenshot({ path: path.join(out, 'inspection-retained.png'), fullPage: true });
-  await dialog.getByRole('button', { name: 'Cerrar resumen del camión', exact: true }).click();
+  await dialog.getByRole('button', { name: /^(Cerrar resumen del camión|Close truck summary)$/ }).click();
   root = await ready(page); await assertRetained(root, resumed, 'Closing a separate inspection preserves the studio state');
   if (record) {
     await root.getByRole('button', { name: 'Site overview', exact: true }).click();

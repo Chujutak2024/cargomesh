@@ -1,3 +1,4 @@
+import { getCargoReadinessV2 } from "@/server/modules/freight-requests/application/cargo-readiness";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { V2DraftRepository } from "@/server/modules/freight-requests/application/draft-service";
@@ -69,6 +70,7 @@ function service(): RoadService {
     capacities: [{
       id: assetId, sourceType: "TRANSPORT_ASSET", calendarId,
       role: "CARRIER", equipmentCode: "BOX_TRUCK", cargoCategoryCodes: ["GENERAL"],
+      usableDimensionsCm: { length: 500, width: 240, height: 250 },
       maxWeightKg: 5000, maxVolumeM3: 10, dataSource: "QA_SCENARIO", observedAt: "2026-09-27T00:00:00Z",
       calendar: { validUntil: "2026-12-01T00:00:00Z", provenanceStatus: "SIMULATED",
         readyPickupAreaId: "pickup-a",
@@ -217,5 +219,91 @@ describe("HAC-12 ROAD application response", () => {
     assert.equal(zero.data.overallStatus, "ineligible");
     await assert.rejects(() => evaluateV2RoadByRequestId(requestId, 2, actor, draft(),
       { listRoadServices: async () => [service()] }), { code: "STALE_DRAFT", httpStatus: 409 });
+  });
+});
+
+describe("Client cargo handoff safety", () => {
+  it("rejects a package exceeding the usable envelope even when weight and volume fit", async () => {
+    const repo = draft();
+    const saved = (await repo.findById(actor, requestId))!;
+    saved.data.cargoSpecification.units[0]!.indivisible = true;
+    saved.data.cargoSpecification.units[0]!.dimensionsCm.height = 300;
+    const result = await evaluateV2RoadByRequestId(requestId, 1, actor,
+      { ...repo, findById: async () => saved }, { listRoadServices: async () => [service()] });
+    const candidate = result.data.candidates[0]!;
+    assert.equal(candidate.status, "ineligible");
+    assert.equal(candidate.checks.cargoAndEquipment.status, "ineligible");
+    assert.equal(candidate.checks.cargoAndEquipment.indivisibleUnitsFit, false);
+    assert.ok(candidate.reasons.includes("UNIT_DIMENSIONS_EXCEEDED"));
+  });
+
+  it("allows horizontal rotation but never tilts a package", async () => {
+    const repo = draft();
+    const saved = (await repo.findById(actor, requestId))!;
+    saved.data.cargoSpecification.units[0]!.dimensionsCm = { length: 200, width: 400, height: 200 };
+    const evaluate = () => evaluateV2RoadByRequestId(requestId, 1, actor,
+      { ...repo, findById: async () => saved }, { listRoadServices: async () => [service()] });
+    assert.equal((await evaluate()).data.overallStatus, "eligible");
+    saved.data.cargoSpecification.units[0]!.dimensionsCm = { length: 200, width: 200, height: 400 };
+    assert.equal((await evaluate()).data.overallStatus, "ineligible");
+  });
+
+  it("keeps missing or malformed vehicle dimensions unknown rather than confirming fit", async () => {
+    for (const dimensions of [undefined, null, { length: 500, width: 0, height: 250 },
+      { length: 500, width: 240, height: Number.NaN }]) {
+      const item = service();
+      item.capacities[0]!.usableDimensionsCm = dimensions;
+      const result = await evaluateV2RoadByRequestId(requestId, 1, actor, draft(),
+        { listRoadServices: async () => [item] });
+      const candidate = result.data.candidates[0]!;
+      assert.equal(candidate.status, "unknown");
+      assert.equal(candidate.checks.cargoAndEquipment.status, "unknown");
+      assert.equal(candidate.checks.cargoAndEquipment.reasonCode, "VEHICLE_DIMENSIONS_UNKNOWN");
+      assert.equal(candidate.checks.capacityWindow.availableWeightKg, null);
+      assert.equal(candidate.checks.cargoAndEquipment.indivisibleUnitsFit, null);
+    }
+  });
+
+  it("does not promote newly captured handling requirements to verified capabilities", async () => {
+    const requirements = ["KEEP_DRY", "FOOD_GRADE", "HIGH_VALUE", "OVERSIZED", "TANK_COMPATIBILITY"];
+    const result = await evaluateV2RoadByRequestId(requestId, 1, actor, draft("Lima", requirements),
+      { listRoadServices: async () => [service()] });
+    assert.equal(result.data.overallStatus, "unknown");
+    assert.ok(result.data.candidates[0]!.reasons.includes("REQUIREMENTS_UNVERIFIED"));
+  });
+
+  it("reports missing temperature details without mutating the saved request", async () => {
+    const repo = draft("Lima", ["TEMP_CONTROLLED", "KEEP_DRY", "CUSTOM_REQUIREMENT"]);
+    const before = JSON.stringify(await repo.findById(actor, requestId));
+    const result = await getCargoReadinessV2(requestId, 1, actor, repo);
+    assert.equal(result.data.captureStatus, "INCOMPLETE");
+    assert.deepEqual(result.data.missingFields, ["cargoSpecification.temperatureRange"]);
+    assert.deepEqual(result.data.requirements, [
+      { code: "TEMP_CONTROLLED", verification: "RESOURCE_EVIDENCE" },
+      { code: "KEEP_DRY", verification: "REQUIRES_REVIEW" },
+      { code: "CUSTOM_REQUIREMENT", verification: "REQUIRES_REVIEW" },
+    ]);
+    assert.deepEqual(result.data.totals, { weightKg: 1000, volumeM3: 2 });
+    assert.equal(result.data.operationalStatus, "NOT_EVALUATED");
+    assert.equal(JSON.stringify(await repo.findById(actor, requestId)), before);
+  });
+
+  it("separates complete capture from carrier verification and checks draft version", async () => {
+    const repo = draft("Lima", ["TEMP_CONTROLLED"], { minCelsius: 2, maxCelsius: 8 });
+    const result = await getCargoReadinessV2(requestId, 1, actor, repo);
+    assert.equal(result.data.captureStatus, "COMPLETE");
+    assert.equal(result.data.evaluatedDraftVersion, 1);
+    assert.equal(result.data.operationalStatus, "NOT_EVALUATED");
+    await assert.rejects(getCargoReadinessV2(requestId, 2, actor, repo), { code: "STALE_DRAFT", httpStatus: 409 });
+    await assert.rejects(getCargoReadinessV2(requestId, 0, actor, repo), { code: "VALIDATION_ERROR", httpStatus: 400 });
+  });
+
+  it("does not disclose another organization's cargo or a missing request", async () => {
+    const repo = draft();
+    await assert.rejects(getCargoReadinessV2(requestId, 1, { ...actor,
+      organizationId: "a0000000-0000-4000-8000-000000000002" }, repo),
+    { code: "REQUEST_NOT_FOUND", httpStatus: 404 });
+    await assert.rejects(getCargoReadinessV2(requestId, 1, actor,
+      { ...repo, findById: async () => null }), { code: "REQUEST_NOT_FOUND", httpStatus: 404 });
   });
 });

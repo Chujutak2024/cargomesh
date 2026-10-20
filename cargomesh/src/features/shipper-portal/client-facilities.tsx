@@ -4,6 +4,7 @@ import {Button,Checkbox,Input,Select} from '@/components/ui';
 import {FacilityInputV2Schema,FacilityV2Schema,type FacilityInputV2,type FacilityV2} from '@/shared/schemas/v2/facilities';
 import {ClientSettingsError,collectionSchema,recordSchema,settingsRequest,settingsCommand,sendSettingsCommand,settingsError,type SettingsCommand} from './client-settings-api';
 import styles from './client-settings.module.css';
+import {ClientFacilityVisual,type FacilityVisualControllers} from './client-facility-visual';
 
 const blank:FacilityInputV2={schemaVersion:'2.0',code:'',name:'',facilityType:'SHIPPER_SITE',active:true,
   location:{label:'',city:'',region:null,countryCode:'PE',lat:null,lng:null},accessRestrictions:[],operatingHours:null};
@@ -15,6 +16,7 @@ export function ClientFacilities({role,initialId}:{role:Role;initialId?:string})
   const [selected,setSelected]=useState<FacilityV2|null>(null),[creating,setCreating]=useState(false);
   const [loading,setLoading]=useState(true),[error,setError]=useState(''),[message,setMessage]=useState('');
   const selection=useRef(0);
+  const visualControllers=useRef<FacilityVisualControllers>(new Map());
   const editable=role==='OWNER'||role==='SUPERVISOR';
   async function loadPage(at=offset){
     setLoading(true);setError('');
@@ -36,6 +38,7 @@ export function ClientFacilities({role,initialId}:{role:Role;initialId?:string})
     <div className={styles.columns}><section className={styles.panel} aria-label="Facility list"><h2>Your facilities</h2>
       {loading?<p role="status">Loading facilities…</p>:items.length?<div className={styles.list}>{items.map(item=><button key={item.id} className={styles.item} type="button" aria-pressed={selected?.id===item.id} onClick={()=>void open(item.id)}><strong>{item.value.name}</strong><span className={styles.muted}>{item.value.code} · {item.value.location.city}, {item.value.location.countryCode}</span><span className={styles.muted}>{item.value.active?'Active':'Inactive'} · v{item.version}</span></button>)}</div>:<p className={styles.empty}>No facilities yet. {editable?'Create your first pickup or delivery address.':'Ask an organization manager to add an address.'}</p>}
       <div className={styles.actions}><Button variant="secondary" disabled={loading||offset===0} onClick={()=>void loadPage(Math.max(0,offset-25))}>Previous</Button><Button variant="secondary" disabled={loading||next===null} onClick={()=>void loadPage(next!)}>Next</Button></div>
+    {selected&&<ClientFacilityVisual key={selected.organizationId+':'+selected.id} facility={selected} editable={editable} controllers={visualControllers.current}/>}
     </section><section className={styles.panel} aria-label="Facility details">{selected||creating?<FacilityEditor key={selected?selected.id+':'+selected.version:'new'} record={selected} editable={editable} onSaved={saved} onReload={()=>selected&&void open(selected.id)}/>:<div className={styles.empty}>Select a facility to view its saved details.</div>}</section></div>
   </div>;
 }

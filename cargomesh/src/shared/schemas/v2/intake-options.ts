@@ -16,9 +16,48 @@ export const RoadEquipmentCodeV2Schema = z.enum([
 export const PackagingCodeV2Schema = z.enum(["PALLET", "BOX", "CRATE", "DRUM", "BULK"]);
 export const RequirementCodeV2Schema = z.enum([
   "TEMP_CONTROLLED", "SECURITY_SEAL", "FRAGILE", "HAZARDOUS",
+  "KEEP_DRY", "FOOD_GRADE", "HIGH_VALUE", "OVERSIZED", "TANK_COMPATIBILITY",
 ]);
 /** These codes have a resource-level evidence check in the Sprint 2 ROAD evaluator. */
 export const ResourceEvidenceRequirementCodesV2 = ["TEMP_CONTROLLED", "SECURITY_SEAL"] as const;
+
+/** Shared capture catalog. An option never asserts operational verification. */
+export const RoadEquipmentOptionsV2 = [
+  { code: "BOX_TRUCK", label: "Camión furgón", mode: "ROAD" },
+  { code: "REEFER_TRUCK", label: "Camión refrigerado", mode: "ROAD" },
+  { code: "FLATBED", label: "Plataforma", mode: "ROAD" },
+  { code: "TANKER_TRUCK", label: "Camión cisterna", mode: "ROAD" },
+  { code: "TRACTOR_TRAILER", label: "Tracto y semirremolque", mode: "ROAD" },
+] as const;
+
+export const PackagingOptionsV2 = [
+  { code: "PALLET", labelEs: "Pallet", labelEn: "Pallet" },
+  { code: "BOX", labelEs: "Caja", labelEn: "Box" },
+  { code: "CRATE", labelEs: "Cajón", labelEn: "Crate" },
+  { code: "DRUM", labelEs: "Tambor", labelEn: "Drum" },
+  { code: "BULK", labelEs: "Granel", labelEn: "Bulk" },
+] as const;
+
+export const RequirementOptionsV2 = [
+  { code: "TEMP_CONTROLLED", labelEs: "Temperatura controlada", labelEn: "Temperature controlled" },
+  { code: "SECURITY_SEAL", labelEs: "Sello de seguridad", labelEn: "Security seal" },
+  { code: "FRAGILE", labelEs: "Carga frágil", labelEn: "Fragile cargo" },
+  { code: "HAZARDOUS", labelEs: "Material peligroso", labelEn: "Hazardous material" },
+  { code: "KEEP_DRY", labelEs: "Mantener seco", labelEn: "Keep dry" },
+  { code: "FOOD_GRADE", labelEs: "Apto para alimentos", labelEn: "Food grade" },
+  { code: "HIGH_VALUE", labelEs: "Alto valor", labelEn: "High value" },
+  { code: "OVERSIZED", labelEs: "Sobredimensionado", labelEn: "Oversized" },
+  { code: "TANK_COMPATIBILITY", labelEs: "Compatibilidad de cisterna", labelEn: "Tank compatibility" },
+] as const;
+
+/** Normalize only equivalent names. Specialized equipment is never downgraded. */
+export function canonicalRoadRecommendationsV2(value: unknown): unknown {
+  if (!Array.isArray(value) || !value.every((code) => typeof code === "string" && code.length > 0)) {
+    return value; // Preserve invalid guidance so response validation fails closed.
+  }
+  return [...new Set(value.map((code) => code === "REFRIGERATED_TRUCK" ? "REEFER_TRUCK" : code)
+    .filter((code) => RoadEquipmentCodeV2Schema.safeParse(code).success))];
+}
 
 const CaptureOptionV2Schema = z.object({
   code: z.string().min(1),
