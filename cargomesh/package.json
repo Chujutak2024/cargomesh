@@ -11,6 +11,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test:hac54": "node --conditions=react-server --import tsx --test src/server/services/v2-workspace/request-workflow.test.ts src/server/conversation/shipper-offer-context.test.ts src/features/shipper-portal/commercial-context.test.ts src/features/shipper-portal/offer-briefing.test.ts",
+    "test:hac54:h3": "node --conditions=react-server --import tsx --test src/features/shipper-portal/booking-resources-model.test.ts src/features/shipper-portal/commercial-intent.test.ts src/features/shipper-portal/shipper-api.test.ts src/features/shipper-portal/shipper-commercial-client.test.ts src/features/shipper-portal/commercial-view.test.ts",
     "check:architecture": "node scripts/check-architecture.mjs",
     "test:hac12:http": "node scripts/hac12-http-smoke.mjs",
     "test:hac40:catalog-http": "node scripts/hac40-catalog-http-smoke.mjs",

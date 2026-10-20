@@ -26,6 +26,8 @@ import { inspectRankedOption, inspectOffer, opportunityTargets, type CommercialC
 import { commonResponseChannels, emptyCommercialCatalog, type CommercialCatalog } from "./commercial-catalog";
 import { OpportunityPanel, carrierLabel } from "./opportunity-panel";
 import comparisonStyles from "./commercial-comparison.module.css";
+import { CommercialIntents } from "./commercial-intent";
+import { BookingResources } from "./booking-resources";
 
 type Workflow = Record<string, WorkflowRecordV2[]>;
 type EditState = {
@@ -34,9 +36,9 @@ type EditState = {
   description: string; equipment: string; quantity: string; weightPerUnitKg: string; volumePerUnitM3: string;
 };
 
-export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatalog, commercialRefreshEnabled = true, readIncomplete = false }: {
+export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatalog, memberId, commercialRefreshEnabled = true, readIncomplete = false }: {
   initialRequest: FreightRequestV2Data;
-  initialWorkflow: Workflow; initialCatalog?: CommercialCatalog; commercialRefreshEnabled?:boolean; readIncomplete?: boolean;
+  initialWorkflow: Workflow; initialCatalog?: CommercialCatalog; memberId?: string; commercialRefreshEnabled?:boolean; readIncomplete?: boolean;
 }) {
   const { locale, localeTag, t } = useLocale();
   const [request, setRequest] = useState(initialRequest);
@@ -60,7 +62,12 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
   const [offerVoiceTurns, setOfferVoiceTurns] = useState<string[]>([]);
   const [bookingConsent, setBookingConsent] = useState(false);
   const bookingInFlight = useRef(false);
-  const bookingKeys = useRef(new Map<string, string>());
+  const commercialIntents = useRef(new CommercialIntents());
+  const selectionInFlight = useRef(false);
+  function intent(action: "selection" | "booking", payload: unknown) {
+    return commercialIntents.current.get({ organizationId: request.organizationId, requestId: request.id, memberId: memberId ?? "preview" },
+      action, payload, memberId ? window.sessionStorage : undefined);
+  }
   const [placeConfirmed, setPlaceConfirmed] = useState(false);
   const [resolvedOrigin, setResolvedOrigin] = useState<FreightLocationV2 | null>(null);
   const [resolvedDestination, setResolvedDestination] = useState<FreightLocationV2 | null>(null);
@@ -132,20 +139,22 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
   }
 
   async function chooseOption() {
-    if (readIncomplete || commercialReadBlocked || refreshBusy.current || !selectedOption || !ranking || phase !== "idle") return;
+    if (readIncomplete || commercialReadBlocked || refreshBusy.current || selectionInFlight.current || !selectedOption || !ranking || phase !== "idle") return;
     if (!inspectRankedOption(selectedOption, commercialContext).available) {
       setError(new ShipperApiError("OFFER_UNAVAILABLE", t("Una oferta de esta alternativa caducó, fue retirada o ya no está disponible. Recarga para revisar alternativas actuales.", "An offer in this option expired, was withdrawn or is no longer available. Reload to review current alternatives."), 409, false));
       return;
     }
-    setPhase("deciding"); setError(null);
+    selectionInFlight.current = true; setPhase("deciding"); setError(null);
     try {
-      const saved = await selectCommercialOption({ requestId: request.id, planId: selectedOption.planId,
-        offerIds: selectedOption.offerIds, consideredOfferIds: offers.filter((offer) => offer.data.status === "RECEIVED").map((offer) => offer.id),
-        policyId: ranking.data.policyId, rationale: t("Alternativa seleccionada explícitamente por el shipper en CargoMesh Web.", "Alternative explicitly selected by the shipper in CargoMesh Web.") });
+      const value = { requestId: request.id, planId: selectedOption.planId,
+        offerIds: [...selectedOption.offerIds].sort(), consideredOfferIds: offers.filter(offer => inspectOffer(offer, commercialContext).current).map(offer => offer.id).sort(),
+        policyId: ranking.data.policyId, rationale: "Alternative explicitly selected by the shipper in CargoMesh Web." };
+      const saved = await selectCommercialOption({ ...value, intent: intent("selection", { requestVersion: request.draftVersion, rankingId: ranking.id, ...value }) });
       if (saved.kind !== "decisions") throw new ShipperApiError("CONTRACT_MISMATCH", "Decision endpoint returned another record kind.", 502, false);
+      if (saved.organizationId !== request.organizationId) throw new ShipperApiError("INVALID_SCOPE", "Decision tenant mismatch.", 403, false);
       setDecision(saved); setWorkflow((current) => ({ ...current, decisions: [...(current.decisions ?? []), saved] })); setDecisionOpen(false); setBookingConsent(false); setBookingOpen(true);
     } catch (caught) { setError(toShipperError(caught)); }
-    finally { setPhase("idle"); }
+    finally { selectionInFlight.current = false; setPhase("idle"); }
   }
 
   async function book() {
@@ -160,10 +169,11 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
     setPhase("booking"); setError(null);
     try {
       for (const offerId of pending) {
-        const actionKey = `${decision.id}:${offerId}`;
-        const key = bookingKeys.current.get(actionKey) ?? crypto.randomUUID();
-        bookingKeys.current.set(actionKey, key);
-        const saved = await authorizeBooking({ decisionId: decision.id, offerId, idempotencyKey: key });
+        const value = { decisionId: decision.id, offerId };
+        const saved = await authorizeBooking({ ...value, intent: intent("booking", value) });
+        if (saved.organizationId !== request.organizationId || saved.requestId !== request.id || saved.carrierId !== offers.find(offer => offer.id === offerId)?.carrierId) {
+          throw new ShipperApiError("INVALID_SCOPE", "Booking request/tenant/Carrier mismatch.", 403, false);
+        }
         setWorkflow((current) => ({ ...current, bookings: [...(current.bookings ?? []).filter((item) => item.id !== saved.id), saved] }));
       }
       setBookingConsent(false); setBookingOpen(false);
@@ -271,7 +281,11 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
         <Timeline label={t("Decisión", "Decision")} value={readIncomplete ? t("Sin verificar", "Unverified") : decision?.status ?? t("Pendiente", "Pending")} />
         <Timeline label={t("Bookings", "Bookings")} value={readIncomplete ? "—" : String(activeBookings.length)} />
       </div></section>
-      {!readIncomplete ? <OutcomePanel requests={[request]} offers={offers} bookings={activeBookings} incidents={incidents} t={t} localeTag={localeTag}/> : null}</aside>
+      {!readIncomplete ? <OutcomePanel requests={[request]} offers={offers} bookings={activeBookings} incidents={incidents} t={t} localeTag={localeTag}/> : null}
+      {activeBookings.map(booking => <section className={styles.panel} key={booking.id}><BookingResources booking={booking}
+        rows={[...(workflow.holds??[]),...(workflow.executions??[])]} offers={offers}
+        decisions={(workflow.decisions??[]).filter(row=>row.kind==="decisions")} complete={!readIncomplete && !commercialReadBlocked}
+        t={t} localeTag={localeTag}/></section>)}</aside>
     </div>
 
     <Dialog open={Boolean(opportunityTarget)} title={t("Solicitar oferta al transportista", "Request a Carrier offer")}

@@ -72,3 +72,7 @@ export function commonResponseChannels(serviceIds: string[], carrierId: string, 
   if (!services.length || services.some(row => !row || row.state !== "AVAILABLE" || !row.active || row.carrierId !== carrierId)) return [];
   return (["MANUAL", "API", "MCP"] as const).filter(channel => services.every(row => row.responseChannels.includes(channel)));
 }
+export function carrierLabel(id: string | null, catalog: CommercialCatalog, t: (es: string, en: string) => string) {
+  return id && catalog.carriers[id]?.state === "AVAILABLE" ? catalog.carriers[id].name!
+    : id ? `${t("Transportista", "Carrier")} ${id.slice(0, 8)}` : t("Transportista sin identificar", "Unidentified carrier");
+}

@@ -44,11 +44,12 @@ export function money(amount: number, currency: string, locale: string) {
 }
 
 export function resolveBookingOffer(booking: Booking, decisions: Decision[], offers: Offer[]) {
-  if (typeof booking.data.offerId === "string") return offers.find((offer) => offer.id === booking.data.offerId
-    && offer.requestId === booking.requestId) ?? null;
-  const decision = decisions.find((item) => item.id === booking.data.decisionId && item.requestId === booking.requestId);
+  if (!booking.organizationId || !booking.requestId || !booking.carrierId) return null;
+  const decision = decisions.find((item) => item.id === booking.data.decisionId && item.requestId === booking.requestId
+    && item.organizationId === booking.organizationId);
   if (!decision) return null;
   const candidates = offers.filter((offer) => decision.data.selectedOfferIds.includes(offer.id)
-    && offer.carrierId === booking.carrierId && offer.requestId === booking.requestId);
+    && offer.organizationId === booking.organizationId && offer.carrierId === booking.carrierId && offer.requestId === booking.requestId);
+  if (typeof booking.data.offerId === "string") return candidates.find(offer => offer.id === booking.data.offerId) ?? null;
   return candidates.length === 1 ? candidates[0] : null;
 }

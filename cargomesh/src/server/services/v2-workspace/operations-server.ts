@@ -22,6 +22,7 @@ export async function operationsReader(expectedOrganizationId?: string) {
     throw new V2DraftError("FORBIDDEN_TENANT", "Request and active organization differ.", 403);
   }
   return {
+    actor,
     async commercialCatalog(workflow: Record<string, WorkflowRecordV2[]>) {
       const refs = commercialCatalogReferences(workflow);
       const service = new CatalogServiceV2(await catalogRepositoryV2());
@@ -70,7 +71,22 @@ export async function readOperationsRequestFlow(id: string) {
   collections.incidents = await readRequestChildren("incidents", workflow.executions, request.organizationId, request.id,
     (kind, parentId) => reader.workflow(kind, null, parentId));
   workflow.incidents = collections.incidents.data;
+  collections.holds = await readRequestChildren("holds", workflow.bookings, request.organizationId, request.id,
+    (kind, parentId) => reader.workflow(kind, null, parentId));
+  workflow.holds = collections.holds.data;
   const catalog = await reader.commercialCatalog(workflow);
-  return { request, workflow, catalog,
+  return { request, workflow, catalog, memberId: reader.actor.memberId,
     issues: operationsReadIssues(collections) };
+}
+
+export async function readOperationsBookingResources(bookings: WorkflowRecordV2[], reader: Awaited<ReturnType<typeof operationsReader>>) {
+  const values = await Promise.all(bookings.slice(0,25).map(async booking => {
+    if (!booking.organizationId || !booking.requestId) throw new OperationsReadContractError("Unscoped booking.");
+    const read = (kind: "holds" | "executions" | "incidents", parentId: string) => reader.workflow(kind, null, parentId);
+    const [holds, executions] = await Promise.all(["holds", "executions"].map(kind =>
+      readRequestChildren(kind as "holds" | "executions", [booking], booking.organizationId!, booking.requestId!, read)));
+    return { holds, executions };
+  }));
+  return { data: values.flatMap(value => [...value.holds.data,...value.executions.data]),
+    complete: bookings.length <= 25 && values.every(value => value.holds.complete && value.executions.complete && !value.holds.error && !value.executions.error) };
 }

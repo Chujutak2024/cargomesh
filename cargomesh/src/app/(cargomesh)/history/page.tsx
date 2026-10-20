@@ -7,22 +7,24 @@ import { OperationRequestLink, OperationsNavigation, OperationsReadNotice, Opera
 import { executionActionLabel, formatDateTime } from "@/features/shipper-portal/shipper-model";
 import { RequestList } from "@/features/shipper-portal/request-list";
 import { OutcomePanel } from "@/features/shipper-portal/outcome-panel";
+import { CommercialHistory } from "@/features/shipper-portal/commercial-history";
 import styles from "@/features/shipper-portal/shipper-portal.module.css";
 
 export const dynamic = "force-dynamic";
 export default async function HistoryPage() {
   const reader = await operationsReader();
-  const [requests, events, offers, bookings, incidents, locale] = await Promise.all([
+  const [requests, events, offers, bookings, incidents, decisions, locale] = await Promise.all([
     reader.requests(), reader.workflow("execution-events"), reader.workflow("offers"),
-    reader.workflow("bookings"), reader.workflow("incidents"), getRequestLocale(),
+    reader.workflow("bookings"), reader.workflow("incidents"), reader.workflow("decisions"), getRequestLocale(),
   ]);
   const t = (es: string, en: string) => translate(locale, es, en), tag = localeTag(locale);
   const eventHistory = [...events.data].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
   const requestsById = new Map(requests.data.map((request) => [request.id, request]));
-  const issues = operationsReadIssues({ requests, "execution-events": events, offers, bookings, incidents });
+  const issues = operationsReadIssues({ requests, "execution-events": events, offers, bookings, incidents, decisions });
   return <div className={styles.page}><header className={styles.hero}><div className={styles.heroCopy}><h1>{t("Historial", "History")}</h1></div></header>
     <OperationsNavigation/><OperationsReadNotice issues={issues}/>
     <OperationsCollectionNotice collection={requests}/><RequestList requests={requests.data}/>
+    <CommercialHistory requests={requests.data} rows={[...decisions.data,...bookings.data]}/>
     {!issues.length ? <OutcomePanel requests={requests.data} offers={offers.data.filter((item) => item.kind === "offers")} bookings={bookings.data.filter((item) => item.kind === "bookings")} incidents={incidents.data.filter((item) => item.kind === "incidents")} t={t} localeTag={tag}/> : null}
     <div className={styles.layout}>
       <section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Cronología física del transporte", "Physical shipment timeline")}</h2></div></header>{eventHistory.length ? <div className={styles.timeline}>{eventHistory.map((event) => <div className={styles.timelineItem} key={event.id}><span className={styles.timelineDot}><CircleDot size={13}/></span><div><strong>{event.kind === "execution-events" ? executionActionLabel(event.data.action, locale) : event.status}</strong><span>{formatDateTime(event.kind === "execution-events" ? event.data.at : event.updatedAt, tag)} · {event.status}</span>{event.requestId && requestsById.has(event.requestId) ? <OperationRequestLink requestId={event.requestId}>{requestsById.get(event.requestId)?.referenceCode}</OperationRequestLink> : null}</div></div>)}</div> : <Empty label={events.error ? t("No se pudieron consultar los eventos", "Events could not be loaded") : t("Aún no hay eventos físicos reportados", "No physical events reported yet")} />}</section></div>

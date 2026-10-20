@@ -3,14 +3,11 @@ import { ArrowRight, Building2, MessageSquareText, Send } from "lucide-react";
 import { Button } from "@/components/ui";
 import { formatDateTime } from "./shipper-model";
 import { opportunityTargets, type CommercialContext } from "./commercial-context";
-import { commonResponseChannels, type CommercialCatalog } from "./commercial-catalog";
+import { commonResponseChannels, carrierLabel, type CommercialCatalog } from "./commercial-catalog";
+export { carrierLabel } from "./commercial-catalog";
 import styles from "./shipper-portal.module.css";
 import comparison from "./commercial-comparison.module.css";
 
-export function carrierLabel(id: string | null, catalog: CommercialCatalog, t: (es: string, en: string) => string) {
-  return id && catalog.carriers[id]?.state === "AVAILABLE" ? catalog.carriers[id].name!
-    : id ? `${t("Transportista", "Carrier")} ${id.slice(0, 8)}` : t("Transportista sin identificar", "Unidentified carrier");
-}
 export function opportunityLabel(status: string, t: (es: string, en: string) => string) {
   const labels: Record<string, [string, string]> = { SENT: ["Esperando respuesta", "Awaiting response"], ACCEPTED: ["Preparando oferta", "Preparing an offer"],
     OFFERED: ["Oferta emitida", "Offer issued"], DECLINED: ["Oportunidad declinada", "Opportunity declined"],
