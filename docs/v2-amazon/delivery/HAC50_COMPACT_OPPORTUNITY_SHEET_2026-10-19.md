@@ -76,3 +76,11 @@ Solicitud del usuario: eliminar el rótulo de solo lectura y el texto sintético
 `node node_modules/typescript/bin/tsc --noEmit`: PASS. Lectura de la ficha real en IAB móvil confirmó la ausencia de los bloques retirados y el orden respuesta → ilustración. Sin acciones comerciales, escrituras de base, cambios de rutas/auth/Vercel/main, nuevo render ni suites generales. No certifica escritorio o flujo comercial completo; revisión del equipo sigue el 21.
 
 Archivos: opportunity-record.tsx, opportunity-record.module.css y connected-opportunities.tsx. Respaldo before-sheet-cleanup/. Captura request-sheet-cleanup.png. Los cambios se guardan en la rama registrada; la subida sigue pendiente por los dos errores de red previos, sin force push.
+
+## Respuesta y visor mínimos — 19-oct-2026
+
+Retirado el párrafo explicativo de Review request y el desplegable/lista de cuatro comprobaciones. Permanece solo el estado resumido de cobertura/capacidad o ineligibilidad. Acciones de preparación e historial en una fila, con etiquetas breves y nombres accesibles completos. Truck illustration pasa a Truck.
+
+LogisticsTruck admite minimalControls, activado exclusivamente en esta ficha: sin badge 3D, controles de avance/giro automático ni caption. Conserva giro manual, centrado, descarga y cambio de iluminación. En este modo se detienen avance y giro automáticos, para no dejar una animación sin control de pausa. Los consumidores existentes conservan por defecto todos sus controles.
+
+El usuario ordena no hacer revisión al culminar estos ajustes visuales. La compilación ya había terminado correctamente antes de esa instrucción; no se ejecutan más pruebas, capturas ni revisión posterior. La navegación del IAB solo se recargó, sin certificar el resultado final. Sin acciones comerciales, DB, auth/rutas, push ni Vercel/main. Respaldo before-response-minimal/.

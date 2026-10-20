@@ -19,11 +19,11 @@ class SceneBoundary extends Component<{children:ReactNode;onFailure:()=>void},{f
 }
 
 /** No asset identity, capacity or position claims; independent of all API state. */
-type Props = { compact?:boolean;variant?:TruckVisualType;designId?:string;thumbnail?:boolean;label?:string;photo?:string|null;caption?:string;modelAssetId?:string|null;custom?:boolean;onInspect?:()=>void;suspended?:boolean };
+type Props = { compact?:boolean;minimalControls?:boolean;variant?:TruckVisualType;designId?:string;thumbnail?:boolean;label?:string;photo?:string|null;caption?:string;modelAssetId?:string|null;custom?:boolean;onInspect?:()=>void;suspended?:boolean };
 export function LogisticsTruck(props:Props) {
   return <TruckView key={`${props.designId??props.variant??"default"}:${props.modelAssetId??"catalog"}:${!!props.custom}`} {...props}/>;
 }
-function TruckView({compact=false,variant,designId,thumbnail=false,label,photo,caption,modelAssetId,custom=false,onInspect,suspended=false}:Props) {
+function TruckView({compact=false,minimalControls=false,variant,designId,thumbnail=false,label,photo,caption,modelAssetId,custom=false,onInspect,suspended=false}:Props) {
   const design = truckDesign(designId);
   const validDesignId = design?.family === (variant ?? 'articulated') ? designId : undefined;
   const newBody = !!validDesignId && !!design?.appearance.bodyStyle;
@@ -69,12 +69,12 @@ function TruckView({compact=false,variant,designId,thumbnail=false,label,photo,c
   const canRender=modelBlob||(!custom&&!photo&&!modelAssetId);
   useEffect(()=>{if(!eligible||!visible||ready||failed||!canRender)return;const timeout=window.setTimeout(markFailure,12000);return()=>window.clearTimeout(timeout);},[eligible,visible,ready,failed,canRender,markFailure]);
   const interactive=!thumbnail&&!!canRender,available=interactive&&eligible&&ready&&!failed;
-  const rotating=available&&autoRotate&&!reduced&&visible&&!hidden&&!suspended;
-  const moving=available&&drive&&!reduced&&visible&&!hidden&&!suspended;
+  const rotating=!minimalControls&&available&&autoRotate&&!reduced&&visible&&!hidden&&!suspended;
+  const moving=!minimalControls&&available&&drive&&!reduced&&visible&&!hidden&&!suspended;
   const PhaseIcon=environment.phase==="day"?Sun:environment.phase==="afternoon"?Sunset:MoonStar;
   const phaseName=(phase:TruckEnvironmentPhase)=>phase==="day"?t("Día","Day"):phase==="afternoon"?t("Tarde","Afternoon"):t("Noche","Night");
   return <figure className={`${styles.figure} ${compact?styles.compact:""} ${thumbnail?styles.thumbnail:""} ${interactive?`${styles.interactive} ${styles.road}`:""}`}>
-    {!thumbnail?<div className={styles.heading}>{label?<strong>{label}</strong>:null}<span>{canRender?"3D · 360°":photo?t("Tu foto","Your photo"):t("Tu camión","Your truck")}</span>{onInspect?<button type="button" className={styles.inspect} onClick={onInspect} aria-label={t("Ver resumen del camión","View truck summary")}><Info size={14}/>{t("Resumen","Summary")}</button>:null}</div>:null}
+    {!thumbnail&&!minimalControls?<div className={styles.heading}>{label?<strong>{label}</strong>:null}<span>{canRender?"3D · 360°":photo?t("Tu foto","Your photo"):t("Tu camión","Your truck")}</span>{onInspect?<button type="button" className={styles.inspect} onClick={onInspect} aria-label={t("Ver resumen del camión","View truck summary")}><Info size={14}/>{t("Resumen","Summary")}</button>:null}</div>:null}
     <div ref={element} className={styles.stage} role={interactive||onInspect?"group":undefined} tabIndex={available||onInspect?0:undefined}
       aria-label={interactive||onInspect?`${t("Vista 3D del camión","3D truck view")}${label?`: ${label}`:""}`:undefined} aria-keyshortcuts={interactive?`ArrowLeft ArrowRight ArrowUp ArrowDown Home${onInspect?" Enter":""}`:onInspect?"Enter":undefined}
       onClick={e=>{if(!available&&onInspect&&e.target===e.currentTarget)onInspect();}}
@@ -98,11 +98,11 @@ function TruckView({compact=false,variant,designId,thumbnail=false,label,photo,c
     </div>
     {interactive?<>
       <div className={styles.controls} role="group" aria-label={t("Controles de vista 3D","3D view controls")}>
-        <button type="button" disabled={!available} aria-pressed={moving} onClick={()=>{if(reduced){setMotionRequested(true);setDrive(true);}else setDrive(value=>!value);}} aria-label={moving?t("Pausar avance del camión","Pause truck motion"):t("Reanudar avance del camión","Resume truck motion")} title={reduced?t("Reproducir solo esta escena; el inicio automático respeta movimiento reducido","Play this scene only; autoplay respects reduced motion"):undefined}>{moving?<Pause size={15} aria-hidden="true"/>:<Play size={15} aria-hidden="true"/>}<span>{moving?t("Pausar avance","Pause motion"):t("Reanudar avance","Resume motion")}</span></button>
+        {!minimalControls?<button type="button" disabled={!available} aria-pressed={moving} onClick={()=>{if(reduced){setMotionRequested(true);setDrive(true);}else setDrive(value=>!value);}} aria-label={moving?t("Pausar avance del camión","Pause truck motion"):t("Reanudar avance del camión","Resume truck motion")} title={reduced?t("Reproducir solo esta escena; el inicio automático respeta movimiento reducido","Play this scene only; autoplay respects reduced motion"):undefined}>{moving?<Pause size={15} aria-hidden="true"/>:<Play size={15} aria-hidden="true"/>}<span>{moving?t("Pausar avance","Pause motion"):t("Reanudar avance","Resume motion")}</span></button>:null}
         <button type="button" disabled={!available} onClick={()=>controls.current?.rotate(Math.PI/6)} aria-label={t("Girar camión a la izquierda","Rotate truck left")} title={t("Girar a la izquierda","Rotate left")}><RotateCcw size={17} aria-hidden="true"/></button>
         <button type="button" disabled={!available} onClick={()=>controls.current?.rotate(-Math.PI/6)} aria-label={t("Girar camión a la derecha","Rotate truck right")} title={t("Girar a la derecha","Rotate right")}><RotateCw size={17} aria-hidden="true"/></button>
         <button type="button" disabled={!available} onClick={()=>controls.current?.reset()} aria-label={t("Centrar vista del camión","Reset truck view")} title={t("Centrar vista","Reset view")}><Scan size={17} aria-hidden="true"/></button>
-        <button type="button" disabled={!available||!!reduced} aria-pressed={rotating} onClick={()=>setAutoRotate(value=>!value)} aria-label={rotating?t("Pausar giro automático","Pause automatic rotation"):t("Iniciar giro automático","Start automatic rotation")} title={reduced?t("Giro automático desactivado por tu preferencia de movimiento reducido","Automatic rotation disabled by your reduced motion preference"):undefined}>{rotating?<Pause size={15} aria-hidden="true"/>:<Play size={15} aria-hidden="true"/>}<span>{t("Giro automático","Auto rotate")}</span></button>
+        {!minimalControls?<button type="button" disabled={!available||!!reduced} aria-pressed={rotating} onClick={()=>setAutoRotate(value=>!value)} aria-label={rotating?t("Pausar giro automático","Pause automatic rotation"):t("Iniciar giro automático","Start automatic rotation")} title={reduced?t("Giro automático desactivado por tu preferencia de movimiento reducido","Automatic rotation disabled by your reduced motion preference"):undefined}>{rotating?<Pause size={15} aria-hidden="true"/>:<Play size={15} aria-hidden="true"/>}<span>{t("Giro automático","Auto rotate")}</span></button>:null}
         <button type="button" disabled={!available} aria-label={t("Descargar vista del camión","Download truck view")} title={t("Descargar vista","Download view")} onClick={async()=>{
           if(!controls.current)return;setExportFailed(false);
           try{const blob=await controls.current.capture(),url=URL.createObjectURL(blob),anchor=document.createElement("a");

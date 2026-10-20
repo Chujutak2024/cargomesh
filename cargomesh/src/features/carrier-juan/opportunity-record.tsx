@@ -1,12 +1,9 @@
 "use client";
-import {useState,type ReactNode,type Ref} from 'react';
-import {motion} from 'motion/react';
-import {ArrowLeftRight,ArrowRight,CalendarDays,ChevronDown,Clock3,FileText,Info,MapPin,Package,RefreshCw,ShieldAlert,Tag,Truck,Weight} from 'lucide-react';
+import type {ReactNode,Ref} from 'react';
+import {ArrowLeftRight,ArrowRight,CalendarDays,Clock3,FileText,Info,MapPin,Package,RefreshCw,ShieldAlert,Tag,Truck,Weight} from 'lucide-react';
 import type {Opportunity} from '@/features/carrier-portal/commercial-model';
 import {CargoSpecificationV2Schema} from '@/shared/schemas/v2/freight-request';
 import {LogisticsTruck} from '@/features/logistics-3d/logistics-truck';
-import {PRODUCT_MOTION} from '@/features/product-motion/content-motion';
-import {useReducedMotionPreference} from '@/features/product-motion/use-motion-preference';
 import {opportunityFacts,opportunityLabel} from './opportunity-model';
 import s from './opportunity-record.module.css';
 
@@ -24,7 +21,6 @@ const labels:Record<string,string>={
  KEEP_DRY:'Keep dry',HAC50_SCENARIO_GENERAL:'General cargo (test scenario)',GENERAL:'General cargo',GENERAL_CARGO:'General cargo',BOX:'Box',PALLET:'Pallet',
 };
 const friendly=(code:string)=>labels[code]??words(code);
-const checkLabel=(code:string)=>labels[code]??(code.startsWith('REQUIREMENT_UNVERIFIED:')?'Confirm: '+friendly(code.slice(23)):'Additional operational check required');
 const amount=(value:number|null,unit:string)=>value===null?'Not provided':value.toLocaleString('en-US')+' '+unit;
 const day=(value:string)=>new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(value));
 const time=(value:string)=>new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZone:'UTC'}).format(new Date(value));
@@ -34,16 +30,6 @@ function WindowValue({value}:{value:{startsAt:string;endsAt:string}|null}){
  return <>{day(value.startsAt)}<span>{time(value.startsAt)} – {same?'':day(value.endsAt)+' '}{time(value.endsAt)} UTC</span></>;
 }
 function Field({label,children,icon:Icon}:{label:string;children:ReactNode;icon?:typeof FileText}){return <div>{Icon?<Icon className={s.factIcon} size={20} aria-hidden="true"/>:null}<dt>{label}</dt><dd>{children}</dd></div>;}
-function Disclosure({title,children,icon:Icon=FileText}:{title:string;children:ReactNode;icon?:typeof FileText}){
- const [open,setOpen]=useState(false),reduced=useReducedMotionPreference();
- return <section className={s.disclosure}>
-  <motion.button type="button" aria-expanded={open} onClick={()=>setOpen(!open)} whileTap={reduced?undefined:{scale:.995}} transition={{duration:PRODUCT_MOTION.fast}}>
-   <span><Icon size={16} aria-hidden="true"/>{title}</span><ChevronDown size={16} aria-hidden="true" style={{transform:open?'rotate(180deg)':undefined}}/>
-  </motion.button>
-  {open?<motion.div className={s.disclosed} initial={reduced?false:{opacity:0,height:0}} animate={{opacity:1,height:'auto'}} transition={{duration:reduced?0:PRODUCT_MOTION.panel,ease:PRODUCT_MOTION.ease}}>{children}</motion.div>:null}
- </section>;
-}
-
 export function OpportunityRecord({row,headingRef,busy,onRefresh}:{row:Opportunity;headingRef:Ref<HTMLHeadingElement>;busy:boolean;onRefresh:()=>void}){
  const f=opportunityFacts(row),brief=f.brief,cargo=CargoSpecificationV2Schema.safeParse(row.data.cargoSpecification);
  const c=cargo.success?cargo.data:null;
@@ -80,17 +66,15 @@ export function OpportunityRecord({row,headingRef,busy,onRefresh}:{row:Opportuni
  </article>;
 }
 
-/** Operational uncertainty stays visible; the supporting checks are secondary. */
+/** Keep the concise eligibility status; detailed checks belong to the evaluation data. */
 export function OpportunityChecks({row}:{row:Opportunity}){
  const brief=opportunityFacts(row).brief;
  if(!brief||brief.planEligibility==='eligible')return null;
- const checks=[...new Set([...brief.pendingRequirements,...brief.exclusionReasons])];
  return <div className={s.checkSummary}>
   <p className={s.checkNote} role={brief.planEligibility==='ineligible'?'alert':undefined}><ShieldAlert size={14} aria-hidden="true"/>{brief.planEligibility==='ineligible'?'Transport plan not eligible':'Coverage and capacity not confirmed'}</p>
-  {checks.length?<Disclosure title={checks.length+' checks to review'} icon={ShieldAlert}><ul className={s.checkList}>{checks.map(code=><li key={code}>{checkLabel(code)}</li>)}</ul></Disclosure>:null}
  </div>;
 }
 
 export function OpportunityTruck(){
- return <section className={s.illustration} aria-label="Reference truck illustration"><h3><Truck size={17} aria-hidden="true"/>Truck illustration</h3><LogisticsTruck compact caption="Reference model · no vehicle assigned"/></section>;
+ return <section className={s.illustration} aria-label="Reference truck illustration"><h3><Truck size={17} aria-hidden="true"/>Truck</h3><LogisticsTruck compact minimalControls/></section>;
 }
