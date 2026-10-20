@@ -54,8 +54,9 @@ export function buildTrackingJourney(execution: Execution, booking: Booking | nu
 
 /** The 3D/map route must belong to this execution's booking→decision→plan, never merely to the same request. */
 export function routeForExecution(execution: Execution, bookings: Booking[], decisions: Decision[], plans: Plan[], routes: Route[]): Route | null {
-  const matchesRequest = (record: WorkflowRecordV2) => record.requestId === execution.requestId && execution.requestId !== null;
-  const booking = bookings.find((record) => record.id === execution.data.bookingId && matchesRequest(record));
+  const matchesRequest = (record: WorkflowRecordV2) => record.requestId === execution.requestId && execution.requestId !== null
+    && typeof execution.organizationId === "string" && record.organizationId === execution.organizationId;
+  const booking = bookings.find((record) => record.id === execution.data.bookingId && record.carrierId === execution.carrierId && matchesRequest(record));
   if (!booking || booking.data.carrierConfirmationStatus !== "CONFIRMED") return null;
   const decision = decisions.find((record) => record.id === booking.data.decisionId && matchesRequest(record));
   if (!decision) return null;

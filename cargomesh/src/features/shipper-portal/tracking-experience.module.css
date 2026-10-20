@@ -9,6 +9,7 @@
 .page h2 { font-size:1.05rem; }
 .panel { min-width:0; overflow:hidden; border:1px solid #cfdee8; border-radius:1.05rem; background:var(--cm-color-surface); box-shadow:0 .8rem 2rem rgb(22 51 73 / 6%); }
 .panelHeading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.7rem; padding:1rem 1.2rem; border-bottom:1px solid var(--cm-color-line); }
+.panelHeading h2 { scroll-margin-block-start:6rem; }
 .listHeader, .detailHeader { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; }
 .listHeader h1 { font-size:clamp(1.8rem,3vw,2.4rem); }
 .listHeader p, .detailHeader p { color:var(--cm-color-muted); font-size:.85rem; margin-top:.45rem; line-height:1.5; }

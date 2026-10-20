@@ -5,9 +5,9 @@ import type { WorkflowRecordV2 } from "./shipper-model";
 
 const requestId = "10000000-0000-4000-8000-000000000001";
 const bookingId = "10000000-0000-4000-8000-000000000002";
-const execution = { id: "10000000-0000-4000-8000-000000000003", requestId, status: "CREATED",
+const execution = { id: "10000000-0000-4000-8000-000000000003", requestId, organizationId:requestId,carrierId:bookingId,status: "CREATED",
   data: { bookingId, actualStartedAt: null, actualCompletedAt: null, lastKnownPosition: null } } as Execution;
-const booking = { id: bookingId, requestId, data: { decisionId: "10000000-0000-4000-8000-000000000004",
+const booking = { id: bookingId, requestId, organizationId:requestId,carrierId:bookingId,data: { decisionId: "10000000-0000-4000-8000-000000000004",
   carrierConfirmationStatus: "CONFIRMED", confirmedAt: "2026-10-11T10:00:00Z", authorizedAt: "2026-10-11T09:00:00Z" } } as Booking;
 const event = (action: ExecutionEvent["data"]["action"], at: string) => ({ requestId, data: { action, at } }) as ExecutionEvent;
 const stage = (journey: ReturnType<typeof buildTrackingJourney>, key: string) => journey.stages.find((item) => item.key === key)!.state;
@@ -68,11 +68,13 @@ test("route selection fails closed unless booking, decision, plan and route belo
   const decisionId = booking.data.decisionId;
   const planId = "10000000-0000-4000-8000-000000000005";
   const routeId = "10000000-0000-4000-8000-000000000006";
-  const decision = { id: decisionId, requestId, data: { selectedPlanId: planId } } as Extract<WorkflowRecordV2, { kind: "decisions" }>;
-  const plan = { id: planId, requestId, data: { routeId } } as Extract<WorkflowRecordV2, { kind: "plans" }>;
-  const route = { id: routeId, requestId, data: { confidence: "VERIFIED", legs: [{ mode: "ROAD" }] } } as Route;
+  const decision = { id: decisionId, requestId,organizationId:requestId, data: { selectedPlanId: planId } } as Extract<WorkflowRecordV2, { kind: "decisions" }>;
+  const plan = { id: planId, requestId,organizationId:requestId, data: { routeId } } as Extract<WorkflowRecordV2, { kind: "plans" }>;
+  const route = { id: routeId, requestId,organizationId:requestId, data: { confidence: "VERIFIED", legs: [{ mode: "ROAD" }] } } as Route;
   assert.equal(routeForExecution(execution, [booking], [decision], [plan], [route])?.id, routeId);
   assert.equal(routeForExecution(execution, [booking], [decision], [plan], [{ ...route, requestId: null }]), null);
+  assert.equal(routeForExecution(execution, [booking], [decision], [plan], [{ ...route, organizationId:bookingId }]), null);
+  assert.equal(routeForExecution(execution, [{...booking,carrierId:requestId}], [decision], [plan], [route]), null);
   assert.equal(routeForExecution(execution, [{ ...booking, data: { ...booking.data, carrierConfirmationStatus: "REJECTED" } }], [decision], [plan], [route]), null);
   assert.equal(canShowConceptual3D(route, true), true);
   assert.equal(canShowConceptual3D({ ...route, data: { ...route.data, legs: [{ ...route.data.legs[0], mode: "SEA" }] } }, true), false);
