@@ -113,7 +113,7 @@ test('unknown organization or request references cannot prove an order relations
 test('privacy-safe native multi-truck projection requires a distinct confirmed reservation per binding',()=>{
  const s=ordersFixture(),b=s.bookings[0],first=s.holds[0],calendar=s.resources.calendars[0];
  const second={...first,id:id(70),data:{...first.data,planResourceId:id(71),calendarId:id(72)}};
- s.holds.push(second);s.resources.calendars.push({...calendar,id:id(72),value:{...calendar.value,assetId:id(73)}});s.resources.assets.push(row(73,{code:'SECOND_TRUCK'}));
+ s.holds.push(second);s.resources.calendars.push({...calendar,id:id(72),value:{...(calendar.value as Record<string,unknown>),assetId:id(73)}});s.resources.assets.push(row(73,{code:'SECOND_TRUCK'}));
  s.opportunities[0].data.assignmentSnapshots=[{id:id(30),legAssignmentId:id(6),serviceId:id(5),window:period,allocationSummary:{role:'LOAD_BEARING',equipment:'BOX_TRUCK',units:[{unitIndex:0,quantity:1,weightKg:100,volumeM3:1}]}},{id:id(74),legAssignmentId:id(6),serviceId:id(5),window:period,allocationSummary:{role:'LOAD_BEARING',equipment:'BOX_TRUCK',units:[{unitIndex:0,quantity:1,weightKg:100,volumeM3:1}]}}];
  assert.equal(capacitySummary(b,s,now).ready,true);
  assert.equal(orderActionAllowed('bookings.confirm',b,s,'ADMIN',now,'CONFIRMED'),true);
