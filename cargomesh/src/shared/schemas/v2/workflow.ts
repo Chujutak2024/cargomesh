@@ -1,5 +1,5 @@
 import { z } from "zod";
-import {RouteAdmissionInputSchema} from './route-admission';
+import {RouteAdmissionInputSchema,RouteAdmissionAssessmentSchema} from './route-admission';
 import {RouteOperatingProfileSchema} from "./operating-costs";
 import { CanonicalLocationV2Schema, TimeWindowV2Schema, TransportModeV2Schema } from "./freight-request";
 import { CarrierOfferV2Schema, CommercialEvidenceV2Schema, ScoringPolicyV2Schema } from "./commercial";
@@ -185,7 +185,7 @@ export const WorkflowRecordV2Schema = z.discriminatedUnion("kind", [
     eligibility: z.enum(["eligible", "unknown", "ineligible"]), evaluatedAt: Instant, exclusionReasons: z.array(Text),
     pendingRequirements: z.array(Text), provenance: Verification, proposedWindow: TimeWindowV2Schema,
     coverage: Verification, availability: Verification, assignments: z.array(Assignment), legAssignments: z.array(LegAssignment).min(1), resourceAssessments: z.array(z.object({
-      assignmentId: Id, resourceId: Id, applicableCapacity: EffectiveCapacity, verificationSource: VerificationSource }).strict()) }) }).strict(),
+      assignmentId: Id, resourceId: Id, applicableCapacity: EffectiveCapacity, verificationSource: VerificationSource, admission:RouteAdmissionAssessmentSchema.optional() }).strict()) }) }).strict(),
   z.object({ ...Metadata, kind: z.literal("opportunities"), data: Stored({ ...WorkflowInputsV2["opportunities.create"].shape,
     sentAt: Instant, cargoSpecification: z.object({ categoryCode: Text }).passthrough(), origin: CanonicalLocationV2Schema,
     destination: CanonicalLocationV2Schema, assignmentSnapshots: z.array(z.object({ id: Id, serviceId: Id }).passthrough()) }) }).strict(),
