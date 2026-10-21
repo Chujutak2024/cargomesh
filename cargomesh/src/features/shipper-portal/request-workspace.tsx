@@ -28,6 +28,10 @@ import { OpportunityPanel, carrierLabel } from "./opportunity-panel";
 import comparisonStyles from "./commercial-comparison.module.css";
 import { CommercialIntents } from "./commercial-intent";
 import { BookingResources } from "./booking-resources";
+import {QuoteSearchPanel} from "./quote-search-panel";
+import {BookingConfirmationWindow} from "@/features/booking-confirmation/panel";
+import {findRequestQuotes} from "./quote-api";
+import {BookingPreparation,prepareBookingCapacity} from "./booking-preparation";
 
 type Workflow = Record<string, WorkflowRecordV2[]>;
 type EditState = {
@@ -88,6 +92,29 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
   const activeBookings = (workflow.bookings ?? []).filter((item): item is Extract<WorkflowRecordV2, { kind: "bookings" }> => item.kind === "bookings");
   const incidents = (workflow.incidents ?? []).filter((item): item is Extract<WorkflowRecordV2, { kind: "incidents" }> => item.kind === "incidents");
 
+  const quoteIntents = useRef(new Map<string,string>());
+  const quoteBusy = useRef(false);
+  async function searchQuotes(deadline: string) {
+    if (phase !== "idle" || quoteBusy.current || refreshBusy.current || readIncomplete || commercialReadBlocked)
+      throw new Error("QUOTATION_BUSY");
+    quoteBusy.current = true; setPhase("requesting"); setError(null);
+    try {
+      const quoteDeadline = Date.parse(deadline);
+      if (!Number.isFinite(quoteDeadline) || quoteDeadline <= Date.now() || quoteDeadline > Date.parse(request.pickupWindow.startsAt))
+        throw new ShipperApiError("INVALID_RESPONSE_DEADLINE",t("El plazo debe ser futuro y anterior al recojo.","Choose a future deadline before pickup."),400,false);
+      let current = request;
+      if (current.status === "DRAFT") { current = await submitFreightRequest(current.id, current.draftVersion); setRequest(current); }
+      const input = {schemaVersion:"2.0",expectedDraftVersion:current.draftVersion,responseDeadline:deadline,consent:"REQUEST_QUOTES"};
+      const fingerprint = JSON.stringify([current.organizationId,memberId,current.id,input]);
+      if (!quoteIntents.current.has(fingerprint)) quoteIntents.current.set(fingerprint,crypto.randomUUID());
+      const result = await findRequestQuotes(current.id,input,quoteIntents.current.get(fingerprint)!);
+      const fresh = await refreshRequestCommercial(current.id,current.organizationId,new AbortController().signal);
+      setRequest(fresh.request);setWorkflow(old=>({...old,...fresh.workflow}));setCatalog(fresh.catalog);
+      quoteIntents.current.delete(fingerprint);
+      return result;
+    } catch (caught) { setError(toShipperError(caught)); throw caught; }
+    finally {quoteBusy.current=false;setPhase("idle");}
+  }
   async function evaluate(next = request) {
     if(refreshBusy.current)return;
     setPhase("evaluating"); setError(null); setEvaluation(null); setSelectedCandidateId(null);
@@ -175,7 +202,10 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
           throw new ShipperApiError("INVALID_SCOPE", "Booking request/tenant/Carrier mismatch.", 403, false);
         }
         setWorkflow((current) => ({ ...current, bookings: [...(current.bookings ?? []).filter((item) => item.id !== saved.id), saved] }));
+        await prepareBookingCapacity(saved.id,saved.version,intent("booking",{operation:"capacity",bookingId:saved.id,version:saved.version}).idempotencyKey);
       }
+      const fresh = await refreshRequestCommercial(request.id,request.organizationId,new AbortController().signal);
+      setRequest(fresh.request);setWorkflow(current=>({...current,...fresh.workflow}));setCatalog(fresh.catalog);
       setBookingConsent(false); setBookingOpen(false);
     } catch (caught) { setError(toShipperError(caught)); }
     finally { bookingInFlight.current = false; setPhase("idle"); }
@@ -250,6 +280,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
       <Summary label={t("Clase solicitada", "Requested class")} value={request.serviceType ?? "UNKNOWN"} />
     </div></section>
     <RequestFacts request={request}/>
+    {!readIncomplete && commercialRefreshEnabled ? <QuoteSearchPanel requestId={request.id} busy={phase!=="idle"||commercialReadBlocked} canSearch={request.status==="DRAFT"||request.status==="PENDING"} onSearch={searchQuotes} onNova={()=>{setOfferVoiceTurns([]);setOfferVoiceOpen(true);}}/> : null}
     {!readIncomplete ? <OpportunityPanel context={commercialContext} catalog={catalog} busy={phase !== "idle" || commercialReadBlocked}
       onRequest={key => { const target = opportunityTargets(commercialContext).find(row => row.key === key); if (!target || phase !== "idle" || commercialReadBlocked) return;
         const channels = commonResponseChannels(target.serviceIds, target.carrierId, catalog); if (!channels.length) return;
@@ -282,7 +313,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
         <Timeline label={t("Bookings", "Bookings")} value={readIncomplete ? "—" : String(activeBookings.length)} />
       </div></section>
       {!readIncomplete ? <OutcomePanel requests={[request]} offers={offers} bookings={activeBookings} incidents={incidents} t={t} localeTag={localeTag}/> : null}
-      {activeBookings.map(booking => <section className={styles.panel} key={booking.id}><BookingResources booking={booking}
+      {activeBookings.map(booking => <section className={styles.panel} key={booking.id}><BookingConfirmationWindow bookingId={booking.id} canAct={!readIncomplete&&!commercialReadBlocked&&phase==="idle"} onChanged={()=>void refreshCommercial()}/>{booking.status==="AUTHORIZED"?<BookingPreparation id={booking.id} version={booking.version} enabled={!readIncomplete&&!commercialReadBlocked&&phase==="idle"} onChanged={()=>void refreshCommercial()}/>:null}<BookingResources booking={booking}
         rows={[...(workflow.holds??[]),...(workflow.executions??[])]} offers={offers}
         decisions={(workflow.decisions??[]).filter(row=>row.kind==="decisions")} complete={!readIncomplete && !commercialReadBlocked}
         t={t} localeTag={localeTag}/></section>)}</aside>
@@ -322,7 +353,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
         {decision && activeBookings.some((item) => item.data.decisionId === decision.id && typeof item.data.offerId !== "string") ? <p className={styles.notice} data-tone="warning"><AlertTriangle size={16}/>{t("Ya existe una autorización. El DTO de booking no identifica la oferta vinculada; no reintentamos otra automáticamente para evitar duplicados. Revisa Reservas o consulta al equipo operativo.", "An authorization already exists. The booking DTO does not identify its offer; we will not automatically retry another to avoid duplicates. Review Bookings or contact operations.")}</p> : null}
         {decision?.data.selectedOfferIds.map((id) => { const offer = offers.find((item) => item.id === id); return <div className={styles.consentOffer} key={id}><strong>{offer ? carrierLabel(offer.carrierId, catalog, t) : t("Oferta no disponible", "Offer unavailable")}</strong>{offer ? <span>{offer.data.carrierReference} · {t("Oferta", "Offer")} v{offer.data.offerVersion}</span> : null}<span>{offer ? `${offer.data.price.currency} ${offer.data.price.amount.toLocaleString(localeTag, { minimumFractionDigits: 2 })} · ${t("vigente hasta", "valid until")} ${formatDateTime(offer.data.validity.endsAt, localeTag)}` : id}</span>{offer?.data.commercialTerms.length ? <ul>{offer.data.commercialTerms.map((term, index) => <li key={`${term.code}-${index}`}>{term.code}: {term.description}</li>)}</ul> : <span>{t("Sin condiciones adicionales declaradas", "No additional terms declared")}</span>}</div>; })}
         <p>{t("El carrier aún puede confirmar o rechazar. Esta autorización no garantiza transporte ni sustituye sus condiciones comerciales.", "The carrier may still confirm or reject. This authorization does not guarantee transport or replace its commercial terms.")}</p>
-        <label className={styles.confirm}><input type="checkbox" checked={bookingConsent} onChange={(event) => setBookingConsent(event.target.checked)}/><span>{t("He revisado transportista, precio, vigencia y condiciones de las ofertas indicadas. Autorizo explícitamente solicitar estas reservas.", "I have reviewed the carrier, price, validity and terms of the listed offers. I explicitly authorize requesting these bookings.")}</span></label>
+        <label className={styles.confirm}><input type="checkbox" checked={bookingConsent} onChange={(event) => setBookingConsent(event.target.checked)}/><span>{t("He revisado transportista, precio, vigencia y condiciones de las ofertas indicadas. Autorizo solicitar estas reservas y la retención temporal de capacidad.", "I have reviewed the carrier, price, validity and terms of the listed offers. I authorize requesting these bookings and temporary capacity holds.")}</span></label>
         <Button disabled={readIncomplete || commercialReadBlocked || !decision || !bookingConsent || phase !== "idle" || !bookingsStillNeeded(decision.data.selectedOfferIds, activeBookings, decision.id).length} isLoading={phase === "booking"} onClick={() => void book()}><ShieldCheck size={16}/>{t("Autorizar ofertas pendientes", "Authorize pending offers")}</Button></div>
     </Dialog>
   </div>;

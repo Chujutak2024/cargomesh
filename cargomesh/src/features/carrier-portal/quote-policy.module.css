@@ -1,0 +1,3 @@
+.panel{background:var(--cm-surface,#fff);border:1px solid var(--cm-border,#d5e3ef);border-radius:12px;padding:16px;font-size:14px;line-height:1.5;display:grid;gap:12px}
+.panel summary{font-size:16px;font-weight:600;cursor:pointer}.panel[open]>summary{margin-bottom:12px}.panel p{margin:8px 0}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0}.options{display:flex;flex-wrap:wrap;gap:16px;margin:12px 0}.panel button{margin:12px 0 0}.panel input[type=checkbox]{margin-right:6px}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.grid{grid-template-columns:1fr}}

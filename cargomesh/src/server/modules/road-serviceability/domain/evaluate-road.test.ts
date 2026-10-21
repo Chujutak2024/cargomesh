@@ -76,8 +76,15 @@ describe("pure ROAD eligibility", () => {
     item.capacities[0]!.cargoCapabilities[0]!.validUntil = "2026-09-28T00:00:00Z";
     assert.ok(evaluateRoad(request, [item]).candidates[0]?.reasons.includes("CARGO_CAPABILITY_UNVERIFIED"));
     item.capacities[0]!.cargoCapabilities[0]!.validUntil = "2026-12-31T00:00:00Z";
-    item.capacities[0]!.cargoCapabilities[0]!.requirements = ["PERMIT_REVIEW"];
-    assert.ok(evaluateRoad(request, [item]).candidates[0]?.reasons.includes("CARGO_CAPABILITY_REQUIREMENTS_UNVERIFIED"));
+    item.capacities[0]!.cargoCapabilities[0]!.requirements = ["KEEP_DRY"];
+    const dryRequest = {...request,unverifiedRequirements:["KEEP_DRY"]};
+    assert.equal(evaluateRoad(dryRequest,[item]).candidates[0]?.status,"eligible");
+    assert.equal(evaluateRoad({...dryRequest,unverifiedRequirements:["FOOD_GRADE"]},[item]).candidates[0]?.status,"unknown");
+    item.capacities[0]!.cargoCapabilities[0]!.evidenceAvailable = false;
+    assert.equal(evaluateRoad(dryRequest,[item]).candidates[0]?.status,"unknown");
+    item.capacities[0]!.cargoCapabilities[0]!.evidenceAvailable = true;
+    item.capacities[0]!.cargoCapabilities[0]!.validUntil = "2026-09-28T00:00:00Z";
+    assert.equal(evaluateRoad(dryRequest,[item]).candidates[0]?.status,"unknown");
   });
   it("accepts a verified directed ROAD service with carrying capacity", () => {
     const result = evaluateRoad(request, [service()]);

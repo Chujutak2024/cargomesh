@@ -54,7 +54,7 @@ export function holdResources(h:Hold,s:OrdersSnapshot){
 /** Full capacity is not asserted from a booking flag or a single hold per service. */
 export function capacitySummary(b:Booking,s:OrdersSnapshot,now:number){
  const relations=orderRelationships(b,s),confirmed=relations.holds.filter(h=>h.status==='CONFIRMED'&&h.data.active);
- if(s.partial||!relations.offer)return {label:'Unknown: incomplete capacity context',confirmed:confirmed.length};
+ if(s.partial||!relations.offer)return {label:'Unknown: incomplete capacity context',confirmed:confirmed.length,ready:false};
  const assignments=relations.offer.data.coveredAssignmentIds;
  const snapshots=relations.opportunity?.data.assignmentSnapshots??[];
  let proven=assignments.length>0;
@@ -63,17 +63,17 @@ export function capacitySummary(b:Booking,s:OrdersSnapshot,now:number){
   if(!bindings.length){proven=false;continue;}
   for(const binding of bindings){const resource=binding.resource as Record<string,unknown>|undefined,resourceId=id(binding.resourceId),window=TimeWindowV2Schema.safeParse(binding.window??resource?.window);
    const needed=z.object({weightKg:z.number().nonnegative(),volumeM3:z.number().nonnegative()}).safeParse(binding.capacityNeeded);
-   if(!resourceId||!window.success||!needed.success||!relations.offer.data.coveredServiceIds.includes(binding.serviceId)||!confirmed.some(h=>h.data.assignmentId===assignment&&h.data.planResourceId===resourceId&&h.data.calendarId===resource?.calendarId&&h.data.capacityCommitted.weightKg>=needed.data.weightKg&&h.data.capacityCommitted.volumeM3>=needed.data.volumeM3&&Date.parse(h.data.window.startsAt)<=Date.parse(window.data.startsAt)&&Date.parse(h.data.window.endsAt)>=Date.parse(window.data.endsAt)&&h.data.evidence.provenanceStatus==='VERIFIED'&&Date.parse(h.data.evidence.verifiedAt)<=now&&h.data.evidence.validUntil!==null&&Date.parse(h.data.evidence.validUntil)>=Math.max(now,Date.parse(window.data.endsAt))&&holdResources(h,s).calendar))proven=false;
+   if(!resourceId||!window.success||!needed.success||!relations.offer.data.coveredServiceIds.includes(binding.serviceId)||!confirmed.some(h=>h.data.assignmentId===assignment&&h.data.planResourceId===resourceId&&h.data.calendarId===resource?.calendarId&&h.data.capacityCommitted.weightKg>=needed.data.weightKg&&h.data.capacityCommitted.volumeM3>=needed.data.volumeM3&&Date.parse(h.data.window.startsAt)<=Date.parse(window.data.startsAt)&&Date.parse(h.data.window.endsAt)>=Date.parse(window.data.endsAt)&&['VERIFIED','SIMULATED'].includes(h.data.evidence.provenanceStatus)&&Date.parse(h.data.evidence.verifiedAt)<=now&&h.data.evidence.validUntil!==null&&Date.parse(h.data.evidence.validUntil)>=Math.max(now,Date.parse(window.data.endsAt))&&holdResources(h,s).calendar))proven=false;
   }
  }
- return {label:proven?'Verified recorded commitments cover the quoted resource windows':'Full capacity unverified · '+confirmed.length+' recorded confirmed reservation(s)',confirmed:confirmed.length};
+ return {label:proven?(confirmed.some(h=>h.data.evidence.provenanceStatus==='SIMULATED')?'Simulated recorded commitments cover the quoted resource windows':'Verified recorded commitments cover the quoted resource windows'):'Full capacity unverified · '+confirmed.length+' recorded confirmed reservation(s)',confirmed:confirmed.length,ready:proven};
 }
 export function orderActionAllowed(action:OrderAction,row:ActionTarget,s:OrdersSnapshot,role:CarrierPortalRole,now:number,confirmation?:'CONFIRMED'|'REJECTED'){
  if(s.partial||row.carrierId!==s.carrierId||!action.startsWith(row.kind+'.')||!canCarrierAction(role,action,row.status))return false;
  const recorded=(row.kind==='bookings'?s.bookings:row.kind==='holds'?s.holds:s.executions).find(r=>r.id===row.id&&r.version===row.version&&sameOrderScope(r,row));if(!recorded)return false;
  if(row.kind==='bookings'){
   if(!s.bookings.some(b=>b.id===row.id&&sameOrderScope(b,row)))return false;
-  if(action==='bookings.confirm')return row.data.authorizationStatus==='AUTHORIZED'&&row.data.carrierConfirmationStatus==='PENDING'&&(confirmation==='REJECTED'||!!selectedOffer(row,s)&&capacitySummary(row,s,now).label.startsWith('Verified'));
+  if(action==='bookings.confirm')return row.data.authorizationStatus==='AUTHORIZED'&&row.data.carrierConfirmationStatus==='PENDING'&&(confirmation==='REJECTED'||!!selectedOffer(row,s)&&capacitySummary(row,s,now).ready);
   return action==='bookings.cancel';
  }
  if(row.kind==='holds'){

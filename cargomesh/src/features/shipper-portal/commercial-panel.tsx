@@ -45,7 +45,7 @@ export function CommercialPanel({ context, catalog, selectedOptionIndex, setSele
         <div className={styles.comparisonIntro}><h3>{t("Alternativas del servidor", "Server-ranked options")}</h3><span>{ranking.data.options.length} {t("alternativas", "options")}</span></div>
         <div className={comparison.tableRegion} role="region" tabIndex={0} aria-label={t("Comparación desplazable de ofertas", "Scrollable offer comparison")}><table className={comparison.table}>
           <thead><tr>{[t("Alternativa", "Option"), t("Transportista / versión", "Carrier / version"), t("Total cotizado", "Quoted total"), t("Tránsito", "Transit"), t("Primera oferta que vence", "Earliest quote expiry"), t("Revisión", "Review")].map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead>
-          <tbody>{ranking.data.options.map((item, index) => {
+          <tbody>{ranking.data.options.slice(0,3).map((item, index) => {
             const checked = inspectRankedOption(item, context), rows = item.offerIds.flatMap(id => offers.find(row => row.id === id) ?? []);
             const end = rows.length && rows.length === item.offerIds.length ? rows.reduce((min, row) => Date.parse(row.data.validity.endsAt) < Date.parse(min) ? row.data.validity.endsAt : min, rows[0].data.validity.endsAt) : null;
             const priceKnown = rows.length === item.offerIds.length && rows.every(row => inspectOffer(row, context).linked) && !checked.reasons.includes("RANKING_PRICE_MISMATCH");

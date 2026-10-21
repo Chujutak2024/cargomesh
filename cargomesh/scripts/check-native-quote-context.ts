@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {asV2RequestRecord} from '../src/server/modules/freight-requests/infrastructure/supabase-draft-repository';
+import {WorkflowRecordV2Schema} from '../src/shared/schemas/v2/workflow';
+import {buildOfferBriefing} from '../src/features/shipper-portal/offer-briefing';
+import {inspectOffer,type CommercialContext} from '../src/features/shipper-portal/commercial-context';
+const file=process.argv[2];if(!file)throw Error('Native SQL context file required.');
+const raw=JSON.parse(fs.readFileSync(file,'utf8')),request=asV2RequestRecord({id:raw.request.id,code:raw.request.referenceCode,organization_id:raw.request.organizationId,status:raw.request.status,draft_version:raw.request.draftVersion,v2_snapshot:raw.request.snapshot,creation_payload_hash:raw.request.payloadHash,created_at:raw.request.createdAt,updated_at:raw.request.updatedAt}).data;
+const records=(kind:string)=>raw[kind].map((r:unknown)=>WorkflowRecordV2Schema.parse(r));
+const context:CommercialContext={request,plans:records('plans'),opportunities:records('opportunities'),offers:records('offers'),ranking:records('ranking')[0]??null};
+assert.equal(context.offers.length,1);
+assert.deepEqual(inspectOffer(context.offers[0],context).reasons,[]);
+const briefing=buildOfferBriefing(context.offers,context.ranking,Date.now(),context);
+assert.equal(briefing.currentOfferCount,1);assert.equal(briefing.options.length,1);assert.equal(briefing.options[0].price,'USD 237.01');assert.equal(briefing.recommended?.position,1);
+console.log('PASS native quote → typed Client comparison → Nova briefing; recommendation matches the stored rank. No hosted writes.');

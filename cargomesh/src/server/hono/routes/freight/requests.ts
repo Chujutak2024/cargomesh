@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import {hasSessionOrigin} from "@/server/auth/session-origin";
 import type { AuthVariables } from "@/server/hono/middleware/auth";
 import { v2AuthMiddleware } from "@/server/hono/middleware/v2-auth";
 import { v2Error } from "@/server/hono/middleware/v2-error";
@@ -85,6 +86,24 @@ freightRequestsRouter.get("/:id/serviceability", async (c) => {
       { memberId: member.memberId, organizationId: member.organizationId },
       await v2DraftRepository(), { listRoadServices: () => loadRoadServices(db) },
     ));
+  } catch (error) { return v2Error(c, error); }
+});
+
+freightRequestsRouter.post("/:id/quotes", async (c) => {
+  c.header("Cache-Control", "private, no-store");
+  try {
+    if (!c.req.header("Authorization") && !hasSessionOrigin(c.req.raw)) throw new V2DraftError("FORBIDDEN_ORIGIN", "Same-origin session request required.", 403);
+    const { searchRequestQuotes } = await import("@/server/modules/commercial/application/quote-search");
+    const body = await c.req.json().catch(() => { throw new V2DraftError("VALIDATION_ERROR", "JSON required.", 400); });
+    return c.json(await searchRequestQuotes(c.get("member"), c.req.param("id"), body, c.req.header("Idempotency-Key")));
+  } catch (error) { return v2Error(c, error); }
+});
+freightRequestsRouter.get("/:id/similar-cases", async (c) => {
+  c.header("Cache-Control", "private, no-store");
+  try {
+    const { readQuoteHistory } = await import("@/server/modules/commercial/application/quote-service");
+    const data = await readQuoteHistory(c.get("member"), c.req.param("id"));
+    return c.json({ schemaVersion: "2.0", data });
   } catch (error) { return v2Error(c, error); }
 });
 
