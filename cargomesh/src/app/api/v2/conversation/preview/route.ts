@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   if (!request.headers.get("content-type")?.startsWith("application/json")) {
     return NextResponse.json({ error: "VALIDATION_ERROR" }, { status: 415 });
   }
-  if (Number(request.headers.get("content-length") ?? 0) > 4096) {
+  if (Number(request.headers.get("content-length") ?? 0) > 32768) {
     return NextResponse.json({ error: "VALIDATION_ERROR" }, { status: 413 });
   }
   try {

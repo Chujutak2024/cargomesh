@@ -72,7 +72,8 @@ export function CandidateResults({
                 <ShieldAlert size={15} aria-hidden="true" />
                 {t("La vigencia de esta fuente terminó antes de la evaluación. Verifica evidencia actual antes de decidir; la elegibilidad mostrada proviene del servicio.", "This source expired before evaluation. Verify current evidence before deciding; the eligibility shown comes from the service.")}
               </p> : null}
-              <ul className={styles.reasons}>{candidate.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+              {candidate.multiResourcePlan?<p>{t('Reparto propuesto: ','Proposed allocation: ')}{candidate.multiResourcePlan.resourceCount} {t('camiones. Se validará el plan completo al solicitar ofertas.','trucks. The complete plan will be validated when requesting quotes.')}</p>:null}
+              <ul className={styles.reasons}>{candidate.reasons.map((reason) => <li key={reason}>{reason==='MULTI_RESOURCE_PLAN_REQUIRES_NATIVE_VALIDATION'?t('Requiere validar un plan con varios vehículos.','A multi-vehicle plan needs validation.'):reason}</li>)}</ul>
               <Button
                 variant={selected ? "primary" : "secondary"}
                 type="button"

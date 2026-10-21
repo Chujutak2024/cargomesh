@@ -49,6 +49,9 @@ import type { V2IntakeApiError } from "./v2-intake-client";
 import { ContentMotion } from "@/features/product-motion/content-motion";
 import styles from "./v2-intake-prototype.module.css";
 
+import {CargoGroupsEditor} from './components/cargo-groups-editor';
+import {cargoGroups} from './cargo-groups';
+
 const STEP_ICONS = [MapPinned, Package, CalendarDays, ClipboardCheck] as const;
 
 type Translate = (spanish: string, english: string) => string;
@@ -236,10 +239,6 @@ function FacilityStep({ draft, options, update, errorFor, t }: FieldHelpers) {
 
 function CargoStep({ draft, options, update, errorFor, t }: FieldHelpers) {
   const category = options.cargoCategories.find((option) => option.code === draft.categoryCode);
-  const dimensionFields: Array<keyof V2IntakePrototypeDraft> = ["unitLengthCm", "unitWidthCm", "unitHeightCm"];
-  const hasDimensionErrors = dimensionFields.some((field) => Boolean(errorFor(field)));
-  const [unitDetailsOpen, setUnitDetailsOpen] = useState(Boolean(draft.unitLengthCm));
-  useEffect(() => { if (hasDimensionErrors) setUnitDetailsOpen(true); }, [hasDimensionErrors]);
   const suggestedRequirements = category ? Object.entries(category.guidance.suggestedRequirements)
     .filter(([, enabled]) => enabled === true)
     .map(([code]) => code)
@@ -261,17 +260,7 @@ function CargoStep({ draft, options, update, errorFor, t }: FieldHelpers) {
 
     {draft.requirements.includes("TEMP_CONTROLLED") ? <section className={`${styles.formSection} ${styles.temperatureSection}`}><header className={styles.formSectionHeader}><div><h3>{t("Rango de temperatura declarado", "Declared temperature range")}</h3></div></header><div className={styles.formGrid}><Input label={t("Temperatura mínima (°C)", "Minimum temperature (°C)")} type="number" step="0.1" value={draft.temperatureMinCelsius} error={errorFor("temperatureMinCelsius")} onChange={(event) => update("temperatureMinCelsius", event.target.value)} /><Input label={t("Temperatura máxima (°C)", "Maximum temperature (°C)")} type="number" step="0.1" value={draft.temperatureMaxCelsius} error={errorFor("temperatureMaxCelsius")} onChange={(event) => update("temperatureMaxCelsius", event.target.value)} /></div></section> : null}
 
-    {draft.packaging ? <section className={styles.formSection}>
-      <header className={styles.formSectionHeader}><div><h3 className={styles.sectionTitle}>{t("Unidad de carga", "Cargo unit")}</h3></div></header>
-      <div className={styles.unitGrid}>
-        <OptionSelect label={t("Tipo de paquete", "Package type")} placeholder={t("Seleccionar tipo", "Select type")} options={options.packagingOptions} value={draft.unitPackageType} error={errorFor("unitPackageType")} onChange={(value) => update("unitPackageType", value)} t={t} />
-        <Input label={t("Cantidad", "Quantity")} type="number" min="1" step="1" value={draft.unitQuantity} error={errorFor("unitQuantity")} onChange={(event) => update("unitQuantity", event.target.value)} />
-        <Input label={t("Peso por unidad (kg)", "Weight per unit (kg)")} type="number" min="0" step="0.1" value={draft.unitWeightPerUnitKg} error={errorFor("unitWeightPerUnitKg")} onChange={(event) => update("unitWeightPerUnitKg", event.target.value)} />
-        <Input label={t("Volumen por unidad (m³)", "Volume per unit (m³)")} type="number" min="0" step="0.1" value={draft.unitVolumePerUnitM3} error={errorFor("unitVolumePerUnitM3")} onChange={(event) => update("unitVolumePerUnitM3", event.target.value)} />
-      </div>
-      <div className={styles.computedTotals} aria-live="polite"><div><span>{t("Peso total calculado", "Calculated total weight")}</span><strong>{draft.totalWeightKg ? `${draft.totalWeightKg} kg` : "—"}</strong>{errorFor("totalWeightKg") ? <small>{errorFor("totalWeightKg")}</small> : null}</div><div><span>{t("Volumen total calculado", "Calculated total volume")}</span><strong>{draft.totalVolumeM3 ? `${draft.totalVolumeM3} m³` : "—"}</strong>{errorFor("totalVolumeM3") ? <small>{errorFor("totalVolumeM3")}</small> : null}</div></div>
-      <details className={styles.advancedDisclosure} open={unitDetailsOpen} onToggle={(event) => setUnitDetailsOpen(event.currentTarget.open)}><summary><span><strong>{t("Dimensiones y manipulación", "Dimensions and handling")}</strong></span><ChevronDown size={17} aria-hidden="true" /></summary><div className={styles.formGrid}><Input label={t("Largo (cm)", "Length (cm)")} type="number" min="0" step="0.1" value={draft.unitLengthCm} error={errorFor("unitLengthCm")} onChange={(event) => update("unitLengthCm", event.target.value)} /><Input label={t("Ancho (cm)", "Width (cm)")} type="number" min="0" step="0.1" value={draft.unitWidthCm} error={errorFor("unitWidthCm")} onChange={(event) => update("unitWidthCm", event.target.value)} /><Input label={t("Alto (cm)", "Height (cm)")} type="number" min="0" step="0.1" value={draft.unitHeightCm} error={errorFor("unitHeightCm")} onChange={(event) => update("unitHeightCm", event.target.value)} /><div className={styles.handlingGrid}><Checkbox label={t("Unidad indivisible", "Indivisible unit")} checked={draft.unitIndivisible} onChange={(event) => update("unitIndivisible", event.target.checked)} /><Checkbox label={t("Apilable", "Stackable")} checked={draft.unitStackable} onChange={(event) => update("unitStackable", event.target.checked)} /></div></div></details>
-    </section> : null}
+    {draft.packaging?<CargoGroupsEditor/>:null}
   </>;
 }
 
@@ -317,7 +306,8 @@ function ReviewStep({ draft, options, request, dirtyAfterCreate, t, locale, onEd
   const destination = findIntakeFacility(options, draft.destinationFacilityId);
   return <div className={styles.reviewGrid}>
     <ReviewSection title={t("Corredor", "Lane")} editLabel={t("Editar sedes", "Edit facilities")} onEdit={() => onEdit(1)} items={[[t("Origen", "Origin"), origin ? `${origin.label} · ${origin.city}` : "—"], [t("Destino", "Destination"), destination ? `${destination.label} · ${destination.city}` : "—"]]} />
-    <ReviewSection title={t("Carga y unidad", "Cargo and unit")} editLabel={t("Editar carga", "Edit cargo")} onEdit={() => onEdit(2)} items={[[t("Categoría", "Category"), draft.categoryCode], [t("Peso / volumen", "Weight / volume"), `${Number(draft.totalWeightKg).toLocaleString(locale, { maximumFractionDigits: 6 })} kg · ${Number(draft.totalVolumeM3).toLocaleString(locale, { maximumFractionDigits: 6 })} m³`], [t("Unidad", "Unit"), `${draft.unitQuantity} × ${draft.unitPackageType}`], [t("Requisitos", "Requirements"), draft.requirements.join(", ") || t("Ninguno", "None")]]} />
+    <ReviewSection title={t("Carga y grupos", "Cargo and groups")} editLabel={t("Editar carga", "Edit cargo")} onEdit={()=>onEdit(2)} items={[[t('Categoría','Category'),draft.categoryCode],[t('Peso / volumen','Weight / volume'),`${draft.totalWeightKg} kg · ${draft.totalVolumeM3} m³`],...cargoGroups(draft).map((g,i)=>[t('Grupo ','Group ')+(i+1),`${g.unitQuantity} × ${g.unitPackageType} · ${g.unitWeightPerUnitKg} kg · ${g.unitVolumePerUnitM3} m³ · ${g.unitLengthCm} × ${g.unitWidthCm} × ${g.unitHeightCm} cm`]),[t('Requisitos comunes','Shared requirements'),draft.requirements.join(', ')||t('Sin requisitos','No requirements')]]}/>
+
     <ReviewSection title={t("Agenda y equipo", "Schedule and equipment")} editLabel={t("Editar agenda", "Edit schedule")} onEdit={() => onEdit(3)} items={[[t("Retiro", "Pickup"), formatLocalRange(draft.pickupWindowStartsAt, draft.pickupWindowEndsAt, locale)], [t("Entrega", "Delivery"), formatLocalRange(draft.deliveryWindowStartsAt, draft.deliveryWindowEndsAt, locale)], [t("Equipo", "Equipment"), draft.requiredEquipment]]} />
     <ReviewSection title={t("Límites comerciales", "Commercial boundaries")} tone="unknown" items={[[t("Elegibilidad", "Serviceability"), t("Se lee después de persistir DRAFT", "Read after DRAFT persistence")], [t("Precio / oferta / booking", "Price / offer / booking"), t("No confirmados ni creados", "Not confirmed or created")]]} />
     {request && dirtyAfterCreate ? <div className={styles.persistedNotice} role="status">{t("Hay cambios locales posteriores; no se guardaron automáticamente.", "There are later local changes; they were not autosaved.")}</div> : null}

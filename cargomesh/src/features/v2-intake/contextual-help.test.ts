@@ -24,3 +24,11 @@ test("how-to question gets a conversational explanation before a form prompt", (
   assert.match(reply ?? "", /only save it when you confirm/i);
   assert.doesNotMatch(reply ?? "", /could not match|saved facilit|where should the cargo be picked up/i);
 });
+
+test("Spanish guidance keeps confirmed totals and asks what pallets contain", () => {
+  const reply=contextualHelpReply({...EMPTY_PROTOTYPE_DRAFT,packaging:"PALLET",unitQuantity:"10",unitWeightPerUnitKg:"100"},getIntakeOptionsFixture().data,"categoryCode","no sé la categoría","es");
+  assert.match(reply??"",/categorías disponibles/);
+  const next=contextualHelpReply({...EMPTY_PROTOTYPE_DRAFT,packaging:"PALLET",unitQuantity:"10",unitWeightPerUnitKg:"100"},getIntakeOptionsFixture().data,"categoryCode","","es");
+  assert.match(next??"",/1000 kg/);
+  assert.match(next??"",/vacíos.*mercancía/);
+});

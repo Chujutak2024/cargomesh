@@ -567,6 +567,29 @@
       "dependencies": [
         "20261019202113"
       ]
+    },
+    {
+      "issue": "PLAN1",
+      "path": "supabase-v2/supabase/migrations/20261021034000_plan1_resource_route_payload.sql",
+      "version": "20261021034000",
+      "sha256": "07275c8106268d96fab065e56d3dca3ee716e43d0eb3dac75046a3b44c540d31",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261007170000"
+      ]
+    },
+    {
+      "issue": "PLAN1",
+      "path": "supabase-v2/supabase/migrations/20261021035000_plan1_multi_resource_quotes.sql",
+      "version": "20261021035000",
+      "sha256": "c7a6cd59abef7ae6ef46c4ec856270489c63789db6397b4b7fc7216cbeae701b",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261021034000",
+        "20261020234155"
+      ]
     }
   ]
 }

@@ -1,4 +1,6 @@
+import {planWholePackages} from '../../commercial/domain/multi-resource-plan';
 import { z } from "zod";
+import type {FreightRequestV2Response} from "@/shared/schemas/v2/freight-request";
 import { cargoUnitTotalsV2 } from "@/shared/schemas/v2/freight-request";
 import { RoadServiceabilityEvaluationV2ResponseSchema, type RoadCandidateV2 } from
   "@/shared/schemas/v2/serviceability";
@@ -39,37 +41,9 @@ export async function evaluateV2RoadByRequestId(
     throw new V2DraftError("MODE_EVALUATION_NOT_IMPLEMENTED",
       "This evaluator supports ROAD only; other modes require their planning adapters.", 501);
   }
-  const window = {
-    startsAt: request.pickupWindow.startsAt,
-    endsAt: request.deliveryWindow.endsAt,
-  };
-  const services = await catalog.listRoadServices();
-  const unitTotals = cargoUnitTotalsV2(request.cargoSpecification.units);
-  const result = evaluateRoad({
-    origin: { countryCode: request.origin.countryCode, regionCode: request.origin.region,
-      city: request.origin.city },
-    destination: { countryCode: request.destination.countryCode, regionCode: request.destination.region,
-      city: request.destination.city },
-    operationWindow: window,
-    pickupWindow: request.pickupWindow,
-    deliveryWindow: request.deliveryWindow,
-    cargoCategoryCode: request.cargoSpecification.categoryCode,
-    // The tolerance handles rounding; never discount actual units at a capacity limit.
-    totalWeightKg: Math.max(request.cargoSpecification.totalWeightKg, unitTotals.weightKg),
-    totalVolumeM3: Math.max(request.cargoSpecification.totalVolumeM3, unitTotals.volumeM3),
-    indivisibleUnits: request.cargoSpecification.units.filter((unit) => unit.indivisible)
-      .map((unit) => ({ weightKg: unit.weightPerUnitKg, volumeM3: unit.volumePerUnitM3 })),
-    unitDimensionsCm: request.cargoSpecification.units.map((unit) => unit.dimensionsCm),
-    requiredEquipmentCode: request.requiredEquipment,
-    serviceClass: request.serviceType ?? "FTL",
-    requiredCertifications: request.cargoSpecification.requirements.filter((code) =>
-      canCheckResourceRequirement(code, request.cargoSpecification.temperatureRange != null)),
-    temperatureRange: request.cargoSpecification.temperatureRange ?? null,
-    // The domain checks each carrying resource's persisted capability evidence;
-    // a pool without such evidence remains UNKNOWN.
-    unverifiedRequirements: request.cargoSpecification.requirements.filter((code) =>
-      !canCheckResourceRequirement(code, request.cargoSpecification.temperatureRange != null)),
-  }, services);
+  const services=await catalog.listRoadServices();
+  const result=evaluateRoad(requestRoadInput(request),services);
+  const window={startsAt:request.pickupWindow.startsAt,endsAt:request.deliveryWindow.endsAt};
   const serviceById = new Map(services.map((service) => [service.id, service]));
   const evaluatedAt = new Date().toISOString();
   const candidates: RoadCandidateV2[] = result.candidates.map((candidate) => {
@@ -99,7 +73,7 @@ export async function evaluateV2RoadByRequestId(
         .every((unit) => unit.weightPerUnitKg <= source.maxWeightKg!
           && unit.volumePerUnitM3 <= source.maxVolumeM3!
           && fitsUprightDimensions(unit.dimensionsCm, source.usableDimensionsCm!));
-    return {
+    const mapped:RoadCandidateV2={
       candidateId: `road:${service.id}`,
       status: candidate.status,
       carrier: { id: service.carrierId, code: service.carrierCode ?? service.carrierId,
@@ -150,12 +124,22 @@ export async function evaluateV2RoadByRequestId(
       // No routing provider or approved synthetic geometry has supplied a line.
       routePreview: null,
     };
+    if(candidate.status!=="eligible"&&request.cargoSpecification.divisible){
+      const proposal=planWholePackages(requestRoadInput(request),request.cargoSpecification.units,true,service);
+      if(proposal.status==='FOUND'&&proposal.resources.length>1){
+        mapped.status='unknown';mapped.reasons=['MULTI_RESOURCE_PLAN_REQUIRES_NATIVE_VALIDATION'];
+        mapped.multiResourcePlan={resourceCount:proposal.resources.length,algorithm:proposal.algorithm,requiresNativeValidation:true};
+        mapped.checks.cargoAndEquipment={...mapped.checks.cargoAndEquipment,status:'unknown',indivisibleUnitsFit:true,reasonCode:'MULTI_RESOURCE_PLAN_REQUIRES_NATIVE_VALIDATION'};
+        mapped.checks.capacityWindow={...mapped.checks.capacityWindow,status:'unknown',sourceId:null,calendarId:null,availableWeightKg:null,availableVolumeM3:null,reasonCode:'MULTI_RESOURCE_PLAN_REQUIRES_NATIVE_VALIDATION'};
+      }
+    }
+    return mapped;
   });
   return RoadServiceabilityEvaluationV2ResponseSchema.parse({
     schemaVersion: "2.0",
     data: {
       freightRequestId: request.id, evaluatedDraftVersion: request.draftVersion,
-      evaluatedAt, overallStatus: result.overallStatus,
+      evaluatedAt, overallStatus: candidates.some(c=>c.status==="eligible")?"eligible":candidates.some(c=>c.status==="unknown")?"unknown":"ineligible",
       summaryCounts: {
         totalEvaluated: candidates.length,
         eligibleCount: candidates.filter((item) => item.status === "eligible").length,
@@ -169,3 +153,33 @@ export async function evaluateV2RoadByRequestId(
 }
 
 export const ExpectedDraftVersionSchema = z.coerce.number().int().positive().optional();
+
+export function requestRoadInput(request:FreightRequestV2Response['data']){
+ const window={startsAt:request.pickupWindow.startsAt,endsAt:request.deliveryWindow.endsAt};
+  const unitTotals = cargoUnitTotalsV2(request.cargoSpecification.units);
+ return {
+    origin: { countryCode: request.origin.countryCode, regionCode: request.origin.region,
+      city: request.origin.city },
+    destination: { countryCode: request.destination.countryCode, regionCode: request.destination.region,
+      city: request.destination.city },
+    operationWindow: window,
+    pickupWindow: request.pickupWindow,
+    deliveryWindow: request.deliveryWindow,
+    cargoCategoryCode: request.cargoSpecification.categoryCode,
+    // The tolerance handles rounding; never discount actual units at a capacity limit.
+    totalWeightKg: Math.max(request.cargoSpecification.totalWeightKg, unitTotals.weightKg),
+    totalVolumeM3: Math.max(request.cargoSpecification.totalVolumeM3, unitTotals.volumeM3),
+    indivisibleUnits: request.cargoSpecification.units.filter((unit) => unit.indivisible)
+      .map((unit) => ({ weightKg: unit.weightPerUnitKg, volumeM3: unit.volumePerUnitM3 })),
+    unitDimensionsCm: request.cargoSpecification.units.map((unit) => unit.dimensionsCm),
+    requiredEquipmentCode: request.requiredEquipment,
+    serviceClass: request.serviceType ?? "FTL",
+    requiredCertifications: request.cargoSpecification.requirements.filter((code) =>
+      canCheckResourceRequirement(code, request.cargoSpecification.temperatureRange != null)),
+    temperatureRange: request.cargoSpecification.temperatureRange ?? null,
+    // The domain checks each carrying resource's persisted capability evidence;
+    // a pool without such evidence remains UNKNOWN.
+    unverifiedRequirements: request.cargoSpecification.requirements.filter((code) =>
+      !canCheckResourceRequirement(code, request.cargoSpecification.temperatureRange != null)),
+  } as const;
+}

@@ -5,9 +5,14 @@ import type {
   IntakeOptionsData,
 } from "./contracts";
 
+import {cargoGroups,groupTotals,cargoGroupInput,type DraftCargoGroup} from './cargo-groups';
+
 export type PrototypeStep = 1 | 2 | 3 | 4;
 
 export type V2IntakePrototypeDraft = {
+  primaryGroupId?: string;
+  primaryOriginalIndex?: number;
+  additionalUnits?: DraftCargoGroup[];
   originFacilityId: string;
   destinationFacilityId: string;
   categoryCode: string;
@@ -42,14 +47,7 @@ export type V2IntakePrototypeDraft = {
 };
 
 function withDerivedCargoTotals(draft: V2IntakePrototypeDraft): V2IntakePrototypeDraft {
-  const count = Number(draft.unitQuantity);
-  const weight = Number(draft.unitWeightPerUnitKg);
-  const volume = Number(draft.unitVolumePerUnitM3);
-  return {
-    ...draft,
-    totalWeightKg: count > 0 && weight > 0 ? String(Number((count * weight).toFixed(6))) : "",
-    totalVolumeM3: count > 0 && volume > 0 ? String(Number((count * volume).toFixed(6))) : "",
-  };
+  return {...draft,...groupTotals(cargoGroups(draft))};
 }
 
 /** Apply one form field and keep contract totals derived from the visible unit inputs. */
@@ -59,7 +57,7 @@ export function updatePrototypeDraftField<K extends keyof V2IntakePrototypeDraft
   value: V2IntakePrototypeDraft[K],
 ): V2IntakePrototypeDraft {
   const next = { ...draft, [field]: value };
-  if (field === "unitQuantity" || field === "unitWeightPerUnitKg" || field === "unitVolumePerUnitM3") {
+  if (field === "unitQuantity" || field === "unitWeightPerUnitKg" || field === "unitVolumePerUnitM3" || field === "additionalUnits") {
     return withDerivedCargoTotals(next);
   }
   return next;
@@ -90,7 +88,7 @@ function localDateTime(instant: string): string {
 /** A persisted request is editable here only if this intake can represent it without losing units or locations. */
 export function requestToPrototypeDraft(request: FreightRequestV2Data): V2IntakePrototypeDraft | null {
   const unit = request.cargoSpecification.units[0];
-  if (!request.origin.facilityId || !request.destination.facilityId || request.cargoSpecification.units.length !== 1 || !unit) return null;
+  if (!request.origin.facilityId || !request.destination.facilityId || !unit) return null;
   return {
     originFacilityId: request.origin.facilityId,
     destinationFacilityId: request.destination.facilityId,
@@ -103,6 +101,8 @@ export function requestToPrototypeDraft(request: FreightRequestV2Data): V2Intake
     requirements: [...request.cargoSpecification.requirements],
     temperatureMinCelsius: request.cargoSpecification.temperatureRange?.minCelsius == null ? "" : String(request.cargoSpecification.temperatureRange.minCelsius),
     temperatureMaxCelsius: request.cargoSpecification.temperatureRange?.maxCelsius == null ? "" : String(request.cargoSpecification.temperatureRange.maxCelsius),
+    primaryGroupId:'group-0',primaryOriginalIndex:0,
+    additionalUnits:request.cargoSpecification.units.slice(1).map((u,i)=>({id:'group-'+(i+1),originalIndex:i+1,unitPackageType:u.packageType,unitQuantity:String(u.quantity),unitWeightPerUnitKg:String(u.weightPerUnitKg),unitVolumePerUnitM3:String(u.volumePerUnitM3),unitLengthCm:String(u.dimensionsCm.length),unitWidthCm:String(u.dimensionsCm.width),unitHeightCm:String(u.dimensionsCm.height),unitIndivisible:u.indivisible,unitStackable:u.stackable})),
     unitPackageType: unit.packageType,
     unitQuantity: String(unit.quantity),
     unitWeightPerUnitKg: String(unit.weightPerUnitKg),
@@ -335,6 +335,10 @@ export function validatePrototypeStep(
   }
 
   if (step === 2) {
+    for(const group of draft.additionalUnits??[]){
+      if(!group.unitPackageType||![group.unitWeightPerUnitKg,group.unitVolumePerUnitM3,group.unitLengthCm,group.unitWidthCm,group.unitHeightCm].every(positiveNumber)||!positiveInteger(group.unitQuantity))issues.push({field:'additionalUnits',code:'positive-number'});
+    }
+    const ids=cargoGroups(draft).map(g=>g.id);if(new Set(ids).size!==ids.length)issues.push({field:'additionalUnits',code:'required'});
     const requiredFields: Array<keyof V2IntakePrototypeDraft> = [
       "categoryCode", "packaging", "cargoDescription", "totalWeightKg", "totalVolumeM3",
       "unitPackageType", "unitQuantity", "unitWeightPerUnitKg", "unitVolumePerUnitM3",
@@ -352,7 +356,7 @@ export function validatePrototypeStep(
       positiveInteger(draft.unitQuantity)
       && positiveNumber(draft.totalWeightKg)
       && positiveNumber(draft.unitWeightPerUnitKg)
-      && !totalsMatch(draft.totalWeightKg, draft.unitQuantity, draft.unitWeightPerUnitKg)
+      && Math.abs(Number(draft.totalWeightKg)-Number(groupTotals(cargoGroups(draft)).totalWeightKg))>CARGO_TOTAL_TOLERANCE_V2
     ) {
       issues.push({ field: "totalWeightKg", code: "total-mismatch" });
     }
@@ -360,7 +364,7 @@ export function validatePrototypeStep(
       positiveInteger(draft.unitQuantity)
       && positiveNumber(draft.totalVolumeM3)
       && positiveNumber(draft.unitVolumePerUnitM3)
-      && !totalsMatch(draft.totalVolumeM3, draft.unitQuantity, draft.unitVolumePerUnitM3)
+      && Math.abs(Number(draft.totalVolumeM3)-Number(groupTotals(cargoGroups(draft)).totalVolumeM3))>CARGO_TOTAL_TOLERANCE_V2
     ) {
       issues.push({ field: "totalVolumeM3", code: "total-mismatch" });
     }
@@ -382,6 +386,10 @@ export function validatePrototypeStep(
   }
 
   if (step === 3) {
+    for(const group of draft.additionalUnits??[]){
+      if(!group.unitPackageType||![group.unitWeightPerUnitKg,group.unitVolumePerUnitM3,group.unitLengthCm,group.unitWidthCm,group.unitHeightCm].every(positiveNumber)||!positiveInteger(group.unitQuantity))issues.push({field:'additionalUnits',code:'positive-number'});
+    }
+    const ids=cargoGroups(draft).map(g=>g.id);if(new Set(ids).size!==ids.length)issues.push({field:'additionalUnits',code:'required'});
     const requiredFields: Array<keyof V2IntakePrototypeDraft> = [
       "pickupWindowStartsAt", "pickupWindowEndsAt", "deliveryWindowStartsAt", "deliveryWindowEndsAt",
       "requiredEquipment", "pickupContactName", "pickupContactPhoneE164", "pickupContactEmail",
@@ -496,7 +504,7 @@ export function mapDraftToCreateFreightRequestV2Input(
   );
   if (!hasCode(options.cargoCategories, draft.categoryCode)) throw new Error("CATEGORY_OPTION_NOT_FOUND");
   if (!hasCode(options.packagingOptions, draft.packaging)) throw new Error("PACKAGING_OPTION_NOT_FOUND");
-  if (!hasCode(options.packagingOptions, draft.unitPackageType)) throw new Error("UNIT_PACKAGING_OPTION_NOT_FOUND");
+  if (cargoGroups(draft).some(g=>!hasCode(options.packagingOptions,g.unitPackageType))) throw new Error("UNIT_PACKAGING_OPTION_NOT_FOUND");
   if (!hasCode(options.equipmentOptions, draft.requiredEquipment)) throw new Error("EQUIPMENT_OPTION_NOT_FOUND");
   if (draft.requirements.some((code) => !hasCode(options.requirementOptions, code))) {
     throw new Error("REQUIREMENT_OPTION_NOT_FOUND");
@@ -530,19 +538,7 @@ export function mapDraftToCreateFreightRequestV2Input(
             maxCelsius: Number(draft.temperatureMaxCelsius),
           }
         : null,
-      units: [{
-        packageType: draft.unitPackageType,
-        quantity: Number(draft.unitQuantity),
-        weightPerUnitKg: Number(draft.unitWeightPerUnitKg),
-        volumePerUnitM3: Number(draft.unitVolumePerUnitM3),
-        dimensionsCm: {
-          length: Number(draft.unitLengthCm),
-          width: Number(draft.unitWidthCm),
-          height: Number(draft.unitHeightCm),
-        },
-        indivisible: draft.unitIndivisible,
-        stackable: draft.unitStackable,
-      }],
+      units: cargoGroups(draft).map(cargoGroupInput),
     },
     contacts: {
       pickup: {
@@ -577,7 +573,7 @@ export function mapDraftToRevisionInput(
     cargoSpecification: {
       ...request.cargoSpecification,
       ...edited.cargoSpecification,
-      units: [{ ...request.cargoSpecification.units[0], ...edited.cargoSpecification.units[0] }],
+      units: edited.cargoSpecification.units.map((unit,index)=>({...request.cargoSpecification.units[cargoGroups(draft)[index].originalIndex??-1],...unit})),
     },
     contacts: {
       pickup: { ...request.contacts.pickup, ...edited.contacts.pickup },

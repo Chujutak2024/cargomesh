@@ -128,6 +128,7 @@ export type RoadRoutePreviewDto = {
 };
 
 export type RoadServiceabilityCandidateV2 = {
+  multiResourcePlan?: {resourceCount:number;algorithm:"WHOLE_PACKAGE_BACKTRACK_V1";requiresNativeValidation:true};
   candidateId: string;
   status: EligibilityStatusV2;
   carrier: {

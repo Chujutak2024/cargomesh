@@ -307,3 +307,13 @@ describe("Client cargo handoff safety", () => {
       { ...repo, findById: async () => null }), { code: "REQUEST_NOT_FOUND", httpStatus: 404 });
   });
 });
+
+it("shows a two-truck proposal as pending native validation, never as one fictitious vehicle",async()=>{
+ const repo=draft(),saved=(await repo.findById(actor,requestId))!,item=service();
+ saved.data.cargoSpecification.totalWeightKg=12000;saved.data.cargoSpecification.totalVolumeM3=4;
+ saved.data.cargoSpecification.units[0]={...saved.data.cargoSpecification.units[0],quantity:2,weightPerUnitKg:6000,indivisible:true};
+ item.capacities[0].maxWeightKg=10000;item.capacities.push({...structuredClone(item.capacities[0]),id:'f0000000-0000-4000-8000-000000000002',calendarId:'a2000000-0000-4000-8000-000000000002'});
+ const result=await evaluateV2RoadByRequestId(requestId,1,actor,{...repo,findById:async()=>saved},{listRoadServices:async()=>[item]});
+ const candidate=result.data.candidates[0];assert.equal(candidate.status,'unknown');assert.equal(candidate.multiResourcePlan?.resourceCount,2);
+ assert.equal(candidate.checks.capacityWindow.availableWeightKg,null);assert.equal(candidate.checks.capacityWindow.sourceId,null);assert.equal(result.data.summaryCounts.unknownCount,1);
+});

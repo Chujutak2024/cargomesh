@@ -2,16 +2,17 @@ import {z} from 'zod';
 const id=z.string().uuid(), money=z.number().finite().min(0).max(1e8).refine(v=>Math.abs(v*100-Math.round(v*100))<0.00001);
 export const QuotePolicyValueSchema=z.object({
  schemaVersion:z.literal('2.0'),serviceId:id,laneId:id,active:z.boolean(),autoIssue:z.boolean(),
+ maxResources:z.number().int().min(1).max(8).optional(),resourcePricing:z.enum(['PER_PLAN','PER_RESOURCE']).optional(),
  basis:z.enum(['PER_TRIP','PER_KM']),baseAmount:money,ratePerKm:money,minimumAmount:money,
  fuelAmount:money,tollAmount:money,handlingAmount:money,taxAmount:money,
  validityMinutes:z.number().int().min(5).max(1440),confirmationMinutes:z.number().int().min(5).max(1440),
  validUntil:z.string().datetime({offset:true}),terms:z.string().trim().min(1).max(2000),
  provenanceStatus:z.enum(['VERIFIED','SIMULATED']),acknowledgeAuthority:z.literal(true),
-}).strict().refine(v=>v.basis==='PER_KM'?v.ratePerKm>0:v.ratePerKm===0)
+}).strict().refine(v=>(v.maxResources??1)===1||v.resourcePricing!==undefined).refine(v=>v.basis==='PER_KM'?v.ratePerKm>0:v.ratePerKm===0)
  .refine(v=>v.baseAmount+v.minimumAmount+v.ratePerKm>0);
 export const SaveQuotePolicySchema=z.object({expectedVersion:z.number().int().nonnegative(),value:QuotePolicyValueSchema}).strict();
 export const QuoteSearchInputSchema=z.object({schemaVersion:z.literal('2.0'),expectedDraftVersion:z.number().int().positive(),responseDeadline:z.string().datetime({offset:true}),consent:z.literal('REQUEST_QUOTES')}).strict();
-export const QuoteCandidateInputSchema=z.object({serviceId:id,laneId:id,calendarId:id,assetId:id.nullable(),poolId:id.nullable()}).strict()
+export const QuoteCandidateInputSchema=z.object({serviceId:id,laneId:id,calendarId:id,assetId:id.nullable(),poolId:id.nullable(),resources:z.array(z.object({calendarId:id,assetId:id,poolId:z.null(),allocations:z.array(z.object({unitIndex:z.number().int().nonnegative(),quantity:z.number().int().positive()}).strict()).min(1)}).strict()).min(2).max(8).optional()}).strict()
  .refine(v=>(v.assetId===null)!==(v.poolId===null));
 export const QuoteOutcomeSchema=z.object({serviceId:id,planId:id.nullable(),opportunityId:id.nullable(),offerId:id.nullable(),
  status:z.enum(['OFFERED','AWAITING_CARRIER','REQUIRES_REVIEW']),reason:z.string(),policyVersion:z.number().int().nullable()}).strict();

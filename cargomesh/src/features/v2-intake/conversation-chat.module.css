@@ -130,3 +130,14 @@
 }
 @media (max-height: 550px) { .structuredSummary { max-height: 25%; } .audioActions { max-height: 2.5rem; } .header { min-height: 54px; } }
 @media (prefers-reduced-motion: reduce) { .launcher, .structuredSummary summary > svg { transition: none; } .launcher:hover { transform: none; } .panel, .panelPosition[data-mode="detached"] .panel, .launcherComposer, .loading::before { animation: none; } }
+
+.messageInput{flex:1;min-width:0;max-height:10rem;resize:vertical;font:inherit;border:0;background:transparent;color:inherit;padding:.75rem;line-height:1.5;}
+
+.actionReview { display:grid; gap:.65rem; margin-top:1rem; padding:.85rem; border:1px solid #ded8ed; border-radius:.8rem; background:#faf9fe; color:var(--chat-ink); font-size:.78rem; overflow-wrap:anywhere; }
+.actionReview h3,.actionReview p { margin:0; line-height:1.6; }
+.actionReview label { display:grid; gap:.35rem; }
+.actionReview label:has(input[type="checkbox"]) { display:flex; align-items:flex-start; gap:.5rem; }
+.actionReview input:not([type="checkbox"]),.actionReview select,.actionReview textarea { min-width:0; width:100%; box-sizing:border-box; min-height:40px; border:1px solid #c6bddf; border-radius:.5rem; background:white; color:#34425c; padding:.5rem; font:inherit; }
+.actionReview button { min-height:40px; padding:.5rem .65rem; border:1px solid #6550ae; border-radius:.5rem; background:white; color:#554091; font:inherit; cursor:pointer; }
+.actionReview button:disabled { opacity:.55; cursor:not-allowed; }
+.actionReview input:focus-visible,.actionReview select:focus-visible,.actionReview textarea:focus-visible,.actionReview button:focus-visible { outline:2px solid #6550ae; outline-offset:2px; }

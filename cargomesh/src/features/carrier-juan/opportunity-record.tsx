@@ -1,5 +1,6 @@
 "use client";
 import type {ReactNode,Ref} from 'react';
+import {opportunityAllocations} from './opportunity-allocation';
 import {ArrowLeftRight,ArrowRight,CalendarDays,Clock3,FileText,Info,MapPin,MoreVertical,Package,Paperclip,ShieldAlert,Tag,Truck,Umbrella,Weight} from 'lucide-react';
 import {Badge} from '@/components/ui';
 import type {Opportunity} from '@/features/carrier-portal/commercial-model';
@@ -52,6 +53,7 @@ function RecordInformation({row}:{row:Opportunity}){
 
 export function OpportunityRecord({row,headingRef}:{row:Opportunity;headingRef:Ref<HTMLHeadingElement>}){
  const f=opportunityFacts(row),brief=f.brief,cargo=CargoSpecificationV2Schema.safeParse(row.data.cargoSpecification),c=cargo.success?cargo.data:null;
+ const allocations=opportunityAllocations(row);
  const description=/^\[SIMULATED\]\s*Inbox(?:\s|$)/.test(f.description)?null:f.description;
  return <article className={s.record} data-opportunity-record aria-label="Read-only customer request">
   <header className={s.header}>
@@ -59,6 +61,13 @@ export function OpportunityRecord({row,headingRef}:{row:Opportunity;headingRef:R
    <div className={s.route} aria-label="Requested route"><div className={s.stop}><span className={s.pin}><MapPin size={28} aria-hidden="true"/></span><div><small>Pickup city</small><strong>{f.origin}</strong></div></div><div className={s.routeLine}><ArrowRight size={21} aria-hidden="true"/></div><div className={s.stop}><span className={s.pin}><MapPin size={28} aria-hidden="true"/></span><div><small>Delivery city</small><strong>{f.destination}</strong></div></div><p className={s.locationNote}><Info size={15} aria-hidden="true"/>City-level locations only — exact addresses and contacts not shared.</p></div>
   </header>
   <div className={s.body}>
+   {allocations.length ? <SheetSection title="Cargo allocation" icon={Truck}>
+    <details><summary>{allocations.filter(assignment=>assignment.allocationSummary.role==='LOAD_BEARING').length} carrying resource(s) · view allocation</summary>
+    {allocations.map((assignment,index)=><div key={assignment.id}><strong>{assignment.allocationSummary.role==='AUXILIARY'?'Support':'Vehicle'} {index+1} · {friendly(assignment.allocationSummary.equipment)}</strong>
+     <p>{day(assignment.window.startsAt)} · {time(assignment.window.startsAt)} – {time(assignment.window.endsAt)} UTC</p>
+     <ul>{assignment.allocationSummary.units.map(unit=><li key={unit.unitIndex}>Group {unit.unitIndex+1}: {unit.quantity} units · {amount(unit.weightKg,'kg')} · {amount(unit.volumeM3,'m³')}</li>)}</ul>
+    </div>)}</details>
+   </SheetSection>:null}
    {f.projectionInvalid?<p role="alert" className={s.alert}>Request details could not be verified. Refresh before responding.</p>:null}
    {brief&&!brief.isCurrent?<p role="alert" className={s.alert}>This is an earlier request version. A refreshed opportunity is needed before accepting.</p>:brief&&!brief.canReview?<p className={s.alert}>The customer request is no longer open for review.</p>:null}
    <div className={s.groups}>

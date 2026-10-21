@@ -1,4 +1,5 @@
 "use client";
+import {replaceCargoGroups,type DraftCargoGroup} from "./cargo-groups";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "@/features/i18n/locale-provider";
@@ -112,6 +113,10 @@ export function useIntakeController() {
     setDraft((current) => updatePrototypeDraftField(current, field, value));
     setIssues((current) => current.filter((issue) => issue.field !== field));
     if (request) { setDirtyAfterCreate(true); setEvaluation(null); setSelectedCandidateId(null); }
+  };
+  const updateCargoGroups=(groups:DraftCargoGroup[])=>{
+    draftRevisionRef.current+=1;setDraft(current=>replaceCargoGroups(current,groups));setIssues([]);
+    if(request){setDirtyAfterCreate(true);setEvaluation(null);setSelectedCandidateId(null);}
   };
   const errorFor = (field: keyof V2IntakePrototypeDraft) => {
     const issue = issues.find((candidate) => candidate.field === field);
@@ -328,7 +333,7 @@ export function useIntakeController() {
 
   return { locale, t, draft, step, maxVisited, issues, options, optionsSource, optionsError, submitPhase, submitError,
     request, evaluation, selectedCandidateId, dirtyAfterCreate, errorRef, activeOptions, origin, destination, optionCoverage,
-    mapProps, update, errorFor, enterReview, goNext, loadExample, reset, createDraftAndEvaluate, retryAfterCreate,
+    mapProps, update, updateCargoGroups, errorFor, enterReview, goNext, loadExample, reset, createDraftAndEvaluate, retryAfterCreate,
     reloadPersisted, updateFromChat, setStep, setMaxVisited, setIssues, setOptionsAttempt, setSelectedCandidateId };
 }
 

@@ -265,3 +265,5 @@
 .embedded .cardBody { min-height: 17rem; }
 .embedded .footer { min-height: 5rem; }
 @container intake (max-width: 680px) { .embedded .stepCopy { display: block; } .embedded .stepCopy small { display: none; } .embedded .stepCopy strong { font-size: 0.58rem; white-space: normal; } .embedded .stepButton { flex-direction: column; } }
+
+.cargoGroup{border:1px solid var(--cm-border,#d8e4ed);border-radius:12px;padding:12px;margin:12px 0;min-width:0}.cargoGroup legend{font-size:14px;font-weight:600;padding:0 6px}.cargoGroupHeading{display:flex;justify-content:flex-end;margin-bottom:8px}

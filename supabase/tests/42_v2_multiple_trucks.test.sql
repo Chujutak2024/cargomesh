@@ -71,6 +71,17 @@ create function pg_temp.oversized_input() returns jsonb language sql as $$select
 insert into refs values('route-limit-request',public.create_v2_freight_request('c2300000-0000-4000-8000-000000000001','c2320000-0000-4000-8000-000000000001',gen_random_uuid(),private.hash_v2_freight_payload(pg_temp.oversized_input()),pg_temp.oversized_input()));
 select public.command_v2_freight_request('c2300000-0000-4000-8000-000000000001','c2320000-0000-4000-8000-000000000001',gen_random_uuid(),pg_temp.id('route-limit-request'),1,'SUBMIT',null);
 select pg_temp.save('route-limit','routes.create',jsonb_build_object('schemaVersion','2.0','corridorIds',jsonb_build_array(pg_temp.id('corridor')),'policyId',pg_temp.id('policy')),pg_temp.ctx(pg_temp.id('route-limit-request')));
-select is((select value->>'status' from refs where name='route-limit'),'ineligible','KNOWN LIMITATION: current route validator compares total twelve tonnes to per-vehicle ten-tonne payload');
-select ok((select value#>'{data,reasons}' from refs where name='route-limit') ? 'ROUTE_PAYLOAD_LIMIT_EXCEEDED','known multi-truck routing limitation remains explicit; do not label this seed operational');
+select is((select value->>'status' from refs where name='route-limit'),'eligible','divisible shipment route is feasible when each whole package respects the corridor limit');
+select ok(not ((select value#>'{data,reasons}' from refs where name='route-limit') ? 'ROUTE_PAYLOAD_LIMIT_EXCEEDED'),'route does not confuse aggregate request mass with vehicle payload');
+reset role;
+update public.route_resource_limits set data=jsonb_set(data,'{manufacturerPayloadLimitKg}','10000') where id in(pg_temp.id('limits'),pg_temp.id('limits-2'));
+set local role authenticated;
+select pg_temp.save('twelve-tonne-plan','plans.create',jsonb_set(pg_temp.plan_input(jsonb_build_array(pg_temp.resource('asset','calendar',1),pg_temp.resource('asset-2','calendar-2',1))),'{routeId}',to_jsonb(pg_temp.id('route-limit')::text)),pg_temp.ctx(pg_temp.id('route-limit-request')));
+select is((select value->>'status' from refs where name='twelve-tonne-plan'),'eligible','twelve tonnes allocated as two whole six-tonne packages respects each vehicle/corridor limit');
+create function pg_temp.indivisible_input() returns jsonb language sql as $$select jsonb_set(jsonb_set(pg_temp.oversized_input(),'{cargoSpecification,units,0,quantity}','1'),'{cargoSpecification,units,0,weightPerUnitKg}','12000')||jsonb_build_object('cargoSpecification',pg_temp.oversized_input()->'cargoSpecification'||jsonb_build_object('totalVolumeM3',2,'units',jsonb_build_array(pg_temp.oversized_input()#>'{cargoSpecification,units,0}'||jsonb_build_object('quantity',1,'weightPerUnitKg',12000))));$$;
+insert into refs values('one-piece-request',public.create_v2_freight_request('c2300000-0000-4000-8000-000000000001','c2320000-0000-4000-8000-000000000001',gen_random_uuid(),private.hash_v2_freight_payload(pg_temp.indivisible_input()),pg_temp.indivisible_input()));
+select public.command_v2_freight_request('c2300000-0000-4000-8000-000000000001','c2320000-0000-4000-8000-000000000001',gen_random_uuid(),pg_temp.id('one-piece-request'),1,'SUBMIT',null);
+select pg_temp.save('one-piece-route','routes.create',jsonb_build_object('schemaVersion','2.0','corridorIds',jsonb_build_array(pg_temp.id('corridor')),'policyId',pg_temp.id('policy')),pg_temp.ctx(pg_temp.id('one-piece-request')));
+select is((select value->>'status' from refs where name='one-piece-route'),'ineligible','one indivisible twelve-tonne package cannot use a ten-tonne-payload corridor');
+
 select * from finish();rollback;

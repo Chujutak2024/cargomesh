@@ -1,10 +1,12 @@
 import type {QuotePolicyValue} from '@/shared/schemas/v2/quote-automation';
 import type {RoadCandidateV2} from '@/shared/schemas/v2/serviceability';
 /** Money is rounded once per quoted component, never invented from a request alone. */
-export function calculateCarrierTariff(policy:QuotePolicyValue,distanceKm:number|null){
+export function calculateCarrierTariff(policy:QuotePolicyValue,distanceKm:number|null,resourceCount=1){
+ if(!Number.isInteger(resourceCount)||resourceCount<1||resourceCount>(policy.maxResources??1)||(resourceCount>1&&!policy.resourcePricing))return null;
+ const multiplier=policy.resourcePricing==='PER_RESOURCE'?resourceCount:1;
  if(policy.basis==='PER_KM'&&(distanceKm===null||!Number.isFinite(distanceKm)||distanceKm<=0))return null;
- const transport=Math.max(Math.round(policy.minimumAmount*100),Math.round((policy.baseAmount+(policy.basis==='PER_KM'?distanceKm!*policy.ratePerKm:0))*100));
- const extras=[policy.fuelAmount,policy.tollAmount,policy.handlingAmount,policy.taxAmount].map(v=>Math.round(v*100));
+ const transport=multiplier*Math.max(Math.round(policy.minimumAmount*100),Math.round((policy.baseAmount+(policy.basis==='PER_KM'?distanceKm!*policy.ratePerKm:0))*100));
+ const extras=[policy.fuelAmount,policy.tollAmount,policy.handlingAmount,policy.taxAmount].map(v=>multiplier*Math.round(v*100));
  const total=transport+extras.reduce((a,b)=>a+b,0);
  return Number.isSafeInteger(total)&&total>0&&total<=1e12?{transportCents:transport,totalCents:total}:null;
 }
