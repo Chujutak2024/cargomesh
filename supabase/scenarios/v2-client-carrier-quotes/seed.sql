@@ -215,7 +215,7 @@ select $scenario$
         "categoryId": "c0000000-0000-0000-0000-000000000001",
         "temperatureRange": null,
         "certifications": [],
-        "evidence": "SIMULATED: enclosed body protects dry demo cargo",
+        "evidence": "SIMULATED: dry enclosed box",
         "verifiedAt": "2026-10-20T12:00:00Z",
         "validUntil": "2026-10-26T00:00:00Z",
         "active": true

@@ -15,5 +15,11 @@ for(const step of scenario.steps){
  if(!schema)throw Error('UNKNOWN_SCENARIO_COMMAND');schema.parse(resolve(step.value));
  const h=createHash('sha256').update(step.key).digest('hex');refs[step.key]=`${h.slice(0,8)}-${h.slice(8,12)}-5${h.slice(13,16)}-a${h.slice(17,20)}-${h.slice(20,32)}`;
 }
+// The native catalog requires an asset capability to reproduce its approved definition evidence.
+const definition=scenario.steps.find(step=>step.key==='definition')?.value as Record<string,unknown>;
+const capability=scenario.steps.find(step=>step.key==='capability')?.value as Record<string,unknown>;
+for(const key of ['categoryId','temperatureRange','certifications','evidence','verifiedAt','validUntil']){
+ if(JSON.stringify(definition[key])!==JSON.stringify(capability[key]))throw Error('CAPABILITY_DEFINITION_MISMATCH:'+key);
+}
 QuotePolicyValueSchema.parse(resolve(scenario.policy));
 console.log(`Scenario valid: ${scenario.steps.length} native commands + explicit simulated tariff. No database writes.`);
