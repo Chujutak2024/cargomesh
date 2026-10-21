@@ -1,6 +1,8 @@
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import {QuoteSearchInputSchema,QuoteSearchResponseSchema,QuoteOutcomeSchema} from '@/shared/schemas/v2/quote-automation';
+import {planWholePackages} from '../domain/multi-resource-plan';
+import {requestRoadInput} from '../../road-serviceability/application/evaluate-v2-road';
 import {quoteCandidate} from '../domain/quote-automation';
 import {V2DraftError,getV2Draft,type V2Actor} from '../../freight-requests/application/draft-service';
 import {evaluateV2RoadByRequestId} from '../../road-serviceability/application/evaluate-v2-road';
@@ -18,10 +20,13 @@ export async function searchRequestQuotes(actor:V2Actor,id:string,raw:unknown,ra
  const repository=await v2DraftRepository(),request=(await getV2Draft(id,actor,repository)).data;
  if(request.status!=='PENDING')throw new V2DraftError('REQUEST_NOT_SUBMITTED','Confirm the request before requesting quotes.',409);
  if(deadline>Date.parse(request.pickupWindow.startsAt))throw new V2DraftError('INVALID_RESPONSE_DEADLINE','The response deadline must precede pickup.',400);
- const evaluation=(await evaluateV2RoadByRequestId(id,input.expectedDraftVersion,actor,repository,{listRoadServices:()=>loadRoadServices(db)})).data;
+ const services=await loadRoadServices(db);
+ const evaluation=(await evaluateV2RoadByRequestId(id,input.expectedDraftVersion,actor,repository,{listRoadServices:async()=>services})).data;
  const outcomes:z.infer<typeof QuoteOutcomeSchema>[]=[];
  // Every eligible service is evaluated, including those outside the first three results.
- for(const candidate of evaluation.candidates){const selected=quoteCandidate(candidate);if(!selected){
+ for(const candidate of evaluation.candidates){let selected:z.infer<typeof import('@/shared/schemas/v2/quote-automation').QuoteCandidateInputSchema>|null=quoteCandidate(candidate);
+  if(!selected){const service=services.find(s=>s.id===candidate.service.id);if(service){const proposal=planWholePackages(requestRoadInput(request),request.cargoSpecification.units,request.cargoSpecification.divisible,service);if(proposal.status==='FOUND'){const first=proposal.resources[0];selected={serviceId:service.id,laneId:proposal.laneId,calendarId:first.calendarId,assetId:first.assetId,poolId:null,...(proposal.resources.length>1?{resources:proposal.resources}:{})};}else if(proposal.status==='REQUIRES_REVIEW'){outcomes.push({serviceId:service.id,planId:null,opportunityId:null,offerId:null,status:'REQUIRES_REVIEW',reason:proposal.reason,policyVersion:null});continue;}}}
+  if(!selected){
   if(candidate.status==='eligible')outcomes.push({serviceId:candidate.service.id,planId:null,opportunityId:null,offerId:null,status:'REQUIRES_REVIEW',reason:'AUTOMATIC_ADAPTER_UNSUPPORTED',policyVersion:null});
   continue;
  }
@@ -36,6 +41,6 @@ export async function searchRequestQuotes(actor:V2Actor,id:string,raw:unknown,ra
   rankingId=ranked.id;rankingNotice=ranked.notice;
  }
  return QuoteSearchResponseSchema.parse({schemaVersion:'2.0',data:{requestId:id,requestVersion:input.expectedDraftVersion,outcomes,
-  evaluatedServices:evaluation.summaryCounts.totalEvaluated,eligibleServices:evaluation.summaryCounts.eligibleCount,
-  unresolvedServices:evaluation.summaryCounts.unknownCount,rankingId,rankingNotice,presentationLimit:3}});
+  evaluatedServices:evaluation.summaryCounts.totalEvaluated,eligibleServices:new Set([...evaluation.candidates.filter(c=>c.status==='eligible').map(c=>c.service.id),...outcomes.filter(o=>o.planId!==null).map(o=>o.serviceId)]).size,
+  unresolvedServices:evaluation.candidates.filter(c=>c.status==='unknown'&&!outcomes.some(o=>o.serviceId===c.service.id)).length,rankingId,rankingNotice,presentationLimit:3}});
 }

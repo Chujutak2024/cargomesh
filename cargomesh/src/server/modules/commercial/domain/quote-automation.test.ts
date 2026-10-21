@@ -28,3 +28,5 @@ test('past prices are labelled as historical and cannot authorize a booking',()=
 test('search requires an explicit version, deadline and consent',()=>{
  assert.equal(QuoteSearchInputSchema.safeParse({schemaVersion:'2.0',expectedDraftVersion:1,responseDeadline:'2030-01-01T00:00:00Z'}).success,false);
 });
+
+test('multi-resource pricing needs explicit scope and applies it without hidden multiplication',()=>{const p=QuotePolicyValueSchema.parse({...policy});assert.equal(calculateCarrierTariff(p,100,2),null);assert.equal(calculateCarrierTariff({...p,maxResources:2,resourcePricing:'PER_PLAN'},100,2)?.totalCents,calculateCarrierTariff(p,100)?.totalCents);assert.equal(calculateCarrierTariff({...p,maxResources:2,resourcePricing:'PER_RESOURCE'},100,2)?.totalCents,2*calculateCarrierTariff(p,100)!.totalCents);});

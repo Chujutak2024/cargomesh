@@ -53,3 +53,7 @@ El [contrato HAC-27](./delivery/SPRINT2_HAC27_CLASS_DB_API_CONTRACT.md) y su [di
 ## Local V2 database bootstrap
 
 See [Clean V2 bootstrap and QA profiles](./delivery/HAC29_CLEAN_BOOTSTRAP.md) for the isolated migration chain, provenance, scenario commands and read-only hosted preflight.
+
+## Carga y operación: incremento Plan1
+
+[Grupos de carga, reparto multicamión y alcance tarifario explícito](./contracts/PLAN1_CARGO_AND_MULTI_RESOURCE.md). Incluye contrato, límites, compatibilidad y migraciones pendientes de rollout; su implementación local no implica activación alojada.

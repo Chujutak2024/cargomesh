@@ -59,7 +59,7 @@ test("saved single-unit draft recovers into intake and revisions preserve unexpo
   assert.equal(payload.cargoSpecification.totalWeightKg, 12 * ROAD_REQUEST_FIXTURE.cargoSpecification.units[0].weightPerUnitKg);
   assert.deepEqual(payload.acceptedModes, ROAD_REQUEST_FIXTURE.acceptedModes);
   assert.equal(payload.contacts.recipient.name, ROAD_REQUEST_FIXTURE.contacts.recipient.name);
-  assert.equal(requestToPrototypeDraft({ ...ROAD_REQUEST_FIXTURE, cargoSpecification: { ...ROAD_REQUEST_FIXTURE.cargoSpecification, units: [ROAD_REQUEST_FIXTURE.cargoSpecification.units[0], ROAD_REQUEST_FIXTURE.cargoSpecification.units[0]] } }), null);
+  assert.equal(requestToPrototypeDraft({ ...ROAD_REQUEST_FIXTURE, cargoSpecification: { ...ROAD_REQUEST_FIXTURE.cargoSpecification, units: [ROAD_REQUEST_FIXTURE.cargoSpecification.units[0], ROAD_REQUEST_FIXTURE.cargoSpecification.units[0]] } })?.additionalUnits?.length, 1);
 });
 
 test("form unit inputs derive totals without requiring duplicate entry", () => {

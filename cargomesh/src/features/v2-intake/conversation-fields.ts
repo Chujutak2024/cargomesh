@@ -1,7 +1,7 @@
 import type { IntakeOptionsData } from "./contracts";
 import type { V2IntakePrototypeDraft } from "./prototype-model";
 
-export type ConversationField = keyof V2IntakePrototypeDraft;
+export type ConversationField = Exclude<keyof V2IntakePrototypeDraft,'primaryGroupId'|'primaryOriginalIndex'|'additionalUnits'>;
 const ENGLISH_EQUIPMENT_LABELS: Record<string, string> = {
   BOX_TRUCK: "Box truck", REFRIGERATED_TRUCK: "Refrigerated truck", SECURE_BOX_TRUCK: "Secure box truck",
   HAZMAT_TRUCK: "Hazmat truck", FLATBED: "Flatbed truck", DUMP_TRUCK: "Dump truck",

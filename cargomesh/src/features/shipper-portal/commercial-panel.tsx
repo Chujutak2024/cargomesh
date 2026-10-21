@@ -98,6 +98,16 @@ function OfferDetails({ offer, context, catalog, t, localeTag }: { offer: Offer;
       <Fact label={t("Tránsito declarado", "Declared transit")} value={offer.data.transitDurationSeconds === null ? t("Desconocido", "Unknown") : `${(offer.data.transitDurationSeconds / 3600).toLocaleString(localeTag, { maximumFractionDigits: 1 })} h`}/>
       <Fact label={t("Capacidad reservable declarada", "Declared reservable capacity")} value={offer.data.reservableCapacity ? `${offer.data.reservableCapacity.weightKg.toLocaleString(localeTag)} kg · ${offer.data.reservableCapacity.volumeM3?.toLocaleString(localeTag) ?? "?"} m³` : t("Desconocida", "Unknown")}/>
     </dl>
+    {state.plan ? <details><summary>{t("Reparto de la carga", "Cargo allocation")}</summary>
+      {state.plan.data.legAssignments.filter(leg => offer.data.coveredAssignmentIds.includes(leg.id)).map(leg => <section key={leg.id}>
+        <h4>{t("Tramo", "Leg")} {leg.sequence} · {leg.resources.filter(row => row.resource.role === "LOAD_BEARING").length} {t("vehículos de carga", "carrying vehicles")}</h4>
+        <p>{formatDateTime(leg.window.startsAt, localeTag)} → {formatDateTime(leg.window.endsAt, localeTag)}</p>
+        {leg.resources.map((row, index) => <div key={row.resourceId}>
+          <strong>{row.resource.role === "AUXILIARY" ? t("Apoyo", "Support") : t("Vehículo", "Vehicle")} {index + 1} · {row.resource.equipment}</strong>
+          <ul>{row.allocations.map(allocation => <li key={allocation.unitIndex}>{t("Grupo", "Group")} {allocation.unitIndex + 1}: {allocation.quantity} {t("unidades", "units")} · {allocation.assignedWeightKg.toLocaleString(localeTag)} kg · {allocation.assignedVolumeM3.toLocaleString(localeTag)} m³</li>)}</ul>
+        </div>)}
+      </section>)}
+    </details> : null}
     <details><summary>{t("Desglose del precio", "Price breakdown")}</summary><dl className={styles.breakdown}>{offer.data.breakdown.map((item, index) => <div key={index}><dt>{item.kind} · {item.treatment}{item.details ? ` · ${item.details}` : ""}</dt><dd>{item.amount ? money(item.amount.amount, item.amount.currency, localeTag) : t("Desconocido", "Unknown")}</dd></div>)}</dl></details>
     <details><summary>{t("Condiciones comerciales", "Commercial terms")} ({offer.data.commercialTerms.length})</summary>{offer.data.commercialTerms.length ? <ul>{offer.data.commercialTerms.map((term, index) => <li key={index}>{term.code}: {term.description}</li>)}</ul> : <p>{t("Sin condiciones adicionales registradas", "No additional terms recorded")}</p>}</details>
     <details><summary>{t("Autoría y trazabilidad", "Authorship and traceability")}</summary><dl className={comparison.metadata}>

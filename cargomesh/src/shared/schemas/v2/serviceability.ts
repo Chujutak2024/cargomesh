@@ -38,6 +38,7 @@ const ReasonCode = z.string().min(1);
 
 export const RoadCandidateV2Schema = z.object({
   candidateId: z.string().min(1),
+  multiResourcePlan: z.object({resourceCount:z.number().int().min(2).max(8),algorithm:z.literal("WHOLE_PACKAGE_BACKTRACK_V1"),requiresNativeValidation:z.literal(true)}).strict().optional(),
   status: EligibilityStatusV2Schema,
   carrier: z.object({
     id: z.string().uuid(),
