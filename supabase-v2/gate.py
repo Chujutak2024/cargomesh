@@ -46,6 +46,8 @@ def run(label, args, data=None):
     write(EVIDENCE / (label + '.log'), 'COMMAND: ' + subprocess.list2cmdline([str(a) for a in args])
           + '\nCWD: ' + str(ROOT) + '\n' + output + f'\nEXIT_CODE: {result.returncode}\n')
     print(f'{label}: exit={result.returncode}\n{output[-2500:]}', flush=True)
+    if result.returncode != 0:
+        print('FAILURE STDOUT:\n' + safe(result.stdout)[-10000:], flush=True)
     require(result.returncode == 0, f'{label} failed; see {EVIDENCE}')
     return result.stdout
 

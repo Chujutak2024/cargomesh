@@ -26,3 +26,8 @@ Checkout inicial: `codex/unified-workspaces-demo-boundary`; otro chat cambió el
 ## Desactivar
 
 Desactivar `autoIssue` y/o `dispatch.autoConfirm` mediante una nueva versión aprobada por Carrier. Las ofertas/retenciones ya emitidas permanecen auditadas y deben cerrarse por los comandos nativos. No borrar tablas ni revertir migraciones con datos para simular una desactivación.
+
+
+## Additive compatibility correction
+
+Apply `20261021154000_dispatch_validator_service_grant.sql` after the four dispatch migrations. The invoker validation chain must preserve the existing canonical service-role intake permission. This grants only EXECUTE on the private pure validator; anonymous access and business RPC/table privileges remain unchanged. Regression: receipt-hash suite 14 and dispatch suite 44. Do not edit the four already applied migrations.

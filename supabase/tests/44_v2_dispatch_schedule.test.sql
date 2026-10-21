@@ -3,6 +3,8 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=extensions,public;
 select no_plan();
+select ok(has_function_privilege('service_role','private.validate_dispatch_preferences(jsonb)','EXECUTE'),'canonical service-role intake can validate dispatch preferences');
+select ok(not has_function_privilege('anon','private.validate_dispatch_preferences(jsonb)','EXECUTE'),'dispatch validator remains unavailable to anonymous clients');
 insert into private.v2_catalog_grants(auth_user_id,permission) values('c2310000-0000-4000-8000-000000000001','CATALOG_ADMIN') on conflict do nothing;
 update public.service_areas set valid_from='2020-01-01',valid_until='2030-01-01',verified_at='2020-01-01' where carrier_service_id='c2360000-0000-4000-8000-000000000001';
 update public.service_lanes set valid_from='2020-01-01',valid_until='2030-01-01',verified_at='2020-01-01' where carrier_service_id='c2360000-0000-4000-8000-000000000001';

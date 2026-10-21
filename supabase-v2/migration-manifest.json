@@ -635,6 +635,17 @@
       "dependencies": [
         "20261021152000"
       ]
+    },
+    {
+      "issue": "PLAN1",
+      "path": "supabase-v2/supabase/migrations/20261021154000_dispatch_validator_service_grant.sql",
+      "version": "20261021154000",
+      "sha256": "020176faf78078c970715ea8edb63e722331a0e9467a05fe66078a041fa24188",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261021153000"
+      ]
     }
   ]
 }
