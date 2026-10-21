@@ -3,7 +3,6 @@
 import {
   ArrowLeft,
   ArrowRight,
-  Bot,
   CalendarDays,
   Check,
   ChevronDown,
@@ -101,7 +100,6 @@ function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps
             </Badge> : null}
             {!embedded ? <>
               <Button variant="secondary" type="button" disabled={!options || options.facilities.length < 2 || !optionCoverage.complete} onClick={loadExample}><Sparkles size={16} aria-hidden="true" />{t("Cargar ejemplo V2", "Load V2 example")}</Button>
-              <Button variant="secondary" type="button" onClick={() => window.dispatchEvent(new CustomEvent("cargomesh:open-assistant"))}><Bot size={16} aria-hidden="true" />{t("Escribir al asistente", "Write to assistant")}</Button>
             </> : null}
           </div> : null}
         </header>

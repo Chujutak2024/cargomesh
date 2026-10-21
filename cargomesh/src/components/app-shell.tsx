@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Bot,
   Building2,
   CircleHelp,
   ClipboardList,
@@ -205,10 +204,6 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
               <input name="q" type="search" placeholder={t("Buscar operación", "Search operation")} />
               <kbd>↵</kbd>
             </form>
-            <button type="button" className={styles.assistantButton} onClick={() => window.dispatchEvent(new CustomEvent("cargomesh:open-assistant"))} aria-label={t("Abrir asistente CargoMesh", "Open CargoMesh assistant")}>
-              <Bot size={17} aria-hidden="true" />
-              <span>{t("Asistente", "Assistant")}</span>
-            </button>
             <LanguageSwitcher compact />
             <div className={styles.avatar} aria-hidden="true">{initials}</div>
             <div className={styles.userCopy}>

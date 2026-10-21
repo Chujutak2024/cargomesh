@@ -1,4 +1,4 @@
-import { ArrowRight, Bot, CalendarCheck2, CircleDotDashed, ClipboardList, MapPinned, PackagePlus } from "lucide-react";
+import { ArrowRight, CalendarCheck2, CircleDotDashed, ClipboardList, MapPinned, PackagePlus } from "lucide-react";
 import {WorkspaceLink as Link} from "@/features/workspace-mode/workspace-link";
 import type { ReactNode } from "react";
 import { operationsReader } from "@/server/services/v2-workspace/operations-server";
@@ -26,7 +26,7 @@ export default async function DashboardPage() {
     <header className={styles.hero}><div className={styles.heroCopy}>
       <h1>{t("Tus cargas, de la solicitud al seguimiento", "Your shipments, from request to tracking")}</h1>
       </div>
-      <div className={styles.heroActions}><Link className={styles.secondary} href="/freight-request/new?assistant=open"><Bot size={17}/>{t("Abrir asistente", "Open assistant")}</Link>
+      <div className={styles.heroActions}>
         <Link className={styles.primary} href="/freight-request/new"><PackagePlus size={17}/>{t("Nueva solicitud", "New request")}</Link></div></header>
 
     <ConversationEntry />

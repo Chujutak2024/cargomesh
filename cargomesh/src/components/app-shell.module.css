@@ -100,24 +100,6 @@
 .search input::placeholder { color: var(--cm-color-muted); }
 .search kbd { border: 1px solid var(--cm-color-line); border-radius: 0.35rem; padding: 0.14rem 0.3rem; color: var(--cm-color-muted); font: inherit; font-size: 0.56rem; }
 
-.assistantButton {
-  display: inline-flex;
-  min-height: 2.8rem;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  border: 1px solid var(--cm-color-line);
-  border-radius: var(--cm-radius-md);
-  padding: 0 0.72rem;
-  background: var(--cm-color-surface);
-  color: var(--cm-color-logistics);
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.assistantButton:hover { border-color: var(--cm-color-line-strong); background: var(--cm-color-selected); }
 .avatar { display: grid; width: 2.55rem; height: 2.55rem; flex: 0 0 auto; place-items: center; border-radius: 0.7rem; background: var(--cm-color-heading); color: white; font-size: 0.66rem; font-weight: 800; }
 .userCopy { display: none; min-width: 0; }
 .userCopy strong, .userCopy span { display: block; overflow: hidden; max-width: 10rem; text-overflow: ellipsis; white-space: nowrap; }
@@ -161,8 +143,6 @@
   .topbar { gap: 0.45rem; padding-inline: 0.8rem; }
   .main { padding: 1.25rem 0.9rem calc(4rem + var(--client-assistant-clearance)); }
   .contextSubtitle { display: none; }
-  .assistantButton { min-width: 2.7rem; padding: 0; }
-  .assistantButton span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
   .avatar, .userCopy { display: none; }
   .signOut :is(button, a) span, .signOutLink span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
 }
