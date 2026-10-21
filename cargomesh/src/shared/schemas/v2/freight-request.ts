@@ -1,4 +1,5 @@
 import { z } from "zod";
+import {DispatchPreferencesSchema,validateDispatchEnvelope} from "./dispatch";
 import { CargoCategoryCodeV2Schema, RoadEquipmentCodeV2Schema } from "./intake-options";
 
 const UtcInstant = z.string().datetime({ offset: true });
@@ -131,6 +132,7 @@ export const CreateFreightRequestV2InputSchema = z.object({
   destination: LocationInputV2Schema,
   pickupWindow: TimeWindowV2Schema,
   deliveryWindow: TimeWindowV2Schema,
+  planningPreferences: DispatchPreferencesSchema.optional(),
   acceptedModes: AcceptedModesV2Schema,
   serviceType: ServiceClassV2Schema.optional(),
   selectionObjective: RankingObjectiveV2Schema.optional(),
@@ -143,7 +145,7 @@ export const CreateFreightRequestV2InputSchema = z.object({
   Date.parse(request.deliveryWindow.endsAt) > Date.parse(request.pickupWindow.startsAt), {
   message: "delivery window must end after pickup starts",
   path: ["deliveryWindow"],
-});
+}).superRefine(validateDispatchEnvelope);
 
 export const FreightRequestV2ResponseSchema = z.object({
   schemaVersion: z.literal("2.0"),
@@ -157,6 +159,7 @@ export const FreightRequestV2ResponseSchema = z.object({
     destination: CanonicalLocationV2Schema,
     pickupWindow: TimeWindowV2Schema,
     deliveryWindow: TimeWindowV2Schema,
+    planningPreferences: DispatchPreferencesSchema.optional(),
     acceptedModes: AcceptedModesV2Schema,
     serviceType: ServiceClassV2Schema.optional(),
     selectionObjective: RankingObjectiveV2Schema.nullable().optional(),

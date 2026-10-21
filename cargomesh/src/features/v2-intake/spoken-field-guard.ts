@@ -5,6 +5,8 @@ export function lastSpokenQuestionField(turns: VoiceTurn[]): GuidedConversationF
   const question = [...turns].reverse().find((turn) => turn.speaker === "assistant" && !turn.provisional)?.text ?? "";
   if (!question.includes("?")) return null;
   const rules: Array<[RegExp, GuidedConversationField]> = [
+    [/\b(?:urgente|urgencia|urgent|urgency|priority|prioridad)\b/i,"urgency"],
+    [/\b(?:liviana|mediana|pesada|light|medium|heavy)\b/i,"loadSize"],
     [/\b(?:pickup|collection|sender)\b.*\bemail\b/i, "pickupContactEmail"],
     [/\b(?:recipient|receiver|delivery)\b.*\bemail\b/i, "recipientContactEmail"],
     [/\b(?:pickup|collection|sender)\b.*\bphone\b/i, "pickupContactPhoneE164"],

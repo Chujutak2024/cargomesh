@@ -68,3 +68,13 @@ describe("V2 attributable offers, ranking and separate commercial commitments", 
     assert.throws(() => validateOfferSelection([first, second], context, "2026-10-07T00:00:00Z"), { code: "OFFER_NOT_CURRENT" });
   });
 });
+
+it('arrival-time policy counts queue delay while legacy duration policy keeps its meaning',()=>{
+ const first=offer();const later={...offer(),id:'a4000000-0000-4000-8000-000000000002'};
+ const a={...first,estimatedPickupAt:'2026-10-01T08:00:00Z',estimatedDeliveryAt:'2026-10-02T08:00:00Z',transitDurationSeconds:86400};
+ const b={...later,estimatedPickupAt:'2026-10-03T08:00:00Z',estimatedDeliveryAt:'2026-10-03T09:00:00Z',transitDurationSeconds:3600};
+ const candidates=[a,b].map(offer=>({offer,eligibility:'eligible' as const,reliability:null}));
+ const policy={version:'arrival-v1',objective:'FASTEST',transitMetric:'ARRIVAL_TIME',weights:{cost:0,transit:1,reliability:0},missingDataRule:'EXCLUDE',tieBreaker:'OFFER_ID_ASC'};
+ assert.equal(rankCommercialOffers(candidates,policy,at).options[0]?.offerId,a.id);
+ assert.equal(rankCommercialOffers(candidates,{...policy,transitMetric:'TRAVEL_DURATION'},at).options[0]?.offerId,b.id);
+});

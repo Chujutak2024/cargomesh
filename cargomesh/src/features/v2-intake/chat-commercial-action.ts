@@ -59,7 +59,7 @@ export async function confirmCommercialAction(prepared:PreparedCommercialAction,
   const existing=state.bookings.find(row=>row.data.decisionId===fresh.decisionId&&row.data.offerId===offer.id&&row.data.authorizationStatus==="AUTHORIZED"&&!['CANCELLED','REJECTED'].includes(row.data.carrierConfirmationStatus));
   const booking=existing??await d.book({decisionId:fresh.decisionId!,offerId:offer.id,intent:intent(keys,`${prepared.signature}:${offer.id}`,d)});
   if(booking.kind!=="bookings"||booking.requestId!==prepared.requestId||booking.organizationId!==prepared.organizationId||booking.carrierId!==offer.carrierId)throw new Error("INVALID_RECEIPT");
-  await d.capacity(booking.id,booking.version,intent(keys,`capacity:${booking.id}:${booking.version}`,d).idempotencyKey);
+  if(booking.data.carrierConfirmationStatus!=="CONFIRMED")await d.capacity(booking.id,booking.version,intent(keys,`capacity:${booking.id}:${booking.version}`,d).idempotencyKey);
  }
  state=await d.read(prepared.requestId,prepared.organizationId);
  for(const offer of fresh.offers){const booking=state.bookings.find(row=>row.data.decisionId===fresh.decisionId&&row.data.offerId===offer.id&&row.organizationId===prepared.organizationId&&row.requestId===prepared.requestId&&row.carrierId===offer.carrierId&&row.data.authorizationStatus==="AUTHORIZED"&&!['CANCELLED','REJECTED'].includes(row.data.carrierConfirmationStatus));if(!booking)throw new Error("RECEIPT_NOT_VERIFIED");receipts.push(booking);}

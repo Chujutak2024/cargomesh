@@ -1,7 +1,9 @@
 import {z} from 'zod';
+import {CarrierDispatchPolicySchema,DispatchScheduleSchema} from './dispatch';
 const id=z.string().uuid(), money=z.number().finite().min(0).max(1e8).refine(v=>Math.abs(v*100-Math.round(v*100))<0.00001);
 export const QuotePolicyValueSchema=z.object({
  schemaVersion:z.literal('2.0'),serviceId:id,laneId:id,active:z.boolean(),autoIssue:z.boolean(),
+ dispatch:CarrierDispatchPolicySchema.optional(),
  maxResources:z.number().int().min(1).max(8).optional(),resourcePricing:z.enum(['PER_PLAN','PER_RESOURCE']).optional(),
  basis:z.enum(['PER_TRIP','PER_KM']),baseAmount:money,ratePerKm:money,minimumAmount:money,
  fuelAmount:money,tollAmount:money,handlingAmount:money,taxAmount:money,
@@ -12,10 +14,10 @@ export const QuotePolicyValueSchema=z.object({
  .refine(v=>v.baseAmount+v.minimumAmount+v.ratePerKm>0);
 export const SaveQuotePolicySchema=z.object({expectedVersion:z.number().int().nonnegative(),value:QuotePolicyValueSchema}).strict();
 export const QuoteSearchInputSchema=z.object({schemaVersion:z.literal('2.0'),expectedDraftVersion:z.number().int().positive(),responseDeadline:z.string().datetime({offset:true}),consent:z.literal('REQUEST_QUOTES')}).strict();
-export const QuoteCandidateInputSchema=z.object({serviceId:id,laneId:id,calendarId:id,assetId:id.nullable(),poolId:id.nullable(),resources:z.array(z.object({calendarId:id,assetId:id,poolId:z.null(),allocations:z.array(z.object({unitIndex:z.number().int().nonnegative(),quantity:z.number().int().positive()}).strict()).min(1)}).strict()).min(2).max(8).optional()}).strict()
+export const QuoteCandidateInputSchema=z.object({serviceId:id,laneId:id,calendarId:id,assetId:id.nullable(),poolId:id.nullable(),schedule:DispatchScheduleSchema.optional(),resources:z.array(z.object({calendarId:id,assetId:id,poolId:z.null(),allocations:z.array(z.object({unitIndex:z.number().int().nonnegative(),quantity:z.number().int().positive()}).strict()).min(1)}).strict()).min(2).max(8).optional()}).strict()
  .refine(v=>(v.assetId===null)!==(v.poolId===null));
 export const QuoteOutcomeSchema=z.object({serviceId:id,planId:id.nullable(),opportunityId:id.nullable(),offerId:id.nullable(),
- status:z.enum(['OFFERED','AWAITING_CARRIER','REQUIRES_REVIEW']),reason:z.string(),policyVersion:z.number().int().nullable()}).strict();
+ status:z.enum(['OFFERED','AWAITING_CARRIER','REQUIRES_REVIEW']),reason:z.string(),schedule:DispatchScheduleSchema.optional(),policyVersion:z.number().int().nullable()}).strict();
 export const QuoteSearchResponseSchema=z.object({schemaVersion:z.literal('2.0'),data:z.object({requestId:id,requestVersion:z.number().int().positive(),
  outcomes:z.array(QuoteOutcomeSchema),evaluatedServices:z.number().int().nonnegative(),eligibleServices:z.number().int().nonnegative(),
  unresolvedServices:z.number().int().nonnegative(),rankingId:id.nullable(),rankingNotice:z.string().nullable(),presentationLimit:z.literal(3)})}).strict();

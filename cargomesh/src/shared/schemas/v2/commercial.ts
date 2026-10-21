@@ -63,6 +63,7 @@ export const CarrierOfferV2Schema = z.object({
 export const ScoringPolicyV2Schema = z.object({
   version: z.string().trim().min(1).max(100),
   objective: z.enum(["LOWEST_COST", "FASTEST", "WEIGHTED"]),
+  transitMetric: z.enum(["TRAVEL_DURATION", "ARRIVAL_TIME"]).optional(),
   weights: z.object({ cost: z.number().min(0).max(1), transit: z.number().min(0).max(1),
     reliability: z.number().min(0).max(1) }).strict(),
   missingDataRule: z.literal("EXCLUDE"), tieBreaker: z.literal("OFFER_ID_ASC"),

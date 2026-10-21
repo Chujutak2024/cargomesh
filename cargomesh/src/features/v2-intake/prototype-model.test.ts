@@ -1,3 +1,4 @@
+import type {FreightRequestV2Data} from "./contracts";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -280,4 +281,12 @@ test("intake and facility layouts respond to their available container, includin
   assert.match(picker, /container:\s*facility\s*\/\s*inline-size/);
   assert.match(picker, /@container facility \(max-width: 330px\)/);
   assert.match(picker, /overflow-wrap:\s*anywhere/);
+});
+
+test('flexible accepted days survive create, reload and revision without filling the gaps',()=>{
+ const options=getIntakeOptionsFixture().data;const draft={...buildPrototypeExample(options),urgency:'URGENT',loadSize:'MEDIUM',planningTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,pickupAlternatives:[{startsAt:'2026-10-06T08:00',endsAt:'2026-10-06T18:00'}],deliveryAlternatives:[{startsAt:'2026-10-08T08:00',endsAt:'2026-10-08T20:00'}]};
+ const input=mapDraftToCreateFreightRequestV2Input(draft,options);assert.equal(input.selectionObjective,'FASTEST');assert.equal(input.planningPreferences?.pickupWindows.length,2);assert.equal(input.pickupWindow.endsAt,input.planningPreferences!.pickupWindows[1].endsAt);
+ const saved={...input,id:'219dfc89-e745-4817-9a58-de64847484c4',referenceCode:'REQ-TEST',organizationId:'e5000001-0000-4000-8000-000000000001',status:'DRAFT',draftVersion:1,origin:options.facilities.find(f=>f.facilityId===draft.originFacilityId),destination:options.facilities.find(f=>f.facilityId===draft.destinationFacilityId),requiredEquipment:input.requiredEquipment??null,budget:null,createdAt:'2026-10-01T00:00:00Z',updatedAt:'2026-10-01T00:00:00Z'} as unknown as FreightRequestV2Data;
+ saved.origin={...input.origin,facilityId:draft.originFacilityId,label:'Origin',countryCode:'PE',city:'Lima',region:null,lat:null,lng:null};saved.destination={...saved.origin,facilityId:draft.destinationFacilityId,city:'Arequipa'};
+ const restored=requestToPrototypeDraft(saved);assert.ok(restored);assert.equal(restored.pickupAlternatives?.length,1);const revision=mapDraftToRevisionInput({...restored,cargoDescription:'Updated description'},options,saved);assert.deepEqual(revision.planningPreferences,input.planningPreferences);
 });

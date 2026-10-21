@@ -1,7 +1,7 @@
 import type { IntakeOptionsData } from "./contracts";
 import type { V2IntakePrototypeDraft } from "./prototype-model";
 
-export type ConversationField = Exclude<keyof V2IntakePrototypeDraft,'primaryGroupId'|'primaryOriginalIndex'|'additionalUnits'>;
+export type ConversationField = Exclude<keyof V2IntakePrototypeDraft,'primaryGroupId'|'primaryOriginalIndex'|'additionalUnits'|'pickupAlternatives'|'deliveryAlternatives'|'planningTimeZone'>;
 const ENGLISH_EQUIPMENT_LABELS: Record<string, string> = {
   BOX_TRUCK: "Box truck", REFRIGERATED_TRUCK: "Refrigerated truck", SECURE_BOX_TRUCK: "Secure box truck",
   HAZMAT_TRUCK: "Hazmat truck", FLATBED: "Flatbed truck", DUMP_TRUCK: "Dump truck",
@@ -12,6 +12,7 @@ const ENGLISH_CATEGORY_LABELS: Record<string, string> = {
   MACHINERY: "Machinery", CONSTRUCTION: "Construction materials", AGRICULTURAL: "Agricultural goods", LIQUID: "Liquids",
 };
 export const CONVERSATION_FIELDS = [
+  "urgency", "loadSize",
   "originFacilityId", "destinationFacilityId", "categoryCode", "packaging", "cargoDescription",
   "unitQuantity", "unitWeightPerUnitKg", "unitVolumePerUnitM3", "unitLengthCm", "unitWidthCm",
   "unitHeightCm", "pickupWindowStartsAt", "pickupWindowEndsAt", "deliveryWindowStartsAt",
@@ -32,6 +33,7 @@ export function resolveConversationSuggestions(
 }
 
 export const FIELD_QUESTION: Record<ConversationField, string> = {
+  urgency:"¿Es urgente o puedes programarlo con flexibilidad?",loadSize:"¿La carga es liviana, mediana o pesada? Luego precisaré peso y volumen.",
   originFacilityId: "¿Dónde se recogerá la carga?",
   destinationFacilityId: "¿Dónde se entregará la carga?",
   categoryCode: "¿Qué tipo de carga transportarás?",
@@ -55,6 +57,7 @@ export const FIELD_QUESTION: Record<ConversationField, string> = {
 };
 
 const ENGLISH_QUESTION: Record<GuidedConversationField, string> = {
+  urgency:"Is this urgent or can it be scheduled flexibly?",loadSize:"Is this a light, medium or heavy shipment? We will also need its weight and volume.",
   originFacilityId: "Where should the cargo be picked up?",
   destinationFacilityId: "Where should the cargo be delivered?",
   categoryCode: "What type of cargo is it?",
@@ -84,6 +87,8 @@ export function questionForField(field: GuidedConversationField, language: "es-P
 }
 
 export function choicesForField(field: ConversationField, options: IntakeOptionsData): Array<{ value: string; label: string }> {
+  if(field==="urgency")return [{value:"URGENT",label:"Urgente / Urgent"},{value:"SCHEDULED",label:"Sin urgencia / Not urgent"}];
+  if(field==="loadSize")return [{value:"LIGHT",label:"Liviana / Light"},{value:"MEDIUM",label:"Mediana / Medium"},{value:"HEAVY",label:"Pesada / Heavy"}];
   if (field === "originFacilityId" || field === "destinationFacilityId") {
     return options.facilities.map((facility) => ({ value: facility.facilityId, label: facility.label }));
   }
@@ -97,6 +102,8 @@ export function choicesForField(field: ConversationField, options: IntakeOptions
 export function matchingConversationChoices(field: ConversationField, input: string, options: IntakeOptionsData): Array<{ value: string; label: string }> {
   const search = input.trim().toLowerCase();
   if (!search) return [];
+  if(field==="urgency")return [{value:"URGENT",label:"Urgente / Urgent"},{value:"SCHEDULED",label:"Sin urgencia / Not urgent"}];
+  if(field==="loadSize")return [{value:"LIGHT",label:"Liviana / Light"},{value:"MEDIUM",label:"Mediana / Medium"},{value:"HEAVY",label:"Pesada / Heavy"}];
   if (field === "originFacilityId" || field === "destinationFacilityId") {
     return options.facilities.filter((facility) => [facility.facilityId, facility.code, facility.label, facility.city]
       .some((value) => value?.toLowerCase() === search || value?.toLowerCase().includes(search)))
@@ -116,6 +123,8 @@ export function matchingConversationChoices(field: ConversationField, input: str
 export function parseConversationField(field: ConversationField, input: string, options: IntakeOptionsData): string | null {
   const value = input.trim();
   if (!value) return null;
+  if(field==='urgency')return /^(?:sin urgencia|no urgente|no es urgente|programad[oa]|flexible|scheduled|not urgent|SCHEDULED)$/i.test(value)?'SCHEDULED':/^(?:urgente|urgent|URGENT)$/i.test(value)?'URGENT':null;
+  if(field==='loadSize')return /^(?:livian[oa]|liger[oa]|light)$/i.test(value)?'LIGHT':/^(?:median[oa]|media|medium)$/i.test(value)?'MEDIUM':/^(?:pesad[oa]|heavy)$/i.test(value)?'HEAVY':null;
   const choices = choicesForField(field, options);
   if (choices.length) {
     const byNumber = choices[Number(value) - 1];

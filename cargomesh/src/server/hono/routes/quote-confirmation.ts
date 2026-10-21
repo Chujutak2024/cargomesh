@@ -30,6 +30,10 @@ quoteConfirmationRouter.post('/bookings/:id/preparations',v2AuthMiddleware,async
   if(!c.req.header('Authorization')&&!hasSessionOrigin(c.req.raw))throw new V2DraftError('FORBIDDEN_ORIGIN','Same-origin session request required.',403);
   const [{prepareAuthorizedBooking},{WorkflowServiceV2},{workflowRepositoryV2}]=await Promise.all([import('@/server/modules/commercial/application/booking-preparation'),import('@/server/modules/workflow/application/workflow-service'),import('@/server/modules/workflow/infrastructure/supabase-workflow-repository')]);
   const member=c.get('member'),id=c.req.param('id'),body=await c.req.json().catch(()=>{throw new V2DraftError('VALIDATION_ERROR','JSON required.',400);});
+  const [{BookingPreparationInputSchema,BookingPreparationResponseSchema},{quoteRpc},{z}]=await Promise.all([import('@/shared/schemas/v2/booking-preparation'),import('@/server/modules/commercial/infrastructure/supabase-quotes'),import('zod')]);
+  const input=BookingPreparationInputSchema.parse(body),key=z.string().uuid().parse(c.req.header('Idempotency-Key'));z.string().uuid().parse(id);
+  const scheduled=await quoteRpc('prepare_v2_delegated_booking',{p_organization_id:member.organizationId,p_member_id:member.memberId,p_booking_id:id,p_expected_version:input.expectedVersion,p_key:key,p_consent:input.consent});
+  if(scheduled!==null)return c.json(BookingPreparationResponseSchema.parse(scheduled));
   return c.json(await prepareAuthorizedBooking(member,id,body,c.req.header('Idempotency-Key'),new WorkflowServiceV2(await workflowRepositoryV2()),async()=>{const window=await quoteConfirmation(member,id,null,undefined);return window?.deadline??null;}));
  }catch(e){return v2Error(c,e);}
 });

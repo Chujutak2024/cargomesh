@@ -37,6 +37,7 @@ export type RankingCandidate = { offer: CarrierOfferV2; eligibility: "eligible" 
   reliability: { rate: number; sampleSize: number; periodEndsAt: string; validUntil: string } | null };
 export function rankCommercialOffers(candidates: RankingCandidate[], rawPolicy: unknown, at: string) {
   const policy = ScoringPolicyV2Schema.parse(rawPolicy);
+  const transitValue=(offer:CarrierOfferV2)=>policy.transitMetric==='ARRIVAL_TIME'?(offer.estimatedDeliveryAt===null?null:Date.parse(offer.estimatedDeliveryAt)/1000):offer.transitDurationSeconds;
   const excluded: { offerId: string; reason: string }[] = [];
   const accepted = candidates.filter((candidate) => {
     const offer = CarrierOfferV2Schema.parse(candidate.offer);
@@ -45,7 +46,7 @@ export function rankCommercialOffers(candidates: RankingCandidate[], rawPolicy: 
     if (!reason && offer.breakdown.some((cost) => ["UNKNOWN", "ESTIMATED", "EXCLUDED"].includes(cost.treatment))) {
       reason = "TOTAL_COST_NOT_COMPARABLE";
     }
-    if (!reason && policy.weights.transit > 0 && offer.transitDurationSeconds === null) reason = "TRANSIT_UNKNOWN";
+    if (!reason && policy.weights.transit > 0 && transitValue(offer) === null) reason = "TRANSIT_UNKNOWN";
     const metric = candidate.reliability;
     if (!reason && policy.weights.reliability > 0 && (!metric || !Number.isFinite(metric.rate)
       || metric.rate < 0 || metric.rate > 1 || !Number.isInteger(metric.sampleSize) || metric.sampleSize <= 0
@@ -57,14 +58,14 @@ export function rankCommercialOffers(candidates: RankingCandidate[], rawPolicy: 
   const duplicateIds = new Set(accepted.map((candidate) => candidate.offer.id));
   if (duplicateIds.size !== accepted.length) throw new CommercialPolicyError("DUPLICATE_OFFER");
   const costs = accepted.map((candidate) => Math.round(candidate.offer.price.amount * 100));
-  const transits = accepted.map((candidate) => candidate.offer.transitDurationSeconds ?? 0);
+  const transits = accepted.map((candidate) => transitValue(candidate.offer) ?? 0);
   const normalizeLower = (values: number[], index: number) => {
     const min = Math.min(...values), max = Math.max(...values);
     return max === min ? 1 : (max - values[index]) / (max - min);
   };
   const options = accepted.map((candidate, index) => {
     const dimensions = { cost: normalizeLower(costs, index),
-      transit: candidate.offer.transitDurationSeconds === null ? null : normalizeLower(transits, index),
+      transit: transitValue(candidate.offer) === null ? null : normalizeLower(transits, index),
       reliability: candidate.reliability?.rate ?? null };
     const score = dimensions.cost * policy.weights.cost + (dimensions.transit ?? 0) * policy.weights.transit
       + (dimensions.reliability ?? 0) * policy.weights.reliability;
