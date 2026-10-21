@@ -81,10 +81,17 @@ class BrowserOutput:
     def __init__(self, socket: ServerConnection):
         self.socket = socket
         self.lock = asyncio.Lock()
+        self.response_idle = asyncio.Event()
+        self.response_idle.set()
 
     async def __call__(self, event: dict[str, Any]) -> None:
         kind = event.get("type")
-        if kind == "bidi_audio_delta":
+        if kind == "bidi_response_start":
+            self.response_idle.clear()
+            payload = {"type": "response_start"}
+        elif kind == "bidi_response_stop":
+            payload = {"type": "response_end"}
+        elif kind == "bidi_audio_delta":
             payload = {
                 "type": "audio",
                 "audio": event["audio"],
@@ -106,6 +113,8 @@ class BrowserOutput:
             return
         async with self.lock:
             await self.socket.send(json.dumps(payload))
+            if kind == "bidi_response_stop":
+                self.response_idle.set()
 
 
 async def handle(socket: ServerConnection, secret: str, profile: str | None) -> None:
@@ -133,15 +142,19 @@ async def handle(socket: ServerConnection, secret: str, profile: str | None) -> 
             model=BedrockNovaSonicModel(model_id=MODEL_ID, boto_session=session, voice=VOICE),
             system_prompt=voice_prompt(claims),
         )
+        output = BrowserOutput(socket)
+        running = asyncio.create_task(agent.run(inputs=[BrowserInput(socket, "Brief me on this opportunity and ask if I want to prepare an offer." if claims.get("role") == "carrier" else "Tell me what offers arrived, which ranked option you recommend, and why." if claims.get("role") == "shipper_offers" else None)], outputs=[output]))
         try:
-            await asyncio.wait_for(
-                agent.run(inputs=[BrowserInput(socket, "Brief me on this opportunity and ask if I want to prepare an offer." if claims.get("role") == "carrier" else "Tell me what offers arrived, which ranked option you recommend, and why." if claims.get("role") == "shipper_offers" else None)], outputs=[BrowserOutput(socket)]),
-                timeout=SESSION_SECONDS,
-            )
+            await asyncio.wait_for(asyncio.shield(running), timeout=SESSION_SECONDS)
         except asyncio.TimeoutError:
-            agent.cancel()
             if socket.state.name == "OPEN":
                 await socket.send(json.dumps({"type": "session_limit"}))
+                # The normal bound is soft for an in-flight response, never unbounded.
+                try:
+                    await asyncio.wait_for(output.response_idle.wait(), timeout=45)
+                except asyncio.TimeoutError:
+                    await socket.send(json.dumps({"type": "response_incomplete"}))
+            agent.cancel()
         except ConnectionClosed:
             agent.cancel()
         except Exception:
@@ -149,6 +162,8 @@ async def handle(socket: ServerConnection, secret: str, profile: str | None) -> 
             if socket.state.name == "OPEN":
                 await socket.send(json.dumps({"type": "error", "message": "Voice session ended. Continue by text."}))
         finally:
+            running.cancel()
+            await asyncio.gather(running, return_exceptions=True)
             if socket.state.name == "OPEN":
                 await socket.close(code=1000)
 

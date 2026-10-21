@@ -85,3 +85,12 @@ test("a spoken Lima to Arequipa route stops before the next sentence and applies
   assert.equal(draft.cargoDescription, "boxes");
   assert.equal(draft.packaging, "BOX");
 });
+
+test("a later Spanish route correction supersedes the earlier English route",()=>{
+ const review=buildSpokenRequestReview([{speaker:'user',contentId:'nova:fix:1',text:'from Lima to Piura'},{speaker:'user',contentId:'nova:fix:2',text:'corrige de Lima a Arequipa'}],options,EMPTY_PROTOTYPE_DRAFT);
+ assert.equal(review.pickup,'Lima');assert.equal(review.destination,'Arequipa');
+});
+test("per-unit weight never becomes a contradictory shipment total in the voice review",()=>{
+ const review=buildSpokenRequestReview([{speaker:'user',contentId:'nova:weight:1',text:'10 pallets de 100 kg cada uno'}],options,EMPTY_PROTOTYPE_DRAFT);
+ assert.equal(review.weight,'');
+});

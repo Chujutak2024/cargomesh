@@ -14,8 +14,11 @@ export type SpokenRequestReview = {
 };
 
 /** Only an explicit command in the open review may authorize a draft mutation. */
-export function spokenReviewCommand(text: string): "apply" | "confirm" | null {
+export function spokenReviewCommand(text: string): "apply" | "confirm" | "review" | "continue" | null {
   const normalized = text.trim().toLowerCase().replace(/[.!?]+$/g, "").replace(/[,]+/g, " ").replace(/\s+/g, " ");
+  if (/^(?:cargomesh )?(?:revisa(?:r)? (?:el )?resumen|mu[eé]strame (?:el )?resumen|quiero revisar(?: el resumen)?|termin[eé]|finalizar|review (?:the )?(?:summary|request)|show (?:the )?summary|i am done)$/.test(normalized)) return "review";
+  if (/^(?:cargomesh )?(?:quiero corregir|seguir (?:hablando|corrigiendo)|continuar por voz|continue by voice|keep editing)$/.test(normalized)) return "continue";
+  if (/^(?:cargomesh )?(?:confirmo (?:crear|guardar) (?:el |mi )?borrador(?: corregido| actualizado)?|confirma(?:r)? y (?:crea(?:r)?|guarda(?:r)?) (?:el |mi )?borrador)$/.test(normalized)) return "confirm";
   if (/^(?:cargomesh )?apply (?:the )?(?:recognized|recognised) details(?: to (?:the |my )?draft)?$/.test(normalized)) return "apply";
   if (/^(?:cargomesh )?confirm and (?:create|save) (?:my |the )?draft(?: revision)?$/.test(normalized)) return "confirm";
   return null;
@@ -55,7 +58,7 @@ function spokenClause(value: string): string {
 /** Speech supplies provisional facts. Only catalog-matched fields can enter the draft. */
 export function buildSpokenRequestReview(turns: VoiceTurn[], options: IntakeOptionsData, draft: V2IntakePrototypeDraft): SpokenRequestReview {
   const text = spokenUserDetails(turns);
-  const route = [...text.matchAll(/\bfrom\s+([^;,.]+?)\s+(?:to|i (?:want|wanna|need) to go to)\s+([^;,.]+)/gi)].at(-1);
+  const route = [...text.matchAll(/\b(?:from|desde|de)\s+([^;,.]+?)\s+(?:to|a|hasta|i (?:want|wanna|need) to go to)\s+([^;,.]+)/gi)].at(-1);
   const pickup = spokenClause(route?.[1]?.trim() ?? "")
     || lastCapture(text, /\b(?:pickup|origin)\s+(?:in|at|is)\s+([^;,.]+)/gi)
     || lastCapture(text, /\bhere\s+in\s+([^;,.]+?)(?=\s+(?:i|we|and|but|would|want|need)\b|[;,.]|$)/gi);
@@ -64,7 +67,8 @@ export function buildSpokenRequestReview(turns: VoiceTurn[], options: IntakeOpti
   const cargo = spokenClause(lastCapture(text, /\b(?:i(?:'m| am)\s+shipping|shipping|transporting|(?:i|we)\s+(?:like|want|need|would like)\s+to\s+(?:send|ship|transport))\s+([^;,.]+)/gi))
     || lastCapture(text, /\bin\s+(?:the\s+)?boxes\s+i\s+have\s+([^;,.]+?)(?=\s+(?:and|with|i need)\b|[;,.]|$)/gi)
     || lastCapture(text, /\b(?:boxes|pallets|crates)\s+of\s+([^;,.]+)/gi);
-  const weight = lastCapture(text, /\b((?:\d[\d,.]*|one|two|three|four|five|ten|hundred|thousand|a couple of)(?:\s+(?:hundred|thousand))?\s*(?:kg|kilograms?|tons?|tonnes?))\b/gi);
+  const latestWeightTurn=[...turns].reverse().find(turn=>turn.speaker==="user"&&/\b(?:kg|kilograms?|kilogramos?|tons?|tonnes?|toneladas?)\b/i.test(turn.text))?.text??"";
+  const weight = /\b(?:cada|por unidad|per unit|each)\b/i.test(latestWeightTurn)?"":lastCapture(latestWeightTurn, /\b((?:\d[\d,.]*|one|two|three|four|five|ten|hundred|thousand|a couple of)(?:\s+(?:hundred|thousand))?\s*(?:kg|kilograms?|tons?|tonnes?))\b/gi);
   const timing = lastCapture(text, /\b((?:in|within)(?:\s+at\s+least)?\s+(?:a\s+)?(?:couple of|few|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\d+)\s+(?:days?|weeks?|months?))\b/gi)
     || lastCapture(text, /\b((?:next|this)\s+(?:week|month|monday|tuesday|wednesday|thursday|friday))\b/gi);
   const handling = [

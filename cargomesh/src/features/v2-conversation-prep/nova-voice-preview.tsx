@@ -9,14 +9,14 @@ import styles from "./nova-voice-preview.module.css";
 
 type Grant = { wsUrl: string; token: string };
 type VoiceEvent =
-  | { type: "ready" | "barge_in" }
+  | { type: "ready" | "barge_in" | "response_start" | "response_end" | "response_incomplete" }
   | { type: "audio"; audio: string; format: string; sampleRate: number; channels: number }
   | { type: "transcript"; role: "user" | "assistant"; contentId: string; text: string }
   | { type: "transcript_delta"; role: "user" | "assistant"; contentId: string; delta: string }
   | { type: "session_limit" }
   | { type: "error"; message: string };
 
-export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId, autoStart = false, voiceContext = [], language, draftContext, onTurn }: {
+export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId, autoStart = false, voiceContext = [], language, draftContext, onResponseFinished, onPlaybackStateChange, onTurn }: {
   preview?: boolean;
   carrierScope?: { carrierId: string; opportunityId: string };
   offerRequestId?: string;
@@ -24,6 +24,8 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
   voiceContext?: string[];
   language?: ConversationLanguage;
   draftContext?: VoiceDraftContext;
+  onResponseFinished?: () => void;
+  onPlaybackStateChange?: (speaking: boolean) => void;
   onTurn: (update: { role: "user" | "assistant"; contentId: string; text: string; final: boolean }) => void;
 }) {
   const { locale } = useLocale();
@@ -49,6 +51,39 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const workletRef = useRef<AudioWorkletNode | null>(null);
   const outputsRef = useRef<AudioBufferSourceNode[]>([]);
+  const [finishing,setFinishing]=useState(false);
+  const responseActiveRef=useRef(false);
+  const responseFinishedOnceRef=useRef(true);
+  const speakingRef=useRef(false);
+  const responseFinishedRef=useRef(onResponseFinished);responseFinishedRef.current=onResponseFinished;
+  const playbackCallbackRef=useRef(onPlaybackStateChange);
+  playbackCallbackRef.current=onPlaybackStateChange;
+  const drainRef=useRef<(()=>void)|null>(null);
+  const finishTimerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
+
+  function reportSpeaking(value:boolean){
+    if(speakingRef.current===value)return;
+    speakingRef.current=value;playbackCallbackRef.current?.(value);
+  }
+  function finishPlayback(){
+    if(finishTimerRef.current!==null)clearTimeout(finishTimerRef.current);
+    if(outputsRef.current.length||responseActiveRef.current)return;
+    // Older gateways have no response boundaries: allow a short inter-chunk gap.
+    finishTimerRef.current=setTimeout(()=>{
+      finishTimerRef.current=null;
+      if(outputsRef.current.length||responseActiveRef.current)return;
+      reportSpeaking(false);
+      if(!responseFinishedOnceRef.current||drainRef.current){responseFinishedOnceRef.current=true;responseFinishedRef.current?.();}
+      const drained=drainRef.current;drainRef.current=null;drained?.();
+    },180);
+  }
+  function finishSession(renew:boolean,message:string){
+    if(drainRef.current)return;
+    readyRef.current=false;pauseCapture();responseActiveRef.current=false;setFinishing(true);
+    setStatus(outputsRef.current.length?(es?"Terminando la respuesta de Nova…":"Finishing Nova's response…"):message);
+    drainRef.current=()=>{stop();setFinishing(false);if(renew)void start(true);else setStatus(message);};
+    finishPlayback();
+  }
   const nextPlayRef = useRef(0);
   const stoppedRef = useRef(true);
   const voiceContextRef = useRef(voiceContext);
@@ -60,6 +95,8 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
   voiceContextRef.current = voiceContext;
 
   function stop() {
+    if(finishTimerRef.current!==null)clearTimeout(finishTimerRef.current);
+    finishTimerRef.current=null;drainRef.current=null;responseActiveRef.current=false;reportSpeaking(false);setFinishing(false);
     stoppedRef.current = true;
     readyRef.current = false;
     pauseCapture();
@@ -78,6 +115,8 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
   }
 
   useEffect(() => () => {
+    if(finishTimerRef.current!==null)clearTimeout(finishTimerRef.current);
+    drainRef.current=null;responseActiveRef.current=false;
     stoppedRef.current = true;
     listeningRef.current = false;
     captureVersionRef.current++;
@@ -137,11 +176,13 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
     const samples = context.createBuffer(1, binary.length / 2, event.sampleRate);
     const channel = samples.getChannelData(0);
     for (let i = 0; i < channel.length; i++) channel[i] = view.getInt16(i * 2, true) / 32768;
+    if(finishTimerRef.current!==null)clearTimeout(finishTimerRef.current);
+    responseFinishedOnceRef.current=false;reportSpeaking(true);
     const output = context.createBufferSource();
     output.buffer = samples;
     output.connect(context.destination);
     outputsRef.current.push(output);
-    output.onended = () => { outputsRef.current = outputsRef.current.filter((item) => item !== output); };
+    output.onended = () => { outputsRef.current = outputsRef.current.filter((item) => item !== output); finishPlayback(); };
     const start = Math.max(context.currentTime + 0.025, nextPlayRef.current);
     output.start(start);
     nextPlayRef.current = start + samples.duration;
@@ -170,7 +211,7 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
     sourceRef.current = source;
     workletRef.current = worklet;
     worklet.port.onmessage = (message: MessageEvent<ArrayBuffer>) => {
-      if (socket.readyState === WebSocket.OPEN && !stoppedRef.current && listeningRef.current) socket.send(message.data);
+      if (socket.readyState === WebSocket.OPEN && !stoppedRef.current && listeningRef.current) socket.send(speakingRef.current ? new ArrayBuffer(message.data.byteLength) : message.data);
     };
     source.connect(worklet);
     // Some browsers do not run a worklet unless it is attached to an output.
@@ -224,6 +265,12 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
           sessionStartedAtRef.current = Date.now();
           if (listeningRef.current) void startCapture(socket).catch(() => { stop(); setStatus((es?"Micrófono no disponible. Continúa por texto.":"Microphone unavailable. Continue by text.")); });
           else setStatus((es?"Micrófono apagado. Continúa cuando quieras hablar.":"Microphone off. Resume when you want to speak."));
+        } else if(event.type==="response_start") {
+          responseActiveRef.current=true;responseFinishedOnceRef.current=false;reportSpeaking(true);
+        } else if(event.type==="response_end") {
+          responseActiveRef.current=false;finishPlayback();
+        } else if(event.type==="response_incomplete") {
+          setStatus(es?"La conexión terminó antes de completar la respuesta. Conservamos tu borrador.":"The connection ended before the response completed. Your draft is preserved.");
         } else if (event.type === "audio") playAudio(event);
         else if ((event.type === "transcript" || event.type === "transcript_delta")
           && (event.role === "user" || event.role === "assistant") && typeof event.contentId === "string") {
@@ -236,25 +283,22 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
               ? (es?"Escuchando con Nova. Revisa y confirma en pantalla cualquier acción comercial.":"Listening with Nova. Review and confirm any business action on screen.")
               : (es?"Micrófono apagado. Conservamos tu conversación y borrador. Continúa cuando quieras hablar.":"Microphone off. Your conversation and draft are intact. Resume when you want to speak."));
             onTurnRef.current({ role: event.role, contentId: `nova:${sessionId}:${event.contentId}`, text, final });
+            if(final&&event.role==="assistant"&&!responseActiveRef.current)finishPlayback();
           }
         } else if (event.type === "session_limit") {
           renewOnCloseRef.current = listeningRef.current && shouldRenewVoiceSession(sessionStartedAtRef.current, lastUserTurnAtRef.current, Date.now());
         } else if (event.type === "barge_in") {
-          outputsRef.current.forEach((output) => { try { output.stop(); } catch { /* Already ended. */ } });
-          outputsRef.current = [];
-          nextPlayRef.current = 0;
+          // Never discard already received speech on an unsolicited interruption event.
+          responseActiveRef.current=false;finishPlayback();
         } else if (event.type === "error") {
-          setStatus(event.message);
-          stop();
+          finishSession(false,event.message);
         }
       };
       socket.onerror = () => { if (socketRef.current === socket) setStatus((es?"Falló la conexión de voz. Continúa por texto.":"Voice connection failed. Continue by text.")); };
       socket.onclose = () => {
         if (!stoppedRef.current && socketRef.current === socket) {
           const renew = renewOnCloseRef.current;
-          stop();
-          if (renew) void start(true);
-          else setStatus((es?"Nova está en pausa. Conservamos tu borrador; pulsa Continuar con Nova.":"Nova paused. Your draft is intact; choose Talk with Nova to continue."));
+          finishSession(renew,es?"Nova está en pausa. Conservamos tu borrador; pulsa Continuar con Nova.":"Nova paused. Your draft is intact; choose Talk with Nova to continue.");
         }
       };
     } catch (error) {
@@ -270,7 +314,7 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
   }, [autoStart]);
 
   return <div className={styles.preview}>
-    <button type="button" className={active && listening ? styles.active : styles.start} aria-label={active ? (listening ? "Turn off Nova microphone" : "Resume Nova microphone") : "Start Nova voice"}
+    <button type="button" disabled={finishing} className={active && listening ? styles.active : styles.start} aria-label={active ? (listening ? "Turn off Nova microphone" : "Resume Nova microphone") : "Start Nova voice"}
       onClick={active ? listening ? () => pauseCapture() : () => {
         const socket = socketRef.current;
         if (socket?.readyState === WebSocket.OPEN && readyRef.current) void startCapture(socket).catch(() => { stop(); setStatus((es?"Micrófono no disponible. Continúa por texto.":"Microphone unavailable. Continue by text.")); });
@@ -279,6 +323,6 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
       {active ? (listening ? (es?"Apagar micrófono":"Stop listening") : (es?"Continuar escuchando":"Resume listening")) : (es?"Continuar con Nova":"Talk with Nova")}
     </button>
     <p role="status">{status}</p>
-    <p className={styles.limit}>{es?"Nova guía por voz. Los datos reconocidos se proponen en un borrador local; revisa cada campo y confirma antes de crear una solicitud.":"Nova guides by voice. Recognized details enter a local draft; review every field and explicitly confirm before a request is created."}</p>
+    <p className={styles.limit}>{es?"Completa y corrige los datos por voz. Di «revisa el resumen» cuando quieras confirmar. Nova termina de hablar antes de volver a escucharte.":"Nova guides by voice. Recognized details enter a local draft; review every field and explicitly confirm before a request is created."}</p>
   </div>;
 }
