@@ -590,6 +590,62 @@
         "20261021034000",
         "20261020234155"
       ]
+    },
+    {
+      "issue": "PLAN1",
+      "path": "supabase-v2/supabase/migrations/20261021150000_dispatch_preferences.sql",
+      "version": "20261021150000",
+      "sha256": "438f257abc1d421e80fccae7e177edcfbfb07df901d7530292a9a5c7855ae652",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261004032151"
+      ]
+    },
+    {
+      "issue": "PLAN1",
+      "path": "supabase-v2/supabase/migrations/20261021151000_dispatch_quote_schedules.sql",
+      "version": "20261021151000",
+      "sha256": "0c7ebb458fc144a8c6945c7f6415f4c0ae1aa85d8bd9121057bb2229c73be8d5",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261021150000",
+        "20261021035000"
+      ]
+    },
+    {
+      "issue": "PLAN1",
+      "path": "supabase-v2/supabase/migrations/20261021152000_delegated_booking_schedule.sql",
+      "version": "20261021152000",
+      "sha256": "797e0540b45188703ac54ea52988b3d08688634c6d5573850cb7c8d5fee26faa",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261021151000"
+      ]
+    },
+    {
+      "issue": "PLAN1",
+      "path": "supabase-v2/supabase/migrations/20261021153000_dispatch_arrival_ranking.sql",
+      "version": "20261021153000",
+      "sha256": "0ded2dde6e9377ec02fb388fab29bd0d7831b5f94c2b56ad093f4965486d460d",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261021152000"
+      ]
+    },
+    {
+      "issue": "PLAN1",
+      "path": "supabase-v2/supabase/migrations/20261021154000_dispatch_validator_service_grant.sql",
+      "version": "20261021154000",
+      "sha256": "020176faf78078c970715ea8edb63e722331a0e9467a05fe66078a041fa24188",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261021153000"
+      ]
     }
   ]
 }

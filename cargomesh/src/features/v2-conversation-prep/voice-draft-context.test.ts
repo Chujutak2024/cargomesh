@@ -30,3 +30,9 @@ test("renewal retains unresolved dimensions and cannot crash on an out-of-range 
  assert.equal(invalid.pendingMeasurement,null);
  assert.deepEqual(invalid.ambiguities,["MEASUREMENT_SCOPE_PENDING"]);
 });
+
+test('voice receives accepted availability without collapsing alternatives or granting execution authority',()=>{
+ const draft={...EMPTY_PROTOTYPE_DRAFT,urgency:'URGENT',loadSize:'MEDIUM',pickupWindowStartsAt:'2026-10-22T08:00',pickupWindowEndsAt:'2026-10-22T10:00',deliveryWindowStartsAt:'2026-10-23T08:00',deliveryWindowEndsAt:'2026-10-23T12:00',pickupAlternatives:[{startsAt:'2026-10-24T08:00',endsAt:'2026-10-24T10:00'}]};
+ const context=voiceDraftContext(draft,null);assert.equal(context.planningPreferences?.pickupWindows.length,2);assert.equal(context.planningPreferences?.urgency,'URGENT');assert.equal('consent' in context,false);
+ assert.equal(voiceDraftContext({...draft,pickupWindowStartsAt:''},null).planningPreferences,undefined);
+});

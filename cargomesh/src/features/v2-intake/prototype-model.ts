@@ -1,3 +1,4 @@
+import {DispatchPreferencesSchema,windowEnvelope,type DispatchPreferences} from "@/shared/schemas/v2/dispatch";
 import type {
   CreateFreightRequestV2Input,
   FreightRequestV2Data,
@@ -10,6 +11,11 @@ import {cargoGroups,groupTotals,cargoGroupInput,type DraftCargoGroup} from './ca
 export type PrototypeStep = 1 | 2 | 3 | 4;
 
 export type V2IntakePrototypeDraft = {
+  urgency?: string;
+  loadSize?: string;
+  pickupAlternatives?: Array<{startsAt:string;endsAt:string}>;
+  deliveryAlternatives?: Array<{startsAt:string;endsAt:string}>;
+  planningTimeZone?: string;
   primaryGroupId?: string;
   primaryOriginalIndex?: number;
   additionalUnits?: DraftCargoGroup[];
@@ -90,6 +96,11 @@ export function requestToPrototypeDraft(request: FreightRequestV2Data): V2Intake
   const unit = request.cargoSpecification.units[0];
   if (!request.origin.facilityId || !request.destination.facilityId || !unit) return null;
   return {
+    urgency:request.planningPreferences?.urgency??"",
+    loadSize:request.planningPreferences?.loadSize??"",
+    planningTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,
+    pickupAlternatives:request.planningPreferences?.pickupWindows.slice(1).map(w=>({startsAt:localDateTime(w.startsAt),endsAt:localDateTime(w.endsAt)}))??[],
+    deliveryAlternatives:request.planningPreferences?.deliveryWindows.slice(1).map(w=>({startsAt:localDateTime(w.startsAt),endsAt:localDateTime(w.endsAt)}))??[],
     originFacilityId: request.origin.facilityId,
     destinationFacilityId: request.destination.facilityId,
     categoryCode: request.cargoSpecification.categoryCode,
@@ -112,10 +123,10 @@ export function requestToPrototypeDraft(request: FreightRequestV2Data): V2Intake
     unitHeightCm: String(unit.dimensionsCm.height),
     unitIndivisible: unit.indivisible,
     unitStackable: unit.stackable,
-    pickupWindowStartsAt: localDateTime(request.pickupWindow.startsAt),
-    pickupWindowEndsAt: localDateTime(request.pickupWindow.endsAt),
-    deliveryWindowStartsAt: localDateTime(request.deliveryWindow.startsAt),
-    deliveryWindowEndsAt: localDateTime(request.deliveryWindow.endsAt),
+    pickupWindowStartsAt: localDateTime(request.planningPreferences?.pickupWindows[0].startsAt??request.pickupWindow.startsAt),
+    pickupWindowEndsAt: localDateTime(request.planningPreferences?.pickupWindows[0].endsAt??request.pickupWindow.endsAt),
+    deliveryWindowStartsAt: localDateTime(request.planningPreferences?.deliveryWindows[0].startsAt??request.deliveryWindow.startsAt),
+    deliveryWindowEndsAt: localDateTime(request.planningPreferences?.deliveryWindows[0].endsAt??request.deliveryWindow.endsAt),
     requiredEquipment: request.requiredEquipment ?? "",
     pickupContactName: request.contacts.pickup.name,
     pickupContactPhoneE164: request.contacts.pickup.phoneE164,
@@ -144,6 +155,7 @@ export type PrototypeValidationIssue = {
 };
 
 export const EMPTY_PROTOTYPE_DRAFT: V2IntakePrototypeDraft = {
+  urgency:"",loadSize:"",pickupAlternatives:[],deliveryAlternatives:[],
   originFacilityId: "",
   destinationFacilityId: "",
   categoryCode: "",
@@ -386,6 +398,7 @@ export function validatePrototypeStep(
   }
 
   if (step === 3) {
+    try { draftDispatchPreferences(draft); } catch {issues.push({field:'pickupAlternatives',code:'invalid-range'});}
     for(const group of draft.additionalUnits??[]){
       if(!group.unitPackageType||![group.unitWeightPerUnitKg,group.unitVolumePerUnitM3,group.unitLengthCm,group.unitWidthCm,group.unitHeightCm].every(positiveNumber)||!positiveInteger(group.unitQuantity))issues.push({field:'additionalUnits',code:'positive-number'});
     }
@@ -420,7 +433,8 @@ export function validatePrototypeStep(
       issues.push({ field: "deliveryWindowEndsAt", code: "invalid-range" });
     }
     if (
-      validLocalDateTime(draft.pickupWindowEndsAt)
+      !draft.urgency && !draft.loadSize && !draft.pickupAlternatives?.length && !draft.deliveryAlternatives?.length
+      && validLocalDateTime(draft.pickupWindowEndsAt)
       && validLocalDateTime(draft.deliveryWindowStartsAt)
       && Date.parse(draft.deliveryWindowStartsAt) < Date.parse(draft.pickupWindowEndsAt)
     ) {
@@ -490,6 +504,13 @@ function locationFromFacility(facility: IntakeFacilityOption) {
   };
 }
 
+export function draftDispatchPreferences(draft:V2IntakePrototypeDraft):DispatchPreferences|undefined {
+ if(!draft.urgency&&!draft.loadSize&&!draft.pickupAlternatives?.length&&!draft.deliveryAlternatives?.length)return undefined;
+ return DispatchPreferencesSchema.parse({urgency:draft.urgency||'SCHEDULED',loadSize:draft.loadSize||null,timeZone:draft.planningTimeZone??Intl.DateTimeFormat().resolvedOptions().timeZone,
+ pickupWindows:[{startsAt:toIso(draft.pickupWindowStartsAt),endsAt:toIso(draft.pickupWindowEndsAt)},...(draft.pickupAlternatives??[]).map(w=>({startsAt:toIso(w.startsAt),endsAt:toIso(w.endsAt)}))],
+ deliveryWindows:[{startsAt:toIso(draft.deliveryWindowStartsAt),endsAt:toIso(draft.deliveryWindowEndsAt)},...(draft.deliveryAlternatives??[]).map(w=>({startsAt:toIso(w.startsAt),endsAt:toIso(w.endsAt)}))]});
+}
+
 export function mapDraftToCreateFreightRequestV2Input(
   draft: V2IntakePrototypeDraft,
   options: IntakeOptionsData,
@@ -510,18 +531,14 @@ export function mapDraftToCreateFreightRequestV2Input(
     throw new Error("REQUIREMENT_OPTION_NOT_FOUND");
   }
 
+  const planningPreferences=draftDispatchPreferences(draft);
   return {
     schemaVersion: "2.0",
+    ...(planningPreferences?{planningPreferences,selectionObjective:planningPreferences.urgency==='URGENT'?'FASTEST' as const:'LOWEST_COST' as const}:{}),
     origin: locationFromFacility(origin),
     destination: locationFromFacility(destination),
-    pickupWindow: {
-      startsAt: toIso(draft.pickupWindowStartsAt),
-      endsAt: toIso(draft.pickupWindowEndsAt),
-    },
-    deliveryWindow: {
-      startsAt: toIso(draft.deliveryWindowStartsAt),
-      endsAt: toIso(draft.deliveryWindowEndsAt),
-    },
+    pickupWindow: planningPreferences?windowEnvelope(planningPreferences.pickupWindows):{startsAt:toIso(draft.pickupWindowStartsAt),endsAt:toIso(draft.pickupWindowEndsAt)},
+    deliveryWindow: planningPreferences?windowEnvelope(planningPreferences.deliveryWindows):{startsAt:toIso(draft.deliveryWindowStartsAt),endsAt:toIso(draft.deliveryWindowEndsAt)},
     acceptedModes: ["ROAD"],
     requiredEquipment: draft.requiredEquipment,
     cargoSpecification: {
@@ -561,13 +578,17 @@ export function mapDraftToRevisionInput(
   options: IntakeOptionsData,
   request: FreightRequestV2Data,
 ): CreateFreightRequestV2Input {
-  if (!requestToPrototypeDraft(request)) throw new Error("REQUEST_NOT_EDITABLE_IN_INTAKE");
+  const restored=requestToPrototypeDraft(request);
+  if (!restored) throw new Error("REQUEST_NOT_EDITABLE_IN_INTAKE");
   const edited = mapDraftToCreateFreightRequestV2Input(draft, options);
+  const datesUnchanged=(["pickupWindowStartsAt","pickupWindowEndsAt","deliveryWindowStartsAt","deliveryWindowEndsAt","pickupAlternatives","deliveryAlternatives"] as const).every(field=>JSON.stringify(draft[field])===JSON.stringify(restored[field]));
+  // Keep original instant precision and timezone when editing unrelated cargo details.
+  if(datesUnchanged&&request.planningPreferences&&edited.planningPreferences){edited.planningPreferences={...edited.planningPreferences,timeZone:request.planningPreferences.timeZone,pickupWindows:request.planningPreferences.pickupWindows,deliveryWindows:request.planningPreferences.deliveryWindows};edited.pickupWindow=request.pickupWindow;edited.deliveryWindow=request.deliveryWindow;}
   return {
     ...edited,
     acceptedModes: request.acceptedModes,
     serviceType: request.serviceType,
-    selectionObjective: request.selectionObjective ?? undefined,
+    selectionObjective: edited.planningPreferences?edited.selectionObjective:request.selectionObjective ?? undefined,
     preferredEquipment: request.preferredEquipment,
     budget: request.budget,
     cargoSpecification: {

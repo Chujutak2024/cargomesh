@@ -43,6 +43,7 @@ export type ShipmentContactV2 = {
 };
 
 export type CreateFreightRequestV2Input = {
+  planningPreferences?: import("@/shared/schemas/v2/dispatch").DispatchPreferences;
   schemaVersion: "2.0";
   organizationId?: string;
   origin: FreightLocationV2;

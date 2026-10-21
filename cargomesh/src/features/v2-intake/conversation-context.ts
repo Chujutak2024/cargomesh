@@ -13,5 +13,5 @@ export function conversationContext(
     const value = String(draft[field] ?? "").trim();
     return value && value.length <= 100 ? [{ field: field as (typeof ConversationContextFieldSchema.options)[number], value }] : [];
   });
-  return { knownFields, lastAskedField, failedAttempts: Math.min(3, Math.max(0, failedAttempts)) };
+  return { knownFields:knownFields.slice(0,24), lastAskedField, failedAttempts: Math.min(3, Math.max(0, failedAttempts)) };
 }

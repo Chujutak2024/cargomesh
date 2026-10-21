@@ -146,7 +146,7 @@ const LegAssignment = z.object({ id: Id, serviceId: Id, carrierId: Id, sequence:
 }).strict();
 const RankingOption = z.object({ offerId: Id, offerIds: z.array(Id).min(1), planId: Id, assignments: z.array(Id).min(1),
   costCents: z.number().nonnegative(), transit: z.number().nonnegative().nullable(), reliability: z.number().min(0).max(1).nullable(),
-  metrics: z.array(Id.nullable()), policyVersion: Text, transitAggregation: z.literal("SUM_ISSUER_DURATIONS"),
+  metrics: z.array(Id.nullable()), policyVersion: Text, transitAggregation: z.enum(["SUM_ISSUER_DURATIONS","LATEST_OFFER_ARRIVAL"]),
   reliabilityAggregation: z.literal("MIN_CARRIER_ON_TIME"), position: z.number().int().positive(), score: z.number().min(0).max(1),
   explanation: z.object({ weights: z.object({ cost: z.number(), transit: z.number(), reliability: z.number() }).strict(),
     dimensions: z.object({ cost: z.number(), transit: z.number().nullable(), reliability: z.number().nullable() }).strict() }).strict(),

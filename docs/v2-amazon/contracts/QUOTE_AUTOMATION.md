@@ -45,3 +45,8 @@ Autorizar una reserva en Cliente solicita una operación PLANNED por servicio y 
 La composición es recuperable: relee hijos existentes, reutiliza referencias y cada escritura mantiene su recibo SHA-256 nativo. La unicidad de ejecución y la exclusión de capacidad resuelven carreras; una colisión solo se recupera si la relectura demuestra el mismo hijo esperado. Un fallo parcial no elimina reservas ni autoriza confirmaciones: la pantalla conserva el booking y ofrece recuperar la preparación. Retenciones vencidas o canceladas exigen revalidación, no renovación silenciosa.
 
 Carrier confirma cada retención y el booking; después asigna vehículo/conductor mediante Fleet. La UI identifica compromisos SIMULATED como simulados y admite la transición que ya valida el backend; no los etiqueta VERIFIED. La salida exige ventana actual y recursos/tripulación confirmados. Reservas, ejecución y solicitud conservan estados independientes; el seguimiento deriva el avance de los hechos operativos.
+
+
+## Extensión de agenda y prioridad
+
+[DISPATCH_DELEGATION.md](./DISPATCH_DELEGATION.md) define las preferencias opcionales de fechas, la propuesta de horario, la delegación independiente de confirmación y el ranking explícito por llegada. Mantiene atribución Carrier, autorización Cliente e idempotencia nativa.

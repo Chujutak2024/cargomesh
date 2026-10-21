@@ -62,3 +62,8 @@ test("unsubmitted drafts and invalid option indices are never selectable",()=>{
  const state=fixture();assert.throws(()=>prepareCommercialAction(state,"SELECT",1,now()),/OFFER_UNAVAILABLE/);
  state.context.request.status="DRAFT";assert.throws(()=>prepareCommercialAction(state,"SELECT",0,now()),/REQUEST_NOT_SUBMITTED/);
 });
+
+test('retrying authorization after delegated confirmation does not prepare capacity again',async()=>{
+ const state=fixture();state.decisions=[decision(state)];const confirmed=bookingFixture();confirmed.status='CONFIRMED';confirmed.data.carrierConfirmationStatus='CONFIRMED';state.bookings=[confirmed];
+ const proposal=prepareCommercialAction(state,'BOOK',0,now());let writes=0;const result=await confirmCommercialAction(proposal,true,new Map(),{now,read:async()=>state,capacity:async()=>{writes++;throw new Error('MUST_NOT_PREPARE_AGAIN');}});assert.equal(result.receipts[0].id,confirmed.id);assert.equal(writes,0);
+});

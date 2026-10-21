@@ -178,3 +178,9 @@ test("comparison questions with explicit cargo do not discard intake facts",()=>
   assert.ok(result.fields.some(f=>f.field==="unitQuantity"&&f.value==="10"));
   assert.ok(result.fields.some(f=>f.field==="originFacilityId"&&f.value==="Lima"));
 });
+
+test('urgency and commercial load size are explicit hints, never truck capacities',()=>{
+ const result=interpretDeterministically({schemaVersion:'2.0',text:'Es urgente, carga pesada.',currentField:null,language:'es'});
+ assert.deepEqual(result.fields,[{field:'urgency',value:'URGENT'},{field:'loadSize',value:'HEAVY'}]);
+ const scheduled=interpretDeterministically({schemaVersion:'2.0',text:'No es urgente.',currentField:'urgency',language:'es'});assert.equal(scheduled.fields[0]?.value,'SCHEDULED');
+});

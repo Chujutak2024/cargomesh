@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const ConversationFieldNameSchema = z.enum([
+  "urgency", "loadSize",
   "originFacilityId", "destinationFacilityId", "categoryCode", "packaging", "cargoDescription",
   "unitQuantity", "unitWeightPerUnitKg", "unitVolumePerUnitM3", "unitLengthCm", "unitWidthCm",
   "unitHeightCm", "pickupWindowStartsAt", "pickupWindowEndsAt", "deliveryWindowStartsAt",
@@ -120,6 +121,10 @@ export function interpretDeterministically(input: InterpretationRequest): Interp
   }
   if (relativeDay && /^(?:mejor|better|instead|hazlo|make it)\b/i.test(text)) return { intent: "CORRECT", fields: [], acknowledgment: "Please confirm the exact pickup and delivery dates and times. I have not changed the saved windows." };
   const fields: Interpretation["fields"] = [];
+  if(!/[?¿]|\b(?:no s[eé]|no estoy segur|maybe|not sure)\b/i.test(text)&&/\b(?:sin urgencia|no (?:es )?urgente|programad[oa]|not urgent|scheduled)\b/i.test(text))fields.push({field:'urgency',value:'SCHEDULED'});
+  else if(!/[?¿]|\b(?:no s[eé]|no estoy segur|maybe|not sure)\b/i.test(text)&&(/^(?:urgente|urgent)[.!]?$/i.test(text)||/\b(?:es|pedido|env[ií]o|carga|prioridad|shipment|request|it is)\s+(?:muy\s+)?(?:urgente|urgent)\b/i.test(text)))fields.push({field:'urgency',value:'URGENT'});
+  const load=/\b(?:carga|cargamento|shipment)\s+(livian[oa]|liger[oa]|median[oa]|pesad[oa]|light|medium|heavy)\b/i.exec(text);
+  if(load)fields.push({field:'loadSize',value:/livian|liger|light/i.test(load[1])?'LIGHT':/median|medium/i.test(load[1])?'MEDIUM':'HEAVY'});
   const route = /\b(?:from|desde|de)\s+([^,.;:\d]{1,80}?)\s+(?:to|hasta|a)\s+([^,.;:\d]{1,80}?)(?=\s+(?:el\s+pr[oó]ximo|el\s+(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)|next\s+|on\s+|this\s+)|[,.]|$)/i.exec(text);
   if (route) {
     fields.push({ field: "originFacilityId", value: route[1].trim().replace(/^(?:nuestra|nuestro|our)\s+(?:sede|facility)\s+(?:de|in|at)\s+/i, "") });

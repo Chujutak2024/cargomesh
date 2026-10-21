@@ -41,6 +41,7 @@ export function asV2RequestRecord(row: DraftRow): PersistedV2Draft {
       status: row.status, draftVersion: row.draft_version,
       origin: snapshot.origin, destination: snapshot.destination,
       pickupWindow: snapshot.pickupWindow, deliveryWindow: snapshot.deliveryWindow,
+      planningPreferences: snapshot.planningPreferences,
       acceptedModes: snapshot.acceptedModes,
       serviceType: snapshot.serviceType ?? "FTL",
       preferredEquipment: snapshot.preferredEquipment ?? null,
