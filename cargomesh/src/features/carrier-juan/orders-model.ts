@@ -55,15 +55,26 @@ export function holdResources(h:Hold,s:OrdersSnapshot){
 export function capacitySummary(b:Booking,s:OrdersSnapshot,now:number){
  const relations=orderRelationships(b,s),confirmed=relations.holds.filter(h=>h.status==='CONFIRMED'&&h.data.active);
  if(s.partial||!relations.offer)return {label:'Unknown: incomplete capacity context',confirmed:confirmed.length,ready:false};
- const assignments=relations.offer.data.coveredAssignmentIds;
- const snapshots=relations.opportunity?.data.assignmentSnapshots??[];
+ const assignments=relations.offer.data.coveredAssignmentIds,snapshots=relations.opportunity?.data.assignmentSnapshots??[];
+ const usedHolds=new Set<string>(),seenBindings=new Set<string>();
  let proven=assignments.length>0;
  for(const assignment of assignments){
   const bindings=snapshots.filter(a=>(a.legAssignmentId??a.id)===assignment);
   if(!bindings.length){proven=false;continue;}
-  for(const binding of bindings){const resource=binding.resource as Record<string,unknown>|undefined,resourceId=id(binding.resourceId),window=TimeWindowV2Schema.safeParse(binding.window??resource?.window);
-   const needed=z.object({weightKg:z.number().nonnegative(),volumeM3:z.number().nonnegative()}).safeParse(binding.capacityNeeded);
-   if(!resourceId||!window.success||!needed.success||!relations.offer.data.coveredServiceIds.includes(binding.serviceId)||!confirmed.some(h=>h.data.assignmentId===assignment&&h.data.planResourceId===resourceId&&h.data.calendarId===resource?.calendarId&&h.data.capacityCommitted.weightKg>=needed.data.weightKg&&h.data.capacityCommitted.volumeM3>=needed.data.volumeM3&&Date.parse(h.data.window.startsAt)<=Date.parse(window.data.startsAt)&&Date.parse(h.data.window.endsAt)>=Date.parse(window.data.endsAt)&&['VERIFIED','SIMULATED'].includes(h.data.evidence.provenanceStatus)&&Date.parse(h.data.evidence.verifiedAt)<=now&&h.data.evidence.validUntil!==null&&Date.parse(h.data.evidence.validUntil)>=Math.max(now,Date.parse(window.data.endsAt))&&holdResources(h,s).calendar))proven=false;
+  for(const binding of bindings){
+   const resource=binding.resource as Record<string,unknown>|undefined,resourceId=id(binding.resourceId),bindingId=id(binding.id);
+   const window=TimeWindowV2Schema.safeParse(binding.window??resource?.window);
+   const summary=z.object({role:z.enum(['LOAD_BEARING','AUXILIARY']),units:z.array(z.object({unitIndex:z.number().int().nonnegative(),quantity:z.number().int().positive(),weightKg:z.number().nonnegative(),volumeM3:z.number().nonnegative()})).max(100)}).safeParse(binding.allocationSummary);
+   // The Carrier opportunity intentionally omits opaque resource snapshots.
+   // Match its published per-binding allocation to distinct native reservations;
+   // the server still validates exact resource bindings on booking confirmation.
+   if(summary.success&&summary.data.role==='AUXILIARY'&&summary.data.units.length===0)continue;
+   const projected=!resourceId&&summary.success&&summary.data.role==='LOAD_BEARING'&&summary.data.units.length>0;
+   const needed=z.object({weightKg:z.number().nonnegative(),volumeM3:z.number().nonnegative()}).safeParse(projected?summary.data.units.reduce((t,u)=>({weightKg:t.weightKg+u.weightKg,volumeM3:t.volumeM3+u.volumeM3}),{weightKg:0,volumeM3:0}):binding.capacityNeeded);
+   if(!bindingId||seenBindings.has(bindingId)||(!resourceId&&!projected)||!window.success||!needed.success||!relations.offer.data.coveredServiceIds.includes(binding.serviceId)){proven=false;continue;}
+   seenBindings.add(bindingId);
+   const match=confirmed.find(h=>!usedHolds.has(h.id)&&h.data.assignmentId===assignment&&(!resourceId||h.data.planResourceId===resourceId)&&(!resource||h.data.calendarId===resource.calendarId)&&h.data.capacityCommitted.weightKg>=needed.data.weightKg&&h.data.capacityCommitted.volumeM3>=needed.data.volumeM3&&Date.parse(h.data.window.startsAt)<=Date.parse(window.data.startsAt)&&Date.parse(h.data.window.endsAt)>=Date.parse(window.data.endsAt)&&['VERIFIED','SIMULATED'].includes(h.data.evidence.provenanceStatus)&&Date.parse(h.data.evidence.verifiedAt)<=now&&h.data.evidence.validUntil!==null&&Date.parse(h.data.evidence.validUntil)>=Math.max(now,Date.parse(window.data.endsAt))&&holdResources(h,s).calendar&&recordData(holdResources(h,s).calendar!).serviceId===binding.serviceId);
+   if(!match)proven=false;else usedHolds.add(match.id);
   }
  }
  return {label:proven?(confirmed.some(h=>h.data.evidence.provenanceStatus==='SIMULATED')?'Simulated recorded commitments cover the quoted resource windows':'Verified recorded commitments cover the quoted resource windows'):'Full capacity unverified · '+confirmed.length+' recorded confirmed reservation(s)',confirmed:confirmed.length,ready:proven};
