@@ -9,7 +9,18 @@ export function contextualHelpReply(
   options: IntakeOptionsData,
   nextField: GuidedConversationField | null,
   question = "",
+  language: "es" | "en" = "en",
 ): string | null {
+  if (language === "es") {
+    const categoryQuestion = /categor[ií]a|tipo de carga|peligros|mercanc[ií]a|qu[eé] contiene/i.test(question);
+    if (categoryQuestion) return `Cuéntame qué producto transportas y si necesita cuidados especiales. Un pallet es el soporte, no el tipo de mercancía. Las categorías disponibles son: ${options.cargoCategories.map(item => item.labelEs).join(", ")}. No confirmaré material peligroso sin aclarar el producto.`;
+    if (/equipo|cami[oó]n/i.test(question)) return `Podemos revisar estos equipos del catálogo: ${options.equipmentOptions.map(item => item.labelEs).join(", ")}. Son tipos admitidos, no camiones con capacidad confirmada. ¿Qué producto y tamaño tiene tu carga?`;
+    const count = Number(draft.unitQuantity), weight = Number(draft.unitWeightPerUnitKg);
+    const summary = count > 0 ? `${count} unidades${weight > 0 ? `, ${Number((count * weight).toFixed(6))} kg en total` : ""}. ` : "";
+    if (draft.packaging === "PALLET" && !draft.cargoDescription) return `${summary}¿Los pallets van vacíos o llevan mercancía? Si llevan mercancía, ¿qué contienen?`;
+    const next = nextField ? questionForField(nextField, "es-PE") : "¿Revisamos el resumen antes de guardar?";
+    return `${summary}Te ayudaré paso a paso y revisaremos los datos antes de guardar. ${next}`;
+  }
   const labels = [
     ["pickup", draft.originFacilityId],
     ["delivery", draft.destinationFacilityId],

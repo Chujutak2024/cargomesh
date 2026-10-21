@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLocale } from "@/features/i18n/locale-provider";
+import type { VoiceDraftContext } from "./voice-draft-context";
+import type { ConversationLanguage } from "./conversation-language";
 import { shouldRenewVoiceSession } from "./voice-session-renewal";
 import styles from "./nova-voice-preview.module.css";
 
@@ -13,15 +16,23 @@ type VoiceEvent =
   | { type: "session_limit" }
   | { type: "error"; message: string };
 
-export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId, autoStart = false, voiceContext = [], onTurn }: {
+export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId, autoStart = false, voiceContext = [], language, draftContext, onTurn }: {
   preview?: boolean;
   carrierScope?: { carrierId: string; opportunityId: string };
   offerRequestId?: string;
   autoStart?: boolean;
   voiceContext?: string[];
+  language?: ConversationLanguage;
+  draftContext?: VoiceDraftContext;
   onTurn: (update: { role: "user" | "assistant"; contentId: string; text: string; final: boolean }) => void;
 }) {
-  const [status, setStatus] = useState("Nova voice ready.");
+  const { locale } = useLocale();
+  const sessionContextRef = useRef({ language: language ?? (locale === "es" ? "es" : "en"), draftContext });
+  sessionContextRef.current = { language: language ?? (locale === "es" ? "es" : "en"), draftContext };
+  const es=(language??locale)==="es";
+  const [status, setStatus] = useState(es?"Voz Nova lista.":"Nova voice ready.");
+  const contextFingerprint=JSON.stringify(sessionContextRef.current);
+  const grantedContextRef=useRef<string|null>(null);
   const [active, setActive] = useState(false);
   const [listening, setListening] = useState(false);
   const listeningRef = useRef(false);
@@ -76,6 +87,13 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
     void contextRef.current?.close();
   }, []);
 
+  useEffect(()=>{
+    if(active&&grantedContextRef.current!==null&&grantedContextRef.current!==contextFingerprint){
+      stop();
+      setStatus(es?"El borrador cambió. Pulsa Continuar con Nova para usar el contexto actualizado; conservamos la conversación.":"Draft changed. Continue with Nova to use the updated context; your conversation is preserved.");
+    }
+  },[contextFingerprint,active,es]);
+
   function prepareMicrophone() {
     if (!microphoneRef.current) {
       const pending = navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
@@ -100,7 +118,7 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
     void microphoneRef.current?.then((stream) => stream.getTracks().forEach((track) => track.stop())).catch(() => {});
     microphoneRef.current = null;
     renewOnCloseRef.current = false;
-    setStatus("Microphone off. Your conversation and draft are intact. Resume when you want to speak.");
+    setStatus((es?"Micrófono apagado. Conservamos tu conversación y borrador. Continúa cuando quieras hablar.":"Microphone off. Your conversation and draft are intact. Resume when you want to speak."));
   }
 
   function playAudio(event: Extract<VoiceEvent, { type: "audio" }>) {
@@ -130,7 +148,7 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
     const version = ++captureVersionRef.current;
     listeningRef.current = true;
     setListening(true);
-    setStatus("Preparing microphone…");
+    setStatus((es?"Preparando micrófono…":"Preparing microphone…"));
     const stream = await prepareMicrophone();
     if (stoppedRef.current || !listeningRef.current || version !== captureVersionRef.current) {
       stream.getTracks().forEach((track) => track.stop()); return;
@@ -156,21 +174,22 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
     const muted = context.createGain();
     muted.gain.value = 0;
     worklet.connect(muted).connect(context.destination);
-    setStatus("Listening with Nova. Review and confirm any business action on screen.");
+    setStatus((es?"Escuchando con Nova. Revisa y confirma en pantalla cualquier acción comercial.":"Listening with Nova. Review and confirm any business action on screen."));
   }
 
   async function start(renewing = false) {
     if (!stoppedRef.current) return;
     if (!navigator.mediaDevices?.getUserMedia || !window.AudioWorkletNode) {
-      setStatus("This browser cannot start Nova voice. Use the existing microphone or text.");
+      setStatus((es?"Este navegador no permite iniciar voz Nova. Continúa por texto.":"This browser cannot start Nova voice. Use the existing microphone or text."));
       return;
     }
     stoppedRef.current = false;
+    grantedContextRef.current = null;
     readyRef.current = false;
     listeningRef.current = true;
     setListening(true);
     setActive(true);
-    setStatus(renewing ? "Continuing your Nova conversation…" : "Connecting to Nova. The first connection can take a few seconds…");
+    setStatus(renewing ? (es?"Continuando tu conversación con Nova…":"Continuing your Nova conversation…") : (es?"Conectando con Nova. La primera conexión puede tardar unos segundos…":"Connecting to Nova. The first connection can take a few seconds…"));
     const sessionId = crypto.randomUUID();
     try {
       prepareMicrophone();
@@ -179,12 +198,15 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
         await new Promise((resolve) => window.setTimeout(resolve, 100));
         if (stoppedRef.current) return;
       }
+      const contextForGrant=sessionContextRef.current;
       const response = await fetch("/api/v2/conversation/voice/session", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ preview, ...carrierScope, offerRequestId, voiceContext: voiceContextRef.current }),
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ preview, ...carrierScope, offerRequestId, voiceContext: voiceContextRef.current, ...contextForGrant }),
       });
-      if (!response.ok) throw new Error(response.status === 401 ? "Sign in to try Nova voice." : "Nova voice is not configured here. Use the existing voice or text.");
+      if (!response.ok) throw new Error(response.status === 401 ? (es?"Inicia sesión para usar voz Nova.":"Sign in to try Nova voice.") : (es?"Voz Nova no está configurada aquí. Continúa por texto.":"Nova voice is not configured here. Use the existing voice or text."));
       const grant = await response.json() as Grant;
+      grantedContextRef.current=JSON.stringify(contextForGrant);
+      if(JSON.stringify(sessionContextRef.current)!==grantedContextRef.current){stop();setStatus(es?"El borrador cambió durante la conexión. Continúa para actualizar el contexto.":"Draft changed while connecting. Continue to refresh context.");return;}
       if (stoppedRef.current) return;
       const socket = new WebSocket(grant.wsUrl);
       socketRef.current = socket;
@@ -196,8 +218,8 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
         if (event.type === "ready") {
           readyRef.current = true;
           sessionStartedAtRef.current = Date.now();
-          if (listeningRef.current) void startCapture(socket).catch(() => { stop(); setStatus("Microphone unavailable. Continue by text."); });
-          else setStatus("Microphone off. Resume when you want to speak.");
+          if (listeningRef.current) void startCapture(socket).catch(() => { stop(); setStatus((es?"Micrófono no disponible. Continúa por texto.":"Microphone unavailable. Continue by text.")); });
+          else setStatus((es?"Micrófono apagado. Continúa cuando quieras hablar.":"Microphone off. Resume when you want to speak."));
         } else if (event.type === "audio") playAudio(event);
         else if ((event.type === "transcript" || event.type === "transcript_delta")
           && (event.role === "user" || event.role === "assistant") && typeof event.contentId === "string") {
@@ -205,10 +227,10 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
           const final = event.type === "transcript";
           if (typeof text === "string" && text && text.length <= 4096) {
             if (final && event.role === "user") lastUserTurnAtRef.current = Date.now();
-            if (final && event.role === "user") setStatus("Nova heard you and is preparing a reply…");
+            if (final && event.role === "user") setStatus((es?"Nova te escuchó y está preparando una respuesta…":"Nova heard you and is preparing a reply…"));
             if (final && event.role === "assistant") setStatus(listeningRef.current
-              ? "Listening with Nova. Review and confirm any business action on screen."
-              : "Microphone off. Your conversation and draft are intact. Resume when you want to speak.");
+              ? (es?"Escuchando con Nova. Revisa y confirma en pantalla cualquier acción comercial.":"Listening with Nova. Review and confirm any business action on screen.")
+              : (es?"Micrófono apagado. Conservamos tu conversación y borrador. Continúa cuando quieras hablar.":"Microphone off. Your conversation and draft are intact. Resume when you want to speak."));
             onTurnRef.current({ role: event.role, contentId: `nova:${sessionId}:${event.contentId}`, text, final });
           }
         } else if (event.type === "session_limit") {
@@ -222,18 +244,18 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
           stop();
         }
       };
-      socket.onerror = () => { if (socketRef.current === socket) setStatus("Voice connection failed. Continue by text."); };
+      socket.onerror = () => { if (socketRef.current === socket) setStatus((es?"Falló la conexión de voz. Continúa por texto.":"Voice connection failed. Continue by text.")); };
       socket.onclose = () => {
         if (!stoppedRef.current && socketRef.current === socket) {
           const renew = renewOnCloseRef.current;
           stop();
           if (renew) void start(true);
-          else setStatus("Nova paused. Your draft is intact; choose Talk with Nova to continue.");
+          else setStatus((es?"Nova está en pausa. Conservamos tu borrador; pulsa Continuar con Nova.":"Nova paused. Your draft is intact; choose Talk with Nova to continue."));
         }
       };
     } catch (error) {
       stop();
-      setStatus(error instanceof Error ? error.message : "Nova voice is unavailable.");
+      setStatus(error instanceof Error ? error.message : (es?"Voz Nova no disponible.":"Nova voice is unavailable."));
     }
   }
 
@@ -247,12 +269,12 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
     <button type="button" className={active && listening ? styles.active : styles.start} aria-label={active ? (listening ? "Turn off Nova microphone" : "Resume Nova microphone") : "Start Nova voice"}
       onClick={active ? listening ? () => pauseCapture() : () => {
         const socket = socketRef.current;
-        if (socket?.readyState === WebSocket.OPEN && readyRef.current) void startCapture(socket).catch(() => { stop(); setStatus("Microphone unavailable. Continue by text."); });
-        else { listeningRef.current = true; setListening(true); setStatus("Connecting to Nova…"); }
+        if (socket?.readyState === WebSocket.OPEN && readyRef.current) void startCapture(socket).catch(() => { stop(); setStatus((es?"Micrófono no disponible. Continúa por texto.":"Microphone unavailable. Continue by text.")); });
+        else { listeningRef.current = true; setListening(true); setStatus((es?"Conectando con Nova…":"Connecting to Nova…")); }
       } : () => void start()}>
-      {active ? (listening ? "Stop listening" : "Resume listening") : "Talk with Nova"}
+      {active ? (listening ? (es?"Apagar micrófono":"Stop listening") : (es?"Continuar escuchando":"Resume listening")) : (es?"Continuar con Nova":"Talk with Nova")}
     </button>
     <p role="status">{status}</p>
-    <p className={styles.limit}>Nova guides by voice. Recognized details enter a local draft; review every field and explicitly confirm before a request is created.</p>
+    <p className={styles.limit}>{es?"Nova guía por voz. Los datos reconocidos se proponen en un borrador local; revisa cada campo y confirma antes de crear una solicitud.":"Nova guides by voice. Recognized details enter a local draft; review every field and explicitly confirm before a request is created."}</p>
   </div>;
 }

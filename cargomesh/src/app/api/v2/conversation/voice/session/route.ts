@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { hasSessionOrigin } from "@/server/auth/session-origin";
 import { requireAuthenticatedMember } from "@/server/auth/member";
 import { z } from "zod";
+import { VoiceDraftContextSchema, type VoiceDraftContext } from "@/features/v2-conversation-prep/voice-draft-context";
 import { carrierVoiceOpportunity, voiceFact } from "@/server/conversation/carrier-voice-scope";
 import { readShipperOfferBriefing } from "@/server/conversation/shipper-offer-context";
 
@@ -41,8 +42,16 @@ export async function POST(request: Request) {
   let carrierScope: { carrierId: string; opportunityId: string } | null = null;
   let offerRequestId: string | null = null;
   let voiceContext: string[] = [];
+  let language: "es" | "en" = "en";
+  let draftContext: VoiceDraftContext | undefined;
   try {
     const body = await request.json() as unknown;
+    if (typeof body === "object" && body !== null) {
+      const session = z.object({ language: z.enum(["es", "en"]).optional(), draftContext: VoiceDraftContextSchema.optional() }).safeParse(body);
+      if (!session.success) return NextResponse.json({ error: "INVALID_DRAFT_CONTEXT" }, { status: 400 });
+      language = session.data.language ?? "en";
+      draftContext = session.data.draftContext;
+    }
     preview = typeof body === "object" && body !== null && "preview" in body && body.preview === true;
     if (typeof body === "object" && body !== null && "voiceContext" in body) {
       const parsed = z.array(z.string().min(1).max(320)).max(16).safeParse(body.voiceContext);
@@ -109,21 +118,28 @@ export async function POST(request: Request) {
       }
     }
   }
+  voiceScope = { ...voiceScope, language };
+  if (!carrierScope && !offerRequestId && draftContext) voiceScope = { ...voiceScope, draftContext };
   if (!carrierScope && voiceContext.length) voiceScope = { ...voiceScope,
     voiceContext: voiceContext.slice(offerRequestId ? -6 : -12).map((turn) => turn.slice(0, offerRequestId ? 160 : 180)) };
   if (!carrierScope && !offerRequestId) {
     try {
-      const facilities = voicePreview
-        ? (await import("@/features/v2-intake/fixtures/intake-options.fixture")).INTAKE_OPTIONS_FIXTURE.data.facilities
-            .map((facility) => ({ city: facility.city, countryCode: facility.countryCode }))
-        : await (await (await import("@/server/modules/intake/infrastructure/supabase-intake-options-repository"))
-            .v2IntakeOptionsRepository()).listActiveFacilities(identity.organizationId)
-            .then((rows) => rows.filter((row) => row.active && row.organization_id === identity.organizationId)
-              .map((row) => ({ city: row.city, countryCode: row.country_code })));
-      voiceScope = { ...voiceScope, facilityCatalog: {
-        complete: facilities.length <= 40,
-        locations: facilities.slice(0, 40).map((facility) => `${facility.city.slice(0, 80)}, ${facility.countryCode.slice(0, 3)}`),
-      } };
+      const catalog = voicePreview
+        ? (await import("@/features/v2-intake/fixtures/intake-options.fixture")).INTAKE_OPTIONS_FIXTURE.data
+        : await (await import("@/server/modules/intake/application/get-intake-options")).getIntakeOptions(identity,
+            await (await import("@/server/modules/intake/infrastructure/supabase-intake-options-repository")).v2IntakeOptionsRepository()).then(result => result.data);
+      voiceScope = { ...voiceScope,
+        facilityCatalog: {
+          complete: catalog.facilities.length <= 40,
+          locations: catalog.facilities.slice(0, 40).map(facility => `${facility.city.slice(0, 80)}, ${facility.countryCode.slice(0, 3)}`),
+          facilities: catalog.facilities.slice(0, 40).map(facility => ({ id: facility.id, label: facility.label.slice(0, 120), city: facility.city.slice(0, 80) })),
+        },
+        intakeCatalog: {
+          complete: catalog.cargoCategories.length <= 16 && catalog.equipmentOptions.length <= 30,
+          categories: catalog.cargoCategories.slice(0, 16).map(item => ({ code: item.code, label: item.name.slice(0, 100) })),
+          equipment: catalog.equipmentOptions.slice(0, 30).map(item => ({ code: item.code, label: item.label.slice(0, 100) })),
+        },
+      };
     } catch {
       voiceScope = { ...voiceScope, facilityCatalog: { complete: false, locations: [] } };
     }

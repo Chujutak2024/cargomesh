@@ -20,7 +20,7 @@ export const ConversationContextSchema = z.object({
   knownFields: z.array(z.object({
     field: ConversationContextFieldSchema,
     value: z.string().trim().min(1).max(100),
-  }).strict()).max(16),
+  }).strict()).max(24),
   lastAskedField: ConversationFieldNameSchema.nullable(),
   failedAttempts: z.number().int().min(0).max(3),
   previousHelpTopic: z.enum(["PURPOSE", "SELECTION", "SERVICES"]).nullable().optional(),
@@ -28,8 +28,9 @@ export const ConversationContextSchema = z.object({
 
 export const InterpretationRequestSchema = z.object({
   schemaVersion: z.literal("2.0"),
-  text: z.string().trim().min(1).max(1000),
+  text: z.string().trim().min(1).max(6000),
   currentField: ConversationFieldNameSchema.nullable(),
+  language: z.enum(["es", "en"]).optional(),
   context: ConversationContextSchema.optional(),
 }).strict();
 
@@ -84,7 +85,7 @@ export function productHelpFallback(text: string): string {
   const compare = /\b(?:escoger|elegir|comparar|choose|compare)\b/i.test(text);
   if (helpTopic(text) === "SERVICES") return "Today this chat can prepare a ROAD freight request and review preliminary ROAD eligibility with backend data; it cannot guarantee carrier coverage. SEA, RAIL and AIR are modeled for future work, not operational services here. What cargo and route do you have?";
   return compare
-    ? "I can help you prepare a freight request and review preliminary ROAD eligibility. When carrier-authored offers exist, you can compare their evidence and terms; I cannot confirm a price or booking here. What cargo and route do you have in mind?"
+    ? "I can help you prepare a freight request and review preliminary ROAD eligibility. For a saved authorized request, I can read current carrier-authored offers and their terms. Selection and booking authorization require separate review in Operations; a consultation does not confirm capacity. What cargo and route do you have in mind?"
     : "CargoMesh helps you prepare a freight request and review preliminary ROAD eligibility using authorized backend data. Tell me what you need to ship and where it should go; I will ask for missing details before you save a draft.";
 }
 
@@ -92,19 +93,20 @@ export function productHelpFallback(text: string): string {
 export function interpretDeterministically(input: InterpretationRequest): Interpretation {
   const text = input.text.trim();
   const lower = text.toLowerCase();
+  const captureFacts = /\b(?:\d+|diez|ten)\s*(?:pallets?|palets?|cajas?|boxes?|kg|kilos?)\b/i.test(text);
   if (isNoisyTranscript(text)) return { intent: "HELP", fields: [], acknowledgment: "I heard your voice, but the transcript is unclear. I can help you prepare a ROAD freight request. What would you like to ship?" };
-  if (isProductHelpQuestion(text)) return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(text) };
+  if (!captureFacts && isProductHelpQuestion(text)) return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(text) };
   if (input.context?.previousHelpTopic && isHelpFollowUp(text)) {
     return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(input.context.previousHelpTopic === "SELECTION" ? "¿Cómo me ayuda a escoger?" : input.context.previousHelpTopic === "SERVICES" ? "¿Qué servicios ofrecen?" : "¿Para qué sirve CargoMesh?") };
   }
-  if (/\b(price|quote|cost|rate|precio|cotizaci[oó]n|costo|tarifa)\b/.test(lower)) return { intent: "PRICE", fields: [] };
+  if (!captureFacts && /\b(price|quote|cost|rate|precio|cotizaci[oó]n|costo|tarifa)\b/.test(lower)) return { intent: "PRICE", fields: [] };
   if (/\b(book(?:ed|ing)?|reserv(?:e|ed|ation|ations|ar|a|as)|contratar)\b/.test(lower)) return { intent: "BOOKING", fields: [] };
   if (/^(start over|reset|new request|empezar de nuevo|reiniciar|nueva solicitud)$/i.test(text)) return { intent: "START_OVER", fields: [] };
   if (/^(help|what can you do|ayuda|qu[eé] puedes hacer)\??$/i.test(text)) return { intent: "HELP", fields: [], acknowledgment: productHelpFallback(text) };
   if (/\b(evaluate|eligib|road options|road result|check road|availability|available|evaluar|elegibilidad|opciones road|revisar road|disponibilidad|disponible)\b/.test(lower)) return { intent: "EVALUATE", fields: [] };
   if (/\b(read|show|retrieve|leer|mostrar|ver)\b.*\b(draft|request|borrador|solicitud)\b/.test(lower)) return { intent: "READ", fields: [] };
   if (/\b(create|save|submit|crear|guardar|enviar)\b.*\b(draft|request|borrador|solicitud)\b/.test(lower)) return { intent: "CREATE", fields: [] };
-  if (isOpenQuestion(text)) return { intent: "HELP", fields: [], acknowledgment: "I can explain the steps and help you prepare the request. What would you like to know?" };
+  if (!captureFacts && isOpenQuestion(text)) return { intent: "HELP", fields: [], acknowledgment: "I can explain the steps and help you prepare the request. What would you like to know?" };
   const relativeDay = /\b(?:next|this)\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b|\b(?:el\s+)?(?:pr[oó]ximo\s+)?(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\b/i.test(text);
   const correcting = /^(?:correct|change|update|corregir|cambiar|actualizar|cambia|corrige)\b/i.test(text)
     || /^(?:son|it's|it is)\s+\d+\s+(?:pallets?|palets?|cajas?|boxes?)\s*,?\s+(?:no|not)\s+\d+/i.test(text);
@@ -128,9 +130,9 @@ export function interpretDeterministically(input: InterpretationRequest): Interp
     if (origin) fields.push({ field: "originFacilityId", value: origin[1].trim() });
     if (destination) fields.push({ field: "destinationFacilityId", value: destination[1].trim() });
   }
-  const count = /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(units?|pallets?|boxes?|crates?|unidades?|palets?|cajas?)\b/i.exec(text);
+  const count = /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+(units?|pallets?|boxes?|crates?|unidades?|palets?|cajas?)\b/i.exec(text);
   if (count) {
-    const spokenNumbers: Record<string, string> = { one: "1", two: "2", three: "3", four: "4", five: "5", six: "6", seven: "7", eight: "8", nine: "9", ten: "10" };
+    const spokenNumbers: Record<string, string> = { one: "1", two: "2", three: "3", four: "4", five: "5", six: "6", seven: "7", eight: "8", nine: "9", ten: "10", uno: "1", dos: "2", tres: "3", cuatro: "4", cinco: "5", seis: "6", siete: "7", ocho: "8", nueve: "9", diez: "10" };
     fields.push({ field: "unitQuantity", value: spokenNumbers[count[1].toLowerCase()] ?? count[1] });
     const packaging = count[2].toLowerCase();
     if (packaging.startsWith("pallet")) fields.push({ field: "packaging", value: "PALLET" });

@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ schemaVersion: "2.0", error: { code: "UNAUTHORIZED", message: "An active CargoMesh session and organization membership are required." } }, { status: 401 });
   }
-  if (Number(request.headers.get("content-length") ?? 0) > 4096) {
+  if (Number(request.headers.get("content-length") ?? 0) > 32768) {
     return NextResponse.json({ schemaVersion: "2.0", error: { code: "VALIDATION_ERROR", message: "Message is too long." } }, { status: 413 });
   }
   let input;
