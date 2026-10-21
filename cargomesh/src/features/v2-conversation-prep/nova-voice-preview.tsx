@@ -31,8 +31,11 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
   sessionContextRef.current = { language: language ?? (locale === "es" ? "es" : "en"), draftContext };
   const es=(language??locale)==="es";
   const [status, setStatus] = useState(es?"Voz Nova lista.":"Nova voice ready.");
-  const contextFingerprint=JSON.stringify(sessionContextRef.current);
-  const grantedContextRef=useRef<string|null>(null);
+  // Draft/language updates are normal voice turns, not a reason to close the transport.
+  const scopeFingerprint=JSON.stringify([preview, carrierScope?.carrierId ?? null, carrierScope?.opportunityId ?? null, offerRequestId ?? null]);
+  const scopeRef=useRef(scopeFingerprint);
+  scopeRef.current=scopeFingerprint;
+  const grantedScopeRef=useRef<string|null>(null);
   const [active, setActive] = useState(false);
   const [listening, setListening] = useState(false);
   const listeningRef = useRef(false);
@@ -88,11 +91,11 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
   }, []);
 
   useEffect(()=>{
-    if(active&&grantedContextRef.current!==null&&grantedContextRef.current!==contextFingerprint){
+    if(active&&grantedScopeRef.current!==null&&grantedScopeRef.current!==scopeFingerprint){
       stop();
-      setStatus(es?"El borrador cambió. Pulsa Continuar con Nova para usar el contexto actualizado; conservamos la conversación.":"Draft changed. Continue with Nova to use the updated context; your conversation is preserved.");
+      setStatus(es?"Cambió la solicitud o el espacio autorizado. Continúa para abrir una sesión con ese acceso.":"The authorized request or workspace changed. Continue to connect with that scope.");
     }
-  },[contextFingerprint,active,es]);
+  },[scopeFingerprint,active,es]);
 
   function prepareMicrophone() {
     if (!microphoneRef.current) {
@@ -184,7 +187,7 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
       return;
     }
     stoppedRef.current = false;
-    grantedContextRef.current = null;
+    grantedScopeRef.current = null;
     readyRef.current = false;
     listeningRef.current = true;
     setListening(true);
@@ -199,14 +202,15 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
         if (stoppedRef.current) return;
       }
       const contextForGrant=sessionContextRef.current;
+      const scopeForGrant=scopeRef.current;
       const response = await fetch("/api/v2/conversation/voice/session", {
         method: "POST", credentials: "same-origin", cache: "no-store",
         headers: { "Content-Type": "application/json" }, body: JSON.stringify({ preview, ...carrierScope, offerRequestId, voiceContext: voiceContextRef.current, ...contextForGrant }),
       });
       if (!response.ok) throw new Error(response.status === 401 ? (es?"Inicia sesión para usar voz Nova.":"Sign in to try Nova voice.") : (es?"Voz Nova no está configurada aquí. Continúa por texto.":"Nova voice is not configured here. Use the existing voice or text."));
       const grant = await response.json() as Grant;
-      grantedContextRef.current=JSON.stringify(contextForGrant);
-      if(JSON.stringify(sessionContextRef.current)!==grantedContextRef.current){stop();setStatus(es?"El borrador cambió durante la conexión. Continúa para actualizar el contexto.":"Draft changed while connecting. Continue to refresh context.");return;}
+      grantedScopeRef.current=scopeForGrant;
+      if(scopeRef.current!==scopeForGrant){stop();setStatus(es?"Cambió el acceso durante la conexión. Continúa de nuevo.":"Authorization scope changed while connecting. Continue again.");return;}
       if (stoppedRef.current) return;
       const socket = new WebSocket(grant.wsUrl);
       socketRef.current = socket;
