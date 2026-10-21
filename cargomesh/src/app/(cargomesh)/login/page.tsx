@@ -1,5 +1,5 @@
 import {AssignedDemoEntry} from '@/components/assigned-demo-entry';
-import {assignedDemoEnabled} from '@/server/auth/assigned-demo';
+import {workspaceDemoEnabled,automaticWorkspaceDemoEntry} from '@/server/auth/workspace-demo';
 import {LocalClientLogin} from '@/components/local-client-login';
 import {hasLocalClientPreviewSession,localClientPreviewEnabled} from '@/server/auth/local-client-preview';
 import {PasswordLogin} from "@/components/password-login";
@@ -10,9 +10,10 @@ import styles from "./page.module.css";
 export const dynamic="force-dynamic";
 export default async function LoginPage({searchParams}:{searchParams:Promise<{returnTo?:string;connected?:string}>}){
  const query=await searchParams,returnTo=safeLoginReturnTo(query.returnTo);
- if(query.connected!=='1'&&await assignedDemoEnabled()){
-  if(returnTo==='/clients')return <AssignedDemoEntry workspace="client"/>;
-  if(returnTo==='/carriers'||returnTo==='/carriers/fleet'||returnTo==='/v2-workspace#/fleet')return <AssignedDemoEntry workspace="carrier"/>;
+ if(query.connected!=='1'&&await workspaceDemoEnabled()){
+  const automatic=await automaticWorkspaceDemoEntry();
+  if(returnTo==='/clients')return <AssignedDemoEntry workspace="client" automatic={automatic}/>;
+  if(returnTo==='/carriers'||returnTo==='/carriers/fleet'||returnTo==='/v2-workspace#/fleet')return <AssignedDemoEntry workspace="carrier" automatic={automatic}/>;
  }
  const clientPreview=returnTo==='/clients'&&query.connected!=='1'&&await localClientPreviewEnabled();
  if(clientPreview&&await hasLocalClientPreviewSession())redirect('/clients');
