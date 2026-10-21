@@ -4,8 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { workspaceHref } from "@/features/workspace-mode/paths";
 import {workspaceFetch} from "@/features/workspace-mode/workspace-fetch";
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { ArrowUp, ChevronDown, GripVertical, MessageSquareText, Mic, PanelRightClose, PanelRightOpen, Sparkles, SquarePen, X } from "lucide-react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { AnimatePresence, LayoutGroup, motion } from "motion/react";
+import { ArrowUp, ChevronDown, GripVertical, MessageSquareText, Mic, PanelRightClose, PanelRightOpen, SquarePen, X } from "lucide-react";
+import { useReducedMotionPreference } from "@/features/product-motion/use-motion-preference";
+import { ASSISTANT_TRANSITION, AssistantLiveContent, AssistantMascot, AssistantSurface, useAssistantEntrance } from "./assistant-motion";
+import { assistantWelcomeMotion } from "./chat-surface-model";
 import { useFloatingChat } from "./use-floating-chat";
 import { lockDocumentScroll } from "@/shared/browser/scroll-lock";
 import type { FreightRequestV2Data, IntakeOptionsData, RoadServiceabilityEvaluationV2Data } from "./contracts";
@@ -119,6 +123,9 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const [open, setOpen] = useState(presentation === "inline");
   const [surfaceMode, setSurfaceMode] = useState<"sidebar" | "detached">("sidebar");
   const [launcherExpanded, setLauncherExpanded] = useState(false);
+  const motionId = useId();
+  const reducedMotion = useReducedMotionPreference();
+  const intro = useAssistantEntrance(catalogStatus !== "loading", open, presentation === "workspace");
   const [mobile, setMobile] = useState(false);
   const [conversationEpoch, setConversationEpoch] = useState(0);
   const launcherPosition = useFloatingChat();
@@ -290,7 +297,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       if (event.defaultPrevented) return;
       if (event.key === "Escape") { event.preventDefault(); closePanel(); return; }
       if (event.key === "Tab" && mobile) {
-        const controls = panelRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), summary, a[href], [tabindex="0"]');
+        const controls = panelRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), summary, a[href], [tabindex="0"]');
         if (!controls?.length) return;
         const visible = [...controls].filter((element) => element.getClientRects().length > 0);
         const first = visible[0], last = visible.at(-1);
@@ -708,23 +715,39 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   }
 
   return <aside className={styles.shell} data-presentation={presentation} data-chat-open={open} aria-label="CargoMesh ROAD assistant" style={viewport ? { "--chat-visual-height": `${viewport.height}px`, "--chat-keyboard-inset": `${viewport.keyboardInset}px` } as CSSProperties : undefined}>
-    <div className={styles.launcherPosition} ref={launcherPosition.ref} style={launcherPosition.style} hidden={open}>
+    <LayoutGroup id={motionId}>
+    {intro && <div className={styles.entrancePosition}>
+      <div className={styles.entranceWelcome}>
+      <p className={styles.entranceBubble}>{t("Soy", "I'm")} <strong>CargoMesh</strong>{t(", tu asistente de transporte con IA.", ", your freight AI.")}</p>
+      <button type="button" className={styles.entranceButton} onClick={() => setOpen(true)} aria-label={launcherLabel} aria-controls="v2-chat-panel">
+        <motion.span layoutId="assistant-orb" transition={ASSISTANT_TRANSITION}><AssistantMascot large welcoming active={false} /></motion.span>
+      </button>
+      </div>
+    </div>}
+    <div className={styles.launcherPosition} ref={launcherPosition.ref} style={launcherPosition.style} hidden={open} data-intro={intro} data-expanded={launcherExpanded}>
       <button type="button" className={styles.dragHandle} {...launcherPosition.handle} aria-label={t("Mover asistente. Usa las flechas; Inicio restaura la posición.", "Move assistant. Use arrow keys; Home resets its position.")} title={t("Arrastra para mover", "Drag to move")}><GripVertical size={18} aria-hidden="true" /></button>
       {launcherExpanded ? <form className={styles.launcherComposer} onSubmit={(event) => { event.preventDefault(); void send(); }}>
-        <span className={styles.rainbowMark} aria-hidden="true"><Sparkles size={17}/></span>
+        <AssistantMascot active={!open} />
         <label className={styles.srOnly} htmlFor="assistant-launcher-text">{t("Mensaje para CargoMesh", "Message CargoMesh")}</label>
         <input id="assistant-launcher-text" ref={launcherInputRef} value={text} onChange={(event) => setText(event.target.value)} maxLength={6000} placeholder={t("¿Qué necesitas transportar?", "What do you need to ship?")} autoComplete="off" onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); setLauncherExpanded(false); requestAnimationFrame(() => launcherRef.current?.focus()); } }} />
         <button type="button" className={styles.launcherAction} title={t("Abrir panel", "Open sidebar")} aria-label={t("Abrir panel del asistente", "Open assistant sidebar")} onClick={() => { setOpen(true); setLauncherExpanded(false); }}><PanelRightOpen size={18}/></button>
         <button type="button" className={styles.launcherAction} title={t("Hablar con CargoMesh", "Talk to CargoMesh")} aria-label={t("Hablar con CargoMesh", "Talk to CargoMesh")} onClick={() => { setOpen(true); setLauncherExpanded(false); if (!novaVoiceEnabled && catalogStatus === "ready") voice.start(); }}><Mic size={18}/></button>
         <button type="submit" className={styles.launcherSend} disabled={!text.trim() || busy || interpretationBusy || workflowBusy} aria-label={t("Enviar mensaje y abrir panel", "Send message and open sidebar")}><ArrowUp size={18}/></button>
-      </form> : <button ref={launcherRef} type="button" className={styles.launcher} onClick={() => setLauncherExpanded(true)} aria-label={launcherLabel} aria-expanded={false} aria-controls="v2-chat-panel"><span className={styles.rainbowMark} aria-hidden="true"><Sparkles size={17}/></span><span>{t("Pregunta, crea, planifica", "Ask, create, plan")}</span></button>}
+      </form> : <div className={styles.launcherPill}>
+        <button ref={launcherRef} type="button" className={styles.launcher} onClick={() => setOpen(true)} aria-label={launcherLabel} aria-expanded={false} aria-controls="v2-chat-panel">
+          {!intro && <motion.span className={styles.launcherOrb} layoutId="assistant-orb" transition={reducedMotion ? { duration: 0 } : { ...ASSISTANT_TRANSITION, duration: .7 }}><AssistantMascot active={!open} /></motion.span>}
+          <span className={styles.launcherCopy}>{t("Pregunta, crea, planifica", "Ask, create, plan")}</span>
+        </button>
+        <button type="button" className={styles.quickCompose} onClick={() => setLauncherExpanded(true)} aria-label={t("Escribir un mensaje rápido", "Write a quick message")} title={t("Escribir un mensaje", "Write a message")}><SquarePen size={17}/></button>
+      </div>}
     </div>
-    {open && <div className={styles.panelPosition} data-mode={surfaceMode} ref={detachedPosition.ref} style={surfaceMode === "detached" && !mobile ? detachedPosition.style : undefined}>
+    <AnimatePresence>
+    {open && <AssistantSurface key="assistant-panel" mode={surfaceMode} mobile={mobile} hostRef={detachedPosition.ref} style={surfaceMode === "detached" && !mobile ? detachedPosition.style : undefined}>
     <section ref={panelRef} id="v2-chat-panel" className={styles.panel} role={mobile ? "dialog" : undefined} aria-modal={mobile ? true : undefined} aria-labelledby="v2-chat-title">
       <header className={styles.header}>
         {surfaceMode === "detached" && !mobile ? <button type="button" className={styles.panelGrip} {...detachedPosition.handle} aria-label={t("Mover ventana del chat", "Move chat window")} title={t("Arrastra para mover", "Drag to move")}><GripVertical size={16}/></button> : null}
-        <span className={styles.rainbowMark} aria-hidden="true"><Sparkles size={18}/></span>
-        <div className={styles.headerCopy}><strong id="v2-chat-title">CargoMesh <span>Copilot</span></strong><small>{t("Tu asistente de transporte", "Your freight assistant")}</small></div>
+        <AssistantMascot thinking={interpretationBusy || workflowBusy || busy} />
+        <div className={styles.headerCopy}><strong id="v2-chat-title">CargoMesh <span>Copilot</span></strong></div>
         <div className={styles.headerActions}>
           <button type="button" className={styles.iconButton} onClick={startNewChat} disabled={busy || interpretationBusy || workflowBusy || voiceInterpretPending} aria-label={t("Nueva conversación", "Start new chat")} title={t("Nueva conversación · conserva tu solicitud", "Start new chat · keeps your request")}><SquarePen size={18}/></button>
           <button type="button" className={styles.iconButton} onClick={() => setSurfaceMode((mode) => mode === "sidebar" ? "detached" : "sidebar")} aria-label={surfaceMode === "sidebar" ? t("Desacoplar del panel lateral", "Detach from sidebar") : t("Acoplar al panel lateral", "Dock to sidebar")} title={surfaceMode === "sidebar" ? t("Desacoplar del panel lateral", "Detach from sidebar") : t("Acoplar al panel lateral", "Dock to sidebar")}>{surfaceMode === "sidebar" ? <PanelRightClose size={18}/> : <PanelRightOpen size={18}/>}</button>
@@ -744,8 +767,16 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         if (following) setNewMessages(false);
       }}>
         <p role="status">{providerMode==="BEDROCK"?(language==="es"?"Texto interpretado con Amazon Bedrock. Las acciones requieren confirmación.":"Text interpreted with Amazon Bedrock. Actions require confirmation."):providerMode==="DETERMINISTIC"?(language==="es"?"Modo guiado por reglas: interpretación de texto sin modelo generativo.":"Rule-guided mode: text interpretation without a generative model."):null}</p>
+        {history.length === 1 && history[0]?.speaker === "assistant" && <div key={`welcome:${conversationEpoch}`} className={styles.welcome}>
+          <motion.div className={styles.welcomeMascot} {...assistantWelcomeMotion("mascot", reducedMotion)}><AssistantMascot large /></motion.div>
+          <motion.h2 {...assistantWelcomeMotion("title", reducedMotion)}>{t("Planifiquemos tu envío", "Let's plan your shipment")}</motion.h2>
+        </div>}
         <div className={styles.history} role="log" aria-live="off" aria-label="Conversation messages">
-          {history.map((message, index) => <div key={index} className={message.speaker === "user" ? styles.userRow : styles.assistantRow}><p className={message.speaker === "user" ? styles.user : styles.assistant}><span className={styles.speaker}>{message.speaker === "user" ? "You" : "CargoMesh"}</span>{message.text}</p></div>)}
+          {history.map((message, index) => <motion.div key={`${conversationEpoch}:${index}`} className={message.speaker === "user" ? styles.userRow : styles.assistantRow}
+            {...(history.length === 1 && message.speaker === "assistant" ? assistantWelcomeMotion("greeting", reducedMotion) : {
+              initial: reducedMotion ? false as const : { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 },
+              transition: { duration: reducedMotion ? 0 : .36, ease: ASSISTANT_TRANSITION.ease },
+            })}><p className={message.speaker === "user" ? styles.user : styles.assistant}><span className={styles.speaker}>{message.speaker === "user" ? "You" : "CargoMesh"}</span>{message.text}</p></motion.div>)}
         </div>
         <div className={styles.srOnly} role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
         {choices.length > 0 && <div className={styles.choiceList} aria-label="Confirm a location">{choices.map((choice) => <button key={choice.value} type="button" onClick={() => { const field = { field: choice.field, value: choice.value }; onFields([field]); setChoices([]); add(null, `Confirmed ${choice.label}. ${ask(missingField(applyChatFieldsToDraft(draft, [field])) ?? "categoryCode")}`); }}>{choice.label}</button>)}</div>}
@@ -814,7 +845,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
           <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || workflowBusy}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
         {novaVoiceEnabled && catalogStatus === "ready" && <>
-          <NovaVoicePreview key={conversationEpoch} preview={optionsSource === "fixture"} language={language} draftContext={voiceDraftContext(draft, request?.draftVersion ?? null, [...(measurementPending ? ["MEASUREMENT_SCOPE_PENDING" as const] : []),...(capturePending.date ? ["DATE_WINDOW_PENDING" as const] : []),...(capturePending.classification ? ["CLASSIFICATION_PENDING" as const] : [])], measurementPending, {timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,pendingDates:capturePending.date?.alternatives??[]})} voiceContext={recentVoiceContext(history)} onTurn={(update) => {
+          <AssistantLiveContent><NovaVoicePreview key={conversationEpoch} preview={optionsSource === "fixture"} language={language} draftContext={voiceDraftContext(draft, request?.draftVersion ?? null, [...(measurementPending ? ["MEASUREMENT_SCOPE_PENDING" as const] : []),...(capturePending.date ? ["DATE_WINDOW_PENDING" as const] : []),...(capturePending.classification ? ["CLASSIFICATION_PENDING" as const] : [])], measurementPending, {timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,pendingDates:capturePending.date?.alternatives??[]})} voiceContext={recentVoiceContext(history)} onTurn={(update) => {
             const nextHistory = applyVoiceTranscript(voiceHistoryRef.current, update);
             voiceHistoryRef.current = nextHistory;
             setHistory(nextHistory);
@@ -855,13 +886,15 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
                 else confirmSpokenDraft();
               }
             }
-          }} />
+          }} /></AssistantLiveContent>
           {spokenDetails && <button type="button" className={styles.retry} onClick={() => setVoiceReviewOpen(true)}>{language==="es"?"Revisar datos de voz":"Review spoken request details"}</button>}
           {onEdit && <button type="button" className={styles.retry} onClick={() => goToFormStep(1)}>{language==="es"?"Ir al formulario":"Go to request form"}</button>}
         </>}
         {!novaVoiceEnabled && <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button><label>Voice <select aria-label="Voice for spoken replies" value={voice.selectedVoiceURI} onChange={(event) => voice.setSelectedVoiceURI(event.target.value)}><option value="">Automatic · Zira preferred</option>{voice.availableVoices.map((option) => <option key={option.voiceURI} value={option.voiceURI}>{option.name} ({option.lang}){option.localService ? " · device" : ""}</option>)}</select></label><label>Pace <select aria-label="Voice pace" value={voiceRate} onChange={(event) => setVoiceRate(Number(event.target.value))}><option value={0.88}>Relaxed</option><option value={0.96}>Natural</option><option value={1.06}>Brisk</option></select></label><button type="button" onClick={() => voice.readResponse("Hello, I'm CargoMesh. Tell me what you need to ship, and I'll help you step by step.")} disabled={voice.speaking}>Test voice</button></div>}
       </div>
-    </section></div>}
+    </section></AssistantSurface>}
+    </AnimatePresence>
+    </LayoutGroup>
   </aside>;
 }
 

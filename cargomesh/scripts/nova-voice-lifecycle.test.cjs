@@ -20,7 +20,7 @@ function setup({deferGrant=false}={}) {
  vm.runInNewContext(code,globals,{filename:source});
  let props={language:'es',draftContext:{knownFields:[],missingFields:['unitQuantity'],savedVersion:null},onTurn:()=>{}};
  function render(next={}){props={...props,...next};index=0;const tree=exports.NovaVoicePreview(props);while(effects.length)effects.shift()();return tree;}
- return {render,sockets,track,grant:()=>resolveGrant(),start:()=>render().props.children[0].props.onClick()};
+ return {render,sockets,track,grant:()=>resolveGrant(),start:()=>render().props.children[0].props.onClick(),unmount:()=>{for(const slot of slots)slot?.cleanup?.();}};
 }
 const settle=async()=>{for(let i=0;i<5;i++)await new Promise(setImmediate);};
 test('recognized fields and pending clarifications update the draft without closing voice',async()=>{
@@ -35,4 +35,9 @@ test('draft updates while obtaining a grant still allow the connection to open',
 });
 test('changing authorized request scope still closes the old voice connection',async()=>{
  const app=setup();app.start();await settle();app.render();app.render({offerRequestId:'new-authorized-request'});assert.equal(app.sockets[0].closed,1);
+});
+
+test('unmounting live content releases the microphone and socket before the visual exit finishes',async()=>{
+ const app=setup();app.start();await settle();app.render();app.unmount();
+ assert.equal(app.sockets[0].closed,1);await settle();assert.equal(app.track.stopped,1);
 });
