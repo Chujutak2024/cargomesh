@@ -158,3 +158,23 @@ test("untrusted model output must use the versioned bounded response contract", 
     interpretation: { intent: "PROVIDE", fields: [{ field: "organizationId", value: "forged" }] },
   }).success, false);
 });
+
+test("mixed commercial question preserves explicit quantity and packaging", () => {
+  const result=interpretDeterministically({schemaVersion:"2.0",text:"¿Cuánto cuesta enviar 10 pallets de 100 kg cada uno?",currentField:null,language:"es"});
+  assert.equal(result.intent,"PROVIDE");
+  assert.ok(result.fields.some(f=>f.field==="unitQuantity"&&f.value==="10"));
+  assert.ok(result.fields.some(f=>f.field==="unitWeightPerUnitKg"&&f.value==="100"));
+});
+
+test("Spanish spoken numbers are captured without assigning a cargo category",()=>{
+  const result=interpretDeterministically({schemaVersion:"2.0",text:"diez pallets",currentField:null,language:"es"});
+  assert.ok(result.fields.some(f=>f.field==="unitQuantity"&&f.value==="10"));
+  assert.equal(result.fields.some(f=>f.field==="categoryCode"),false);
+});
+
+test("comparison questions with explicit cargo do not discard intake facts",()=>{
+  const result=interpretDeterministically({schemaVersion:"2.0",text:"compare prices for 10 pallets from Lima to Arequipa",currentField:null});
+  assert.equal(result.intent,"PROVIDE");
+  assert.ok(result.fields.some(f=>f.field==="unitQuantity"&&f.value==="10"));
+  assert.ok(result.fields.some(f=>f.field==="originFacilityId"&&f.value==="Lima"));
+});

@@ -25,3 +25,12 @@ test("invalid or incomplete workflow pagination fails visibly", async () => {
   const fetcher = async () => Response.json({ schemaVersion: "2.0", data: [], meta: { nextOffset: 0 } });
   await assert.rejects(readRequestWorkflow(requestId, "executions", fetcher as typeof fetch), /did not advance/);
 });
+
+test("readiness rejects mismatched request/version and never confirms capacity",async()=>{
+  const {readCargoReadiness,summarizeCargoReadiness}=await import("./workflow-chat-client");
+  const data={freightRequestId:requestId,evaluatedDraftVersion:2,captureStatus:"INCOMPLETE",missingFields:["cargoSpecification.temperatureRange"],requirements:[],totals:{weightKg:1000,volumeM3:15},operationalStatus:"NOT_EVALUATED"};
+  const result=await readCargoReadiness(requestId,2,async(url,init)=>{assert.match(String(url),/expectedDraftVersion=2/);assert.equal(init?.credentials,"same-origin");return Response.json({schemaVersion:"2.0",data});});
+  assert.match(summarizeCargoReadiness(result,"es"),/rango de temperatura/);
+  assert.match(summarizeCargoReadiness(result,"es"),/no confirma disponibilidad/);
+  await assert.rejects(()=>readCargoReadiness(requestId,3,async()=>Response.json({schemaVersion:"2.0",data})),/INVALID_READINESS_SCOPE/);
+});

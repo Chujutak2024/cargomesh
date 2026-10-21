@@ -13,3 +13,9 @@ test("other read-only workflow questions remain distinct", () => {
   assert.equal(workflowChatIntent("track my shipment"), "executions");
   assert.equal(workflowChatIntent("two pallets from Lima"), null);
 });
+
+test("readiness uses its real backend read and mixed cargo questions retain capture", () => {
+  assert.equal(workflowChatIntent("¿Qué me falta?"), "readiness");
+  assert.equal(workflowChatIntent("what is missing?"), "readiness");
+  assert.equal(workflowChatIntent("compare prices for 10 pallets from Lima to Arequipa"), null);
+});

@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { workspaceHref } from "@/features/workspace-mode/paths";
 import {workspaceFetch} from "@/features/workspace-mode/workspace-fetch";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { ArrowUp, ChevronDown, GripVertical, MessageSquareText, Mic, PanelRightClose, PanelRightOpen, Sparkles, SquarePen, X } from "lucide-react";
@@ -13,6 +16,17 @@ import { useConversationVoice } from "@/features/v2-conversation-prep/voice-cont
 import { NovaVoicePreview } from "@/features/v2-conversation-prep/nova-voice-preview";
 import { applyVoiceTranscript, recentVoiceContext, spokenUserDetails, type VoiceTurn } from "@/features/v2-conversation-prep/voice-transcript";
 import { InterpretationResponseSchema, guardExplicitCorrection, helpTopic, isHelpFollowUp, type Interpretation } from "@/features/v2-conversation-prep/interpretation";
+import { conversationLanguage, type ConversationLanguage } from "@/features/v2-conversation-prep/conversation-language";
+import { voiceDraftContext } from "@/features/v2-conversation-prep/voice-draft-context";
+import { readCargoReadiness, summarizeCargoReadiness } from "./workflow-chat-client";
+import { wantsQuoteSearch } from "./chat-quote-action";
+import { DateClarificationPanel, CargoClassificationPanel } from "./capture-clarification-panel";
+import { dateClarification, needsCargoClassification, type DateClarification } from "./capture-clarification";
+import { ChatCommercialPanel } from "./chat-commercial-panel";
+import { commercialChatIntent } from "./chat-commercial-action";
+import { ChatQuotePanel } from "./chat-quote-panel";
+import { measurementTurn, measurementReply, type PendingMeasurement } from "./measurement-clarification";
+import { interpretDeterministically } from "@/features/v2-conversation-prep/interpretation";
 import { conversationContext } from "./conversation-context";
 import { serviceabilityReply } from "./serviceability-reply";
 import type { V2IntakeApiError } from "./v2-intake-client";
@@ -32,10 +46,8 @@ type Message = VoiceTurn;
 type Choice = { value: string; label: string; field: ConversationField };
 const GREETING_EN = "Hi, I'm CargoMesh. Tell me what you need to ship, and I'll help you prepare a request and review preliminary ROAD options.";
 const unavailable = "I cannot quote or book transportation here yet. The ROAD check is preliminary; it is neither an offer nor a reservation.";
-function englishAcknowledgment(value: string | undefined): string | undefined {
-  if (!value) return undefined;
-  return /\b(?:claro|puedo|ayudarte|dime|necesito|solicitud|borrador|carga|recoger|entrega|origen|servicios|todav[ií]a)\b/i.test(value)
-    ? undefined : value;
+function conversationAcknowledgment(value: string | undefined): string | undefined {
+  return value?.trim() || undefined;
 }
 
 const positive = /^(yes|yes,? (?:create|save) (?:the )?(?:draft|revision)|(?:create|save) (?:the )?(?:draft|revision)|confirm|go ahead|s[ií]|s[ií],? (?:crea(?:r)?|guarda(?:r)?) (?:el |la )?(?:borrador|revisi[oó]n)|(?:crea(?:r)?|guarda(?:r)?) (?:el |la )?(?:borrador|revisi[oó]n)|confirmo|confirmar|adelante)$/i;
@@ -50,7 +62,8 @@ function locationName(id: string, options: IntakeOptionsData) {
   return facility.label.includes("[SYNTHETIC]") ? `${facility.city} (synthetic test facility)` : `${facility.label}, ${facility.city}`;
 }
 
-function draftSummary(draft: V2IntakePrototypeDraft, options: IntakeOptionsData, request: FreightRequestV2Data | null) {
+function draftSummary(draft: V2IntakePrototypeDraft, options: IntakeOptionsData, request: FreightRequestV2Data | null, language:"es"|"en") {
+  if(language==="es")return `Revisa los datos estructurados: ${locationName(draft.originFacilityId,options)} → ${locationName(draft.destinationFacilityId,options)}; ${draft.unitQuantity} unidad(es), ${draft.totalWeightKg} kg y ${draft.totalVolumeM3} m³ en total. ${request?`Guardar actualizará ${request.referenceCode}, versión ${request.draftVersion}.`:"Guardar creará un borrador para tu organización autorizada."} Confirma explícitamente o indica qué corregir.`;
   return `Review the structured details below. ${locationName(draft.originFacilityId, options)} → ${locationName(draft.destinationFacilityId, options)}; ${draft.unitQuantity} unit(s) of ${draft.categoryCode.toLowerCase()}. ${request ? `Saving will revise ${request.referenceCode} from version ${request.draftVersion}.` : "Saving will create a DRAFT for your authorized organization."} Confirm explicitly or tell me what to change.`;
 }
 
@@ -100,6 +113,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   onStartOver?: () => void;
 }) {
   const { locale, t } = useLocale();
+  const pathname = usePathname();
+  const [language, setLanguage] = useState<ConversationLanguage>(locale === "es" ? "es" : "en");
   const launcherLabel = t("Preguntar a CargoMesh", "Ask CargoMesh");
   const [open, setOpen] = useState(presentation === "inline");
   const [surfaceMode, setSurfaceMode] = useState<"sidebar" | "detached">("sidebar");
@@ -114,7 +129,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const sendInFlightRef = useRef(false);
   const [newMessages, setNewMessages] = useState(false);
   const [text, setText] = useState("");
-  const [history, setHistory] = useState<Message[]>([{ speaker: "assistant", text: GREETING_EN }]);
+  const [history, setHistory] = useState<Message[]>([{ speaker: "assistant", text: locale === "es" ? "Hola, soy CargoMesh. Cuéntame qué necesitas transportar y te ayudaré a preparar la solicitud, paso a paso." : GREETING_EN }]);
   const [announcement, setAnnouncement] = useState("");
   const [sendNotice, setSendNotice] = useState("");
   const spokenDetails = spokenUserDetails(history);
@@ -130,13 +145,20 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const voicePayload = prepareSpokenRequestJson(draft, options, spokenRouteConflict, declaredWeightKg, request);
   const [failedMessage, setFailedMessage] = useState("");
   const [interpretationBusy, setInterpretationBusy] = useState(false);
+  const [providerMode,setProviderMode]=useState<"BEDROCK"|"DETERMINISTIC"|null>(null);
+  const [commercialCommand,setCommercialCommand] = useState<{kind:"SELECT"|"BOOK";index:number;nonce:number}|null>(null);
+  const [quotePanelOpen, setQuotePanelOpen] = useState(false);
   const [workflowBusy, setWorkflowBusy] = useState(false);
   const novaVoiceEnabled = process.env.NEXT_PUBLIC_CARGOMESH_NOVA_VOICE_PREVIEW === "true";
   const [audioReplies, setAudioReplies] = useState(true);
-  const voiceLanguage = locale === "es" ? "es-PE" as const : "en-US" as const;
+  const voiceLanguage = language === "es" ? "es-PE" as const : "en-US" as const;
   const [voiceRate, setVoiceRate] = useState(0.96);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const confirmationRef = useRef<{ review: DraftReview; requestId: string | null; version: number | null } | null>(null);
+  const measurementPendingRef = useRef<PendingMeasurement | null>(null);
+  const capturePendingRef = useRef<{date:DateClarification|null;classification:boolean}>({date:null,classification:false});
+  const [capturePending,setCapturePending] = useState(capturePendingRef.current);
+  const [measurementPending, setMeasurementPending] = useState<PendingMeasurement | null>(null);
   const [choices, setChoices] = useState<Choice[]>([]);
   const [viewport, setViewport] = useState<{ height: number; keyboardInset: number } | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -150,7 +172,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const voiceInterpretCountRef = useRef(0);
   const processedVoiceCommandsRef = useRef<Set<string>>(new Set());
   const voiceSaveInFlightRef = useRef(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const announcedDraftRef = useRef<string | null>(null);
   const lastSpokenMessage = useRef(0);
@@ -169,14 +191,14 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     const seed = window.sessionStorage.getItem("cargomesh-v2-chat-seed-v1");
     if (seed) {
       window.sessionStorage.removeItem("cargomesh-v2-chat-seed-v1");
-      setText(seed.slice(0, 1000));
+      setText(seed);
     }
   }, []);
   useEffect(() => {
     const openAssistant = () => { setOpen(true); setLauncherExpanded(false); };
     const receiveMessage = (event: Event) => {
       const value = (event as CustomEvent<{ text?: string }>).detail?.text;
-      if (typeof value === "string" && value.trim()) incomingRef.current(value.slice(0, 1000));
+      if (typeof value === "string" && value.trim()) incomingRef.current(value);
     };
     window.addEventListener("cargomesh:open-assistant", openAssistant);
     window.addEventListener("cargomesh:assistant-message", receiveMessage);
@@ -313,7 +335,47 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     setAnnouncement(assistant);
   }
 
+  function setCaptureClarification(next:typeof capturePendingRef.current) {
+    capturePendingRef.current=next;setCapturePending(next);confirmationRef.current=null;setAwaitingConfirmation(false);
+  }
+  function handleCaptureClarification(value:string,user:string|null):boolean {
+    const date=dateClarification(value,Intl.DateTimeFormat().resolvedOptions().timeZone);
+    const classification=needsCargoClassification(value);
+    if(!date&&!classification)return false;
+    setCaptureClarification({date:date??capturePendingRef.current.date,classification:classification||capturePendingRef.current.classification});
+    const explicit=interpretDeterministically({schemaVersion:'2.0',text:value,currentField:null}).fields;
+    const measures=measurementTurn(value,measurementPendingRef.current,voiceDraftRef.current);
+    if(measures.handled){measurementPendingRef.current=measures.pending;setMeasurementPending(measures.pending);}
+    const fields=[...measures.fields,...resolveConversationSuggestions(explicit.filter(f=>['unitQuantity','unitWeightPerUnitKg','packaging','originFacilityId','destinationFacilityId'].includes(f.field)),options).flatMap(f=>f.parsed===null?[]:[{field:f.field,value:f.parsed}])];
+    if(fields.length){voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,fields);onFields(fields);}
+    add(user,conversationLanguage(value,language)==='es'?'Conservé los datos claros. Revisa el panel de fechas o mercancía: no elegiré una alternativa ni clasificación por mi cuenta.':'I kept the explicit facts. Review the date or cargo panel; I will not choose an alternative or classification myself.');
+    return true;
+  }
+  function hasCaptureClarification(){return Boolean(capturePendingRef.current.date||capturePendingRef.current.classification);}
+
+  function handleMeasurement(value: string, user: string | null): boolean {
+    const current = voiceDraftRef.current;
+    const result = measurementTurn(value, measurementPendingRef.current, current);
+    if (!result.handled) return false;
+    measurementPendingRef.current = result.pending;
+    setMeasurementPending(result.pending);
+    confirmationRef.current = null;
+    setAwaitingConfirmation(false);
+    // Keep explicit count/weight/route facts from mixed turns; never let a model apply ambiguous dimensions.
+    const explicit = interpretDeterministically({schemaVersion:"2.0",text:value,currentField:null}).fields;
+    const preserved = resolveConversationSuggestions(explicit.filter(item => ["unitQuantity","unitWeightPerUnitKg","packaging","originFacilityId","destinationFacilityId"].includes(item.field)),options)
+      .flatMap(item=>item.parsed===null?[]:[{field:item.field,value:item.parsed}]);
+    const fields = [...preserved,...result.fields];
+    if (fields.length) { voiceDraftRef.current = applyChatFieldsToDraft(current,fields); onFields(fields); }
+    const reply = measurementReply(result,conversationLanguage(value,language));
+    setVoiceReviewNotice(reply);
+    add(user,reply);
+    return true;
+  }
+
   function prepareConfirmation(nextDraft: V2IntakePrototypeDraft, user: string | null = null) {
+    if (hasCaptureClarification()) { add(user,language==='es'?'Revisa primero las fechas o la clasificación pendientes.':'Review pending dates or classification first.'); return; }
+    if (measurementPendingRef.current) { add(user, language === "es" ? "Antes de confirmar, aclara si las medidas son por unidad o del conjunto y su unidad de medida. Si son del conjunto, necesito además las de cada unidad." : "Before confirming, clarify the measurement unit and whether these dimensions are per unit or for the whole shipment. For a shipment total I still need each unit’s dimensions."); return; }
     const validation = validatePrototypeReview(nextDraft);
     if (!validation.valid) {
       const field = validation.issues[0]?.field;
@@ -333,26 +395,26 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     }
     confirmationRef.current = { review: proposeDraftReview(nextDraft), requestId: request?.id ?? null, version: request?.draftVersion ?? null };
     setAwaitingConfirmation(true);
-    add(user, draftSummary(nextDraft, options, request));
+    add(user, draftSummary(nextDraft, options, request, language));
   }
 
   function confirmSave(user: string | null) {
     if (optionsSource === "fixture") {
       confirmationRef.current = null;
       setAwaitingConfirmation(false);
-      add(user, "This preview only tests the conversation. Sign in on the V2 freight page to save a request.");
+      add(user, (language==="es"?"Esta vista solo prueba la conversación. Inicia sesión en la página de solicitudes para guardar.":"This preview only tests the conversation. Sign in on the V2 freight page to save a request."));
       return;
     }
     const confirmation = confirmationRef.current;
-    if (!confirmation || !canApproveDraftReview(confirmation.review, draft)
+    if (hasCaptureClarification() || measurementPendingRef.current || !confirmation || !canApproveDraftReview(confirmation.review, draft)
       || confirmation.requestId !== (request?.id ?? null) || confirmation.version !== (request?.draftVersion ?? null)
       || !validatePrototypeReview(draft).valid || (request && (!canRevise || request.status !== "DRAFT"))) {
-      add(user, "The draft changed, is incomplete, or cannot be revised here. Review it again before saving.");
+      add(user, (language==="es"?"El borrador cambió, está incompleto o no se puede revisar aquí. Revísalo antes de guardar.":"The draft changed, is incomplete, or cannot be revised here. Review it again before saving."));
       confirmationRef.current = null;
       setAwaitingConfirmation(false);
       return;
     }
-    add(user, request ? "Saving the confirmed revision, then refreshing ROAD for its new version…" : "Creating your authorized draft, then checking ROAD eligibility…");
+    add(user, request ? (language==="es"?"Guardando la revisión confirmada y consultando ROAD para la nueva versión…":"Saving the confirmed revision, then refreshing ROAD for its new version…") : (language==="es"?"Creando tu borrador autorizado y consultando elegibilidad ROAD…":"Creating your authorized draft, then checking ROAD eligibility…"));
     confirmationRef.current = null;
     setAwaitingConfirmation(false);
     onSave();
@@ -369,7 +431,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   function startNewChat() {
     if (busy || interpretationBusy || workflowBusy || voiceInterpretPending || sendInFlightRef.current) return;
     voice.stop(); voice.stopResponse();
-    const greeting: Message[] = [{ speaker: "assistant", text: GREETING_EN }];
+    const greeting: Message[] = [{ speaker: "assistant", text: locale === "es" ? "Hola, soy CargoMesh. Cuéntame qué necesitas transportar y te ayudaré a preparar la solicitud, paso a paso." : GREETING_EN }];
     voiceHistoryRef.current = greeting;
     setHistory(greeting); setText(""); setChoices([]); setFailedMessage(""); setSendNotice("");
     setAwaitingConfirmation(false); confirmationRef.current = null;
@@ -393,8 +455,9 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   }
 
   function applySpokenDetails() {
+    if (hasCaptureClarification() || measurementPendingRef.current) { setVoiceReviewNotice(language === "es" ? "Aclara primero las medidas pendientes." : "Clarify the pending measurements first."); return; }
     if (!voiceReview.fields.length) {
-      setVoiceReviewNotice("All matched spoken details are already in the local draft. Complete any missing fields below.");
+      setVoiceReviewNotice((language==="es"?"Los datos reconocidos ya están en el borrador local. Completa los campos pendientes.":"All matched spoken details are already in the local draft. Complete any missing fields below."));
       return;
     }
     const count = voiceReview.fields.length;
@@ -404,41 +467,46 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   }
 
   function confirmSpokenDraft() {
-    if (!voiceReviewOpen || !voicePayload || busy || voiceInterpretCountRef.current > 0 || optionsSource === "fixture"
+    if (hasCaptureClarification() || measurementPendingRef.current || !voiceReviewOpen || !voicePayload || busy || voiceInterpretCountRef.current > 0 || optionsSource === "fixture"
       || Boolean(request && (!canRevise || !draftDirty || request.status !== "DRAFT"))) {
-      setVoiceReviewNotice("I cannot create a draft yet. Review the missing or conflicting details shown here first.");
+      setVoiceReviewNotice((language==="es"?"Primero revisa los datos pendientes o contradictorios que aparecen aquí.":"I cannot create a draft yet. Review the missing or conflicting details shown here first."));
       return;
     }
     if (voiceSaveInFlightRef.current) return;
     voiceSaveInFlightRef.current = true;
-    setVoiceReviewNotice(request ? "Saving the confirmed draft revision…" : "Creating your confirmed draft and checking preliminary ROAD options…");
+    setVoiceReviewNotice(request ? (language==="es"?"Guardando la revisión confirmada…":"Saving the confirmed draft revision…") : (language==="es"?"Creando el borrador confirmado y consultando opciones preliminares ROAD…":"Creating your confirmed draft and checking preliminary ROAD options…"));
     onSave();
   }
 
   async function interpret(value: string, currentDraft = draft, preferredField: GuidedConversationField | null = null): Promise<{ interpretation: Interpretation; mode: "BEDROCK" | "DETERMINISTIC" }> {
     const currentField = preferredField ?? missingField(currentDraft);
-    const input = { schemaVersion: "2.0" as const, text: value, currentField,
+    const input = { schemaVersion: "2.0" as const, text: value, currentField, language: conversationLanguage(value, language),
       context: { ...conversationContext(currentDraft, currentField, failedAttempts.current), previousHelpTopic: previousHelpTopic.current } };
     const endpoint = optionsSource === "fixture" ? "/api/v2/conversation/preview" : "/api/v2/conversation/interpret";
     const response = await workspaceFetch(endpoint, {
       method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
     });
-    if (!response.ok) throw new Error(response.status === 401 ? "Your session or organization membership is no longer active. Sign in again." : "I could not interpret that message. Please retry.");
+    if (!response.ok) throw new Error(response.status === 401 ? (language==="es"?"Tu sesión o pertenencia a la organización ya no está activa. Inicia sesión de nuevo.":"Your session or organization membership is no longer active. Sign in again.") : (language==="es"?"No pude interpretar ese mensaje. Inténtalo otra vez.":"I could not interpret that message. Please retry."));
     const parsed = InterpretationResponseSchema.safeParse(await response.json());
-    if (!parsed.success) throw new Error("The conversation service returned an invalid response. Please retry.");
+    if (!parsed.success) throw new Error((language==="es"?"La respuesta del servicio no es válida. Inténtalo otra vez.":"The conversation service returned an invalid response. Please retry."));
+    setProviderMode(parsed.data.mode);
     return { interpretation: parsed.data.interpretation, mode: parsed.data.mode };
   }
 
   async function interpretSpokenDetail(value: string, turns: Message[]) {
     if (optionsSource === "fixture" || spokenReviewCommand(value)) return;
     const currentDraft = voiceDraftRef.current;
+    if (handleCaptureClarification(value,null) || handleMeasurement(value, null)) return;
     try {
       const expectedField = lastSpokenQuestionField(turns) ?? missingField(currentDraft);
       const { interpretation } = await interpret(value, currentDraft, expectedField);
       const proposal = guardExplicitCorrection(value, expectedField, interpretation);
       if (proposal.intent !== "PROVIDE" && proposal.intent !== "CORRECT") return;
+      if(proposal.fields.some(f=>f.field==='categoryCode'&&f.value.toUpperCase()==='CHEMICAL'))setCaptureClarification({...capturePendingRef.current,classification:true});
       const fields = resolveConversationSuggestions(proposal.fields, options)
+        .filter(f=>(!capturePendingRef.current.date||!f.field.endsWith("At"))&&(!capturePendingRef.current.classification||f.field!=="categoryCode"))
+        .filter(item => !measurementPendingRef.current || !["unitLengthCm","unitWidthCm","unitHeightCm","unitVolumePerUnitM3"].includes(item.field))
         .filter(({ field }) => JSON.stringify(voiceDraftRef.current[field]) === JSON.stringify(currentDraft[field]))
         .flatMap(({ field, parsed }) => {
           const checked = parsed === null ? null : checkedSpokenField(field, parsed, value, turns);
@@ -449,7 +517,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       onFields(fields);
       setVoiceReviewNotice(`${fields.length} more spoken detail${fields.length === 1 ? " was" : "s were"} added to the local draft. Review the structured values before confirming.`);
     } catch {
-      setVoiceReviewNotice("I could not validate one spoken detail. Please review the fields and try that detail again.");
+      setVoiceReviewNotice((language==="es"?"No pude validar un dato de voz. Revisa los campos e indica ese dato otra vez.":"I could not validate one spoken detail. Please review the fields and try that detail again."));
     }
   }
 
@@ -472,6 +540,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       return;
     }
     const value = gate.value;
+    setLanguage(conversationLanguage(value, language));
     followLatestRef.current = true;
     setNewMessages(false);
     setSendNotice("");
@@ -479,12 +548,31 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     if (voice.state === "listening" || voice.state === "requesting_permission") voice.stop();
     setText("");
     setChoices([]);
+    const turnLanguage = conversationLanguage(value, language);
+    if (handleCaptureClarification(value,value) || handleMeasurement(value,value)) return;
+    const commercial = commercialChatIntent(value);
+    if (commercial) {
+      if(!request||optionsSource==='fixture'){add(value,turnLanguage==='es'?'Primero guarda una solicitud autorizada.':'First save an authorized request.');return;}
+      setCommercialCommand({...commercial,nonce:Date.now()});
+      add(value,turnLanguage==='es'?'Prepararé una revisión con datos actuales. Tu mensaje no confirma la selección ni autoriza reservas; usa el resumen y su confirmación separada.':'I will prepare a current review. Your message does not confirm selection or authorize bookings; review and confirm the action separately.');return;
+    }
+    if (wantsQuoteSearch(value)) {
+      if (!request || optionsSource === "fixture") { add(value,turnLanguage === "es" ? "Primero revisa y guarda una solicitud con tu organización activa." : "First review and save an authorized request."); return; }
+      setQuotePanelOpen(true);
+      add(value,turnLanguage === "es" ? "Revisa el pedido y el plazo en el panel de cotización. Solo se solicitarán ofertas cuando marques el consentimiento y pulses Buscar ofertas; esto no selecciona ni contrata transporte." : "Review the request and deadline in the quotation panel. Quotes are requested only after checking consent and pressing Find offers; this does not select or book transportation.");
+      return;
+    }
     const workflowIntent = workflowChatIntent(value);
     if (workflowIntent) {
       if (optionsSource === "fixture") { add(value, "This preview uses synthetic facilities and cannot read commercial records. Sign in to view an authorized request."); return; }
-      if (!request) { add(value, "First save a freight request. Then I can check its current offers, booking state or recorded execution."); return; }
+      if (!request) { add(value, turnLanguage === "es" ? "Primero revisa y guarda una solicitud. Después puedo consultar sus ofertas, campos pendientes, reservas y seguimiento." : "First save a freight request. Then I can check its current offers, booking state or recorded execution."); return; }
       setWorkflowBusy(true);
-      try { add(value, summarizeWorkflow(workflowIntent, await readRequestWorkflow(request.id, workflowIntent))); }
+      try {
+        if (workflowIntent === "readiness") {
+          if (draftDirty) add(value, turnLanguage === "es" ? "Hay cambios sin guardar. Revisa y confirma la revisión para comprobar la versión actual." : "Review and save the local changes before checking the current version.");
+          else add(value, summarizeCargoReadiness(await readCargoReadiness(request.id, request.draftVersion), conversationLanguage(value, language)));
+        } else add(value, summarizeWorkflow(workflowIntent, await readRequestWorkflow(request.id, workflowIntent), turnLanguage));
+      }
       catch (error) { add(value, error instanceof Error ? error.message : "I could not load the current workflow. Please retry."); }
       finally { setWorkflowBusy(false); }
       return;
@@ -507,21 +595,25 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     try {
       const { interpretation: received, mode } = await interpret(value);
       const proposal = guardExplicitCorrection(value, nextField, received);
-      if (proposal.intent === "PRICE" || proposal.intent === "BOOKING") { add(value, unavailable); return; }
+      if (proposal.intent === "PRICE" || proposal.intent === "BOOKING") {
+        add(value, turnLanguage === "es" ? "Puedo consultar ofertas de una solicitud guardada. La selección y la autorización se revisan en Operaciones; una consulta de precio no contrata transporte." : unavailable); return;
+      }
       if (proposal.intent === "HELP") {
         if (!isHelpFollowUp(value)) previousHelpTopic.current = helpTopic(value);
-        const guided = contextualHelpReply(draft, options, nextField, value);
-        const modelReply = mode === "BEDROCK" ? englishAcknowledgment(proposal.acknowledgment) : undefined;
-        const explanatoryReply = englishAcknowledgment(proposal.acknowledgment);
-        add(value, modelReply ?? (/\b(?:services|offer|available|selection|compare|what is|what can|para qu[eé]|servicios|escoger|comparar)\b/i.test(value) ? explanatoryReply : undefined) ?? guided ?? explanatoryReply ?? "Tell me what you need to ship, and I'll guide you through the request.");
+        const guided = contextualHelpReply(draft, options, nextField, value, conversationLanguage(value, language));
+        const modelReply = mode === "BEDROCK" ? conversationAcknowledgment(proposal.acknowledgment) : undefined;
+        const explanatoryReply = conversationAcknowledgment(proposal.acknowledgment);
+        add(value, (turnLanguage === "es" ? guided : null) ?? modelReply ?? (/\b(?:services|offer|available|selection|compare|what is|what can|para qu[eé]|servicios|escoger|comparar)\b/i.test(value) ? explanatoryReply : undefined) ?? guided ?? explanatoryReply ?? "Tell me what you need to ship, and I'll guide you through the request.");
         return;
       }
       if (proposal.intent === "START_OVER") {
+        setCaptureClarification({date:null,classification:false});
+        measurementPendingRef.current=null;setMeasurementPending(null);setQuotePanelOpen(false);setCommercialCommand(null);
         onStartOver?.();
         failedAttempts.current = 0;
         previousHelpTopic.current = null;
         setAwaitingConfirmation(false);
-        add(value, "Let’s start a new provisional request. Where should the cargo be picked up?");
+        add(value, turnLanguage==="es"?"Empecemos un borrador nuevo. ¿Dónde recogemos la carga?":"Let’s start a new provisional request. Where should the cargo be picked up?");
         return;
       }
       if (proposal.intent === "READ") {
@@ -544,7 +636,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       const accepted = new Set<ConversationField>();
       const applied: Array<{ field: ConversationField; value: string }> = [];
       let clarification: string | null = null;
-      for (const suggestion of resolveConversationSuggestions(proposal.fields, options)) {
+      if(proposal.fields.some(f=>f.field==='categoryCode'&&f.value.toUpperCase()==='CHEMICAL'))setCaptureClarification({...capturePendingRef.current,classification:true});
+      for (const suggestion of resolveConversationSuggestions(proposal.fields, options).filter(f=>(!capturePendingRef.current.date||!f.field.endsWith('At'))&&(!capturePendingRef.current.classification||f.field!=='categoryCode')).filter(item => !measurementPendingRef.current || !["unitLengthCm","unitWidthCm","unitHeightCm","unitVolumePerUnitM3"].includes(item.field))) {
         const field = suggestion.field;
         const parsed = suggestion.parsed;
         if (parsed === null) {
@@ -584,15 +677,15 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         if (proposal.intent === "CORRECT" && proposal.acknowledgment) { add(value, proposal.acknowledgment); return; }
         failedAttempts.current = Math.min(3, failedAttempts.current + 1);
         if (mode === "DETERMINISTIC" && optionsSource !== "fixture" && /\b(?:help|how|what|can you|tell me)\b/i.test(value)) {
-          add(value, contextualHelpReply(draft, options, nextField, value) ?? `I can help you prepare a request. ${ask(nextField ?? "originFacilityId")}`);
+          add(value, contextualHelpReply(draft, options, nextField, value, conversationLanguage(value, language)) ?? `I can help you prepare a request. ${ask(nextField ?? "originFacilityId")}`);
           return;
         }
-        if (mode === "BEDROCK" && englishAcknowledgment(proposal.acknowledgment)) {
-          add(value, englishAcknowledgment(proposal.acknowledgment)!);
+        if (mode === "BEDROCK" && conversationAcknowledgment(proposal.acknowledgment)) {
+          add(value, conversationAcknowledgment(proposal.acknowledgment)!);
           return;
         }
         add(value, failedAttempts.current >= 2
-          ? "I still could not identify that detail. You can type a specific value or enter it in the request form."
+          ? (language==="es"?"No pude identificar ese dato. Puedes escribir un valor concreto o completarlo en el formulario.":"I still could not identify that detail. You can type a specific value or enter it in the request form.")
           : `I did not catch a freight detail. ${ask(nextField ?? "originFacilityId")}`);
         return;
       }
@@ -600,11 +693,11 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       setAwaitingConfirmation(false);
       confirmationRef.current = null;
       const remaining = missingField(projected);
-      const preface = englishAcknowledgment(proposal.acknowledgment) ?? `I have ${[...accepted].map((field) => field === "originFacilityId" ? `pickup at ${locationName(projected.originFacilityId, options)}` : field === "destinationFacilityId" ? `delivery at ${locationName(projected.destinationFacilityId, options)}` : field === "unitQuantity" ? `${projected.unitQuantity} unit(s)` : field === "cargoDescription" ? `cargo described as ${projected.cargoDescription}` : field === "categoryCode" ? `${projected.categoryCode.toLowerCase()} cargo` : field === "packaging" ? `${projected.packaging.toLowerCase()} packaging` : "that detail").join(" and ")}.`;
+      const preface = (turnLanguage === "es" ? contextualHelpReply(projected, options, remaining, value, "es") : null) ?? conversationAcknowledgment(proposal.acknowledgment) ?? `I have ${[...accepted].map((field) => field === "originFacilityId" ? `pickup at ${locationName(projected.originFacilityId, options)}` : field === "destinationFacilityId" ? `delivery at ${locationName(projected.destinationFacilityId, options)}` : field === "unitQuantity" ? `${projected.unitQuantity} unit(s)` : field === "cargoDescription" ? `cargo described as ${projected.cargoDescription}` : field === "categoryCode" ? `${projected.categoryCode.toLowerCase()} cargo` : field === "packaging" ? `${projected.packaging.toLowerCase()} packaging` : "that detail").join(" and ")}.`;
       const changed = proposal.intent === "CORRECT" ? ` Updated ${[...accepted].map((field) => field === "originFacilityId" ? "pickup" : field === "destinationFacilityId" ? "delivery" : field).join(", ")}.` : "";
-      if (remaining) add(value, `${preface}${changed} ${ask(remaining)}`);
+      if (remaining) add(value, turnLanguage === "es" ? preface : `${preface}${changed} ${ask(remaining)}`);
       else {
-        add(value, `${preface}${changed} The structured summary is updated. Review and confirm when ready.`);
+        add(value, turnLanguage === "es" ? `${preface} El resumen está actualizado. Revísalo y confirma cuando esté listo.` : `${preface}${changed} The structured summary is updated. Review and confirm when ready.`);
       }
     } catch (error) {
       setFailedMessage(value);
@@ -620,7 +713,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       {launcherExpanded ? <form className={styles.launcherComposer} onSubmit={(event) => { event.preventDefault(); void send(); }}>
         <span className={styles.rainbowMark} aria-hidden="true"><Sparkles size={17}/></span>
         <label className={styles.srOnly} htmlFor="assistant-launcher-text">{t("Mensaje para CargoMesh", "Message CargoMesh")}</label>
-        <input id="assistant-launcher-text" ref={launcherInputRef} value={text} onChange={(event) => setText(event.target.value)} maxLength={1000} placeholder={t("¿Qué necesitas transportar?", "What do you need to ship?")} autoComplete="off" onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); setLauncherExpanded(false); requestAnimationFrame(() => launcherRef.current?.focus()); } }} />
+        <input id="assistant-launcher-text" ref={launcherInputRef} value={text} onChange={(event) => setText(event.target.value)} maxLength={6000} placeholder={t("¿Qué necesitas transportar?", "What do you need to ship?")} autoComplete="off" onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); setLauncherExpanded(false); requestAnimationFrame(() => launcherRef.current?.focus()); } }} />
         <button type="button" className={styles.launcherAction} title={t("Abrir panel", "Open sidebar")} aria-label={t("Abrir panel del asistente", "Open assistant sidebar")} onClick={() => { setOpen(true); setLauncherExpanded(false); }}><PanelRightOpen size={18}/></button>
         <button type="button" className={styles.launcherAction} title={t("Hablar con CargoMesh", "Talk to CargoMesh")} aria-label={t("Hablar con CargoMesh", "Talk to CargoMesh")} onClick={() => { setOpen(true); setLauncherExpanded(false); if (!novaVoiceEnabled && catalogStatus === "ready") voice.start(); }}><Mic size={18}/></button>
         <button type="submit" className={styles.launcherSend} disabled={!text.trim() || busy || interpretationBusy || workflowBusy} aria-label={t("Enviar mensaje y abrir panel", "Send message and open sidebar")}><ArrowUp size={18}/></button>
@@ -650,6 +743,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         if (following || !metrics || (metrics.height === area.clientHeight && metrics.contentHeight === area.scrollHeight)) followLatestRef.current = following;
         if (following) setNewMessages(false);
       }}>
+        <p role="status">{providerMode==="BEDROCK"?(language==="es"?"Texto interpretado con Amazon Bedrock. Las acciones requieren confirmación.":"Text interpreted with Amazon Bedrock. Actions require confirmation."):providerMode==="DETERMINISTIC"?(language==="es"?"Modo guiado por reglas: interpretación de texto sin modelo generativo.":"Rule-guided mode: text interpretation without a generative model."):null}</p>
         <div className={styles.history} role="log" aria-live="off" aria-label="Conversation messages">
           {history.map((message, index) => <div key={index} className={message.speaker === "user" ? styles.userRow : styles.assistantRow}><p className={message.speaker === "user" ? styles.user : styles.assistant}><span className={styles.speaker}>{message.speaker === "user" ? "You" : "CargoMesh"}</span>{message.text}</p></div>)}
         </div>
@@ -681,8 +775,23 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
           </div>
           <p className={styles.reviewPending}>You can say “CargoMesh, apply recognized details”. Once every required field is valid and you have checked the review, say “CargoMesh, {request ? "confirm and save my draft revision" : "confirm and create my draft"}”. A simple “yes” will not create anything.</p>
         </section>}
+        {capturePending.date && <DateClarificationPanel key={JSON.stringify(capturePending.date)} pending={capturePending.date} language={language} onDiscard={()=>setCaptureClarification({...capturePendingRef.current,date:null})} onConfirm={(role,start,end)=>{const fields=[{field:role==='pickup'?'pickupWindowStartsAt' as const:'deliveryWindowStartsAt' as const,value:start},{field:role==='pickup'?'pickupWindowEndsAt' as const:'deliveryWindowEndsAt' as const,value:end}];voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,fields);onFields(fields);setCaptureClarification({...capturePendingRef.current,date:null});add(null,language==='es'?'Ventana aplicada al borrador local. Revisa el resumen antes de guardar.':'Window applied to the local draft. Review before saving.');}}/>}
+        {capturePending.classification && <CargoClassificationPanel options={options} language={language} onConfirm={(code,product)=>{const fields=[{field:'categoryCode' as const,value:code},{field:'cargoDescription' as const,value:product}];voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,fields);onFields(fields);setCaptureClarification({...capturePendingRef.current,classification:false});add(null,language==='es'?'Apliqué tu clasificación revisada; los requisitos y documentos todavía deben validarse.':'Applied your reviewed classification; requirements and documents still need validation.');}}/>}
+        {commercialCommand && request && optionsSource!=='fixture' && <ChatCommercialPanel key={`${request.id}:${request.draftVersion}`} requestId={request.id} organizationId={request.organizationId} version={request.draftVersion} command={commercialCommand} blocked={busy||draftDirty||Boolean(measurementPending || capturePending.date || capturePending.classification)} language={language} onChanged={onRead}/>}
+        {quotePanelOpen && request && optionsSource !== "fixture" && <ChatQuotePanel key={`${request.id}:${request.draftVersion}:${request.status}`} request={request}
+          blocked={busy || interpretationBusy || Boolean(measurementPending || capturePending.date || capturePending.classification) || draftDirty} language={language} onChanged={onRead}
+          onDiscuss={() => add(null, language === "es" ? "Las ofertas son atribuibles al transportista. El precio histórico es solo una referencia; no confirma precio o capacidad actual." : "Offers belong to their carrier. Historical prices are references, not current price or capacity confirmations.")}/>}
+        {request && !draftDirty && optionsSource !== "fixture" && <div className={styles.confirmation} role="group" aria-label={language === "es" ? "Continuar con la solicitud guardada" : "Continue with the saved request"}>
+          <strong>{request.referenceCode} · {language === "es" ? "versión" : "version"} {request.draftVersion}</strong>
+          <p>{language === "es" ? "Revisa las alternativas de esta solicitud en Operaciones. Solicitar cotizaciones, seleccionar una opción y autorizar una reserva requieren sus propias confirmaciones; abrir la pantalla no contrata transporte." : "Review this request's alternatives in Operations. Requesting quotes, selecting an option and authorizing a booking each require their own confirmation; opening this screen does not book transportation."}</p>
+          <button className={styles.suggestion} type="button" disabled={busy || interpretationBusy || Boolean(measurementPending || capturePending.date || capturePending.classification)} onClick={() => setQuotePanelOpen(current=>!current)}>{language === "es" ? (quotePanelOpen ? "Cerrar cotización" : "Buscar cotizaciones con confirmación") : (quotePanelOpen ? "Close quotation" : "Request quotes with confirmation")}</button>
+          <Link className={styles.suggestion} href={workspaceHref(`/requests/${encodeURIComponent(request.id)}`, pathname ?? "")}>
+            {language === "es" ? "Revisar alternativas y acciones" : "Review alternatives and actions"}
+          </Link>
+        </div>}
+        {measurementPending && <p className={styles.notice} role="alert">{language === "es" ? "Medidas pendientes de aclaración. La confirmación desde el asistente está bloqueada." : "Measurements need clarification. Assistant confirmation is blocked."}</p>}
         {!awaitingConfirmation && !busy && (!request || draftDirty) && <button type="button" className={styles.suggestion} onClick={() => prepareConfirmation(draft)}>{request ? t("Revisar cambios antes de guardar", "Review changes before saving") : t("Revisar borrador antes de crear", "Review draft before creating")}</button>}
-        {awaitingConfirmation && <div className={styles.confirmation} role="group" aria-label="Confirm request save"><strong>{request ? "Save DRAFT revision" : "Create DRAFT"}</strong><p>{request ? `Expected version ${request.draftVersion} will be used.` : "A DRAFT will be created for your current organization."} Check every detail below. This approval expires after five minutes; no booking will occur.</p><dl>{reviewRows(draft, options).map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl><div><button type="button" onClick={() => confirmSave(null)} disabled={busy}>{request ? "Confirm revision" : "Confirm creation"}</button><button type="button" onClick={() => { confirmationRef.current = null; setAwaitingConfirmation(false); add(null, "Nothing was saved. You can keep editing."); }}>Keep editing</button></div></div>}
+        {awaitingConfirmation && <div className={styles.confirmation} role="group" aria-label="Confirm request save"><strong>{language === "es" ? (request ? "Guardar revisión del borrador" : "Crear borrador") : (request ? "Save DRAFT revision" : "Create DRAFT")}</strong><p>{request ? `Expected version ${request.draftVersion} will be used.` : "A DRAFT will be created for your current organization."} Check every detail below. This approval expires after five minutes; no booking will occur.</p><dl>{reviewRows(draft, options).map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl><div><button type="button" onClick={() => confirmSave(null)} disabled={busy || Boolean(measurementPending || capturePending.date || capturePending.classification)}>{language === "es" ? (request ? "Confirmar revisión" : "Confirmar creación") : (request ? "Confirm revision" : "Confirm creation")}</button><button type="button" onClick={() => { confirmationRef.current = null; setAwaitingConfirmation(false); add(null, "Nothing was saved. You can keep editing."); }}>{language === "es" ? "Seguir editando" : "Keep editing"}</button></div></div>}
         {draftDirty && <p className={styles.notice} role="status">{t("Hay cambios locales sin guardar. Confirma la revisión para volver a evaluar ROAD.", "Local changes are unsaved. Confirm the revision before checking ROAD again.")}</p>}
         {error?.code === "STALE_DRAFT" && onReload && <div className={styles.conflict} role="alert"><strong>{t("Conflicto de versión", "Version conflict")}</strong><p>{t("Otro cambio actualizó el DRAFT. Recargar la versión del servidor descartará tus cambios locales sin guardar.", "Another change updated this DRAFT. Reloading the server version will discard your unsaved local changes.")}</p><button type="button" onClick={onReload}>{t("Recargar versión actual", "Reload current version")}</button></div>}
         {interpretationBusy && <p className={styles.loading} role="status">{t("Interpretando tu mensaje…", "Interpreting your message…")}</p>}
@@ -698,22 +807,33 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         {sendNotice && <p className={styles.voiceStatus} role="status">{sendNotice}</p>}
         <form onSubmit={(event) => { event.preventDefault(); void send(); }} className={styles.composer}>
           <label className={styles.srOnly} htmlFor="v2-chat-text">Your message or editable voice transcript</label>
-          <input ref={inputRef} id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder={t("Describe tu carga o corrige un dato…", "Describe cargo or correct a detail…")} autoComplete="off" disabled={busy || interpretationBusy || workflowBusy} />
+          <textarea rows={2} maxLength={6000} className={styles.messageInput} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.nativeEvent.isComposing){event.preventDefault();event.currentTarget.form?.requestSubmit();}}} ref={inputRef} id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder={t("Describe tu carga o corrige un dato…", "Describe cargo or correct a detail…")} autoComplete="off" disabled={busy || interpretationBusy || workflowBusy} />
           {!novaVoiceEnabled && (voice.state === "listening" || voice.state === "requesting_permission")
             ? <button type="button" className={styles.micActive} aria-label="Stop listening" title="Stop listening" onClick={voice.stop}>■</button>
             : !novaVoiceEnabled && <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={catalogStatus !== "ready" || voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing" || voice.speaking || busy || interpretationBusy || workflowBusy} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>}
           <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || workflowBusy}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
         {novaVoiceEnabled && catalogStatus === "ready" && <>
-          <NovaVoicePreview key={conversationEpoch} preview={optionsSource === "fixture"} voiceContext={recentVoiceContext(history)} onTurn={(update) => {
+          <NovaVoicePreview key={conversationEpoch} preview={optionsSource === "fixture"} language={language} draftContext={voiceDraftContext(draft, request?.draftVersion ?? null, [...(measurementPending ? ["MEASUREMENT_SCOPE_PENDING" as const] : []),...(capturePending.date ? ["DATE_WINDOW_PENDING" as const] : []),...(capturePending.classification ? ["CLASSIFICATION_PENDING" as const] : [])], measurementPending, {timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,pendingDates:capturePending.date?.alternatives??[]})} voiceContext={recentVoiceContext(history)} onTurn={(update) => {
             const nextHistory = applyVoiceTranscript(voiceHistoryRef.current, update);
             voiceHistoryRef.current = nextHistory;
             setHistory(nextHistory);
             if (update.final && update.role === "assistant") setAnnouncement(update.text);
+            if (update.final && update.role === "user") setLanguage(current => conversationLanguage(update.text, current));
             if (update.final && update.role === "user" && !appliedVoiceTurnsRef.current.has(update.contentId)) {
               appliedVoiceTurnsRef.current.add(update.contentId);
+              if (handleCaptureClarification(update.text,null) || handleMeasurement(update.text, null)) return;
+              const commercial = commercialChatIntent(update.text);
+              if(commercial&&request&&optionsSource!=='fixture'){setCommercialCommand({...commercial,nonce:Date.now()});add(null,language==='es'?'Revisa la acción y confirma en pantalla; todavía no ejecuté selección ni reserva.':'Review and confirm the action on screen; no selection or booking was executed yet.');return;}
+              if (wantsQuoteSearch(update.text)) {
+                if (request && optionsSource !== "fixture") {
+                  setQuotePanelOpen(true);
+                  add(null, language === "es" ? "Abre el panel de cotización, revisa el pedido y el plazo y confirma con la casilla y el botón. Tu petición de voz todavía no ha solicitado ni contratado transporte." : "Review the quotation panel and deadline, then confirm with the checkbox and button. Your voice request has not requested quotes or booked transportation yet.");
+                } else add(null,language === "es" ? "Primero revisa y guarda una solicitud autorizada." : "First review and save an authorized request.");
+                return;
+              }
               if (!spokenReviewCommand(update.text)) {
-                const fields = buildSpokenRequestReview(nextHistory, options, voiceDraftRef.current).fields;
+                const fields = buildSpokenRequestReview(nextHistory, options, voiceDraftRef.current).fields.filter(f=>(!capturePendingRef.current.date||!f.field.endsWith("At"))&&(!capturePendingRef.current.classification||f.field!=="categoryCode")&&(!measurementPendingRef.current||!["unitLengthCm","unitWidthCm","unitHeightCm","unitVolumePerUnitM3"].includes(f.field)));
                 if (fields.length) {
                   voiceDraftRef.current = applyChatFieldsToDraft(voiceDraftRef.current, fields);
                   onFields(fields);
@@ -736,8 +856,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
               }
             }
           }} />
-          {spokenDetails && <button type="button" className={styles.retry} onClick={() => setVoiceReviewOpen(true)}>Review spoken request details</button>}
-          {onEdit && <button type="button" className={styles.retry} onClick={() => goToFormStep(1)}>Go to request form</button>}
+          {spokenDetails && <button type="button" className={styles.retry} onClick={() => setVoiceReviewOpen(true)}>{language==="es"?"Revisar datos de voz":"Review spoken request details"}</button>}
+          {onEdit && <button type="button" className={styles.retry} onClick={() => goToFormStep(1)}>{language==="es"?"Ir al formulario":"Go to request form"}</button>}
         </>}
         {!novaVoiceEnabled && <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button><label>Voice <select aria-label="Voice for spoken replies" value={voice.selectedVoiceURI} onChange={(event) => voice.setSelectedVoiceURI(event.target.value)}><option value="">Automatic · Zira preferred</option>{voice.availableVoices.map((option) => <option key={option.voiceURI} value={option.voiceURI}>{option.name} ({option.lang}){option.localService ? " · device" : ""}</option>)}</select></label><label>Pace <select aria-label="Voice pace" value={voiceRate} onChange={(event) => setVoiceRate(Number(event.target.value))}><option value={0.88}>Relaxed</option><option value={0.96}>Natural</option><option value={1.06}>Brisk</option></select></label><button type="button" onClick={() => voice.readResponse("Hello, I'm CargoMesh. Tell me what you need to ship, and I'll help you step by step.")} disabled={voice.speaking}>Test voice</button></div>}
       </div>

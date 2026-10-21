@@ -48,3 +48,9 @@ test("current offer summary includes issuer price, components, terms and version
   assert.match(summary, /offer version 2/);
   assert.match(summary, /cannot authorize a booking/);
 });
+
+test("Spanish commercial summaries retain absent-offer and consent boundaries",()=>{
+  assert.match(summarizeWorkflow("offers",[],"es"),/no hay ofertas vigentes/);
+  assert.match(summarizeWorkflow("bookings",[],"es"),/confirmaciones separadas/);
+  assert.match(summarizeWorkflow("executions",[],"es"),/No puedo inferir/);
+});
