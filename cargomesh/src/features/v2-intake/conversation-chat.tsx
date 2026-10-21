@@ -25,6 +25,7 @@ import { voiceDraftContext } from "@/features/v2-conversation-prep/voice-draft-c
 import { readCargoReadiness, summarizeCargoReadiness } from "./workflow-chat-client";
 import { wantsQuoteSearch } from "./chat-quote-action";
 import { DateClarificationPanel, CargoClassificationPanel } from "./capture-clarification-panel";
+import {spokenCaptureClarification} from "./spoken-capture-clarification";
 import { dateClarification, needsCargoClassification, type DateClarification } from "./capture-clarification";
 import { ChatCommercialPanel } from "./chat-commercial-panel";
 import { commercialChatIntent } from "./chat-commercial-action";
@@ -71,7 +72,8 @@ function draftSummary(draft: V2IntakePrototypeDraft, options: IntakeOptionsData,
   return `Review the structured details below. ${locationName(draft.originFacilityId, options)} → ${locationName(draft.destinationFacilityId, options)}; ${draft.unitQuantity} unit(s) of ${draft.categoryCode.toLowerCase()}. ${request ? `Saving will revise ${request.referenceCode} from version ${request.draftVersion}.` : "Saving will create a DRAFT for your authorized organization."} Confirm explicitly or tell me what to change.`;
 }
 
-function reviewRows(draft: V2IntakePrototypeDraft, options: IntakeOptionsData) {
+function reviewRows(draft: V2IntakePrototypeDraft, options: IntakeOptionsData,language:"es"|"en"="en") {
+  const spanish:Partial<Record<keyof V2IntakePrototypeDraft,string>>={originFacilityId:'Recojo',destinationFacilityId:'Entrega',categoryCode:'Categoría',packaging:'Embalaje',cargoDescription:'Mercancía',unitQuantity:'Unidades',unitWeightPerUnitKg:'Peso por unidad (kg)',unitVolumePerUnitM3:'Volumen por unidad (m³)',totalWeightKg:'Peso total (kg)',totalVolumeM3:'Volumen total (m³)',unitLengthCm:'Largo por unidad (cm)',unitWidthCm:'Ancho por unidad (cm)',unitHeightCm:'Alto por unidad (cm)',pickupWindowStartsAt:'Recojo desde',pickupWindowEndsAt:'Recojo hasta',deliveryWindowStartsAt:'Entrega desde',deliveryWindowEndsAt:'Entrega hasta',requiredEquipment:'Equipo',pickupContactName:'Contacto de recojo',pickupContactPhoneE164:'Teléfono de recojo',pickupContactEmail:'Correo de recojo',recipientContactName:'Persona que recibe',recipientContactPhoneE164:'Teléfono de entrega',recipientContactEmail:'Correo de entrega',requirements:'Requisitos',divisible:'Carga divisible',unitIndivisible:'Unidad indivisible',unitStackable:'Apilable'};
   const labels: Partial<Record<keyof V2IntakePrototypeDraft, string>> = {
     originFacilityId: "Pickup facility", destinationFacilityId: "Delivery facility", categoryCode: "Cargo category",
     packaging: "Packaging", cargoDescription: "Cargo description", unitQuantity: "Quantity",
@@ -89,7 +91,7 @@ function reviewRows(draft: V2IntakePrototypeDraft, options: IntakeOptionsData) {
   };
   return (Object.entries(draft) as Array<[keyof V2IntakePrototypeDraft, V2IntakePrototypeDraft[keyof V2IntakePrototypeDraft]]>)
     .filter(([field, value]) => field !== "unitPackageType" && (typeof value === "boolean" || (Array.isArray(value) ? value.length > 0 : Boolean(String(value).trim()))))
-    .map(([field, value]) => ({ label: labels[field] ?? field, value: field === "originFacilityId" || field === "destinationFacilityId"
+    .map(([field, value]) => ({ label: (language==="es"?spanish[field]:null)??labels[field]??field, value: field === "originFacilityId" || field === "destinationFacilityId"
       ? locationName(String(value), options) : Array.isArray(value) ? value.join(", ") : typeof value === "boolean" ? value ? "Yes" : "No" : String(value) }));
 }
 
@@ -141,6 +143,12 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const [sendNotice, setSendNotice] = useState("");
   const spokenDetails = spokenUserDetails(history);
   const [voiceReviewOpen, setVoiceReviewOpen] = useState(false);
+  const [voiceMode,setVoiceMode]=useState(false);
+  const [novaSpeaking,setNovaSpeaking]=useState(false);
+  const [queuedVoiceAction,setQueuedVoiceAction]=useState<"review"|"confirm"|"apply"|null>(null);
+  const awaitVoiceReplyRef=useRef(false);
+  const [responseFinishedEpoch,setResponseFinishedEpoch]=useState(0);
+  const voiceConfirmationRef=useRef<{review:DraftReview;requestId:string|null;version:number|null}|null>(null);
   const [voiceReviewNotice, setVoiceReviewNotice] = useState("");
   const [voiceInterpretPending, setVoiceInterpretPending] = useState(false);
   const voiceReview = buildSpokenRequestReview(history, options, draft);
@@ -346,6 +354,14 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     capturePendingRef.current=next;setCapturePending(next);confirmationRef.current=null;setAwaitingConfirmation(false);
   }
   function handleCaptureClarification(value:string,user:string|null):boolean {
+    const prompted=lastSpokenQuestionField(voiceHistoryRef.current);
+    const roleHint=prompted?.startsWith("pickupWindow")?"pickup":prompted?.startsWith("deliveryWindow")?"delivery":undefined;
+    const resolved=spokenCaptureClarification(value,capturePendingRef.current,options,Intl.DateTimeFormat().resolvedOptions().timeZone,Date.now(),roleHint);
+    if(resolved.fields.length){
+      voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,resolved.fields);onFields(resolved.fields);
+      setCaptureClarification({date:resolved.dateResolved?null:capturePendingRef.current.date,classification:resolved.classificationResolved?false:capturePendingRef.current.classification});
+      add(user,language==='es'?'Apliqué tu aclaración al borrador local. Puedes seguir hablando y corregir cualquier dato.':'Applied your clarification to the local draft. Keep speaking and correct any detail.');return true;
+    }
     const date=dateClarification(value,Intl.DateTimeFormat().resolvedOptions().timeZone);
     const classification=needsCargoClassification(value);
     if(!date&&!classification)return false;
@@ -355,7 +371,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     if(measures.handled){measurementPendingRef.current=measures.pending;setMeasurementPending(measures.pending);}
     const fields=[...measures.fields,...resolveConversationSuggestions(explicit.filter(f=>['unitQuantity','unitWeightPerUnitKg','packaging','originFacilityId','destinationFacilityId'].includes(f.field)),options).flatMap(f=>f.parsed===null?[]:[{field:f.field,value:f.parsed}])];
     if(fields.length){voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,fields);onFields(fields);}
-    add(user,conversationLanguage(value,language)==='es'?'Conservé los datos claros. Revisa el panel de fechas o mercancía: no elegiré una alternativa ni clasificación por mi cuenta.':'I kept the explicit facts. Review the date or cargo panel; I will not choose an alternative or classification myself.');
+    add(user,conversationLanguage(value,language)==='es'?'Conservé los datos claros. Aclara por voz la fecha, si es recojo o entrega y el horario; para mercancía, indica el producto y la categoría revisada. No elegiré por mi cuenta.':'I kept the explicit facts. Clarify the date, pickup or delivery and time range by voice, or the product and reviewed category. I will not choose for you.');
     return true;
   }
   function hasCaptureClarification(){return Boolean(capturePendingRef.current.date||capturePendingRef.current.classification);}
@@ -443,6 +459,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     setHistory(greeting); setText(""); setChoices([]); setFailedMessage(""); setSendNotice("");
     setAwaitingConfirmation(false); confirmationRef.current = null;
     setVoiceReviewOpen(false); setVoiceReviewNotice(""); setNewMessages(false);
+    voiceConfirmationRef.current=null;setQueuedVoiceAction(null);awaitVoiceReplyRef.current=false;setNovaSpeaking(false);setVoiceMode(false);
     appliedVoiceTurnsRef.current.clear(); processedVoiceCommandsRef.current.clear();
     failedAttempts.current = 0; previousHelpTopic.current = null; lastSpokenMessage.current = 0;
     followLatestRef.current = true;
@@ -473,14 +490,28 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     window.requestAnimationFrame(() => reviewRef.current?.scrollIntoView({ block: "start" }));
   }
 
+  function requestVoiceReview(waitForReply=false){
+    awaitVoiceReplyRef.current=waitForReply;setQueuedVoiceAction('review');
+  }
+  useEffect(()=>{
+    if(!queuedVoiceAction||awaitVoiceReplyRef.current||novaSpeaking||voiceInterpretPending||busy)return;
+    setQueuedVoiceAction(null);
+    if(queuedVoiceAction==='review'){
+      voiceConfirmationRef.current={review:proposeDraftReview(draft),requestId:request?.id??null,version:request?.draftVersion??null};
+      setVoiceReviewOpen(true);setVoiceReviewNotice(language==='es'?'Resumen del borrador actual. Corrige por voz o confirma explícitamente cuando esté completo.':'Current draft summary. Correct by voice or explicitly confirm when complete.');
+    }else if(queuedVoiceAction==='apply')applySpokenDetails();
+    else confirmSpokenDraft();
+  },[queuedVoiceAction,novaSpeaking,voiceInterpretPending,busy,responseFinishedEpoch,draft,request]);
+
   function confirmSpokenDraft() {
-    if (hasCaptureClarification() || measurementPendingRef.current || !voiceReviewOpen || !voicePayload || busy || voiceInterpretCountRef.current > 0 || optionsSource === "fixture"
+    const approval=voiceConfirmationRef.current;
+    if (!approval||!canApproveDraftReview(approval.review,draft)||approval.requestId!==(request?.id??null)||approval.version!==(request?.draftVersion??null)||novaSpeaking||hasCaptureClarification() || measurementPendingRef.current || !voiceReviewOpen || !voicePayload || busy || voiceInterpretCountRef.current > 0 || optionsSource === "fixture"
       || Boolean(request && (!canRevise || !draftDirty || request.status !== "DRAFT"))) {
       setVoiceReviewNotice((language==="es"?"Primero revisa los datos pendientes o contradictorios que aparecen aquí.":"I cannot create a draft yet. Review the missing or conflicting details shown here first."));
       return;
     }
     if (voiceSaveInFlightRef.current) return;
-    voiceSaveInFlightRef.current = true;
+    voiceSaveInFlightRef.current = true;voiceConfirmationRef.current=null;
     setVoiceReviewNotice(request ? (language==="es"?"Guardando la revisión confirmada…":"Saving the confirmed draft revision…") : (language==="es"?"Creando el borrador confirmado y consultando opciones preliminares ROAD…":"Creating your confirmed draft and checking preliminary ROAD options…"));
     onSave();
   }
@@ -510,7 +541,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       const { interpretation } = await interpret(value, currentDraft, expectedField);
       const proposal = guardExplicitCorrection(value, expectedField, interpretation);
       if (proposal.intent !== "PROVIDE" && proposal.intent !== "CORRECT") return;
-      if(proposal.fields.some(f=>f.field==='categoryCode'&&f.value.toUpperCase()==='CHEMICAL'))setCaptureClarification({...capturePendingRef.current,classification:true});
+      if(voiceDraftRef.current.categoryCode!=='CHEMICAL'&&proposal.fields.some(f=>f.field==='categoryCode'&&f.value.toUpperCase()==='CHEMICAL'))setCaptureClarification({...capturePendingRef.current,classification:true});
       const fields = resolveConversationSuggestions(proposal.fields, options)
         .filter(f=>(!capturePendingRef.current.date||!f.field.endsWith("At"))&&(!capturePendingRef.current.classification||f.field!=="categoryCode"))
         .filter(item => !measurementPendingRef.current || !["unitLengthCm","unitWidthCm","unitHeightCm","unitVolumePerUnitM3"].includes(item.field))
@@ -643,7 +674,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       const accepted = new Set<ConversationField>();
       const applied: Array<{ field: ConversationField; value: string }> = [];
       let clarification: string | null = null;
-      if(proposal.fields.some(f=>f.field==='categoryCode'&&f.value.toUpperCase()==='CHEMICAL'))setCaptureClarification({...capturePendingRef.current,classification:true});
+      if(voiceDraftRef.current.categoryCode!=='CHEMICAL'&&proposal.fields.some(f=>f.field==='categoryCode'&&f.value.toUpperCase()==='CHEMICAL'))setCaptureClarification({...capturePendingRef.current,classification:true});
       for (const suggestion of resolveConversationSuggestions(proposal.fields, options).filter(f=>(!capturePendingRef.current.date||!f.field.endsWith('At'))&&(!capturePendingRef.current.classification||f.field!=='categoryCode')).filter(item => !measurementPendingRef.current || !["unitLengthCm","unitWidthCm","unitHeightCm","unitVolumePerUnitM3"].includes(item.field))) {
         const field = suggestion.field;
         const parsed = suggestion.parsed;
@@ -780,34 +811,20 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         </div>
         <div className={styles.srOnly} role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
         {choices.length > 0 && <div className={styles.choiceList} aria-label="Confirm a location">{choices.map((choice) => <button key={choice.value} type="button" onClick={() => { const field = { field: choice.field, value: choice.value }; onFields([field]); setChoices([]); add(null, `Confirmed ${choice.label}. ${ask(missingField(applyChatFieldsToDraft(draft, [field])) ?? "categoryCode")}`); }}>{choice.label}</button>)}</div>}
-        {voiceReviewOpen && <section ref={reviewRef} className={styles.spokenReview} aria-label="Review spoken freight request">
-          <header><strong>Review your freight request</strong><p>These are provisional details from your voice conversation. Check them before creating a draft.</p></header>
-          <dl>
-            <div><dt>From</dt><dd>{draft.originFacilityId ? locationName(draft.originFacilityId, options) : voiceReview.pickup || "Not provided"}{voiceReview.pickup && <small>Heard: {voiceReview.pickup}{!draft.originFacilityId ? " · select an authorized facility" : ""}</small>}</dd></div>
-            <div><dt>To</dt><dd>{draft.destinationFacilityId ? locationName(draft.destinationFacilityId, options) : voiceReview.destination || "Not provided"}{voiceReview.destination && <small>Heard: {voiceReview.destination}{!draft.destinationFacilityId ? " · select an authorized facility" : ""}</small>}</dd></div>
-            <div><dt>Cargo</dt><dd>{draft.cargoDescription || voiceReview.cargo || "Not provided"}{voiceReview.cargo && draft.cargoDescription && voiceReview.cargo !== draft.cargoDescription ? <small>Heard: {voiceReview.cargo}</small> : null}</dd></div>
-            <div><dt>Weight</dt><dd>{draft.totalWeightKg ? `${draft.totalWeightKg} kg from units` : voiceReview.weight || "Not provided"}{voiceReview.weight && <small>Heard: {voiceReview.weight}{!draft.totalWeightKg ? " · confirm number of units and weight per unit" : ""}</small>}</dd></div>
-            <div><dt>Timing</dt><dd>{draft.pickupWindowStartsAt && draft.deliveryWindowEndsAt ? `${draft.pickupWindowStartsAt} → ${draft.deliveryWindowEndsAt}` : voiceReview.timing || "Exact pickup and delivery windows needed"}</dd></div>
-            <div><dt>Special handling</dt><dd>{draft.requirements.length ? draft.requirements.join(", ") : voiceReview.handling.join(", ") || "None stated"}{voiceReview.handling.length > 0 && <small>Heard: {voiceReview.handling.join(", ")}</small>}</dd></div>
-            <div><dt>Price</dt><dd>Not confirmed here<small>Check the request workspace for any carrier-authored offers.</small></dd></div>
-          </dl>
-          <details className={styles.reviewMore}><summary>See all validated form details</summary><dl>{reviewRows(draft, options).map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl></details>
-          {voicePayload && <details className={styles.reviewMore}><summary>See the request JSON that will be submitted</summary><pre className={styles.reviewJson}>{JSON.stringify(voicePayload, null, 2)}</pre></details>}
-          <button type="button" className={styles.reviewAction} disabled={!voiceReview.fields.length} onClick={applySpokenDetails}>{voiceReview.fields.length ? `Apply ${voiceReview.fields.length} matched detail${voiceReview.fields.length === 1 ? "" : "s"} to draft` : "Matched details applied"}</button>
-          {voiceReviewNotice && <p className={styles.reviewPending} role="status">{voiceReviewNotice}</p>}
-          {voiceReview.destination && !draft.destinationFacilityId && <p className={styles.reviewPending}>Destination heard: {voiceReview.destination}. No authorized facility matched, so it was not applied. Select an available destination in the form; if it is absent, this request cannot be created with the current catalog.</p>}
-          {spokenWeightConflict && <p className={styles.reviewPending}>The spoken total weight ({declaredWeightKg} kg) differs from the units in the draft ({draft.totalWeightKg} kg). Correct the count or weight per unit before creating the request.</p>}
-          <p className={styles.reviewPending}>{voiceInterpretPending ? "Checking the latest spoken detail before confirmation…" : spokenRouteConflict ? "The spoken route differs from the selected facility. Check the facility before creating a draft." : reviewIssues.length ? `${reviewIssues.length} required or invalid field${reviewIssues.length === 1 ? "" : "s"} remain. No request has been created.` : voicePayload ? "The request JSON is ready. Review it, then confirm to create a draft and check preliminary ROAD options." : "The request fields do not match the spoken facts or current authorized catalog. Check them before creating a draft."}</p>
-          {nextField && reviewIssues.length > 0 && <p className={styles.reviewPending}>Next detail: {ask(nextField)} Your spoken answers are checked against the request fields; please verify them here.</p>}
-          {reviewIssues.length > 0 && <ul className={styles.reviewMissing}>{([1, 2, 3] as PrototypeStep[]).map((step) => { const count = reviewIssues.filter((issue) => issue.step === step).length; return count ? <li key={step}>{step === 1 ? "Facilities" : step === 2 ? "Cargo and units" : "Windows and contacts"}: {count} to complete</li> : null; })}</ul>}
+        {voiceReviewOpen && <section ref={reviewRef} className={styles.spokenReview} aria-label={language==='es'?'Confirmar solicitud por voz':'Review spoken freight request'}>
+          <header><strong>{language==='es'?'Revisa y confirma tu solicitud':'Review and confirm your request'}</strong><p>{language==='es'?'Puedes corregir cualquier dato hablando. El resumen se actualiza; no se guarda automáticamente.':'Correct any detail by voice. The summary updates; it is not saved automatically.'}</p></header>
+          <dl>{reviewRows(draft,options,language).map(row=><div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl>
+          {voiceReviewNotice&&<p role="status" className={styles.reviewPending}>{voiceReviewNotice}</p>}
+          {(reviewIssues.length>0||spokenRouteConflict||spokenWeightConflict||hasCaptureClarification()||measurementPending)&&<p className={styles.reviewPending}>{language==='es'?`Quedan datos pendientes o contradictorios. Sigue respondiendo por voz. ${nextField?ask(nextField):''}`:`Some details need clarification. Keep answering by voice. ${nextField?ask(nextField):''}`}</p>}
+          <p className={styles.reviewPending}>{language==='es'?'Di «quiero corregir» para continuar o «confirmo guardar el borrador» después de revisar todos los datos. Un «sí» no crea una solicitud ni reserva transporte.':'Say “keep editing” to continue, or “confirm and save my draft” after reviewing every detail. A bare yes never creates a request or books transport.'}</p>
           <div className={styles.reviewActions}>
-            {(reviewIssues.length > 0 || spokenRouteConflict) && onEdit && <button type="button" onClick={() => goToFormStep(spokenRouteConflict ? 1 : reviewIssues[0].step)}>Complete missing fields in request form</button>}
-            {voicePayload && <button type="button" className={styles.reviewAction} disabled={busy || voiceInterpretPending || optionsSource === "fixture" || Boolean(request && (!canRevise || !draftDirty))} onClick={confirmSpokenDraft}>{request ? "Confirm and save draft revision" : "Confirm and create draft"}</button>}
+            <button type="button" onClick={()=>{voiceConfirmationRef.current=null;setVoiceReviewOpen(false);}}>{language==='es'?'Seguir corrigiendo por voz':'Keep correcting by voice'}</button>
+            <button type="button" disabled={novaSpeaking||voiceInterpretPending||busy} onClick={()=>requestVoiceReview()}>{language==='es'?'Revisar resumen actualizado':'Review updated summary'}</button>
+            {voicePayload&&<button type="button" className={styles.reviewAction} disabled={novaSpeaking||busy||voiceInterpretPending||optionsSource==='fixture'||Boolean(measurementPending)||hasCaptureClarification()||!canApproveDraftReview(voiceConfirmationRef.current?.review??null,draft)} onClick={confirmSpokenDraft}>{language==='es'?'Confirmar y guardar borrador':'Confirm and save draft'}</button>}
           </div>
-          <p className={styles.reviewPending}>You can say “CargoMesh, apply recognized details”. Once every required field is valid and you have checked the review, say “CargoMesh, {request ? "confirm and save my draft revision" : "confirm and create my draft"}”. A simple “yes” will not create anything.</p>
         </section>}
-        {capturePending.date && <DateClarificationPanel key={JSON.stringify(capturePending.date)} pending={capturePending.date} language={language} onDiscard={()=>setCaptureClarification({...capturePendingRef.current,date:null})} onConfirm={(role,start,end)=>{const fields=[{field:role==='pickup'?'pickupWindowStartsAt' as const:'deliveryWindowStartsAt' as const,value:start},{field:role==='pickup'?'pickupWindowEndsAt' as const:'deliveryWindowEndsAt' as const,value:end}];voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,fields);onFields(fields);setCaptureClarification({...capturePendingRef.current,date:null});add(null,language==='es'?'Ventana aplicada al borrador local. Revisa el resumen antes de guardar.':'Window applied to the local draft. Review before saving.');}}/>}
-        {capturePending.classification && <CargoClassificationPanel options={options} language={language} onConfirm={(code,product)=>{const fields=[{field:'categoryCode' as const,value:code},{field:'cargoDescription' as const,value:product}];voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,fields);onFields(fields);setCaptureClarification({...capturePendingRef.current,classification:false});add(null,language==='es'?'Apliqué tu clasificación revisada; los requisitos y documentos todavía deben validarse.':'Applied your reviewed classification; requirements and documents still need validation.');}}/>}
+        {!voiceMode&&capturePending.date && <DateClarificationPanel key={JSON.stringify(capturePending.date)} pending={capturePending.date} language={language} onDiscard={()=>setCaptureClarification({...capturePendingRef.current,date:null})} onConfirm={(role,start,end)=>{const fields=[{field:role==='pickup'?'pickupWindowStartsAt' as const:'deliveryWindowStartsAt' as const,value:start},{field:role==='pickup'?'pickupWindowEndsAt' as const:'deliveryWindowEndsAt' as const,value:end}];voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,fields);onFields(fields);setCaptureClarification({...capturePendingRef.current,date:null});add(null,language==='es'?'Ventana aplicada al borrador local. Revisa el resumen antes de guardar.':'Window applied to the local draft. Review before saving.');}}/>}
+        {!voiceMode&&capturePending.classification && <CargoClassificationPanel options={options} language={language} onConfirm={(code,product)=>{const fields=[{field:'categoryCode' as const,value:code},{field:'cargoDescription' as const,value:product}];voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,fields);onFields(fields);setCaptureClarification({...capturePendingRef.current,classification:false});add(null,language==='es'?'Apliqué tu clasificación revisada; los requisitos y documentos todavía deben validarse.':'Applied your reviewed classification; requirements and documents still need validation.');}}/>}
         {commercialCommand && request && optionsSource!=='fixture' && <ChatCommercialPanel key={`${request.id}:${request.draftVersion}`} requestId={request.id} organizationId={request.organizationId} version={request.draftVersion} command={commercialCommand} blocked={busy||draftDirty||Boolean(measurementPending || capturePending.date || capturePending.classification)} language={language} onChanged={onRead}/>}
         {quotePanelOpen && request && optionsSource !== "fixture" && <ChatQuotePanel key={`${request.id}:${request.draftVersion}:${request.status}`} request={request}
           blocked={busy || interpretationBusy || Boolean(measurementPending || capturePending.date || capturePending.classification) || draftDirty} language={language} onChanged={onRead}
@@ -822,7 +839,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         </div>}
         {measurementPending && <p className={styles.notice} role="alert">{language === "es" ? "Medidas pendientes de aclaración. La confirmación desde el asistente está bloqueada." : "Measurements need clarification. Assistant confirmation is blocked."}</p>}
         {!awaitingConfirmation && !busy && (!request || draftDirty) && <button type="button" className={styles.suggestion} onClick={() => prepareConfirmation(draft)}>{request ? t("Revisar cambios antes de guardar", "Review changes before saving") : t("Revisar borrador antes de crear", "Review draft before creating")}</button>}
-        {awaitingConfirmation && <div className={styles.confirmation} role="group" aria-label="Confirm request save"><strong>{language === "es" ? (request ? "Guardar revisión del borrador" : "Crear borrador") : (request ? "Save DRAFT revision" : "Create DRAFT")}</strong><p>{request ? `Expected version ${request.draftVersion} will be used.` : "A DRAFT will be created for your current organization."} Check every detail below. This approval expires after five minutes; no booking will occur.</p><dl>{reviewRows(draft, options).map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl><div><button type="button" onClick={() => confirmSave(null)} disabled={busy || Boolean(measurementPending || capturePending.date || capturePending.classification)}>{language === "es" ? (request ? "Confirmar revisión" : "Confirmar creación") : (request ? "Confirm revision" : "Confirm creation")}</button><button type="button" onClick={() => { confirmationRef.current = null; setAwaitingConfirmation(false); add(null, "Nothing was saved. You can keep editing."); }}>{language === "es" ? "Seguir editando" : "Keep editing"}</button></div></div>}
+        {awaitingConfirmation && <div className={styles.confirmation} role="group" aria-label="Confirm request save"><strong>{language === "es" ? (request ? "Guardar revisión del borrador" : "Crear borrador") : (request ? "Save DRAFT revision" : "Create DRAFT")}</strong><p>{request ? `Expected version ${request.draftVersion} will be used.` : "A DRAFT will be created for your current organization."} Check every detail below. This approval expires after five minutes; no booking will occur.</p><dl>{reviewRows(draft, options,language).map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl><div><button type="button" onClick={() => confirmSave(null)} disabled={busy || Boolean(measurementPending || capturePending.date || capturePending.classification)}>{language === "es" ? (request ? "Confirmar revisión" : "Confirmar creación") : (request ? "Confirm revision" : "Confirm creation")}</button><button type="button" onClick={() => { confirmationRef.current = null; setAwaitingConfirmation(false); add(null, "Nothing was saved. You can keep editing."); }}>{language === "es" ? "Seguir editando" : "Keep editing"}</button></div></div>}
         {draftDirty && <p className={styles.notice} role="status">{t("Hay cambios locales sin guardar. Confirma la revisión para volver a evaluar ROAD.", "Local changes are unsaved. Confirm the revision before checking ROAD again.")}</p>}
         {error?.code === "STALE_DRAFT" && onReload && <div className={styles.conflict} role="alert"><strong>{t("Conflicto de versión", "Version conflict")}</strong><p>{t("Otro cambio actualizó el DRAFT. Recargar la versión del servidor descartará tus cambios locales sin guardar.", "Another change updated this DRAFT. Reloading the server version will discard your unsaved local changes.")}</p><button type="button" onClick={onReload}>{t("Recargar versión actual", "Reload current version")}</button></div>}
         {interpretationBusy && <p className={styles.loading} role="status">{t("Interpretando tu mensaje…", "Interpreting your message…")}</p>}
@@ -845,14 +862,23 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
           <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || workflowBusy}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
         {novaVoiceEnabled && catalogStatus === "ready" && <>
-          <AssistantLiveContent><NovaVoicePreview key={conversationEpoch} preview={optionsSource === "fixture"} language={language} draftContext={voiceDraftContext(draft, request?.draftVersion ?? null, [...(measurementPending ? ["MEASUREMENT_SCOPE_PENDING" as const] : []),...(capturePending.date ? ["DATE_WINDOW_PENDING" as const] : []),...(capturePending.classification ? ["CLASSIFICATION_PENDING" as const] : [])], measurementPending, {timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,pendingDates:capturePending.date?.alternatives??[]})} voiceContext={recentVoiceContext(history)} onTurn={(update) => {
+          <AssistantLiveContent><NovaVoicePreview key={conversationEpoch} preview={optionsSource === "fixture"} language={language} draftContext={voiceDraftContext(draft, request?.draftVersion ?? null, [...(measurementPending ? ["MEASUREMENT_SCOPE_PENDING" as const] : []),...(capturePending.date ? ["DATE_WINDOW_PENDING" as const] : []),...(capturePending.classification ? ["CLASSIFICATION_PENDING" as const] : [])], measurementPending, {timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,pendingDates:capturePending.date?.alternatives??[]})} voiceContext={recentVoiceContext(history)} onPlaybackStateChange={speaking=>{setNovaSpeaking(speaking);if(speaking)setVoiceMode(true);}} onResponseFinished={()=>{awaitVoiceReplyRef.current=false;setResponseFinishedEpoch(n=>n+1);}} onTurn={(update) => {
             const nextHistory = applyVoiceTranscript(voiceHistoryRef.current, update);
             voiceHistoryRef.current = nextHistory;
             setHistory(nextHistory);
             if (update.final && update.role === "assistant") setAnnouncement(update.text);
             if (update.final && update.role === "user") setLanguage(current => conversationLanguage(update.text, current));
             if (update.final && update.role === "user" && !appliedVoiceTurnsRef.current.has(update.contentId)) {
-              appliedVoiceTurnsRef.current.add(update.contentId);
+              appliedVoiceTurnsRef.current.add(update.contentId);setVoiceMode(true);
+              const reviewCommand=spokenReviewCommand(update.text);
+              if(reviewCommand){
+                if(processedVoiceCommandsRef.current.has(update.contentId))return;
+                processedVoiceCommandsRef.current.add(update.contentId);
+                if(reviewCommand==='continue'){voiceConfirmationRef.current=null;setVoiceReviewOpen(false);setQueuedVoiceAction(null);return;}
+                if(reviewCommand==='review'){requestVoiceReview(true);return;}
+                if(reviewCommand==='confirm'&&!voiceReviewOpen){setVoiceReviewNotice(language==='es'?'Pide revisar el resumen antes de confirmar.':'Ask to review the summary before confirming.');return;}
+                awaitVoiceReplyRef.current=true;setQueuedVoiceAction(reviewCommand);return;
+              }
               if (handleCaptureClarification(update.text,null) || handleMeasurement(update.text, null)) return;
               const commercial = commercialChatIntent(update.text);
               if(commercial&&request&&optionsSource!=='fixture'){setCommercialCommand({...commercial,nonce:Date.now()});add(null,language==='es'?'Revisa la acción y confirma en pantalla; todavía no ejecuté selección ni reserva.':'Review and confirm the action on screen; no selection or booking was executed yet.');return;}
@@ -864,7 +890,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
                 return;
               }
               if (!spokenReviewCommand(update.text)) {
-                const fields = buildSpokenRequestReview(nextHistory, options, voiceDraftRef.current).fields.filter(f=>(!capturePendingRef.current.date||!f.field.endsWith("At"))&&(!capturePendingRef.current.classification||f.field!=="categoryCode")&&(!measurementPendingRef.current||!["unitLengthCm","unitWidthCm","unitHeightCm","unitVolumePerUnitM3"].includes(f.field)));
+                const fields = buildSpokenRequestReview([{speaker:"user",text:update.text,contentId:update.contentId,provisional:false}], options, voiceDraftRef.current).fields.filter(f=>(!capturePendingRef.current.date||!f.field.endsWith("At"))&&(!capturePendingRef.current.classification||f.field!=="categoryCode")&&(!measurementPendingRef.current||!["unitLengthCm","unitWidthCm","unitHeightCm","unitVolumePerUnitM3"].includes(f.field)));
                 if (fields.length) {
                   voiceDraftRef.current = applyChatFieldsToDraft(voiceDraftRef.current, fields);
                   onFields(fields);
@@ -878,17 +904,10 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
                 });
               }
             }
-            if (update.final && update.role === "user" && voiceReviewOpen) {
-              const command = spokenReviewCommand(update.text);
-              if (command && !processedVoiceCommandsRef.current.has(update.contentId)) {
-                processedVoiceCommandsRef.current.add(update.contentId);
-                if (command === "apply") applySpokenDetails();
-                else confirmSpokenDraft();
-              }
-            }
+
           }} /></AssistantLiveContent>
-          {spokenDetails && <button type="button" className={styles.retry} onClick={() => setVoiceReviewOpen(true)}>{language==="es"?"Revisar datos de voz":"Review spoken request details"}</button>}
-          {onEdit && <button type="button" className={styles.retry} onClick={() => goToFormStep(1)}>{language==="es"?"Ir al formulario":"Go to request form"}</button>}
+          {spokenDetails && <button type="button" className={styles.retry} onClick={() => requestVoiceReview()}>{language==="es"?"Revisar datos de voz":"Review spoken request details"}</button>}
+          {onEdit && <button type="button" className={styles.retry} disabled={novaSpeaking} onClick={() => goToFormStep(1)}>{language==="es"?"Ir al formulario":"Go to request form"}</button>}
         </>}
         {!novaVoiceEnabled && <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button><label>Voice <select aria-label="Voice for spoken replies" value={voice.selectedVoiceURI} onChange={(event) => voice.setSelectedVoiceURI(event.target.value)}><option value="">Automatic · Zira preferred</option>{voice.availableVoices.map((option) => <option key={option.voiceURI} value={option.voiceURI}>{option.name} ({option.lang}){option.localService ? " · device" : ""}</option>)}</select></label><label>Pace <select aria-label="Voice pace" value={voiceRate} onChange={(event) => setVoiceRate(Number(event.target.value))}><option value={0.88}>Relaxed</option><option value={0.96}>Natural</option><option value={1.06}>Brisk</option></select></label><button type="button" onClick={() => voice.readResponse("Hello, I'm CargoMesh. Tell me what you need to ship, and I'll help you step by step.")} disabled={voice.speaking}>Test voice</button></div>}
       </div>

@@ -7,10 +7,11 @@ export function sessionDate(now:number,timeZone:string){
 export function dateClarification(text:string,timeZone:string,now=Date.now()):DateClarification|null{
  const referenceDate=sessionDate(now,timeZone);
  const dates=[...text.matchAll(/\b\d{4}-\d{2}-\d{2}\b/g)].map(m=>m[0]);
- const relative=/\b(?:hoy|today|ma[nñ]ana|tomorrow|pasado ma[nñ]ana|day after tomorrow)\b/i.test(text);
+ const dateText=text.replace(/\b(?:de|por)\s+la\s+ma[nñ]ana\b/gi,"");
+ const relative=/\b(?:hoy|today|ma[nñ]ana|tomorrow|pasado ma[nñ]ana|day after tomorrow)\b/i.test(dateText);
  const alternatives=/\b(?:o|or)\b/i.test(text)&&(/\b(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(text)||dates.length>1);
  if(!relative&&!alternatives)return null;
- if(relative){const offset=/pasado ma[nñ]ana|day after tomorrow/i.test(text)?2:/\b(?:hoy|today)\b/i.test(text)?0:1;const next=new Date(`${referenceDate}T00:00:00Z`);next.setUTCDate(next.getUTCDate()+offset);dates.push(next.toISOString().slice(0,10));}
+ if(relative){const offset=/pasado ma[nñ]ana|day after tomorrow/i.test(dateText)?2:/\b(?:hoy|today)\b/i.test(dateText)?0:1;const next=new Date(`${referenceDate}T00:00:00Z`);next.setUTCDate(next.getUTCDate()+offset);dates.push(next.toISOString().slice(0,10));}
  return {alternatives:[...new Set(dates)].slice(0,6),timeZone,referenceDate};
 }
 export function needsCargoClassification(text:string){return /\b(?:material(?:es)? peligros[oa]s?|carga peligrosa|peligroso|hazardous|hazmat|dangerous goods|no s[eé].*(?:categor[ií]a|tipo de carga))\b/i.test(text);}
