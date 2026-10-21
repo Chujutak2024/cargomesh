@@ -54,3 +54,13 @@ La proyección nativa exportada desde SQL pasa los schemas de producción y los 
 Lectura alojada al preparar la entrega:31 migraciones,1 servicio,7 assets,6 calendarios antiguos; pedido demo permanece DRAFTv1. El ADMIN Carrier nativo ya existe. No hay nuevas órdenes, cotizaciones ni bookings alojados de esta entrega. El gate CI, publicación y activación se registrarán con sus resultados reales.
 
 La lectura actual de Linear muestra HAC-50 Done como historia; este incremento nuevo no cambia ese estado ni afirma una nueva aceptación. Mantiene la rama existente por la continuidad autorizada por Cristhian. El registro del nuevo alcance y el target a main requieren la excepción de publicación vigente.
+
+## Cierre del enlace reserva → recursos
+
+Cristhian solicita implementar lo faltante antes del esquema final de seeds y luego validar, en orden, reservas múltiples, varios camiones, rutas y casos. El bloqueo de red de la entrega anterior se resolvió; dec3208 se publicó y CI39534402215 quedó SUCCESS3/3. PR137 continúa como target autorizado de esta entrega; no se mergea una versión anterior al enlace de preparación.
+
+Se detectó que autorizar booking no disparaba las operaciones/retenciones nativas y el portal Carrier no podía crearlas con su identidad. Se enlaza la preparación desde el consentimiento Cliente, con recuperación explícita y sin ampliar permisos. Los controles de capacidad Carrier aceptan compromisos simulados rotulados como tales; confirmación/prórroga también aparece en Orders vigente. No hay nuevas migraciones ni nuevos seeds en este incremento.
+
+Evidencia focal del cierre:22 Node PASS (5 preparación +17 Orders), tipos y arquitectura660/197 PASS;40 pgTAP aisladas PASS, incluidos ejecución PLANNED, retención HELD y vencimiento limitado al plazo aprobado. Los datos del banco se revierten y el banco se elimina. No se crearon reservas, ofertas ni ejecuciones alojadas para hacer estas comprobaciones.
+
+El alojado ya tiene las5DDL y receta9registros/tarifaUSD500SIMULATED autorizadas, ledger36; pedido demo DRAFTv1. La publicación exacta y validaciones de casos se registran en la entrega posterior con su evidencia real. No se declara micrófono humano ni validación visual general por este código.

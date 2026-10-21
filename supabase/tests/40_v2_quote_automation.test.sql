@@ -99,6 +99,13 @@ insert into refs select 'booking',pg_temp.client_command('bookings.create',jsonb
 insert into refs select 'window',public.command_v2_quote_confirmation('c2300000-0000-4000-8000-000000000001','c2320000-0000-4000-8000-000000000003',null,null,pg_temp.id('booking'),'READ',null,null);
 select is((select value->>'bookingStatus' from refs where name='window'),'AUTHORIZED','selection and authorization do not confirm or start transport');
 select ok((select (value->>'deadline')::timestamptz=now()+interval '30 minutes' from refs where name='window'),'approved Carrier policy defines the confirmation deadline');
+-- Same native commands used by explicit Client booking preparation.
+insert into refs select 'prepared-execution',pg_temp.client_command('executions.create',jsonb_build_object('schemaVersion','2.0','bookingId',pg_temp.id('booking'),'serviceId','c2360000-0000-4000-8000-000000000001'));
+insert into refs select 'prepared-hold',pg_temp.client_command('holds.create',jsonb_build_object('schemaVersion','2.0','bookingId',pg_temp.id('booking'),'assignmentId',plan#>>'{data,legAssignments,0,id}','planResourceId',plan#>>'{data,legAssignments,0,resources,0,resourceId}','expiresAt',now()+interval '45 minutes','consolidationId',null,'evidence',plan#>'{data,legAssignments,0,resources,0,resource,verificationSource,source}'))
+from (select public.read_v2_workflow('c2300000-0000-4000-8000-000000000001','c2320000-0000-4000-8000-000000000003','plans',pg_temp.ctx(pg_temp.id('request')),25,0)->0 as plan) x;
+select is((select value->>'status' from refs where name='prepared-execution'),'PLANNED','client authorization prepares an operation without starting it');
+select is((select value->>'status' from refs where name='prepared-hold'),'HELD','client preparation retains temporary capacity without Carrier confirmation');
+select ok((select (value#>>'{data,expiresAt}')::timestamptz=now()+interval '30 minutes' from refs where name='prepared-hold'),'native hold respects the approved confirmation deadline');
 select throws_ok($$select public.command_v2_quote_confirmation('c2300000-0000-4000-8000-000000000001','c2320000-0000-4000-8000-000000000003',null,null,pg_temp.id('booking'),'PROPOSE',gen_random_uuid(),1,now()+interval '40 minutes','test')$$,'PT403','FORBIDDEN_WORKFLOW','client cannot invent a Carrier extension proposal');
 set local "request.jwt.claims"='{"sub":"c2310000-0000-4000-8000-000000000001","role":"authenticated"}';
 insert into refs select 'extension',public.command_v2_quote_confirmation(null,null,'c2340000-0000-4000-8000-000000000001',pg_temp.op(),pg_temp.id('booking'),'PROPOSE','c2900000-0000-4000-8000-000000000003',1,now()+interval '40 minutes','Synthetic carrier requests a short extension');

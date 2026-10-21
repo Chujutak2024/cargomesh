@@ -37,3 +37,11 @@ Migración aditiva `20261020234155_hac50_quote_automation.sql`, dependencia `202
 La entrega debe distinguir comprobación SQL aislada, lecturas alojadas y una prueba comercial real. No declarar el flujo publicado u operativo en Vercel sin su migración, política aprobada, datos actuales y evidencia del recorrido.
 
 La evaluación previa ROAD puede comprobar un requisito de manipulación declarado por una definición de la misma categoría, con evidencia vigente del recurso y definición activa. No convierte un certificado de otra categoría/recurso en cumplimiento. La evaluación nativa del plan revalida también vencimiento y evidencia de la definición antes de emitir la oferta. Temperatura sin rango sigue desconocida. Se conservan los permisos de columnas del catálogo; no se exponen referencias privadas para esta comprobación.
+
+## Preparación posterior al consentimiento
+
+Autorizar una reserva en Cliente solicita una operación PLANNED por servicio y una retención HELD por recurso cotizado, mediante los comandos nativos existentes. `POST /bookings/:id/preparations` requiere miembro autorizado, versión esperada, origen de sesión e intención explícita. Copia la evidencia de capacidad del plan; no la reemplaza por el consentimiento del Cliente. El vencimiento se limita por oferta, plazo de confirmación y ventana del recurso.
+
+La composición es recuperable: relee hijos existentes, reutiliza referencias y cada escritura mantiene su recibo SHA-256 nativo. La unicidad de ejecución y la exclusión de capacidad resuelven carreras; una colisión solo se recupera si la relectura demuestra el mismo hijo esperado. Un fallo parcial no elimina reservas ni autoriza confirmaciones: la pantalla conserva el booking y ofrece recuperar la preparación. Retenciones vencidas o canceladas exigen revalidación, no renovación silenciosa.
+
+Carrier confirma cada retención y el booking; después asigna vehículo/conductor mediante Fleet. La UI identifica compromisos SIMULATED como simulados y admite la transición que ya valida el backend; no los etiqueta VERIFIED. La salida exige ventana actual y recursos/tripulación confirmados. Reservas, ejecución y solicitud conservan estados independientes; el seguimiento deriva el avance de los hechos operativos.

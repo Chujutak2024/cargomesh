@@ -39,7 +39,7 @@ test('capacity is unverified without every resource binding, fresh verified evid
  const s=ordersFixture(),b=s.bookings[0];assert.match(capacitySummary(b,s,now).label,/^Verified/);
  const insufficient={...s,holds:[{...s.holds[0],data:{...s.holds[0].data,capacityCommitted:{weightKg:1,volumeM3:1}}}]};assert.match(capacitySummary(b,insufficient,now).label,/unverified/);
  const noBindings={...s,opportunities:[{...s.opportunities[0],data:{...s.opportunities[0].data,assignmentSnapshots:[{id:id(30),serviceId:id(5)}]}}]};assert.match(capacitySummary(b,noBindings,now).label,/unverified/);
- const simulated={...s,holds:[{...s.holds[0],data:{...s.holds[0].data,evidence:{...s.holds[0].data.evidence,provenanceStatus:'SIMULATED' as const}}}]};assert.match(capacitySummary(b,simulated,now).label,/unverified/);assert.match(capacitySummary(b,{...s,partial:true},now).label,/Unknown/);
+ const simulated={...s,holds:[{...s.holds[0],data:{...s.holds[0].data,evidence:{...s.holds[0].data.evidence,provenanceStatus:'SIMULATED' as const}}}]};assert.match(capacitySummary(b,simulated,now).label,/^Simulated/);assert.equal(capacitySummary(b,simulated,now).ready,true);assert.match(capacitySummary(b,{...s,partial:true},now).label,/Unknown/);
 });
 test('booking confirmation requires capacity, while rejection remains a separate audited decision',()=>{
  const s=ordersFixture(),b=s.bookings[0];assert.equal(orderActionAllowed('bookings.confirm',b,s,'ADMIN',now,'CONFIRMED'),true);
