@@ -28,6 +28,9 @@ import { OpportunityPanel, carrierLabel } from "./opportunity-panel";
 import comparisonStyles from "./commercial-comparison.module.css";
 import { CommercialIntents } from "./commercial-intent";
 import { BookingResources } from "./booking-resources";
+import {QuoteSearchPanel} from "./quote-search-panel";
+import {BookingConfirmationWindow} from "@/features/booking-confirmation/panel";
+import {findRequestQuotes} from "./quote-api";
 
 type Workflow = Record<string, WorkflowRecordV2[]>;
 type EditState = {
@@ -88,6 +91,29 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
   const activeBookings = (workflow.bookings ?? []).filter((item): item is Extract<WorkflowRecordV2, { kind: "bookings" }> => item.kind === "bookings");
   const incidents = (workflow.incidents ?? []).filter((item): item is Extract<WorkflowRecordV2, { kind: "incidents" }> => item.kind === "incidents");
 
+  const quoteIntents = useRef(new Map<string,string>());
+  const quoteBusy = useRef(false);
+  async function searchQuotes(deadline: string) {
+    if (phase !== "idle" || quoteBusy.current || refreshBusy.current || readIncomplete || commercialReadBlocked)
+      throw new Error("QUOTATION_BUSY");
+    quoteBusy.current = true; setPhase("requesting"); setError(null);
+    try {
+      const quoteDeadline = Date.parse(deadline);
+      if (!Number.isFinite(quoteDeadline) || quoteDeadline <= Date.now() || quoteDeadline > Date.parse(request.pickupWindow.startsAt))
+        throw new ShipperApiError("INVALID_RESPONSE_DEADLINE",t("El plazo debe ser futuro y anterior al recojo.","Choose a future deadline before pickup."),400,false);
+      let current = request;
+      if (current.status === "DRAFT") { current = await submitFreightRequest(current.id, current.draftVersion); setRequest(current); }
+      const input = {schemaVersion:"2.0",expectedDraftVersion:current.draftVersion,responseDeadline:deadline,consent:"REQUEST_QUOTES"};
+      const fingerprint = JSON.stringify([current.organizationId,memberId,current.id,input]);
+      if (!quoteIntents.current.has(fingerprint)) quoteIntents.current.set(fingerprint,crypto.randomUUID());
+      const result = await findRequestQuotes(current.id,input,quoteIntents.current.get(fingerprint)!);
+      const fresh = await refreshRequestCommercial(current.id,current.organizationId,new AbortController().signal);
+      setRequest(fresh.request);setWorkflow(old=>({...old,...fresh.workflow}));setCatalog(fresh.catalog);
+      quoteIntents.current.delete(fingerprint);
+      return result;
+    } catch (caught) { setError(toShipperError(caught)); throw caught; }
+    finally {quoteBusy.current=false;setPhase("idle");}
+  }
   async function evaluate(next = request) {
     if(refreshBusy.current)return;
     setPhase("evaluating"); setError(null); setEvaluation(null); setSelectedCandidateId(null);
@@ -250,6 +276,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
       <Summary label={t("Clase solicitada", "Requested class")} value={request.serviceType ?? "UNKNOWN"} />
     </div></section>
     <RequestFacts request={request}/>
+    {!readIncomplete && commercialRefreshEnabled ? <QuoteSearchPanel requestId={request.id} busy={phase!=="idle"||commercialReadBlocked} canSearch={request.status==="DRAFT"||request.status==="PENDING"} onSearch={searchQuotes} onNova={()=>{setOfferVoiceTurns([]);setOfferVoiceOpen(true);}}/> : null}
     {!readIncomplete ? <OpportunityPanel context={commercialContext} catalog={catalog} busy={phase !== "idle" || commercialReadBlocked}
       onRequest={key => { const target = opportunityTargets(commercialContext).find(row => row.key === key); if (!target || phase !== "idle" || commercialReadBlocked) return;
         const channels = commonResponseChannels(target.serviceIds, target.carrierId, catalog); if (!channels.length) return;
@@ -282,7 +309,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
         <Timeline label={t("Bookings", "Bookings")} value={readIncomplete ? "—" : String(activeBookings.length)} />
       </div></section>
       {!readIncomplete ? <OutcomePanel requests={[request]} offers={offers} bookings={activeBookings} incidents={incidents} t={t} localeTag={localeTag}/> : null}
-      {activeBookings.map(booking => <section className={styles.panel} key={booking.id}><BookingResources booking={booking}
+      {activeBookings.map(booking => <section className={styles.panel} key={booking.id}><BookingConfirmationWindow bookingId={booking.id} canAct={!readIncomplete&&!commercialReadBlocked&&phase==="idle"} onChanged={()=>void refreshCommercial()}/><BookingResources booking={booking}
         rows={[...(workflow.holds??[]),...(workflow.executions??[])]} offers={offers}
         decisions={(workflow.decisions??[]).filter(row=>row.kind==="decisions")} complete={!readIncomplete && !commercialReadBlocked}
         t={t} localeTag={localeTag}/></section>)}</aside>

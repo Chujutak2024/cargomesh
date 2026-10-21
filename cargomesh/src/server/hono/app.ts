@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import {carrierQuotePoliciesRouter} from "./routes/carrier-quote-policies";
+import {quoteConfirmationRouter} from "./routes/quote-confirmation";
 import {carrierRegularDriversRouter} from "./routes/carrier-regular-drivers";
 import { errorHandler } from "./middleware/error-handler";
 import { healthRouter } from "./routes/health";
@@ -37,6 +39,8 @@ export function createHonoApp() {
   // Routes
   app.route("/health", healthRouter);
   app.route("/", carrierRegularDriversRouter);
+  app.route("/", carrierQuotePoliciesRouter);
+  app.route("/", quoteConfirmationRouter);
   app.route("/", carrierOperationsRouter);
   app.route("/", carrierBordersRouter);
   app.route("/", carrierRoadRouter);

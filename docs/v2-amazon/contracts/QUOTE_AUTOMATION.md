@@ -1,0 +1,37 @@
+# Cotización Cliente–Carrier
+
+Alcance aceptado por Cristhian el 20 de octubre de 2026. Extiende el workflow nativo V2; no cambia V1 ni autoriza desplegar a producción por documentarlo.
+
+## Secuencia
+
+1. El Cliente revisa el pedido preparado con Nova o por escrito. Confirma explícitamente su presentación y el plazo para recibir ofertas.
+2. Se evalúa el universo ROAD soportado: cobertura y lane dirigida, compatibilidad de carga/equipo y calendario completo. Datos desconocidos no confirman elegibilidad.
+3. El adaptador automático inicial admite FTL directo de un tramo, un recurso portador y un corredor publicado inequívoco con límites del recurso/servicio asociados. El plan nativo vuelve a comprobar capacidad efectiva, reservas, mantenimiento, reposicionamiento, límites y requisitos. Otros planes conservan su flujo nativo/manual; no se inventa un reparto de carga entre camiones.
+4. Se crea una oportunidad atribuida al Carrier. Si tiene una política vigente aprobada por un ADMIN verificado, con permisos de catálogo vigentes, el adaptador emite una oferta con desglose, moneda USD, vigencia y evidencia. En otro caso espera la oferta manual del Carrier.
+5. El ranking conserva todas las alternativas conocidas. La comparación presenta hasta tres; no se limita el discovery a tres proveedores. Se usa una ScoringPolicy LOWEST_COST publicada, elegida determinísticamente por ID si existen varias. Sin esa política no se inventa un ranking.
+6. El Cliente selecciona y autoriza mediante los comandos nativos auditados. La cotización por sí sola no crea booking ni reserva capacidad.
+7. El Carrier confirma compromisos y booking. Confirmado significa programado; la salida registrada activa En curso/En camino.
+
+## Política del Carrier
+
+Scope exacto Carrier + servicio + lane, control de versión esperada y recibo idempotente SHA-256. Se configuran base por viaje o base + USD/km, mínimo de transporte, combustible, peajes, manipulación e impuestos; todos con precisión de centavos. USD/km requiere distancia de un corredor persistido. No se calcula un precio a partir de una ciudad o un historial sin fuente.
+
+La política incluye vencimiento, vigencia de cada oferta, minutos de confirmación, términos, procedencia VERIFIED/SIMULATED y consentimiento explícito para emisión automática. El snapshot y versión aprobados quedan ligados a cada oferta. El Cliente no suplanta al emisor: la delegación privada está limitada a una transacción, una política y un ID de oferta. No se modifican JWT ni se concede un rol Carrier al Cliente.
+
+## Historial de Nova
+
+Solo solicitudes de la organización autenticada. Hasta cinco casos anteriores con ruta dirigida y países iguales, categoría, requisitos y equipo iguales y peso/volumen entre la mitad y el doble. Se devuelven precios de ofertas realmente persistidas, con fecha y estado. Son referencias históricas, no una oferta actual, capacidad reservada ni predicción estadística. Sin casos con precio no se estima uno. La voz utiliza el contexto autorizado del pedido; el canal escrito determinista no se presenta como una nueva integración Bedrock.
+
+## Confirmación y prórroga
+
+Las ofertas automáticas generan un plazo de confirmación al autorizar el booking: el menor entre los minutos aprobados y el vencimiento de la oferta. Se rechaza confirmar después del plazo y las retenciones temporales quedan acotadas a él.
+
+El Carrier puede proponer una sola prórroga, dentro de la vigencia original. Proponerla no cambia el plazo. Solo un Cliente autorizado puede aprobarla; se conserva motivo, actor, versión y fecha. No revive capacidad ya vencida: se debe revalidar y volver a retener recursos.
+
+El vencimiento se muestra y bloquea confirmaciones tardías. La acción explícita «Cerrar por vencimiento y liberar recursos» usa la cancelación nativa, sin cambiar silenciosamente de Carrier. Este corte no instala un proceso periódico de cancelación automática: los compromisos ya confirmados se liberan al cerrar la autorización vencida.
+
+## Activación
+
+Migración aditiva `20261020234155_hac50_quote_automation.sql`, dependencia `20261019202113`. No contiene organizaciones, usuarios, tarifas ni escenarios sintéticos. Los RPC requieren sesión nativa y scope real. El paquete alojado debe revisar su ledger, dependencias y datos de capacidad antes de activarse; un merge no aplica migraciones ni tarifas.
+
+La entrega debe distinguir comprobación SQL aislada, lecturas alojadas y una prueba comercial real. No declarar el flujo publicado u operativo en Vercel sin su migración, política aprobada, datos actuales y evidencia del recorrido.

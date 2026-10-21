@@ -556,6 +556,17 @@
       "dependencies": [
         "20261004012929"
       ]
+    },
+    {
+      "issue": "HAC-50",
+      "path": "supabase-v2/supabase/migrations/20261020234155_hac50_quote_automation.sql",
+      "version": "20261020234155",
+      "sha256": "8a5c508c73b447e0684502694942d801206eccaa2aa2b4caa6a547035f0e43d7",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261019202113"
+      ]
     }
   ]
 }
