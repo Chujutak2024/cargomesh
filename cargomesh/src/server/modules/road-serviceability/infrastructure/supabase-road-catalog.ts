@@ -167,7 +167,7 @@ export async function loadRoadServices(db: Client): Promise<RoadService[]> {
                 temperatureMaxC: item.temperature_max_c,
                 ...(item.definition_id ? {
                   maxWeightKg: definitions.get(item.definition_id)?.max_weight_kg ?? null,
-                  evidenceAvailable: Boolean(item.evidence && item.verified_at && definitions.get(item.definition_id)?.active),
+                  evidenceAvailable: Boolean(item.evidence && item.verified_at && Date.parse(item.verified_at)<=Date.now() && definitions.get(item.definition_id)?.active),
                   validUntil: item.valid_until,
                   requirements: z.array(z.string()).parse(definitions.get(item.definition_id)?.requirements ?? []),
                 } : {}) }];

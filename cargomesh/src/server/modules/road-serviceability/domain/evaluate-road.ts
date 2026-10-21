@@ -244,7 +244,6 @@ function capacityCheck(capacity: Capacity, request: RoadRequest): Check {
     && (cargoCapability.validUntil === null || instant(cargoCapability.validUntil) < instant(request.operationWindow.endsAt)))) {
     return { status: "unknown", reason: "CARGO_CAPABILITY_UNVERIFIED" };
   }
-  if (cargoCapability?.requirements?.length) return { status: "unknown", reason: "CARGO_CAPABILITY_REQUIREMENTS_UNVERIFIED" };
   if (cargoCapability?.maxWeightKg != null && request.totalWeightKg > cargoCapability.maxWeightKg) {
     return { status: "ineligible", reason: "CARGO_CAPABILITY_OVER_CAPACITY" };
   }
@@ -306,13 +305,18 @@ function capacityCheck(capacity: Capacity, request: RoadRequest): Check {
 }
 
 function requirementsCheck(capacity: Capacity, request: RoadRequest): Check {
-  if (request.unverifiedRequirements.length > 0) {
-    return { status: "unknown", reason: "REQUIREMENTS_UNVERIFIED" };
-  }
-  if (!request.requiredCertifications?.length && !request.temperatureRange) return { status: "eligible" };
   const capability = capacity.cargoCapabilities?.find(
     (item) => item.categoryCode === request.cargoCategoryCode,
   );
+  // Same evidence contract as the native plan evaluator: a definition lists the
+  // requirements its category-specific resource can satisfy, not extra demand.
+  if (request.unverifiedRequirements.some(code => code === "TEMP_CONTROLLED"
+      || capability?.evidenceAvailable !== true || !capability.validUntil
+      || instant(capability.validUntil) < instant(request.operationWindow.endsAt)
+      || !capability.requirements?.includes(code))) {
+    return { status: "unknown", reason: "REQUIREMENTS_UNVERIFIED" };
+  }
+  if (!request.requiredCertifications?.length && !request.temperatureRange) return { status: "eligible" };
   if (!capability) return { status: "unknown", reason: "REQUIREMENTS_UNVERIFIED" };
   if (request.requiredCertifications?.some(
     (required) => !capability.certifications?.includes(required),
