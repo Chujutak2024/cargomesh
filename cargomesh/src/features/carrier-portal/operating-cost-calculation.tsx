@@ -1,0 +1,13 @@
+import {useEffect,useState} from 'react';
+import {z} from 'zod';
+import {CarrierCostCalculationRecordSchema} from '@/shared/schemas/v2/operating-costs';
+import {portalRequest,portalErrorCopy} from './api';
+import s from './quote-policy.module.css';
+const labels:Record<string,string>={FUEL:'Fuel',DRIVER:'Driver time',VEHICLE:'Vehicle wear',FIXED_PER_VEHICLE:'Fixed vehicle cost',TOLLS:'Tolls',REST_FACILITIES:'Rest facilities',HANDLING_PER_SHIPMENT:'Shipment handling',CARRIER_MARKUP:'Carrier markup',MINIMUM_ADJUSTMENT:'Minimum price adjustment',TAX:'Tax'};
+export function OperatingCostCalculation({carrierId,offerId}:{carrierId:string;offerId:string}){
+ const [row,setRow]=useState<z.infer<typeof CarrierCostCalculationRecordSchema>|null>(null),[error,setError]=useState('');
+ useEffect(()=>{const c=new AbortController();setRow(null);setError('');void portalRequest(`/api/v2/carrier-portal/carriers/${encodeURIComponent(carrierId)}/offers/${encodeURIComponent(offerId)}/cost-calculation`,{signal:c.signal}).then(r=>{if(!c.signal.aborted)setRow(CarrierCostCalculationRecordSchema.nullable().parse(r.data));}).catch(e=>{if(!c.signal.aborted)setError(portalErrorCopy(e,false));});return()=>c.abort();},[carrierId,offerId]);
+ if(error)return <p role="alert">{error}</p>;if(!row?.snapshot)return null;
+ const x=row.snapshot.calculation,money=(cents:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(cents/100);
+ return <details className={s.panel}><summary>Cost calculation · {money(x.totalCents)}</summary><p>{row.snapshot.distanceKm} km · {x.resourceCount} truck(s) · {x.litres.toFixed(2)} L · {(x.drivingSeconds/3600).toFixed(2)} h driving · {(x.restSeconds/3600).toFixed(2)} h rest</p>{x.resources?.length?<><h3>Costs by truck</h3><ul>{x.resources.map(r=><li key={r.assetId}>{r.assetCode??r.assetId.slice(0,8)} · {r.label} · {money(r.operatingCents)} · {r.litres.toFixed(2)} L</li>)}</ul></>:null}<dl>{x.components.map(c=><div key={c.code} className={s.costLine}><dt>{labels[c.code]??c.code}</dt><dd>{money(c.cents)}</dd></div>)}</dl>{row.snapshot.operatingProfile.stops.length?<><h3>Planned rest stops</h3><ul>{row.snapshot.operatingProfile.stops.map(stop=>{const location=row.snapshot!.restLocations.find(p=>p.waypointIndex===stop.waypointIndex);return <li key={stop.waypointIndex}>{location?.label??location?.city??'Recorded rest point'} · after {(stop.afterDrivingSeconds/3600).toFixed(2)} h driving · {stop.restMinutes} min rest</li>;})}</ul></>:null}<p>Policy version {row.policyVersion} · {x.provenance==='SIMULATED'?'Simulated inputs':'Verified inputs'}</p></details>;
+}

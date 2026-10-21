@@ -1,13 +1,10 @@
 import { z } from "zod";
+import {CommercialEvidenceV2Schema} from "./evidence";
+export {CommercialEvidenceV2Schema} from "./evidence";
 import { TimeWindowV2Schema } from "./freight-request";
 
 const Id = z.string().uuid();
 const Instant = z.string().datetime({ offset: true });
-export const CommercialEvidenceV2Schema = z.object({
-  reference: z.string().trim().min(1).max(500), provider: z.string().trim().min(1).max(150),
-  observedAt: Instant, validUntil: Instant.nullable(),
-  provenanceStatus: z.enum(["VERIFIED", "ESTIMATED", "SIMULATED", "UNKNOWN"]),
-}).strict().refine((item) => item.validUntil === null || Date.parse(item.validUntil) > Date.parse(item.observedAt));
 export const UsdMoneyV2Schema = z.object({
   amount: z.number().finite().min(0).max(1e10).refine((value) =>
     Math.abs(value * 100 - Math.round(value * 100)) < 0.00001, "Use at most two decimal places."),

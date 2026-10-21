@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {RouteAdmissionRecordSchema} from "./route-admission";
 const instant=z.string().datetime({offset:true});
 export const DispatchWindowSchema=z.object({startsAt:instant,endsAt:instant}).strict().refine(w=>Date.parse(w.startsAt)<Date.parse(w.endsAt));
 export const UrgencySchema=z.enum(["URGENT","SCHEDULED"]);
@@ -12,5 +13,5 @@ export function validateDispatchEnvelope(value:{pickupWindow:DispatchWindow;deli
 export const CarrierDispatchPolicySchema=z.object({allowedPriorities:z.array(UrgencySchema).min(1).max(2).refine(v=>new Set(v).size===v.length),minNoticeMinutes:z.number().int().min(0).max(43200),loadingMinutes:z.number().int().min(0).max(1440),unloadingMinutes:z.number().int().min(0).max(1440),autoConfirm:z.boolean(),maxBookingAmount:z.number().finite().positive().max(1e8).nullable(),acknowledgeSchedulingAuthority:z.boolean()}).strict().refine(v=>!v.autoConfirm||(v.acknowledgeSchedulingAuthority&&v.maxBookingAmount!==null),'Scheduling needs explicit Carrier authority');
 export const DispatchScheduleSchema=z.object({policyVersion:z.number().int().positive(),pickupAt:instant,deliveryAt:instant,operationWindow:DispatchWindowSchema,routeId:z.string().uuid(),transitSeconds:z.number().int().positive()}).strict().refine(v=>Date.parse(v.pickupAt)===Date.parse(v.operationWindow.startsAt)&&Date.parse(v.deliveryAt)<=Date.parse(v.operationWindow.endsAt)&&Date.parse(v.deliveryAt)>Date.parse(v.pickupAt));
 export type DispatchSchedule=z.infer<typeof DispatchScheduleSchema>;
-export const DispatchOptionSchema=z.object({serviceId:z.string().uuid(),laneId:z.string().uuid(),policyVersion:z.number().int().positive(),routeId:z.string().uuid(),transitSeconds:z.number().int().positive(),provenance:z.enum(['VERIFIED','ESTIMATED','SIMULATED']),policy:CarrierDispatchPolicySchema}).strict();
+export const DispatchOptionSchema=z.object({admissions:z.array(RouteAdmissionRecordSchema).max(1000).refine(a=>new Set(a.map(r=>r.assetId)).size===a.length,"Unique asset admissions required"),costMode:z.enum(['FIXED','COST_PLUS']).optional(),maxResources:z.number().int().min(1).max(8).optional(),serviceId:z.string().uuid(),laneId:z.string().uuid(),policyVersion:z.number().int().positive(),routeId:z.string().uuid(),transitSeconds:z.number().int().positive(),provenance:z.enum(['VERIFIED','ESTIMATED','SIMULATED']),policy:CarrierDispatchPolicySchema}).strict();
 export type DispatchOption=z.infer<typeof DispatchOptionSchema>;

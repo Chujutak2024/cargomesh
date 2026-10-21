@@ -646,6 +646,28 @@
       "dependencies": [
         "20261021153000"
       ]
+    },
+    {
+      "issue": "PLAN1",
+      "path": "supabase-v2/supabase/migrations/20261021175507_carrier_operating_costs.sql",
+      "version": "20261021175507",
+      "sha256": "ba1fac0b6bd28b4915fb14f92bc292636625dfd92912c0ea99a798bb93805a37",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261021154000"
+      ]
+    },
+    {
+      "issue": "PLAN1",
+      "path": "supabase-v2/supabase/migrations/20261021203000_resource_route_admission.sql",
+      "version": "20261021203000",
+      "sha256": "b4e4af2234c72841a9c037cb4aea100e27adaafd6013b6861809c5b7fe8db9a8",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261021175507"
+      ]
     }
   ]
 }
