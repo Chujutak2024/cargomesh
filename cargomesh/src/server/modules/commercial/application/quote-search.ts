@@ -1,5 +1,5 @@
 import {DispatchOptionSchema} from '@/shared/schemas/v2/dispatch';
-import {proposeDispatch} from '../domain/dispatch-planner';
+import {proposeDispatchAlternatives,compareDispatchPlans} from '../domain/dispatch-alternatives';
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import {QuoteSearchInputSchema,QuoteSearchResponseSchema,QuoteOutcomeSchema,QuoteCandidateInputSchema} from '@/shared/schemas/v2/quote-automation';
@@ -32,7 +32,7 @@ export async function searchRequestQuotes(actor:V2Actor,id:string,raw:unknown,ra
  const services=await loadRoadServices(db);
  const evaluation=(await evaluateV2RoadByRequestId(id,input.expectedDraftVersion,actor,repository,{listRoadServices:async()=>services})).data;
  if(evaluation.summaryCounts.totalEvaluated>1000)throw new V2DraftError('DISPATCH_SEARCH_UNIVERSE_LIMIT','The service universe exceeds the automatic dispatch limit. Request manual review.',409);
- const dispatchOptions=request.planningPreferences?z.array(DispatchOptionSchema).parse(await quoteRpc('read_v2_dispatch_options',{p_organization_id:actor.organizationId,p_member_id:actor.memberId,p_request_id:id,p_expected_version:input.expectedDraftVersion})):[];
+ const dispatchOptions=request.planningPreferences?z.array(DispatchOptionSchema).parse(await quoteRpc('read_v2_dispatch_options_with_admission',{p_organization_id:actor.organizationId,p_member_id:actor.memberId,p_request_id:id,p_expected_version:input.expectedDraftVersion})):[];
  const searchTime=Date.now();
  const selections:z.infer<typeof Selection>[]=[];
  const outcomes:z.infer<typeof QuoteOutcomeSchema>[]=[];
@@ -40,10 +40,21 @@ export async function searchRequestQuotes(actor:V2Actor,id:string,raw:unknown,ra
  for(const candidate of evaluation.candidates){let selected:z.infer<typeof import('@/shared/schemas/v2/quote-automation').QuoteCandidateInputSchema>|null=quoteCandidate(candidate);
   if(request.planningPreferences){
    const service=services.find(s=>s.id===candidate.service.id),options=dispatchOptions.filter(o=>o.serviceId===candidate.service.id);
-   const proposals=service?options.map(option=>proposeDispatch(request,request.planningPreferences!,requestRoadInput(request),service,option,searchTime,deadline)):[];
-   const found=proposals.filter((p):p is Extract<typeof p,{status:'FOUND'}>=>p.status==='FOUND').sort((a,b)=>Date.parse(a.schedule.deliveryAt)-Date.parse(b.schedule.deliveryAt)||Date.parse(a.schedule.pickupAt)-Date.parse(b.schedule.pickupAt)||a.schedule.routeId.localeCompare(b.schedule.routeId));
-   if(!found.length){outcomes.push({serviceId:candidate.service.id,planId:null,opportunityId:null,offerId:null,status:'REQUIRES_REVIEW',reason:options.length?(proposals.find(p=>p.status!=='FOUND') as {reason:string}|undefined)?.reason??'NO_VERIFIED_DISPATCH_PLAN':'DISPATCH_POLICY_OR_ROUTE_REQUIRED',policyVersion:null});continue;}
-   const plan=found[0],first=plan.resources[0];selected={serviceId:candidate.service.id,laneId:plan.laneId,calendarId:first.calendarId,assetId:first.assetId,poolId:null,schedule:plan.schedule,...(plan.resources.length>1?{resources:plan.resources}:{})};
+   const proposals=service?options.map(option=>proposeDispatchAlternatives(request,request.planningPreferences!,requestRoadInput(request),service,option,searchTime,deadline)):[];
+   const plans=proposals.flatMap(p=>p.status==='FOUND'?p.plans:[]);
+   if(!plans.length){outcomes.push({serviceId:candidate.service.id,planId:null,opportunityId:null,offerId:null,status:'REQUIRES_REVIEW',reason:options.length?(proposals.find(p=>p.status!=='FOUND') as {reason:string}|undefined)?.reason??'NO_VERIFIED_DISPATCH_PLAN':'DISPATCH_POLICY_OR_ROUTE_REQUIRED',policyVersion:null});continue;}
+   // An exhausted search is unresolved; do not publish a falsely cheapest partial result.
+   if(plans.length>128||proposals.some(p=>p.status!=='FOUND'&&/LIMIT/.test(p.reason))){outcomes.push({serviceId:candidate.service.id,planId:null,opportunityId:null,offerId:null,status:'REQUIRES_REVIEW',reason:'DISPATCH_COST_SEARCH_LIMIT',policyVersion:null});continue;}
+   const toCandidate=(plan:typeof plans[number])=>{const first=plan.resources[0];return {serviceId:candidate.service.id,laneId:plan.laneId,calendarId:first.calendarId,assetId:first.assetId,poolId:null,schedule:plan.schedule,...(plan.resources.length>1?{resources:plan.resources}:{})};};
+   if(options.some(o=>o.costMode==='COST_PLUS')){
+    const previews=z.array(z.object({index:z.number().int().nonnegative(),status:z.enum(['READY','REQUIRES_REVIEW']),totalCents:z.number().int().positive().nullable(),reason:z.string().nullable()}).strict()).parse(await quoteRpc('preview_v2_dispatch_costs',{p_organization_id:actor.organizationId,p_member_id:actor.memberId,p_request_id:id,p_expected_version:input.expectedDraftVersion,p_candidates:plans.map(toCandidate)}));
+    if(previews.length!==plans.length||previews.some((p,i)=>p.index!==i))throw new V2DraftError('INVALID_COST_PREVIEW','Invalid cost correlation.',502);
+    const priced=previews.flatMap(p=>p.status==='READY'&&p.totalCents!==null?[{plan:plans[p.index],schedule:plans[p.index].schedule,totalCents:p.totalCents}]:[]).sort((a,b)=>compareDispatchPlans(a,b,request.planningPreferences!.urgency));
+    if(!priced.length){outcomes.push({serviceId:candidate.service.id,planId:null,opportunityId:null,offerId:null,status:'REQUIRES_REVIEW',reason:previews[0]?.reason??'NO_VERIFIED_COST_PLAN',policyVersion:null});continue;}
+    selected=toCandidate(priced[0].plan);
+   }else{
+    plans.sort((a,b)=>Date.parse(a.schedule.deliveryAt)-Date.parse(b.schedule.deliveryAt)||Date.parse(a.schedule.pickupAt)-Date.parse(b.schedule.pickupAt)||a.schedule.routeId.localeCompare(b.schedule.routeId));selected=toCandidate(plans[0]);
+   }
   }
 
   if(!selected){const service=services.find(s=>s.id===candidate.service.id);if(service){const proposal=planWholePackages(requestRoadInput(request),request.cargoSpecification.units,request.cargoSpecification.divisible,service);if(proposal.status==='FOUND'){const first=proposal.resources[0];selected={serviceId:service.id,laneId:proposal.laneId,calendarId:first.calendarId,assetId:first.assetId,poolId:null,...(proposal.resources.length>1?{resources:proposal.resources}:{})};}else if(proposal.status==='REQUIRES_REVIEW'){outcomes.push({serviceId:service.id,planId:null,opportunityId:null,offerId:null,status:'REQUIRES_REVIEW',reason:proposal.reason,policyVersion:null});continue;}}}

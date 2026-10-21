@@ -50,3 +50,13 @@ test("native authorization failure and expired quotes cannot be promoted by the 
   const context = await collectShipperOfferContext(source.request.id, source.request.organizationId, normal);
   assert.equal(buildOfferBriefing(context.offers, context.ranking, Date.parse("2026-10-23T00:00:00Z"), context).recommended, null);
 });
+
+test('voice plan facts count distinct carrying trucks and retain only quoted dates and provenance',async()=>{
+ const {quoteVoicePlanFacts,quoteVoiceScript}=await import('@/server/modules/commercial/domain/quote-history');
+ const context=commercialFixture(),plan=context.plans[0],leg=plan.data.legAssignments[0],binding=leg.resources[0];
+ leg.resources.push({...binding,bindingId:id(301),resourceId:id(302),resource:{...binding.resource,assetId:id(303)}});
+ context.offers[0].data.estimatedPickupAt='2026-10-17T10:00:00Z';context.offers[0].data.estimatedDeliveryAt='2026-10-17T15:00:00Z';
+ const now=Date.parse('2026-10-17T11:00:00Z'),briefing=buildOfferBriefing(context.offers,context.ranking,now,context);
+ const facts=quoteVoicePlanFacts(briefing.options,context);assert.equal(facts[0].truckCount,2);assert.equal(facts[0].pickupAt,new Date(context.offers[0].data.estimatedPickupAt!).toISOString());assert.equal(facts[0].deliveryAt,new Date(context.offers[0].data.estimatedDeliveryAt!).toISOString());
+ const script=quoteVoiceScript({count:1,options:facts,recommended:1,status:'PENDING',weight:1000,volume:2,origin:'Lima',destination:'Arequipa'},'No recorded history.');assert.match(script,/2 carrying truck/);assert.match(script,/Quoted delivery/);assert.match(script,/No booking or departure is confirmed/);assert.ok(!script.includes('CARRIER_MARKUP'));context.offers[0].data.estimatedDeliveryAt=null;assert.equal(quoteVoicePlanFacts(briefing.options,context)[0].deliveryAt,null);
+});

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import {RouteAdmissionInputSchema,RouteAdmissionAssessmentSchema} from './route-admission';
+import {RouteOperatingProfileSchema} from "./operating-costs";
 import { CanonicalLocationV2Schema, TimeWindowV2Schema, TransportModeV2Schema } from "./freight-request";
 import { CarrierOfferV2Schema, CommercialEvidenceV2Schema, ScoringPolicyV2Schema } from "./commercial";
 
@@ -26,7 +28,7 @@ const GroupedPlanAssignmentInput = z.object({ legSequence: z.number().int().posi
 export const WorkflowInputsV2 = {
   "nodes.publish": z.object({ ...Publishing, kind: z.enum(["PORT", "TERMINAL", "BORDER", "HUB"]), name: Text,
     location: Location, jurisdiction: Text.nullable(), source: Evidence, verifiedAt: Instant.nullable() }).strict(),
-  "corridors.publish": z.object({ ...Publishing, originNodeId: Id, destinationNodeId: Id, mode: TransportModeV2Schema,
+  "corridors.publish": z.object({ operatingProfile:RouteOperatingProfileSchema.optional(), ...Publishing, originNodeId: Id, destinationNodeId: Id, mode: TransportModeV2Schema,
     estimatedDistanceKm: z.number().nonnegative().nullable(), estimatedDurationSeconds: z.number().positive().nullable(),
     restrictions: Rules, source: Evidence, version: Text, validUntil: Instant.nullable(),
     grossWeightLimitKg: z.number().positive().nullable(), payloadLimitKg: z.number().positive().nullable(),
@@ -44,7 +46,8 @@ export const WorkflowInputsV2 = {
   "limits.publish": z.object({ ...Publishing, serviceId: Id, assetId: Id.nullable(), combinationId: Id.nullable(),
     corridorId: Id, manufacturerPayloadLimitKg: z.number().positive(), routeGrossLimitKg: z.number().positive(),
     combinedTareKg: z.number().nonnegative(), usableVolumeM3: z.number().positive(), usableDimensions: Dimensions,
-    compatibilityConfirmed: z.boolean(), source: Evidence }).strict()
+    compatibilityConfirmed: z.boolean(), admission:RouteAdmissionInputSchema.optional(), source: Evidence }).strict()
+    .refine(v=>!v.admission||v.compatibilityConfirmed===(v.admission.decision==='ALLOWED'),'Admission and compatibility must agree.')
     .refine(v => (v.assetId === null) !== (v.combinationId === null), "Exactly one physical source required.")
     .refine(v => v.combinedTareKg < v.routeGrossLimitKg),
   "scoring-policies.publish": z.object({ ...Publishing, policy: ScoringPolicyV2Schema }).strict(),
@@ -182,7 +185,7 @@ export const WorkflowRecordV2Schema = z.discriminatedUnion("kind", [
     eligibility: z.enum(["eligible", "unknown", "ineligible"]), evaluatedAt: Instant, exclusionReasons: z.array(Text),
     pendingRequirements: z.array(Text), provenance: Verification, proposedWindow: TimeWindowV2Schema,
     coverage: Verification, availability: Verification, assignments: z.array(Assignment), legAssignments: z.array(LegAssignment).min(1), resourceAssessments: z.array(z.object({
-      assignmentId: Id, resourceId: Id, applicableCapacity: EffectiveCapacity, verificationSource: VerificationSource }).strict()) }) }).strict(),
+      assignmentId: Id, resourceId: Id, applicableCapacity: EffectiveCapacity, verificationSource: VerificationSource, admission:RouteAdmissionAssessmentSchema.optional() }).strict()) }) }).strict(),
   z.object({ ...Metadata, kind: z.literal("opportunities"), data: Stored({ ...WorkflowInputsV2["opportunities.create"].shape,
     sentAt: Instant, cargoSpecification: z.object({ categoryCode: Text }).passthrough(), origin: CanonicalLocationV2Schema,
     destination: CanonicalLocationV2Schema, assignmentSnapshots: z.array(z.object({ id: Id, serviceId: Id }).passthrough()) }) }).strict(),

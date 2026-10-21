@@ -53,12 +53,12 @@ export async function readShipperOfferBriefing(actor: V2Actor, requestId: string
     },
   });
   const briefing = buildOfferBriefing(context.offers, context.ranking, Date.now(), context);
-  const [{quoteRpc},{quoteHistoryScript,quoteVoiceScript}] = await Promise.all([
+  const [{quoteRpc},{quoteHistoryScript,quoteVoiceScript,quoteVoicePlanFacts}] = await Promise.all([
     import("@/server/modules/commercial/infrastructure/supabase-quotes"),
     import("@/server/modules/commercial/domain/quote-history")]);
   let historical = "Historical data is unavailable. Do not invent a historical price.";
   try { historical = quoteHistoryScript(await quoteRpc("read_v2_quote_history",{
     p_organization_id:actor.organizationId,p_member_id:actor.memberId,p_request_id:requestId})); }
   catch { /* Preserve the verified current offer context if the history rollout is pending. */ }
-  return {...briefing,script:quoteVoiceScript({count:briefing.currentOfferCount,options:briefing.options,recommended:briefing.recommended?.position??null,status:context.request.status,weight:context.request.cargoSpecification.totalWeightKg,volume:context.request.cargoSpecification.totalVolumeM3,origin:context.request.origin.city??context.request.origin.label,destination:context.request.destination.city??context.request.destination.label},historical)};
+  return {...briefing,script:quoteVoiceScript({count:briefing.currentOfferCount,options:quoteVoicePlanFacts(briefing.options,context),recommended:briefing.recommended?.position??null,status:context.request.status,weight:context.request.cargoSpecification.totalWeightKg,volume:context.request.cargoSpecification.totalVolumeM3,origin:context.request.origin.city??context.request.origin.label,destination:context.request.destination.city??context.request.destination.label},historical)};
 }

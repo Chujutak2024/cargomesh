@@ -50,3 +50,13 @@ Carrier confirma cada retención y el booking; después asigna vehículo/conduct
 ## Extensión de agenda y prioridad
 
 [DISPATCH_DELEGATION.md](./DISPATCH_DELEGATION.md) define las preferencias opcionales de fechas, la propuesta de horario, la delegación independiente de confirmación y el ranking explícito por llegada. Mantiene atribución Carrier, autorización Cliente e idempotencia nativa.
+
+
+## Cost-based quotation
+
+[COST_PLUS operating costs](./CARRIER_OPERATING_COSTS.md) adds consumption, driver time, rest locations/durations, vehicle wear, shared/per-resource charges, markup and tax. This is a local additive implementation pending rollout and joint synthetic parameter approval; existing fixed tariffs are not converted automatically.
+
+
+### Cost-aware direct FTL dispatch
+
+Optional truck profiles and resource overrides, exact endpoint correlation, bounded subset search and private native comparison are specified in [CARRIER_OPERATING_COSTS.md](CARRIER_OPERATING_COSTS.md). `preview_v2_dispatch_costs` is read-only and organization scoped; it cannot issue an offer or reserve capacity. The final native quote persists the selected individual cost snapshot. This extension is locally prepared and does not activate existing Carrier policies.
