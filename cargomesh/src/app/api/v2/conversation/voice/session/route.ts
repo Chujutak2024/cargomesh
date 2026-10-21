@@ -1,3 +1,4 @@
+import {buildVoiceIntakeCatalog} from "@/server/conversation/voice-intake-catalog";
 import {assignedDemoConfig} from '@/server/auth/assigned-demo';
 import {assignedVoicePreviewAllowed} from '@/server/auth/assigned-demo-policy';
 import { randomUUID } from "node:crypto";
@@ -134,11 +135,13 @@ export async function POST(request: Request) {
           locations: catalog.facilities.slice(0, 40).map(facility => `${facility.city.slice(0, 80)}, ${facility.countryCode.slice(0, 3)}`),
           facilities: catalog.facilities.slice(0, 40).map(facility => ({ id: facility.id, label: facility.label.slice(0, 120), city: facility.city.slice(0, 80) })),
         },
-        intakeCatalog: {
-          complete: catalog.cargoCategories.length <= 16 && catalog.equipmentOptions.length <= 30,
-          categories: catalog.cargoCategories.slice(0, 16).map(item => ({ code: item.code, label: item.name.slice(0, 100) })),
-          equipment: catalog.equipmentOptions.slice(0, 30).map(item => ({ code: item.code, label: item.label.slice(0, 100) })),
-        },
+        // Enable after the gateway accepts 64 KiB signed envelopes; older deployments cap auth at 4 KiB.
+        intakeCatalog: process.env.CARGOMESH_VOICE_EXTENDED_CATALOG === "true"
+          ? buildVoiceIntakeCatalog(catalog) : {
+            complete: catalog.cargoCategories.length <= 16 && catalog.equipmentOptions.length <= 30,
+            categories: catalog.cargoCategories.slice(0,16).map(item=>({code:item.code,label:item.name.slice(0,100)})),
+            equipment: catalog.equipmentOptions.slice(0,30).map(item=>({code:item.code,label:item.label.slice(0,100)})),
+          },
       };
     } catch {
       voiceScope = { ...voiceScope, facilityCatalog: { complete: false, locations: [] } };

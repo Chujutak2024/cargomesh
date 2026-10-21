@@ -14,6 +14,14 @@ class VoiceGuidanceTests(unittest.TestCase):
         self.assertIn("cannot directly write",prompt)
         self.assertNotIn("Speak natural English",prompt)
 
+    def test_intake_continues_after_a_turn_instead_of_forcing_a_form(self):
+        prompt=voice_prompt({"role":"shipper","language":"es"})
+        self.assertIn("A pause or the end of a spoken turn is not the end of intake",prompt)
+        self.assertIn("Do not send the customer to a form",prompt)
+        self.assertIn("not actual available trucks",prompt)
+        self.assertIn("serviceTypes",prompt)
+        self.assertNotIn("If the customer finishes speaking, tell them to click",prompt)
+
     def test_english_default_remains_available_for_older_grants(self):
         self.assertIn("Keep speaking English",voice_prompt({"role":"shipper"}))
 

@@ -23,6 +23,7 @@ from websockets.asyncio.server import ServerConnection, serve
 from websockets.exceptions import ConnectionClosed
 
 from cargomesh_voice_prompt import voice_prompt
+from voice_transport_limits import MAX_AUTH_BYTES, valid_auth_frame
 
 ISSUER = "cargomesh-web"
 AUDIENCE = "cargomesh-voice-gateway"
@@ -113,7 +114,7 @@ async def handle(socket: ServerConnection, secret: str, profile: str | None) -> 
         return
     try:
         first = await asyncio.wait_for(socket.recv(), timeout=5)
-        if not isinstance(first, str) or len(first) > 4096:
+        if not valid_auth_frame(first):
             raise InvalidTokenError("Missing voice grant")
         envelope = json.loads(first)
         if not isinstance(envelope, dict) or envelope.get("type") != "auth" or not isinstance(envelope.get("token"), str):
@@ -173,7 +174,7 @@ async def main(host: str, port: int, origin: str, profile: str | None, secret: s
         return None
 
     async with serve(lambda socket: handle(socket, secret, profile), host, port,
-                     origins=[origin], process_request=health, max_size=16 * 1024,
+                     origins=[origin], process_request=health, max_size=MAX_AUTH_BYTES,
                      compression=None, server_header=None):
         print(f"Nova voice bridge listening on {host}:{port}; origin {origin}")
         await asyncio.Future()
