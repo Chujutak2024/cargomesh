@@ -42,6 +42,8 @@
     "supabase/tests/38_v2_hac50_request_projection.test.sql",
     "supabase/tests/39_v2_hac50_facility_visual.test.sql",
     "supabase/tests/38_v2_hac52_client_context.test.sql",
-    "supabase/tests/40_v2_quote_automation.test.sql"
+    "supabase/tests/40_v2_quote_automation.test.sql",
+    "supabase/tests/41_v2_multiple_bookings.test.sql",
+    "supabase/tests/42_v2_multiple_trucks.test.sql"
   ]
 }
