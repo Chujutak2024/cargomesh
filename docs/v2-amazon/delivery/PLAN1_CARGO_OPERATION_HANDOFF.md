@@ -30,7 +30,7 @@ Comandos reproducibles desde `cargomesh/`: ejecutar `node node_modules/typescrip
 1. Integrar el corte autorizado y pasar el gate de publicación. No hay nuevo PR, push ni merge a main como parte de esta entrega local.
 2. Aplicar en orden `20261021034000_plan1_resource_route_payload.sql` y `20261021035000_plan1_multi_resource_quotes.sql`, cotejando primero el ledger y hashes reales. Este paquete no se ha aplicado al alojado.
 3. Desplegar el frontend/API compatible después del SQL. Sin esas migraciones el guardado del nuevo alcance tarifario no es compatible con el RPC anterior.
-4. Plan3 prepara ventanas, límites y vehículos vigentes en su escenario. No activar las nueve recetas anteriores a ciegas: el caso de limitación12t describe el baseline anterior y debe ajustar su expectativa al nuevo corte.
+4. Cristhian y este chat definen juntos el paquete de seeds: empresa, sedes, rutas, vehículos, ventanas y pedidos. La propuesta de8perfiles/22casos es un borrador para seleccionar y ajustar, no una activación ni una delegación automática a Plan3. No activar las nueve recetas anteriores a ciegas: el caso de limitación12t describe el baseline anterior y debe ajustar su expectativa al nuevo corte.
 5. Un ADMIN del Carrier revisa y autoriza `maxResources` y `resourcePricing`, indicando si el precio cubre todo el plan o cada recurso. No se cambia automáticamente la tarifa demo USD500.
 6. Plan2 conecta su adaptador al borrador compartido y su confirmación explícita; el soporte de varios grupos en formulario no acredita captura multigrupo por Nova.
 
