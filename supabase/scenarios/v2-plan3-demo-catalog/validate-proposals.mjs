@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createHash } from "node:crypto";
-import { pathToFileURL, fileURLToPath } from "node:url";
+import { pathToFileURL } from "node:url";
 import { CatalogInputsV2 } from "../../../cargomesh/src/shared/schemas/v2/catalog.ts";
 import { WorkflowInputsV2 } from "../../../cargomesh/src/shared/schemas/v2/workflow.ts";
 import { QuotePolicyValueSchema } from "../../../cargomesh/src/shared/schemas/v2/quote-automation.ts";
