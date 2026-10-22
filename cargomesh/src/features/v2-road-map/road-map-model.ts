@@ -1,4 +1,5 @@
 import type { RoadCandidateMapViewProps, RoadRoutePreviewDto } from "./road-map-contract";
+import type { OperationRouteFacts } from "./operation-route-model";
 
 export type MapProvider = "google" | "openstreetmap" | "none" | "loading";
 export type Coordinate = { lat: number; lng: number };
@@ -16,6 +17,8 @@ export type MapPresentation = {
   geometrySource: string | null;
   distanceKm: number | null;
   estimatedTransitHours: number | null;
+  pathProvenance?: RoadRoutePreviewDto["provenanceStatus"][];
+  operation?: OperationRouteFacts;
 };
 
 export function validCoordinate(lat: number | null, lng: number | null): lat is number {

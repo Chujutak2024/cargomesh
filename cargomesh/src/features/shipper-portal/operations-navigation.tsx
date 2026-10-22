@@ -43,6 +43,7 @@ export function OperationsReadNotice({ issues }: { issues: OperationsReadIssue[]
   const names: Record<string, string> = { requests: t("solicitudes", "requests"), bookings: t("reservas", "bookings"),
     offers: t("ofertas", "offers"), decisions: t("decisiones", "decisions"), ranking: t("ranking", "ranking"),
     executions: t("ejecuciones", "executions"), facilities: t("sedes", "facilities"), routes: t("rutas", "routes"),
+    route: t("ruta", "route"), corridors: t("corredores", "corridors"),
     plans: t("planes", "plans"), opportunities: t("oportunidades", "opportunities"), incidents: t("incidencias", "incidents"),
     "execution-events": t("eventos", "events") };
   return <section className={styles.readNotice} aria-label={t("Estado de lectura", "Read status")}>

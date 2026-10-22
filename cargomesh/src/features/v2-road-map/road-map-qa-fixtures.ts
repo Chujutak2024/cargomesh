@@ -2,8 +2,8 @@ import type { RoadCandidateMapViewProps } from "./road-map-contract";
 
 /** Local presentation fixtures, not API responses or carrier/road evidence. */
 const base: Omit<RoadCandidateMapViewProps, "selectedCandidateId" | "onSelectCandidate"> = {
-  origin: { label: "Planta Callao Norte", city: "Callao", countryCode: "PE", lat: -12.0464, lng: -77.1181 },
-  destination: { label: "Centro de distribución Arequipa", city: "Arequipa", countryCode: "PE", lat: -16.409, lng: -71.5375 },
+  origin: { label: "Facility C01_SIM_A · synthetic preview", city: "C01_SIM_A", countryCode: "PE", lat: -12, lng: -77 },
+  destination: { label: "Facility C01_SIM_B · synthetic preview", city: "C01_SIM_B", countryCode: "PE", lat: -12.5, lng: -77 },
   overallStatus: "eligible",
   candidates: [{
     candidateId: "road-a", status: "eligible",
@@ -11,10 +11,10 @@ const base: Omit<RoadCandidateMapViewProps, "selectedCandidateId" | "onSelectCan
     service: { id: "service-a", code: "ROAD-SUR", mode: "ROAD" },
     carrierName: "Transportista de escenario A", serviceCode: "ROAD-SUR",
     routePreview: {
-      corridorCode: "PE-PANAM-SUR-1S", distanceKm: 1015, estimatedTransitHours: 18.5,
+      corridorCode: "C01-SHAPED-PREVIEW", distanceKm: 100, estimatedTransitHours: 1,
       geometrySource: "SCENARIO_SYNTHETIC_GEOMETRY", provenanceStatus: "SIMULATED",
-      legs: [{ sequence: 1, mode: "ROAD", originLabel: "Callao", destinationLabel: "Arequipa",
-        waypoints: [{ lat: -12.0464, lng: -77.1181 }, { lat: -14.0678, lng: -75.7286 }, { lat: -16.409, lng: -71.5375 }], conditions: [] }],
+      legs: [{ sequence: 1, mode: "ROAD", originLabel: "Facility C01_SIM_A", destinationLabel: "Facility C01_SIM_B",
+        waypoints: [{ lat: -12, lng: -77 }, { lat: -12.2, lng: -77 }, { lat: -12.3, lng: -77 }, { lat: -12.5, lng: -77 }], conditions: [] }],
     },
   }, {
     candidateId: "road-b", status: "unknown",

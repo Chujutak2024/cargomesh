@@ -5,8 +5,9 @@ import type { WorkflowRecordV2 } from "./shipper-model";
 import type { TrackingListItem } from "./tracking-presentation";
 import { routeForExecution, canShowConceptual3D, type Execution } from "./tracking-journey";
 import { routeRecordToPresentation } from "./tracking-model";
+import { operationRouteFacts } from "@/features/v2-road-map/operation-route-model";
 import type { OperationsCollection, OperationsReadIssue } from "@/server/services/v2-workspace/operations-collection";
-export type TrackingKind = "executions" | "bookings" | "decisions" | "offers" | "plans" | "routes";
+export type TrackingKind = "executions" | "bookings" | "decisions" | "offers" | "plans" | "routes" | "corridors";
 export type TrackingSource = {
   record: (kind: TrackingKind, id: string) => Promise<unknown>;
   request: (id: string) => Promise<unknown>;
@@ -16,7 +17,9 @@ export class TrackingScopeError extends Error { readonly code = "INVALID_TRACKIN
 function scoped<K extends TrackingKind>(raw: unknown, kind: K, organizationId: string, id?: string, execution?: Execution): Extract<WorkflowRecordV2,{kind:K}> {
   const row = WorkflowRecordV2Schema.parse(raw);
   if (row.kind !== kind || row.organizationId !== organizationId || !row.requestId || (id && row.id !== id)
-    || (execution && (row.requestId !== execution.requestId || (["bookings","offers"].includes(kind) && row.carrierId !== execution.carrierId))))
+    || (execution && (row.requestId !== execution.requestId
+      || (row.carrierId !== null && row.carrierId !== execution.carrierId)
+      || (["bookings","offers"].includes(kind) && row.carrierId !== execution.carrierId))))
     throw new TrackingScopeError("Tracking reference scope mismatch.");
   return row as Extract<WorkflowRecordV2,{kind:K}>;
 }
@@ -59,8 +62,28 @@ export async function collectTrackingDetail(id: string, organizationId: string, 
     || !offer.data.coveredServiceIds.includes(execution.data.serviceId)
     || !plan.data.legAssignments.some(leg=>leg.serviceId===execution.data.serviceId&&leg.carrierId===execution.carrierId&&offer.data.coveredAssignmentIds.includes(leg.id))))
     throw new TrackingScopeError("Booked offer/service mismatch.");
-  const linkedRoute = offer ? routeForExecution(execution,[booking],[decision],[plan],[route]) : null;
+  let linkedRoute = offer ? routeForExecution(execution,[booking],[decision],[plan],[route]) : null;
+  if (linkedRoute && [[result.request.origin, linkedRoute.data.origin], [result.request.destination, linkedRoute.data.destination]]
+    .some(([expected, actual]) => expected.lat !== null && expected.lng !== null && (expected.lat !== actual.lat || expected.lng !== actual.lng))) {
+    result.issues.push({resource:"route",reason:"partial"});
+    linkedRoute = null;
+  }
   const presentation = routeRecordToPresentation(linkedRoute);
+  if (linkedRoute && offer) {
+    const corridorIds = [...new Set(linkedRoute.data.legs.map(leg => leg.corridorId))];
+    const bookedCorridorIds = linkedRoute.data.corridorIds;
+    const corridorReads = await Promise.all(corridorIds.map(async corridorId => {
+      try {
+        const row = WorkflowRecordV2Schema.parse(await source.record("corridors",corridorId));
+        if (row.kind !== "corridors" || row.id !== corridorId || row.organizationId !== null && row.organizationId !== organizationId
+          || row.carrierId !== null && row.carrierId !== execution.carrierId
+          || row.requestId !== null && row.requestId !== execution.requestId || !bookedCorridorIds.includes(corridorId)) return null;
+        return row;
+      } catch { return null; }
+    }));
+    if (corridorReads.some(row => row === null)) result.issues.push({resource:"corridors",reason:"unavailable"});
+    presentation.operation = operationRouteFacts(linkedRoute,offer,plan,execution,corridorReads.filter(row => row !== null));
+  }
   if (!offer) result.issues.push({resource:"booking-offer",reason:"partial"});
   return {...result,offer,route:linkedRoute,presentation,canView3D:canShowConceptual3D(linkedRoute,presentation.paths.length>0)};
 }
