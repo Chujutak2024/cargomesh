@@ -1,5 +1,5 @@
 import {WorkspaceLink as Link} from "@/features/workspace-mode/workspace-link";
-import { CircleHelp, Info } from "lucide-react";
+import { Info } from "lucide-react";
 import { translate } from "@/features/i18n/config";
 import { requireOperationalRouteAccess } from "@/server/auth/route-guard";
 import { getRequestLocale } from "@/server/i18n/server";
@@ -8,7 +8,7 @@ export default async function HelpPage() {
   const [, locale] = await Promise.all([requireOperationalRouteAccess(), getRequestLocale()]);
   const t = (es: string, en: string) => translate(locale, es, en);
   return <div className={styles.page}>
-    <header className={styles.header}><div><span className={styles.eyebrow}><CircleHelp size={15} aria-hidden="true" />{t("Centro de ayuda", "Help center")}</span>
+    <header className={styles.header}><div>
       <h1>{t("Tu flujo de transporte V2", "Your V2 shipping flow")}</h1>
       <p>{t("De la solicitud al seguimiento, siempre con datos autorizados y estados verificables.", "From request to tracking, always with authorized data and verifiable states.")}</p></div></header>
     <section className={styles.panel} aria-label={t("Pasos del flujo", "Flow steps")}>

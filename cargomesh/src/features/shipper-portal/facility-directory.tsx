@@ -28,7 +28,7 @@ export function FacilityDirectory({ facilities, visualReferences = [] }: { facil
   }, [activeOnly, facilities, localeTag, query]);
 
   return <><div className={styles.toolbar}>
-    <label className={styles.search}><Search size={16} aria-hidden="true"/><span className="sr-only">{t("Buscar sedes", "Search facilities")}</span>
+    <label className={styles.search}><Search size={16} aria-hidden="true"/><span className={styles.srOnly}>{t("Buscar sedes", "Search facilities")}</span>
       <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Nombre, código, ciudad o dirección…", "Name, code, city, or address…")}/></label>
     <div className={styles.filters}><button className={styles.filter} type="button" aria-pressed={!activeOnly} onClick={() => setActiveOnly(false)}>{t("Todas", "All")}</button>
       <button className={styles.filter} type="button" aria-pressed={activeOnly} onClick={() => setActiveOnly(true)}>{t("Sólo activas", "Active only")}</button></div>

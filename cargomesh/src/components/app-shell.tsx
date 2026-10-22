@@ -147,12 +147,12 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
   }
 
   return (
-    <IntakeSessionProvider><div className={`${navStyles.frame} ${styles.shell}`} data-collapsed={collapsed} data-open={open} data-assistant-docked={assistantDocked} data-cm-client-preview={preview?"true":undefined}>
+    <IntakeSessionProvider><div className={`${navStyles.frame} ${styles.shell}`} data-cm-workspace="client" data-collapsed={collapsed} data-open={open} data-assistant-docked={assistantDocked} data-cm-client-preview={preview?"true":undefined}>
       <a className={navStyles.skip} href="#main-content">{t("Saltar al contenido", "Skip to content")}</a>
 
-      <aside ref={sidebarRef} id={sidebarId} className={navStyles.sidebar} role={mobile && open ? "dialog" : undefined} aria-modal={mobile && open ? true : undefined} aria-labelledby={sidebarTitleId} inert={mobile && !open}>
+      <aside ref={sidebarRef} id={sidebarId} className={`${navStyles.sidebar} ${styles.sidebar}`} role={mobile && open ? "dialog" : undefined} aria-modal={mobile && open ? true : undefined} aria-labelledby={sidebarTitleId} inert={mobile && !open}>
         <div className={navStyles.brandRow}>
-          <Link className={navStyles.brand} href="/dashboard" aria-label="CargoMesh" onClick={closeNavigation}>
+          <Link className={`${navStyles.brand} ${styles.brand}`} href="/dashboard" aria-label="CargoMesh" onClick={closeNavigation}>
             <Image src="/v2-workspace/cargomesh-icon.png" width={30} height={30} sizes="30px" alt="" priority />
             <span>CargoMesh</span>
           </Link>
@@ -162,7 +162,7 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
           </button>
         </div>
 
-        <nav className={navStyles.nav} aria-label={t("Menú cliente", "Shipper menu")}>
+        <nav className={`${navStyles.nav} ${styles.navigation}`} aria-label={t("Menú cliente", "Shipper menu")}>
           {navigation.map((section) => (
             <section className={navStyles.group} key={section.id} aria-labelledby={`${sidebarId}-${section.id}`}>
               <h2 id={`${sidebarId}-${section.id}`} className={navStyles.groupLabel}>{section.label}</h2>
@@ -180,7 +180,7 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
           ))}
         </nav>
 
-        <div className={navStyles.identity} title={identity?.organizationName ?? "CargoMesh"}>
+        <div className={`${navStyles.identity} ${styles.workspaceIdentity}`} title={identity?.organizationName ?? "CargoMesh"}>
           <span className={navStyles.avatar} aria-hidden="true"><UserRound size={19} /></span>
           <div><strong>{t("Espacio cliente", "Shipper workspace")}</strong><span>{demo ? t("Demo visual · solo lectura", "Visual demo · read only") : identity?.organizationName ?? "CargoMesh"}</span></div>
         </div>
@@ -226,7 +226,9 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
           <ContentMotion identity={pathname} className={styles.motionRegion}>{children}</ContentMotion>
         </main>
       </div>
-      <ClientAssistant onDockedChange={setAssistantDocked} />
+      <div className={styles.assistantLayer} inert={mobile && open}>
+        <ClientAssistant onDockedChange={setAssistantDocked} />
+      </div>
     </div></IntakeSessionProvider>
   );
 }

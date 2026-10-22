@@ -48,3 +48,17 @@
 @container client-bookings (min-width: 800px) { .grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @container client-bookings (min-width: 1440px) { .grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 @container client-bookings (max-width: 400px) { .grid { padding: .85rem; gap: 1rem; } .card { padding: 1rem; } .facts { grid-template-columns: minmax(0,1fr); } }
+
+:global([data-cm-workspace="client"]) .grid { grid-template-columns: minmax(0,1fr); gap: 0; padding: 0; }
+:global([data-cm-workspace="client"]) .card { display: grid; gap: 1rem 2rem; border: 0; border-bottom: 1px solid var(--cm-color-line); border-radius: 0; padding: 1.5rem 0; box-shadow: none; }
+:global([data-cm-workspace="client"]) .price { border: 0; border-radius: 0; padding: 0; background: transparent; }
+:global([data-cm-workspace="client"]) .price strong { font-size: 1.15rem; letter-spacing: -.02em; }
+:global([data-cm-workspace="client"]) .reference code { font: inherit; font-weight: 650; }
+:global([data-cm-workspace="client"]) .action { width: fit-content; min-height: 2.75rem; padding: .6rem .85rem; border-radius: var(--cm-radius-md); font-size: .85rem; }
+@container client-bookings (min-width: 850px) {
+  :global([data-cm-workspace="client"]) .card { grid-template-columns: minmax(12rem,.8fr) minmax(0,1fr) minmax(0,1fr); }
+  :global([data-cm-workspace="client"]) .header { grid-column: 1; grid-row: 1 / 5; align-content: start; }
+  :global([data-cm-workspace="client"]) :is(.price,.evidence) { grid-column: 2; }
+  :global([data-cm-workspace="client"]) .facts { grid-column: 3; grid-row: 1 / 4; grid-template-columns: minmax(0,1fr); align-content: start; }
+  :global([data-cm-workspace="client"]) :is(.notice,.resources,.footer) { grid-column: 2 / -1; }
+}

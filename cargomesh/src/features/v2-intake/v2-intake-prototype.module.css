@@ -267,3 +267,45 @@
 @container intake (max-width: 680px) { .embedded .stepCopy { display: block; } .embedded .stepCopy small { display: none; } .embedded .stepCopy strong { font-size: 0.58rem; white-space: normal; } .embedded .stepButton { flex-direction: column; } }
 
 .cargoGroup{border:1px solid var(--cm-border,#d8e4ed);border-radius:12px;padding:12px;margin:12px 0;min-width:0}.cargoGroup legend{font-size:14px;font-weight:600;padding:0 6px}.cargoGroupHeading{display:flex;justify-content:flex-end;margin-bottom:8px}
+
+/* Cliente inherits Carrier's palette; shared intake used by Carrier keeps its presentation. */
+:global([data-cm-workspace="client"]) :is(.hero, .card, .formSection, .choiceFieldset, .contactCard, .windowCard, .reviewSection, .integrationArea) { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+:global([data-cm-workspace="client"]) .cargoGroup { border: 0; border-bottom: 1px solid var(--cm-color-line); border-radius: 0; padding: 1rem 0; }
+:global([data-cm-workspace="client"]) .hero { padding: .25rem 0 1.5rem; border-bottom: 1px solid var(--cm-color-line); }
+:global([data-cm-workspace="client"]) .hero::after { display: none; }
+:global([data-cm-workspace="client"]) .heroIcon { width: 2.2rem; height: 2.2rem; color: var(--cm-color-logistics); background: transparent; box-shadow: none; }
+:global([data-cm-workspace="client"]) .hero :is(h1, h2) { font-size: 2.125rem; letter-spacing: -.035em; }
+:global([data-cm-workspace="client"]) :is(.hero p, .cardHeader p, .formSectionHeader p) { max-width: 65ch; }
+:global([data-cm-workspace="client"]) .stepper { gap: 0; padding: 0; border: 0; border-bottom: 1px solid var(--cm-color-line); border-radius: 0; background: transparent; box-shadow: none; }
+:global([data-cm-workspace="client"]) .stepButton { border: 0; border-bottom: 2px solid transparent; border-radius: 0; box-shadow: none; }
+:global([data-cm-workspace="client"]) .stepButton::after { display: none; }
+:global([data-cm-workspace="client"]) .stepButtonActive { border-bottom-color: var(--cm-color-logistics); background: transparent; }
+:global([data-cm-workspace="client"]) .stepNumber { width: 1.8rem; height: 1.8rem; box-shadow: none; }
+:global([data-cm-workspace="client"]) .workspace { gap: 2rem; }
+:global([data-cm-workspace="client"]) .cardHeader { padding: 1.1rem 0; background: transparent; }
+:global([data-cm-workspace="client"]) .stepHeaderIcon { width: 1.7rem; background: transparent; }
+:global([data-cm-workspace="client"]) .cardBody { padding: 1.25rem 0; }
+:global([data-cm-workspace="client"]) .formSection { border-top: 1px solid var(--cm-color-line); padding: 1.25rem 0; }
+:global([data-cm-workspace="client"]) :is(.choiceFieldset, .contactCard, .windowCard, .reviewSection) { padding: 1rem 0; border-bottom: 1px solid var(--cm-color-line); }
+:global([data-cm-workspace="client"]) :is(.choiceFieldset, .contactCard, .windowCard) > legend { padding: 0; }
+:global([data-cm-workspace="client"]) .summaryRoute { padding-inline: 0; background: transparent; }
+:global([data-cm-workspace="client"]) .summaryRow { padding-inline: 0; }
+:global([data-cm-workspace="client"]) .computedTotals > div { border: 0; border-bottom: 1px solid var(--cm-color-line); border-radius: 0; background: transparent; }
+:global([data-cm-workspace="client"]) .equipmentGrid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+:global([data-cm-workspace="client"]) .equipmentCard { border: 0; border-bottom: 1px solid var(--cm-color-line); border-radius: 0; background: transparent; box-shadow: none; transition: background .18s ease; }
+:global([data-cm-workspace="client"]) .equipmentCard:hover { transform: none; background: var(--cm-color-surface-tint); }
+:global([data-cm-workspace="client"]) .equipmentCard[data-selected="true"] { background: var(--cm-color-selected); }
+:global([data-cm-workspace="client"]) .footer { padding-inline: 0; }
+:global([data-cm-workspace="client"]) .integrationArea { padding-inline: 0; border-top: 1px solid var(--cm-color-line); }
+:global([data-cm-workspace="client"]) :is(.assistantBridge, .optionsState, .optionsError) { border: 0; border-block: 1px solid var(--cm-color-line); border-radius: 0; background: var(--cm-color-surface-tint); box-shadow: none; }
+:global([data-cm-workspace="client"]) :is(.notice span, .assistantBridge span, .optionsState span, .optionsError span, .optionsError small) { font-size: .75rem; line-height: 1.6; }
+:global([data-cm-workspace="client"]) :is(.notice strong, .assistantBridge strong, .optionsState strong, .optionsError strong) { font-size: .8125rem; }
+:global([data-cm-workspace="client"]) .stepper { background: var(--cm-color-surface-tint); }
+@container intake (max-width: 680px) { :global([data-cm-workspace="client"]) .hero :is(h1, h2) { font-size: 1.6rem; } }
+@media (prefers-reduced-motion: reduce) { :global([data-cm-workspace="client"]) .equipmentCard { transition: none; } }
+@container intake (max-width: 680px) {
+  :global([data-cm-workspace="client"]) .stepButton { display: flex; flex-direction: column; justify-content: center; min-height: 4.5rem; padding: .5rem .2rem; }
+  :global([data-cm-workspace="client"]) .stepCopy { display: grid; }
+  :global([data-cm-workspace="client"]) .stepCopy small { display: none; }
+  :global([data-cm-workspace="client"]) .stepCopy strong { font-size: .65rem; font-weight: 650; line-height: 1.35; white-space: normal; text-align: center; }
+}

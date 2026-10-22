@@ -12,7 +12,7 @@ export default async function FacilitiesPage() {
   ]);
   const t = (es: string, en: string) => translate(locale, es, en);
   return <div className={styles.page}><header className={styles.hero}><div className={styles.heroCopy}>
-    <h1>{t("Sedes y perfiles de carga", "Facilities and cargo profiles")}</h1></div></header>
+    <h1>{t("Sedes y perfiles de carga", "Facilities and cargo profiles")}</h1><p>{t("Consulta las ubicaciones y los perfiles que utilizas al preparar tus cargas.", "Review the locations and profiles used to prepare your shipments.")}</p></div></header>
     <section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Sedes propias", "Owned facilities")}</h2></div></header>
       <FacilityDirectory facilities={facilities}/></section>
     <section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Perfiles reutilizables", "Reusable profiles")}</h2></div></header>

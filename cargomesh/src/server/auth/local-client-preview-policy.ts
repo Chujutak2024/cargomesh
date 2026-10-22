@@ -1,8 +1,12 @@
 import {createHmac, timingSafeEqual} from 'node:crypto';
 export const CLIENT_PREVIEW_COOKIE='cm-client-preview';
 export const CLIENT_PREVIEW_TTL=2*60*60;
-export function localClientPreviewAllowed(config:{enabled:boolean;production:boolean;secret?:string},host:string|null){
- return config.enabled&&!config.production&&!!config.secret&&config.secret.length>=32&&['127.0.0.1:8080','localhost:8080'].includes(host??'');
+type ClientPreviewConfig={enabled:boolean;production:boolean;secret?:string};
+export function localClientPreviewAllowed(config:ClientPreviewConfig,host:string|null){
+ return config.enabled&&!config.production&&!!config.secret&&config.secret.length>=32&&['127.0.0.1:8080','localhost:8080','127.0.0.1:8092','localhost:8092'].includes(host??'');
+}
+export function localClientFrontendPreviewAllowed(config:ClientPreviewConfig,host:string|null,backendConfigured:boolean){
+ return !backendConfigured&&localClientPreviewAllowed(config,host);
 }
 export function signClientPreview(secret:string,now=Date.now()){
  const payload=`client-preview-v1:${Math.floor(now/1000)+CLIENT_PREVIEW_TTL}`;
