@@ -1,3 +1,4 @@
+import {displayReference,locationDisplayLabel,cargoDisplayDescription} from '@/shared/lib/display-identity';
 import {opportunityRequestBrief} from './opportunity-request-brief';
 import {TimeWindowV2Schema} from '@/shared/schemas/v2/freight-request';
 import {canCarrierAction} from '@/features/carrier-portal/permissions';
@@ -5,7 +6,7 @@ import type {CarrierPortalRole} from '@/features/carrier-portal/permissions';
 import type {Opportunity} from '@/features/carrier-portal/commercial-model';
 const labels:Record<string,string>={SENT:'Awaiting response',ACCEPTED:'Accepted for review',DECLINED:'Declined',OFFERED:'Offer issued',EXPIRED:'Expired',CANCELLED:'Cancelled'};
 export const opportunityLabel=(status:string)=>labels[status]??'Needs review';
-export const opportunityReference=(row:Opportunity)=>opportunityRequestBrief(row)?.requestCode??'Opportunity '+row.id.slice(-8).toUpperCase();
+export const opportunityReference=(row:Opportunity)=>displayReference(opportunityRequestBrief(row)?.requestCode,'PED',row.requestId??row.id);
 export function canRespondOpportunity(row:Opportunity,role:CarrierPortalRole,now:number){
  return (row.data.requestBrief===undefined||opportunityRequestBrief(row)?.canReview===true)&&canCarrierAction(role,'opportunities.respond',row.status)&&Number.isFinite(now)&&Date.parse(row.data.responseDeadline)>now;
 }
@@ -13,8 +14,8 @@ export function requestedWindow(raw:unknown){const parsed=TimeWindowV2Schema.saf
 export function opportunityFacts(row:Opportunity){
  const cargo=row.data.cargoSpecification,brief=opportunityRequestBrief(row);
  const nonnegative=(value:unknown)=>typeof value==='number'&&Number.isFinite(value)&&value>=0?value:null;
- return {brief,projectionInvalid:row.data.requestBrief!==undefined&&!brief,reference:opportunityReference(row),origin:row.data.origin.city??row.data.origin.label,destination:row.data.destination.city??row.data.destination.label,
-  description:typeof cargo.description==='string'&&cargo.description.trim()?cargo.description:cargo.categoryCode,
+ return {brief,projectionInvalid:row.data.requestBrief!==undefined&&!brief,reference:opportunityReference(row),origin:locationDisplayLabel(row.data.origin.city??row.data.origin.label),destination:locationDisplayLabel(row.data.destination.city??row.data.destination.label),
+  description:cargoDisplayDescription(typeof cargo.description==='string'?cargo.description:null,typeof cargo.categoryCode==='string'?cargo.categoryCode:null),
   weightKg:nonnegative(cargo.totalWeightKg),volumeM3:nonnegative(cargo.totalVolumeM3),
   pickup:brief?.pickupWindow??requestedWindow(row.data.pickupWindow),delivery:brief?.deliveryWindow??requestedWindow(row.data.deliveryWindow),
   resourceWindows:row.data.assignmentSnapshots.flatMap(snapshot=>{const window=requestedWindow(snapshot.window);return window?[{id:snapshot.id,window}]:[];})};

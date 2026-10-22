@@ -1,4 +1,5 @@
 "use client";
+import {displayReference,locationDisplayLabel,cargoDisplayDescription} from '@/shared/lib/display-identity';
 
 import { ArrowUpDown, Search } from "lucide-react";
 import {WorkspaceLink as Link} from "@/features/workspace-mode/workspace-link";
@@ -70,11 +71,11 @@ export function RequestList({ requests }: { requests: FreightRequestV2Data[]; in
     {visible.length ? <div className={styles.list}>{visible.map((request) => <Link className={`${styles.row} ${query.selected === request.id ? operationsStyles.selected : ""}`}
       ref={query.selected === request.id ? selectedRow : undefined} aria-current={query.selected === request.id ? "true" : undefined}
       onClick={() => update({ selected: request.id })} href={operationDetailHref(request.id, query, view)} key={request.id}>
-      <span className={styles.stack}><strong>{request.referenceCode}</strong><small>{t("Actualizada", "Updated")} {formatDateTime(request.updatedAt, localeTag)} · v{request.draftVersion}</small><small>{t("Creada", "Created")} {formatDateTime(request.createdAt, localeTag)}</small></span>
-      <span className={styles.stack}><strong>{request.origin.city} → {request.destination.city}</strong><span>{request.origin.label} → {request.destination.label}</span>
+      <span className={styles.stack}><strong>{displayReference(request.referenceCode,'PED',request.id)}</strong><small>{t("Actualizada", "Updated")} {formatDateTime(request.updatedAt, localeTag)} · v{request.draftVersion}</small><small>{t("Creada", "Created")} {formatDateTime(request.createdAt, localeTag)}</small></span>
+      <span className={styles.stack}><strong>{locationDisplayLabel(request.origin.city)} → {locationDisplayLabel(request.destination.city)}</strong><span>{locationDisplayLabel(request.origin.label)} → {locationDisplayLabel(request.destination.label)}</span>
         <small>{t("Recojo", "Pickup")}: {formatDateTime(request.pickupWindow.startsAt, localeTag)} – {formatDateTime(request.pickupWindow.endsAt, localeTag)}</small>
         <small>{t("Entrega", "Delivery")}: {formatDateTime(request.deliveryWindow.startsAt, localeTag)} – {formatDateTime(request.deliveryWindow.endsAt, localeTag)}</small></span>
-      <span className={styles.stack}><strong>{formatMass(request.cargoSpecification.totalWeightKg, localeTag)} · {request.cargoSpecification.totalVolumeM3.toLocaleString(localeTag)} m³</strong><small>{request.cargoSpecification.description}</small></span>
+      <span className={styles.stack}><strong>{formatMass(request.cargoSpecification.totalWeightKg, localeTag)} · {request.cargoSpecification.totalVolumeM3.toLocaleString(localeTag)} m³</strong><small>{cargoDisplayDescription(request.cargoSpecification.description,request.cargoSpecification.categoryCode)}</small></span>
       <span className={styles.status} data-tone={requestStatusTone(request.status)}>{requestStatusLabel(request.status, locale)}</span>
     </Link>)}</div> : <div className={styles.empty} role="status"><Search className={styles.emptyIcon} size={24} /><strong>{requests.length ? t("Sin coincidencias en los registros cargados", "No matches in loaded records") : t("No hay solicitudes cargadas", "No requests loaded")}</strong><p>{t("Prueba otros filtros o revisa el estado de lectura y la paginación.", "Try different filters or check read status and pagination.")}</p></div>}
   </section>;

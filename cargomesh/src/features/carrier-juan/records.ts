@@ -1,3 +1,4 @@
+import {recordDisplayName} from '@/shared/lib/display-identity';
 import { z } from "zod";
 import { parseCatalogRecordV2, type CatalogKindV2 } from "@/shared/schemas/v2/catalog";
 import { WorkflowRecordV2Schema } from "@/shared/schemas/v2/workflow";
@@ -17,7 +18,7 @@ export function parseRecords(resource:PortalResource,data:unknown,carrierId:stri
 export function recordData(record:PortalRecord):Record<string,unknown>{
  const value=record.value??record.data;return value && typeof value==="object"?value as Record<string,unknown>:{};
 }
-export function recordName(record:PortalRecord){const value=recordData(record);return String(value.name??value.fullName??value.commercialName??value.registeredName??value.displayName??value.referenceCode??value.code??value.carrierReference??value.description??(value.mode&&value.serviceClass?value.mode+" · "+value.serviceClass+" · "+record.id.slice(0,8):record.id));}
+export function recordName(record:PortalRecord){return recordDisplayName(record.id,recordData(record),'kind' in record&&typeof record.kind==='string'?record.kind:undefined);}
 export function recordStatus(record:PortalRecord){return String(record.status??recordData(record).status??recordData(record).operatingStatus??"—");}
 export function validCarrierId(value:string){return z.string().uuid().safeParse(value).success;}
 export function carrierCommandPath(carrierId:string,resource:PortalResource,recordId:string,parentId:string,suffix:string){

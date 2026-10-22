@@ -1,4 +1,5 @@
 "use client";
+import {carrierDisplayName} from '@/shared/lib/display-identity';
 import dynamic from 'next/dynamic';
 import {GuidanceImage} from './guidance-image';
 import {usePathname} from 'next/navigation';
@@ -46,8 +47,8 @@ export function ConnectedCarrierWorkspace({previewEnabled,initialAccess}:{previe
   useEffect(()=>{const pane=document.querySelector<HTMLElement>('[data-carrier-scroll]');pane?.scrollTo({top:0});},[view,preview]);
   const active=access?.find(row=>row.carrierId===carrierId);
   const title=preview==='route-lab'?'Road routing lab':preview==='tower'?'Control tower':titles[view];
-  return <CarrierNavigation current={preview??(view==='sites'?'sites':view)} locale={locale} towerHref={CARRIER_TOWER} previewEnabled={previewEnabled} sourceLabel={preview?'Visual preview · not live':active?.carrierName??'Carrier workspace'}>
-    {preview==='tower'?<ControlTower embedded/>:<div className={nav.workspaceSurface}><header className={s.topbar}><div><CarrierMenuButton/><CarrierBreadcrumb currentLabel={title} locale={locale}/></div><div>{!preview&&access&&access.length>1?<Select fieldClassName={s.carrierContextPicker} label="Carrier" value={carrierId} onChange={e=>setCarrierId(e.target.value)}><option value="">Select carrier</option>{access.map(row=><option key={row.carrierId} value={row.carrierId}>{row.carrierName}</option>)}</Select>:null}<LanguageSwitcher compact/><form action="/api/auth/logout" method="post"><Button type="submit" variant="secondary">Sign out</Button></form></div></header>
+  return <CarrierNavigation current={preview??(view==='sites'?'sites':view)} locale={locale} towerHref={CARRIER_TOWER} previewEnabled={previewEnabled} sourceLabel={preview?'Visual preview · not live':(active?carrierDisplayName(active.carrierName,active.carrierId):undefined)??'Carrier workspace'}>
+    {preview==='tower'?<ControlTower embedded/>:<div className={nav.workspaceSurface}><header className={s.topbar}><div><CarrierMenuButton/><CarrierBreadcrumb currentLabel={title} locale={locale}/></div><div>{!preview&&access&&access.length>1?<Select fieldClassName={s.carrierContextPicker} label="Carrier" value={carrierId} onChange={e=>setCarrierId(e.target.value)}><option value="">Select carrier</option>{access.map(row=><option key={row.carrierId} value={row.carrierId}>{carrierDisplayName(row.carrierName,row.carrierId)}</option>)}</Select>:null}<LanguageSwitcher compact/><form action="/api/auth/logout" method="post"><Button type="submit" variant="secondary">Sign out</Button></form></div></header>
     {preview==='route-lab'?<RouteLab/>:<main className={s.content} id="coordinator-content"><div className={s.heading}><div><span className={s.eyebrow}>{view==='fleet'?'Fleet coordination':'Carrier workspace'}</span><h1 tabIndex={-1}>{title}</h1>{view==='fleet'?<p>View truck conditions and organize their assignments.</p>:null}</div></div>
       {error?<section className={s.card}><p role="alert">{error}</p><Button onClick={()=>setRefresh(n=>n+1)}>Retry access</Button></section>:!access?<p role="status">Checking carrier access…</p>:!access.length?<section className={s.card}><h2>No carrier access</h2><p>Your account has no authorized carrier membership. Customer membership does not grant carrier access.</p></section>:<>
 

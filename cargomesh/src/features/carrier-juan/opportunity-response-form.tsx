@@ -1,4 +1,5 @@
 "use client";
+import {carrierDisplayName} from '@/shared/lib/display-identity';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import type {CarrierPortalAccessV2} from '@/shared/schemas/v2/carrier-portal';
 import {mutationReceipt,portalErrorCopy} from '@/features/carrier-portal/api';
@@ -31,7 +32,7 @@ export function OpportunityResponseForm({carrier,row,response,allowed,onSaved,on
    <label>Source reference<input required maxLength={500} value={reference} onChange={e=>setReference(e.target.value)}/></label>
    <label>Evidence provenance<select value={provenance} onChange={e=>setProvenance(e.target.value as typeof provenance)}><option value="UNKNOWN">Unknown</option><option value="SIMULATED">Simulated</option><option value="ESTIMATED">Estimated</option><option value="VERIFIED">Verified — supporting evidence required</option></select></label>
   </fieldset>
-  <small>Attributed to your account by the backend. Current opportunity revision: {row.version}. Source provider: {carrier.carrierName}.</small>
+  <small>Attributed to your account by the backend. Current opportunity revision: {row.version}. Source provider: {carrierDisplayName(carrier.carrierName,carrier.carrierId)}.</small>
   {error?<p role="alert" className={p.error}>{error} Refresh the opportunity if its version or state changed.</p>:null}
   <div className={p.toolbar}><button type="submit" disabled={busy||!allowed}>{busy?'Sending…':'Send response'}</button><button type="button" disabled={busy} onClick={onClose}>Cancel</button></div>
  </form>;

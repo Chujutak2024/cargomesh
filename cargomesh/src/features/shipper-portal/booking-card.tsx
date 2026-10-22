@@ -1,3 +1,4 @@
+import {displayReference} from '@/shared/lib/display-identity';
 import type { ReactNode } from "react";
 import { CalendarDays, CircleAlert, Clock3, PackageCheck, ShieldCheck } from "lucide-react";
 import { localeTag, translate, type Locale } from "@/features/i18n/config";
@@ -22,7 +23,7 @@ export function BookingCard({ booking, offer, reference, carrier, locale, childr
         <span className={styles.version}>{t("Versión", "Version")} {booking.version}</span>
       </div>
       <h3>{carrier}</h3>
-      <div className={styles.reference}><span>{t("Solicitud", "Request")}</span><code>{reference}</code></div>
+      <div className={styles.reference}><span>{t("Reserva", "Booking")}</span><code>{displayReference(reference,'BKG',booking.id)}</code></div>
     </header>
     <div className={styles.price}>
       <span><PackageCheck size={18} aria-hidden="true"/>{t("Oferta vinculada", "Linked offer")}</span>

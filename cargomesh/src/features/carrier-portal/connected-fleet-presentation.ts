@@ -1,3 +1,4 @@
+import {driverDisplayName,vehicleDisplayName} from '@/shared/lib/display-identity';
 import type {RegularDriverRecordV2} from '@/shared/schemas/v2/regular-driver';
 import {associateAssetVisual} from "@/features/logistics-3d/asset-visual";
 import type {FleetDriver} from './fleet-drivers';
@@ -7,7 +8,7 @@ import {recordData,type PortalRecord} from './records';
 export type ConnectedFleetSnapshot=Omit<Awaited<ReturnType<typeof readConnectedFleet>>,'regularDrivers'|'regularDriversUnavailable'>&{regularDrivers?:RegularDriverRecordV2[];regularDriversUnavailable?:boolean};
 export function connectedDriver(record:PortalRecord,vehicle?:FleetVehicle):FleetDriver{
  const d=recordData(record);
- return {id:record.id,name:String(d.fullName),enabled:null,vehicleCode:vehicle?.code??'',photo:null,
+ return {id:record.id,name:driverDisplayName(String(d.fullName),record.id),enabled:null,vehicleCode:vehicle?vehicleDisplayName(vehicle.id,vehicle.code,vehicle.plate):'',photo:null,
   licenseClass:String(d.licenseClass),licenseExpiresAt:String(d.licenseValidUntil),experienceYears:typeof d.experienceYears==='number'?d.experienceYears:null,
   joinedAt:null,base:null,shift:null,specialties:Array.isArray(d.qualifications)?d.qualifications.map(String):[],completedTrips:null,punctualityPercent:null};
 }

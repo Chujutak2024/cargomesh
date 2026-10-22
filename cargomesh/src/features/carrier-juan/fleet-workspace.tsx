@@ -1,4 +1,5 @@
 "use client";
+import {carrierDisplayName} from '@/shared/lib/display-identity';
 import {readJuanHash,navigateJuanHash,subscribeJuanRoute,juanHref} from "./juan-navigation";
 
 import dynamic from "next/dynamic";
@@ -9,7 +10,7 @@ import {CarrierKpis} from "./carrier-kpis";
 import {DriversWorkspace} from "./drivers-workspace";
 import {ServiceSpecifications} from "./service-specifications";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, CalendarDays, Download, Fuel, Gauge, Info, LayoutGrid, List, MapPin, RefreshCw, Search, ShieldCheck, Truck, UsersRound, Plus, Wrench } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, Download, Fuel, Gauge, LayoutGrid, List, MapPin, RefreshCw, Search, ShieldCheck, Truck, UsersRound, Plus, Wrench, Package, Clock3 } from "lucide-react";
 import { useLocale } from "@/features/i18n/locale-provider";
 import { ContentMotion } from "@/features/product-motion/content-motion";
 import { portalErrorCopy } from "./api";
@@ -20,7 +21,6 @@ import {connectedDriver} from '@/features/carrier-portal/connected-fleet-present
 import {ConnectedCrew} from '@/features/carrier-portal/connected-crew';
 import {ConnectedTruckRegistration} from './connected-truck-registration';
 import {useConnectedFleet} from './use-connected-fleet';
-import { fleetReferencePhoto } from "./fleet-photos";
 import { EXAMPLE_AS_OF, filterFleet, fleetSummary, remainingRangeKm, matchesFleetFilter, type FleetFilter, type FleetSort, type FleetStatus, type FleetVehicle } from "./fleet-model";
 import { applyDemoCommand, createFleetDemo, demoFleetVehicles, type DemoCommand } from "./fleet-demo";
 import { useFleetDemo } from "./use-fleet-demo";
@@ -54,7 +54,7 @@ const filters: { id: FleetFilter; es: string; en: string }[] = [
   { id: "maintenance", es: "En taller", en: "In shop" }, { id: "due", es: "Servicio próximo", en: "Service due" },
   { id: "fuel", es: "Combustible bajo", en: "Low fuel" }, { id: "reefer", es: "Refrigerados", en: "Reefers" },
 ];
-const statusLabels: Record<FleetStatus, [string, string]> = { AVAILABLE: ["Disponible (registro)", "Available (record)"],
+const statusLabels: Record<FleetStatus, [string, string]> = { AVAILABLE: ["Disponible", "Available"],
   IN_SERVICE: ["En servicio", "In service"], MAINTENANCE: ["En taller", "In shop"], OUT_OF_SERVICE: ["Fuera de servicio", "Out of service"] };
 function VehicleStatus({ vehicle }: { vehicle: FleetVehicle }) {
   const { t } = useLocale();
@@ -70,28 +70,21 @@ function ServiceValue({ vehicle }: { vehicle: FleetVehicle }) {
   return vehicle.maintenance ? <><strong className={s.serviceDate}>{new Date(vehicle.maintenance.startsAt).toLocaleDateString(localeTag, { day: "numeric", month: "short" })}</strong>
     <small>{vehicle.maintenance.kind}</small></> : <><strong>—</strong><small>{t("Sin registro", "No record")}</small></>;
 }
-function ReferencePhoto({ vehicle, eager = false }: { vehicle: FleetVehicle; eager?: boolean }) {
-  const { t } = useLocale();
-  const photo = fleetReferencePhoto(vehicle);
-  return <>
-    {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img src={photo.src} width={1200} height={800} loading={eager ? "eager" : "lazy"} decoding="async"
-      style={{ objectPosition: photo.position }} alt={t(photo.es, photo.en)} />
-    <span className={s.imageCaption}>{vehicle.photoDataUrl?t("Foto del camión","Truck photo"):vehicle.visual?t("Modelo de referencia", "Model reference"):vehicle.source==="SERVICE"?t("Referencia del tipo", "Type reference"):t("Foto de referencia", "Reference photo")}</span>
-  </>;
+function ReferencePhoto({ vehicle }: { vehicle: FleetVehicle; eager?: boolean }) {
+  return <FleetTruckPreview vehicle={vehicle}/>;
 }
 function VehicleFacts({ vehicle }: { vehicle: FleetVehicle }) {
   const { t, localeTag } = useLocale();
   const date = (value: string | null) => value ? new Date(value.length === 10 ? value + "T12:00:00Z" : value).toLocaleDateString(localeTag) : "—";
   return <>
     <dl className={s.vehicleFacts}>
-      <div><dt>Fleet ID</dt><dd>{vehicle.code}</dd></div>
-      <div><dt>Recorded make and model</dt><dd>{vehicle.model || "Not recorded"}</dd></div>
+      <div><dt>{t('Marca y modelo','Make and model')}</dt><dd>{fleetCardIdentity(vehicle).model || t('Sin registro','Not recorded')}</dd></div>
       <div><dt>{t("Placa", "Plate")}</dt><dd>{vehicle.plate || "—"}</dd></div>
       <div><dt>{t("Capacidad de carga", "Load capacity")}</dt><dd>{vehicle.capacityKg.toLocaleString(localeTag)} kg</dd></div>
       <div><dt>{t("Fecha de registro", "Registration date")}</dt><dd>{date(vehicle.registeredAt)}</dd></div>
       <div><dt>{t("Alta en CargoMesh", "Added to CargoMesh")}</dt><dd>{date(vehicle.createdAt)}</dd></div>
     </dl>
+    <details className={s.recordIdentifiers}><summary>{t('Identificadores del registro','Record identifiers')}</summary><dl><div><dt>{t('Código interno','Internal code')}</dt><dd><code>{vehicle.code}</code></dd></div><div><dt>Record ID</dt><dd><code>{vehicle.id}</code></dd></div>{vehicle.model?<div><dt>{t('Modelo original del registro','Original recorded model')}</dt><dd>{vehicle.model}</dd></div>:null}</dl></details>
     <p className={s.cardDescription}>{vehicle.description || t("Descripción sin registrar", "Description not recorded")}</p>
     <div className={s.statusContext}><span>{t("Último estado", "Latest state")}</span><VehicleStatus vehicle={vehicle} />
       <p>{vehicle.statusReason || t("Sin descripción de estado", "No state description")}</p>
@@ -106,33 +99,53 @@ function RangeValue({ vehicle }: { vehicle: FleetVehicle }) {
   return <small className={s.rangeValue}>{range === null ? t("Autonomía sin datos", "Range unavailable") : "≈ " + range.toLocaleString(localeTag) + " km · " + t("autonomía estimada", "estimated range")}</small>;
 }
 function VehicleCard({ vehicle, open, openDriver, openScheduling, openRegularDriver, canManageRegularDriver, buttonRef, list }: { vehicle: FleetVehicle; open: () => void; openDriver:()=>void; openScheduling:()=>void; openRegularDriver:()=>void; canManageRegularDriver:boolean; buttonRef: (node: HTMLButtonElement | null) => void; list: boolean }) {
-  const { t,localeTag } = useLocale();
-  const identity=fleetCardIdentity(vehicle);
-  return <article className={`${s.vehicleCard} ${list ? s.listCard : ""}`} data-body={vehicle.variant}>
-    <button className={s.cardOpen} ref={buttonRef} onClick={open} aria-label={t("Ver camión ", "View truck ") + identity.title} aria-describedby={`fleet-model-${vehicle.id}`} />
+  const { t, localeTag } = useLocale();
+  const identity = fleetCardIdentity(vehicle), driver = vehicle.driverProfile;
+  const typeLabel = t(...fleetTruckTypeLabel(fleetTruckType(vehicle)));
+  const capacity = Number.isFinite(vehicle.capacityKg) && vehicle.capacityKg > 0
+    ? new Intl.NumberFormat(localeTag, { maximumFractionDigits: 2 }).format(vehicle.capacityKg / 1000) + ' t'
+    : t('Sin dato', 'Not recorded');
+  const driverRole = vehicle.driverProfileRole === 'regular' ? t('Habitual', 'Usual driver') : t('Asignado', 'Assigned driver');
+  const experience = driver?.experienceYears === null || driver?.experienceYears === undefined ? null
+    : new Intl.NumberFormat(localeTag, { maximumFractionDigits: 1 }).format(driver.experienceYears) + ' ' + t(driver.experienceYears === 1 ? 'año' : 'años', driver.experienceYears === 1 ? 'year' : 'years');
+  return <article className={`${s.vehicleCard} ${s.demoTruckCard} ${list ? s.listCard : ''}`} data-body={vehicle.variant}>
     <div className={s.truckImage} data-variant={vehicle.variant}>
-      <div className={s.imageBadges}><VehicleStatus vehicle={vehicle} />{vehicle.conditionScore !== null ? <span className={s.condition}><Gauge size={14} aria-hidden="true" />{t("Condición", "Condition")} {vehicle.conditionScore}</span> : <span className={s.condition} title="No vehicle condition assessment is recorded."><Gauge size={14} aria-hidden="true"/>Condition not assessed</span>}</div>
-      <FleetTruckPreview vehicle={vehicle} />
+      <button type="button" className={s.cardImageOpen} onClick={open} aria-label={t('Ver camión ', 'View truck ') + identity.title}/>
+      <div className={s.imageBadges}>
+        <VehicleStatus vehicle={vehicle}/>
+        <span className={s.condition}>
+          {vehicle.conditionScore === null ? <Clock3 size={13} aria-hidden="true"/> : <Gauge size={13} aria-hidden="true"/>}
+          {vehicle.conditionScore === null ? t('Sin evaluar', 'Not assessed') : t('Condición', 'Condition') + ' ' + vehicle.conditionScore + '/100'}
+        </span>
+      </div>
+      <FleetTruckPreview vehicle={vehicle}/>
     </div>
-    <div className={s.cardBody}><div className={s.identity}><div><h2>{identity.title}</h2><p id={`fleet-model-${vehicle.id}`}>{identity.model}</p></div>
-      <span className={s.cardPlate}>{vehicle.source==='SERVICE'?identity.unit:vehicle.plate??"—"}</span></div>
-      <p className={s.directorySpecs}><span>{t(...fleetTruckTypeLabel(fleetTruckType(vehicle)))}</span><strong>{Number.isFinite(vehicle.capacityKg)&&vehicle.capacityKg>0?new Intl.NumberFormat(localeTag,{maximumFractionDigits:2}).format(vehicle.capacityKg/1000)+' t':t('Capacidad sin registrar','Capacity not recorded')}</strong></p>
-      {vehicle.driverProfile?<button className={s.driverPreview} onClick={openDriver} aria-label={t("Ver conductor: ","View driver: ")+vehicle.driverProfile.name}>
-        <DriverPortrait driver={vehicle.driverProfile}/><span><strong>{vehicle.driverProfile.name}</strong><small>{vehicle.driverProfileRole==="regular"?t("Habitual","Regular"):t("Asignado","Assigned")} · {vehicle.driverProfile.licenseClass} · {vehicle.driverProfile.experienceYears===null?t("Experiencia sin registrar","Experience not recorded"):vehicle.driverProfile.experienceYears+" "+t("años","years")}</small></span><ArrowRight size={15} aria-hidden="true"/>
-      </button>:vehicle.source==='SERVICE'?<button type="button" className={`${s.driverPreview} ${s.driverUnassigned}`} onClick={canManageRegularDriver?openRegularDriver:openScheduling} aria-label={(canManageRegularDriver?'Set regular driver for ':'Review driver assignment for ')+identity.title}>
-        <span className={s.emptyDriverAvatar}><UsersRound size={20} aria-hidden="true"/></span><span><strong>{canManageRegularDriver?'Set regular driver':'Driver assignment'}</strong><small>{canManageRegularDriver?'Choose from this service’s drivers':'No current assignment confirmed'}</small></span><ArrowRight size={15} aria-hidden="true"/>
-      </button>:null}
-      {vehicle.source==='SERVICE'&&vehicle.driverProfile&&canManageRegularDriver?<button type="button" className={s.changeRegularDriver} onClick={openRegularDriver}>{vehicle.regularDriverId?'Change regular driver':'Set regular driver'}</button>:null}
-      <span className={s.cardPrompt}>{t("Ver detalles del camión", "View truck details")}<ArrowRight size={17} aria-hidden="true" /></span>
+    <div className={s.cardBody}>
+      <div className={s.cardIdentity}>
+        <div><h2>{identity.title}</h2><p id={`fleet-model-${vehicle.id}`}>{typeLabel}</p></div>
+        <span className={s.capacityBadge} aria-label={t('Capacidad de carga: ', 'Load capacity: ') + capacity}><Package size={15} aria-hidden="true"/>{capacity}</span>
+      </div>
+      <div className={s.cardDriverPanel}>
+        {driver ? <>
+          <button type="button" className={s.cardDriverProfile} onClick={openDriver} aria-label={t('Ver conductor: ', 'View driver: ') + driver.name}>
+            <DriverPortrait driver={driver}/><span><strong>{driver.name}</strong><small>{driverRole}{experience ? ' · ' + experience : ''}</small></span>
+          </button>
+          {vehicle.source === 'SERVICE' && canManageRegularDriver ? <button type="button" className={s.cardDriverChange} onClick={openRegularDriver} aria-label={t('Cambiar conductor habitual de ', 'Change usual driver for ') + identity.title}>{t('Cambiar', 'Change')}</button> : null}
+        </> : <>
+          <span className={s.cardDriverEmpty}><UsersRound size={21} aria-hidden="true"/></span>
+          <span className={s.cardDriverMissing}><strong>{t('Sin conductor habitual', 'No usual driver')}</strong></span>
+          {vehicle.source === 'SERVICE' ? <button type="button" className={s.cardDriverChange} onClick={canManageRegularDriver ? openRegularDriver : openScheduling}>{canManageRegularDriver ? t('Asignar', 'Assign') : t('Ver agenda', 'Schedule')}</button> : null}
+        </>}
+      </div>
+      <button type="button" className={s.cardDetailsButton} ref={buttonRef} onClick={open} aria-label={t('Ver detalles de ', 'View details for ') + identity.title} aria-describedby={`fleet-model-${vehicle.id}`}>{t('Ver detalles del camión', 'View truck details')}<ArrowRight size={17} aria-hidden="true"/></button>
     </div>
   </article>;
 }
 
+
 export function FleetWorkspace({access=[],headerTarget=null}:{access?:CarrierPortalAccessV2[];headerTarget?:HTMLDivElement|null}) {
   const { t, locale, localeTag } = useLocale();
   const [source, setSource] = useState<"example" | "service">("service"), [filter, setFilter] = useState<FleetFilter>("all"), [search, setSearch] = useState(""), [sort, setSort] = useState<FleetSort>("attention"), [layout, setLayout] = useState<"grid" | "list">("grid");
-  const [localProfile,setLocalProfile]=useState<'none'|'main'|'fleet80'>('none');
-  useEffect(()=>{if(process.env.NODE_ENV==='development'&&['127.0.0.1','localhost'].includes(window.location.hostname))setLocalProfile(window.location.port==='8083'?'fleet80':window.location.port==='8080'?'main':'none');},[]);
   const [selected, setSelected] = useState<string | null>(null);
   const [inspectionId,setInspectionId]=useState<string|null>(null);
   const [driverView,setDriverView]=useState(false),[driverFromDetail,setDriverFromDetail]=useState(false);
@@ -153,6 +166,13 @@ export function FleetWorkspace({access=[],headerTarget=null}:{access?:CarrierPor
   const changeView=(next:typeof view)=>{if(saving)return;setSelected(null);setStandaloneDriverId(null);setEditing(null);setView(next);navigateJuanHash("/fleet/"+(source==="service"?"service/":"")+next);};
   useEffect(() => { if (!selected && returnTo.current) { cardButtons.current.get(returnTo.current)?.focus(); returnTo.current = null; } }, [selected]);
   const resetScope=()=>{setRegularAssetId(null);setSelected(null);setStandaloneDriverId(null);setInspectionId(null);setEditing(null);setManageDrivers(false);setSavedMessage('');};
+  // Drivers and Scheduling open the Carrier directory, independent of truck filters.
+  useEffect(()=>{
+    if(localView||!['drivers','assignment'].includes(view)||connected.carrierId)return;
+    const requested=new URLSearchParams(window.location.search).get('carrier');
+    const carrier=access.find(row=>row.carrierId===requested)??access[0];
+    if(carrier)connected.setCarrierId(carrier.carrierId);
+  },[localView,view,access,connected.carrierId]);
   const connect=()=>connected.refresh();
   const vehicles:FleetVehicle[] = localView ? examples : connected.vehicles;
   const inspected=vehicles.find(vehicle=>vehicle.id===inspectionId);
@@ -164,10 +184,13 @@ export function FleetWorkspace({access=[],headerTarget=null}:{access?:CarrierPor
   const truckTypes=Array.from(new Set(vehicles.map(fleetTruckType))).sort((a,b)=>t(...fleetTruckTypeLabel(a)).localeCompare(t(...fleetTruckTypeLabel(b)),localeTag));
   const vehicle = selected ? vehicles.find(value => value.id === selected) : null;
   const summary = fleetSummary(vehicles, now);
-  const driverRows=connected.current?.drivers.filter(row=>recordData(row).serviceId===connected.serviceId)??[];
+  const driverRows=connected.current?.drivers.filter(row=>row.carrierId===connected.carrierId&&connected.services.some(service=>service.id===recordData(row).serviceId))??[];
+  const canManageCrew=connected.carrier?.role==='ADMIN'&&!!connected.current&&!connected.current.partial;
   const regularAsset=connected.vehicles.find(row=>row.id===regularAssetId);
   const canWriteService=(serviceId?:string)=>!!serviceId&&connected.carrier?.role==='ADMIN'&&!!connected.current&&!connected.current.partial&&connected.services.some(row=>row.id===serviceId&&recordData(row).status==='ACTIVE');
-  const standaloneDriver=driverRows.find(row=>row.id===standaloneDriverId),driverVehicle=vehicles.find(row=>row.driverId===standaloneDriverId);
+  const inspectionRecord=connected.current?.assets.find(row=>row.id===inspectionId);
+  const canManageInspection=!localView&&!!inspectionRecord&&canWriteService(inspected?.serviceId);
+  const standaloneDriver=driverRows.find(row=>row.id===standaloneDriverId),driverVehicle=vehicles.find(row=>row.driverId===standaloneDriverId||row.regularDriverId===standaloneDriverId);
   const saved=(row:PortalRecord)=>{setSavedMessage(recordName(row)+' saved — revision '+row.version);setEditing(null);connected.refresh();navigateJuanHash('/fleet/vehicle/'+row.id);};
   const registerButton = (id: string, node: HTMLButtonElement | null) => { if (node) cardButtons.current.set(id, node); else cardButtons.current.delete(id); };
   const command = (value: DemoCommand) => { const next = applyDemoCommand(demo, value,undefined,operations.inventory); if (!next.error) setDemo(next.state); return next.error; };
@@ -175,28 +198,20 @@ export function FleetWorkspace({access=[],headerTarget=null}:{access?:CarrierPor
   const openDriver=(id:string,fromDetail=false)=>{returnTo.current=id;setSelected(id);setDriverView(true);setDriverFromDetail(fromDetail);};
   const back = () => { setSelected(null);setStandaloneDriverId(null); if(readJuanHash().includes("/vehicle/")) navigateJuanHash("/fleet/"+(source==="service"?"service/":"")+"vehicles"); };
   const contextControls = !localView ? <div className={s.contextControls}>
-    <label><select aria-label="Carrier" disabled={loading||saving} value={connected.carrierId} onChange={e=>{resetScope();connected.setCarrierId(e.target.value);}}><option value="">Select Carrier</option>{access.map(row=><option key={row.carrierId} value={row.carrierId}>{row.carrierName}</option>)}</select></label>
+    <label><select aria-label="Carrier" disabled={loading||saving} value={connected.carrierId} onChange={e=>{resetScope();connected.setCarrierId(e.target.value);}}><option value="">Select Carrier</option>{access.map(row=><option key={row.carrierId} value={row.carrierId}>{carrierDisplayName(row.carrierName,row.carrierId)}</option>)}</select></label>
     <button type="button" className={s.contextRefresh} disabled={loading||saving||!connected.carrier} aria-label={view==='carriers'?'Refresh sites and coverage':'Refresh fleet'} title={loading?'Loading…':view==='carriers'?'Refresh sites and coverage':'Refresh fleet'} onClick={connect}><RefreshCw size={17} aria-hidden="true"/></button>
   </div> : null;
   const fleetHref=(section:string)=>juanHref('#/fleet/'+(localView?'':'service/')+section);
   const primaryView=view==='drivers'?'drivers':view==='assignment'?'assignment':'vehicles';
-  const driversDisabled=localView||!result||saving;
-  const schedulingDisabled=(!localView&&!connected.current)||saving;
+  const driversDisabled=localView||saving;
+  const schedulingDisabled=saving;
   const registrationDisabled=(!localView&&!connected.services.some(row=>canWriteService(row.id)))||saving;
   const truckDirectory=view==='vehicles'&&!vehicle&&!standaloneDriver&&!editing;
-  const needsService=!localView&&['drivers','assignment','register'].includes(view);
+  const needsService=!localView&&view==='register';
   const directoryFilters=<div className={s.directoryFilters}>
-    <label><span>{t('Tonelaje','Load capacity')}</span><select value={capacity} disabled={loading||saving} onChange={event=>setCapacity(event.target.value as FleetCapacityFilter)}>{capacityFilters.map(option=><option key={option.id} value={option.id}>{t(option.es,option.en)}</option>)}</select></label>
-    <label><span>{t('Tipo de camión','Truck type')}</span><select value={truckType} disabled={loading||saving} onChange={event=>setTruckType(event.target.value)}><option value="all">{t('Todos los tipos','All truck types')}</option>{truckTypes.map(type=><option key={type} value={type}>{t(...fleetTruckTypeLabel(type))}</option>)}</select></label>
+    <label><span className={s.srOnly}>{t('Tonelaje','Load capacity')}</span><select value={capacity} disabled={loading||saving} onChange={event=>setCapacity(event.target.value as FleetCapacityFilter)}>{capacityFilters.map(option=><option key={option.id} value={option.id}>{t(option.es,option.en)}</option>)}</select></label>
+    <label><span className={s.srOnly}>{t('Tipo de camión','Truck type')}</span><select value={truckType} disabled={loading||saving} onChange={event=>setTruckType(event.target.value)}><option value="all">{t('Todos los tipos','All truck types')}</option>{truckTypes.map(type=><option key={type} value={type}>{t(...fleetTruckTypeLabel(type))}</option>)}</select></label>
   </div>;
-  const sourceDisclosure=(<details className={s.contextSource}>
-        <summary><Info size={15} aria-hidden="true"/>{localView?'Local examples · No GPS':localProfile==='fleet80'?'Test data · No GPS':'Connected records · No GPS'}</summary>
-        <div className={s.contextDetails}>
-          <p>{localView?'Local examples remain separate from the connected Carrier catalog.':view==='carriers'?'The same authorized Carrier and service are used by Sites. Depot location does not establish coverage.':'Counts use authorized loaded records. Operating state is separate from availability for a booking.'}</p>
-          {localProfile==='fleet80'?<p>Connected local Supabase scenario · Synthetic Carrier records · Native session and permissions. The assigned depot is an administrative reference; no current truck position is implied.</p>:localProfile==='main'?<p><a href="http://127.0.0.1:8083/carriers/fleet" target="_blank" rel="noopener noreferrer">Open connected test fleet</a> · Separate local data and session, same application.</p>:null}
-          <button type="button" disabled={saving} onClick={()=>{resetScope();setSource(localView?'service':'example');}}>View {localView?(view==='carriers'?'connected sites':'connected fleet'):'illustrative examples'}</button>
-        </div>
-      </details>);
   const serviceSelector=!localView?<div className={s.serviceContext}>
     <label className={s.contextService}><span className={s.srOnly}>Transport service</span><select disabled={loading||saving||!connected.current} value={connected.serviceId} onChange={e=>{resetScope();connected.setServiceId(e.target.value);}}><option value="">Select service</option>{connected.services.map(row=>{
       const sameName=connected.services.filter(other=>serviceCaption(other,true)===serviceCaption(row,true));
@@ -211,7 +226,7 @@ export function FleetWorkspace({access=[],headerTarget=null}:{access?:CarrierPor
       <CarrierLink href={fleetHref('vehicles')} aria-current={primaryView==='vehicles'?'page':undefined} aria-disabled={saving||undefined} onClick={event=>{if(saving)event.preventDefault();}}><Truck size={17} aria-hidden="true"/>Trucks</CarrierLink>
       <CarrierLink href={fleetHref('drivers')} aria-current={primaryView==='drivers'?'page':undefined} aria-disabled={driversDisabled||undefined} onClick={event=>{if(driversDisabled)event.preventDefault();}}><UsersRound size={17} aria-hidden="true"/>Drivers</CarrierLink>
       <CarrierLink href={fleetHref('assignment')} aria-current={primaryView==='assignment'?'page':undefined} aria-disabled={schedulingDisabled||undefined} onClick={event=>{if(schedulingDisabled)event.preventDefault();}}><CalendarDays size={17} aria-hidden="true"/>Scheduling</CarrierLink>
-    </nav>{needsService?serviceSelector:truckDirectory||view==='coverage'?directoryFilters:null}{sourceDisclosure}</div>:null}
+    </nav>{needsService?serviceSelector:truckDirectory||view==='coverage'?directoryFilters:null}</div>:null}
     {headerTarget?createPortal(contextControls,headerTarget):contextControls}
     {error&&!localView?<div className={s.error} role="alert"><ShieldCheck size={20}/><p>{error}</p><button onClick={connect}>Retry</button></div>:null}
     {!access.length&&!localView?<p role="status">No authorized Carrier membership. Local examples are not used as a fallback.</p>:null}
@@ -224,18 +239,18 @@ export function FleetWorkspace({access=[],headerTarget=null}:{access?:CarrierPor
       {id:'maintenance',label:t("En mantenimiento","In maintenance"),value:!localView&&!result?null:summary.maintenance,tone:'violet',art:'fleet-wrench',description:'Current recorded maintenance state.'},
       {id:'annual',label:t("Mantenimiento · último año","Maintenance · past year"),value:!localView&&!result?null:summary.annualPercent,format:'percent',tone:'indigo',art:'fleet-calendar',description:summary.annualPercent===null?'Annual history unavailable.':`${summary.maintained} of ${summary.total} loaded trucks with completed maintenance, ${new Date(summary.startsAt).toLocaleDateString(localeTag)} — ${new Date(summary.endsAt).toLocaleDateString(localeTag)}.`},
     ]}/>:null}
-    {view==='carriers'?<div className={s.contextBar}>{serviceSelector}{sourceDisclosure}</div>:null}
+    {view==='carriers'?<div className={s.contextBar}>{serviceSelector}</div>:null}
     <ContentMotion identity={standaloneDriver?'driver:'+standaloneDriver.id:editing?'edit:'+editing.id:selected?`${selected}:${driverView?"driver":"truck"}`:view} focusOnChange>
       {view==='carriers'?<CarrierSites example={localView} context={connected}/>:editing&&!localView&&connected.current&&connected.carrier?<ConnectedTruckRegistration key={editing.id} carrierId={connected.carrierId} carrierName={connected.carrier.carrierName} serviceId={String(recordData(editing).serviceId)} depots={connected.current.depots} partners={connected.current.partners} record={editing} canWrite={canWriteService(String(recordData(editing).serviceId))} onBusyChange={setSaving} back={()=>setEditing(null)} saved={saved}/>:standaloneDriver?<DriverProfile profile={connectedDriver(standaloneDriver,driverVehicle)} vehicle={driverVehicle} back={()=>setStandaloneDriverId(null)} openTruck={()=>{if(driverVehicle){setStandaloneDriverId(null);setSelected(driverVehicle.id);}}}/>:vehicle ? driverView&&vehicle.driverProfile?<DriverProfile vehicle={vehicle} back={()=>driverFromDetail?setDriverView(false):back()} openTruck={()=>setDriverView(false)}/>:<><VehicleDetail vehicle={vehicle} back={back} openDriver={()=>openDriver(vehicle.id,true)} />{!localView&&canWriteService(vehicle.serviceId)?<button onClick={()=>setEditing(connected.current?.assets.find(row=>row.id===vehicle.id)??null)}>Edit recorded truck</button>:null}</> : !localView && !result ? (error||!access.length?null:<section className={s.empty} aria-busy={loading}><Truck size={32} aria-hidden="true" /><h2>{loading ? t("Consultando la flota…", "Fetching the fleet…") : !connected.carrier?t("Selecciona un transportista", "Select a carrier"):t("Sin vehículos registrados", "No registered vehicles")}</h2></section>)
-        :needsService&&!connected.service?<section className={s.empty}><Truck size={28} aria-hidden="true"/><h2>{t('Selecciona un servicio','Select a service')}</h2><p>{t('Elige el servicio para gestionar sus recursos.','Choose the service whose resources you want to manage.')}</p></section>
+        :needsService&&!connected.service?<section className={s.empty} aria-busy={connected.services.length>0&&view!=='register'}><Truck size={28} aria-hidden="true"/><h2>{!connected.services.length?t('No hay servicios de carretera registrados','No road services registered'):view==='register'?t('Selecciona un servicio','Select a service'):t('Cargando recursos…','Loading resources…')}</h2>{view==='register'&&connected.services.length?<p>{t('Elige el servicio para registrar el camión.','Choose the service for the truck registration.')}</p>:null}</section>
          :view==='register'&&!localView&&connected.current&&connected.carrier?<ConnectedTruckRegistration key={connected.carrierId+connected.serviceId} carrierId={connected.carrierId} carrierName={connected.carrier.carrierName} serviceId={connected.serviceId} depots={connected.current.depots} partners={connected.current.partners} canWrite={connected.canWrite} onBusyChange={setSaving} back={()=>changeView('vehicles')} saved={saved}/>
         : view==="register"&&localView?<TruckRegistration back={()=>changeView("vehicles")} registered={id=>{navigateJuanHash("/fleet/vehicle/"+id);}}/>
 
         : view==='drivers'&&!localView&&connected.current?<>
-         <div hidden={manageDrivers}><DriversWorkspace key={connected.carrierId+connected.serviceId} drivers={driverRows} assignments={connected.current.operational['driver-assignments']} carrierId={connected.carrierId} serviceId={connected.serviceId} readAt={connected.current.readAt} assignmentsUnavailable={connected.current.visualGaps.includes('driver-assignments')} onOpen={setStandaloneDriverId} onManage={()=>setManageDrivers(true)}/></div>
-         {manageDrivers?<section className={s.panel}><button type="button" onClick={()=>setManageDrivers(false)}><ArrowLeft size={16} aria-hidden="true"/>Back to drivers</button><ConnectedCrew carrierId={connected.carrierId} serviceId={connected.serviceId} references={connected.current} canWrite={connected.canWrite} initialSection="drivers" onCatalogChanged={connected.refresh}/></section>:null}
+         <div hidden={manageDrivers}><DriversWorkspace key={connected.carrierId} drivers={driverRows} assignments={connected.current.operational['driver-assignments']} carrierId={connected.carrierId} serviceId="" readAt={connected.current.readAt} assignmentsUnavailable={connected.current.visualGaps.includes('driver-assignments')} onOpen={setStandaloneDriverId} onManage={()=>setManageDrivers(true)}/></div>
+         {manageDrivers?<section className={s.panel}><button type="button" onClick={()=>setManageDrivers(false)}><ArrowLeft size={16} aria-hidden="true"/>Back to drivers</button><ConnectedCrew carrierId={connected.carrierId} serviceId="" allServices references={connected.current} canWrite={canManageCrew} initialSection="drivers" onCatalogChanged={connected.refresh}/></section>:null}
         </>
-        :view==='assignment'&&!localView&&connected.current?<ConnectedCrew carrierId={connected.carrierId} serviceId={connected.serviceId} references={connected.current} canWrite={connected.canWrite} initialSection="operations" onCatalogChanged={connected.refresh}/>
+        :view==='assignment'&&!localView&&connected.current?<ConnectedCrew carrierId={connected.carrierId} serviceId="" allServices references={connected.current} canWrite={canManageCrew} initialSection="operations" onCatalogChanged={connected.refresh}/>
         : view === "coverage" ? <><div className={s.coverageActions}><button disabled={saving} onClick={()=>changeView('vehicles')}><ArrowLeft size={16} aria-hidden="true"/>Vehicle directory</button><button className={s.primary} disabled={registrationDisabled} onClick={()=>changeView('register')}><Plus size={16} aria-hidden="true"/>New truck</button></div><FleetCoverage vehicles={directoryVehicles} open={open} registerButton={registerButton} /></>
         : view === "assignment" && localView ? <FleetAssignmentBoard state={demo} vehicles={vehicles} command={command} reset={() => setDemo(createFleetDemo(operations.inventory))} ready={ready} storageAvailable={storageAvailable} open={open} registerButton={registerButton} /> : <>
         <div className={`${s.toolbar} ${s.unifiedToolbar}`}>
@@ -249,7 +264,11 @@ export function FleetWorkspace({access=[],headerTarget=null}:{access?:CarrierPor
           : <section className={s.empty}><Search size={30} aria-hidden="true" /><h3>{vehicles.length ? t("Sin coincidencias", "No matches") : t("No hay vehículos de carretera en esta consulta", "No road vehicles in this read")}</h3><p>{t("Prueba otro filtro o término de búsqueda.", "Try another filter or search term.")}</p><button onClick={() => { setFilter("all"); setSearch("");setCapacity('all');setTruckType('all'); }}>{t("Limpiar filtros", "Clear filters")}</button></section>}
       </>}
     </ContentMotion>
-    {inspection?<TruckInspection key={inspection.id} context={inspection} illustrative={!localView} onClose={()=>setInspectionId(null)} onOpenDetail={()=>{setSelected(inspection.id);setInspectionId(null);}}/>:null}
+    {inspection?<TruckInspection key={inspection.id} context={inspection} illustrative={!localView} onClose={()=>setInspectionId(null)} onOpenDetail={()=>{setSelected(inspection.id);setInspectionId(null);}}
+      onEdit={canManageInspection?()=>{setInspectionId(null);setEditing(inspectionRecord!);}:undefined}
+      onAssignTrip={canManageInspection?()=>{if(inspected?.serviceId)connected.setServiceId(inspected.serviceId);setInspectionId(null);changeView('assignment');}:undefined}
+      onAssignDriver={canManageInspection&&!connected.current?.regularDriversUnavailable?()=>{setInspectionId(null);setRegularAssetId(inspection.id);}:undefined}
+    />:null}
   </div>;
 }
 
@@ -261,14 +280,14 @@ function VehicleDetail({ vehicle, back, openDriver }: { vehicle: FleetVehicle; b
     const anchor = document.createElement("a"); anchor.href = url; anchor.download = `CargoMesh-${vehicle.code}.json`; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   return <section className={s.detail}>
-    <div className={s.detailHeading}><div><button onClick={back} className={s.back}><ArrowLeft size={18} aria-hidden="true" />{t("Volver a la flota", "Back to fleet")}</button><p className={s.detailTrail}>{t("Flota / Camiones / ", "Fleet / Trucks / ")}{vehicle.code}</p><h2 tabIndex={-1}>{fleetCardIdentity(vehicle).title} <span>· {fleetCardIdentity(vehicle).model}</span></h2></div><button onClick={download}><Download size={16} aria-hidden="true" />{t("Descargar ficha", "Download record")}</button></div>
-    <div className={s.detailHero}><div className={s.detailVisual}><ReferencePhoto vehicle={vehicle} eager /><span className={s.detailCode}>{vehicle.code}</span></div><div className={s.detailInfo}><div className={s.detailStatusLine}><VehicleStatus vehicle={vehicle} />{vehicle.conditionScore !== null ? <span className={s.condition}><Gauge size={14} aria-hidden="true" />{t("Condición", "Condition")} {vehicle.conditionScore}/100</span> : null}</div><p className={s.provenance}>{t("Última actualización: ", "Last updated: ")}{new Date(vehicle.updatedAt).toLocaleString(localeTag)}</p><dl>
+    <div className={s.detailHeading}><div><button onClick={back} className={s.back}><ArrowLeft size={18} aria-hidden="true" />{t("Volver a la flota", "Back to fleet")}</button><p className={s.detailTrail}>{t("Flota / Camiones / ", "Fleet / Trucks / ")}{fleetCardIdentity(vehicle).title}</p><h2 tabIndex={-1}>{fleetCardIdentity(vehicle).title}{fleetCardIdentity(vehicle).model?<span> · {fleetCardIdentity(vehicle).model}</span>:null}</h2></div><button onClick={download}><Download size={16} aria-hidden="true" />{t("Descargar ficha", "Download record")}</button></div>
+    <div className={s.detailHero}><div className={s.detailVisual}><ReferencePhoto vehicle={vehicle} eager /><span className={s.detailCode}>{fleetCardIdentity(vehicle).title}</span></div><div className={s.detailInfo}><div className={s.detailStatusLine}><VehicleStatus vehicle={vehicle} />{vehicle.conditionScore !== null ? <span className={s.condition}><Gauge size={14} aria-hidden="true" />{t("Condición", "Condition")} {vehicle.conditionScore}/100</span> : null}</div><p className={s.provenance}>{t("Última actualización: ", "Last updated: ")}{new Date(vehicle.updatedAt).toLocaleString(localeTag)}</p><dl>
       <div><dt>{vehicle.driverProfileRole==="regular"?t("Conductor habitual","Regular driver"):t("Conductor asignado", "Assigned driver")}</dt><dd>{vehicle.driverProfile?<button className={s.driverLink} onClick={openDriver}><DriverPortrait driver={vehicle.driverProfile}/><span>{vehicle.driverProfile.name}</span><ArrowRight size={14} aria-hidden="true"/></button>:vehicle.driver || t("Sin registro", "Not recorded")}</dd></div>
       <div><dt>{t("Última posición", "Last position")}</dt><dd>{vehicle.location || t("No disponible", "Unavailable")}</dd></div>
       <div><dt>{t("Velocidad", "Speed")}</dt><dd>{vehicle.speedKmh === null ? t("No disponible", "Unavailable") : vehicle.speedKmh + " km/h"}</dd></div>
       <div><dt>{t("Placa", "Plate")}</dt><dd>{vehicle.plate || "—"}</dd></div><div><dt>{t("Carrocería", "Body type")}</dt><dd>{vehicle.body}</dd></div><div><dt>{t("Base", "Home base")}</dt><dd>{vehicle.depot || t("Sin registro", "Not recorded")}</dd></div>
     </dl>{vehicle.coordinates ? <a className={s.mapLink} href={`https://www.google.com/maps/search/?api=1&query=${vehicle.coordinates.lat},${vehicle.coordinates.lng}`} target="_blank" rel="noreferrer"><MapPin size={16} aria-hidden="true" />{t("Ver posición registrada", "View recorded position")} ↗</a> : null}<small>{vehicle.source === "SERVICE" ? t("La posición registrada no incluye fecha de observación; no confirma movimiento actual.", "The recorded position has no observation timestamp; it does not confirm current motion.") : ""}</small></div></div>
-    {vehicle.visual&&!vehicle.photoDataUrl?<section className={s.modelPreview} aria-label="Associated 3D model"><AssociatedTruck compact variant={vehicle.visual.family} designId={vehicle.visual.designId} label={vehicle.code+" · "+vehicle.visual.name} caption="Reference model associated with recorded equipment. Appearance does not report position, availability or assigned tasks."/></section>:null}
+    {vehicle.visual&&!vehicle.photoDataUrl?<section className={s.modelPreview} aria-label="Associated 3D model"><AssociatedTruck compact variant={vehicle.visual.family} designId={vehicle.visual.designId} label={fleetCardIdentity(vehicle).title}/></section>:null}
     <div className={s.detailMetrics}>
       <div><Gauge size={18} aria-hidden="true" /><span>{t("Odómetro", "Odometer")}</span><strong>{vehicle.odometerKm === null ? "—" : vehicle.odometerKm.toLocaleString(localeTag) + " km"}</strong><small>{t("Lectura registrada", "Recorded reading")}</small></div>
       <div><Fuel size={18} aria-hidden="true" /><span>{t("Combustible", "Fuel")}</span><FuelValue value={vehicle.fuelPercent} /><RangeValue vehicle={vehicle} /></div>

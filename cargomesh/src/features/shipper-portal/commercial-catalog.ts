@@ -1,3 +1,4 @@
+import {carrierDisplayName,displayReference} from '@/shared/lib/display-identity';
 import { z } from "zod";
 import { CatalogInputsV2, parseCatalogRecordV2 } from "@/shared/schemas/v2/catalog";
 
@@ -73,6 +74,6 @@ export function commonResponseChannels(serviceIds: string[], carrierId: string, 
   return (["MANUAL", "API", "MCP"] as const).filter(channel => services.every(row => row.responseChannels.includes(channel)));
 }
 export function carrierLabel(id: string | null, catalog: CommercialCatalog, t: (es: string, en: string) => string) {
-  return id && catalog.carriers[id]?.state === "AVAILABLE" ? catalog.carriers[id].name!
-    : id ? `${t("Transportista", "Carrier")} ${id.slice(0, 8)}` : t("Transportista sin identificar", "Unidentified carrier");
+  return id && catalog.carriers[id]?.state === "AVAILABLE" ? carrierDisplayName(catalog.carriers[id].name!,id)
+    : id ? displayReference(id,'TRA') : t("Transportista sin identificar", "Unidentified carrier");
 }

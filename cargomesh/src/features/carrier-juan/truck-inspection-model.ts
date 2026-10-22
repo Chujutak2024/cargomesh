@@ -13,8 +13,9 @@ export type DepotContext = { name: string; city: string; carrier: string | null;
 export type TruckInspectionContext = {
   id: string; title: string; subtitle: string; variant?: TruckVisualType; modelAssetId?: string | null;
   visualDesignId?: string; visualDesignName?: string;
-  custom: boolean; photo: string; photoReference: boolean; status: string;
-  facts: { label: string; value: string }[]; routeDraft: LocalDraft | null;
+  technicalReferences?: {label:string;value:string}[];
+  custom: boolean; photo: string; photoReference: boolean; status: string; statusCode?: FleetVehicle['status'];
+  facts: { key?: string; label: string; value: string }[]; routeDraft: LocalDraft | null;
   origin: string; destination: string; map: MapPresentation; depot: DepotContext;
   detailHref?: string;
 };
@@ -36,7 +37,7 @@ export function inspectRequest(draft: LocalDraft, id: string, carriers: Carrier[
   const preferred = vehicle ? { type: vehicle.variant, model: vehicle.model ?? "", photoDataUrl: vehicle.photoDataUrl ?? null } : draft.truckPreference;
   const variant = preferred?.type === "custom" ? undefined : preferred?.type ?? "articulated";
   const origin = findRoadLocation(draft.originId)?.city ?? draft.originId, destination = findRoadLocation(draft.destinationId)?.city ?? draft.destinationId;
-  return { id, title: vehicle ? `${vehicle.code} · ${vehicle.model ?? vehicle.body}` : truckLabel(preferred, "es"), subtitle: localRequestReference(id),
+  return { id, title: vehicle ? fleetCardIdentity(vehicle).title : truckLabel(preferred, "es"), subtitle: localRequestReference(id),
     variant, custom: preferred?.type === "custom", modelAssetId: draft.truckPreference?.type === "custom" && !vehicle ? draft.truckPreference.modelAssetId : null,
     photo: vehicle ? fleetReferencePhoto(vehicle).src : preferred?.photoDataUrl ?? `/v2-workspace/trucks/${variant ?? "articulated"}-3d.png`,
     photoReference: !!vehicle && !vehicle.photoDataUrl, status: vehicle ? "Unidad programada" : "Preferencia de la solicitud",
@@ -64,13 +65,14 @@ export function inspectFleet(vehicle: FleetVehicle, carriers: Carrier[]): TruckI
     : { name: "Centro de llegada", city: city(destination), carrier: null, color: carrier?.color ?? "#0a9292", site: null, planned: true }
     : { name: site?.name ?? vehicle.depot ?? "Sede del camión", city: site?.city ?? city(vehicle.location ?? vehicle.depot ?? destination), carrier: site ? carrier?.name ?? null : null, color: carrier?.color ?? "#0a9292", site, planned: false };
   const statuses = { AVAILABLE: "Disponible", IN_SERVICE: "En servicio", MAINTENANCE: "En mantenimiento", OUT_OF_SERVICE: "Fuera de servicio" };
-  return { id: vehicle.id, title: `${fleetCardIdentity(vehicle).title} · ${fleetCardIdentity(vehicle).model}`, subtitle: vehicle.body, variant: vehicle.variant, custom: false,
+  return { id: vehicle.id, title: fleetCardIdentity(vehicle).title, subtitle: vehicle.body, variant: vehicle.variant, custom: false,
     visualDesignId: vehicle.visual?.designId, visualDesignName: vehicle.visual?.name,
-    photo: fleetReferencePhoto(vehicle).src, photoReference: !vehicle.photoDataUrl, status: statuses[vehicle.status], routeDraft, map, origin, destination,
-    facts: [{ label: "Fleet ID", value: vehicle.code }, { label: "Recorded make and model", value: vehicle.model ?? "Not recorded" }, { label: "Placa", value: vehicle.plate ?? "Sin registro" }, { label: "Capacidad de carga", value: `${vehicle.capacityKg.toLocaleString("es-PE")} kg` },
-      { label: vehicle.driverProfileRole === "regular" ? "Conductor habitual" : "Conductor asignado", value: vehicle.driverProfile?.name ?? vehicle.driver ?? "Por asignar" },
-      { label: "Combustible", value: vehicle.fuelPercent === null ? "Sin lectura" : `${vehicle.fuelPercent}%` },
-      { label: "Odómetro", value: vehicle.odometerKm === null ? "Sin lectura" : `${vehicle.odometerKm.toLocaleString("es-PE")} km` },
-      { label: "Última actualización", value: new Date(vehicle.updatedAt).toLocaleDateString("es-PE") }],
+    photo: fleetReferencePhoto(vehicle).src, photoReference: !vehicle.photoDataUrl, status: statuses[vehicle.status], statusCode: vehicle.status, routeDraft, map, origin, destination,
+    technicalReferences:[{label:'Record ID',value:vehicle.id},{label:'Internal code',value:vehicle.code},...(vehicle.model?[{label:'Original recorded model',value:vehicle.model}]:[]),...(vehicle.serviceId?[{label:'Service ID',value:vehicle.serviceId}]:[])],
+    facts: [{ key: "model", label: "Marca y modelo", value: fleetCardIdentity(vehicle).model || "Sin registro" }, { key: "plate", label: "Placa", value: vehicle.plate ?? "Sin registro" }, { key: "capacity", label: "Capacidad de carga", value: `${vehicle.capacityKg.toLocaleString("es-PE")} kg` },
+      { key: "driver", label: vehicle.driverProfileRole === "regular" ? "Conductor habitual" : "Conductor asignado", value: vehicle.driverProfile?.name ?? vehicle.driver ?? "Por asignar" },
+      { key: "fuel", label: "Combustible", value: vehicle.fuelPercent === null ? "Sin lectura" : `${vehicle.fuelPercent}%` },
+      { key: "odometer", label: "Odómetro", value: vehicle.odometerKm === null ? "Sin lectura" : `${vehicle.odometerKm.toLocaleString("es-PE")} km` },
+      { key: "updated", label: "Última actualización", value: new Date(vehicle.updatedAt).toLocaleDateString("es-PE") }],
     depot, detailHref: `#/fleet/vehicle/${vehicle.id}` };
 }

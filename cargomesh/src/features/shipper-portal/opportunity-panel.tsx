@@ -1,4 +1,5 @@
 "use client";
+import {displayReference} from '@/shared/lib/display-identity';
 import { ArrowRight, Building2, MessageSquareText, Send } from "lucide-react";
 import { Button } from "@/components/ui";
 import { formatDateTime } from "./shipper-model";
@@ -26,7 +27,7 @@ export function OpportunityPanel({ context, catalog, busy, onRequest, t, localeT
         <p>{t("La evaluación de cobertura no crea una oportunidad ni una cotización. Los planes persistidos aparecerán aquí para solicitar una oferta.", "A coverage check does not create an opportunity or a quote. Persisted plans appear here so you can request an offer.")}</p></div> : null}
       {targets.map(target => { const channels = commonResponseChannels(target.serviceIds, target.carrierId, catalog);
         return <article className={comparison.opportunity} key={target.key}>
-          <header><div><strong>{carrierLabel(target.carrierId, catalog, t)}</strong><small>{t("Plan", "Plan")} {target.plan.id.slice(0, 8)} · v{target.plan.version} · {t("Solicitud", "Request")} v{target.plan.data.requestVersion}</small></div>
+          <header><div><strong>{carrierLabel(target.carrierId, catalog, t)}</strong><small>{t("Plan", "Plan")} {displayReference(target.plan.id,'PLAN')} · v{target.plan.version} · {t("Solicitud", "Request")} v{target.plan.data.requestVersion}</small></div>
             <span className={styles.status} data-tone={target.current ? "positive" : "pending"}>{target.plan.data.requestVersion !== context.request.draftVersion ? t("Versión anterior", "Previous request version") : target.plan.data.eligibility === "eligible" ? t("Plan elegible", "Eligible plan") : target.plan.data.eligibility === "unknown" ? t("Elegibilidad desconocida", "Eligibility unknown") : t("Plan no elegible", "Ineligible plan")}</span></header>
           <p>{target.serviceIds.map(id => { const service = catalog.services[id]; return service?.state === "AVAILABLE" ? `${service.mode} · ${service.serviceClass}` : t("Servicio sin datos actuales", "Current service data unavailable"); }).join(" / ")}</p>
           {target.existing.map(row => <div className={comparison.opportunityState} key={row.id}>
