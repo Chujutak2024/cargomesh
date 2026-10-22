@@ -53,7 +53,7 @@ export function TrackingVisual({ presentation, origin, destination, canView3D, m
         : <div className={s.empty}><Route size={28} aria-hidden="true"/><strong>{t("Ruta todavía no disponible", "Route not available yet")}</strong><p>{t("No hay geometría verificable enlazada a esta reserva. Puedes consultar los hitos y eventos del transporte.", "No verifiable geometry is linked to this booking. You can still review transport milestones and events.")}</p></div>}
       </div>
       {view === "3d" ? <p className={s.visualNote}><Info size={15} aria-hidden="true"/>{t("Escena ilustrativa; el movimiento no representa la posición ni el avance real de tu carga.", "Illustrative scene; movement does not represent your cargo's actual location or progress.")}</p> : hasEndpoints && <p className={s.visualNote}>{t("Ruta planificada, no posición en vivo.", "Planned route, not a live position.")}</p>}
-      {presentation.operation ? <OperationRouteFactsView facts={presentation.operation}/> : null}
+      {presentation.operation ? <OperationRouteFactsView facts={presentation.operation} locale={locale} t={t}/> : null}
       {threeFailed && <div className={s.visualNote} role="status"><span>{t("3D no disponible. El mapa y los eventos siguen accesibles.", "3D unavailable. Map and events remain accessible.")}</span><button type="button" className={s.heroAction} onClick={() => { setThreeFailed(false); setView("3d"); }}>{t("Reintentar", "Retry")}</button></div>}
       {!canView3D && hasGeometry && <p className={s.visualNote}>{t("3D requiere geometría completa por carretera.", "3D requires complete road geometry.")}</p>}
     </div>

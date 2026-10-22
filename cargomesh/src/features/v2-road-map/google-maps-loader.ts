@@ -18,6 +18,8 @@ export function loadGoogleMaps(browserKey: string): Promise<void> {
   if (pending) return pending;
   pending = new Promise<void>((resolve, reject) => {
     forceReload = false;
+    document.querySelectorAll<HTMLScriptElement>('script[src^="https://maps.googleapis.com/maps/api/js"]')
+      .forEach(previous => previous.remove());
     const script = document.createElement("script");
     const authWindow = window as Window & {
       gm_authFailure?: () => void;

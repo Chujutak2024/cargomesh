@@ -1,10 +1,11 @@
-/** Shared by Vitest and the existing release gate. Synthetic records; no database reads. */
+/** Synthetic native-runner test cases and fixtures; no database reads. */
 import assert from "node:assert/strict";
 import { WorkflowRecordV2Schema } from "@/shared/schemas/v2/workflow";
 import { commercialFixture, id, org, at } from "@/features/shipper-portal/commercial-context.test-fixtures";
 import { booking, execution, ev } from "@/features/carrier-portal/commercial-test-fixtures";
 import { collectTrackingDetail, TrackingScopeError, type TrackingSource } from "@/features/shipper-portal/tracking-data";
 import { routeRecordToPresentation } from "@/features/shipper-portal/tracking-model";
+import { buildTrackingJourney } from "@/features/shipper-portal/tracking-journey";
 import type { WorkflowRecordV2 } from "@/features/shipper-portal/shipper-model";
 import { operationRouteFacts } from "./operation-route-model";
 import { operationMapPoints, schematicMapModel, mapFailureCategory } from "./schematic-map-model";
@@ -102,13 +103,70 @@ export const operationMapCases: Array<[string, () => void | Promise<void>]> = [
       f => { f.b.carrierId = id(999); }, f => { f.decision.data.selectedPlanId = id(999); },
       f => { f.context.plans[0].data.routeId = id(999); f.source.record = async (kind, requested) => kind === "routes" ? f.route : f.records.find(row => row.kind === kind && row.id === requested); },
       f => { f.context.offers[0].data.planCandidateId = id(999); }, f => { f.context.offers[0].data.coveredServiceIds = [id(999)]; },
-      f => { f.context.request.destination.lat = -16; }, f => { f.corridor.organizationId = id(999); }, f => { f.corridor.carrierId = id(999); },
     ];
     for (const mutate of mutations) {
       const f = operationFixture();
       assert.equal((await collectTrackingDetail(f.ex.id, org, f.source)).presentation.paths.length, 1);
       mutate(f);
       await assert.rejects(collectTrackingDetail(f.ex.id, org, f.source), TrackingScopeError);
+    }
+  }],
+  ["mismatched request endpoints remove route, markers and facts while preserving events and milestones", async () => {
+    for (const endpoint of ["origin", "destination"] as const) {
+      const f = operationFixture();
+      withReportedEvent(f);
+      const positive = await collectTrackingDetail(f.ex.id, org, f.source);
+      assert.equal(positive.presentation.paths.length, 1);
+      assert.equal(positive.item.events.length, 1);
+      f.context.request[endpoint].lat = -16;
+      const detail = await collectTrackingDetail(f.ex.id, org, f.source);
+      assert.deepEqual(detail.presentation.paths, []);
+      assert.deepEqual(detail.presentation.markers, []);
+      assert.equal(detail.presentation.operation, undefined);
+      assert.equal(detail.route, null);
+      assert.equal(detail.canView3D, false);
+      assert.deepEqual(detail.issues, [{ resource: "route", reason: "partial" }]);
+      assertOperationalEvidenceUnchanged(detail, positive);
+    }
+  }],
+  ["unavailable or foreign corridors omit only their driving facts and preserve route, events and milestones", async () => {
+    const mutations: Array<(f: ReturnType<typeof operationFixture>) => void> = [
+      f => { const read = f.source.record; f.source.record = async (kind, requested) => {
+        if (kind === "corridors" && requested === f.corridor.id) throw new Error("CORRIDOR_READ_FAILED");
+        return read(kind, requested);
+      }; },
+      f => { f.corridor.organizationId = id(999); }, f => { f.corridor.carrierId = id(999); },
+      f => { f.corridor.requestId = id(999); }, f => { f.corridor.id = id(999); },
+      f => { const read = f.source.record; f.source.record = async (kind, requested) =>
+        kind === "corridors" && requested === f.corridor.id ? {} : read(kind, requested); },
+    ];
+    for (const mutate of mutations) {
+      const f = operationFixture(), other = structuredClone(f.corridor), leg = f.route.data.legs[0];
+      other.id = id(66);
+      other.data.operatingProfile!.drivingSeconds = 1800;
+      f.records.push(other);
+      f.route.data.corridorIds.push(other.id);
+      f.route.data.legs.push({ ...structuredClone(leg), id: id(67), sequence: 2, corridorId: other.id,
+        origin: { ...leg.origin, lat: -12.3 }, waypoints: [], estimatedDistanceKm: 50, estimatedDurationSeconds: 1800 });
+      leg.destination = { ...leg.destination, lat: -12.2 };
+      leg.estimatedDistanceKm = 50; leg.estimatedDurationSeconds = 1800;
+      withReportedEvent(f);
+      const positive = await collectTrackingDetail(f.ex.id, org, f.source);
+      assert.equal(positive.presentation.operation!.commercial.corridors[0].drivingSeconds, 3600);
+      assert.equal(positive.presentation.operation!.commercial.corridors[1].drivingSeconds, 1800);
+      mutate(f);
+      f.corridor.data.operatingProfile!.source.provider = "FOREIGN_CORRIDOR_CANARY";
+      const detail = await collectTrackingDetail(f.ex.id, org, f.source), facts = detail.presentation.operation!;
+      assert.deepEqual(detail.presentation.paths, positive.presentation.paths);
+      assert.deepEqual(detail.presentation.markers, positive.presentation.markers);
+      assert.equal(facts.commercial.corridors[0].drivingSeconds, null);
+      assert.equal(facts.commercial.corridors[0].drivingSource, null);
+      assert.equal(facts.commercial.corridors[1].drivingSeconds, 1800);
+      assert.deepEqual(facts.geometry, positive.presentation.operation!.geometry);
+      assert.deepEqual(facts.eta, positive.presentation.operation!.eta);
+      assert.doesNotMatch(JSON.stringify(facts), /FOREIGN_CORRIDOR_CANARY/);
+      assert.deepEqual(detail.issues, [{ resource: "corridors", reason: "unavailable" }]);
+      assertOperationalEvidenceUnchanged(detail, positive);
     }
   }],
   ["tracking facts distinguish geometry, commercial transit, driving and quote ETA without private fields", async () => {
@@ -138,3 +196,19 @@ export const operationMapCases: Array<[string, () => void | Promise<void>]> = [
     assert.equal(mapFailureCategory(new Error("https://provider.invalid?key=REDACTION_TEST_CANARY")), "unavailable");
   }],
 ];
+
+function withReportedEvent(f: ReturnType<typeof operationFixture>) {
+  const event = record({ ...f.ex, id: id(68), kind: "execution-events", status: "REPORTED", data: {
+    schemaVersion: "2.0", expectedVersion: 1, action: "executions.start", at: f.ex.data.plannedWindow.startsAt,
+    actorId: id(99), evidence: f.context.offers[0].data.source.evidence, note: "Synthetic unit-test event, never persisted.",
+  } }, "execution-events");
+  f.source.children = async kind => ({ data: kind === "execution-events" ? [event] : [], offset: 0, batchSize: 500,
+    nextOffset: null, complete: true, error: null });
+}
+function assertOperationalEvidenceUnchanged(detail: Awaited<ReturnType<typeof collectTrackingDetail>>, positive: Awaited<ReturnType<typeof collectTrackingDetail>>) {
+  assert.deepEqual(detail.item, positive.item);
+  assert.equal(detail.item.events.length, 1);
+  const journey = (value: typeof detail) => buildTrackingJourney(value.item.execution, value.item.booking, value.item.events, value.item.incidents);
+  assert.deepEqual(journey(detail), journey(positive));
+  assert.equal(journey(detail).lastReportedStage, "departure");
+}

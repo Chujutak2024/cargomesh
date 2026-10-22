@@ -1,3 +1,4 @@
+import React from "react";
 import type { MapPresentation } from "./road-map-model";
 import { mapFailureLabel, schematicMapModel, type MapFailure } from "./schematic-map-model";
 import styles from "./schematic-map.module.css";

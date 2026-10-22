@@ -3,9 +3,6 @@ import test from "node:test";
 import type { RoadCandidateMapViewProps } from "./road-map-contract";
 import { canRenderGeometry, getMapPresentation, isGoogleRoutesSource, providerNote } from "./road-map-model";
 import { scenarioData } from "./road-map-qa-fixtures";
-import { operationMapCases } from "./operation-map.test-cases";
-
-for (const [name, run] of operationMapCases) test(name, run);
 
 const sample: RoadCandidateMapViewProps = {
   origin: { label: "Planta Callao Norte", city: "Callao", countryCode: "PE", lat: -12.0464, lng: -77.1181 },

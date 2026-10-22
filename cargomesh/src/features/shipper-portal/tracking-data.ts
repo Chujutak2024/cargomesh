@@ -62,22 +62,27 @@ export async function collectTrackingDetail(id: string, organizationId: string, 
     || !offer.data.coveredServiceIds.includes(execution.data.serviceId)
     || !plan.data.legAssignments.some(leg=>leg.serviceId===execution.data.serviceId&&leg.carrierId===execution.carrierId&&offer.data.coveredAssignmentIds.includes(leg.id))))
     throw new TrackingScopeError("Booked offer/service mismatch.");
-  const linkedRoute = offer ? routeForExecution(execution,[booking],[decision],[plan],[route]) : null;
+  let linkedRoute = offer ? routeForExecution(execution,[booking],[decision],[plan],[route]) : null;
+  if (linkedRoute && [[result.request.origin, linkedRoute.data.origin], [result.request.destination, linkedRoute.data.destination]]
+    .some(([expected, actual]) => expected.lat !== null && expected.lng !== null && (expected.lat !== actual.lat || expected.lng !== actual.lng))) {
+    result.issues.push({resource:"route",reason:"partial"});
+    linkedRoute = null;
+  }
   const presentation = routeRecordToPresentation(linkedRoute);
   if (linkedRoute && offer) {
-    for (const [expected, actual] of [[result.request.origin, linkedRoute.data.origin], [result.request.destination, linkedRoute.data.destination]]) {
-      if (expected.lat !== null && expected.lng !== null && (expected.lat !== actual.lat || expected.lng !== actual.lng))
-        throw new TrackingScopeError("Booked route endpoints differ from the operation's request.");
-    }
     const corridorIds = [...new Set(linkedRoute.data.legs.map(leg => leg.corridorId))];
-    const corridors = await Promise.all(corridorIds.map(async corridorId => {
-      const row = WorkflowRecordV2Schema.parse(await source.record("corridors",corridorId));
-      if (row.kind !== "corridors" || row.id !== corridorId || row.organizationId !== null && row.organizationId !== organizationId
-        || row.carrierId !== null && row.carrierId !== execution.carrierId
-        || !linkedRoute.data.corridorIds.includes(corridorId)) throw new TrackingScopeError("Booked corridor scope mismatch.");
-      return row;
+    const bookedCorridorIds = linkedRoute.data.corridorIds;
+    const corridorReads = await Promise.all(corridorIds.map(async corridorId => {
+      try {
+        const row = WorkflowRecordV2Schema.parse(await source.record("corridors",corridorId));
+        if (row.kind !== "corridors" || row.id !== corridorId || row.organizationId !== null && row.organizationId !== organizationId
+          || row.carrierId !== null && row.carrierId !== execution.carrierId
+          || row.requestId !== null && row.requestId !== execution.requestId || !bookedCorridorIds.includes(corridorId)) return null;
+        return row;
+      } catch { return null; }
     }));
-    presentation.operation = operationRouteFacts(linkedRoute,offer,plan,execution,corridors);
+    if (corridorReads.some(row => row === null)) result.issues.push({resource:"corridors",reason:"unavailable"});
+    presentation.operation = operationRouteFacts(linkedRoute,offer,plan,execution,corridorReads.filter(row => row !== null));
   }
   if (!offer) result.issues.push({resource:"booking-offer",reason:"partial"});
   return {...result,offer,route:linkedRoute,presentation,canView3D:canShowConceptual3D(linkedRoute,presentation.paths.length>0)};
