@@ -5,10 +5,14 @@ const path=require('node:path');
 const vm=require('node:vm');
 const ts=require('typescript');
 // Component lifecycle test with inert media/socket adapters. No browser, audio or AWS is used.
-function setup({deferGrant=false}={}) {
+function setup({deferGrant=false,deferMicrophone=false}={}) {
  const source=process.env.NOVA_VOICE_COMPONENT_SOURCE??path.resolve(__dirname,'../src/features/v2-conversation-prep/nova-voice-preview.tsx');
  const code=ts.transpileModule(fs.readFileSync(source,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
- const slots=[],effects=[],sockets=[],audio=[],contexts=[],worklets=[],playback=[],finished=[],turns=[],grantRequests=[];let mediaRequests=0;let index=0,nonce=0;let resolveGrant;
+ const slots=[],effects=[],sockets=[],audio=[],contexts=[],worklets=[],playback=[],finished=[],turns=[],grantRequests=[];let mediaRequests=0;let index=0,nonce=0;let resolveGrant,resolveMicrophone;
+ const intervals=new Map(),renewalChecks=[];let intervalId=0,clockNow=Date.now();
+ const scheduleInterval=(callback,delay)=>{const id=++intervalId;intervals.set(id,{callback,delay});return id;};
+ const cancelInterval=id=>intervals.delete(id);
+ class Clock extends Date {static now(){return clockNow;}}
  const depsEqual=(a,b)=>a&&b&&a.length===b.length&&a.every((x,i)=>Object.is(x,b[i]));
  const hooks={useRef(value){const i=index++;return slots[i]??(slots[i]={current:value});},useState(value){const i=index++;if(!(i in slots))slots[i]=typeof value==='function'?value():value;return [slots[i],v=>slots[i]=typeof v==='function'?v(slots[i]):v];},useEffect(run,deps){const i=index++;if(!depsEqual(slots[i]?.deps,deps)){const previous=slots[i];slots[i]={deps,cleanup:previous?.cleanup};effects.push(()=>{slots[i].cleanup?.();slots[i].cleanup=run();});}}};
  class Socket{static OPEN=1;constructor(){this.readyState=1;this.closed=0;this.messages=[];sockets.push(this);}send(v){this.messages.push(v);}close(){this.closed++;this.readyState=3;}}
@@ -24,12 +28,12 @@ function setup({deferGrant=false}={}) {
  }
  class Worklet{constructor(){this.port={};worklets.push(this);}connect(){return {connect(){}};}disconnect(){}}
  const exports={};const response={ok:true,json:async()=>({wsUrl:'wss://voice.test/voice',token:'test-not-a-real-grant'})};
- const globals={exports,require:name=>name==='react'?hooks:name==='react/jsx-runtime'?{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})}:name.includes('locale-provider')?{useLocale:()=>({locale:'es'})}:name.includes('voice-session-renewal')?{shouldRenewVoiceSession:()=>false}:name.endsWith('.css')?{__esModule:true,default:{}}:(()=>{throw new Error('Unexpected import '+name);})(),navigator:{mediaDevices:{getUserMedia:async()=>{mediaRequests++;return media;}}},window:{AudioWorkletNode:Worklet,setTimeout,clearTimeout},AudioWorkletNode:Worklet,AudioContext:Context,atob,WebSocket:Socket,crypto:{randomUUID:()=>String(++nonce)},fetch:(_url,init)=>{grantRequests.push(JSON.parse(init.body));return deferGrant?new Promise(resolve=>{resolveGrant=()=>resolve(response);}):Promise.resolve(response);},setTimeout,clearTimeout,console};
+ const globals={exports,require:name=>name==='react'?hooks:name==='react/jsx-runtime'?{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})}:name.includes('locale-provider')?{useLocale:()=>({locale:'es'})}:name.includes('voice-session-renewal')?{shouldRenewVoiceSession:(...args)=>{renewalChecks.push(args);return false;}}:name.endsWith('.css')?{__esModule:true,default:{}}:(()=>{throw new Error('Unexpected import '+name);})(),navigator:{mediaDevices:{getUserMedia:async()=>{mediaRequests++;return deferMicrophone?new Promise(resolve=>{resolveMicrophone=()=>resolve(media);}):media;}}},window:{AudioWorkletNode:Worklet,setTimeout,clearTimeout},AudioWorkletNode:Worklet,AudioContext:Context,atob,WebSocket:Socket,crypto:{randomUUID:()=>String(++nonce)},fetch:(_url,init)=>{grantRequests.push(JSON.parse(init.body));return deferGrant?new Promise(resolve=>{resolveGrant=()=>resolve(response);}):Promise.resolve(response);},setTimeout,clearTimeout,setInterval:scheduleInterval,clearInterval:cancelInterval,Date:Clock,console};
  vm.runInNewContext(code,globals,{filename:source});
  const sender={current:null};
  let props={textInputRef:sender,language:'es',draftContext:{knownFields:[],missingFields:['unitQuantity'],savedVersion:null},onTurn:turn=>turns.push(turn),onPlaybackStateChange:value=>playback.push(value),onResponseFinished:()=>finished.push(true)};
  function render(next={}){props={...props,...next};index=0;const tree=exports.NovaVoicePreview(props);while(effects.length)effects.shift()();return tree;}
- return {render,sockets,track,audio,contexts,worklets,playback,finished,turns,grantRequests,mediaRequests:()=>mediaRequests,write:text=>{render();return sender.current(text);},event:event=>sockets.at(-1).onmessage({data:JSON.stringify(event)}),grant:()=>resolveGrant(),start:()=>render().props.children[0].props.onClick(),unmount:()=>{for(const slot of slots)slot?.cleanup?.();}};
+ return {render,sockets,track,audio,contexts,worklets,playback,finished,turns,grantRequests,intervals,renewalChecks,clock:()=>clockNow,advanceClock:ms=>{clockNow+=ms;},microphoneReady:()=>resolveMicrophone(),tickSilence:()=>{for(const tick of [...intervals.values()])tick.callback();},mediaRequests:()=>mediaRequests,write:text=>{render();return sender.current(text);},event:event=>sockets.at(-1).onmessage({data:JSON.stringify(event)}),grant:()=>resolveGrant(),start:()=>render().props.children[0].props.onClick(),unmount:()=>{for(const slot of slots)slot?.cleanup?.();}};
 }
 const settle=async()=>{for(let i=0;i<5;i++)await new Promise(setImmediate);};
 test('recognized fields and pending clarifications update the draft without closing voice',async()=>{
@@ -130,4 +134,87 @@ test('written reconnects use the current authorized request scope, not a stale m
  const app=setup();app.render();app.render({offerRequestId:'current-request'});
  const sent=app.write('Explain my offers');await settle();assert.equal(app.grantRequests.at(-1).offerRequestId,'current-request');
  app.event({type:'ready',textInput:true});await sent;app.unmount();
+});
+
+
+const pcmPackets=socket=>socket.messages.filter(message=>typeof message!=='string');
+async function openWrittenSession(app){
+ const sent=app.write('What information should I prepare?');await settle();
+ app.event({type:'ready',textInput:true});await sent;await settle();
+}
+
+test('typed-only sessions prime bounded PCM after ready and before text, without microphone permission',async()=>{
+ const app=setup();const sent=app.write('Explain FTL');await settle();
+ assert.equal(pcmPackets(app.sockets[0]).length,0);assert.equal(app.intervals.size,0);
+ app.event({type:'ready',textInput:true});await sent;
+ const socket=app.sockets[0],pcm=pcmPackets(socket);
+ assert.equal(app.mediaRequests(),0);assert.equal(pcm.length,1);assert.equal(pcm[0].byteLength,1024);
+ assert.ok([...new Uint8Array(pcm[0])].every(value=>value===0));
+ assert.ok(socket.messages.indexOf(pcm[0])<socket.messages.findIndex(raw=>typeof raw==='string'&&JSON.parse(raw).type==='text'));
+ assert.equal(app.intervals.size,1);assert.equal([...app.intervals.values()][0].delay,32);
+ app.tickSilence();assert.equal(pcmPackets(socket).length,2);assert.equal(app.turns.length,1);
+ app.unmount();assert.equal(app.intervals.size,0);
+});
+
+test('live microphone replaces silence and pausing/resuming never duplicates PCM streams',async()=>{
+ const app=setup();app.start();await settle();app.event({type:'ready',textInput:true});await settle();
+ assert.equal(app.worklets.length,1);assert.equal(app.intervals.size,0);
+ const pcm=new Uint8Array([1,2,3,4]).buffer;app.worklets[0].port.onmessage({data:pcm});
+ assert.equal(app.sockets[0].messages.at(-1),pcm);
+ app.start();assert.equal(app.intervals.size,1);assert.equal(app.mediaRequests(),1);
+ const before=pcmPackets(app.sockets[0]).length;app.tickSilence();assert.equal(pcmPackets(app.sockets[0]).length,before+1);
+ app.start();await settle();assert.equal(app.worklets.length,2);assert.equal(app.intervals.size,0);
+ const resumed=pcmPackets(app.sockets[0]).length;app.tickSilence();assert.equal(pcmPackets(app.sockets[0]).length,resumed);
+ app.worklets[1].port.onmessage({data:pcm});assert.equal(app.sockets[0].messages.at(-1),pcm);app.unmount();
+});
+
+test('silence covers microphone permission/setup delay and stops when capture is ready',async()=>{
+ const app=setup({deferMicrophone:true});app.start();await settle();app.event({type:'ready',textInput:true});await settle();
+ assert.equal(app.worklets.length,0);assert.equal(app.intervals.size,1);
+ app.tickSilence();assert.equal(pcmPackets(app.sockets[0]).length,2);
+ app.microphoneReady();await settle();assert.equal(app.worklets.length,1);assert.equal(app.intervals.size,0);app.unmount();
+});
+
+test('unmount and stale timer callbacks cannot send more silent audio',async()=>{
+ const app=setup();await openWrittenSession(app);const tick=[...app.intervals.values()][0].callback;
+ const socket=app.sockets[0],before=socket.messages.length;app.unmount();
+ assert.equal(app.intervals.size,0);tick();assert.equal(socket.messages.length,before);assert.equal(socket.closed,1);
+});
+
+test('changing authorization scope stops silence before closing the old connection',async()=>{
+ const app=setup();await openWrittenSession(app);app.render({offerRequestId:'another-request'});
+ assert.equal(app.intervals.size,0);assert.equal(app.sockets[0].closed,1);
+ const before=app.sockets[0].messages.length;app.tickSilence();assert.equal(app.sockets[0].messages.length,before);app.unmount();
+});
+
+test('closing a typed session stops input immediately but drains all received speech',async()=>{
+ const app=setup();await openWrittenSession(app);
+ app.event({type:'response_start'});app.event({type:'audio',audio:'AQACAA==',format:'pcm',sampleRate:24000,channels:1});
+ app.sockets[0].onclose();assert.equal(app.intervals.size,0);assert.equal(app.contexts[0].closed,0);assert.equal(app.audio[0].stopped,0);
+ app.audio[0].onended();await new Promise(resolve=>setTimeout(resolve,210));
+ assert.equal(app.contexts[0].closed,1);assert.equal(app.finished.length,1);app.unmount();
+});
+
+test('provider errors and socket errors release the silent input timer',async()=>{
+ const provider=setup();await openWrittenSession(provider);provider.event({type:'error',message:'Controlled failure'});
+ assert.equal(provider.intervals.size,0);provider.unmount();
+ const network=setup();await openWrittenSession(network);network.sockets[0].onerror();
+ assert.equal(network.intervals.size,0);network.unmount();
+});
+
+test('silence is not user activity and does not renew an idle session',async()=>{
+ const app=setup();const writtenAt=app.clock();await openWrittenSession(app);
+ app.advanceClock(60000);app.tickSilence();assert.equal(app.turns.length,1);
+ app.event({type:'session_limit'});assert.equal(app.renewalChecks.length,0,'microphone-off sessions do not opt into renewal');
+ app.start();await settle();app.event({type:'session_limit'});
+ assert.equal(app.renewalChecks.length,1);assert.equal(app.renewalChecks[0][1],writtenAt);
+ assert.equal(app.renewalChecks[0][2],writtenAt+60000);
+ app.event({type:'response_end'});app.sockets[0].onclose();await new Promise(resolve=>setTimeout(resolve,210));
+ assert.equal(app.sockets.length,1);assert.equal(app.grantRequests.length,1);app.unmount();
+});
+
+test('a failed silent send shuts down input without an uncaught timer error',async()=>{
+ const app=setup();await openWrittenSession(app);
+ app.sockets[0].send=()=>{throw new Error('Controlled send failure');};
+ assert.doesNotThrow(()=>app.tickSilence());assert.equal(app.intervals.size,0);app.unmount();
 });
