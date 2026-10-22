@@ -13,7 +13,7 @@ export function carrierNavigation({ locale, workspaceHref, towerHref, editReques
   return [
     { id: 'overview', label: t('Resumen', 'Overview'), items: [
       { id: 'dashboard', label: 'Dashboard', href: page('dashboard'), icon: 'dashboard' },
-      ...(previewEnabled ? [{ id: 'tower' as const, label: 'Control tower', href: towerHref, icon: 'activity' as const, preview: true }] : []),
+      ...(previewEnabled && demoMode ? [{ id: 'tower' as const, label: 'Control tower', href: towerHref, icon: 'activity' as const, preview: true }] : []),
     ] },
     { id: 'operations', label: t('Operaciones de transporte', 'Transport operations'), items: [
       ...(demoMode ? [
@@ -37,6 +37,7 @@ export function carrierNavigation({ locale, workspaceHref, towerHref, editReques
 }
 
 export function carrierActiveItem(current: string, hash: string, demoMode = false): CarrierNavId {
+  if (!demoMode && current === 'tower') return 'dashboard';
   if (!demoMode && ['shipments','desk','pipeline'].includes(current)) return 'commercial';
   if (current === 'fleet') {
     const part = hash.replace(/^#\//, '').split('/').filter(value => value !== 'service');

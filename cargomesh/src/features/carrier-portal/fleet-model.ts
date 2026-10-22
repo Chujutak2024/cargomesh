@@ -10,6 +10,7 @@ export type FleetZone = { id: string; name: string; cities: string[]; countryCod
 export type FleetJourney = { origin: string; destination: string; facility: string; departureAt: string; arrivalAt: string };
 export type FleetMaintenanceEvent = { id: string; kind: string; startsAt: string; endsAt: string; status: string };
 export type FleetVehicle = {
+  serviceId?: string;
   visual?: import("@/features/logistics-3d/asset-visual").AssetVisualReference | null;
   carrierId?:string;siteId?:string;modelYear?:number;photoDataUrl?:string|null;volumeM3?:number;insuranceUntil?:string;inspectionUntil?:string;
   id: string; code: string; source: "EXAMPLE" | "SERVICE"; status: FleetStatus;

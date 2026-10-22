@@ -31,10 +31,10 @@ export function useConnectedFleet(access:CarrierPortalAccessV2[],enabled:boolean
    const query=new URLSearchParams(window.location.search);
    const scenario=!networkOnly&&process.env.NODE_ENV==='development'&&['127.0.0.1','localhost'].includes(window.location.hostname)&&window.location.port==='8083';
    const entry=fleetEntry({scenario,requestedCarrier:null,requestedService:query.get('service'),carriers:[],services:services.map(row=>row.id)});
-   setServiceId(previous=>services.some(row=>row.id===previous)?previous:entry.service|| (services.length===1?services[0].id:''));
+   setServiceId(previous=>services.some(row=>row.id===previous)?previous:entry.service||'');
   }).catch(failure=>{if(!controller.signal.aborted)setError(portalErrorCopy(failure,false));}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
   return()=>controller.abort();
  },[carrierId,enabled,revision,networkOnly]);
- return {...context,carrierId,serviceId,loading,error,vehicles:context.current&&context.service?connectedVehiclePresentation(context.current,serviceId,Date.parse(context.current.readAt)):[],
+ return {...context,carrierId,serviceId,loading,error,vehicles:context.current?connectedVehiclePresentation(context.current,'',Date.parse(context.current.readAt)):[],
   setCarrierId:(id:string)=>{setCarrierId(id);setServiceId('');setSnapshot(null);},setServiceId,refresh:()=>setRevision(value=>value+1)};
 }

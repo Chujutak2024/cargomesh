@@ -12,7 +12,7 @@ export type AssetVisualReference = {
 
 /** A presentation association; never changes equipment, capacity or availability. */
 export function associateAssetVisual(input: {
-  equipmentType: string; bodyType: string; modelName?: string | null; designHint?: string | null;
+  equipmentType: string; bodyType: string; modelName?: string | null; designHint?: string | null; referenceKey?: string;
 }): AssetVisualReference | null {
   // Explicit body/equipment fields are authoritative; commercial names are not.
   const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase().replace(/[ -]+/g, '_');
@@ -28,7 +28,9 @@ export function associateAssetVisual(input: {
   const family = candidate.family;
   const hint = truckDesign(input.designHint);
   const recorded = hint && compatibleTruckDesign(hint, family, body) ? hint : null;
-  const design = recorded ?? candidate;
+  const references = truckDesigns.filter(design => compatibleTruckDesign(design, family, body));
+  const referenceIndex = Array.from(input.referenceKey ?? '').reduce((hash, char) => (Math.imul(hash, 31) + char.charCodeAt(0)) >>> 0, 0);
+  const design = recorded ?? (input.referenceKey ? references[referenceIndex % references.length] : candidate);
   return { family, body, designId: design.id, name: design.name,
     poster: design.appearance.bodyStyle ? '/v2-workspace/trucks/reference.svg' : `/v2-workspace/trucks/${family}-3d.png`,
     source: recorded ? 'RECORDED_DESIGN' : 'EQUIPMENT_REFERENCE' };
