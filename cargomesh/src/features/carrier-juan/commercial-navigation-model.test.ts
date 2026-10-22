@@ -14,7 +14,7 @@ test('view destinations retain independent selections without contaminating anot
  assert.equal(c.list,a.list);assert.equal(c.offers,b.offers);assert.equal(c.board,'#/pipeline');
  assert.equal(rememberCommercialRoute(c,'#/tracking/details/'+id(12)),c);
  assert.equal(rememberCommercialRoute(c,c.list),c);
- assert.deepEqual(commercialRoots,{list:'#/shipments',board:'#/pipeline',offers:'#/desk'});
+ assert.deepEqual(commercialRoots,{list:'#/shipments',board:'#/pipeline',offers:'#/desk',automation:'#/desk/automation'});
 });
 test('offer destinations distinguish preparation, history and issued versions; malformed IDs are rejected',()=>{
  assert.deepEqual(offerDestination('#/desk/prepare/'+id(10)),{selection:{kind:'opportunities',id:id(10)},prepare:true,invalid:false});
@@ -29,3 +29,5 @@ test('Request history includes exact Carrier, organization, request, opportunity
  assert.deepEqual(requestOfferHistory(o,[a,...wrong,b]).map(row=>row.id),[b.id,a.id]);
  assert.deepEqual(requestOfferHistory(o,[]),[]);
 });
+
+test('automation has its own route without being parsed as an offer',()=>{assert.equal(commercialTab('#/desk/automation'),'automation');assert.equal(commercialTab('#/desk/details/'+id(11)),'offers');});

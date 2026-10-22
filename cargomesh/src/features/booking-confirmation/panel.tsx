@@ -23,6 +23,7 @@ export function BookingConfirmationWindow({bookingId,carrierId,onChanged,canAct=
  }
  if(!window)return error?<p role="status">{error}</p>:null;
  const expired=Date.parse(window.deadline)<=now,pending=window.bookingStatus==='AUTHORIZED';
+ if(!pending)return error?<p role="status">{error}</p>:null;
  return <section aria-label={t('Confirmación del transporte','Transport confirmation')} style={{fontSize:14,lineHeight:1.5,marginBlock:12}}>
   <strong>{t('Confirmación de Carrier hasta','Carrier confirmation by')}: {date(window.deadline)} {t('(hora local)','(local time)')}</strong>
   <p>{pending?(expired?t('Plazo vencido. No hay transporte confirmado.','Deadline expired. Transport is not confirmed.'):t('Pendiente de confirmar recursos y reserva.','Awaiting resource and booking confirmation.')):t('Consulta el estado actualizado de la reserva.','Check the updated booking status.')}</p>

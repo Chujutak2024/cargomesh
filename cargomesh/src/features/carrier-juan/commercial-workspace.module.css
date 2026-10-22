@@ -7,3 +7,5 @@
 .views a[aria-disabled=true]{opacity:.55;cursor:wait}
 .workspace>section{min-width:0}
 .workspace>section[hidden]{display:none}
+.breadcrumb{display:flex;align-items:center;gap:12px;margin-bottom:16px;font-size:13px;color:var(--cm-text-muted,#526b7c)}
+.breadcrumb a{display:inline-flex;align-items:center;gap:6px;color:var(--cm-text,#07354b);text-decoration:none}

@@ -9,6 +9,7 @@ import { requireAuthenticatedMember } from "@/server/auth/member";
 import { z } from "zod";
 import { VoiceDraftContextSchema, type VoiceDraftContext } from "@/features/v2-conversation-prep/voice-draft-context";
 import { carrierVoiceOpportunity, voiceFact } from "@/server/conversation/carrier-voice-scope";
+import { readCarrierBriefing } from "@/server/conversation/carrier-briefing";
 import { readShipperOfferBriefing } from "@/server/conversation/shipper-offer-context";
 
 export const runtime = "nodejs";
@@ -95,6 +96,7 @@ export async function POST(request: Request) {
         route: `${voiceFact(row.data.origin.city ?? row.data.origin.label)} to ${voiceFact(row.data.destination.city ?? row.data.destination.label)}`,
         cargo: voiceFact(row.data.cargoSpecification.categoryCode),
         responseDeadline: voiceFact(row.data.responseDeadline),
+        briefing: await readCarrierBriefing(actor,row),
       } };
       identity = { userId: actor.userId, organizationId: actor.carrierId, memberId: actor.operatorId };
     } catch {

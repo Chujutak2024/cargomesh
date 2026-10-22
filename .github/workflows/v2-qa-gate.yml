@@ -49,6 +49,13 @@ jobs:
       - name: Run release test chain
         run: pnpm test:release
 
+      - name: Verify Carrier briefing, dashboard and native demo entry
+        run: pnpm test:carrier-closeout && pnpm test:workspace-demo
+
+      - name: Verify gateway guidance and transport limits
+        working-directory: cargomesh/voice-pilot
+        run: python3 -m unittest test_voice_guidance test_voice_transport_limits
+
       - name: Verify client operations read and navigation contracts
         run: pnpm test:client-operations
 

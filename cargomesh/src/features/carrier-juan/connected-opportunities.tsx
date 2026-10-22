@@ -13,6 +13,7 @@ import sheet from './opportunity-record.module.css';
 import {readOpportunities} from './opportunity-client';
 import {canRespondOpportunity,opportunityFacts,opportunityIdFromHash,opportunityLabel,displayOpportunityDate} from './opportunity-model';
 import {OpportunityResponseForm} from './opportunity-response-form';
+import {CarrierNova} from './carrier-nova';
 import {navigateJuanHash,readJuanHash,subscribeJuanRoute} from './juan-navigation';
 import p from './portal.module.css';
 import filters from '@/features/carrier-portal/commercial-workspace.module.css';
@@ -69,7 +70,7 @@ export function ConnectedOpportunities({carrier,active=true,routeHash,refreshTok
       <Button variant="secondary" disabled={busy||!current||current.partial||!!error||!canPrepareOffer(row,carrier.role,now)} onClick={()=>navigateJuanHash('#/desk/prepare/'+row.id)} aria-label="Prepare offer" title="Prepare offer"><CirclePlus size={16} aria-hidden="true"/>Prepare</Button>
       <Button variant="secondary" disabled={busy} onClick={()=>navigateJuanHash('#/desk/opportunity/'+row.id)} aria-label="View offers and version history" title="View offers and version history"><Clock3 size={16} aria-hidden="true"/>Offer history</Button>
      </div></section>
-    <OpportunityTruck/></div>
+    {process.env.NEXT_PUBLIC_CARGOMESH_NOVA_VOICE_PREVIEW==='true'?<CarrierNova key={row.id+':'+row.version} carrierId={carrier.carrierId} opportunityId={row.id}/>:null}<OpportunityTruck/></div>
    </div>:null}
   </>:current?<>
    <div className={filters.directoryFilters}>
