@@ -36,15 +36,3 @@
 }
 
 @media (prefers-reduced-motion: reduce) { .option { transition: none; } .option:hover { transform: none; } }
-
-:global([data-cm-workspace="client"]) .picker { border: 0; border-bottom: 1px solid var(--cm-color-line); border-radius: 0; padding: 1rem 0; background: transparent; box-shadow: none; }
-:global([data-cm-workspace="client"]) .list { gap: 0; }
-:global([data-cm-workspace="client"]) .option { border: 0; border-bottom: 1px solid var(--cm-color-line); border-radius: 0; background: transparent; box-shadow: none; transition: background .18s ease; }
-:global([data-cm-workspace="client"]) .option:hover { transform: none; background: var(--cm-color-surface-tint); }
-:global([data-cm-workspace="client"]) .option[data-selected="true"] { background: var(--cm-color-selected); }
-:global([data-cm-workspace="client"]) .error { border-left: 0; }
-:global([data-cm-workspace="client"]) .header h3 { font-size: 1.125rem; }
-:global([data-cm-workspace="client"]) .optionCopy strong { font-size: .875rem; }
-:global([data-cm-workspace="client"]) :is(.optionCopy small, .code, .contractHint, .error) { font-size: .75rem; line-height: 1.5; }
-:global([data-cm-workspace="client"]) .geo { font-size: .7rem; }
-@media (prefers-reduced-motion: reduce) { :global([data-cm-workspace="client"]) .option { transition: none; } }

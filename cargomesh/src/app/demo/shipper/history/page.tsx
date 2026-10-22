@@ -17,7 +17,7 @@ export default async function HistoryPage() {
   const t = (es: string, en: string) => translate(locale, es, en), tag = localeTag(locale);
   const eventHistory = [...events].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
   const requestsById = new Map(requests.map((request) => [request.id, request]));
-  return <div className={styles.page}><header className={styles.hero}><div className={styles.heroCopy}><h1>{t("Historial", "History")}</h1><p>{t("Revisa tus solicitudes, incidencias y eventos reportados en un solo lugar.", "Review your requests, incidents and reported events in one place.")}</p></div></header>
+  return <div className={styles.page}><header className={styles.hero}><div className={styles.heroCopy}><h1>{t("Historial", "History")}</h1></div></header>
     <RequestList requests={requests}/>
     <OutcomePanel requests={requests} offers={offers.filter((item) => item.kind === "offers")} bookings={bookings.filter((item) => item.kind === "bookings")} incidents={incidents.filter((item) => item.kind === "incidents")} t={t} localeTag={tag}/>
     <div className={styles.layout}>

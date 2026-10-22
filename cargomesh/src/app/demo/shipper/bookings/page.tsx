@@ -16,7 +16,7 @@ export default async function BookingsPage() {
   const decisions = decisionRecords.filter((item) => item.kind === "decisions");
   const requestById = new Map(requests.map((request) => [request.id, request]));
   const t = (es: string, en: string) => translate(locale, es, en);
-  return <div className={styles.page}><header className={styles.hero}><div className={styles.heroCopy}><h1>{t("Reservas", "Bookings")}</h1><p>{t("Consulta las autorizaciones, las respuestas del transportista y sus condiciones.", "Review authorizations, carrier responses and their conditions.")}</p></div></header>
+  return <div className={styles.page}><header className={styles.hero}><div className={styles.heroCopy}><h1>{t("Reservas", "Bookings")}</h1></div></header>
     <section className={`${styles.panel} ${bookingStyles.panel}`}><header className={styles.panelHeader}><div><h2>{t("Estado de cada reserva", "Status of each booking")}</h2></div></header>
       {bookings.length ? <div className={bookingStyles.grid}>{bookings.map((booking) => { const request = booking.requestId ? requestById.get(booking.requestId) : undefined;
         const offer = resolveBookingOffer(booking, decisions, offers);

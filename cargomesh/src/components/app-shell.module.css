@@ -2,33 +2,14 @@
   color-scheme: light;
   font-family: var(--cm-font-sans);
   /* Carrier-aligned presentation tokens, scoped to the shipper workspace. */
-  --cm-color-canvas: #fff;
-  --cm-color-surface-subtle: #f3f6f7;
-  --cm-color-surface-tint: #f5f9fa;
-  --cm-color-primary: #163d4d;
-  --cm-color-primary-hover: #0d2c3a;
-  --cm-radius-md: 6px;
-  --cm-radius-lg: 8px;
-  --cm-shadow-card: none;
+  --cm-color-canvas: #e8eff4;
+  --cm-color-surface-subtle: #edf4f8;
+  --cm-color-surface-tint: #f1f8fb;
+  --cm-color-primary: #185be7;
+  --cm-color-primary-hover: #124cc6;
   --client-assistant-clearance: 5.5rem;
 }
 .shell:has([data-chat-open="true"]) { --client-assistant-clearance: 0rem; }
-.assistantLayer[inert] { display: none; }
-.shell[data-cm-workspace="client"] { --carrier-nav-bg: #153a48; --carrier-nav-ink: #e4f0f2; --carrier-nav-muted: #b0c8ce; }
-.shell .sidebar { border-right: 0; transition-property: transform; }
-.sidebar .brand { color: #fff; font-size: 1.2rem; letter-spacing: -.025em; }
-.navigation h2 { color: #b0c8ce; font-size: .75rem; margin-top: 1rem; margin-bottom: .65rem; }
-.navigation a { min-height: 46px; border: 0; border-radius: 6px; color: #e4f0f2; font-size: .875rem; padding-inline: 14px; }
-.navigation a > svg { color: #9cbdc5; }
-.navigation a:hover { background: #244c59; color: #fff; }
-.navigation a[aria-current="page"] { color: #fff; background: #296271; box-shadow: none; font-weight: 650; }
-.navigation a[aria-current="page"] > svg { color: #a2efe3; }
-.sidebar .workspaceIdentity { border-top-color: #3b5d68; color: #e4f0f2; }
-.sidebar .workspaceIdentity strong { font-size: .8125rem; }
-.sidebar .workspaceIdentity > div > span { color: #b0c8ce; font-size: .75rem; }
-.sidebar :is(a, button):focus-visible { outline-color: #a2efe3 !important; }
-.sidebar button { color: #e4f0f2 !important; }
-.sidebar button:hover { background: #296271 !important; }
 
 .contentColumn {
   min-width: 0;
@@ -45,7 +26,7 @@
   z-index: 30;
   top: 0;
   display: flex;
-  min-height: 4rem;
+  min-height: 4.75rem;
   align-items: center;
   gap: 0.8rem;
   border-bottom: 1px solid var(--cm-color-line);
@@ -62,7 +43,7 @@
 .context strong {
   overflow: hidden;
   color: var(--cm-color-heading);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   letter-spacing: -0.015em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -72,7 +53,7 @@
   display: none;
   overflow: hidden;
   color: var(--cm-color-muted);
-  font-size: 0.75rem;
+  font-size: 0.62rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -113,7 +94,7 @@
   background: transparent;
   color: var(--cm-color-ink);
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 0.72rem;
 }
 
 .search input::placeholder { color: var(--cm-color-muted); }
@@ -122,8 +103,8 @@
 .avatar { display: grid; width: 2.55rem; height: 2.55rem; flex: 0 0 auto; place-items: center; border-radius: 0.7rem; background: var(--cm-color-heading); color: white; font-size: 0.66rem; font-weight: 800; }
 .userCopy { display: none; min-width: 0; }
 .userCopy strong, .userCopy span { display: block; overflow: hidden; max-width: 10rem; text-overflow: ellipsis; white-space: nowrap; }
-.userCopy strong { color: var(--cm-color-ink); font-size: 0.8125rem; }
-.userCopy span { margin-top: 0.12rem; color: var(--cm-color-muted); font-size: 0.7rem; text-transform: capitalize; }
+.userCopy strong { color: var(--cm-color-ink); font-size: 0.69rem; }
+.userCopy span { margin-top: 0.12rem; color: var(--cm-color-muted); font-size: 0.58rem; text-transform: capitalize; }
 
 .signOut button, .signOutLink {
   display: inline-flex;
@@ -144,17 +125,10 @@
 }
 
 .signOut button:hover, .signOutLink:hover { border-color: var(--cm-color-line-strong); background: var(--cm-color-selected); }
-.main { min-width: 0; min-height: calc(100dvh - 4rem); padding: 1.5rem clamp(1rem, 2.5vw, 2.75rem) calc(3rem + var(--client-assistant-clearance)); background: var(--cm-color-canvas); color: var(--cm-color-ink); }
-.previewNotice { display: flex; align-items: center; gap: .5rem; margin-bottom: 1.75rem; padding: .6rem .8rem; background: var(--cm-color-surface-subtle); color: var(--cm-color-muted); font-size: .75rem; line-height: 1.5; }
-.previewNotice::before { content: ""; width: .4rem; height: .4rem; flex: none; border-radius: 50%; background: var(--cm-color-logistics); }
-.shell ::selection { background: #d1e9e9; color: #163349; }
-.shell :is(input, textarea) { caret-color: var(--cm-color-logistics); }
-.shell :is(time, meter) { font-variant-numeric: tabular-nums; }
+.main { min-width: 0; min-height: calc(100dvh - 4.75rem); padding: 1.75rem clamp(1rem, 2.5vw, 2.75rem) calc(4rem + var(--client-assistant-clearance)); background: linear-gradient(180deg, #eef5fa 0, var(--cm-color-canvas) 24rem); }
 .motionRegion { min-width: 0; }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
-.shell :is(button, a, input, select, summary, [tabindex]):focus-visible { outline: 3px solid var(--cm-color-logistics); outline-offset: 2px; }
-.shell { scrollbar-color: var(--cm-color-line-strong) var(--cm-color-surface); }
-.shell :is(input, textarea, select) { accent-color: var(--cm-color-logistics); }
+.shell :is(button, a, input, select):focus-visible { outline: 3px solid color-mix(in srgb, var(--cm-color-focus) 34%, transparent); outline-offset: 2px; }
 
 @media (min-width: 640px) {
   .contextSubtitle, .userCopy { display: block; }
@@ -177,7 +151,6 @@
   .topbar { padding-inline: 0.55rem; }
   .context { max-width: 8rem; }
   .topbarActions { gap: 0.3rem; }
-  .main :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { font-size: 1rem; }
 }
 
 @media (prefers-reduced-motion: reduce) { .search { transition: none; } }
