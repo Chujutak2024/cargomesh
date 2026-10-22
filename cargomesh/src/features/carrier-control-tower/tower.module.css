@@ -30,3 +30,62 @@
 .routePreviewLink:hover{background:var(--cm-color-selected)}
 .routePreviewLink>span{color:var(--cm-color-muted);font-size:10px}
 .pageHeading p{font-size:var(--cm-page-description-size)}
+
+/* Unified Carrier dashboard: the operational map is the primary workspace. */
+.dashboard{min-height:0;background:transparent}
+.dashboard .main{padding:0;max-width:none}
+.dashboard .pageHeading{margin-bottom:22px;gap:20px}
+.carrierHeading{margin:5px 0 4px;font-size:24px;line-height:1.3;letter-spacing:-.6px;overflow-wrap:anywhere;color:var(--cm-color-heading)}
+.sourcePill{display:inline-flex;align-items:center;gap:7px;padding:9px 12px;background:#fff;border:1px solid var(--line);border-radius:30px;font-size:11px;color:var(--muted);white-space:nowrap}
+.dashboard .eyebrow{font-size:10px;letter-spacing:1.5px}
+.dashboard .metrics{gap:16px;margin-bottom:22px}
+.dashboard .metric{padding:20px;border-radius:18px;gap:12px;box-shadow:0 4px 18px #173f4a04}
+.dashboard .metricIcon{display:grid;width:36px;height:36px;border-radius:12px;background:#e5f5ef;color:#168671}
+.dashboard .metric:nth-child(2) .metricIcon{background:#eaf2ff;color:#3879c8}
+.dashboard .metric:nth-child(3) .metricIcon{background:#f0ebff;color:#8563c4}
+.dashboard .metric:nth-child(4) .metricIcon{background:#e9f7f6;color:#178b91}
+.dashboard .metric strong{font-size:30px;margin:6px 0}
+.dashboard .metric small{font-size:10px;line-height:1.5;display:block}
+.dashboard .operationGrid{grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+.dashboard .mapCard,.dashboard .exceptionPanel,.operationsPanel{border-radius:18px;box-shadow:0 4px 18px #173f4a04}
+.dashboard .mapHeader{padding:20px 20px 14px}
+.dashboard .mapHeader h2,.dashboard .exceptionHeading h2{font-size:15px}
+.dashboard .filters{padding:0 20px 16px;gap:10px;flex-wrap:nowrap}
+.dashboardSearch{min-width:120px;flex:1}
+.dashboardSearch>div{width:100%}
+.dashboardStatus{min-width:130px;max-width:190px;height:44px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);font:inherit;font-size:12px}
+.dashboard .visualFrame{margin:0 12px;min-height:520px}
+.dashboard .mapSurface{height:520px}
+.dashboard .listView{height:520px;min-height:520px;overflow:auto}
+.dashboard .mapFooter{padding:13px 20px;flex-wrap:wrap;line-height:1.5}
+.dashboardRail{display:grid;gap:18px;min-width:0}
+.operationsPanel{background:white;border:1px solid var(--line);overflow:hidden}
+.operationsPanel>header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 18px 8px}
+.operationsPanel h2{margin:0;font-size:15px}
+.operationsPanel header a{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--primary);text-decoration:none;white-space:nowrap}
+.operationQueue{display:grid;gap:9px;padding:10px 12px 14px}
+.operationQueue>button{width:100%;display:flex;align-items:center;gap:10px;padding:12px;text-align:left;background:white;border:1px solid #e8eff2;border-radius:12px;color:var(--ink);min-height:70px}
+.operationQueue>button:hover,.operationQueue>button[aria-pressed=true]{border-color:#99cfc6;background:#f1faf7}
+.operationQueue>button>span:nth-child(2){flex:1;min-width:0}
+.operationQueue strong{font-size:12px;display:block;overflow-wrap:anywhere}
+.operationQueue small{display:block;margin:3px 0 7px;color:var(--muted);font-size:11px;overflow-wrap:anywhere}
+.operationQueue .vehicleIcon{width:31px;height:31px;color:#178671;background:#e8f7ef}
+.operationQueue .statusBadge{display:inline-block;font-size:9px;border-radius:20px;padding:3px 7px}
+.operationQueue>p{padding:12px;font-size:12px;color:var(--muted)}
+.dashboard .exceptionList{min-height:150px;max-height:330px;overflow:auto;grid-template-columns:1fr;background:white}
+.dashboard .exceptionList .empty{padding:18px 12px}
+.dashboard .exceptionHeading{padding:18px 18px 10px}
+.dashboard .exceptionHeading p{display:block}
+.dashboardPlanner{margin-top:20px}
+.dashboardPlanner>section{border-radius:16px;padding:18px 20px;margin-bottom:0!important}
+.dashboardPlanner>section>div:first-child{justify-content:space-between;gap:16px}
+.dashboardPlanner h2{font-size:14px}
+.contextDetails>summary{display:none}
+.dashboard .contextDetails{margin-top:18px;border:1px solid var(--line);border-radius:14px;background:#ffffff9c}
+.dashboard .contextDetails>summary{display:list-item;cursor:pointer;padding:16px 20px;font-size:13px;font-weight:600;color:var(--ink);list-style-position:inside}
+.dashboard .contextDetails .bottomGrid{margin:0;padding:0 16px 16px}
+.dashboard .queueNote{line-height:1.5}
+@media(min-width:1800px){.dashboard .operationGrid{grid-template-columns:minmax(0,1fr) 360px}.dashboard .mapSurface,.dashboard .visualFrame,.dashboard .listView{height:580px;min-height:580px}}
+@media(max-width:1250px){.dashboard .operationGrid{grid-template-columns:minmax(0,1fr) 285px;gap:16px}.dashboard .metrics{gap:12px}.dashboard .metric{padding:16px;flex-direction:column}.dashboard .filters{flex-wrap:wrap}.dashboardSearch{flex-basis:100%}.dashboardStatus{flex:1;max-width:none}}
+@media(max-width:1000px){.dashboard .operationGrid{grid-template-columns:1fr}.dashboardRail{grid-template-columns:1fr 1fr;align-items:start}.dashboard .metric{flex-direction:row}.dashboard .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard .filters{flex-wrap:nowrap}.dashboardSearch{flex-basis:auto}}
+@media(max-width:700px){.dashboard .pageHeading{align-items:flex-start;flex-direction:column;gap:12px}.carrierHeading{font-size:21px}.sourcePill{white-space:normal}.dashboardRail{grid-template-columns:1fr}.dashboard .metric{padding:14px;flex-direction:column}.dashboard .metric strong{font-size:27px}.dashboard .filters{flex-wrap:wrap;padding:0 14px 14px}.dashboardSearch{flex-basis:100%}.dashboard .mapHeader{padding:16px 14px}.dashboard .mapSurface,.dashboard .visualFrame,.dashboard .listView{height:440px;min-height:440px}.dashboard .visualFrame{margin:0 8px}.dashboardPlanner>section>div:first-child{flex-wrap:wrap}}

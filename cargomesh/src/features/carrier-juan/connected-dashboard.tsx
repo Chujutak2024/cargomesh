@@ -8,10 +8,22 @@ import type {CommercialSnapshot} from '@/features/carrier-portal/commercial-mode
 import {portalRequest,portalErrorCopy} from '@/features/carrier-portal/api';
 import {CarrierLink} from '@/features/carrier-navigation/carrier-link';
 import {useLocale} from '@/features/i18n/locale-provider';
+import {ControlTower} from '@/features/carrier-control-tower/control-tower';
 import {carrierDashboard} from './dashboard-model';
 import s from './connected-dashboard.module.css';
 
 export function ConnectedDashboard({carrier,refreshToken}:{carrier:CarrierPortalAccessV2;refreshToken:number}){
+ const {t}=useLocale();
+ return <div className={s.dashboard}>
+  <ControlTower embedded dashboard carrier={carrier} refreshToken={refreshToken}/>
+  <details className={s.commercialSummary}>
+   <summary>{t('Resumen comercial','Commercial summary')}<span>{t('Contratación, margen y pendientes','Bookings, margin and follow-ups')}</span></summary>
+   <CommercialDashboard carrier={carrier} refreshToken={refreshToken}/>
+  </details>
+ </div>;
+}
+
+function CommercialDashboard({carrier,refreshToken}:{carrier:CarrierPortalAccessV2;refreshToken:number}){
  const {t,localeTag}=useLocale(),[snapshot,setSnapshot]=useState<CommercialSnapshot|null>(null),[error,setError]=useState(''),[revision,setRevision]=useState(0),[days,setDays]=useState(7),[currency,setCurrency]=useState('USD'),[costs,setCosts]=useState<Record<string,unknown>>({});
  useEffect(()=>{const c=new AbortController();setSnapshot(null);setCosts({});setError('');void readCommercial(carrier.carrierId,c.signal).then(value=>{if(!c.signal.aborted)setSnapshot(value);}).catch(e=>{if(!c.signal.aborted)setError(portalErrorCopy(e,false));});return()=>c.abort();},[carrier.carrierId,refreshToken,revision]);
  useEffect(()=>{const c=new AbortController();setCosts({});if(snapshot&&carrier.role==='ADMIN'){
