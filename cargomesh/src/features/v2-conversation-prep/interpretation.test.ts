@@ -2,6 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { InterpretationRequestSchema, InterpretationResponseSchema, guardExplicitCorrection, interpretDeterministically } from "./interpretation";
 
+test('real speech quantities and explicit per-pallet weight survive while totals stay separate',()=>{
+ for(const text of ['there are twelve pallets. not ten.','son doce pallets, no diez.'])assert.equal(interpretDeterministically({schemaVersion:'2.0',text,currentField:null}).fields.find(f=>f.field==='unitQuantity')?.value,'12');
+ for(const text of ['each pallet still weighs one hundred kilograms. and the total is one thousand two hundred kilograms.','cada pallet pesa cien kilogramos y el total es mil doscientos kilogramos'])assert.equal(interpretDeterministically({schemaVersion:'2.0',text,currentField:null}).fields.find(f=>f.field==='unitWeightPerUnitKg')?.value,'100');
+ assert(!interpretDeterministically({schemaVersion:'2.0',text:'the total is one thousand two hundred kilograms',currentField:null}).fields.some(f=>f.field==='unitWeightPerUnitKg'));
+});
+
 test("bounded conversation context accepts provisional facts but rejects contacts and extra authority", () => {
   const request = { schemaVersion: "2.0", text: "Change it to Piura", currentField: "destinationFacilityId", context: {
     knownFields: [{ field: "originFacilityId", value: "Lima" }], lastAskedField: "destinationFacilityId", failedAttempts: 1,

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import {normalizeSpokenQuantities} from './spoken-quantities';
 
 export const ConversationFieldNameSchema = z.enum([
   "urgency", "loadSize",
@@ -92,7 +93,7 @@ export function productHelpFallback(text: string): string {
 
 /** A bounded, local fallback. It extracts only explicit statements and never infers domain facts. */
 export function interpretDeterministically(input: InterpretationRequest): Interpretation {
-  const text = input.text.trim();
+  const text = normalizeSpokenQuantities(input.text).trim();
   const lower = text.toLowerCase();
   const captureFacts = /\b(?:\d+|diez|ten)\s*(?:pallets?|palets?|cajas?|boxes?|kg|kilos?)\b/i.test(text);
   if (isNoisyTranscript(text)) return { intent: "HELP", fields: [], acknowledgment: "I heard your voice, but the transcript is unclear. I can help you prepare a ROAD freight request. What would you like to ship?" };
@@ -147,7 +148,8 @@ export function interpretDeterministically(input: InterpretationRequest): Interp
   const cargoPhrase = /\bof\s+([\p{L}][\p{L}\s-]{1,50}?)\s+(?:from|de)\b/iu.exec(text)
     ?? /\b(?:ship|shipping|transport|transporting|carry|carrying)\s+([\p{L}][\p{L}\s-]{1,50}?)\s+(?:from|de)\b/iu.exec(text);
   if (cargoPhrase) fields.push({ field: "categoryCode", value: cargoPhrase[1].trim() });
-  const weight = /\b(\d+(?:[.,]\d+)?)\s*(?:kg|kilograms?)\s*(?:each|per unit|per pallet|per box|cada|por unidad|por pallet|por caja)\b/i.exec(text);
+  const weight = /\b(\d+(?:[.,]\d+)?)\s*(?:kg|kilograms?|kilogramos?)\s*(?:each|per unit|per pallet|per box|cada|por unidad|por pallet|por caja)\b/i.exec(text)
+    ?? /\b(?:each|every|cada)\s+(?:unit|pallet|box|crate|unidad|palet|caja)(?:\s+still)?\s+(?:weighs?|pesa)\s+(\d+(?:[.,]\d+)?)\s*(?:kg|kilograms?|kilogramos?)\b/i.exec(text);
   if (weight) fields.push({ field: "unitWeightPerUnitKg", value: weight[1] });
   const volume = /\b(\d+(?:[.,]\d+)?)\s*(?:m3|m³|cubic meters?|metros c[uú]bicos?)\s*(?:each|per unit|per pallet|per box|cada|por unidad|por pallet|por caja)\b/i.exec(text);
   if (volume) fields.push({ field: "unitVolumePerUnitM3", value: volume[1] });

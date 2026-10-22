@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { checkedSpokenField, lastSpokenQuestionField } from "./spoken-field-guard";
+test('word numbers stay grounded in real spoken quantities, not group totals',()=>{
+ assert.equal(checkedSpokenField('unitQuantity','12','twelve pallets weighing one thousand two hundred kilograms total',[]),'12');
+ assert.equal(checkedSpokenField('unitWeightPerUnitKg','100','each pallet weighs one hundred kilograms',[]),'100');
+ assert.equal(checkedSpokenField('unitWeightPerUnitKg','1200','one thousand two hundred kilograms total',[]),null);
+});
 
 test("total weight and relative timing cannot become invented unit measurements or exact windows", () => {
   assert.equal(checkedSpokenField("unitWeightPerUnitKg", "1000", "It's 1000 kilograms in total", []), null);

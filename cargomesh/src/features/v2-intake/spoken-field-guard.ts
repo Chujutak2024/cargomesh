@@ -1,5 +1,6 @@
 import type { ConversationField, GuidedConversationField } from "./conversation-fields";
 import type { VoiceTurn } from "@/features/v2-conversation-prep/voice-transcript";
+import {normalizeSpokenQuantities} from '@/features/v2-conversation-prep/spoken-quantities';
 
 export function lastSpokenQuestionField(turns: VoiceTurn[]): GuidedConversationField | null {
   const question = [...turns].reverse().find((turn) => turn.speaker === "assistant" && !turn.provisional)?.text ?? "";
@@ -50,7 +51,7 @@ export function lastSpokenQuestionField(turns: VoiceTurn[]): GuidedConversationF
 
 /** The voice model proposes data; the app accepts only values grounded in the latest turn. */
 export function checkedSpokenField(field: ConversationField, parsed: string, utterance: string, turns: VoiceTurn[]): string | null {
-  const spoken = utterance.trim();
+  const spoken = normalizeSpokenQuantities(utterance).trim();
   const promptedField = lastSpokenQuestionField(turns);
   const prompt = [...turns].reverse().find((turn) => turn.speaker === "assistant" && !turn.provisional)?.text ?? "";
   const asked = (pattern: RegExp) => pattern.test(prompt);

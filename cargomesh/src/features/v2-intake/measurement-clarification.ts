@@ -1,5 +1,6 @@
 import type { V2IntakePrototypeDraft } from "./prototype-model";
 import type { ConversationField } from "./conversation-fields";
+import {normalizeSpokenQuantities} from '@/features/v2-conversation-prep/spoken-quantities';
 
 export type PendingMeasurement = {
   values: [number, number, number];
@@ -30,12 +31,23 @@ function round(value: number) { return Number(value.toFixed(6)); }
 
 /** Resolves only explicit measurement facts. A group bounding box never becomes per-unit dimensions. */
 export function measurementTurn(text: string, pending: PendingMeasurement | null, draft: V2IntakePrototypeDraft): MeasurementTurn {
+  text=normalizeSpokenQuantities(text);
   if (pending && /^(?:descarta(?:r)? (?:estas |las )?medidas|cancel measurements|discard (?:these )?measurements)[.!]?$/i.test(text.trim())) return {handled:true,pending:null,fields:[],question:"DISCARDED"};
   const match = triple.exec(text);
   let next: PendingMeasurement | null = match ? {
     values: [Number(match[1].replace(",", ".")), Number(match[2].replace(",", ".")), Number(match[3].replace(",", "."))],
     unit: unitOf(match[4] ?? ""), scope: scopeOf(text),
   } : null;
+  if(!next){
+    const axis=(label:string)=>{
+      const unit='(cm|cent[ií]metros?|centimeters?|metros?|meters?|m)',value='(-?\\d+(?:[.,]\\d+)?)';
+      const result=new RegExp(`(?<![\\w.,-])${value}\\s*${unit}\\s*(?:de\\s+)?(?:${label})\\b`,'i').exec(text)
+        ?? new RegExp(`\\b(?:${label})\\s*(?:es|is|de|of)?\\s*${value}\\s*${unit}\\b`,'i').exec(text);
+      return result?Number(result[1].replace(',','.'))*(unitOf(result[2])==='m'?100:1):null;
+    };
+    const values=[axis('largo|length|long'),axis('ancho|width|wide'),axis('alto|altura|height|high')];
+    if(values.every((value):value is number=>value!==null))next={values:values as [number,number,number],unit:'cm',scope:scopeOf(text)};
+  }
   if (!next && pending) {
     const unit = unitOf(text), scope = scopeOf(text);
     if (!unit && !scope) return {handled:false,pending,fields:[],question:null};
