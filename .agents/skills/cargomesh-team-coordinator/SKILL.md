@@ -10,7 +10,7 @@ description: >-
 
 ## Fuentes obligatorias
 
-Lee AGENTS.md, docs/v2-amazon/README.md, docs/v2-amazon/delivery/CURRENT_DELIVERY_STATE.md, docs/v2-amazon/delivery/LINEAR_ISSUE_TEMPLATE.md y la sección de revisión técnica de docs/v2-amazon/delivery/QUALITY_AND_VALIDATION_PLAN.md. Los planes archivados de septiembre son historia, no autoridad para ramas, alcance, fechas o estados actuales. Consulta la issue vigente antes de modificar Linear.
+Lee `../../../docs/README.md`, `../../../docs/STATUS.md`, `../../../docs/hackathon/SUBMISSION.md`, `../../../docs/hackathon/AWS_BUILDER_KIRO.md`, `../../../docs/hackathon/OPEN_SOURCE.md`, `../../../docs/hackathon/ALEXA_PLUS.md`, la plantilla vigente en `../../../docs/v2-amazon/delivery/LINEAR_ISSUE_TEMPLATE.md` y el plan de calidad de esa carpeta. Consulta la issue actual antes de inferir estados. Los planes de sprint retirados no son requisitos de ejecución.
 
 ## Reglas de Linear
 

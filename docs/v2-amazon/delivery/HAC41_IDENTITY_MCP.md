@@ -1,6 +1,6 @@
 # HAC-41 — Identidad y flujo completo MCP
 
-Entrega para revisión desde `codex/v2-full-identity-mcp`, sobre `codex/v2-amazon-contracts@1e9ff995ef9c8fa6789e473263e64873bcb13fba` (tras #112). Implementación por el integrador con autorización expresa del Tech Lead del 8-oct-2026; Axel conserva la responsabilidad de HAC-41 y la revisión del alcance. El SHA evaluado se registra en el PR y Linear, sin presumir merge ni Done.
+Implementation reference for the shared identity/MCP services. Active base: `main`. See [current API/MCP guide](../../API.md) and [status](../../STATUS.md) for current deployment boundaries.
 
 ## Archivos y migraciones
 

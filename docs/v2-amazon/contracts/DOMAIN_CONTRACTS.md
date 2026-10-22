@@ -2,7 +2,7 @@
 
 ## Alcance completo autorizado
 
-El [contrato HAC-27/HAC-40](../delivery/HAC40_FULL_API_AND_CLOSURE.md) incorpora también ofertas, selección, booking y operación. La restricción de una sola oferta pertenece al corte ROAD anterior y queda sustituida. El workflow persistente admite `1..*` ofertas con cobertura exacta y compromisos separados por emisor, mediante servicios compartidos y endpoints V2. Véanse el [workflow implementado](../delivery/HAC40_WORKFLOW_API.md) y los [límites de certificación externa](../delivery/INTEGRATION_CERTIFICATION_2026-10-09.md).
+El [contrato HAC-27/HAC-40](../delivery/HAC40_FULL_API_AND_CLOSURE.md) incorpora también ofertas, selección, booking y operación. La restricción de una sola oferta pertenece al corte ROAD anterior y queda sustituida. El workflow persistente admite `1..*` ofertas con cobertura exacta y compromisos separados por emisor, mediante servicios compartidos y endpoints V2. Véanse el [workflow implementado](../delivery/HAC40_WORKFLOW_API.md) y los [límites de certificación externa](../../TESTING.md).
 
 ## FreightRequest
 

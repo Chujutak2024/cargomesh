@@ -12,7 +12,7 @@ Este documento define el contrato objetivo V2. No declara que la gestión de flo
 
 Se conserva el UML: cada alternativa posee su snapshot de `RoutePlan`; una ruta asociada no pertenece a dos alternativas. Una plantilla de itinerario puede originar snapshots distintos. Cada `PlanLegAssignment` agrupa `1..N` `PlanResource`; cada recurso pertenece a una asignación. `CapacityReservation.planResourceId` identifica directamente el recurso comprometido. La confirmación del booking exige todos los recursos cubiertos, incluida la escolta sin aporte de carga.
 
-El contrato HTTP de HAC-40 acepta `assignments[].resources[]` para crear planes y devuelve `data.legAssignments` como agrupación canónica. Conserva `data.assignments` como detalle por recurso con `legAssignmentId` por compatibilidad; esos IDs de vínculo no sustituyen los IDs de cabecera en ofertas y oportunidades. Crear un hold para una cabecera con varios recursos exige `planResourceId`. La implementación candidata y sus límites de validación están en [el informe CP-1](../delivery/HAC40_CP1_RECONCILIATION_2026-10-05.md); ratificar el contrato no acredita por sí solo migración alojada ni aprobación QA.
+El contrato HTTP de HAC-40 acepta `assignments[].resources[]` para crear planes y devuelve `data.legAssignments` como agrupación canónica. Conserva `data.assignments` como detalle por recurso con `legAssignmentId` por compatibilidad; esos IDs de vínculo no sustituyen los IDs de cabecera en ofertas y oportunidades. Crear un hold para una cabecera con varios recursos exige `planResourceId`. La implementación candidata y sus límites de validación están en [el informe CP-1](../../ARCHITECTURE.md); ratificar el contrato no acredita por sí solo migración alojada ni aprobación QA.
 
 ## Taxonomía y propiedad
 
@@ -81,4 +81,4 @@ ADMIN registra, sustituye o retira el vínculo con versión esperada e idempoten
 
 El score visual Condition requiere una evaluación mecánica propia. No se obtiene del estado AVAILABLE, de reservas ni de un porcentaje arbitrario; sin evaluación, la interfaz indica Not assessed. Esta entrega no añade una fuente de inspecciones mecánicas.
 
-Implementación y límites: [conductor habitual y tarjetas](../delivery/HAC50_REGULAR_DRIVERS_2026-10-18.md).
+Implementación y límites: [conductor habitual y tarjetas](../../PRODUCT.md).

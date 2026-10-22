@@ -14,7 +14,7 @@
 
 ## Fuentes y convención
 
-- Verde = tablas definidas por [HAC-21](../delivery/SPRINT1_DATA_MAPPING.md) y su [migración en Git](../../../supabase/migrations/20260922053512_v2_road_facilities_services.sql). La etiqueta original «no desplegadas al 22/9» pertenece a la fotografía histórica; las tablas existen en el remoto desde el 23/9, sin datos de catálogo V2.
+- Verde = tablas definidas por [HAC-21](../../DATA.md) y su [migración en Git](../../../supabase/migrations/20260922053512_v2_road_facilities_services.sql). La etiqueta original «no desplegadas al 22/9» pertenece a la fotografía histórica; las tablas existen en el remoto desde el 23/9, sin datos de catálogo V2.
 - Gris = tablas que ya existían en la base anterior; su existencia no prueba comportamiento V2.
 - Amarillo discontinuo = concepto propuesto, sin migración/DoD aceptado. Azul = resultado de servicio que **no es tabla**.
 - La autoridad para reglas comerciales es [DOMAIN_CONTRACTS](../contracts/DOMAIN_CONTRACTS.md), [cobertura](../contracts/CARRIER_COVERAGE_AND_SERVICEABILITY.md), [flota/planes](../contracts/TRANSPORT_PLANS_AND_FLEET.md) y [ranking](../contracts/CARRIER_DISCOVERY_AND_RANKING.md). `docs/architecture-v2/` es propuesta transicional, no fuente normativa: sus referencias a WebMCP y BALANCED no se copian al modelo activo.

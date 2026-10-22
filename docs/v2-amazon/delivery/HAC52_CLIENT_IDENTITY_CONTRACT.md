@@ -1,16 +1,6 @@
 # HAC-52 — Client identity and facilities contract
 
-Owner: Jean Paul. Integrator: Cristhian. Consumers: Juan (HAC-53), Luis (HAC-54).
-
-Initial base: `origin/main` at `c7e394db3c0d2d135011ad601df161cf05b61620`.
-Branch: `codex/v2-client-identity-facilities`. Target: `main`.
-Worktree: `C:\Users\Usuario\Documents\Proyectos\cargomesh-hac52`.
-
-The user-approved October 19 plan supersedes the older visual approval checkpoints:
-October 19–20 implementation; October 21 joint validation (CP-J1..J3); October 22
-stabilization. Only compilation, domain checks and build are required during construction.
-This contract describes the inspected base and explicitly identifies planned additions.
-No hosted database, Auth, configuration or secret is accessed or changed by this task.
+Implementation reference for current V2 services. Use [API/MCP](../../API.md), [setup](../../SETUP.md) and [status](../../STATUS.md) for the maintained operational guides. `main` is the active base.
 
 ## Identity and authorization
 

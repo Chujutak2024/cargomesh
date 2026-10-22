@@ -2,7 +2,7 @@
 
 This separate **synthetic, local-only** package does not redate or replace the October 20 H4 recipe. It reuses the H2 catalog/network references and the existing local Client/Carrier identities. Business records are created by authenticated native commands, never SQL inserts or runtime fixture fallback. Jean's base manifest is unchanged.
 
-Prerequisites: approved main `f17fdc6` merged into the registered HAC-54 branch, the existing V2 Docker bank on gateway `127.0.0.1:61321`, current migrations, existing H2 references and the app on port 3000. This is not a clean-database bootstrap. See the [integration/limitations report](../../../docs/v2-amazon/delivery/HAC54_OCT21_PREPARATION_2026-10-20.md).
+Prerequisites: approved main `f17fdc6` merged into the registered HAC-54 branch, the existing V2 Docker bank on gateway `127.0.0.1:61321`, current migrations, existing H2 references and the app on port 3000. This is not a clean-database bootstrap. See the [integration/limitations report](../../../docs/PRODUCT.md).
 
 ## Explicit dates (2026)
 

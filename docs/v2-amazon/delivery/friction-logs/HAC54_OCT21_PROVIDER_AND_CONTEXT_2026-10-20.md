@@ -1,6 +1,6 @@
 # HAC-54 — local provider/context blockers, October 20
 
-Scope: local-only October 21 preparation, approved main `f17fdc6` synchronized through `742ea70`. Full [evidence and reproduction](../HAC54_OCT21_PREPARATION_2026-10-20.md).
+Scope: local-only October 21 preparation, approved main `f17fdc6` synchronized through `742ea70`. Full [evidence and reproduction](../../../PRODUCT.md).
 
 ## Google Maps restriction
 

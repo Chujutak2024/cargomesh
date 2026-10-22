@@ -14,4 +14,4 @@ The earlier hosted Supabase OAuth PKCE smoke remains valid evidence for its exac
 
 Restore the authorized management session or provide a private approved Bedrock environment, then execute `scripts/certify-bedrock.ts` with real credentials and retain its sanitized JSON. A deterministic fallback must fail certification. Designate a carrier/provider sandbox before implementing and certifying its adapter. For a new OAuth client, agree callback/consent UI and disposable access, execute PKCE and MCP calls on the intended deployed SHA, and withdraw temporary access afterward.
 
-Access and provider availability were requested while documentation and regression work continued. No security checks were bypassed. See the [certification record](../INTEGRATION_CERTIFICATION_2026-10-09.md) for exact boundaries and remaining inputs.
+Access and provider availability were requested while documentation and regression work continued. No security checks were bypassed. See the [certification record](../../../TESTING.md) for exact boundaries and remaining inputs.

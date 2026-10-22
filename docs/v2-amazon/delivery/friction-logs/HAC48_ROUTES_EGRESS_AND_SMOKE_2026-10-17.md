@@ -12,4 +12,4 @@ Resolution: process-scoped `node --dns-result-order=ipv4first scripts/dev-local.
 
 The previous smoke asserts the lab title at `/carrier-route-lab` without a session. Navigation now redirects that URL into the Carrier workspace, whose existing session gate returns the sign-in screen. The assertion failed before its API checks. It was not suppressed or represented as green; dedicated backend checks passed separately. Authenticated visual verification and updating the UI smoke remain pending with the front work.
 
-See [live validation](../HAC48_LIVE_ROAD_VALIDATION_2026-10-17.md) for scope, metrics and reproduction. No credentials, full provider bodies or stored geometry are included.
+See [live validation](../../../PRODUCT.md) for scope, metrics and reproduction. No credentials, full provider bodies or stored geometry are included.
