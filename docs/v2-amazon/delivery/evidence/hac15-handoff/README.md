@@ -2,13 +2,13 @@
 
 ## Respuesta posterior a revisión independiente — 2 octubre 2026
 
-[R-MAP-01/02/03, comandos frescos, límites y handoff](../../../../PRODUCT.md). Seguridad Leaflet: [JSON DOM](./review-2026-10-02-leaflet-dom.json), 18/18 PASS y capturas 31–36. Contrato real: [7 checks](./review-2026-10-02-contract-labels.json) con HAC-12 `3cf966f` / mapper Luis `226624e`. Suite 33/33, typecheck, arquitectura 238/30 y build PASS. R-MAP-02 sigue abierto: [plan truck/MTC](../../../../PRODUCT.md), sin consulta truck ni comparación de geometría ejecutadas. [Metadatos MTC](./review-2026-10-02-mtc-metadata.json) son preparación, no evidencia de ruta coincidente. Google live y sus fallos anteriores no se reejecutaron para esta corrección.
+[R-MAP-01/02/03, comandos frescos, límites y handoff](https://github.com/Chujutak2024/cargomesh/blob/a6a41fdb78a9e7fea5e01d553cb604e104e1ed74/docs/v2-amazon/delivery/HAC15_REVIEW_RESPONSE_2026_10_02.md). Seguridad Leaflet: [JSON DOM](./review-2026-10-02-leaflet-dom.json), 18/18 PASS y capturas 31–36. Contrato real: [7 checks](./review-2026-10-02-contract-labels.json) con HAC-12 `3cf966f` / mapper Luis `226624e`. Suite 33/33, typecheck, arquitectura 238/30 y build PASS. R-MAP-02 sigue abierto: [plan truck/MTC](https://github.com/Chujutak2024/cargomesh/blob/a6a41fdb78a9e7fea5e01d553cb604e104e1ed74/docs/v2-amazon/delivery/HAC15_TRUCK_PILOT_PLAN.md), sin consulta truck ni comparación de geometría ejecutadas. [Metadatos MTC](./review-2026-10-02-mtc-metadata.json) son preparación, no evidencia de ruta coincidente. Google live y sus fallos anteriores no se reejecutaron para esta corrección.
 
 Las secciones siguientes conservan resultados históricos con sus snapshots; no acreditan nuevas ejecuciones ni sustituyen QA-13-20 integrado.
 
 ## Primera revisión contractual — 2 octubre 2026 (snapshot histórico)
 
-[Contrato y correcciones actuales](../../../../PRODUCT.md). [Schemas/mapper reales: PASS 6 comprobaciones](./review-2026-10-02-contract.json) · [Interacción nueva: PASS 12/12 y consola sanitizada](./review-2026-10-02-interaction.json). Las evidencias anteriores siguen siendo históricas; en particular, **04 usa el fixture anterior unknown y no representa el negativo API corregido**.
+[Contrato y correcciones actuales](https://github.com/Chujutak2024/cargomesh/blob/a6a41fdb78a9e7fea5e01d553cb604e104e1ed74/docs/v2-amazon/delivery/HAC15_CONTRACT_REVIEW_2026_10_02.md). [Schemas/mapper reales: PASS 6 comprobaciones](./review-2026-10-02-contract.json) · [Interacción nueva: PASS 12/12 y consola sanitizada](./review-2026-10-02-interaction.json). Las evidencias anteriores siguen siendo históricas; en particular, **04 usa el fixture anterior unknown y no representa el negativo API corregido**.
 
 | Captura nueva | Qué muestra |
 | --- | --- |
@@ -25,7 +25,7 @@ Datos: fixtures locales en `/hac15-preview`, habilitado sólo en `next dev`; no 
 
 ## Evidencia histórica
 
-Fecha: 1 octubre 2026. [Handoff a Luis](../../../../PRODUCT.md) · [PR #92](https://github.com/Chujutak2024/cargomesh/pull/92).
+Fecha: 1 octubre 2026. [Handoff a Luis](https://github.com/Chujutak2024/cargomesh/blob/a6a41fdb78a9e7fea5e01d553cb604e104e1ed74/docs/v2-amazon/delivery/HAC15_HAC14_INTEGRATION_HANDOFF.md) · [PR #92](https://github.com/Chujutak2024/cargomesh/pull/92).
 
 Código: `2c5cc8de7005b1cc5531296f64e56ba4920ebb49`, rama `feat/fe2-v2-route-map`. Navegador integrado de Codex; Next local en `127.0.0.1:3093`. Datos de contrato **fixtures**, sin integración del controller de HAC-14, API freight ni DB. No es una certificación QA-13-20 ni una prueba de routing para camión.
 
@@ -47,7 +47,7 @@ Código: `2c5cc8de7005b1cc5531296f64e56ba4920ebb49`, rama `feat/fe2-v2-route-map
 | [12 — Ruta vial Google EN](./12-google-road-route-en-desktop.jpg) | Fuente, leyenda y estado en inglés; ruta conservada al cambiar idioma | Misma consulta local, sin evaluación API de carrier. |
 | [13 — Ruta vial Google móvil](./13-google-road-route-mobile-390-es.jpg) | Viewport 390 px, ruta, iconos y atribución visibles, sin overflow horizontal de página | Viewport responsive; no GPS ni dispositivo físico. |
 
-Las capturas 11–13 corresponden a la [mejora local posterior de Google Routes](../../../../SETUP.md). Las capturas 01–10 conservan su contexto histórico: no se reclasifican como evidencia de routing real. Los fixtures de `/hac15-preview` y las 19 comprobaciones anteriores permanecen separados de esta nueva consulta del workspace.
+Las capturas 11–13 corresponden a la [mejora local posterior de Google Routes](https://github.com/Chujutak2024/cargomesh/blob/a6a41fdb78a9e7fea5e01d553cb604e104e1ed74/docs/v2-amazon/delivery/HAC15_GOOGLE_ROAD_PREVIEW_LOCAL.md). Las capturas 01–10 conservan su contexto histórico: no se reclasifican como evidencia de routing real. Los fixtures de `/hac15-preview` y las 19 comprobaciones anteriores permanecen separados de esta nueva consulta del workspace.
 
 [interaction-results.json](./interaction-results.json) registra **19/19 comprobaciones PASS** mediante interacciones y lecturas DOM en CUA. Es un registro de esta ejecución; no un script de CI. [console-summary.json](./console-summary.json) conserva la evidencia sanitizada del error de autorización del proveedor y del aviso de deprecación de `google.maps.Marker`.
 
@@ -121,4 +121,4 @@ Las capturas 01–10 y su matriz anterior son históricas. Las 11–13 documenta
 | [21-no-cross-ocean-geometry-en.png](./21-no-cross-ocean-geometry-en.png) | Mapa Google sólo con pines: sin ruta, fuente/métricas no disponibles, UNKNOWN. |
 | [22-multicontinent-catalog-mobile-es.png](./22-multicontinent-catalog-mobile-es.png) | Catálogo ES, 390×844, sin overflow; extremos iniciales restaurados. |
 
-Ver [catálogo/política ROAD y matriz de pruebas](../../../../DATA.md): 33/33 pruebas dirigidas, typecheck, arquitectura (237 módulos / 30 client entry points) y build. Ferris y metadatos incompletos se probaron con respuestas controladas, sin presentarlos como consultas reales. Las restricciones de altura/peso/aduanas y el smoke conjunto QA siguen pendientes.
+Ver [catálogo/política ROAD y matriz de pruebas](https://github.com/Chujutak2024/cargomesh/blob/a6a41fdb78a9e7fea5e01d553cb604e104e1ed74/docs/v2-amazon/delivery/HAC15_MULTICONTINENT_ROAD_CATALOG.md): 33/33 pruebas dirigidas, typecheck, arquitectura (237 módulos / 30 client entry points) y build. Ferris y metadatos incompletos se probaron con respuestas controladas, sin presentarlos como consultas reales. Las restricciones de altura/peso/aduanas y el smoke conjunto QA siguen pendientes.

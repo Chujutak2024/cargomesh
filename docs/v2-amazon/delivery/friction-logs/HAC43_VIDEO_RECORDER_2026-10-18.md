@@ -9,4 +9,4 @@
 - Corrección de la prueba durante el diagnóstico: la lectura de tiempo de Scenario summary incluía el sufijo `ms`; se cambió Number por parseFloat. Los cambios de vista se comparan ahora contra el tiempo del canvas y vuelven a ejecutarse en un contexto nuevo. No fue un reinicio del coordinador.
 - Límite: la frecuencia del video no mide FPS del renderer. Sin FFmpeg disponible se puede ejecutar la misma prueba sin `--record`; la grabación requiere un encoder libvpx-vp9 instalado por el entorno.
 
-Ver [informe de entrega](../../../PRODUCT.md) y [resultados](../evidence/HAC43-2026-10-18/browser-results.json).
+Ver [informe de entrega](https://github.com/Chujutak2024/cargomesh/blob/a6a41fdb78a9e7fea5e01d553cb604e104e1ed74/docs/v2-amazon/delivery/HAC43_DRAFT_DELIVERY_2026-10-18.md) y [resultados](../evidence/HAC43-2026-10-18/browser-results.json).
