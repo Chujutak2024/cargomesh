@@ -1,11 +1,13 @@
 /** Synthetic native-runner test cases and fixtures; no database reads. */
 import assert from "node:assert/strict";
 import { WorkflowRecordV2Schema } from "@/shared/schemas/v2/workflow";
+import { ExecutionPreparationSchema } from "@/shared/schemas/v2/execution-preparation";
 import { commercialFixture, id, org, at } from "@/features/shipper-portal/commercial-context.test-fixtures";
 import { booking, execution, ev } from "@/features/carrier-portal/commercial-test-fixtures";
 import { collectTrackingDetail, TrackingScopeError, type TrackingSource } from "@/features/shipper-portal/tracking-data";
 import { routeRecordToPresentation } from "@/features/shipper-portal/tracking-model";
 import { buildTrackingJourney } from "@/features/shipper-portal/tracking-journey";
+import type { TrackingDetailProps } from "@/features/shipper-portal/tracking-detail";
 import type { WorkflowRecordV2 } from "@/features/shipper-portal/shipper-model";
 import { operationRouteFacts } from "./operation-route-model";
 import { operationMapPoints, schematicMapModel, mapFailureCategory } from "./schematic-map-model";
@@ -169,6 +171,30 @@ export const operationMapCases: Array<[string, () => void | Promise<void>]> = [
       assertOperationalEvidenceUnchanged(detail, positive);
     }
   }],
+  ["main's assignment preparation composes with tracking and geometry without reporting departure", async () => {
+    const f = operationFixture(), detail = await collectTrackingDetail(f.ex.id, org, f.source);
+    const preparation = assignedPreparation(detail.item.execution);
+    const props = { ...detail.item, presentation: detail.presentation, canView3D: detail.canView3D, preparation } satisfies
+      Pick<TrackingDetailProps, "execution" | "booking" | "events" | "incidents" | "presentation" | "canView3D" | "preparation">;
+    const journey = buildTrackingJourney(props.execution, props.booking, props.events, props.incidents, props.preparation);
+    assert.equal(props.execution.status, "PLANNED");
+    assert.equal(props.execution.data.actualStartedAt, null);
+    assert.deepEqual(journey.preparation, preparation);
+    assert.deepEqual(journey.stages.find(stage => stage.key === "preparation"),
+      { key: "preparation", state: "current", at: null, evidence: "assignments" });
+    assert.equal(journey.stages.find(stage => stage.key === "departure")!.state, "future");
+    assert.equal(journey.lastReportedStage, "booking");
+    assert.equal(props.presentation.paths.length, 1);
+    assert.equal(props.presentation.provenanceStatus, "SIMULATED");
+    assert.equal(props.presentation.operation!.geometry.routeId, f.route.id);
+    for (const field of ["executionId", "organizationId", "requestId"] as const) {
+      const foreign = buildTrackingJourney(props.execution, props.booking, props.events, props.incidents,
+        { ...preparation, [field]: id(999) });
+      assert.equal(foreign.preparation, null);
+      assert.equal(foreign.stages.find(stage => stage.key === "preparation")!.state, "unknown");
+      assert.equal(foreign.lastReportedStage, journey.lastReportedStage);
+    }
+  }],
   ["tracking facts distinguish geometry, commercial transit, driving and quote ETA without private fields", async () => {
     const f = operationFixture(), detail = await collectTrackingDetail(f.ex.id, org, f.source), facts = detail.presentation.operation!;
     assert.ok(f.calls.includes(`corridors:${f.corridor.id}`));
@@ -208,7 +234,15 @@ function withReportedEvent(f: ReturnType<typeof operationFixture>) {
 function assertOperationalEvidenceUnchanged(detail: Awaited<ReturnType<typeof collectTrackingDetail>>, positive: Awaited<ReturnType<typeof collectTrackingDetail>>) {
   assert.deepEqual(detail.item, positive.item);
   assert.equal(detail.item.events.length, 1);
-  const journey = (value: typeof detail) => buildTrackingJourney(value.item.execution, value.item.booking, value.item.events, value.item.incidents);
+  const preparation = assignedPreparation(positive.item.execution);
+  const journey = (value: typeof detail) => buildTrackingJourney(value.item.execution, value.item.booking, value.item.events, value.item.incidents, preparation);
   assert.deepEqual(journey(detail), journey(positive));
   assert.equal(journey(detail).lastReportedStage, "departure");
+  assert.equal(journey(detail).stages.find(stage => stage.key === "preparation")!.state, "current");
+}
+
+function assignedPreparation(execution: Awaited<ReturnType<typeof collectTrackingDetail>>["item"]["execution"]) {
+  return ExecutionPreparationSchema.parse({ schemaVersion: "2.0", executionId: execution.id,
+    organizationId: execution.organizationId, requestId: execution.requestId, status: "ASSIGNED",
+    vehicleCount: 1, driverCount: 1, requiredVehicles: 1, checkedAt: at, operationalClearance: "NOT_EVALUATED" });
 }

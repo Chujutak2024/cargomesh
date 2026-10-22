@@ -6,7 +6,9 @@ Tracking keeps the exact execution → confirmed booking → decision → select
 
 The Tracking presentation contains three independent facts: the route record and declared geometry, booked offer/plan/service and corridor facts, and the offer's delivery estimate at quote time. All carry IDs/revisions and evidence validity. The public projection whitelists fields; it does not include a private calculation, wages, costs, prices or margin. Corridor driving time is shown only when the current public record matches the route's booked corridor revision; a newer revision cannot silently replace it.
 
-Fact labels use Tracking's `t(es, en)` translator. The local map helper formats every displayed instant with explicit Lima/PET and UTC, including the UTC date on day rollover; it does not modify the shared date formatter. Retry removes any previous Maps JavaScript script before inserting its replacement, including after authentication failure.
+Fact labels use Tracking's `t(es, en)` translator. The local `formatOperationInstant` delegates to the unchanged shared F-04 `formatDateTime` helper with the same locale as Requests, Bookings and Tracking: Lima time with explicit `PET (UTC−05:00)`. `formatOperationDuration` remains independent. Retry removes any previous Maps JavaScript script before inserting its replacement, including after authentication failure.
+
+The integration with main's #152 execution preparation keeps assignment readiness separate from reported departure. Tests compose the collected detail with the new preparation DTO and Tracking props, reject foreign preparation scope, and retain events/milestones even when the map degrades. The server's preparation read and the shared Tracking/Booking files are inherited unchanged from main.
 
 ## Contract gaps — owner: Cristhian
 

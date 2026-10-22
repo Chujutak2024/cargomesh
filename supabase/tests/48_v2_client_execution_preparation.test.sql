@@ -1,0 +1,12 @@
+begin;
+set local search_path=extensions,public;
+select no_plan();
+select ok(has_function_privilege('authenticated','public.read_v2_execution_preparation(uuid,uuid,uuid)','EXECUTE'),'authenticated client can request scoped preparation');
+select ok(not has_function_privilege('anon','public.read_v2_execution_preparation(uuid,uuid,uuid)','EXECUTE'),'anonymous preparation denied');
+select ok(not has_function_privilege('service_role','public.read_v2_execution_preparation(uuid,uuid,uuid)','EXECUTE'),'administrative role is not the client read path');
+set local role authenticated;
+set local "request.jwt.claims"='{}';
+select throws_ok($q$select public.read_v2_execution_preparation('c2300000-0000-4000-8000-000000000001','c2320000-0000-4000-8000-000000000001',gen_random_uuid())$q$,'PT403','FORBIDDEN_WORKFLOW','missing/foreign identity cannot enumerate preparation');
+reset role;
+select * from finish();
+rollback;

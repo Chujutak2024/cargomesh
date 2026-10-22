@@ -15,6 +15,7 @@ export function TrackingProgress({ journey }: { journey: ReturnType<typeof build
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   const scroll = useRef<HTMLDivElement>(null);
   const stage = journey.stages.find((item) => item.key === selected)!;
+  const stateLabel=(item:typeof stage)=>item.evidence==='assignments'?(journey.preparation?.status==='ASSIGNED'?t('Recursos asignados','Resources assigned'):t('Asignaciones pendientes','Assignments pending')):stageStateName(item.state,t);
   useEffect(() => {
     const viewport = scroll.current;
     const button = buttons.current[journey.stages.findIndex((item) => item.key === selected)];
@@ -46,12 +47,13 @@ export function TrackingProgress({ journey }: { journey: ReturnType<typeof build
     <div className={s.journeyScroll} ref={scroll}><div className={s.journeyRail} role="tablist" aria-label={t("Hitos del transporte", "Transport milestones")}>
       {journey.stages.map((item, index) => <button type="button" role="tab" id={`milestone-${item.key}`} aria-controls="milestone-detail" aria-selected={selected === item.key} tabIndex={selected === item.key ? 0 : -1} ref={(element) => { buttons.current[index] = element; }} key={item.key} className={s.journeyStep} data-state={item.state} onClick={() => setSelected(item.key)} onKeyDown={(event) => navigate(event, index)}>
         <span className={s.stageSymbol} aria-hidden="true">{item.state === "blocked" ? <AlertTriangle size={17}/> : journey.lastReportedStage === item.key ? <Truck size={18}/> : item.state === "completed" ? <Check size={18}/> : item.state === "unknown" ? <CircleHelp size={16}/> : <span className={s.innerDot}/>}</span>
-        <strong>{stageName(item.key, t)}</strong><small>{stageStateName(item.state, t)}</small>
+        <strong>{stageName(item.key, t)}</strong><small>{stateLabel(item)}</small>
       </button>)}
     </div></div>
     <div className={s.stageDetail} role="tabpanel" id="milestone-detail" aria-labelledby={`milestone-${selected}`} tabIndex={0}>
-      <div><strong>{stageName(selected, t)}</strong><span className={s.statePill} data-state={stage.state}>{stageStateName(stage.state, t)}</span>{stage.at && <time dateTime={stage.at}>{formatDateTime(stage.at, localeTag(locale))}</time>}</div>
-      <p>{stage.state === "unknown" ? t("No hay un reporte independiente que permita verificar esta etapa.", "There is no independent report to verify this milestone.") : stage.state === "blocked" ? t("Revisa las incidencias y el estado de la reserva antes de continuar.", "Review incidents and booking status before continuing.") : stage.state === "future" ? t("Aún no se ha recibido un reporte de esta etapa.", "No report has been received for this milestone yet.") : stage.key === "booking" && stage.state === "current" ? t("La reserva espera confirmación del transportista.", "The booking is awaiting carrier confirmation.") : stage.evidence === "event" ? t("Hito respaldado por un evento del transportista.", "Milestone backed by a carrier event.") : t("Estado registrado en el transporte o su reserva.", "State recorded in the transport or its booking.")}</p>
+      <div><strong>{stageName(selected, t)}</strong><span className={s.statePill} data-state={stage.state}>{stateLabel(stage)}</span>{stage.at && <time dateTime={stage.at}>{formatDateTime(stage.at, localeTag(locale))}</time>}</div>
+      {stage.evidence==='assignments'&&journey.preparation?<p>{journey.preparation.vehicleCount} / {journey.preparation.requiredVehicles} {t('vehículos','vehicles')} · {journey.preparation.driverCount} {t('conductores principales asignados. Permisos y salida aún requieren validación.','primary drivers assigned. Clearance and departure still require validation.')}</p>:null}
+      {stage.evidence!=='assignments'?<p>{stage.state === "unknown" ? t("No hay un reporte independiente que permita verificar esta etapa.", "There is no independent report to verify this milestone.") : stage.state === "blocked" ? t("Revisa las incidencias y el estado de la reserva antes de continuar.", "Review incidents and booking status before continuing.") : stage.state === "future" ? t("Aún no se ha recibido un reporte de esta etapa.", "No report has been received for this milestone yet.") : stage.key === "booking" && stage.state === "current" ? t("La reserva espera confirmación del transportista.", "The booking is awaiting carrier confirmation.") : stage.evidence === "event" ? t("Hito respaldado por un evento del transportista.", "Milestone backed by a carrier event.") : t("Estado registrado en el transporte o su reserva.", "State recorded in the transport or its booking.")}</p>:null}
     </div>
   </section>;
 }

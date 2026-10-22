@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildTrackingJourney, canShowConceptual3D, routeForExecution, type Booking, type Execution, type ExecutionEvent, type Incident, type Route } from "./tracking-journey";
 import type { WorkflowRecordV2 } from "./shipper-model";
+import type {ExecutionPreparation} from '@/shared/schemas/v2/execution-preparation';
 
 const requestId = "10000000-0000-4000-8000-000000000001";
 const bookingId = "10000000-0000-4000-8000-000000000002";
@@ -11,6 +12,15 @@ const booking = { id: bookingId, requestId, organizationId:requestId,carrierId:b
   carrierConfirmationStatus: "CONFIRMED", confirmedAt: "2026-10-11T10:00:00Z", authorizedAt: "2026-10-11T09:00:00Z" } } as Booking;
 const event = (action: ExecutionEvent["data"]["action"], at: string) => ({ requestId, data: { action, at } }) as ExecutionEvent;
 const stage = (journey: ReturnType<typeof buildTrackingJourney>, key: string) => journey.stages.find((item) => item.key === key)!.state;
+
+test('authorized assignments explain preparation without reporting departure or physical completion',()=>{
+ const preparation={executionId:execution.id,organizationId:execution.organizationId,requestId:execution.requestId,status:'ASSIGNED',vehicleCount:2,driverCount:2,requiredVehicles:2,operationalClearance:'NOT_EVALUATED'} as ExecutionPreparation;
+ const journey=buildTrackingJourney(execution,booking,[],[],preparation);
+ assert.equal(stage(journey,'preparation'),'current');assert.equal(stage(journey,'departure'),'future');
+ assert.equal(journey.lastReportedStage,'booking');
+ assert.equal(stage(buildTrackingJourney(execution,booking,[],[],{...preparation,organizationId:'foreign'}),'preparation'),'unknown');
+ assert.equal(stage(buildTrackingJourney(execution,booking,[],[],{...preparation,status:'PENDING'}),'preparation'),'future');
+});
 
 test("initial execution distinguishes confirmed booking from unreported physical milestones", () => {
   const journey = buildTrackingJourney(execution, booking, [], []);

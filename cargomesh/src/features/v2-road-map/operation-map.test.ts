@@ -71,15 +71,15 @@ test("markup labels remain text nodes, never injected HTML", () => {
   assert.equal(view.elements.some(element => element.type === "img" || element.props.dangerouslySetInnerHTML !== undefined), false);
 });
 
-test("route facts translate every section and show explicit PET/UTC instead of raw instants", () => {
+test("route facts translate every section and use the shared explicit PET format", () => {
   const f = operationFixture(), facts = operationRouteFacts(f.route, f.context.offers[0], f.context.plans[0], f.ex, [f.corridor]);
   const english = rendered(OperationRouteFactsView({ facts, locale: "en", t: en })).text;
   assert.match(english, /Displayed geometry/); assert.match(english, /Contracted commercial corridor/);
   assert.match(english, /Delivery estimate at quote time/); assert.match(english, /not a live ETA/);
   assert.match(english, /6.5 h \(390 min\)/); assert.match(english, /120 min/); assert.match(english, /60 min/);
   assert.match(english, /does not establish paid time/);
-  assert.match(english, /2 Nov 2026, 08:00 PET \(13:00 UTC\)/);
-  assert.match(english, /3 Nov 2026, 19:00 PET \(4 Nov 2026, 00:00 UTC\)/);
+  assert.match(english, /Nov 2, 2026, 8:00 AM PET \(UTC−05:00\)/);
+  assert.match(english, /Nov 3, 2026, 7:00 PM PET \(UTC−05:00\)/);
   assert.doesNotMatch(english, /\d{4}-\d{2}-\d{2}T|987654|driverHourlyCost|margin|markup/);
   facts.commercial.corridors[0].drivingSeconds = null;
   facts.commercial.corridors[0].drivingSource = null;
@@ -90,11 +90,12 @@ test("route facts translate every section and show explicit PET/UTC instead of r
   assert.doesNotMatch(spanish, /Displayed geometry|Booked offer|Valid until|Driving time|Quote validity|\d{4}-\d{2}-\d{2}T/);
 });
 
-test("the local instant helper handles UTC date rollover and unavailable values", () => {
-  assert.equal(formatOperationInstant("2026-11-02T08:00:00-05:00", "en", en), "2 Nov 2026, 08:00 PET (13:00 UTC)");
-  assert.equal(formatOperationInstant("2026-11-03T01:00:00Z", "en", en), "2 Nov 2026, 20:00 PET (3 Nov 2026, 01:00 UTC)");
-  assert.equal(formatOperationInstant(null, "en", en), "Time unavailable");
-  assert.equal(formatOperationInstant("invalid", "es", es), "Fecha no disponible");
+test("operation instants share Tracking's PET zone, locale and unknown-value labels", () => {
+  assert.equal(formatOperationInstant("2026-11-02T08:00:00-05:00", "en"), "Nov 2, 2026, 8:00 AM PET (UTC−05:00)");
+  assert.equal(formatOperationInstant("2026-11-03T01:00:00Z", "en"), "Nov 2, 2026, 8:00 PM PET (UTC−05:00)");
+  assert.equal(formatOperationInstant("2026-11-02T08:00:00-05:00", "es"), "2 nov. 2026, 8:00 a. m. PET (UTC−05:00)");
+  assert.equal(formatOperationInstant(null, "en"), "Unknown");
+  assert.equal(formatOperationInstant("invalid", "es"), "Desconocido");
 });
 
 test("native mock timers cover readiness, timeout, auth and retry replacing the previous script", async context => {

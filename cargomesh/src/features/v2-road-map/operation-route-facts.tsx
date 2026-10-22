@@ -7,14 +7,14 @@ import styles from "./schematic-map.module.css";
 type LocaleProps = { locale: Locale; t: OperationMapTranslate };
 function Evidence({ value, locale, t }: { value: PublicMapSource } & LocaleProps) {
   return <p className={styles.metadata}>{value.provider} · <code>{value.reference}</code> · {value.provenance}<br/>
-    {t("Observado", "Observed")}: {formatOperationInstant(value.observedAt, locale, t)} · {t("Válido hasta", "Valid until")}: {formatOperationInstant(value.validUntil, locale, t)}</p>;
+    {t("Observado", "Observed")}: {formatOperationInstant(value.observedAt, locale)} · {t("Válido hasta", "Valid until")}: {formatOperationInstant(value.validUntil, locale)}</p>;
 }
 
 /** Tracking supplies its locale and translator; these remain three independent facts. */
 export function OperationRouteFactsView({ facts, locale, t }: { facts: OperationRouteFacts } & LocaleProps) {
   const { geometry, commercial, eta } = facts;
   const duration = (seconds: number | null) => formatOperationDuration(seconds, locale, t);
-  const instant = (value: string | null) => formatOperationInstant(value, locale, t);
+  const instant = (value: string | null) => formatOperationInstant(value, locale);
   const labels = { geometry: t("Geometría mostrada", "Displayed geometry"), corridor: t("Corredor comercial contratado", "Contracted commercial corridor"),
     eta: t("Estimación de entrega al cotizar", "Delivery estimate at quote time") };
   return <div className={styles.facts} aria-label={t("Ruta, corredor contratado y ETA al cotizar", "Route, contracted corridor and quote-time ETA")}>
