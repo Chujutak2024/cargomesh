@@ -1,5 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+test('spoken axis labels resolve individual dimensions and retain scope ambiguity',()=>{
+ const result=measurementTurn('each pallet is one meter long. one meter wide. and one meter high.',null,draft);
+ assert.equal(result.question,'APPLIED');assert.equal(result.volumeM3,1);assert.deepEqual(result.fields.map(f=>f.value),['100','100','100','1']);
+ const es=measurementTurn('cada pallet mide un metro de largo, un metro de ancho y un metro de alto',null,draft);
+ assert.equal(es.question,'APPLIED');assert.equal(es.volumeM3,1);
+ assert.equal(measurementTurn('one meter long, one meter wide, one meter high',null,draft).question,'SCOPE');
+ assert.equal(measurementTurn('the whole shipment is one meter long, one meter wide, one meter high',null,draft).question,'PER_UNIT');
+ assert.deepEqual(measurementTurn('each pallet is one meter long',null,draft).fields,[]);
+});
 import { measurementTurn, measurementReply } from "./measurement-clarification";
 import { EMPTY_PROTOTYPE_DRAFT, applyChatFieldsToDraft } from "./prototype-model";
 
