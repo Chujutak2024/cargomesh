@@ -21,6 +21,29 @@ test('automatic entry is only anonymous or an exact configured synthetic identit
  assert.equal(automaticDemoIdentity({carrier:config.carrier},{}),false);
  assert.equal(automaticDemoIdentity({client:{email:'real@company.com',password:'not-used'}},{email:'real@company.com'}),false);
 });
+test('hosted development demo needs its own opt-in and exact loopback origin; never production or arbitrary API',()=>{
+ const hosted:WorkspaceDemoConfig={...config,allowHostedLocal:true,origin:'http://127.0.0.1:8090',supabaseUrl:'https://project.supabase.co'};
+ assert.equal(workspaceDemoAllowed(hosted,'127.0.0.1:8090'),true);
+ for(const delta of [{allowHostedLocal:false},{production:true},{origin:'http://127.0.0.1:8080'},
+  {origin:'http://evil.test:8090'},{origin:'http://127.0.0.1:8090/path'},
+  {supabaseUrl:'https://project.supabase.co.evil.test'},{supabaseUrl:'https://user:pw@project.supabase.co'},
+  {supabaseUrl:'https://project.supabase.co/path'},{supabaseUrl:'https://project.supabase.co?key=not-allowed'},
+  {supabaseUrl:'http://project.supabase.co'},{supabaseUrl:'https://unrelated.test'}]){
+  assert.equal(workspaceDemoAllowed({...hosted,...delta},'127.0.0.1:8090'),false);
+ }
+ for(const host of ['localhost:8090','evil.test:8090','127.0.0.1:8090.evil',null])assert.equal(workspaceDemoAllowed(hosted,host),false);
+});
+test('hosted local switching preserves fixed native credentials, origin checks and no preview fallback',async()=>{
+ const localOrigin='http://127.0.0.1:8090';let calls=0;
+ const handler=createWorkspaceDemoHandler({...config,allowHostedLocal:true,origin:localOrigin,supabaseUrl:'https://project.supabase.co'},
+  {start:async(workspace,account)=>{calls++;assert.equal(workspace,'carrier');assert.deepEqual(account,config.carrier);return true;},preview:async()=>assert.fail('no preview')});
+ const make=(source:string,body:unknown={workspace:'carrier'})=>new Request(localOrigin+'/api/auth/workspace-session',{
+  method:'POST',headers:{host:'127.0.0.1:8090',origin:source,'content-type':'application/json'},body:JSON.stringify(body)});
+ assert.equal((await handler(make('https://evil.test'))).status,403);
+ assert.equal((await handler(make(localOrigin,{workspace:'carrier',email:'other@test.invalid'}))).status,400);
+ assert.deepEqual(await (await handler(make(localOrigin))).json(),{ok:true,destination:'/carriers'});
+ assert.equal(calls,1);
+});
 test('CSRF, missing origin, GET and arbitrary workspace/credentials/redirects never call Auth',async()=>{
  let calls=0;const handler=createWorkspaceDemoHandler(config,{start:async()=>{calls++;return true;},preview:async()=>assert.fail('no local preview')});
  for(const req of [request(undefined,{origin:'https://evil.test'}),request(undefined,{origin:''}),request(undefined,{'sec-fetch-site':'cross-site'}),

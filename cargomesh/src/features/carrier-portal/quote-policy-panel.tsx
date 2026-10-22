@@ -13,10 +13,11 @@ import {recordName,type PortalRecord} from './records';
 import s from './quote-policy.module.css';
 type Policy=z.infer<typeof QuotePolicyRecordSchema>;
 const empty={dispatchEnabled:false,urgent:true,scheduled:true,minNoticeMinutes:'60',loadingMinutes:'30',unloadingMinutes:'30',autoConfirm:false,maxBookingAmount:'',schedulingConsent:false,maxResources:'1',resourcePricing:'PER_PLAN',provenanceStatus:'SIMULATED',basis:'PER_TRIP',baseAmount:'',ratePerKm:'0',minimumAmount:'0',fuelAmount:'0',tollAmount:'0',handlingAmount:'0',taxAmount:'0',validityMinutes:'60',confirmationMinutes:'30',validUntil:'',terms:'',active:false,autoIssue:false};
-export function QuotePolicyPanel({carrier}:{carrier:CarrierPortalAccessV2}){
+export function QuotePolicyPanel({carrier,expanded=false,onBusyChange}:{carrier:CarrierPortalAccessV2;expanded?:boolean;onBusyChange?:(busy:boolean)=>void}){
  const [policies,setPolicies]=useState<Policy[]>([]),[services,setServices]=useState<PortalRecord[]>([]),[lanes,setLanes]=useState<PortalRecord[]>([]),[assets,setAssets]=useState<PortalRecord[]>([]);
  const [serviceId,setServiceId]=useState(''),[laneId,setLaneId]=useState(''),[fields,setFields]=useState(empty),[consent,setConsent]=useState(false),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false),[lanesLoaded,setLanesLoaded]=useState(false),[error,setError]=useState(''),[saved,setSaved]=useState(false);
  const [costFields,setCostFields]=useState(costFieldsFrom()),[fleet,setFleet]=useState<TruckCostFleet|undefined>();
+ useEffect(()=>{onBusyChange?.(busy);return()=>onBusyChange?.(false);},[busy,onBusyChange]);
  const intent=useRef<{payload:string;key:string}|null>(null);const endpoint=`/api/v2/carrier-portal/carriers/${encodeURIComponent(carrier.carrierId)}/quote-policies`;
  useEffect(()=>{const c=new AbortController();setLoaded(false);setError('');void Promise.all([portalRequest(endpoint,{signal:c.signal}),readFleetResource(carrier.carrierId,'services',c.signal)]).then(([r,page])=>{if(c.signal.aborted)return;if(page.truncated)throw new Error('PARTIAL_CATALOG');setPolicies(z.array(QuotePolicyRecordSchema).parse(r.data));setServices(page.records);setLoaded(true);}).catch(e=>{if(!c.signal.aborted)setError(portalErrorCopy(e,false));});return()=>c.abort();},[carrier.carrierId,endpoint]);
  useEffect(()=>{const c=new AbortController();setLanes([]);setLaneId('');setLanesLoaded(false);setAssets([]);if(serviceId)void Promise.all([readFleetResource(carrier.carrierId,'lanes',c.signal,fetch,serviceId),readFleetResource(carrier.carrierId,'assets',c.signal)]).then(([page,fleetPage])=>{if(c.signal.aborted)return;if(page.truncated||fleetPage.truncated)throw new Error('PARTIAL_CATALOG');setAssets(fleetPage.records.filter(a=>a.serviceId===serviceId));setLanes(page.records);setLanesLoaded(true);}).catch(e=>{if(!c.signal.aborted)setError(portalErrorCopy(e,false));});return()=>c.abort();},[carrier.carrierId,serviceId]);
@@ -33,7 +34,7 @@ export function QuotePolicyPanel({carrier}:{carrier:CarrierPortalAccessV2}){
   setPolicies(rows=>[...rows.filter(p=>p.id!==policy.id),policy]);setSaved(true);setConsent(false);
  }catch(e){setError(e instanceof z.ZodError?'Check operating costs, driving/rest limits, tariff amounts and scheduling approval.':portalErrorCopy(e,false));}finally{setBusy(false);}}
  const readonly=carrier.role!=='ADMIN'||busy;
- return <details className={s.panel}><summary>Automatic quote policy</summary><p>USD tariff per service and directed lane. Carrier administrator approval is required.</p>
+ return <details className={s.panel} open={expanded||undefined}><summary>Automatic quote policy</summary>
   {error?<p role="alert">{error}</p>:null}
   <div className={s.grid}><Select label="Transport service" value={serviceId} disabled={!loaded||busy} onChange={e=>setServiceId(e.target.value)}><option value="">Select service</option>{services.map(row=><option key={row.id} value={row.id}>{recordName(row)}</option>)}</Select>
   <Select label="Directed lane" value={laneId} disabled={!lanesLoaded||busy} onChange={e=>setLaneId(e.target.value)}><option value="">Select lane</option>{lanes.map(row=><option key={row.id} value={row.id}>{recordName(row)}</option>)}</Select></div>

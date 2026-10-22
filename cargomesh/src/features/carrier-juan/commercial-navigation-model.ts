@@ -2,12 +2,12 @@ import {z} from 'zod';
 import type {Offer,Opportunity} from '@/features/carrier-portal/commercial-model';
 import {offerRelations} from './offers-model';
 
-export type CommercialTab='list'|'board'|'offers';
+export type CommercialTab='list'|'board'|'offers'|'automation';
 export type CommercialRoutes=Record<CommercialTab,string>;
-export const commercialRoots:CommercialRoutes={list:'#/shipments',board:'#/pipeline',offers:'#/desk'};
+export const commercialRoots:CommercialRoutes={list:'#/shipments',board:'#/pipeline',offers:'#/desk',automation:'#/desk/automation'};
 export function commercialTab(hash:string):CommercialTab|null{
  const section=hash.split('/')[1];
- return section==='shipments'?'list':section==='pipeline'?'board':section==='desk'?'offers':null;
+ return hash==='#/desk/automation'?'automation':section==='shipments'?'list':section==='pipeline'?'board':section==='desk'?'offers':null;
 }
 export function rememberCommercialRoute(previous:CommercialRoutes,hash:string):CommercialRoutes{
  const tab=commercialTab(hash);

@@ -25,5 +25,17 @@ class VoiceGuidanceTests(unittest.TestCase):
     def test_english_default_remains_available_for_older_grants(self):
         self.assertIn("Keep speaking English",voice_prompt({"role":"shipper"}))
 
+    def test_carrier_uses_authenticated_native_facts_without_claiming_execution(self):
+        prompt=voice_prompt({"role":"carrier","language":"es","opportunity":{"route":"A to B","cargo":"GENERAL","responseDeadline":"2026-11-01","briefing":"12000 kg; two trucks; recorded offer USD 361.20"}})
+        self.assertIn("12000 kg; two trucks",prompt)
+        self.assertIn("recorded offer USD 361.20",prompt)
+        self.assertIn("not a newly calculated quote",prompt)
+        self.assertIn("native web review and consent",prompt)
+        self.assertNotIn("ask them to state their own proposed total",prompt)
+
+    def test_legacy_carrier_grant_remains_compatible(self):
+        prompt=voice_prompt({"role":"carrier","opportunity":{"route":"A to B","cargo":"GENERAL"}})
+        self.assertIn("ask them to state their own proposed total",prompt)
+
 if __name__ == '__main__':
     unittest.main()

@@ -14,11 +14,12 @@ export function workspaceDemoConfig():WorkspaceDemoConfig{
  const assigned=assignedDemoConfig(),local=process.env.CARGOMESH_LOCAL_WORKSPACE_DEMO_ENABLED==='true'&&process.env.CM_ENABLE_DEMO==='1';
  const origin=local?process.env.CARGOMESH_LOCAL_WORKSPACE_DEMO_ORIGIN:assigned.origin;
  const production=process.env.NODE_ENV==='production',supabaseUrl=process.env.NEXT_PUBLIC_SUPABASE_URL;
+ const allowHostedLocal=process.env.CARGOMESH_LOCAL_WORKSPACE_DEMO_HOSTED==='true';
  let localAccounts:DemoAccount[]=[];
  // Optional existing private credentials file, development loopback ONLY. Never sent to the browser.
  if(local&&!production&&process.env.CARGOMESH_LOCAL_WORKSPACE_DEMO_ACCESS_FILE){
   try{
-   if(workspaceDemoAllowed({mode:'local',production,origin,supabaseUrl},new URL(origin!).host)){
+   if(workspaceDemoAllowed({mode:'local',production,origin,supabaseUrl,allowHostedLocal},new URL(origin!).host)){
     const text=readFileSync(process.env.CARGOMESH_LOCAL_WORKSPACE_DEMO_ACCESS_FILE,'utf8');
     const emails=text.split(/\r?\n/).filter(row=>/^Email:/i.test(row)).map(row=>row.slice(row.indexOf(':')+1).trim());
     const passwords=text.split(/\r?\n/).filter(row=>/^Password:/i.test(row)).map(row=>row.slice(row.indexOf(':')+1).trim());
@@ -30,7 +31,7 @@ export function workspaceDemoConfig():WorkspaceDemoConfig{
  const carrierEmail=assigned.carrierEmail??localAccounts[1]?.email,carrierPassword=assigned.carrierPassword??localAccounts[1]?.password;
  const carrier=carrierEmail&&carrierPassword?{email:carrierEmail,password:carrierPassword}:undefined;
  const explicitClient=clientEmail||clientPassword?{email:clientEmail??'',password:clientPassword??''}:undefined;
- return {mode:local?'local':assigned.enabled?'assigned':'disabled',production,supabaseUrl,
+ return {mode:local?'local':assigned.enabled?'assigned':'disabled',production,supabaseUrl,allowHostedLocal,
   origin,assigned,carrier,
   client:explicitClient??(assigned.clientOrganizationId?carrier:undefined),clientOrganizationId:assigned.clientOrganizationId,previewSecret:assigned.secret};
 }

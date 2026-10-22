@@ -1,0 +1,21 @@
+.breadcrumb{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--cm-text-muted,#526b7c);margin-bottom:2px}
+.breadcrumb a,.breadcrumb button{display:inline-flex;gap:6px;align-items:center;color:inherit;background:none;border:0;padding:4px 0;text-decoration:none;min-height:32px}
+.title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.title h2{font-size:var(--cm-font-size-xl,22px);line-height:1.3;margin:0;color:var(--cm-text,#07354b);overflow-wrap:anywhere}
+.state{font-size:12px;font-weight:600;padding:6px 10px;border-radius:20px;background:#e3f1f3;color:#007b88;white-space:nowrap}
+.resource{padding:14px 0;border-bottom:1px solid var(--cm-border,#d5e2e7);font-size:14px}
+.resource:last-child{border-bottom:0}
+.resource h4{font-size:14px;margin:0 0 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.resource p{margin:6px 0;color:var(--cm-text-muted,#526b7c);line-height:1.5}
+.resource details{font-size:12px;margin-top:8px;overflow-wrap:anywhere}
+.resource summary{cursor:pointer;color:var(--cm-text-muted,#526b7c)}
+.assistant{border:1px solid var(--cm-border,#d5e2e7);background:#fff;border-radius:14px;padding:14px;min-width:0}
+.assistantToggle{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;color:var(--cm-text,#07354b);font-size:15px;font-weight:600;min-height:32px;text-align:left}
+.assistantToggle span{margin-left:auto;font-size:12px;font-weight:400;color:var(--cm-text-muted,#526b7c)}
+.message{display:flex;gap:6px;align-items:center;margin-top:10px}
+.message input{min-width:0;width:100%;border:1px solid var(--cm-border,#d5e2e7);border-radius:10px;font:inherit;font-size:13px;padding:10px;background:#fff;color:var(--cm-text,#07354b)}
+.message button{padding:10px;min-width:40px}
+.transcript{font-size:13px;line-height:1.5;max-height:220px;overflow:auto}
+.transcript p{margin:10px 0;overflow-wrap:anywhere}
+.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:640px){.title{align-items:flex-start;flex-wrap:wrap}.title h2{font-size:20px}}

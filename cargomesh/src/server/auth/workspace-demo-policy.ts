@@ -3,7 +3,7 @@ import {hasSessionOrigin} from './session-origin';
 
 export type DemoWorkspace='client'|'carrier';
 export type DemoAccount={email:string;password:string};
-export type WorkspaceDemoConfig={mode:'disabled'|'local'|'assigned';origin?:string;production:boolean;supabaseUrl?:string;
+export type WorkspaceDemoConfig={mode:'disabled'|'local'|'assigned';origin?:string;production:boolean;supabaseUrl?:string;allowHostedLocal?:boolean;
  assigned?:AssignedDemoConfig;client?:DemoAccount;carrier?:DemoAccount;clientOrganizationId?:string;previewSecret?:string};
 /** Also recognizes the pre-existing hac54.carrier.local fixture, without changing legacy policy. */
 export function workspaceDemoSyntheticEmail(email:string){return syntheticDemoEmail(email)||/^hac\d+\.[a-z0-9._-]+@cargomesh\.test$/i.test(email);}
@@ -20,9 +20,13 @@ export function workspaceDemoAllowed(config:WorkspaceDemoConfig,host:string|null
  if(config.production)return false;
  try{
   const origin=new URL(config.origin),api=new URL(config.supabaseUrl??'');
+  const localApi=api.protocol==='http:'&&['127.0.0.1','localhost'].includes(api.hostname);
+  const hostedApi=config.allowHostedLocal===true&&api.protocol==='https:'&&/^[a-z0-9]+\.supabase\.co$/.test(api.hostname)
+   &&!api.port&&api.pathname==='/'&&!api.search&&!api.hash;
+  const allowedHosts=hostedApi?['127.0.0.1:8090','localhost:8090']:['127.0.0.1:8080','localhost:8080'];
   return origin.origin===config.origin&&origin.protocol==='http:'&&!origin.username&&!origin.password
-   &&['127.0.0.1:8080','localhost:8080'].includes(origin.host)&&origin.host===host
-   &&api.protocol==='http:'&&['127.0.0.1','localhost'].includes(api.hostname)&&!api.username&&!api.password;
+   &&allowedHosts.includes(origin.host)&&origin.host===host
+   &&(localApi||hostedApi)&&!api.username&&!api.password;
  }catch{return false;}
 }
 
