@@ -6,11 +6,16 @@ parser.add_argument('--repo-root',type=Path,default=Path(__file__).resolve().par
 parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--container',required=True)
 parser.add_argument('--local-only',action='store_true')
+parser.add_argument('--extra-flow',type=Path,help='Additional controlled assertions inside the isolated C01 transaction; never hosted.')
+parser.add_argument('--extra-check',type=Path,help='Additional standalone pgTAP contract in the same temporary database.')
+parser.add_argument('--recovery-race',action='store_true',help='Commit only the temporary C01 fixture and test concurrent recovery commands there.')
 args=parser.parse_args()
 if not args.local_only or not re.fullmatch(r'supabase_db_[A-Za-z0-9_-]+',args.container):parser.error('--local-only and a local supabase_db_* container required')
 ROOT=args.repo_root.resolve();SOURCE=Path(__file__).resolve().parent;OUT=args.output.resolve();OUT.mkdir(parents=True,exist_ok=True)
 CONTAINER=args.container;DB='cargomesh_c01_dataset_'+uuid.uuid4().hex[:10]
-manifest=json.loads((SOURCE/'C01-SIM-v1.json').read_text(encoding='utf-8'));digest=hashlib.sha256((SOURCE/'C01-SIM-v1.json').read_bytes()).hexdigest()
+manifest_text=(SOURCE/'C01-SIM-v1.json').read_text(encoding='utf-8')
+# Git's Windows CRLF checkout must preserve the reviewed LF artifact hash.
+manifest=json.loads(manifest_text);digest=hashlib.sha256(manifest_text.encode('utf-8')).hexdigest()
 validation=subprocess.run(['node','--conditions=react-server','--import','tsx',str(SOURCE/'validate-manifest.cjs'),str(ROOT),str(SOURCE/'C01-SIM-v1.json'),str(OUT/'MANIFEST-VALIDATION.json')],cwd=ROOT/'cargomesh',capture_output=True,text=True,encoding='utf-8',timeout=60)
 if validation.returncode:raise RuntimeError('Manifest schema validation failed: '+validation.stderr[-2000:])
 print(validation.stdout.strip(),flush=True)
@@ -65,9 +70,21 @@ do $h$declare t text;begin
  checked(sql("create table c01_verification.refs(name text primary key,id uuid);insert into c01_verification.refs select key,value::uuid from jsonb_each_text('"+json.dumps(refs)+"');grant usage on schema c01_verification to authenticated;grant select on c01_verification.refs to authenticated;"),'native references')
  (OUT/'LOCAL-REQUEST.json').write_text(json.dumps(activations[0]['requestTemplate'],indent=2),encoding='utf-8')
  case=(SOURCE/'verify-flow.sql').read_text(encoding='utf-8').replace('__REQUEST__',json.dumps(activations[0]['requestTemplate'])).replace('__CREW_TEMPLATES__',json.dumps(manifest['postBookingAssignments']['operations'])).replace('__ORG__',c['organizationId']).replace('__MEMBER__',c['memberId']).replace('__CARRIER__',r['carrierId']).replace('__OPERATOR__',r['operatorId'])
+ if args.extra_flow:
+  extra=args.extra_flow.resolve().read_text(encoding='utf-8').replace('__ORG__',c['organizationId']).replace('__MEMBER__',c['memberId']).replace('__CARRIER__',r['carrierId']).replace('__OPERATOR__',r['operatorId'])
+  case=case.replace('select * from finish();',extra+'\nselect * from finish();')
+ if args.extra_check:
+  (OUT/'LOCAL-RECOVERY-CONTRACT.log').write_text(checked(sql(args.extra_check.resolve().read_text(encoding='utf-8')),'recovery SQL contract'),encoding='utf-8')
+ if args.recovery_race:
+  if args.extra_flow:raise RuntimeError('Race setup requires baseline C01, without --extra-flow')
+  case=case.replace('rollback;','commit;')
  output=checked(sql(case),'single native C01 dataset flow')
  (OUT/'LOCAL-FLOW.log').write_text(output,encoding='utf-8')
  facts=json.loads(next(line for line in output.splitlines() if line.startswith('{"') and 'C01_RESULT' in line))['C01_RESULT']
+ if args.recovery_race:
+  execution=json.loads(checked(sql("select jsonb_build_object('id',id) from public.transport_executions where booking_id='"+facts['bookingId']+"';"),'temporary execution identity'))['id']
+  race=subprocess.run(['python',str(ROOT/'supabase/scenarios/v2-incident-recovery/verify-race.py'),'--container',CONTAINER,'--database',DB,'--organization',c['organizationId'],'--member',c['memberId'],'--carrier',r['carrierId'],'--operator',r['operatorId'],'--execution',execution,'--request-file',str(OUT/'LOCAL-REQUEST.json'),'--local-only'],capture_output=True,text=True,encoding='utf-8',timeout=60)
+  (OUT/'LOCAL-RECOVERY-RACE.log').write_text(checked(race,'concurrent recovery commands'),encoding='utf-8')
  result={'localOnly':True,'hostedWrites':0,'datasetSHA256':digest,'manifestSchemaValidation':json.loads((OUT/'MANIFEST-VALIDATION.json').read_text()),'activationCount':2,'sameGeneratedIds':True,'nativeFlowAssertions':sum(x.startswith('ok ') for x in output.splitlines()),'result':'PASS','facts':facts,'autoConfirm':False,'datasetIdAssignmentsAreLocalOnly':True}
  (OUT/'LOCAL-RESULTADO.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
  print(json.dumps({'result':result['result'],'datasetSHA256':digest,'assertions':result['nativeFlowAssertions'],'activationReplays':2,'computedPrice':facts['computedPrice'],'executionStatus':facts['executionStatus'],'hostedWrites':0}),flush=True)

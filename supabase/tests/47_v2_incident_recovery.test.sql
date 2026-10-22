@@ -1,0 +1,23 @@
+-- Access and execution contracts. Native partial/full recovery is covered by the isolated C01 extra-flow.
+begin;
+set local search_path=extensions,public;
+select no_plan();
+select ok((select relrowsecurity from pg_class where oid='public.incident_recoveries'::regclass),'recovery cases use RLS');
+select ok((select relrowsecurity from pg_class where oid='public.incident_recovery_reservations'::regclass),'affected allocations use RLS');
+select ok((select relrowsecurity from pg_class where oid='private.incident_recovery_receipts'::regclass),'receipts use RLS');
+select ok(not has_table_privilege('authenticated','public.incident_recoveries','INSERT'),'cases cannot be forged with direct INSERT');
+select ok(not has_table_privilege('authenticated','public.incident_recoveries','UPDATE'),'replacement status cannot be forged');
+select ok(not has_table_privilege('authenticated','public.incident_recovery_reservations','UPDATE'),'affected cargo cannot be rewritten');
+select ok(not has_table_privilege('anon','public.incident_recoveries','SELECT'),'anonymous access denied');
+select ok(has_function_privilege('authenticated','public.create_v2_incident_recovery(uuid,uuid,uuid,uuid,jsonb)','EXECUTE'),'members can call identity-scoped recovery command');
+select ok(not has_function_privilege('anon','public.create_v2_incident_recovery(uuid,uuid,uuid,uuid,jsonb)','EXECUTE'),'anonymous recovery command denied');
+select ok(not has_function_privilege('authenticated','private.confirm_incident_replacement()','EXECUTE'),'clients cannot invoke finalization directly');
+select ok(not has_function_privilege('authenticated','private.request_v2_carrier_quote_before_incident_recovery(uuid,uuid,uuid,integer,uuid,timestamp with time zone,jsonb)','EXECUTE'),'clients cannot bypass incident quote guard');
+select throws_ok($q$insert into public.incident_recoveries(id,organization_id) values(gen_random_uuid(),null)$q$,'23502',null,'incomplete recovery cannot be persisted');
+select ok(strpos(pg_get_functiondef('private.command_v2_workflow_before_ltl_operations(uuid,uuid,text,jsonb,uuid,jsonb)'::regprocedure),'recovery.original_execution_id=e.id')>0,'native start command excludes confirmed replaced resources only');
+set local role authenticated;
+set local "request.jwt.claims"='{}';
+select throws_ok($q$select public.read_v2_incident_recovery('c2300000-0000-4000-8000-000000000001','c2320000-0000-4000-8000-000000000001',gen_random_uuid())$q$,'PT403','FORBIDDEN_WORKFLOW','expired/foreign identity cannot enumerate incident recoveries');
+reset role;
+select * from finish();
+rollback;

@@ -10,3 +10,7 @@ Current product/setup/hackathon documentation starts at [the documentation index
 | [Hackathon](../hackathon/README.md) | English judge and submission guides |
 
 `AGENTS.md` governs team execution. Domain capabilities need implementation, data and tests; modeling a mode or drawing a diagram does not activate it. Synthetic scenarios remain separate from production migrations. Retained evidence applies only to its recorded environment; the current guides replace old sprint/visual iteration narratives.
+
+## Incident recovery
+
+[Urgent replacement without an urgency surcharge](contracts/INCIDENT_RECOVERY.md): affected cargo, attributable Carrier pricing and explicit Client authorization. See the contract for implementation and rollout limits.
