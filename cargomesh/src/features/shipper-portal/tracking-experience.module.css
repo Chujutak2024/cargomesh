@@ -1,4 +1,4 @@
-.page { display:grid; width:100%; max-width:100rem; min-width:0; gap:1.1rem; margin:0 auto; color:var(--cm-color-ink); }
+.page { display:grid; width:100%; max-width:80rem; min-width:0; gap:1.5rem; margin:0 auto; color:var(--cm-color-ink); }
 .page * { box-sizing:border-box; }
 .page :is(button,input,select,a,summary,[tabindex]):focus-visible { outline:3px solid var(--cm-color-focus); outline-offset:3px; }
 .page button, .page input, .page select { font:inherit; }
@@ -11,7 +11,7 @@
 .panelHeading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.7rem; border-bottom:1px solid var(--cm-color-line); padding: 1rem 0; }
 .panelHeading h2 { scroll-margin-block-start:6rem; }
 .listHeader, .detailHeader { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; }
-.listHeader h1 { font-size:clamp(1.6rem,3vw,1.9rem); }
+.listHeader h1 { font-size:clamp(1.6rem,3vw,2.125rem); }
 .listHeader p, .detailHeader p { color:var(--cm-color-muted); font-size:.85rem; margin-top:.45rem; line-height:1.5; }
 .detailHeader h1 { display:flex; align-items:center; flex-wrap:wrap; gap:.6rem; font-size:clamp(1.6rem,2.7vw,1.9rem); line-height:1.2; }
 .detailHeader h1 span { overflow-wrap:anywhere; }

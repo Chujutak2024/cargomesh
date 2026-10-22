@@ -74,3 +74,24 @@ No authorized Supabase V2 session was available. Connected organization/facility
 This is an expert browser/visual inspection plus an independent screenshot/source review, not observed research with a separate end user. It does not measure screen-reader behavior, Core Web Vitals or every supported browser. Main's newer functional components were preserved; the integrator should validate their authorized connected scenario before accepting the full HAC-53 DoD.
 
 No merge or deployment is part of this delivery.
+
+## Follow-up refinement after visual feedback
+
+The user requested another Client-wide visual pass after the first published increment. This follow-up keeps the same branch and PR. It strengthens the existing petroleum/teal palette with a dark Client navigation rail and high-contrast active state, raises operational typography, groups filters and counts into flat bands, widens the dashboard assistant rail, and aligns page widths/header scales. Support uses two open columns on desktop. Facility names and diagnostic copy are more readable. No commercial behavior or data changed.
+
+A mobile navigation defect found during this pass is fixed: the mounted assistant becomes hidden and inert while the menu is open. Its state is retained. The menu's visibility no longer transitions through a hidden focus target; the existing focus and Escape handlers are preserved.
+
+Current follow-up evidence: 25 PNGs in `C:/Users/PISFIL/Documents/Codex/outputs/client-refinement-20261022/` (12 route tops at both sizes plus the open mobile menu). Dashboard, reservations and tracking copies below are refreshed; [mobile navigation](../evidence/hac53-client-presentation/navigation-mobile.png) is added. The first-pass Nova capture remains representative because this follow-up does not change its panel styling.
+
+Observed assert-based browser checks:
+- Open mobile navigation: assistant layer is inert and display:none; focus lands on Close.
+- Escape: focus returns to Open menu; unsent quick-composer text remains unchanged.
+- Collapsed navigation at800px: existing collapse handler works, reservations remains visible, document width stays800px.
+- Navigation contrast: normal text10.43:1, group labels6.93:1, active row6.82:1. This is a targeted check, not an overall accessibility certificate.
+- No warnings/errors in the inspected reservation console.
+
+Types, architecture709/206 and production build were rerun successfully for the follow-up code. The final CSS transition-property correction was confirmed in the browser; it changes no imports or build configuration. The241 business/preview tests above belong to the first published increment; they were not repeated for this presentation-only follow-up. A single new detector scan retained four inherited intake border rules with Client overrides, and no second scan was run.
+
+Local follow-up logs and assertions are in `.planning/2026-10-22-client-refinement/`. The same connected-data limitations apply. This iteration remains separate from accepting the full HAC-53 workflow.
+
+The independent full follow-up review inspected all25 new captures and representative source, returning **`disposition: ship`** with no material fixes. Final browser assertions were repeated after removing a temporary focus workaround: the original focus handler works with the corrected visibility styling, and assistant text remains intact.

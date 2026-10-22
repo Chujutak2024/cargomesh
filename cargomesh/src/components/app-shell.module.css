@@ -13,6 +13,22 @@
   --client-assistant-clearance: 5.5rem;
 }
 .shell:has([data-chat-open="true"]) { --client-assistant-clearance: 0rem; }
+.assistantLayer[inert] { display: none; }
+.shell[data-cm-workspace="client"] { --carrier-nav-bg: #153a48; --carrier-nav-ink: #e4f0f2; --carrier-nav-muted: #b0c8ce; }
+.shell .sidebar { border-right: 0; transition-property: transform; }
+.sidebar .brand { color: #fff; font-size: 1.2rem; letter-spacing: -.025em; }
+.navigation h2 { color: #b0c8ce; font-size: .75rem; margin-top: 1rem; margin-bottom: .65rem; }
+.navigation a { min-height: 46px; border: 0; border-radius: 6px; color: #e4f0f2; font-size: .875rem; padding-inline: 14px; }
+.navigation a > svg { color: #9cbdc5; }
+.navigation a:hover { background: #244c59; color: #fff; }
+.navigation a[aria-current="page"] { color: #fff; background: #296271; box-shadow: none; font-weight: 650; }
+.navigation a[aria-current="page"] > svg { color: #a2efe3; }
+.sidebar .workspaceIdentity { border-top-color: #3b5d68; color: #e4f0f2; }
+.sidebar .workspaceIdentity strong { font-size: .8125rem; }
+.sidebar .workspaceIdentity > div > span { color: #b0c8ce; font-size: .75rem; }
+.sidebar :is(a, button):focus-visible { outline-color: #a2efe3 !important; }
+.sidebar button { color: #e4f0f2 !important; }
+.sidebar button:hover { background: #296271 !important; }
 
 .contentColumn {
   min-width: 0;
@@ -46,7 +62,7 @@
 .context strong {
   overflow: hidden;
   color: var(--cm-color-heading);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   letter-spacing: -0.015em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -56,7 +72,7 @@
   display: none;
   overflow: hidden;
   color: var(--cm-color-muted);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -97,7 +113,7 @@
   background: transparent;
   color: var(--cm-color-ink);
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 0.875rem;
 }
 
 .search input::placeholder { color: var(--cm-color-muted); }
@@ -106,8 +122,8 @@
 .avatar { display: grid; width: 2.55rem; height: 2.55rem; flex: 0 0 auto; place-items: center; border-radius: 0.7rem; background: var(--cm-color-heading); color: white; font-size: 0.66rem; font-weight: 800; }
 .userCopy { display: none; min-width: 0; }
 .userCopy strong, .userCopy span { display: block; overflow: hidden; max-width: 10rem; text-overflow: ellipsis; white-space: nowrap; }
-.userCopy strong { color: var(--cm-color-ink); font-size: 0.69rem; }
-.userCopy span { margin-top: 0.12rem; color: var(--cm-color-muted); font-size: 0.58rem; text-transform: capitalize; }
+.userCopy strong { color: var(--cm-color-ink); font-size: 0.8125rem; }
+.userCopy span { margin-top: 0.12rem; color: var(--cm-color-muted); font-size: 0.7rem; text-transform: capitalize; }
 
 .signOut button, .signOutLink {
   display: inline-flex;
@@ -128,8 +144,8 @@
 }
 
 .signOut button:hover, .signOutLink:hover { border-color: var(--cm-color-line-strong); background: var(--cm-color-selected); }
-.main { min-width: 0; min-height: calc(100dvh - 4rem); padding: 1.75rem clamp(1rem, 2.5vw, 2.75rem) calc(3rem + var(--client-assistant-clearance)); background: var(--cm-color-canvas); }
-.previewNotice { display: flex; align-items: center; gap: .5rem; margin-bottom: 1.5rem; padding: 0 0 .8rem; border-bottom: 1px solid var(--cm-color-line); color: var(--cm-color-muted); font-size: .72rem; line-height: 1.5; }
+.main { min-width: 0; min-height: calc(100dvh - 4rem); padding: 1.5rem clamp(1rem, 2.5vw, 2.75rem) calc(3rem + var(--client-assistant-clearance)); background: var(--cm-color-canvas); color: var(--cm-color-ink); }
+.previewNotice { display: flex; align-items: center; gap: .5rem; margin-bottom: 1.75rem; padding: .6rem .8rem; background: var(--cm-color-surface-subtle); color: var(--cm-color-muted); font-size: .75rem; line-height: 1.5; }
 .previewNotice::before { content: ""; width: .4rem; height: .4rem; flex: none; border-radius: 50%; background: var(--cm-color-logistics); }
 .shell ::selection { background: #d1e9e9; color: #163349; }
 .shell :is(input, textarea) { caret-color: var(--cm-color-logistics); }

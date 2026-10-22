@@ -12,7 +12,7 @@
 .readNotice button:disabled { opacity: .6; cursor: wait; }
 .collectionNotice { padding: .8rem 1rem; color: var(--cm-color-muted); border-bottom: 1px solid var(--cm-color-line); background: var(--cm-color-surface-tint); }
 .pagination { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .7rem; }
-.selected { background: var(--cm-color-positive-surface); box-shadow: inset 3px 0 var(--cm-color-logistics); }
+.selected { background: var(--cm-color-positive-surface); }
 .reset { min-height: 2.5rem; padding: .4rem .7rem; border: 1px solid var(--cm-color-line); border-radius: .6rem; color: var(--cm-color-logistics); background: var(--cm-color-surface); font: inherit; font-size: .8rem; cursor: pointer; }
 .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin: 0; }
 .factsDisclosure summary { cursor: pointer; color: var(--cm-color-heading); font-weight: 750; }
