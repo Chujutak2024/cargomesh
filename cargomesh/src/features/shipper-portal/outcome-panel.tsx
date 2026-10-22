@@ -37,7 +37,7 @@ export function OutcomePanel({ requests, offers, bookings, incidents, t, localeT
       title: `${t("Incidencia operativa", "Operational incident")}: ${incident.data.kind}`,
       detail: incident.data.description, reason: `${t("Severidad", "Severity")}: ${incident.data.severity} · ${t("Estado", "Status")}: ${incident.data.status}`,
       tone: incident.data.severity === "CRITICAL" ? "danger" : "warning",
-      recoveryHref: "/tracking", recoveryLabel: t("Ver seguimiento", "View tracking") })),
+      recoveryHref: `/requests/${incident.requestId}`, recoveryLabel: t("Revisar recuperación", "Review recovery") })),
   ].sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
   return <section className={styles.panel} aria-labelledby="outcome-title"><header className={styles.panelHeader}><div><h2 id="outcome-title">{t("Rechazos, cancelaciones e incidencias", "Rejections, cancellations and incidents")}</h2></div></header>
     {items.length ? <div className={`${styles.section} ${styles.outcomeGrid}`}>{items.map((item) => <article className={styles.outcomeCard} data-tone={item.tone} key={item.key}>

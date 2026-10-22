@@ -668,6 +668,17 @@
       "dependencies": [
         "20261021175507"
       ]
+    },
+    {
+      "issue": "INCIDENT-RECOVERY",
+      "path": "supabase-v2/supabase/migrations/20261022090000_incident_recovery.sql",
+      "version": "20261022090000",
+      "sha256": "a4100f74eef139595cd96244d8da30291db648b3c20422ceaa8be839984fe51f",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261021203000"
+      ]
     }
   ]
 }

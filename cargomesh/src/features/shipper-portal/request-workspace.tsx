@@ -29,6 +29,7 @@ import comparisonStyles from "./commercial-comparison.module.css";
 import { CommercialIntents } from "./commercial-intent";
 import { BookingResources } from "./booking-resources";
 import {QuoteSearchPanel} from "./quote-search-panel";
+import {IncidentRecoveryPanel} from './incident-recovery-panel';
 import {BookingConfirmationWindow} from "@/features/booking-confirmation/panel";
 import {findRequestQuotes} from "./quote-api";
 import {BookingPreparation,prepareBookingCapacity} from "./booking-preparation";
@@ -280,6 +281,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
       <Summary label={t("Clase solicitada", "Requested class")} value={request.serviceType ?? "UNKNOWN"} />
     </div></section>
     <RequestFacts request={request}/>
+    {!readIncomplete ? <IncidentRecoveryPanel request={request}/> : null}
     {!readIncomplete && commercialRefreshEnabled ? <QuoteSearchPanel requestId={request.id} busy={phase!=="idle"||commercialReadBlocked} canSearch={request.status==="DRAFT"||request.status==="PENDING"} onSearch={searchQuotes} onNova={()=>{setOfferVoiceTurns([]);setOfferVoiceOpen(true);}}/> : null}
     {!readIncomplete ? <OpportunityPanel context={commercialContext} catalog={catalog} busy={phase !== "idle" || commercialReadBlocked}
       onRequest={key => { const target = opportunityTargets(commercialContext).find(row => row.key === key); if (!target || phase !== "idle" || commercialReadBlocked) return;
