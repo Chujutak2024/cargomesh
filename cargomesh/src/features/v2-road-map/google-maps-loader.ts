@@ -1,8 +1,11 @@
 let pending: Promise<void> | null = null;
 let authFailed = false;
+let forceReload = false;
 const failureListeners = new Set<() => void>();
 
 export function googleMapsAuthFailed() { return authFailed; }
+/** A deliberate user retry may recheck the provider after its administrator fixes access. */
+export function retryGoogleMaps() { forceReload = authFailed; authFailed = false; pending = null; }
 export function onGoogleMapsAuthFailure(listener: () => void) {
   failureListeners.add(listener);
   return () => failureListeners.delete(listener);
@@ -11,9 +14,10 @@ export function onGoogleMapsAuthFailure(listener: () => void) {
 /** Load only the browser Maps JavaScript API. Route geometry remains contract-owned. */
 export function loadGoogleMaps(browserKey: string): Promise<void> {
   if (authFailed) return Promise.reject(new Error("MAP_PROVIDER_AUTH_FAILED"));
-  if (typeof google !== "undefined" && google.maps?.Map) return Promise.resolve();
+  if (!forceReload && typeof google !== "undefined" && google.maps?.Map) return Promise.resolve();
   if (pending) return pending;
   pending = new Promise<void>((resolve, reject) => {
+    forceReload = false;
     const script = document.createElement("script");
     const authWindow = window as Window & {
       gm_authFailure?: () => void;

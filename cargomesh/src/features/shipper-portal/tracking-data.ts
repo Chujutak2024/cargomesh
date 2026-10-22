@@ -5,8 +5,9 @@ import type { WorkflowRecordV2 } from "./shipper-model";
 import type { TrackingListItem } from "./tracking-presentation";
 import { routeForExecution, canShowConceptual3D, type Execution } from "./tracking-journey";
 import { routeRecordToPresentation } from "./tracking-model";
+import { operationRouteFacts } from "@/features/v2-road-map/operation-route-model";
 import type { OperationsCollection, OperationsReadIssue } from "@/server/services/v2-workspace/operations-collection";
-export type TrackingKind = "executions" | "bookings" | "decisions" | "offers" | "plans" | "routes";
+export type TrackingKind = "executions" | "bookings" | "decisions" | "offers" | "plans" | "routes" | "corridors";
 export type TrackingSource = {
   record: (kind: TrackingKind, id: string) => Promise<unknown>;
   request: (id: string) => Promise<unknown>;
@@ -16,7 +17,9 @@ export class TrackingScopeError extends Error { readonly code = "INVALID_TRACKIN
 function scoped<K extends TrackingKind>(raw: unknown, kind: K, organizationId: string, id?: string, execution?: Execution): Extract<WorkflowRecordV2,{kind:K}> {
   const row = WorkflowRecordV2Schema.parse(raw);
   if (row.kind !== kind || row.organizationId !== organizationId || !row.requestId || (id && row.id !== id)
-    || (execution && (row.requestId !== execution.requestId || (["bookings","offers"].includes(kind) && row.carrierId !== execution.carrierId))))
+    || (execution && (row.requestId !== execution.requestId
+      || (row.carrierId !== null && row.carrierId !== execution.carrierId)
+      || (["bookings","offers"].includes(kind) && row.carrierId !== execution.carrierId))))
     throw new TrackingScopeError("Tracking reference scope mismatch.");
   return row as Extract<WorkflowRecordV2,{kind:K}>;
 }
@@ -61,6 +64,21 @@ export async function collectTrackingDetail(id: string, organizationId: string, 
     throw new TrackingScopeError("Booked offer/service mismatch.");
   const linkedRoute = offer ? routeForExecution(execution,[booking],[decision],[plan],[route]) : null;
   const presentation = routeRecordToPresentation(linkedRoute);
+  if (linkedRoute && offer) {
+    for (const [expected, actual] of [[result.request.origin, linkedRoute.data.origin], [result.request.destination, linkedRoute.data.destination]]) {
+      if (expected.lat !== null && expected.lng !== null && (expected.lat !== actual.lat || expected.lng !== actual.lng))
+        throw new TrackingScopeError("Booked route endpoints differ from the operation's request.");
+    }
+    const corridorIds = [...new Set(linkedRoute.data.legs.map(leg => leg.corridorId))];
+    const corridors = await Promise.all(corridorIds.map(async corridorId => {
+      const row = WorkflowRecordV2Schema.parse(await source.record("corridors",corridorId));
+      if (row.kind !== "corridors" || row.id !== corridorId || row.organizationId !== null && row.organizationId !== organizationId
+        || row.carrierId !== null && row.carrierId !== execution.carrierId
+        || !linkedRoute.data.corridorIds.includes(corridorId)) throw new TrackingScopeError("Booked corridor scope mismatch.");
+      return row;
+    }));
+    presentation.operation = operationRouteFacts(linkedRoute,offer,plan,execution,corridors);
+  }
   if (!offer) result.issues.push({resource:"booking-offer",reason:"partial"});
   return {...result,offer,route:linkedRoute,presentation,canView3D:canShowConceptual3D(linkedRoute,presentation.paths.length>0)};
 }
