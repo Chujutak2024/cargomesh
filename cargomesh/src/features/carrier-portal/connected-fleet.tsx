@@ -1,4 +1,5 @@
 "use client";
+import {carrierDisplayName} from '@/shared/lib/display-identity';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Check,Gauge,Info,LayoutGrid,List,MapPin,Search,ShieldCheck,Truck,Users,Wrench} from 'lucide-react';
 import {Button,SearchField,Select} from '@/components/ui';
@@ -68,7 +69,7 @@ export function ConnectedFleet({register,section,onNavigate,carrierContext}:{reg
    </div><p className={s.kpiNote}>Normal operating state does not confirm booking availability. Counts use authorized loaded records. Annual maintenance: {new Date(summary.startsAt).toLocaleDateString('en-US')} — {new Date(summary.endsAt).toLocaleDateString('en-US')}.</p>
   </>:null}
   <div className={c.context}>
-   {!carrierContext?<Select label="Authorized carrier" value={carrierId} disabled={!access||loading} onChange={e=>{setCarrierId(e.target.value);changeService('');}}><option value="">Select carrier</option>{access?.map(row=><option key={row.carrierId} value={row.carrierId}>{row.carrierName} · {row.role}</option>)}</Select>:null}
+   {!carrierContext?<Select label="Authorized carrier" value={carrierId} disabled={!access||loading} onChange={e=>{setCarrierId(e.target.value);changeService('');}}><option value="">Select carrier</option>{access?.map(row=><option key={row.carrierId} value={row.carrierId}>{carrierDisplayName(row.carrierName,row.carrierId)} · {row.role}</option>)}</Select>:null}
    <Select label="Road service" value={serviceId} disabled={!current||loading} onChange={e=>changeService(e.target.value)}><option value="">Select service</option>{services.map(row=>{const v=recordData(row);return <option key={row.id} value={row.id}>{String(v.mode)} · {String(v.serviceClass)} · {v.maxWeightKg==null?'Capacity not recorded':String(v.maxWeightKg)+' kg'} · {String(v.status)}</option>;})}</Select>
   </div>
   {loading?<p role="status">Loading authorized fleet…</p>:null}

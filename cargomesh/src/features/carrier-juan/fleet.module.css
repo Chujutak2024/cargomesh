@@ -181,3 +181,121 @@
 .directorySpecs strong{font-size:13px;font-weight:600;color:var(--fleet-ink,#173e52)}
 @media(max-width:767px){.directoryFilters{flex:1 1 100%;width:100%;margin-left:0}.directoryFilters label{min-width:0;flex:1 1 calc(50% - 5px)}.workspace .directoryFilters select{height:44px;min-height:44px}}
 @media(max-width:420px){.directoryFilters label{flex-basis:100%}}
+
+/* A directory card renders one visual, with its scene filling the card stage. */
+.directoryPreview .directoryModel>figure,.directoryPreview .directoryModel>figure>div{height:100%;min-height:0;max-width:none}
+
+/* Reference stills stay mounted while scrolling; only the detail opens an interactive scene. */
+.directoryPreview img[data-reference=true]{object-fit:contain;transform:none;transition:none}
+.vehicleCard:hover .directoryPreview img[data-reference=true]{transform:none}
+.truckImage .imageCaption{max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.recordIdentifiers{margin:10px 0;font-size:12px;color:var(--fleet-muted,#526b7b)}
+.recordIdentifiers summary{cursor:pointer;min-height:36px;align-content:center}
+.recordIdentifiers dl{display:grid;gap:10px;padding:10px 0}
+.recordIdentifiers dt{font-size:11px}
+.recordIdentifiers dd{margin:3px 0;overflow-wrap:anywhere;color:var(--fleet-ink,#173e52)}
+
+/* Light truck cards, adapted from the JohnnyCSilva / Uiverse reference. */
+.workspace .softTruckCard{
+ border:1px solid #ffffff;border-bottom-width:1px;border-radius:30px;
+ background:#fff;color:#203d49;
+ box-shadow:12px 14px 30px #30455417,-8px -8px 24px #ffffff9c;
+ transition:box-shadow .2s ease,border-color .2s ease;
+}
+.workspace .softTruckCard:hover,.workspace .softTruckCard:focus-within{
+ transform:none;border-color:#bcd9d5;
+ box-shadow:0 12px 24px #203f501a;
+}
+.softTruckCard .truckImage{
+ margin:0;border-radius:29px 29px 0 0;aspect-ratio:16/9;
+ background:linear-gradient(145deg,#f2d7d9 0%,#e7def3 55%,#d7e4fa 100%);
+}
+.softTruckCard .truckImage[data-variant=refrigerated]{background:linear-gradient(145deg,#cfeee8,#d9e8fb)}
+.softTruckCard .truckImage[data-variant=rigid]{background:linear-gradient(145deg,#f0d7da,#dedcf6)}
+.softTruckCard .truckImage[data-variant=flatbed]{background:linear-gradient(145deg,#d6e9de,#e1e7f5)}
+.softTruckCard .truckImage[data-variant=tipper]{background:linear-gradient(145deg,#f3dfd2,#e4def3)}
+.softTruckCard .imageBadges{top:16px;left:16px;right:16px;gap:8px;flex-wrap:wrap;align-items:flex-start}
+.softTruckCard .imageBadges :is(.status,.condition){
+ padding:7px 10px;min-height:30px;box-sizing:border-box;
+ background:#fffffff2;box-shadow:0 3px 10px #423a6b09;font-size:10px;
+}
+.softTruckCard .imageBadges .condition{color:#6c5f96}
+.softTruckCard .imageCaption{
+ bottom:12px;right:14px;max-width:calc(100% - 28px);
+ padding:4px 8px;border-radius:8px;background:#ffffffdb;
+ font-size:9px;box-shadow:none;
+}
+.softTruckCard .cardBody{padding:20px 22px 16px}
+.softTruckCard .identity{margin-bottom:14px;gap:8px}
+.softTruckCard .identity>div{flex-basis:160px}
+.softTruckCard .identity h2{font-size:18px;font-weight:650;letter-spacing:-.3px;color:#23343d}
+.softTruckCard .identity p{margin:5px 0 0;color:#7a858d;font-size:12px;line-height:1.5}
+.softTruckCard .cardPlate{background:#f4f6f8;color:#687982;font-size:10px;border-radius:8px;padding:5px 8px}
+.softTruckCard .directorySpecs{
+ display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;
+ gap:7px 9px;width:fit-content;max-width:100%;box-sizing:border-box;
+ margin:0 0 16px;padding:11px 13px;border:0;border-radius:12px;
+ background:#e3fff7;color:#497f83;font-size:12px;line-height:1.5;
+}
+.softTruckCard .directorySpecs>svg{flex:none;color:#548c99}
+.softTruckCard .directorySpecs>span{min-width:0;overflow-wrap:anywhere}
+.softTruckCard .directorySpecs>strong{color:#526fa0;font-size:12px;white-space:nowrap}
+.workspace .softTruckCard .driverPreview{
+ border-top:1px solid #eff2f4;border-radius:12px;
+ padding:10px 8px;gap:9px;min-height:60px;color:#46616e;
+}
+.workspace .softTruckCard .driverPreview:hover{background:#f2faf8}
+.softTruckCard .driverPreview strong{font-size:11px}
+.softTruckCard .driverPreview small{font-size:10px;line-height:1.5;color:#81909a}
+.softTruckCard .emptyDriverAvatar{width:34px;height:34px;background:#edf6f5;color:#6a9299}
+.softTruckCard .cardPrompt{padding-top:12px;font-size:11px;border-top:1px solid #eff2f4;color:#40838a}
+.softTruckCard.listCard{grid-template-columns:240px minmax(0,1fr)}
+.softTruckCard.listCard .truckImage{margin:0;align-self:stretch;aspect-ratio:auto;min-height:230px;border-radius:29px 0 0 29px}
+.softTruckCard.listCard .cardBody{padding:20px 24px 16px}
+.softTruckCard.listCard .imageBadges{left:12px;right:12px;top:12px}
+@media(max-width:767px){
+ .softTruckCard.listCard{grid-template-columns:minmax(0,1fr)}
+ .softTruckCard .truckImage,.softTruckCard.listCard .truckImage{aspect-ratio:16/10;min-height:0;border-radius:29px 29px 0 0}
+ .vehicleGrid .softTruckCard .cardBody,.softTruckCard.listCard .cardBody{padding:20px 20px 16px}
+}
+@media(prefers-reduced-motion:reduce){.workspace .softTruckCard{transition:none}}
+@media(forced-colors:active){.workspace .softTruckCard{border:1px solid CanvasText;box-shadow:none}.softTruckCard .directorySpecs{border:1px solid CanvasText}}
+
+/* Truck directory: clean SaaS card from the supplied HTML reference. */
+.workspace .demoTruckCard{display:flex;flex-direction:column;height:auto;overflow:hidden;border:1px solid #e3e8ef;border-radius:14px;background:#fff;color:#0f172a;box-shadow:0 1px 2px #0f172a0a;cursor:default;transition:border-color .18s ease,box-shadow .18s ease}
+.workspace .demoTruckCard:hover,.workspace .demoTruckCard:focus-within{transform:none;border-color:#cbd5e1;box-shadow:0 8px 24px -8px #0f172a29}
+.demoTruckCard .truckImage{position:relative;flex:none;height:176px;min-height:0;aspect-ratio:auto;margin:0;border:0;border-bottom:1px solid #eef1f6;border-radius:13px 13px 0 0;background:#f4f6fa}
+.demoTruckCard:hover .truckImage img{transform:none}
+.workspace .demoTruckCard .cardImageOpen{position:absolute;inset:0;z-index:2;width:100%;height:100%;min-height:0;border:0;border-radius:0;padding:0;background:transparent;box-shadow:none}
+.workspace .demoTruckCard .cardImageOpen:hover{background:transparent}
+.demoTruckCard .imageBadges{top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none}
+.demoTruckCard .imageBadges :is(.status,.condition){display:inline-flex;align-items:center;gap:6px;min-height:24px;max-width:100%;padding:4px 10px;border:1px solid #e3e8ef;border-radius:999px;background:#fff;box-shadow:none;font-size:12px;font-weight:600;line-height:16px;white-space:normal}
+.demoTruckCard .imageBadges .condition{font-weight:500;color:#64748b}
+.demoTruckCard .cardBody{display:flex;flex:1;flex-direction:column;gap:16px;padding:16px;border:0}
+.cardIdentity{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-width:0}
+.cardIdentity>div{min-width:0}
+.demoTruckCard .cardIdentity h2{margin:0;color:#0f172a;font-size:20px;font-weight:700;line-height:26px;letter-spacing:-.02em;overflow-wrap:anywhere}
+.demoTruckCard .cardIdentity p{margin:2px 0 0;color:#64748b;font-size:13px;line-height:20px}
+.capacityBadge{display:inline-flex;flex:none;align-items:center;gap:6px;min-height:28px;padding:4px 10px;border:0;border-radius:8px;background:#f1f5f9;color:#334155;font-size:13px;font-weight:600;line-height:20px;white-space:nowrap}
+.cardDriverPanel{position:relative;display:flex;align-items:center;gap:12px;min-width:0;min-height:64px;padding:12px;border:1px solid #eef1f6;border-radius:12px;background:#fafbfd}
+.workspace .demoTruckCard .cardDriverProfile{display:flex;flex:1;align-items:center;justify-content:flex-start;gap:12px;min-width:0;min-height:40px;padding:0;border:0;border-radius:8px;background:transparent;color:#0f172a;text-align:left;box-shadow:none}
+.workspace .demoTruckCard .cardDriverProfile:hover{background:transparent}
+.cardDriverProfile>span:first-child,.cardDriverEmpty{display:grid;flex:none;place-items:center;width:40px;height:40px;border:0;border-radius:50%;background:#e0e7ff;color:#2b3fb8;font-size:14px;font-weight:600;overflow:hidden}
+.cardDriverProfile>span:nth-child(2){display:grid;flex:1;gap:2px;min-width:0}
+.demoTruckCard .cardDriverProfile strong,.demoTruckCard .cardDriverMissing strong{font-size:14px;font-weight:600;line-height:20px;overflow-wrap:anywhere}
+.cardDriverProfile small{display:block;color:#64748b;font-size:12px;font-weight:400;line-height:18px}
+.cardDriverProfile:hover strong{text-decoration:underline;text-underline-offset:3px}
+.workspace .demoTruckCard .cardDriverChange{flex:none;min-width:0;min-height:36px;margin:0 0 0 auto;padding:6px 10px;border:1px solid #d9dfe8;border-radius:8px;background:#fff;color:#0f172a;font-size:12px;font-weight:600;line-height:18px;box-shadow:none}
+.workspace .demoTruckCard .cardDriverChange:hover{background:#f1f5f9}
+.cardDriverMissing{flex:1;min-width:0}
+.cardDriverEmpty{background:#fff;border:1px dashed #cbd5e1;color:#94a3b8}
+.workspace .demoTruckCard .cardDetailsButton{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:40px;width:100%;margin:auto 0 0;padding:9px 14px;border:1px solid #d9dfe8;border-radius:10px;background:#fff;color:#0f172a;font-size:13px;font-weight:600;line-height:20px;text-align:left;box-shadow:none}
+.workspace .demoTruckCard .cardDetailsButton:hover{background:#185be7;border-color:#185be7;color:#fff}
+.workspace .demoTruckCard :is(.cardImageOpen,.cardDriverProfile,.cardDriverChange,.cardDetailsButton):focus-visible{outline:2px solid #185be7;outline-offset:2px}
+.workspace .demoTruckCard .cardImageOpen:focus-visible{outline-offset:-3px}
+.workspace .demoTruckCard.listCard{display:grid;grid-template-columns:220px minmax(0,1fr)}
+.demoTruckCard.listCard .truckImage{height:100%;min-height:224px;border-bottom:0;border-right:1px solid #eef1f6;border-radius:13px 0 0 13px}
+@media(max-width:767px){.workspace .demoTruckCard.listCard{display:flex;flex-direction:column}.demoTruckCard.listCard .truckImage{height:176px;min-height:0;border-right:0;border-bottom:1px solid #eef1f6;border-radius:13px 13px 0 0}.vehicleGrid .demoTruckCard .cardBody,.demoTruckCard.listCard .cardBody{padding:16px}.cardDriverPanel{gap:10px}.workspace .demoTruckCard .cardDetailsButton,.workspace .demoTruckCard .cardDriverChange{min-height:44px}}
+@media(prefers-reduced-motion:reduce){.workspace .demoTruckCard{transition:none}}
+@media(forced-colors:active){.workspace .demoTruckCard,.cardDriverPanel,.capacityBadge{border:1px solid CanvasText;box-shadow:none}}

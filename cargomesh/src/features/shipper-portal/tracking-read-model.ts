@@ -1,3 +1,4 @@
+import {displayReference,locationDisplayLabel} from '@/shared/lib/display-identity';
 import type { FreightRequestV2Data } from "@/features/v2-intake/contracts";
 import type { WorkflowRecordV2 } from "./shipper-model";
 import type { Booking, Execution, ExecutionEvent, Incident } from "./tracking-journey";
@@ -19,8 +20,8 @@ export async function loadTrackingItems(executions: Execution[], bookings: Booki
         booking: bookings.find((item) => item.id === execution.data.bookingId && item.requestId === execution.requestId) ?? null,
         events: events.filter((item): item is ExecutionEvent => item.kind === "execution-events" && item.requestId === execution.requestId),
         incidents: incidents.filter((item): item is Incident => item.kind === "incidents" && item.requestId === execution.requestId),
-        reference: request?.referenceCode ?? execution.id.slice(0, 8),
-        corridor: request ? `${request.origin.city} → ${request.destination.city}` : "—",
+        reference: request?displayReference(request.referenceCode,'PED',request.id):displayReference(execution.id,'OP'),
+        corridor: request ? `${locationDisplayLabel(request.origin.city)} → ${locationDisplayLabel(request.destination.city)}` : "—",
       };
     })));
   }

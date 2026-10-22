@@ -1,4 +1,5 @@
 "use client";
+import {carrierDisplayName} from '@/shared/lib/display-identity';
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ArrowRight, BriefcaseBusiness, CircleHelp, FileCheck2, LayoutDashboard, MapPinned, Network, RefreshCw, Search, ShieldCheck, Truck, X } from "lucide-react";
@@ -83,7 +84,7 @@ export function CarrierPortal(){
    {section==="help"?<Help/>:!authorized?<section className={`${s.card} ${s.welcomeLayout}`}><div><div className={s.empty}><ShieldCheck size={32} aria-hidden="true"/><h2>{t("Accede a tu transportista","Access your carrier")}</h2>
     <p>{t("Inicia sesión y elige uno de los transportistas vinculados a tu cuenta. Las acciones dependen de tu rol y del estado del registro.","Sign in and select a carrier linked to your account. Actions depend on your role and the record state.")}</p>
     <a href="/login?returnTo=%2Fcarrier-portal">{t("Iniciar sesión","Sign in")} →</a></div><form className={s.entry} onSubmit={e=>{e.preventDefault();void connect();}}>
-    <label style={{flex:1}}>{t("Transportista autorizado","Authorized carrier")}<select value={reference} disabled={checking||accessLoading} onChange={e=>setReference(e.target.value)}><option value="">{accessLoading?t("Comprobando acceso…","Checking access…"):t("Selecciona tu transportista","Select your carrier")}</option>{access.map(a=><option key={a.carrierId} value={a.carrierId}>{a.carrierName} · {a.role}</option>)}</select></label>
+    <label style={{flex:1}}>{t("Transportista autorizado","Authorized carrier")}<select value={reference} disabled={checking||accessLoading} onChange={e=>setReference(e.target.value)}><option value="">{accessLoading?t("Comprobando acceso…","Checking access…"):t("Selecciona tu transportista","Select your carrier")}</option>{access.map(a=><option key={a.carrierId} value={a.carrierId}>{carrierDisplayName(a.carrierName,a.carrierId)} · {a.role}</option>)}</select></label>
     <button className={s.primary} disabled={checking||accessLoading||!reference} type="submit">{checking?t("Comprobando…","Checking…"):t("Acceder","Access")}<ArrowRight size={16} aria-hidden="true"/></button></form>
     {error?<p className={s.error} role="alert">{error}</p>:null}<p style={{marginTop:16}}>{t("Sin una sesión autorizada no se muestran datos, se ofrecen vehículos ni se crean ofertas.","Without an authorized session, no data is shown and no vehicles or offers are submitted.")}</p></div><div><LogisticsTruck/><small>{t("Visualización ilustrativa; no representa GPS ni disponibilidad real.","Illustrative visualization; not live GPS or actual availability.")}</small></div></section>:
     section==="overview"&&activeAccess?<Overview access={activeAccess} carrierId={carrierId} profile={profile!} onSaved={()=>void reloadProfile()} key={revision}/>:

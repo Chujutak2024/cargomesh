@@ -1,3 +1,4 @@
+import {locationDisplayLabel} from "@/shared/lib/display-identity";
 import {z} from 'zod';
 import {WorkflowRecordV2Schema,WorkflowInputsV2} from '@/shared/schemas/v2/workflow';
 import {CarrierOfferV2Schema} from '@/shared/schemas/v2/commercial';
@@ -66,4 +67,4 @@ export function offerContext(o:Opportunity,assignmentIds:string[],supersedes:Off
  return {schemaVersion:'2.0',planCandidateId:o.data.planId,coveredAssignmentIds:ids,coveredServiceIds:[...new Set(snapshots.map(s=>s!.serviceId))],supersedesOfferId:supersedes?.id??null,issuedAt};
 }
 export function responseValue(o:Opportunity,response:'ACCEPTED'|'DECLINED',note:string,evidence:unknown){return WorkflowInputsV2['opportunities.respond'].parse({schemaVersion:'2.0',expectedVersion:o.version,response,note,evidence});}
-export function routeLabel(o:Opportunity){return `${o.data.origin.city??o.data.origin.label} → ${o.data.destination.city??o.data.destination.label}`;}
+export function routeLabel(o:Opportunity){return `${locationDisplayLabel(o.data.origin.city??o.data.origin.label)} → ${locationDisplayLabel(o.data.destination.city??o.data.destination.label)}`;}

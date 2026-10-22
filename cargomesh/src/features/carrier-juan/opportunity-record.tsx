@@ -20,8 +20,7 @@ const peruDeadline=new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',
 
 /** Display alias; canonical identifiers remain unchanged. */
 export function shortRequestReference(row:Opportunity){
- const code=opportunityFacts(row).reference;
- return /^V2-[0-9a-f]{32}$/i.test(code)?'REQ · '+code.slice(3,11).toUpperCase():code;
+ return opportunityFacts(row).reference;
 }
 function SheetSection({title,icon:Icon,children,className=''}:{title:string;icon:SheetIcon;children:ReactNode;className?:string}){
  return <section className={`${s.group} ${className}`}><h3><Icon size={22} aria-hidden="true"/>{title}</h3>{children}</section>;

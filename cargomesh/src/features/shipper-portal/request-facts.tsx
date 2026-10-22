@@ -1,4 +1,5 @@
 "use client";
+import {locationDisplayLabel,cargoDisplayDescription} from "@/shared/lib/display-identity";
 import { ChevronDown } from "lucide-react";
 import { useLocale } from "@/features/i18n/locale-provider";
 import type { FreightRequestV2Data } from "@/features/v2-intake/contracts";
@@ -11,11 +12,11 @@ export function RequestFacts({ request }: { request: FreightRequestV2Data }) {
   const window = (value: FreightRequestV2Data["pickupWindow"]) => `${formatDateTime(value.startsAt, localeTag)} – ${formatDateTime(value.endsAt, localeTag)}`;
   const facts = [
     [t("Versión y última actualización", "Version and last update"), `v${request.draftVersion} · ${formatDateTime(request.updatedAt, localeTag)}`],
-    [t("Origen", "Origin"), `${request.origin.label} · ${request.origin.city} · ${request.origin.countryCode}`],
-    [t("Destino", "Destination"), `${request.destination.label} · ${request.destination.city} · ${request.destination.countryCode}`],
+    [t("Origen", "Origin"), `${locationDisplayLabel(request.origin.label)} · ${locationDisplayLabel(request.origin.city)} · ${request.origin.countryCode}`],
+    [t("Destino", "Destination"), `${locationDisplayLabel(request.destination.label)} · ${locationDisplayLabel(request.destination.city)} · ${request.destination.countryCode}`],
     [t("Ventana de recojo", "Pickup window"), window(request.pickupWindow)],
     [t("Ventana de entrega", "Delivery window"), window(request.deliveryWindow)],
-    [t("Carga y embalaje", "Cargo and packaging"), `${cargo.description} · ${cargo.packaging}`],
+    [t("Carga y embalaje", "Cargo and packaging"), `${cargoDisplayDescription(cargo.description,cargo.categoryCode)} · ${cargo.packaging}`],
     [t("Unidades declaradas", "Declared units"), cargo.units.map(unit => `${unit.quantity} × ${unit.weightPerUnitKg.toLocaleString(localeTag)} kg · ${unit.volumePerUnitM3.toLocaleString(localeTag)} m³`).join(" / ")],
     [t("Equipo requerido", "Required equipment"), request.requiredEquipment ?? t("No especificado", "Not specified")],
     [t("Requisitos declarados", "Declared requirements"), cargo.requirements.join(" · ") || t("Sin requisitos adicionales declarados", "No additional requirements declared")],

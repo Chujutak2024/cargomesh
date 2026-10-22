@@ -1,4 +1,5 @@
 "use client";
+import {displayReference} from '@/shared/lib/display-identity';
 import { AlertTriangle, ArrowRight, FileCheck2, ShieldCheck, Truck } from "lucide-react";
 import { Button } from "@/components/ui";
 import type { WorkflowRecordV2 } from "./shipper-model";
@@ -63,7 +64,7 @@ export function CommercialPanel({ context, catalog, selectedOptionIndex, setSele
             const priceKnown = rows.length === item.offerIds.length && rows.every(row => inspectOffer(row, context).linked) && !checked.reasons.includes("RANKING_PRICE_MISMATCH");
             return <tr key={`${item.planId}-${index}`} data-selected={index === selectedOptionIndex}>
               <th scope="row"><button type="button" disabled={busy} aria-pressed={index === selectedOptionIndex} onClick={() => setSelectedOptionIndex(index)}>#{item.position} · {index === selectedOptionIndex ? t("Comparando", "Comparing") : t("Comparar", "Compare")}</button><small>{t("Score", "Score")} {item.score.toFixed(3)}</small></th>
-              <td>{rows.map(row => <div key={row.id}><strong>{carrierLabel(row.carrierId, catalog, t)}</strong><small>{t("Oferta", "Offer")} v{row.data.offerVersion} · {row.data.carrierReference}</small></div>)}</td>
+              <td>{rows.map(row => <div key={row.id}><strong>{carrierLabel(row.carrierId, catalog, t)}</strong><small>{t("Oferta", "Offer")} v{row.data.offerVersion} · {displayReference(row.data.carrierReference,'OFE',row.id)}</small></div>)}</td>
               <td><strong>{priceKnown ? money(item.costCents / 100, "USD", localeTag) : t("Total sin verificar", "Unverified total")}</strong><small>{rows.reduce((sum, row) => sum + row.data.commercialTerms.length, 0)} {t("condiciones declaradas", "declared terms")}</small></td>
               <td>{item.transit === null ? t("Desconocido", "Unknown") : item.transitAggregation==="LATEST_OFFER_ARRIVAL"?formatDateTime(new Date(item.transit*1000).toISOString(),localeTag): `${(item.transit / 3600).toLocaleString(localeTag, { maximumFractionDigits: 1 })} h`}</td>
               <td>{formatDateTime(end, localeTag)}</td><td><span className={styles.status} data-tone={checked.available ? "positive" : "pending"}>{checked.available ? t("Vigente para revisar", "Current for review") : t("Necesita revisión", "Needs review")}</span>{!checked.available ? <small>{commercialReason(checked.reasons[0], t)}</small> : null}</td>
@@ -77,7 +78,7 @@ export function CommercialPanel({ context, catalog, selectedOptionIndex, setSele
             <p>{t("Datos faltantes declarados", "Declared missing data")}: {option.missingData.join(" · ") || t("Ninguno en este resultado", "None in this result")}</p></> : null}
           {ranking.data.excluded.length ? <details><summary>{t("Exclusiones del servidor", "Server exclusions")} ({ranking.data.excluded.length})</summary><ul>{ranking.data.excluded.map((row, index) => <li key={index}>{row.offerId?.slice(0, 8) ?? row.planId?.slice(0, 8)} · {row.reason}</li>)}</ul></details> : null}
         </details>
-        {option ? <div className={styles.comparisonDetail}><h3>{t("Alternativa", "Option")} #{option.position} · {t("Plan", "Plan")} {option.planId.slice(0, 8)}</h3>
+        {option ? <div className={styles.comparisonDetail}><h3>{t("Alternativa", "Option")} #{option.position} · {t("Plan", "Plan")} {displayReference(option.planId,'PLAN')}</h3>
           {!state.available ? <ul className={comparison.issues}>{state.reasons.map(reason => <li key={reason}>{commercialReason(reason, t)}</li>)}</ul> : null}
           {option.offerIds.map(id => { const row = offers.find(offer => offer.id === id); return row ? <OfferDetails key={id} offer={row} context={context} catalog={catalog} t={t} localeTag={localeTag}/>
             : <p className={styles.notice} key={id}><AlertTriangle size={16}/>{t("Falta una oferta referenciada. Actualiza antes de decidir.", "A referenced offer is missing. Refresh before deciding.")}</p>; })}
@@ -99,14 +100,14 @@ function OfferDetails({ offer, context, catalog, t, localeTag, contracted=false 
   const status = state.availability === "AVAILABLE" ? t("Vigente", "Current") : commercialReason(state.availability, t);
   return <article className={styles.offerDetail}><header className={styles.offerHead}><div className={comparison.identity}>
     <span className={styles.eyebrow}>{t("Oferta", "Offer")} v{offer.data.offerVersion}</span><h3>{carrierLabel(offer.carrierId, catalog, t)}</h3>
-    <small>{t("Referencia de cotización", "Quote reference")}: {offer.data.carrierReference}</small>{identity?.state !== "AVAILABLE" ? <small>{t("Nombre comercial no disponible", "Commercial name unavailable")} · {identity?.state ?? "NOT_LOADED"}</small> : null}
+    <small>{t("Referencia de cotización", "Quote reference")}: {displayReference(offer.data.carrierReference,'OFE',offer.id)}</small>{identity?.state !== "AVAILABLE" ? <small>{t("Nombre comercial no disponible", "Commercial name unavailable")} · {identity?.state ?? "NOT_LOADED"}</small> : null}
     </div><strong className={styles.price}>{money(offer.data.price.amount, offer.data.price.currency, localeTag)}</strong></header>
     <span className={styles.status} data-tone={contracted||state.current ? "positive" : "pending"}>{contracted?t('Oferta contratada','Contracted offer'):status}{!state.linked ? ` · ${t("atribución sin verificar", "unverified attribution")}` : ""}</span>
     {!contracted&&!state.current ? <ul className={comparison.issues}>{state.reasons.map(reason => <li key={reason}>{commercialReason(reason, t)}</li>)}</ul> : null}
     <dl className={comparison.metadata}>
       <Fact label={contracted?t('Vigencia para nuevas contrataciones','Validity for new bookings'):t("Vigencia", "Validity")} value={`${formatDateTime(offer.data.validity.startsAt, localeTag)} → ${formatDateTime(offer.data.validity.endsAt, localeTag)}`}/>
       <Fact label={t("Recojo estimado", "Estimated pickup")} value={formatDateTime(offer.data.estimatedPickupAt, localeTag)}/><Fact label={t("Entrega estimada", "Estimated delivery")} value={formatDateTime(offer.data.estimatedDeliveryAt, localeTag)}/>
-      <Fact label={t("Servicios", "Services")} value={offer.data.coveredServiceIds.map(id => { const row = catalog.services[id]; return row?.state === "AVAILABLE" ? `${row.mode} · ${row.serviceClass}` : `${t("Servicio", "Service")} ${id.slice(0, 8)}`; }).join(" / ")}/>
+      <Fact label={t("Servicios", "Services")} value={offer.data.coveredServiceIds.map(id => { const row = catalog.services[id]; return row?.state === "AVAILABLE" ? `${row.mode} · ${row.serviceClass}` : `${t("Servicio", "Service")} ${displayReference(id,'SRV')}`; }).join(" / ")}/>
       <Fact label={t("Tránsito declarado", "Declared transit")} value={offer.data.transitDurationSeconds === null ? t("Desconocido", "Unknown") : `${(offer.data.transitDurationSeconds / 3600).toLocaleString(localeTag, { maximumFractionDigits: 1 })} h`}/>
       <Fact label={t("Capacidad reservable declarada", "Declared reservable capacity")} value={offer.data.reservableCapacity ? `${offer.data.reservableCapacity.weightKg.toLocaleString(localeTag)} kg · ${offer.data.reservableCapacity.volumeM3?.toLocaleString(localeTag) ?? "?"} m³` : t("Desconocida", "Unknown")}/>
     </dl>

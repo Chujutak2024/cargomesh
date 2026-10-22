@@ -1,4 +1,5 @@
 "use client";
+import {carrierDisplayName} from '@/shared/lib/display-identity';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import {ArrowLeft,Building2,ClipboardCheck,Fuel,Truck} from 'lucide-react';
 import {FleetInputsV2} from '@/shared/schemas/v2/fleet';
@@ -43,7 +44,7 @@ export function ConnectedTruckRegistration({carrierId,carrierName,serviceId,depo
  <label className={s.wide}>Description and equipment<textarea name="description" disabled rows={2} placeholder="Pending persistence"/></label>
  </div></fieldset>
  <fieldset disabled={busy||!canWrite}><legend><Building2 size={19}/>Carrier and operating base</legend><div className={s.fields}>
- <label>Carrier<input readOnly value={carrierName}/></label><label>Home depot<select name="site" defaultValue={old?.homeDepotId??''}><option value="">Not recorded</option>{depots.map(depot=><option key={depot.id} value={depot.id}>{recordName(depot)}</option>)}</select><small>A home depot does not confirm current presence or service coverage.</small></label>
+ <label>Carrier<input readOnly value={carrierDisplayName(carrierName,carrierId)}/></label><label>Home depot<select name="site" defaultValue={old?.homeDepotId??''}><option value="">Not recorded</option>{depots.map(depot=><option key={depot.id} value={depot.id}>{recordName(depot)}</option>)}</select><small>A home depot does not confirm current presence or service coverage.</small></label>
  <label>Registration date<input name="registeredAt" type="date" defaultValue={r?.registeredAt??''}/></label><label>Operating state<select name="status" defaultValue={old?.operatingStatus??'OUT_OF_SERVICE'}>{['AVAILABLE','IN_SERVICE','MAINTENANCE','OUT_OF_SERVICE'].map(status=><option key={status}>{status}</option>)}</select></label>
  <label className={s.wide}>State / condition note<input name="statusReason" defaultValue={r?.conditionReason??''}/></label>
  <label>Ownership / source<select name="provenance" defaultValue={old?.provenance??'OWN'}>{['OWN','CONTRACTED','PARTNER'].map(value=><option key={value}>{value}</option>)}</select></label>

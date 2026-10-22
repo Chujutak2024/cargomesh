@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useRef,useState,useSyncExternalStore} from 'react';
-import {ArrowLeft,ArrowRight,ChevronRight,CirclePlus,Clock3,Package,Search,Tag,Users} from 'lucide-react';
+import {ArrowLeft,ArrowRight,ChevronRight,CirclePlus,Clock3,Search,Tag,Users} from 'lucide-react';
 import {Button,SearchField,Select} from '@/components/ui';
 import type {CarrierPortalAccessV2} from '@/shared/schemas/v2/carrier-portal';
 import {readCommercialDetail} from '@/features/carrier-portal/commercial-client';
@@ -8,10 +8,12 @@ import type {Opportunity} from '@/features/carrier-portal/commercial-model';
 import {portalErrorCopy} from '@/features/carrier-portal/api';
 import {canPrepareOffer} from './offers-model';
 import {CarrierKpis} from './carrier-kpis';
+import {OpportunityListCard} from './opportunity-list-card';
+import cards from './opportunity-list-card.module.css';
 import {OpportunityRecord,OpportunityDeadline,OpportunityChecks,OpportunityTruck,shortRequestReference} from './opportunity-record';
 import sheet from './opportunity-record.module.css';
 import {readOpportunities} from './opportunity-client';
-import {canRespondOpportunity,opportunityFacts,opportunityIdFromHash,opportunityLabel,displayOpportunityDate} from './opportunity-model';
+import {canRespondOpportunity,opportunityFacts,opportunityIdFromHash,opportunityLabel} from './opportunity-model';
 import {OpportunityResponseForm} from './opportunity-response-form';
 import {CarrierNova} from './carrier-nova';
 import {navigateJuanHash,readJuanHash,subscribeJuanRoute} from './juan-navigation';
@@ -39,7 +41,7 @@ export function ConnectedOpportunities({carrier,active=true,routeHash,refreshTok
  const current=catalog?.carrierId===carrier.carrierId?catalog:null,row=detail?.carrierId===carrier.carrierId&&detail.id===id?detail:null;
  useEffect(()=>{if(active&&row)heading.current?.focus({preventScroll:true});},[active,row]);
  const rows=current?.rows??[],query=search.trim().toLowerCase(),facts=row?opportunityFacts(row):null;
- const filtered=rows.filter(item=>{const f=opportunityFacts(item);return (status==='all'||item.status===status)&&[item.id,item.requestId,f.origin,f.destination,f.description].join(' ').toLowerCase().includes(query);});
+ const filtered=rows.filter(item=>{const f=opportunityFacts(item);return (status==='all'||item.status===status)&&[item.id,item.requestId,f.reference,f.origin,f.destination,f.description].join(' ').toLowerCase().includes(query);});
  const openCount=rows.filter(item=>['SENT','ACCEPTED'].includes(item.status)&&Date.parse(item.data.responseDeadline)>now).length;
  const allowed=!!current&&!current.partial&&!error&&!!row&&canRespondOpportunity(row,carrier.role,now);
  const setResponseBusy=(value:boolean)=>{setBusy(value);onBusyChange(value);};
@@ -77,7 +79,7 @@ export function ConnectedOpportunities({carrier,active=true,routeHash,refreshTok
     <div className={filters.toolbar}><SearchField label="Search loaded records" value={search} onValueChange={setSearch} placeholder="Request, city or cargo…"/><Select label="Opportunity status" value={status} onChange={e=>setStatus(e.target.value)}><option value="all">All</option>{[...new Set(rows.map(item=>item.status))].map(value=><option key={value} value={value}>{opportunityLabel(value)}</option>)}</Select></div>
     <small className={filters.filterCount} role="status">{filtered.length} of {rows.length} opportunities</small>
    </div>
-   <div className={s.requestGrid}>{filtered.map(item=>{const f=opportunityFacts(item);return <article key={item.id} className={s.directoryCard} aria-label={f.reference}><header><strong title={f.reference}>{shortRequestReference(item)}</strong><span className={s.originBadge}>Customer opportunity</span></header><div className={s.cardRoute}><div><small>Origin</small><h3>{f.origin}</h3></div><ArrowRight size={16}/><div><small>Destination</small><h3>{f.destination}</h3></div></div><div className={s.cargoPreview}><div><Package size={15}/><p>{f.description}</p></div><img src="/v2-workspace/cargomesh-truck-poster.webp" width={120} height={78} alt="" loading="lazy"/></div><dl className={s.cardFacts}><div><dt>Total weight</dt><dd>{f.weightKg===null?'Not provided':f.weightKg.toLocaleString('en-US')+' kg'}</dd></div><div><dt>Respond by</dt><dd>{displayOpportunityDate(item.data.responseDeadline)}</dd></div><div><dt>Requested delivery</dt><dd>{f.delivery?displayOpportunityDate(f.delivery.endsAt):'Not provided'}</dd></div></dl><footer><button disabled={busy} onClick={()=>navigateJuanHash('#/shipments/details/'+item.id)}>Open opportunity<ArrowRight size={15}/></button></footer></article>;})}</div>
+   <div className={cards.grid}>{filtered.map(item=><OpportunityListCard key={item.id} row={item} busy={busy} onOpen={()=>navigateJuanHash('#/shipments/details/'+item.id)}/>)}</div>
    {!filtered.length?<section className={`${p.card} ${s.noResults}`}><Search size={24}/><h2>{rows.length?'No matches':'No opportunities received'}</h2><p>{rows.length?'Try another search or status.':'No local examples are substituted for an empty Carrier inbox.'}</p><button onClick={()=>{setSearch('');setStatus('all');}}>Clear filters</button></section>:null}
   </>:null}
  </div>;

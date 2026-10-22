@@ -1,3 +1,4 @@
+import {displayReference} from '@/shared/lib/display-identity';
 import type { FreightRequestV2Data } from "@/features/v2-intake/contracts";
 
 export const operationStatuses = ["ALL", "DRAFT", "PENDING", "ORCHESTRATING", "AWAITING_SELECTION", "BOOKING", "BOOKED", "FAILED", "CANCELLED"] as const;
@@ -54,7 +55,7 @@ export function filterOperationRequests(requests: FreightRequestV2Data[], query:
   return requests.filter(request => (query.status === "ALL" || request.status === query.status)
     && (!query.from || new Date(request.updatedAt).toISOString().slice(0, 10) >= query.from)
     && (!query.to || new Date(request.updatedAt).toISOString().slice(0, 10) <= query.to)
-    && (!needle || [request.referenceCode, request.origin.label, request.destination.label, request.origin.city,
+    && (!needle || [request.referenceCode, displayReference(request.referenceCode,'PED',request.id), request.origin.label, request.destination.label, request.origin.city,
       request.destination.city, request.cargoSpecification.description, request.status, request.updatedAt,
       formattedDate(request.updatedAt)].some(value => value.toLocaleLowerCase(localeTag).includes(needle))))
     .sort((left, right) => (query.sort === "PICKUP_ASC" ? Date.parse(left.pickupWindow.startsAt) - Date.parse(right.pickupWindow.startsAt)

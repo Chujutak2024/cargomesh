@@ -19,11 +19,11 @@ class SceneBoundary extends Component<{children:ReactNode;onFailure:()=>void},{f
 }
 
 /** No asset identity, capacity or position claims; independent of all API state. */
-type Props = { compact?:boolean;minimalControls?:boolean;previewOnly?:boolean;variant?:TruckVisualType;designId?:string;thumbnail?:boolean;label?:string;photo?:string|null;caption?:string;modelAssetId?:string|null;custom?:boolean;onInspect?:()=>void;suspended?:boolean };
+type Props = { compact?:boolean;minimalControls?:boolean;previewOnly?:boolean;variant?:TruckVisualType;designId?:string;thumbnail?:boolean;label?:string;photo?:string|null;fallbackPoster?:string;caption?:string;modelAssetId?:string|null;custom?:boolean;onInspect?:()=>void;suspended?:boolean };
 export function LogisticsTruck(props:Props) {
   return <TruckView key={`${props.designId??props.variant??"default"}:${props.modelAssetId??"catalog"}:${!!props.custom}`} {...props}/>;
 }
-function TruckView({compact=false,minimalControls=false,previewOnly=false,variant,designId,thumbnail=false,label,photo,caption,modelAssetId,custom=false,onInspect,suspended=false}:Props) {
+function TruckView({compact=false,minimalControls=false,previewOnly=false,variant,designId,thumbnail=false,label,photo,fallbackPoster,caption,modelAssetId,custom=false,onInspect,suspended=false}:Props) {
   const design = truckDesign(designId);
   const validDesignId = design?.family === (variant ?? 'articulated') ? designId : undefined;
   const newBody = !!validDesignId && !!design?.appearance.bodyStyle;
@@ -86,7 +86,7 @@ function TruckView({compact=false,minimalControls=false,previewOnly=false,varian
       data-environment-phase={interactive?environment.phase:undefined} data-environment-mode={interactive?preview?"preview":"auto":undefined} data-environment-blend={interactive?environment.blend.toFixed(3):undefined} data-truck-moving={moving}>
       {/* Poster is rendered from this exact original 3D scene; no stock or assigned vehicle. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      {photo||!custom&&!modelAssetId&&!newBody?<img className={styles.poster} src={photo??`/v2-workspace/trucks/${variant??"articulated"}-3d.png`} alt={photo?t("Foto de tu camión preferido","Preferred truck photo"):""} width={thumbnail?340:840} height={thumbnail?150:540} loading="lazy" style={{opacity:eligible&&ready&&!failed?0:1,zIndex:1}}/>:null}
+      {photo||!custom&&!modelAssetId&&(!newBody||fallbackPoster)?<img className={styles.poster} src={photo??fallbackPoster??`/v2-workspace/trucks/${variant??"articulated"}-3d.png`} alt={photo?t("Foto de tu camión preferido","Preferred truck photo"):""} width={thumbnail?340:840} height={thumbnail?150:540} loading="lazy" style={{opacity:eligible&&ready&&!failed?0:1,zIndex:1}}/>:null}
       {newBody&&(!ready||failed)?<p className={styles.empty} role="status">{failed?t("Este diseño necesita un navegador con gráficos 3D disponibles.","This design requires a browser with 3D graphics available."):t("Preparando esta carrocería 3D…","Preparing this 3D body…")}</p>:null}
       {!canRender&&!photo||failed&&modelAssetId&&!photo?<p className={styles.empty} role="status">{modelAssetId&&assetState==="loading"?t("Cargando tu modelo 3D…","Loading your 3D model…"):modelAssetId?t("Modelo no disponible. Vuelve a cargar el archivo GLB.","Model unavailable. Import the GLB file again."):t("Sube una foto o un modelo 3D de tu camión.","Upload a photo or a 3D model of your truck.")}</p>:null}
       {/* Keep a ready scene mounted while offscreen; its demand loop pauses without losing the visual or controls. */}

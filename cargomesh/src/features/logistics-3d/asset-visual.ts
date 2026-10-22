@@ -37,7 +37,7 @@ export function associateAssetVisual(input: {
 }
 
 const bodies: Record<string, TruckBody> = {
-  BOX: 'box', DRY_BOX: 'box', CAJA_SECA: 'box', FURGON: 'box',
+  BOX: 'box', BOX_BODY: 'box', DRY_BOX: 'box', CAJA_SECA: 'box', FURGON: 'box',
   REEFER: 'refrigerated', REFRIGERATED: 'refrigerated', REFRIGERADO: 'refrigerated',
   CURTAINSIDER: 'curtainsider', CURTAIN: 'curtainsider', LONA_LATERAL: 'curtainsider',
   PLATFORM: 'flatbed', FLATBED: 'flatbed', PLATAFORMA: 'flatbed',

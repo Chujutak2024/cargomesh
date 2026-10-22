@@ -1,3 +1,4 @@
+import {vehicleDisplayName} from '@/shared/lib/display-identity';
 import { FleetOutputsV2 } from "@/shared/schemas/v2/fleet";
 import { recordData, type PortalRecord } from "./records";
 import type { TruckVisualType } from "@/features/logistics-3d/truck-model";
@@ -67,7 +68,7 @@ export function attentionRank(vehicle: FleetVehicle, now: number) {
 export function filterFleet(vehicles: FleetVehicle[], filter: FleetFilter, search: string, sort: FleetSort, now: number) {
   const query = search.trim().toLocaleLowerCase();
   return vehicles.filter(vehicle => matchesFleetFilter(vehicle, filter, now)
-    && [vehicle.code, vehicle.model, vehicle.plate, vehicle.driver, vehicle.driverProfile?.name, vehicle.location, vehicle.body].filter(Boolean).join(" ").toLocaleLowerCase().includes(query))
+    && [vehicle.code, vehicleDisplayName(vehicle.id,vehicle.code,vehicle.plate), vehicle.model, vehicle.plate, vehicle.driver, vehicle.driverProfile?.name, vehicle.location, vehicle.body].filter(Boolean).join(" ").toLocaleLowerCase().includes(query))
     .sort((a, b) => (sort === "attention" ? attentionRank(a, now) - attentionRank(b, now)
       : sort === "fuel" ? (a.fuelPercent ?? Infinity) - (b.fuelPercent ?? Infinity) : 0) || a.code.localeCompare(b.code));
 }

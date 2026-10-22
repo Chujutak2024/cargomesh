@@ -1,3 +1,4 @@
+import {locationDisplayLabel} from "@/shared/lib/display-identity";
 import { ArrowRight, CalendarClock, MapPin, Radio, ShieldCheck } from "lucide-react";
 import {WorkspaceLink as Link} from "@/features/workspace-mode/workspace-link";
 import { localeTag, translate, type Locale } from "@/features/i18n/config";
@@ -24,7 +25,7 @@ export function TrackingDetail({ execution, booking, events, incidents, referenc
   const milestone = journey.lastReportedStage ? stageName(journey.lastReportedStage, t) : t("Sin reporte", "No report");
   return <div className={s.page}>
     <div className={s.breadcrumb}><TrackingBackLink/><span title={reference}>{reference}</span></div>
-    <header className={s.detailHeader}><div><h1><span>{origin}</span><ArrowRight size={24} aria-hidden="true"/><span>{destination}</span></h1><p>{t("Último hito", "Last milestone")}: <strong>{milestone}</strong></p></div><TrackingRefresh/>{requestId && <Link href={`/requests/${requestId}`} className={s.actionLink}>{t("Ver solicitud", "View request")}<ArrowRight size={14} aria-hidden="true"/></Link>}</header>
+    <header className={s.detailHeader}><div><h1><span>{locationDisplayLabel(origin)}</span><ArrowRight size={24} aria-hidden="true"/><span>{locationDisplayLabel(destination)}</span></h1><p>{t("Último hito", "Last milestone")}: <strong>{milestone}</strong></p></div><TrackingRefresh/>{requestId && <Link href={`/requests/${requestId}`} className={s.actionLink}>{t("Ver solicitud", "View request")}<ArrowRight size={14} aria-hidden="true"/></Link>}</header>
     <section className={s.executiveGrid} aria-label={t("Resumen del transporte", "Transport summary")}>
       <div className={s.metric}><Radio size={19} aria-hidden="true"/><div><small>{t("Último evento", "Latest event")}</small><strong>{journey.latestEvent ? executionActionLabel(journey.latestEvent.data.action, locale) : t("Esperando reporte", "Awaiting report")}</strong><span>{formatDateTime(journey.latestEvent?.data.at, tag)}</span></div></div>
       <div className={s.metric}><CalendarClock size={19} aria-hidden="true"/><div><small>{t("Actualizado", "Updated")}</small><strong>{formatDateTime(journey.lastUpdatedAt, tag)}</strong><span>{t("Registro del transporte", "Transport record")}</span></div></div>
@@ -32,7 +33,7 @@ export function TrackingDetail({ execution, booking, events, incidents, referenc
     </section>
     <TrackingProgress journey={journey}/>
     <div className={s.detailGrid}><div className={s.mainColumn}>
-      <TrackingVisual presentation={presentation} origin={originLabel} destination={destinationLabel} canView3D={canView3D} milestone={milestone} lastReportedAt={journey.latestEvent?.data.at ?? null}/>
+      <TrackingVisual presentation={presentation} origin={locationDisplayLabel(originLabel)} destination={locationDisplayLabel(destinationLabel)} canView3D={canView3D} milestone={milestone} lastReportedAt={journey.latestEvent?.data.at ?? null}/>
       <TrackingEventsPanel events={events} t={t} tag={tag} locale={locale} complete={eventsComplete}/>
     </div><aside className={s.sideColumn}>
       <TrackingIncidentsPanel incidents={incidents} t={t} tag={tag} complete={incidentsComplete}/>

@@ -1,4 +1,5 @@
 "use client";
+import {carrierDisplayName} from '@/shared/lib/display-identity';
 import {readJuanHash} from "./juan-navigation";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -110,7 +111,7 @@ export function CarrierPortal(){
       entryStatus==="choose"?<p>{t("Selecciona el transportista con el que quieres trabajar.","Select the carrier you want to work with.")}</p>:null}
     </div>
     {entryStatus==="choose"?<form className={s.entry} onSubmit={e=>{e.preventDefault();void connect();}}>
-     <label style={{flex:1}}>{t("Transportista autorizado","Authorized carrier")}<select value={reference} disabled={checking} onChange={e=>setReference(e.target.value)}><option value="">{t("Selecciona tu transportista","Select your carrier")}</option>{access.map(a=><option key={a.carrierId} value={a.carrierId}>{a.carrierName} · {a.role}</option>)}</select></label>
+     <label style={{flex:1}}>{t("Transportista autorizado","Authorized carrier")}<select value={reference} disabled={checking} onChange={e=>setReference(e.target.value)}><option value="">{t("Selecciona tu transportista","Select your carrier")}</option>{access.map(a=><option key={a.carrierId} value={a.carrierId}>{carrierDisplayName(a.carrierName,a.carrierId)} · {a.role}</option>)}</select></label>
      <button className={s.primary} disabled={checking||!reference} type="submit">{checking?t("Abriendo…","Opening…"):t("Abrir espacio","Open workspace")}<ArrowRight size={16} aria-hidden="true"/></button>
     </form>:null}
     {error?<p className={s.error} role="alert">{error}</p>:null}

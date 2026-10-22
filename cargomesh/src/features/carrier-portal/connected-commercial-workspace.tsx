@@ -1,4 +1,5 @@
 "use client";
+import {displayReference} from "@/shared/lib/display-identity";
 import {OperatingCostCalculation} from './operating-cost-calculation';
 import {PipelineConnections} from '@/features/carrier-juan/pipeline-connections';
 import {PipelineBoard} from './pipeline-board';
@@ -52,19 +53,19 @@ function CommercialWorkspace({carrier,view,active=true,refreshToken=0,onBusyChan
  useEffect(()=>{const controller=new AbortController();setDetail(null);setAction(null);setDetailError('');setSelectedAssignments([]);setVoiceTurns([]);setSpokenAmount(null);setRatePerKm('');setUseEstimate(false);
   if(selection&&snapshot&&!(view==='pipeline'&&selection.kind==='bookings'))void readCommercialDetail(carrier.carrierId,selection.kind,selection.id,controller.signal).then(row=>{if(!controller.signal.aborted){setDetail(row);if(row.kind==='opportunities')setSelectedAssignments(row.data.assignmentIds);}}).catch(e=>{if(!controller.signal.aborted){setDetailError(portalErrorCopy(e,false));if(e instanceof PortalApiError&&[401,403].includes(e.status))setSnapshot(null);}});return()=>controller.abort();
  },[carrier.carrierId,carrier.operatorId,selection,!!snapshot,refresh,refreshToken,view]);
- useEffect(()=>{if(!snapshot)return;let active=true;const controller=new AbortController();
-  const timer=setInterval(()=>{if(!active||document.visibilityState!=='visible')return;
-   void readFleetResource(carrier.carrierId,'opportunities',controller.signal).then(page=>{
-    if(!active||page.truncated)return;
-    const rows=page.records.map(row=>parseCommercialRecord('opportunities',row,carrier.carrierId));
-    setSnapshot(current=>current?{...current,opportunities:rows,readAt:new Date().toISOString()}:current);
-   }).catch(()=>{/* Keep the last known read; manual refresh reports errors. */});
-  },30000);return()=>{active=false;controller.abort();clearInterval(timer);};
- },[carrier.carrierId,!!snapshot,active]);
+ useEffect(()=>{if(!snapshot||!active||busy)return;let live=true,inFlight=false;const controller=new AbortController();
+  const timer=setInterval(()=>{if(!live||inFlight||document.visibilityState!=='visible')return;
+   inFlight=true;
+   // Replace the whole commercial snapshot together; never combine a fresh opportunity with stale booking state.
+   void readCommercial(carrier.carrierId,controller.signal).then(value=>{
+    if(live&&!controller.signal.aborted)setSnapshot(value);
+   }).catch(()=>{/* Keep the last known snapshot; manual refresh reports errors. */}).finally(()=>{inFlight=false;});
+  },30000);return()=>{live=false;controller.abort();clearInterval(timer);};
+ },[carrier.carrierId,carrier.operatorId,!!snapshot,active,busy]);
  useEffect(()=>{if(active&&detail){detailPanel.current?.focus({preventScroll:true});detailPanel.current?.scrollIntoView({block:'start',behavior:'auto'});}},[detail,active]);
  useEffect(()=>{if(view==='pipeline')return;setSelection(null);setDetail(null);setAction(null);setSearch('');setFilter('All');},[view]);
  const matches=(text:string)=>text.toLowerCase().includes(search.trim().toLowerCase());
- const opportunities=snapshot?.opportunities.filter(o=>matches(routeLabel(o)+' '+o.id+' '+o.data.cargoSpecification.categoryCode))??[];
+ const opportunities=snapshot?.opportunities.filter(o=>matches(routeLabel(o)+' '+o.id+' '+displayReference(null,'PED',o.requestId)+' '+o.data.cargoSpecification.categoryCode))??[];
  const offers=snapshot?.offers.filter(f=>matches(f.data.carrierReference+' '+f.id))??[];
  const orders=snapshot?.bookings.filter(b=>matches((b.data.carrierReference??'')+' '+b.id+' '+(b.requestId??''))&&(filter==='All'||orderStage(b,snapshot)===filter))??[];
  const pipeline=snapshot?pipelineItems(snapshot,now).filter(p=>opportunities.some(o=>o.id===p.opportunity.id)&&(filter==='All'||p.stage===filter)):[];

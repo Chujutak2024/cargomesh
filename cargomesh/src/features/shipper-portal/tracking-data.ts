@@ -1,3 +1,4 @@
+import {displayReference,locationDisplayLabel} from '@/shared/lib/display-identity';
 import { z } from "zod";
 import { WorkflowRecordV2Schema } from "@/shared/schemas/v2/workflow";
 import { FreightRequestV2ResponseSchema } from "@/shared/schemas/v2/freight-request";
@@ -43,7 +44,7 @@ export async function collectTrackingItem(raw: unknown, organizationId: string, 
         throw new TrackingScopeError("Tracking child scope mismatch.");
     }
   }
-  const item: TrackingListItem = {execution, booking, reference:request.referenceCode,corridor:`${request.origin.city} → ${request.destination.city}`,
+  const item: TrackingListItem = {execution, booking, reference:displayReference(request.referenceCode,'PED',request.id),corridor:`${locationDisplayLabel(request.origin.city)} → ${locationDisplayLabel(request.destination.city)}`,
     events:eventPage.data.filter(row=>row.kind==="execution-events"),incidents:incidentPage.data.filter(row=>row.kind==="incidents"),
     eventsComplete:eventPage.complete&&!eventPage.error,incidentsComplete:incidentPage.complete&&!incidentPage.error};
   return {item, request, issues};
