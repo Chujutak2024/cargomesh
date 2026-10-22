@@ -1,7 +1,6 @@
 # HAC-40 — Catálogo B1 implementado
 
-Rama: `codex/v2-full-backend`. Migración aditiva: `20261004032151_hac40_catalog.sql`.
-Este contrato describe código y PostgreSQL **local** verificados. No acredita migración alojada, frontend conectado ni integración Alexa live.
+Implementation reference for current V2 services. Use [API/MCP](../../API.md), [setup](../../SETUP.md) and [status](../../STATUS.md) for the maintained operational guides. `main` is the active base.
 
 ## Rutas exactas
 

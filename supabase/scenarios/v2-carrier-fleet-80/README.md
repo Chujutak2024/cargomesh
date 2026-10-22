@@ -22,7 +22,7 @@ This is a local test scenario, not a production migration or a live Carrier cata
 
 Each Carrier has GENERAL and CHILLED services: 20 services, 93 CITY area records including one temporary exclusion, 28 explicitly directed lanes, 16 operating policies and 80 capacity calendars. The full fixture contains 607 base rows, including synthetic identities and scoped test grants.
 
-Directions follow the [coverage definition](../../../docs/v2-amazon/delivery/HAC50_CARRIER_COVERAGE_DEFINITION_2026-10-16.md). Local Lima services use distinct pickup/delivery IDs with identical geography. Reverse intercity lanes are not published. A chain of lanes is not a computed road route. Tacna→Arica retains border review; no permit is fabricated.
+Directions follow the [coverage definition](../../../docs/PRODUCT.md). Local Lima services use distinct pickup/delivery IDs with identical geography. Reverse intercity lanes are not published. A chain of lanes is not a computed road route. Tacna→Arica retains border review; no permit is fabricated.
 
 ## Clock and resource cases
 
@@ -127,7 +127,7 @@ The base verification scopes its Auth/operator/grant counts to the deterministic
 
 The same application can now read this persisted scenario using its native Auth/RPC/REST contracts on an isolated local profile at `http://127.0.0.1:8083/carriers/fleet`. Equipment/model associations use the existing 3D catalogue. The original 8080 profile and hosted Supabase remain unchanged. The representative administrator retains access to C01/C02/C05; no additional memberships were granted.
 
-Run `prepare-demo-access.py` then `prepare-local-runtime.py` against the existing marked database, and use `cargomesh/scripts/dev-fleet-scenario.mjs` with the private configuration path. See [the current delivery and startup instructions](../../../docs/v2-amazon/delivery/HAC50_FLEET_VISUAL_ASSOCIATION_2026-10-18.md). The earlier evidence and fixed scenario windows above remain historical/versioned; this profile does not turn the depot animation into actual yard operations.
+Run `prepare-demo-access.py` then `prepare-local-runtime.py` against the existing marked database, and use `cargomesh/scripts/dev-fleet-scenario.mjs` with the private configuration path. See [the current delivery and startup instructions](../../../docs/PRODUCT.md). The earlier evidence and fixed scenario windows above remain historical/versioned; this profile does not turn the depot animation into actual yard operations.
 
 ## Optional regular-driver extension — 2026-10-18
 

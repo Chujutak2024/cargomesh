@@ -17,4 +17,4 @@ Además, el intérprete del chat solo devuelve intención y campos; la interfaz 
 - Rediseñar interpretación y respuesta usando hechos verificados, con pruebas multivuelta ES/EN y sin mutaciones implícitas.
 - Verificar la disponibilidad real del modelo antes de actualizar una guía o afirmar una integración live.
 
-Referencia: [Acceso a modelos en Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html). La guía de rediseño está en [CHAT_V2_CONVERSATION_RESET_2026-10-07.md](../CHAT_V2_CONVERSATION_RESET_2026-10-07.md).
+Referencia: [Acceso a modelos en Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html). La guía de rediseño está en [CHAT_V2_CONVERSATION_RESET_2026-10-07.md](https://github.com/Chujutak2024/cargomesh/blob/a6a41fdb78a9e7fea5e01d553cb604e104e1ed74/docs/v2-amazon/delivery/CHAT_V2_CONVERSATION_RESET_2026-10-07.md).

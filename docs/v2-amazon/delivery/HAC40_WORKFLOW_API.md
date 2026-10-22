@@ -1,6 +1,6 @@
 # HAC-40 — planes, comercial, compromisos y operación persistentes
 
-Rama `codex/v2-full-backend`; [#99](https://github.com/Chujutak2024/cargomesh/pull/99) integrado históricamente y transferido a `codex/v2-amazon-contracts` por [#100](https://github.com/Chujutak2024/cargomesh/pull/100); incrementos nuevos apuntan directamente a esa base. Migración nativa aditiva `20261004154048_hac40_workflow.sql`. No aplicada a Supabase alojado.
+Implementation reference. The active base is `main`; see [current API guide](../../API.md) and [verification status](../../STATUS.md). Historical rollout statements do not certify the current hosted schema.
 
 ## Contrato de consumo
 

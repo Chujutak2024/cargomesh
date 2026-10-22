@@ -1,14 +1,7 @@
 # HAC-54 — Client commercial operations: H0 contract and inventory
 
-## Delivery boundary
+Implementation reference for current V2 services. Use [API/MCP](../../API.md), [setup](../../SETUP.md) and [status](../../STATUS.md) for the maintained operational guides. `main` is the active base.
 
-- Owner: Luis. Integrator: Cristhian Chujutalli.
-- Issue: [HAC-54](https://linear.app/hackatonteamcargomesh/issue/HAC-54/full-stack-cliente-cerrar-operaciones-ofertas-reservas-y-seguimiento).
-- Registered branch: `codex/v2-client-commercial-operations`; PR target: `main`.
-- Fetched starting point: `origin/main` at `c7e394db3c0d2d135011ad601df161cf05b61620`. The working tree was clean before branch creation. Existing intake, Copilot and responsive changes are preserved; no historical branch was copied or remerged.
-- This increment publishes **H0 only**: source inventory, consumer contracts, gaps, dependency handoffs and a validation script. It does not implement H1–H4 or demonstrate a connected commercial transaction.
-- Governing plan: the October 19 update at the top of HAC-54 supersedes historical sequential screenshot/PASS gates. Build/share increments on October 19–20; joint validation on October 21; stabilization on October 22. These are internal dates, not contest deadlines. Full suites, routine UI audits and repeated regression runs are not prerequisites for this documentation cut. Existing CI remains enabled.
-- Estimate/commitment for this requested cut: one documentation increment in this work session. No whole-vertical completion date or story-point estimate is asserted; implementation sizing follows the concrete gaps below.
 
 ## Sections and implementation order
 

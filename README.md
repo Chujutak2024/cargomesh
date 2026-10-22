@@ -1,43 +1,46 @@
-# CargoMesh V2
+# CargoMesh — conversational freight coordination
 
-CargoMesh captura solicitudes y expone operaciones persistentes de transporte mediante una aplicación Next.js, API Hono y servidor MCP.
+CargoMesh helps customers describe freight in natural language and helps carriers evaluate requests, prepare offers and manage confirmed work. Its Web workspaces combine a shared, persistent logistics backend with Amazon Nova voice guidance and an authenticated MCP server.
 
-## Entradas
+Built for **Build, Ship, Shape: Amazon Developer Hackathon 2026**. Submission-facing guides are in English. Internal domain contracts remain in Spanish and are identified separately.
 
-- [Contratos y alcance V2](docs/v2-amazon/README.md).
-- [Endpoints implementados](docs/v2-amazon/delivery/HAC40_API_ENDPOINTS.md).
-- [Backend](cargomesh/src/server/README.md).
-- [Flujo de entrega](docs/v2-amazon/delivery/CURRENT_DELIVERY_STATE.md).
+**[Try the Web application](https://cargomesh.vercel.app/)** · **[Judge guide](docs/hackathon/JUDGE_GUIDE.md)** · **[Setup](docs/SETUP.md)** · **[Submission checklist](docs/hackathon/SUBMISSION.md)**
 
-## Base de trabajo
+## What you can explore
 
-`main` es la base activa V2. Actualiza desde `origin/main`, trabaja en una rama registrada y entrega PR a `main`; consulta [AGENTS.md](AGENTS.md). La rama anterior de contratos se conserva como historia.
+| Workspace | Entry | Implemented experience |
+|---|---|---|
+| Customer | `/clients` | Facilities, request capture by text/voice, editable review, commercial decisions, bookings and tracking views |
+| Carrier | `/carriers` | Native dashboard, opportunities, offer preparation, quote automation, orders, fleet, sites and control tower |
+| MCP client | `/mcp` | Authenticated intake, routing, workflow reads and prepared/confirmed commercial commands |
 
-## Desarrollo local
+The connected workspace requires an authorized Supabase identity. Assigned synthetic demo access is optional and controlled by server configuration; opening a page does not grant membership. Browser-only visual examples and connected records are different data sources.
 
-La aplicación está en `cargomesh/`. Usa la versión de pnpm declarada por el gate y Node 24.
+Nova can answer questions and capture/correct details. Typed turns can receive Nova audio when the deployed gateway advertises `textInput`. Commercial actions use application validation and explicit confirmation. Nova does not independently create offers or book transport.
+
+## Start locally
+
+Use **Node 24.20.0**, **pnpm 11.19.0**, and a configured Supabase V2 project. From the repository root:
 
 ```sh
 pnpm --dir cargomesh install --frozen-lockfile
+# Copy cargomesh/.env.example to cargomesh/.env.local; configure your own values.
 pnpm --dir cargomesh dev
 ```
 
-Copia `cargomesh/.env.example` a `cargomesh/.env.local` y configura el Supabase V2 correcto. Para QA local sigue [el bootstrap V2](docs/v2-amazon/delivery/HAC29_CLEAN_BOOTSTRAP.md). Los escenarios sintéticos se cargan explícitamente, fuera de migraciones.
+Open `http://localhost:3000/`. See [setup and database profiles](docs/SETUP.md) for local Supabase, authentication, optional providers and scenario loading. Voice additionally needs the Python gateway and authorized Bedrock access.
 
-Para ver el panel visual con siete solicitudes, gráficos y camiones 3D, abre **`/v2-workspace#/dashboard`**; la flota está en **`/v2-workspace#/fleet`**. La portada `/` también lleva a ese panel. Funciona en cualquier puerto local y prepara sus datos de presentación solo cuando ese navegador no tiene datos guardados. **`/carrier-portal` es otra pantalla:** el portal operativo del transportista conectado a la API y a sus permisos. Véase [la guía del frontend](LOCAL_FRONTEND.md).
+## Documentation
 
-El acceso usa correo/contraseña y exige membresía activa. No hay login automático de demo ni directorio WebMCP de tres carriers. El flujo visible implementado incluye captura/evaluación ROAD, listado/detalle de solicitudes y lectura de reservas/ejecuciones V2; no acredita pantallas completas de oferta, ranking o booking.
+- [Product and data boundaries](docs/PRODUCT.md)
+- [Architecture and integrations](docs/ARCHITECTURE.md)
+- [REST and MCP reference](docs/API.md)
+- [Configuration](docs/CONFIGURATION.md)
+- [Voice and gateway deployment](docs/VOICE.md)
+- [Database and demo scenarios](docs/DATA.md)
+- [Testing](docs/TESTING.md)
+- [Hackathon: Alexa+, AWS Builder/Kiro and Open Source](docs/hackathon/README.md)
+- [Current verification status](docs/STATUS.md)
+- [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [MIT license](LICENSE)
 
-## Verificación
-
-```sh
-pnpm --dir cargomesh release:verify
-```
-
-Los gates SQL separan la cadena nativa `supabase-v2/` de la cadena histórica `supabase/`. La cadena histórica es entrada de regresión/importación; no se conecta al producto V2 ni se carga automáticamente como catálogo.
-
-## Historial y límites
-
-La entrega WebMCP anterior y sus documentos se consultan en el [corte previo a la limpieza](https://github.com/Chujutak2024/cargomesh/tree/feef2419fa5f786c9a6063f85aeee452dd9eb84b). No describen capacidades actuales de V2.
-
-El servidor MCP ofrece únicamente sus herramientas V2 implementadas y declara los límites pendientes. Una demo local o un esquema modelado no prueban Alexa+ live, carriers operativos ni despliegue alojado. La configuración de Vercel debe corresponder a `cargomesh/` antes de aceptar un despliegue V2.
+ROAD has the implemented operational validation path. International facilities do not establish carrier coverage or cross-border service; AIR/SEA/RAIL and multimodal concepts must not be presented as live merely because the schema represents them. The Web Nova experience is **not a verified live Alexa+ integration**. Read the status guide before making deployment or contest claims.

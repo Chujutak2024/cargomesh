@@ -16,7 +16,7 @@ Local synthetic Client scenario, never a migration or hosted seed.
   availability. Luis supplies his 12 requests/relations in a separate file.
 - Auth users are linked by local provisioning, without credentials in SQL.
 
-From the worktree root after [local startup](../../../docs/v2-amazon/delivery/HAC52_LOCAL_DELIVERY.md):
+From the worktree root after [local startup](../../../docs/SETUP.md):
 
 ```powershell
 node supabase/scenarios/v2-client-base/generate.mjs
@@ -34,4 +34,4 @@ compares full row hashes before/after two executions, alongside manifest counts.
 There is no destructive cleanup. Retain the bank for October 21. Any later
 cleanup requires explicit IDs, backups, counts and FK review. Logs/access files
 stay outside Git. The completed BO/CL recovery and verified three-account access
-are documented in [the handoff](../../../docs/v2-amazon/delivery/HAC52_HANDOFF.md).
+are documented in [the handoff](../../../docs/PRODUCT.md).

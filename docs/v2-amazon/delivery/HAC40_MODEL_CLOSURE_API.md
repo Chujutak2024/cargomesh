@@ -1,6 +1,6 @@
 # HAC-40 — socio por tramo, incidentes y RoutePlanner
 
-Incremento sobre `fe12d41e474c2c12d9dcd8e77047a0f2b7f0bd66`, rama `codex/v2-full-backend`, target `codex/v2-amazon-contracts`. Dos migraciones aditivas: `20261007083000` y `20261007084000`. Contrato implementado y probado localmente; requiere reprueba independiente y aprobación de integración. No certifica Supabase alojado ni el UML completo.
+Implementation reference. The active base is `main`; see [current API guide](../../API.md) and [verification status](../../STATUS.md). Historical rollout statements do not certify the current hosted schema.
 
 ## API para frontend y MCP
 

@@ -2,9 +2,9 @@
 
 ## Corte y consumo
 
-Rama `codex/v2-full-backend`, Draft #99 hacia `feat/cycle-3-integration`. Migración nativa aditiva `20261004080506_hac40_crew_assignments.sql`. Aplicación alojada pendiente de QA y autorización específica.
+Implementation reference for current V2 services. Use [API/MCP](../../API.md), [setup](../../SETUP.md) and [status](../../STATUS.md) for the maintained operational guides. `main` is the active base.
 
-Prefijo `/api/v2`. Se añaden **16 operaciones**, total acumulado **93** de negocio (health excluido):
+Prefijo `/api/v2`. This subsystem registers the following operations. The complete current route inventory is [generated from Hono](./HAC40_API_ENDPOINTS.md):
 
 | Clase | Base | Tabla |
 |---|---|---|

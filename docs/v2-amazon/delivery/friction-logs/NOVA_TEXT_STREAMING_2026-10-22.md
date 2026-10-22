@@ -1,0 +1,17 @@
+# Nova typed-only Web response needs a continuous stream
+
+Date: 22 October 2026. Severity: **Important**. Environment: accepted main `92ec470`, AWS gateway task revision 5, image digest `611b194e3a36e46b8623b9bc48420510955e383ed2af3c93a56dfa9f6db6732b`, Strands 1.61.0 / Nova 2.5 Sonic. [Deployment evidence](../evidence/nova/GATEWAY_92EC470_2026-10-22.md).
+
+## Task and reproduction
+
+Use an authorized native Client session at the configured Vercel Origin. Obtain a fresh one-use voice grant, connect to `/voice`, send auth and wait for ready. Confirm `textInput:true`. Send one bounded informational `{type:"text",text:"..."}` turn without starting microphone/audio input. Do not execute a commercial action.
+
+Expected: a completed spoken answer without requesting microphone permission. Actual: ready/text capability succeeds, but no audio or response completion within the 55-second bound. Repeat with 16-bit mono PCM digital silence (1,024 bytes per 32 ms at 16 kHz): the same text produces Spanish transcript, 307 audio frames and response_end. Neither test records microphone input or changes business data.
+
+## Cause and correction boundary
+
+The [official cross-modal guidance](https://docs.aws.amazon.com/nova/latest/nova2-userguide/sonic-cross-modal.html) requires continuous streaming. The installed Strands model starts its audio input container on the first AudioDelta; sending a string alone does not create that stream. `NovaVoicePreview.start(false,false)` intentionally avoids microphone permission but currently provides no digital-silence stream. This limitation is independent of PR148's spoken quantity parsing fix and of JWT/context-size authentication.
+
+The controlled probe's silence stream is a verified diagnostic workaround, not a deployed Web fix. A browser fix must keep the authenticated stream active while microphone capture is absent, avoid duplicate PCM when live capture runs, stop on disconnect/unmount/scope change, respect existing idle/session bounds, and never treat synthetic silence as user activity for automatic renewal. Add lifecycle tests and a real typed-only browser test. Preserve microphone opt-in and complete-response playback.
+
+Product Feedback suggestion: make the continuous-input requirement and typed-without-microphone initialization explicit in SDK cross-modal examples. A ready connection and text support declaration alone are insufficient evidence of a completed text/audio round trip.

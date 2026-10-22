@@ -2,7 +2,7 @@
 
 ## Alcance integral vigente — recuperación HAC-27/HAC-40
 
-El [contrato integral y catálogo de ejecución](../delivery/HAC40_FULL_API_AND_CLOSURE.md) incorpora las 57 clases y reemplaza las exclusiones del corte ROAD descrito debajo. La separación modular y los límites de identidad/atomicidad se conservan. La selección multi-oferta, su persistencia, bookings separados y endpoints están implementados en el workflow V2. La coordinación con carriers externos no queda certificada por esos resultados; consultar el [estado de integraciones](../delivery/INTEGRATION_CERTIFICATION_2026-10-09.md).
+El [contrato integral y catálogo de ejecución](../delivery/HAC40_FULL_API_AND_CLOSURE.md) incorpora las 57 clases y reemplaza las exclusiones del corte ROAD descrito debajo. La separación modular y los límites de identidad/atomicidad se conservan. La selección multi-oferta, su persistencia, bookings separados y endpoints están implementados en el workflow V2. La coordinación con carriers externos no queda certificada por esos resultados; consultar el [estado de integraciones](../../STATUS.md).
 
 ## Capas
 
