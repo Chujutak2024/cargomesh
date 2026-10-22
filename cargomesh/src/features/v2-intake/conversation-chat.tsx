@@ -17,7 +17,7 @@ import type { PrototypeStep, V2IntakePrototypeDraft } from "./prototype-model";
 import { applyChatFieldsToDraft, validatePrototypeReview, validatePrototypeStep } from "./prototype-model";
 import { CONVERSATION_FIELDS, choicesForField, matchingConversationChoices, questionForField, resolveConversationSuggestions, type ConversationField, type GuidedConversationField } from "./conversation-fields";
 import { useConversationVoice } from "@/features/v2-conversation-prep/voice-controls";
-import { NovaVoicePreview } from "@/features/v2-conversation-prep/nova-voice-preview";
+import { NovaVoicePreview, type NovaTextSender } from "@/features/v2-conversation-prep/nova-voice-preview";
 import { applyVoiceTranscript, recentVoiceContext, spokenUserDetails, type VoiceTurn } from "@/features/v2-conversation-prep/voice-transcript";
 import { InterpretationResponseSchema, guardExplicitCorrection, helpTopic, isHelpFollowUp, type Interpretation } from "@/features/v2-conversation-prep/interpretation";
 import { conversationLanguage, type ConversationLanguage } from "@/features/v2-conversation-prep/conversation-language";
@@ -145,6 +145,12 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const [voiceReviewOpen, setVoiceReviewOpen] = useState(false);
   const [voiceMode,setVoiceMode]=useState(false);
   const [novaSpeaking,setNovaSpeaking]=useState(false);
+  const novaTextSenderRef = useRef<NovaTextSender | null>(null);
+  const [novaTextPending, setNovaTextPending] = useState(false);
+  const chatMountedRef = useRef(true);
+  const currentTextScope = JSON.stringify([pathname, optionsSource, request?.id ?? null, request?.draftVersion ?? null]);
+  const textScopeRef = useRef(currentTextScope); textScopeRef.current = currentTextScope;
+  useEffect(() => { chatMountedRef.current = true; return () => { chatMountedRef.current = false; }; }, []);
   const [queuedVoiceAction,setQueuedVoiceAction]=useState<"review"|"confirm"|"apply"|null>(null);
   const awaitVoiceReplyRef=useRef(false);
   const [responseFinishedEpoch,setResponseFinishedEpoch]=useState(0);
@@ -274,11 +280,11 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   useEffect(() => {
     const index = history.length - 1;
     const latest = history[index];
-    if (!open || novaVoiceEnabled || !audioReplies || !latest || latest.speaker !== "assistant" || index <= lastSpokenMessage.current || latest.text.endsWith("…") || busy || interpretationBusy) return;
+    if (!open || (novaVoiceEnabled && (!history.some(turn => turn.speaker === "user") || latest?.contentId?.startsWith("nova:"))) || novaSpeaking || !audioReplies || !latest || latest.speaker !== "assistant" || index <= lastSpokenMessage.current || latest.text.endsWith("…") || busy || interpretationBusy) return;
     lastSpokenMessage.current = index;
     voice.finishProcessing();
     voice.readResponse(latest.text);
-  }, [history, busy, interpretationBusy, audioReplies, open]);
+  }, [history, busy, interpretationBusy, audioReplies, open, novaSpeaking, novaVoiceEnabled]);
   useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
   useEffect(() => {
     const confirmation = confirmationRef.current;
@@ -568,7 +574,22 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     }
     if (sendInFlightRef.current) return;
     sendInFlightRef.current = true;
-    try { await processMessage(value); } finally { sendInFlightRef.current = false; }
+    try {
+      setLanguage(conversationLanguage(value, language));
+      if (novaVoiceEnabled) await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      // Read/mutate business data through the existing reviewed workflow, never through the model.
+      const localAction = awaitingConfirmation || commercialChatIntent(value) || wantsQuoteSearch(value) || workflowChatIntent(value)
+        || /\b(?:start over|start again|empezar de nuevo|empecemos|reiniciar)\b/i.test(value.trim());
+      if (novaVoiceEnabled && novaTextSenderRef.current && !localAction) {
+        if (!value.trim() || busy || interpretationBusy || workflowBusy || novaSpeaking || voice.speaking) return;
+        setNovaTextPending(true); setSendNotice("");
+        const scope = textScopeRef.current;
+        try { await novaTextSenderRef.current(value); if (chatMountedRef.current) setText(""); return; }
+        catch { if (!chatMountedRef.current || scope !== textScopeRef.current) return; /* Old gateways keep native text/reading. */ }
+        finally { setNovaTextPending(false); }
+      }
+      await processMessage(value);
+    } finally { sendInFlightRef.current = false; }
   }
 
   async function processMessage(submitted: string) {
@@ -760,10 +781,10 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       {launcherExpanded ? <form className={styles.launcherComposer} onSubmit={(event) => { event.preventDefault(); void send(); }}>
         <AssistantMascot active={!open} />
         <label className={styles.srOnly} htmlFor="assistant-launcher-text">{t("Mensaje para CargoMesh", "Message CargoMesh")}</label>
-        <input id="assistant-launcher-text" ref={launcherInputRef} value={text} onChange={(event) => setText(event.target.value)} maxLength={6000} placeholder={t("¿Qué necesitas transportar?", "What do you need to ship?")} autoComplete="off" onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); setLauncherExpanded(false); requestAnimationFrame(() => launcherRef.current?.focus()); } }} />
+        <input id="assistant-launcher-text" ref={launcherInputRef} value={text} onChange={(event) => setText(event.target.value)} maxLength={4096} placeholder={t("¿Qué necesitas transportar?", "What do you need to ship?")} autoComplete="off" onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); setLauncherExpanded(false); requestAnimationFrame(() => launcherRef.current?.focus()); } }} />
         <button type="button" className={styles.launcherAction} title={t("Abrir panel", "Open sidebar")} aria-label={t("Abrir panel del asistente", "Open assistant sidebar")} onClick={() => { setOpen(true); setLauncherExpanded(false); }}><PanelRightOpen size={18}/></button>
         <button type="button" className={styles.launcherAction} title={t("Hablar con CargoMesh", "Talk to CargoMesh")} aria-label={t("Hablar con CargoMesh", "Talk to CargoMesh")} onClick={() => { setOpen(true); setLauncherExpanded(false); if (!novaVoiceEnabled && catalogStatus === "ready") voice.start(); }}><Mic size={18}/></button>
-        <button type="submit" className={styles.launcherSend} disabled={!text.trim() || busy || interpretationBusy || workflowBusy} aria-label={t("Enviar mensaje y abrir panel", "Send message and open sidebar")}><ArrowUp size={18}/></button>
+        <button type="submit" className={styles.launcherSend} disabled={!text.trim() || busy || interpretationBusy || workflowBusy || novaTextPending || novaSpeaking || voice.speaking} aria-label={t("Enviar mensaje y abrir panel", "Send message and open sidebar")}><ArrowUp size={18}/></button>
       </form> : <div className={styles.launcherPill}>
         <button ref={launcherRef} type="button" className={styles.launcher} onClick={() => setOpen(true)} aria-label={launcherLabel} aria-expanded={false} aria-controls="v2-chat-panel">
           {!intro && <motion.span className={styles.launcherOrb} layoutId="assistant-orb" transition={reducedMotion ? { duration: 0 } : { ...ASSISTANT_TRANSITION, duration: .7 }}><AssistantMascot active={!open} /></motion.span>}
@@ -855,14 +876,14 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         {sendNotice && <p className={styles.voiceStatus} role="status">{sendNotice}</p>}
         <form onSubmit={(event) => { event.preventDefault(); void send(); }} className={styles.composer}>
           <label className={styles.srOnly} htmlFor="v2-chat-text">Your message or editable voice transcript</label>
-          <textarea rows={2} maxLength={6000} className={styles.messageInput} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.nativeEvent.isComposing){event.preventDefault();event.currentTarget.form?.requestSubmit();}}} ref={inputRef} id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder={t("Describe tu carga o corrige un dato…", "Describe cargo or correct a detail…")} autoComplete="off" disabled={busy || interpretationBusy || workflowBusy} />
+          <textarea rows={2} maxLength={4096} className={styles.messageInput} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.nativeEvent.isComposing){event.preventDefault();event.currentTarget.form?.requestSubmit();}}} ref={inputRef} id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder={t("Describe tu carga o corrige un dato…", "Describe cargo or correct a detail…")} autoComplete="off" disabled={busy || interpretationBusy || workflowBusy || novaTextPending} />
           {!novaVoiceEnabled && (voice.state === "listening" || voice.state === "requesting_permission")
             ? <button type="button" className={styles.micActive} aria-label="Stop listening" title="Stop listening" onClick={voice.stop}>■</button>
             : !novaVoiceEnabled && <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={catalogStatus !== "ready" || voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing" || voice.speaking || busy || interpretationBusy || workflowBusy} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>}
-          <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || workflowBusy}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
+          <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || workflowBusy || novaTextPending || novaSpeaking || voice.speaking}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
         {novaVoiceEnabled && catalogStatus === "ready" && <>
-          <AssistantLiveContent><NovaVoicePreview key={conversationEpoch} preview={optionsSource === "fixture"} language={language} draftContext={voiceDraftContext(draft, request?.draftVersion ?? null, [...(measurementPending ? ["MEASUREMENT_SCOPE_PENDING" as const] : []),...(capturePending.date ? ["DATE_WINDOW_PENDING" as const] : []),...(capturePending.classification ? ["CLASSIFICATION_PENDING" as const] : [])], measurementPending, {timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,pendingDates:capturePending.date?.alternatives??[]})} voiceContext={recentVoiceContext(history)} onPlaybackStateChange={speaking=>{setNovaSpeaking(speaking);if(speaking)setVoiceMode(true);}} onResponseFinished={()=>{awaitVoiceReplyRef.current=false;setResponseFinishedEpoch(n=>n+1);}} onTurn={(update) => {
+          <AssistantLiveContent><NovaVoicePreview externalSpeaking={voice.speaking} audioReplies={audioReplies} textInputRef={novaTextSenderRef} key={conversationEpoch} preview={optionsSource === "fixture"} language={language} draftContext={voiceDraftContext(draft, request?.draftVersion ?? null, [...(measurementPending ? ["MEASUREMENT_SCOPE_PENDING" as const] : []),...(capturePending.date ? ["DATE_WINDOW_PENDING" as const] : []),...(capturePending.classification ? ["CLASSIFICATION_PENDING" as const] : [])], measurementPending, {timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,pendingDates:capturePending.date?.alternatives??[]})} voiceContext={recentVoiceContext(history)} onPlaybackStateChange={speaking=>{setNovaSpeaking(speaking);if(speaking)setVoiceMode(true);}} onResponseFinished={()=>{awaitVoiceReplyRef.current=false;setResponseFinishedEpoch(n=>n+1);}} onTurn={(update) => {
             const nextHistory = applyVoiceTranscript(voiceHistoryRef.current, update);
             voiceHistoryRef.current = nextHistory;
             setHistory(nextHistory);
@@ -909,6 +930,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
           {spokenDetails && <button type="button" className={styles.retry} onClick={() => requestVoiceReview()}>{language==="es"?"Revisar datos de voz":"Review spoken request details"}</button>}
           {onEdit && <button type="button" className={styles.retry} disabled={novaSpeaking} onClick={() => goToFormStep(1)}>{language==="es"?"Ir al formulario":"Go to request form"}</button>}
         </>}
+        {novaVoiceEnabled && <div className={styles.audioActions}><button type="button" aria-pressed={audioReplies} onClick={() => { setAudioReplies(enabled => !enabled); if (audioReplies) voice.stopResponse(); }}>{audioReplies ? t("Respuestas con voz activadas", "Voice replies on") : t("Respuestas con voz desactivadas", "Voice replies off")}</button></div>}
         {!novaVoiceEnabled && <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button><label>Voice <select aria-label="Voice for spoken replies" value={voice.selectedVoiceURI} onChange={(event) => voice.setSelectedVoiceURI(event.target.value)}><option value="">Automatic · Zira preferred</option>{voice.availableVoices.map((option) => <option key={option.voiceURI} value={option.voiceURI}>{option.name} ({option.lang}){option.localService ? " · device" : ""}</option>)}</select></label><label>Pace <select aria-label="Voice pace" value={voiceRate} onChange={(event) => setVoiceRate(Number(event.target.value))}><option value={0.88}>Relaxed</option><option value={0.96}>Natural</option><option value={1.06}>Brisk</option></select></label><button type="button" onClick={() => voice.readResponse("Hello, I'm CargoMesh. Tell me what you need to ship, and I'll help you step by step.")} disabled={voice.speaking}>Test voice</button></div>}
       </div>
     </section></AssistantSurface>}
