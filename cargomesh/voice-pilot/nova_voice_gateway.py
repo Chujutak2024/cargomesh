@@ -30,6 +30,7 @@ AUDIENCE = "cargomesh-voice-gateway"
 MODEL_ID = "amazon.nova-2-5-sonic"
 REGION = os.environ.get("AWS_REGION", "us-east-1")
 VOICE = "tiffany"
+MAX_TEXT_CHARS = 4096
 MAX_AUDIO_FRAME = 8192
 MAX_SESSIONS = 2
 SESSION_SECONDS = 240
@@ -72,6 +73,15 @@ class BrowserInput:
             opening, self.opening = self.opening, None
             return opening
         packet = await self.socket.recv()
+        if isinstance(packet, str):
+            if len(packet.encode("utf-8")) > MAX_TEXT_CHARS * 4 + 128:
+                raise ValueError("Text frame too large")
+            data = json.loads(packet)
+            if (not isinstance(data, dict) or set(data) != {"type", "text"}
+                    or data.get("type") != "text" or not isinstance(data.get("text"), str)
+                    or not 0 < len(data["text"].strip()) <= MAX_TEXT_CHARS):
+                raise ValueError("Expected a bounded customer text turn")
+            return data["text"].strip()
         if not isinstance(packet, bytes) or not 0 < len(packet) <= MAX_AUDIO_FRAME or len(packet) % 2:
             raise ValueError("Expected a bounded 16-bit PCM audio frame")
         return AudioDelta(format="pcm", source={"bytes": packet})
@@ -108,7 +118,7 @@ class BrowserOutput:
         elif kind == "bidi_barge_in":
             payload = {"type": "barge_in"}
         elif kind == "bidi_connection_start":
-            payload = {"type": "ready"}
+            payload = {"type": "ready", "textInput": True}
         else:
             return
         async with self.lock:

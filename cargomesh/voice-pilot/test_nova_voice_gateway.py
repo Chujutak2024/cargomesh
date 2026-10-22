@@ -158,6 +158,31 @@ class VoiceTranscriptTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([message["contentId"] for message in socket.messages], ["turn-1", "turn-1"])
 
 
+class WrittenTurnTests(unittest.IsolatedAsyncioTestCase):
+    async def test_valid_customer_text_is_forwarded_as_a_strands_text_turn(self):
+        class Socket:
+            async def recv(self):
+                return json.dumps({"type": "text", "text": " What is FTL? "})
+        self.assertEqual(await BrowserInput(Socket())(), "What is FTL?")
+
+    async def test_text_cannot_change_identity_or_carry_unbounded_input(self):
+        for frame in [{"type": "auth", "token": "not-a-grant"}, {"type": "text", "text": "hi", "organizationId": "other"},
+                      {"type": "text", "text": " "}, {"type": "text", "text": "x" * 4097}, []]:
+            class Socket:
+                async def recv(self):
+                    return json.dumps(frame)
+            with self.subTest(frame_type=type(frame).__name__), self.assertRaises(ValueError):
+                await BrowserInput(Socket())()
+
+    async def test_text_capability_is_advertised_only_by_the_new_gateway(self):
+        class Socket:
+            async def send(self, message):
+                self.message = json.loads(message)
+        socket = Socket()
+        await BrowserOutput(socket)({"type": "bidi_connection_start"})
+        self.assertEqual(socket.message, {"type": "ready", "textInput": True})
+
+
 class DeploymentConfigurationTests(unittest.TestCase):
     def test_local_mode_rejects_network_bind(self):
         with self.assertRaises(ValueError):
