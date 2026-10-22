@@ -21,7 +21,7 @@ export default async function BookingsPage() {
   const [resources, catalog] = await Promise.all([readOperationsBookingResources(bookings, reader), reader.commercialCatalog({ offers })]);
   const requestById = new Map(requests.data.map((request) => [request.id, request]));
   const t = (es: string, en: string) => translate(locale, es, en), tag = localeTag(locale);
-  return <div className={styles.page}><header className={styles.hero}><div className={styles.heroCopy}><h1>{t("Reservas", "Bookings")}</h1></div></header>
+  return <div className={styles.page}><header className={styles.hero}><div className={styles.heroCopy}><h1>{t("Reservas", "Bookings")}</h1><p>{t("Consulta las autorizaciones, las respuestas del transportista y sus condiciones.", "Review authorizations, carrier responses and their conditions.")}</p></div></header>
     <OperationsNavigation/>
     <OperationsReadNotice issues={operationsReadIssues({ bookings: records, requests, offers: offerRecords, decisions: decisionRecords })}/>
     <section className={`${styles.panel} ${bookingStyles.panel}`}><header className={styles.panelHeader}><div><h2>{t("Estado de cada reserva", "Status of each booking")}</h2></div></header>

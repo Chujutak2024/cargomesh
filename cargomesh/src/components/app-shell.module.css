@@ -2,11 +2,14 @@
   color-scheme: light;
   font-family: var(--cm-font-sans);
   /* Carrier-aligned presentation tokens, scoped to the shipper workspace. */
-  --cm-color-canvas: #e8eff4;
-  --cm-color-surface-subtle: #edf4f8;
-  --cm-color-surface-tint: #f1f8fb;
-  --cm-color-primary: #185be7;
-  --cm-color-primary-hover: #124cc6;
+  --cm-color-canvas: #fff;
+  --cm-color-surface-subtle: #f3f6f7;
+  --cm-color-surface-tint: #f5f9fa;
+  --cm-color-primary: #163d4d;
+  --cm-color-primary-hover: #0d2c3a;
+  --cm-radius-md: 6px;
+  --cm-radius-lg: 8px;
+  --cm-shadow-card: none;
   --client-assistant-clearance: 5.5rem;
 }
 .shell:has([data-chat-open="true"]) { --client-assistant-clearance: 0rem; }
@@ -26,7 +29,7 @@
   z-index: 30;
   top: 0;
   display: flex;
-  min-height: 4.75rem;
+  min-height: 4rem;
   align-items: center;
   gap: 0.8rem;
   border-bottom: 1px solid var(--cm-color-line);
@@ -125,10 +128,17 @@
 }
 
 .signOut button:hover, .signOutLink:hover { border-color: var(--cm-color-line-strong); background: var(--cm-color-selected); }
-.main { min-width: 0; min-height: calc(100dvh - 4.75rem); padding: 1.75rem clamp(1rem, 2.5vw, 2.75rem) calc(4rem + var(--client-assistant-clearance)); background: linear-gradient(180deg, #eef5fa 0, var(--cm-color-canvas) 24rem); }
+.main { min-width: 0; min-height: calc(100dvh - 4rem); padding: 1.75rem clamp(1rem, 2.5vw, 2.75rem) calc(3rem + var(--client-assistant-clearance)); background: var(--cm-color-canvas); }
+.previewNotice { display: flex; align-items: center; gap: .5rem; margin-bottom: 1.5rem; padding: 0 0 .8rem; border-bottom: 1px solid var(--cm-color-line); color: var(--cm-color-muted); font-size: .72rem; line-height: 1.5; }
+.previewNotice::before { content: ""; width: .4rem; height: .4rem; flex: none; border-radius: 50%; background: var(--cm-color-logistics); }
+.shell ::selection { background: #d1e9e9; color: #163349; }
+.shell :is(input, textarea) { caret-color: var(--cm-color-logistics); }
+.shell :is(time, meter) { font-variant-numeric: tabular-nums; }
 .motionRegion { min-width: 0; }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
-.shell :is(button, a, input, select):focus-visible { outline: 3px solid color-mix(in srgb, var(--cm-color-focus) 34%, transparent); outline-offset: 2px; }
+.shell :is(button, a, input, select, summary, [tabindex]):focus-visible { outline: 3px solid var(--cm-color-logistics); outline-offset: 2px; }
+.shell { scrollbar-color: var(--cm-color-line-strong) var(--cm-color-surface); }
+.shell :is(input, textarea, select) { accent-color: var(--cm-color-logistics); }
 
 @media (min-width: 640px) {
   .contextSubtitle, .userCopy { display: block; }
@@ -151,6 +161,7 @@
   .topbar { padding-inline: 0.55rem; }
   .context { max-width: 8rem; }
   .topbarActions { gap: 0.3rem; }
+  .main :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { font-size: 1rem; }
 }
 
 @media (prefers-reduced-motion: reduce) { .search { transition: none; } }

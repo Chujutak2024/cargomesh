@@ -195,3 +195,36 @@
 .actionReview button { min-height:40px; padding:.5rem .65rem; border:1px solid #6550ae; border-radius:.5rem; background:white; color:#554091; font:inherit; cursor:pointer; }
 .actionReview button:disabled { opacity:.55; cursor:not-allowed; }
 .actionReview input:focus-visible,.actionReview select:focus-visible,.actionReview textarea:focus-visible,.actionReview button:focus-visible { outline:2px solid #6550ae; outline-offset:2px; }
+/* Keep the workspace assistant in the Client palette without changing chat behavior. */
+:global([data-cm-workspace="client"]) .shell { --chat-ink: var(--cm-color-heading); --chat-muted: var(--cm-color-muted); }
+:global([data-cm-workspace="client"]) :is(.launcher, .launcherComposer) { border: 1px solid var(--cm-color-line-strong); border-radius: var(--cm-radius-md); color: var(--cm-color-heading); background: var(--cm-color-surface); box-shadow: 0 4px 16px #16334914; }
+:global([data-cm-workspace="client"]) .launcher:hover { transform: none; background: var(--cm-color-surface-tint); box-shadow: 0 4px 16px #16334914; }
+:global([data-cm-workspace="client"]) .rainbowMark { color: var(--cm-color-logistics); background: var(--cm-color-selected); box-shadow: none; }
+:global([data-cm-workspace="client"]) :is(.dragHandle, .panelGrip) { border-radius: var(--cm-radius-md); box-shadow: none; }
+:global([data-cm-workspace="client"]) .composerDock { background: var(--cm-color-surface); }
+:global([data-cm-workspace="client"]) .structuredSummary { border: 0; border-block: 1px solid var(--cm-color-line); border-radius: 0; background: var(--cm-color-surface-subtle); }
+:global([data-cm-workspace="client"]) .structuredSummary dl > div { border: 0; border-bottom: 1px solid var(--cm-color-line); border-radius: 0; background: transparent; }
+:global([data-cm-workspace="client"]) :is(.launcherSend, .confirmation button:first-child, .reviewAction) { border-color: var(--cm-color-primary); background: var(--cm-color-primary); }
+:global([data-cm-workspace="client"]) .headerCopy strong span { color: var(--cm-color-logistics); }
+:global([data-cm-workspace="client"]) .user { color: var(--cm-color-heading); background: var(--cm-color-selected); }
+:global([data-cm-workspace="client"]) .actionReview { border: 0; border-block: 1px solid var(--cm-color-line); border-radius: 0; background: var(--cm-color-surface-tint); }
+:global([data-cm-workspace="client"]) .actionReview button { color: var(--cm-color-logistics); border-color: var(--cm-color-line-strong); }
+:global([data-cm-workspace="client"]) .shell :is(button,input,textarea,select):focus-visible { outline-color: var(--cm-color-logistics); }
+:global([data-cm-workspace="client"]) .launcherPill { border: 1px solid var(--cm-color-line-strong); border-radius: var(--cm-radius-md); background: var(--cm-color-surface); box-shadow: 0 4px 16px #16334914; }
+:global([data-cm-workspace="client"]) .launcherPill .launcher { border: 0; background: transparent; box-shadow: none; }
+:global([data-cm-workspace="client"]) .quickCompose { color: var(--cm-color-logistics); background: var(--cm-color-selected); }
+:global([data-cm-workspace="client"]) .mascot { background: var(--cm-color-selected); box-shadow: none; }
+:global([data-cm-workspace="client"]) .mascot::before { background: transparent; }
+:global([data-cm-workspace="client"]) .mascotFace { background: var(--cm-color-logistics); box-shadow: none; }
+:global([data-cm-workspace="client"]) .entranceBubble { border-color: var(--cm-color-line); border-radius: var(--cm-radius-md); color: var(--cm-color-muted); box-shadow: 0 4px 16px #16334914; }
+:global([data-cm-workspace="client"]) .entranceBubble strong { color: var(--cm-color-logistics); }
+:global([data-cm-workspace="client"]) .entranceBubble::after { border-color: var(--cm-color-line); }
+:global([data-cm-workspace="client"]) :is(.welcome h2, .assistant, .structuredSummary dd) { color: var(--cm-color-heading); }
+:global([data-cm-workspace="client"]) :is(.speaker, .structuredSummary dt, .voiceStatus, .audioActions button, .audioActions label) { color: var(--cm-color-muted); }
+:global([data-cm-workspace="client"]) :is(.draftIcon, .draftCount, .mic) { color: var(--cm-color-logistics); background: var(--cm-color-selected); border-color: var(--cm-color-line); }
+:global([data-cm-workspace="client"]) :is(.structuredSummary dl button, .suggestion) { color: var(--cm-color-logistics); border-color: var(--cm-color-line-strong); }
+:global([data-cm-workspace="client"]) .composer { border-color: var(--cm-color-line-strong); border-radius: var(--cm-radius-md); box-shadow: none; }
+:global([data-cm-workspace="client"]) .composer:focus-within { border-color: var(--cm-color-logistics); box-shadow: 0 0 0 2px var(--cm-color-focus); }
+:global([data-cm-workspace="client"]) .send { background: var(--cm-color-primary); }
+:global([data-cm-workspace="client"]) .send:hover:not(:disabled) { background: var(--cm-color-primary-hover); }
+:global([data-cm-workspace="client"]) .audioActions select { color: var(--cm-color-heading); border-color: var(--cm-color-line-strong); }

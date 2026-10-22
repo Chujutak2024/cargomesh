@@ -21,7 +21,7 @@ export default async function HistoryPage() {
   const eventHistory = [...events.data].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
   const requestsById = new Map(requests.data.map((request) => [request.id, request]));
   const issues = operationsReadIssues({ requests, "execution-events": events, offers, bookings, incidents, decisions });
-  return <div className={styles.page}><header className={styles.hero}><div className={styles.heroCopy}><h1>{t("Historial", "History")}</h1></div></header>
+  return <div className={styles.page}><header className={styles.hero}><div className={styles.heroCopy}><h1>{t("Historial", "History")}</h1><p>{t("Revisa tus solicitudes, incidencias y eventos reportados en un solo lugar.", "Review your requests, incidents and reported events in one place.")}</p></div></header>
     <OperationsNavigation/><OperationsReadNotice issues={issues}/>
     <OperationsCollectionNotice collection={requests}/><RequestList requests={requests.data}/>
     <CommercialHistory requests={requests.data} rows={[...decisions.data,...bookings.data]}/>

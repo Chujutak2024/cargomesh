@@ -10,7 +10,7 @@ export default async function OrganizationPage() {
   const data={name:"Sample Shipper organization",status:"DEMO"};
   const t = (es: string, en: string) => translate(locale, es, en);
   return <div className={styles.page}>
-    <header className={styles.header}><div><span className={styles.eyebrow}><Building2 size={15} aria-hidden="true" />{t("Organización", "Organization")}</span>
+    <header className={styles.header}><div>
       <h1>{t("Tu espacio de trabajo", "Your workspace")}</h1>
       <p>{t("Escenario visual simulado para revisar el diseño de Cliente.", "Simulated visual scenario for reviewing the Shipper design.")}</p></div></header>
     <section className={styles.panel} aria-label={t("Identidad de la organización", "Organization identity")}>

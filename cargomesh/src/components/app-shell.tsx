@@ -147,7 +147,7 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
   }
 
   return (
-    <IntakeSessionProvider><div className={`${navStyles.frame} ${styles.shell}`} data-collapsed={collapsed} data-open={open} data-assistant-docked={assistantDocked} data-cm-client-preview={preview?"true":undefined}>
+    <IntakeSessionProvider><div className={`${navStyles.frame} ${styles.shell}`} data-cm-workspace="client" data-collapsed={collapsed} data-open={open} data-assistant-docked={assistantDocked} data-cm-client-preview={preview?"true":undefined}>
       <a className={navStyles.skip} href="#main-content">{t("Saltar al contenido", "Skip to content")}</a>
 
       <aside ref={sidebarRef} id={sidebarId} className={navStyles.sidebar} role={mobile && open ? "dialog" : undefined} aria-modal={mobile && open ? true : undefined} aria-labelledby={sidebarTitleId} inert={mobile && !open}>
