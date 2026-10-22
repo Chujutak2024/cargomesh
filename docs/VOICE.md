@@ -10,6 +10,10 @@ The `ready` response advertises `textInput: true` for gateways supporting typed 
 
 Response completion waits for pending speech playback; finishing an intake step must not open a form and cut off the current reply. Reconnection uses fresh grants and a bounded recent context, not an unlimited persistent Bedrock conversation. Human acceptance must cover long replies, corrections, typed questions, mute, renewal and network failure.
 
+## Typed-only Web acceptance
+
+The deployed revision 5 advertises textInput and has passed a real typed-to-audio turn **with a continuous digital-silence stream**. Nova cross-modal input needs continuous streaming even when the user types. The current Web text-only path still lacks that stream; without it, the accepted typed turn can wait without audio. This is separate from spoken quantity parsing. See [deployment evidence](v2-amazon/delivery/evidence/nova/GATEWAY_92EC470_2026-10-22.md) and [the required Web correction](v2-amazon/delivery/friction-logs/NOVA_TEXT_STREAMING_2026-10-22.md). No microphone permission should be required merely to type.
+
 ## Local gateway
 
 From `cargomesh/voice-pilot/`, create a virtual environment and install `requirements-gateway.txt`. `requirements.txt` additionally supports historical standalone audio/model comparison pilots.
