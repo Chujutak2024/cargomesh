@@ -2,10 +2,12 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
-import { ArrowRight, Building2, LoaderCircle, RefreshCw, ShieldCheck, Truck } from "lucide-react";
+import { ArrowRight, Building2, RefreshCw, ShieldCheck, Truck } from "lucide-react";
 import { useLocale } from "@/features/i18n/locale-provider";
 import { workspaceSwitchDecision, type WorkspaceSwitchDetail } from "./switch-guard";
 import s from "./workspace-demo.module.css";
+import { WorkspaceLoader, WorkspaceLoadingScreen } from "@/features/landing/workspace-loader";
+import loaderStyles from "@/features/landing/workspace-loader.module.css";
 
 type Workspace = "client" | "carrier";
 type WorkspaceChange = { version: 1; id: string; sender: string; workspace: Workspace };
@@ -115,6 +117,7 @@ export function DemoWorkspaceProvider({ enabled, children }: { enabled: boolean;
     return () => { channel?.close(); window.removeEventListener("storage", storage); };
   }, [enabled]);
   const blocked = enabled && (changed !== null || pendingSwitch !== null || approvalPrompt !== null);
+  const loadingWorkspace = !changed && !approvalPrompt && pendingSwitch?.phase === "switching" ? pendingSwitch.workspace : null;
   useEffect(() => {
     if (!blocked) return;
     const first = dialog.current?.querySelector<HTMLButtonElement>("button:not([disabled])");
@@ -123,8 +126,8 @@ export function DemoWorkspaceProvider({ enabled, children }: { enabled: boolean;
   const workspaceName = (workspace: Workspace) => workspace === "client" ? t("Cliente", "Client") : "Carrier";
   return <DemoWorkspaceContext.Provider value={{ enabled, approveSwitch, beginSwitch, failSwitch }}>
     <div className={s.application} inert={blocked} aria-hidden={blocked || undefined}>{children}</div>
-    {blocked ? <div className={s.sessionBackdrop}>
-      <section ref={dialog} tabIndex={-1} className={s.sessionCard} role="dialog" aria-modal="true" aria-labelledby="demo-session-change-title"
+    {blocked ? <div className={loadingWorkspace ? loaderStyles.screen : s.sessionBackdrop}>
+      <section ref={dialog} tabIndex={-1} className={loadingWorkspace ? loaderStyles.surface : s.sessionCard} role="dialog" aria-modal="true" aria-labelledby="demo-session-change-title"
         aria-describedby="demo-session-change-description" onKeyDown={event => {
           if (event.key === "Tab") {
             const controls = dialog.current?.querySelectorAll<HTMLButtonElement>("button:not([disabled])");
@@ -138,7 +141,7 @@ export function DemoWorkspaceProvider({ enabled, children }: { enabled: boolean;
             if (approvalPrompt) finishApproval(false);
           }
         }}>
-        <span className={s.cardIcon}>{!changed && pendingSwitch?.phase === "switching" ? <LoaderCircle size={25} className={s.spinner} aria-hidden="true" /> : <ShieldCheck size={25} aria-hidden="true" />}</span>
+        {!loadingWorkspace && <span className={s.cardIcon}><ShieldCheck size={25} aria-hidden="true" /></span>}
         {approvalPrompt ? <>
           <h2 id="demo-session-change-title">{approvalPrompt.kind === "confirmation" ? t("¿Cambiar a", "Switch to") + " " + workspaceName(approvalPrompt.workspace) + "?" : t("Espera un momento", "Please wait")}</h2>
           <p id="demo-session-change-description">{approvalPrompt.message}</p>
@@ -160,8 +163,7 @@ export function DemoWorkspaceProvider({ enabled, children }: { enabled: boolean;
             <ArrowRight size={17} aria-hidden="true" />
           </button>
         </> : pendingSwitch?.phase === "switching" ? <>
-          <h2 id="demo-session-change-title">{t("Abriendo", "Opening")} {workspaceName(pendingSwitch.workspace)}…</h2>
-          <p id="demo-session-change-description" role="status">{t("Un momento.", "One moment.")}</p>
+          <div role="status" aria-live="polite"><WorkspaceLoader workspace={pendingSwitch.workspace} titleId="demo-session-change-title" descriptionId="demo-session-change-description"/></div>
         </> : <>
           <h2 id="demo-session-change-title">{t("No pudimos abrir el espacio", "Could not open workspace")}</h2>
           <p id="demo-session-change-description" role="alert">{pendingSwitch?.message}</p>
@@ -241,10 +243,7 @@ export function DemoWorkspaceEntry({ workspace, automatic = false }: { workspace
     return () => { active = false; };
   }, [enabled, automatic, workspace, switchTo]);
   if (enabled && automatic) return <main className={s.entryPage} data-workspace-entry={workspace}>
-    <div className={s.entryLoading} role="status">
-      <LoaderCircle size={22} className={s.spinner} aria-hidden="true" />
-      <span>{t("Abriendo", "Opening")} {name}…</span>
-    </div>
+    <WorkspaceLoadingScreen workspace={workspace}/>
   </main>;
   return <main className={s.entryPage} data-workspace-entry={workspace}>
     <section className={s.entryCard} aria-labelledby="workspace-access-title">

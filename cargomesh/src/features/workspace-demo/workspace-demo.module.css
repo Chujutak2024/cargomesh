@@ -1,12 +1,9 @@
 .application { display: contents; }
-.spinner { animation: workspace-spin 1s linear infinite; }
 .entryPage {
   box-sizing: border-box; min-height: 100dvh; display: grid; place-items: center;
   padding: 24px; background: #f1f6f9; color: #18394b;
   font-family: var(--cm-font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
 }
-.entryLoading { display: flex; align-items: center; gap: 12px; font-size: 15px; }
-.entryLoading svg { flex: none; color: #007d86; }
 .entryPage *, .sessionBackdrop * { box-sizing: border-box; }
 .entryCard {
   width: min(100%, 420px); padding: 28px; border: 1px solid #dce7ee;
@@ -49,10 +46,8 @@
 }
 .secondaryButton:hover { background: #eff7f9; }
 .primaryButton:focus-visible, .secondaryButton:focus-visible, .textLink:focus-visible { outline: 3px solid #69c8d5; outline-offset: 3px; }
-@keyframes workspace-spin { to { transform: rotate(360deg); } }
 @media (max-width: 480px) {
   .entryPage, .sessionBackdrop { padding: 18px; }
   .entryCard, .sessionCard { padding: 24px; }
   .sessionCard h2 { font-size: 22px; }
 }
-@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }

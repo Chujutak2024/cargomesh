@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { ArrowRight, PackageCheck, Truck, Route, Globe2 } from "lucide-react";
+import { ArrowRight, PackageCheck, Truck, Globe2 } from "lucide-react";
 
 import { LandingPlanet } from "@/features/landing-planet/landing-planet";
 import styles from "./landing-preview.module.css";
@@ -28,12 +28,10 @@ export default async function HomePage() {
           <WorkspaceEntryLink workspace="Shipper" className={styles.choice} href="/clients"><span className={styles.icon}><PackageCheck size={23} aria-hidden="true" /></span><span><strong>I need to ship</strong><small>Create requests and follow your shipments.</small><span className={styles.action}>Explore Shipper <ArrowRight size={16} aria-hidden="true" /></span></span></WorkspaceEntryLink>
           <WorkspaceEntryLink workspace="Carrier" className={styles.choice} href="/carriers"><span className={styles.icon}><Truck size={23} aria-hidden="true" /></span><span><strong>I provide transport</strong><small>Manage your fleet, services and operations.</small><span className={styles.action}>Explore Carrier <ArrowRight size={16} aria-hidden="true" /></span></span></WorkspaceEntryLink>
         </div>
-        <p className={styles.note}>Sign in to access your Client or Carrier workspace.</p>
       </div>
       <div className={styles.visual}>
         <LandingPlanet />
-        <div className={styles.visualTop}><Route size={17} aria-hidden="true" /> From planning to delivery</div>
-        <div className={styles.visualBottom}><span>ONE PLATFORM. TWO WORKSPACES.</span><p>Built around the people<br />who keep freight moving.</p><small>Illustrative scene · No live tracking</small></div>
+        <div className={styles.visualBottom}><span>ONE PLATFORM. TWO WORKSPACES.</span><p>Built around the people<br />who keep freight moving.</p></div>
       </div>
     </section>
     <footer className={styles.footer}><span>CargoMesh · Freight, connected.</span><span>Connected workspaces</span></footer>
