@@ -1,4 +1,6 @@
 import {DispatchOptionSchema} from '@/shared/schemas/v2/dispatch';
+import {RecoveryQuoteContextSchema} from '@/shared/schemas/v2/incident-recovery';
+import {recoveryCandidates} from '../domain/recovery-candidates';
 import {proposeDispatchAlternatives,compareDispatchPlans} from '../domain/dispatch-alternatives';
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
@@ -29,7 +31,9 @@ export async function searchRequestQuotes(actor:V2Actor,id:string,raw:unknown,ra
  let planIntent: z.infer<typeof Intent>;
  if(recorded!==null)planIntent=Intent.parse(recorded);
  else {
- const services=await loadRoadServices(db);
+ const recovery=RecoveryQuoteContextSchema.parse(await quoteRpc('read_v2_recovery_quote_context',{p_organization_id:actor.organizationId,p_member_id:actor.memberId,p_request_id:id}));
+ const blocked=z.array(z.string().uuid()).parse(await quoteRpc('read_v2_recovery_blocked_calendars',{p_organization_id:actor.organizationId,p_member_id:actor.memberId}));
+ const services=recoveryCandidates(await loadRoadServices(db),recovery?.failedCarrierId??null,blocked);
  const evaluation=(await evaluateV2RoadByRequestId(id,input.expectedDraftVersion,actor,repository,{listRoadServices:async()=>services})).data;
  if(evaluation.summaryCounts.totalEvaluated>1000)throw new V2DraftError('DISPATCH_SEARCH_UNIVERSE_LIMIT','The service universe exceeds the automatic dispatch limit. Request manual review.',409);
  const dispatchOptions=request.planningPreferences?z.array(DispatchOptionSchema).parse(await quoteRpc('read_v2_dispatch_options_with_admission',{p_organization_id:actor.organizationId,p_member_id:actor.memberId,p_request_id:id,p_expected_version:input.expectedDraftVersion})):[];

@@ -57,3 +57,7 @@ See [Clean V2 bootstrap and QA profiles](./delivery/HAC29_CLEAN_BOOTSTRAP.md) fo
 ## Carga y operaci贸n: incremento Plan1
 
 [Grupos de carga, reparto multicami贸n y alcance tarifario expl铆cito](./contracts/PLAN1_CARGO_AND_MULTI_RESOURCE.md). Incluye contrato, l铆mites, compatibilidad y migraciones pendientes de rollout; su implementaci贸n local no implica activaci贸n alojada.
+
+## Recuperaci髇 por incidencia
+
+[Reemplazo urgente sin recargo por urgencia](./contracts/INCIDENT_RECOVERY.md): carga afectada, tarifa atribuible y autorizaci髇 del Cliente; implementaci髇 local pendiente de rollout autorizado.
