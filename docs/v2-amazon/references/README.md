@@ -1,5 +1,3 @@
-# Referencias no normativas
+# External references
 
-- [SupplyMesh y mapa](./SUPPLYMESH_MAP_REFERENCE.md): observaciones y datos de referencia para un escenario simulado; no incorpora automáticamente código, licencias, ofertas ni cobertura de terceros a CargoMesh.
-
-Una referencia externa no modifica los [contratos V2](../contracts/README.md). Antes de usar material ajeno en la demo, confirmar procedencia, licencia y etiquetado de simulación.
+[SupplyMesh](SUPPLYMESH_MAP_REFERENCE.md) is an external design/reference study. It does not define CargoMesh behavior or add an integration. Current product documentation is at [docs/README.md](../../README.md); authoritative internal domain rules are in [contracts](../contracts/README.md).

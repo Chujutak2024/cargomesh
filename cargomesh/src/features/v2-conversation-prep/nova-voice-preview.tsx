@@ -52,6 +52,7 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
   const workletLoadedRef = useRef(false);
   const readyRef = useRef(false);
   const socketRef = useRef<WebSocket | null>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const contextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
@@ -72,6 +73,29 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
   const acceptsTextRef = useRef(false);
   const pendingTextRef = useRef<{ text: string; resolve: () => void; reject: (error: Error) => void } | null>(null);
   const textTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function stopSilenceStream() {
+    if (silenceTimerRef.current !== null) clearInterval(silenceTimerRef.current);
+    silenceTimerRef.current = null;
+  }
+  function startSilenceStream(socket: WebSocket) {
+    if (silenceTimerRef.current !== null || stoppedRef.current || !readyRef.current || !acceptsTextRef.current
+      || socketRef.current !== socket || socket.readyState !== WebSocket.OPEN) return;
+    // Nova cross-modal text still needs continuous 16 kHz PCM, without microphone permission.
+    const sendSilence = () => {
+      if (stoppedRef.current || !readyRef.current || socketRef.current !== socket || socket.readyState !== WebSocket.OPEN) {
+        stopSilenceStream(); return;
+      }
+      if (workletRef.current && listeningRef.current) return;
+      try { socket.send(new ArrayBuffer(1024)); }
+      catch {
+        stopSilenceStream();
+        finishSession(false, es ? "Falló la conexión de voz. Conservamos tu borrador." : "Voice connection failed. Your draft is preserved.");
+      }
+    };
+    sendSilence();
+    if (!stoppedRef.current && readyRef.current)
+      silenceTimerRef.current = setInterval(sendSilence, 32);
+  }
   function rejectPendingText() {
     const pending = pendingTextRef.current; pendingTextRef.current = null;
     if (textTimerRef.current !== null) clearTimeout(textTimerRef.current);
@@ -131,7 +155,7 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
   function finishSession(renew:boolean,message:string){
     if(drainRef.current)return;
     rejectPendingText();
-    readyRef.current=false;pauseCapture();responseActiveRef.current=false;setFinishing(true);
+    readyRef.current=false;stopSilenceStream();pauseCapture();responseActiveRef.current=false;setFinishing(true);
     setStatus(outputsRef.current.length?(es?"Terminando la respuesta de Nova…":"Finishing Nova's response…"):message);
     drainRef.current=()=>{stop();setFinishing(false);if(renew)void start(true);else setStatus(message);};
     finishPlayback();
@@ -147,6 +171,7 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
   voiceContextRef.current = voiceContext;
 
   function stop() {
+    stopSilenceStream();
     if(finishTimerRef.current!==null)clearTimeout(finishTimerRef.current);
     finishTimerRef.current=null;drainRef.current=null;responseActiveRef.current=false;reportSpeaking(false);setFinishing(false);
     rejectPendingText(); acceptsTextRef.current = false;
@@ -168,6 +193,7 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
   }
 
   useEffect(() => () => {
+    stopSilenceStream();
     if(finishTimerRef.current!==null)clearTimeout(finishTimerRef.current);
     drainRef.current=null;responseActiveRef.current=false;
     stoppedRef.current = true;
@@ -212,6 +238,7 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
     streamRef.current = null;
     void microphoneRef.current?.then((stream) => stream.getTracks().forEach((track) => track.stop())).catch(() => {});
     microphoneRef.current = null;
+    if (socketRef.current) startSilenceStream(socketRef.current);
     renewOnCloseRef.current = false;
     setStatus((es?"Micrófono apagado. Conservamos tu conversación y borrador. Continúa cuando quieras hablar.":"Microphone off. Your conversation and draft are intact. Resume when you want to speak."));
   }
@@ -263,6 +290,7 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
     const worklet = new AudioWorkletNode(context, "nova-pcm-worklet");
     sourceRef.current = source;
     workletRef.current = worklet;
+    stopSilenceStream();
     worklet.port.onmessage = (message: MessageEvent<ArrayBuffer>) => {
       if (socket.readyState === WebSocket.OPEN && !stoppedRef.current && listeningRef.current) socket.send(speakingRef.current || externalSpeakingRef.current ? new ArrayBuffer(message.data.byteLength) : message.data);
     };
@@ -316,6 +344,7 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
         if (event.type === "ready") {
           acceptsTextRef.current = event.textInput === true;
           readyRef.current = true;
+          startSilenceStream(socket);
           flushWrittenTurn();
           sessionStartedAtRef.current = Date.now();
           if (listeningRef.current) void startCapture(socket).catch(() => { stop(); setStatus((es?"Micrófono no disponible. Continúa por texto.":"Microphone unavailable. Continue by text.")); });
@@ -349,7 +378,7 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
           finishSession(false,event.message);
         }
       };
-      socket.onerror = () => { if (socketRef.current === socket) setStatus((es?"Falló la conexión de voz. Continúa por texto.":"Voice connection failed. Continue by text.")); };
+      socket.onerror = () => { if (socketRef.current === socket) { stopSilenceStream(); setStatus((es?"Falló la conexión de voz. Continúa por texto.":"Voice connection failed. Continue by text.")); } };
       socket.onclose = () => {
         if (!stoppedRef.current && socketRef.current === socket) {
           const renew = renewOnCloseRef.current;

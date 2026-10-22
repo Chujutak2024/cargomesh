@@ -1,6 +1,6 @@
 # HAC-40 — flota y disponibilidad: recursos publicados
 
-Rama `codex/v2-full-backend`, PR Draft #99 hacia `feat/cycle-3-integration`. Este avance pertenece a B2 de la misma entrega integral; HAC-40 sigue abierta. No aplica cambios al Supabase alojado.
+Implementation reference. The active base is `main`; see [current API guide](../../API.md) and [verification status](../../STATUS.md). Historical rollout statements do not certify the current hosted schema.
 
 ## API disponible en esta rama
 
