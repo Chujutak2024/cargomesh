@@ -58,7 +58,7 @@ const canonical=(value:string)=>value.replace(/^V2-/i,'').replace(/-/g,'').toLow
 const technical=(value:string)=>/^(?:V2-)?[0-9a-f-]{32,36}$/i.test(value)||/^[0-9a-f]{8,}$/i.test(value)||/^(?:HAC\d|C\d+_SIM_|AUTO[_-]|DEMO[_-]|SYN[_-]|SIM[_-])/i.test(value)||value.length>30;
 
 /** A short public code is a label, not a new business identifier or sequence. */
-export function displayReference(value:string|null|undefined,prefix:string,fallbackId?:string):string{
+export function displayReference(value:string|null|undefined,prefix:string,fallbackId?:string|null):string{
  const raw=value?.trim()??'',id=fallbackId?.trim()||raw;
  const known=demoCodes[canonical(id)]??demoCodes[canonical(raw)];
  if(known)return prefix+'-'+known;
