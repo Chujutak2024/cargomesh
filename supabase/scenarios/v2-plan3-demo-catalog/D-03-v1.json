@@ -1,0 +1,940 @@
+{
+  "schemaVersion": "PLAN3_PROPOSAL_MANIFEST_V1",
+  "dataset": "D-03",
+  "version": 1,
+  "status": "PROPOSED",
+  "applicationStatus": "NOT_APPLIED",
+  "applied": false,
+  "activationAllowed": false,
+  "executionMode": "OFFLINE_VALIDATION_ONLY",
+  "timezone": "America/Lima",
+  "source": {
+    "path": "../v2-c01-sim-v1/C01-SIM-v1.json",
+    "sha256": "3ec394684362182803144cc34185614a1faa23f9bb8681c3211947ca85e39ab6",
+    "sha256Encoding": "UTF8_LF",
+    "proposalDocument": "salida/plan3/aplicacion-20261022T0423Z/D-FICHAS.md",
+    "proposalDocumentSHA256": "8475c62c84e5690d318ce209e76cb3ca2d0b103f48a57a42b0a3c1be3cc9e174",
+    "derivedAt": "2026-10-22",
+    "note": "D-FICHAS D-01/D-03/D-04. D-02 remains existing C-01; no replacement attempt."
+  },
+  "approvals": {
+    "integrator": "Cristhian",
+    "integratorApproved": false,
+    "carrierAdminApproved": false,
+    "requiredBeforeActivation": [
+      "exact actors and RLS",
+      "fresh dependency versions and evidence",
+      "Carrier policy and admission",
+      "native payload/hash preview and explicit consent"
+    ],
+    "intentKeysMustBeIssuedAfterApproval": true,
+    "futureAuthorityLiteralIsNotApproval": true
+  },
+  "provenance": {
+    "reference": "simulation:PLAN3-D-03-v1",
+    "provider": "CargoMesh Plan 3 proposal derived from C01 synthetic fixture",
+    "observedAt": "2026-10-21T00:00:00Z",
+    "validUntil": "2026-11-04T00:00:00Z",
+    "provenanceStatus": "SIMULATED"
+  },
+  "geography": {
+    "origin": {
+      "label": "[SIMULATED] C-01-SIM Point A",
+      "countryCode": "PE",
+      "region": null,
+      "city": "C01_SIM_A",
+      "lat": -12,
+      "lng": -77
+    },
+    "destination": {
+      "label": "[SIMULATED] C-01-SIM Point B",
+      "countryCode": "PE",
+      "region": null,
+      "city": "C01_SIM_B",
+      "lat": -12.5,
+      "lng": -77
+    },
+    "measured": false,
+    "realFacilities": false,
+    "roadVerified": false
+  },
+  "existingReferences": {
+    "client": {
+      "organizationId": "52000000-0000-4000-8000-000000000001",
+      "memberId": "52020000-0000-4000-8000-000000000002",
+      "expectedCode": "HAC52_PE",
+      "expectedRole": "SUPERVISOR"
+    },
+    "carrier": {
+      "carrierId": "e4440000-0000-4000-8000-000000000001",
+      "operatorId": "460388d2-0f66-400f-8fe4-0296093266c6",
+      "expectedCode": "HAC44_ROAD",
+      "expectedRole": "ADMIN"
+    },
+    "facilityA": {
+      "id": "ec63f447-95ab-46ca-85c1-e9b8953ed475",
+      "version": null,
+      "mustReread": true
+    },
+    "facilityB": {
+      "id": "2c967237-69d6-4e5b-9586-c825d64c993d",
+      "version": null,
+      "mustReread": true
+    },
+    "corridor": {
+      "id": "85140780-2760-465f-9bef-4caba7319eb2",
+      "snapshotVersion": 1,
+      "mustReread": true
+    },
+    "nodeA": {
+      "id": "2ca2493d-12e5-47ea-8dae-828b7b034adc",
+      "snapshotVersion": 1,
+      "mustReread": true
+    },
+    "nodeB": {
+      "id": "41ba7944-147c-41a6-9a2a-65cafd3787ba",
+      "snapshotVersion": 1,
+      "mustReread": true
+    },
+    "routePolicy": {
+      "id": "40a0cb90-c75d-41fa-8a36-ade5b93c7967",
+      "snapshotVersion": 1,
+      "mustReread": true
+    },
+    "category": {
+      "resolution": "existing active GENERAL; resolve exact ID after approval"
+    }
+  },
+  "sharedCorridorSnapshot": {
+    "schemaVersion": "2.0",
+    "active": true,
+    "originNodeId": {
+      "$ref": "nodeA"
+    },
+    "destinationNodeId": {
+      "$ref": "nodeB"
+    },
+    "mode": "ROAD",
+    "estimatedDistanceKm": 100,
+    "estimatedDurationSeconds": 3600,
+    "restrictions": [],
+    "source": {
+      "reference": "simulation:C01-SIM-v1",
+      "provider": "CargoMesh C-01-SIM fixture",
+      "observedAt": "2026-10-21T00:00:00Z",
+      "validUntil": "2026-11-04T00:00:00Z",
+      "provenanceStatus": "SIMULATED"
+    },
+    "version": "C01-SIM-v1",
+    "validUntil": "2026-11-04T00:00:00Z",
+    "grossWeightLimitKg": 15000,
+    "payloadLimitKg": 10000,
+    "usableDimensions": {
+      "length": 500,
+      "width": 240,
+      "height": 250
+    },
+    "limitsEvidence": {
+      "reference": "simulation:C01-SIM-v1",
+      "provider": "CargoMesh C-01-SIM fixture",
+      "observedAt": "2026-10-21T00:00:00Z",
+      "validUntil": "2026-11-04T00:00:00Z",
+      "provenanceStatus": "SIMULATED"
+    },
+    "waypoints": [
+      {
+        "kind": "REST",
+        "location": {
+          "label": "[SIMULATED] C-01-SIM Point A",
+          "countryCode": "PE",
+          "region": null,
+          "city": "C01_SIM_A",
+          "lat": -12,
+          "lng": -77
+        },
+        "source": {
+          "reference": "simulation:C01-SIM-v1",
+          "provider": "CargoMesh C-01-SIM fixture",
+          "observedAt": "2026-10-21T00:00:00Z",
+          "validUntil": "2026-11-04T00:00:00Z",
+          "provenanceStatus": "SIMULATED"
+        },
+        "verifiedAt": null
+      },
+      {
+        "kind": "FUEL",
+        "location": {
+          "label": "[SIMULATED] C-01-SIM Point B",
+          "countryCode": "PE",
+          "region": null,
+          "city": "C01_SIM_B",
+          "lat": -12.5,
+          "lng": -77
+        },
+        "source": {
+          "reference": "simulation:C01-SIM-v1",
+          "provider": "CargoMesh C-01-SIM fixture",
+          "observedAt": "2026-10-21T00:00:00Z",
+          "validUntil": "2026-11-04T00:00:00Z",
+          "provenanceStatus": "SIMULATED"
+        },
+        "verifiedAt": null
+      }
+    ],
+    "operatingProfile": {
+      "version": "ROAD_COST_INPUT_V1",
+      "drivingSeconds": 3600,
+      "tollAmount": 10,
+      "stops": [
+        {
+          "waypointIndex": 0,
+          "afterDrivingSeconds": 1800,
+          "restMinutes": 15,
+          "feeAmount": 5
+        }
+      ],
+      "source": {
+        "reference": "simulation:C01-SIM-v1:costs",
+        "provider": "CargoMesh C-01-SIM fixture",
+        "observedAt": "2026-10-21T00:00:00Z",
+        "validUntil": "2026-11-04T00:00:00Z",
+        "provenanceStatus": "SIMULATED"
+      },
+      "endpoints": {
+        "origin": {
+          "lat": -12,
+          "lng": -77
+        },
+        "destination": {
+          "lat": -12.5,
+          "lng": -77
+        }
+      }
+    }
+  },
+  "scope": {
+    "carrierCount": 1,
+    "serviceCode": "PROP_D03_FTL",
+    "resourceRefs": [
+      "D03.truck1",
+      "D03.calendar1",
+      "D03.driver1"
+    ],
+    "c01ForbiddenWindow": {
+      "startsAt": "2026-11-02T08:00:00-05:00",
+      "endsAt": "2026-11-02T14:30:00-05:00"
+    },
+    "dedicatedResources": true,
+    "availability": {
+      "startsAt": "2026-11-03T07:00:00-05:00",
+      "endsAt": "2026-11-03T19:00:00-05:00"
+    }
+  },
+  "operations": [
+    {
+      "ref": "D03.service",
+      "api": "catalog",
+      "actor": "carrier",
+      "scope": {
+        "kind": "services"
+      },
+      "value": {
+        "schemaVersion": "2.0",
+        "mode": "ROAD",
+        "serviceClass": "FTL",
+        "maxWeightKg": 10000,
+        "maxVolumeM3": 28,
+        "responseChannels": [
+          "MANUAL"
+        ],
+        "status": "ACTIVE",
+        "admittedCargoTypes": [
+          {
+            "$ref": "category"
+          }
+        ],
+        "temperatureRange": null,
+        "requiredCertifications": [],
+        "supportsHazardous": false,
+        "supportsFragile": false,
+        "supportsOversized": false
+      },
+      "status": "PROPOSED",
+      "applied": false,
+      "idempotencyKey": null,
+      "requiresFreshPreview": true
+    },
+    {
+      "ref": "D03.depot",
+      "api": "catalog",
+      "actor": "carrier",
+      "scope": {
+        "kind": "depots"
+      },
+      "value": {
+        "schemaVersion": "2.0",
+        "code": "PROP_D03_DEPOT",
+        "name": "[SIMULATED] D03 depot",
+        "location": {
+          "label": "[SIMULATED] C-01-SIM Point A",
+          "countryCode": "PE",
+          "region": null,
+          "city": "C01_SIM_A",
+          "lat": -12,
+          "lng": -77
+        },
+        "active": true,
+        "handling": [
+          "SIMULATED_HEAVY_CRATE_HANDLING"
+        ]
+      },
+      "status": "PROPOSED",
+      "applied": false,
+      "idempotencyKey": null,
+      "requiresFreshPreview": true
+    },
+    {
+      "ref": "D03.areaA",
+      "api": "catalog",
+      "actor": "carrier",
+      "scope": {
+        "kind": "areas",
+        "serviceId": {
+          "$ref": "D03.service"
+        }
+      },
+      "value": {
+        "schemaVersion": "2.0",
+        "role": "PICKUP",
+        "inclusion": "INCLUDE",
+        "geography": {
+          "granularity": "CITY",
+          "countryCode": "PE",
+          "region": null,
+          "city": "C01_SIM_A",
+          "postalCode": null
+        },
+        "source": "OWN",
+        "partnerId": null,
+        "evidence": "simulation:PLAN3-D-03-v1",
+        "verifiedAt": "2026-10-21T00:00:00Z",
+        "validFrom": "2026-10-21T00:00:00Z",
+        "validUntil": "2026-11-04T00:00:00Z",
+        "active": true
+      },
+      "status": "PROPOSED",
+      "applied": false,
+      "idempotencyKey": null,
+      "requiresFreshPreview": true
+    },
+    {
+      "ref": "D03.areaB",
+      "api": "catalog",
+      "actor": "carrier",
+      "scope": {
+        "kind": "areas",
+        "serviceId": {
+          "$ref": "D03.service"
+        }
+      },
+      "value": {
+        "schemaVersion": "2.0",
+        "role": "DELIVERY",
+        "inclusion": "INCLUDE",
+        "geography": {
+          "granularity": "CITY",
+          "countryCode": "PE",
+          "region": null,
+          "city": "C01_SIM_B",
+          "postalCode": null
+        },
+        "source": "OWN",
+        "partnerId": null,
+        "evidence": "simulation:PLAN3-D-03-v1",
+        "verifiedAt": "2026-10-21T00:00:00Z",
+        "validFrom": "2026-10-21T00:00:00Z",
+        "validUntil": "2026-11-04T00:00:00Z",
+        "active": true
+      },
+      "status": "PROPOSED",
+      "applied": false,
+      "idempotencyKey": null,
+      "requiresFreshPreview": true
+    },
+    {
+      "ref": "D03.lane",
+      "api": "catalog",
+      "actor": "carrier",
+      "scope": {
+        "kind": "lanes",
+        "serviceId": {
+          "$ref": "D03.service"
+        }
+      },
+      "value": {
+        "schemaVersion": "2.0",
+        "pickupAreaId": {
+          "$ref": "D03.areaA"
+        },
+        "deliveryAreaId": {
+          "$ref": "D03.areaB"
+        },
+        "kind": "DIRECT",
+        "mode": "ROAD",
+        "borderReviewRequired": false,
+        "evidence": "simulation:PLAN3-D-03-v1",
+        "verifiedAt": "2026-10-21T00:00:00Z",
+        "validFrom": "2026-10-21T00:00:00Z",
+        "validUntil": "2026-11-04T00:00:00Z",
+        "active": true,
+        "plannedTransitMinutes": 120,
+        "transitProvenanceStatus": "SIMULATED",
+        "crossBorderProhibited": false,
+        "crossBorderProhibitionReference": null
+      },
+      "status": "PROPOSED",
+      "applied": false,
+      "idempotencyKey": null,
+      "requiresFreshPreview": true
+    },
+    {
+      "ref": "D03.capabilityDefinition",
+      "api": "catalog",
+      "actor": "carrier",
+      "scope": {
+        "kind": "capability-definitions"
+      },
+      "value": {
+        "schemaVersion": "2.0",
+        "serviceId": {
+          "$ref": "D03.service"
+        },
+        "categoryId": {
+          "$ref": "category"
+        },
+        "requirements": [],
+        "maxWeightKg": 10000,
+        "temperatureRange": null,
+        "certifications": [],
+        "evidence": "simulation:PLAN3-D-03-v1",
+        "verifiedAt": "2026-10-21T00:00:00Z",
+        "validUntil": "2026-11-04T00:00:00Z",
+        "active": true
+      },
+      "status": "PROPOSED",
+      "applied": false,
+      "idempotencyKey": null,
+      "requiresFreshPreview": true
+    },
+    {
+      "ref": "D03.truck1",
+      "api": "catalog",
+      "actor": "carrier",
+      "scope": {
+        "kind": "assets"
+      },
+      "value": {
+        "schemaVersion": "2.0",
+        "serviceId": {
+          "$ref": "D03.service"
+        },
+        "code": "PROP_D03_T1",
+        "mode": "ROAD",
+        "equipmentType": "BOX_TRUCK",
+        "role": "LOAD_BEARING",
+        "usefulCapacityKg": 10000,
+        "usableVolumeM3": 28,
+        "operatingStatus": "AVAILABLE",
+        "homeDepotId": {
+          "$ref": "D03.depot"
+        },
+        "provenance": "OWN",
+        "partnerId": null,
+        "evidence": "simulation:PLAN3-D-03-v1",
+        "roadVehicle": {
+          "plate": "SIM-D03-T1",
+          "registrationCode": "SIM-D03-T1",
+          "registeredAt": "2026-10-21",
+          "brand": "Synthetic",
+          "model": "D03-T1",
+          "variant": null,
+          "bodyType": "BOX",
+          "usableDimensions": {
+            "length": 500,
+            "width": 240,
+            "height": 250
+          },
+          "grossWeightLimitKg": 15000,
+          "odometerKm": 0,
+          "conditionReason": null,
+          "axleConfig": "SIMULATED_2S1"
+        }
+      },
+      "status": "PROPOSED",
+      "applied": false,
+      "idempotencyKey": null,
+      "requiresFreshPreview": true
+    },
+    {
+      "ref": "D03.capability1",
+      "api": "catalog",
+      "actor": "carrier",
+      "scope": {
+        "kind": "asset-capabilities"
+      },
+      "value": {
+        "schemaVersion": "2.0",
+        "serviceId": {
+          "$ref": "D03.service"
+        },
+        "assetId": {
+          "$ref": "D03.truck1"
+        },
+        "definitionId": {
+          "$ref": "D03.capabilityDefinition"
+        },
+        "categoryId": {
+          "$ref": "category"
+        },
+        "temperatureRange": null,
+        "certifications": [],
+        "evidence": "simulation:PLAN3-D-03-v1",
+        "verifiedAt": "2026-10-21T00:00:00Z",
+        "validUntil": "2026-11-04T00:00:00Z",
+        "active": true
+      },
+      "status": "PROPOSED",
+      "applied": false,
+      "idempotencyKey": null,
+      "requiresFreshPreview": true
+    },
+    {
+      "ref": "D03.calendar1",
+      "api": "catalog",
+      "actor": "carrier",
+      "scope": {
+        "kind": "calendars"
+      },
+      "value": {
+        "schemaVersion": "2.0",
+        "serviceId": {
+          "$ref": "D03.service"
+        },
+        "assetId": {
+          "$ref": "D03.truck1"
+        },
+        "capacityPoolId": null,
+        "timezone": "America/Lima",
+        "horizon": {
+          "startsAt": "2026-11-03T07:00:00-05:00",
+          "endsAt": "2026-11-03T19:00:00-05:00"
+        },
+        "source": "simulation:PLAN3-D-03-v1",
+        "lastVerifiedAt": "2026-10-21T00:00:00Z",
+        "freshness": "SIMULATED",
+        "validUntil": "2026-11-04T00:00:00Z",
+        "complete": true,
+        "availableWindows": [
+          {
+            "startsAt": "2026-11-03T07:00:00-05:00",
+            "endsAt": "2026-11-03T19:00:00-05:00"
+          }
+        ],
+        "readyPickupAreaId": {
+          "$ref": "D03.areaA"
+        }
+      },
+      "status": "PROPOSED",
+      "applied": false,
+      "idempotencyKey": null,
+      "requiresFreshPreview": true
+    },
+    {
+      "ref": "D03.driver1",
+      "api": "catalog",
+      "actor": "carrier",
+      "scope": {
+        "kind": "drivers"
+      },
+      "value": {
+        "schemaVersion": "2.0",
+        "serviceId": {
+          "$ref": "D03.service"
+        },
+        "fullName": "[SIMULATED] D03 Driver 1",
+        "portalAccountId": null,
+        "licenseClass": "SIMULATED_A_III",
+        "licenseValidUntil": "2026-11-04",
+        "licenseTimezone": "America/Lima",
+        "qualifications": [
+          "SIMULATED_BOX_TRUCK",
+          "SIMULATED_HEAVY_CRATES"
+        ],
+        "experienceYears": 5,
+        "dutyStatus": "AVAILABLE",
+        "evidence": {
+          "reference": "simulation:PLAN3-D-03-D1-qualification",
+          "verifiedAt": "2026-10-21T00:00:00Z",
+          "validUntil": "2026-11-04T00:00:00Z",
+          "provenanceStatus": "SIMULATED"
+        },
+        "availableWindows": [
+          {
+            "startsAt": "2026-11-03T07:00:00-05:00",
+            "endsAt": "2026-11-03T19:00:00-05:00"
+          }
+        ],
+        "dutyWindow": {
+          "startsAt": "2026-11-03T07:00:00-05:00",
+          "endsAt": "2026-11-03T19:00:00-05:00"
+        },
+        "maximumDutySeconds": 43200,
+        "usedDutySeconds": 0
+      },
+      "status": "PROPOSED",
+      "applied": false,
+      "idempotencyKey": null,
+      "requiresFreshPreview": true
+    },
+    {
+      "ref": "D03.limit1",
+      "api": "workflow",
+      "actor": "carrier",
+      "scope": {
+        "action": "limits.publish"
+      },
+      "value": {
+        "schemaVersion": "2.0",
+        "active": true,
+        "serviceId": {
+          "$ref": "D03.service"
+        },
+        "assetId": {
+          "$ref": "D03.truck1"
+        },
+        "combinationId": null,
+        "corridorId": {
+          "$ref": "corridor"
+        },
+        "manufacturerPayloadLimitKg": 10000,
+        "routeGrossLimitKg": 15000,
+        "combinedTareKg": 5000,
+        "usableVolumeM3": 28,
+        "usableDimensions": {
+          "length": 500,
+          "width": 240,
+          "height": 250
+        },
+        "compatibilityConfirmed": true,
+        "source": {
+          "reference": "simulation:PLAN3-D-03-v1",
+          "provider": "CargoMesh C-01-SIM fixture",
+          "observedAt": "2026-10-21T00:00:00Z",
+          "validUntil": "2026-11-04T00:00:00Z",
+          "provenanceStatus": "SIMULATED"
+        },
+        "admission": {
+          "decision": "ALLOWED",
+          "reasonCode": "SIMULATED_ACCESS_CONFIRMED"
+        }
+      },
+      "status": "PROPOSED",
+      "applied": false,
+      "idempotencyKey": null,
+      "requiresFreshPreview": true
+    },
+    {
+      "ref": "D03.quotePolicy",
+      "api": "quotePolicy",
+      "actor": "carrier",
+      "scope": {},
+      "value": {
+        "schemaVersion": "2.0",
+        "serviceId": {
+          "$ref": "D03.service"
+        },
+        "laneId": {
+          "$ref": "D03.lane"
+        },
+        "active": false,
+        "autoIssue": false,
+        "basis": "COST_PLUS",
+        "baseAmount": 0,
+        "ratePerKm": 0,
+        "minimumAmount": 0,
+        "fuelAmount": 0,
+        "tollAmount": 0,
+        "handlingAmount": 0,
+        "taxAmount": 0,
+        "validityMinutes": 60,
+        "confirmationMinutes": 30,
+        "validUntil": "2026-11-04T00:00:00Z",
+        "terms": "PROPOSED / NOT APPLIED. D-03 synthetic cost proposal; Carrier approval and a fresh native preview are required. No fixed C-01 price, real-world transport commitment, automatic booking or dispatch.",
+        "provenanceStatus": "SIMULATED",
+        "acknowledgeAuthority": true,
+        "maxResources": 1,
+        "resourcePricing": "PER_RESOURCE",
+        "operatingCosts": {
+          "version": "COST_PLUS_V1",
+          "fuelLitresPer100Km": 30,
+          "fuelPricePerLitre": 1.2,
+          "driverHourlyCost": 6,
+          "vehicleCostPerKm": 0.15,
+          "fixedCostPerVehicle": 25,
+          "handlingCostPerShipment": 20,
+          "maxContinuousDrivingMinutes": 60,
+          "breakMinutes": 15,
+          "maxDailyDrivingMinutes": 120,
+          "dailyRestMinutes": 600,
+          "payRestTime": true,
+          "markupPercent": 20,
+          "taxPercent": 0,
+          "fleet": {
+            "version": "TRUCK_PROFILES_V1",
+            "profiles": [
+              {
+                "id": "rigid",
+                "label": "Rigid model",
+                "equipmentCode": "BOX_TRUCK",
+                "fuelLitresPer100Km": 30,
+                "driverHourlyCost": 6,
+                "vehicleCostPerKm": 0.15,
+                "fixedCostPerVehicle": 25,
+                "maxSpeedKph": 120
+              }
+            ],
+            "assets": [
+              {
+                "assetId": {
+                  "$ref": "D03.truck1"
+                },
+                "profileId": "rigid",
+                "overrides": {}
+              }
+            ]
+          }
+        },
+        "dispatch": {
+          "allowedPriorities": [
+            "URGENT",
+            "SCHEDULED"
+          ],
+          "minNoticeMinutes": 0,
+          "loadingMinutes": 30,
+          "unloadingMinutes": 30,
+          "autoConfirm": false,
+          "maxBookingAmount": null,
+          "acknowledgeSchedulingAuthority": false
+        }
+      },
+      "status": "PROPOSED",
+      "applied": false,
+      "idempotencyKey": null,
+      "requiresFreshPreview": true,
+      "requiresCarrierApproval": true
+    }
+  ],
+  "cases": [
+    {
+      "ref": "D03.fit-control",
+      "status": "PROPOSED",
+      "applied": false,
+      "requestTemplate": {
+        "schemaVersion": "2.0",
+        "origin": {
+          "facilityId": {
+            "$ref": "facilityA"
+          }
+        },
+        "destination": {
+          "facilityId": {
+            "$ref": "facilityB"
+          }
+        },
+        "pickupWindow": {
+          "startsAt": "2026-11-03T08:00:00-05:00",
+          "endsAt": "2026-11-03T10:00:00-05:00"
+        },
+        "deliveryWindow": {
+          "startsAt": "2026-11-03T14:00:00-05:00",
+          "endsAt": "2026-11-03T18:00:00-05:00"
+        },
+        "acceptedModes": [
+          "ROAD"
+        ],
+        "requiredEquipment": null,
+        "cargoSpecification": {
+          "categoryCode": "GENERAL",
+          "description": "[SIMULATED] D-03 fit-control; not an active shipment",
+          "packaging": "CRATE",
+          "totalWeightKg": 1000,
+          "totalVolumeM3": 1.2,
+          "divisible": false,
+          "requirements": [],
+          "units": [
+            {
+              "packageType": "CRATE",
+              "quantity": 1,
+              "weightPerUnitKg": 1000,
+              "volumePerUnitM3": 1.2,
+              "dimensionsCm": {
+                "length": 120,
+                "width": 100,
+                "height": 100
+              },
+              "indivisible": true,
+              "stackable": false
+            }
+          ]
+        },
+        "contacts": {
+          "pickup": {
+            "name": "[SIMULATED] D03 pickup",
+            "phoneE164": "+51900000031"
+          },
+          "recipient": {
+            "name": "[SIMULATED] D03 recipient",
+            "phoneE164": "+51900000032"
+          }
+        },
+        "budget": {
+          "amount": 500,
+          "currency": "USD"
+        },
+        "selectionObjective": "LOWEST_COST",
+        "planningPreferences": {
+          "urgency": "SCHEDULED",
+          "loadSize": "HEAVY",
+          "timeZone": "America/Lima",
+          "pickupWindows": [
+            {
+              "startsAt": "2026-11-03T08:00:00-05:00",
+              "endsAt": "2026-11-03T10:00:00-05:00"
+            }
+          ],
+          "deliveryWindows": [
+            {
+              "startsAt": "2026-11-03T14:00:00-05:00",
+              "endsAt": "2026-11-03T18:00:00-05:00"
+            }
+          ]
+        }
+      },
+      "operationWindow": {
+        "startsAt": "2026-11-03T08:00:00-05:00",
+        "endsAt": "2026-11-03T14:30:00-05:00"
+      },
+      "expectedOffline": "eligible",
+      "expectedNative": "UNVERIFIED_UNTIL_APPROVED_ACTIVATION",
+      "persistedOutcomes": [],
+      "allowOfferBookingOrReservation": false,
+      "actualStartedAt": null,
+      "actualCompletedAt": null
+    },
+    {
+      "ref": "D03.oversize-negative",
+      "status": "PROPOSED",
+      "applied": false,
+      "requestTemplate": {
+        "schemaVersion": "2.0",
+        "origin": {
+          "facilityId": {
+            "$ref": "facilityA"
+          }
+        },
+        "destination": {
+          "facilityId": {
+            "$ref": "facilityB"
+          }
+        },
+        "pickupWindow": {
+          "startsAt": "2026-11-03T08:00:00-05:00",
+          "endsAt": "2026-11-03T10:00:00-05:00"
+        },
+        "deliveryWindow": {
+          "startsAt": "2026-11-03T14:00:00-05:00",
+          "endsAt": "2026-11-03T18:00:00-05:00"
+        },
+        "acceptedModes": [
+          "ROAD"
+        ],
+        "requiredEquipment": null,
+        "cargoSpecification": {
+          "categoryCode": "GENERAL",
+          "description": "[SIMULATED] D-03 oversize-negative; not an active shipment",
+          "packaging": "CRATE",
+          "totalWeightKg": 1000,
+          "totalVolumeM3": 6,
+          "divisible": false,
+          "requirements": [],
+          "units": [
+            {
+              "packageType": "CRATE",
+              "quantity": 1,
+              "weightPerUnitKg": 1000,
+              "volumePerUnitM3": 6,
+              "dimensionsCm": {
+                "length": 600,
+                "width": 100,
+                "height": 100
+              },
+              "indivisible": true,
+              "stackable": false
+            }
+          ]
+        },
+        "contacts": {
+          "pickup": {
+            "name": "[SIMULATED] D03 pickup",
+            "phoneE164": "+51900000031"
+          },
+          "recipient": {
+            "name": "[SIMULATED] D03 recipient",
+            "phoneE164": "+51900000032"
+          }
+        },
+        "budget": {
+          "amount": 500,
+          "currency": "USD"
+        },
+        "selectionObjective": "LOWEST_COST",
+        "planningPreferences": {
+          "urgency": "SCHEDULED",
+          "loadSize": "HEAVY",
+          "timeZone": "America/Lima",
+          "pickupWindows": [
+            {
+              "startsAt": "2026-11-03T08:00:00-05:00",
+              "endsAt": "2026-11-03T10:00:00-05:00"
+            }
+          ],
+          "deliveryWindows": [
+            {
+              "startsAt": "2026-11-03T14:00:00-05:00",
+              "endsAt": "2026-11-03T18:00:00-05:00"
+            }
+          ]
+        }
+      },
+      "operationWindow": {
+        "startsAt": "2026-11-03T08:00:00-05:00",
+        "endsAt": "2026-11-03T14:30:00-05:00"
+      },
+      "expectedOffline": "ineligible",
+      "expectedNative": "UNVERIFIED_UNTIL_APPROVED_ACTIVATION",
+      "persistedOutcomes": [],
+      "allowOfferBookingOrReservation": false,
+      "actualStartedAt": null,
+      "actualCompletedAt": null
+    }
+  ],
+  "prohibitedActions": [
+    "start",
+    "position",
+    "completion",
+    "fake_delivery",
+    "extra_offer",
+    "c01_revision"
+  ],
+  "futureD01Only": null
+}
