@@ -10,16 +10,17 @@ import { TrackingVisual } from "./tracking-visual";
 import { TrackingEventsPanel, TrackingIncidentsPanel } from "./tracking-experience";
 import s from "./tracking-experience.module.css";
 import {TrackingRefresh,TrackingBackLink} from "./tracking-controls";
+import type {ExecutionPreparation} from '@/shared/schemas/v2/execution-preparation';
 
 export type TrackingDetailProps = {
   execution: Execution; booking: Booking | null; events: ExecutionEvent[]; incidents: Incident[];
   reference: string; origin: string; destination: string; originLabel: string; destinationLabel: string;
   requestId: string | null; presentation: MapPresentation; canView3D: boolean; locale: Locale;
-  eventsComplete?:boolean; incidentsComplete?:boolean; estimatedDeliveryAt?:string|null;
+  eventsComplete?:boolean; incidentsComplete?:boolean; estimatedDeliveryAt?:string|null; preparation?:ExecutionPreparation|null;
 };
-export function TrackingDetail({ execution, booking, events, incidents, reference, origin, destination, originLabel, destinationLabel, requestId, presentation, canView3D, locale,eventsComplete=true,incidentsComplete=true,estimatedDeliveryAt=null }: TrackingDetailProps) {
+export function TrackingDetail({ execution, booking, events, incidents, reference, origin, destination, originLabel, destinationLabel, requestId, presentation, canView3D, locale,eventsComplete=true,incidentsComplete=true,estimatedDeliveryAt=null,preparation=null }: TrackingDetailProps) {
   const t = (es: string, en: string) => translate(locale, es, en), tag = localeTag(locale);
-  const journey = buildTrackingJourney(execution, booking, events, incidents);
+  const journey = buildTrackingJourney(execution, booking, events, incidents,preparation);
   const milestone = journey.lastReportedStage ? stageName(journey.lastReportedStage, t) : t("Sin reporte", "No report");
   return <div className={s.page}>
     <div className={s.breadcrumb}><TrackingBackLink/><span title={reference}>{reference}</span></div>

@@ -1,7 +1,8 @@
 import { buildTrackingJourney, type Booking, type Execution, type ExecutionEvent, type Incident, type JourneyStageKey, type JourneyStageState } from "./tracking-journey";
+import type {ExecutionPreparation} from '@/shared/schemas/v2/execution-preparation';
 
 export type TrackingTranslate = (es: string, en: string) => string;
-export type TrackingListItem = { execution: Execution; booking: Booking | null; events: ExecutionEvent[]; incidents: Incident[]; reference: string; corridor: string; eventsComplete?:boolean; incidentsComplete?:boolean };
+export type TrackingListItem = { execution: Execution; booking: Booking | null; events: ExecutionEvent[]; incidents: Incident[]; reference: string; corridor: string; eventsComplete?:boolean; incidentsComplete?:boolean; preparation?:ExecutionPreparation|null };
 export type TrackingFilter = "all" | "active" | "attention" | "completed";
 
 export function stageName(key: JourneyStageKey, t: TrackingTranslate) {

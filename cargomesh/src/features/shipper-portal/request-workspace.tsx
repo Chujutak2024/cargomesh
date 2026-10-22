@@ -33,6 +33,7 @@ import {IncidentRecoveryPanel} from './incident-recovery-panel';
 import {BookingConfirmationWindow} from "@/features/booking-confirmation/panel";
 import {findRequestQuotes} from "./quote-api";
 import {BookingPreparation,prepareBookingCapacity} from "./booking-preparation";
+import {requestContractState} from './contract-state';
 
 type Workflow = Record<string, WorkflowRecordV2[]>;
 type EditState = {
@@ -91,12 +92,14 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
   const selectedOption = ranking?.data.options[selectedOptionIndex] ?? null;
   const [decision, setDecision] = useState(existingDecision);
   const activeBookings = (workflow.bookings ?? []).filter((item): item is Extract<WorkflowRecordV2, { kind: "bookings" }> => item.kind === "bookings");
+  const contract = requestContractState(request,activeBookings,(workflow.executions??[]).filter(row=>row.kind==='executions'));
+  const contractLabels = {CONFIRMED:t('Reserva confirmada','Booking confirmed'),PARTIAL:t('Confirmación parcial','Partially confirmed'),AWAITING_CARRIER:t('Esperando al transportista','Awaiting carrier'),IN_PROGRESS:t('En curso','In progress'),COMPLETED:t('Finalizada','Completed')};
   const incidents = (workflow.incidents ?? []).filter((item): item is Extract<WorkflowRecordV2, { kind: "incidents" }> => item.kind === "incidents");
 
   const quoteIntents = useRef(new Map<string,string>());
   const quoteBusy = useRef(false);
   async function searchQuotes(deadline: string) {
-    if (phase !== "idle" || quoteBusy.current || refreshBusy.current || readIncomplete || commercialReadBlocked)
+    if (!contract.canRequestQuotes || phase !== "idle" || quoteBusy.current || refreshBusy.current || readIncomplete || commercialReadBlocked)
       throw new Error("QUOTATION_BUSY");
     quoteBusy.current = true; setPhase("requesting"); setError(null);
     try {
@@ -264,26 +267,26 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
 
     {error ? <ErrorNotice error={error} t={t} /> : null}
     {commercialReadBlocked ? <p className={styles.notice} role="status">{t("La última actualización falló. Los datos conservados son una lectura anterior; actualiza antes de seleccionar, invitar o reservar.", "The last refresh failed. Retained data is an earlier read; refresh before selecting, inviting or booking.")}</p> : null}
-    {!readIncomplete && !commercialReadBlocked && offerBriefing.currentOfferCount > 0 ? <section className={styles.offerArrival} role="status" aria-live="polite">
+    {!readIncomplete && !commercialReadBlocked && contract.canRequestQuotes && offerBriefing.currentOfferCount > 0 ? <section className={styles.offerArrival} role="status" aria-live="polite">
       <div><strong>{t("Llegaron ofertas de transportistas", "Carrier offers have arrived")}</strong>
         <p>{offerBriefing.currentOfferCount} {t("oferta(s) vigente(s)", "current offer(s)")} · {offerBriefing.recommended
           ? t(`El ranking recomienda revisar primero la opción ${offerBriefing.recommended.position}.`, `The ranking recommends reviewing option ${offerBriefing.recommended.position} first.`)
           : t("Aún no hay un plan completo y clasificado para recomendar.", "No complete ranked plan is ready to recommend yet.")}</p></div>
       <Button variant="secondary" onClick={() => { setOfferVoiceTurns([]); setOfferVoiceOpen(true); }}>{t("Escuchar opciones con Nova", "Hear options with Nova")}</Button>
-    </section> : !readIncomplete && !commercialReadBlocked && acceptedOpportunities.length > 0 ? <section className={styles.offerArrival} role="status" aria-live="polite">
+    </section> : !readIncomplete && !commercialReadBlocked && contract.canRequestQuotes && acceptedOpportunities.length > 0 ? <section className={styles.offerArrival} role="status" aria-live="polite">
       <div><strong>{t("Un transportista aceptó revisar la solicitud", "A carrier accepted the opportunity")}</strong>
         <p>{t("Aún no ha enviado una oferta con precio. Te avisaremos aquí cuando llegue; todavía no hay una opción que Nova pueda recomendar.", "No priced offer has arrived yet. We will show it here when it arrives; Nova has no option to recommend yet.")}</p></div>
     </section> : null}
     <section className={styles.panel}><div className={styles.summary}>
-      <Summary label={t("Estado", "Status")} value={requestStatusLabel(request.status, locale)} badge={requestStatusTone(request.status)} />
+      <Summary label={t("Estado", "Status")} value={!readIncomplete&&contract.phase?contractLabels[contract.phase]:requestStatusLabel(request.status, locale)} badge={!readIncomplete&&contract.confirmed.length?'positive':requestStatusTone(request.status)} />
       <Summary label={t("Carga", "Cargo")} value={`${formatMass(request.cargoSpecification.totalWeightKg, localeTag)} · ${request.cargoSpecification.totalVolumeM3.toLocaleString(localeTag)} m³`} />
       <Summary label={t("Ventana de recojo", "Pickup window")} value={formatDateTime(request.pickupWindow.startsAt, localeTag)} />
       <Summary label={t("Clase solicitada", "Requested class")} value={request.serviceType ?? "UNKNOWN"} />
     </div></section>
     <RequestFacts request={request}/>
     {!readIncomplete ? <IncidentRecoveryPanel request={request}/> : null}
-    {!readIncomplete && commercialRefreshEnabled ? <QuoteSearchPanel requestId={request.id} busy={phase!=="idle"||commercialReadBlocked} canSearch={request.status==="DRAFT"||request.status==="PENDING"} onSearch={searchQuotes} onNova={()=>{setOfferVoiceTurns([]);setOfferVoiceOpen(true);}}/> : null}
-    {!readIncomplete ? <OpportunityPanel context={commercialContext} catalog={catalog} busy={phase !== "idle" || commercialReadBlocked}
+    {!readIncomplete && contract.canRequestQuotes && commercialRefreshEnabled ? <QuoteSearchPanel requestId={request.id} busy={phase!=="idle"||commercialReadBlocked} canSearch={request.status==="DRAFT"||request.status==="PENDING"} onSearch={searchQuotes} onNova={()=>{setOfferVoiceTurns([]);setOfferVoiceOpen(true);}}/> : null}
+    {!readIncomplete && contract.canRequestQuotes ? <OpportunityPanel context={commercialContext} catalog={catalog} busy={phase !== "idle" || commercialReadBlocked}
       onRequest={key => { const target = opportunityTargets(commercialContext).find(row => row.key === key); if (!target || phase !== "idle" || commercialReadBlocked) return;
         const channels = commonResponseChannels(target.serviceIds, target.carrierId, catalog); if (!channels.length) return;
         setOpportunityKey(key); setOpportunityDeadline(""); setResponseChannel(channels[0]); setOpportunityConsent(false); }} t={t} localeTag={localeTag}/> : null}
@@ -301,7 +304,7 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
         {request.status === "FAILED" ? <p className={styles.notice} data-tone="danger"><AlertTriangle size={17}/>{t("La solicitud falló. Revisa la trazabilidad y los datos persistidos; corrige mediante una revisión permitida o crea una nueva solicitud. No se reintenta en silencio.", "The request failed. Review traceability and persisted data; correct it through an allowed revision or create a new request. It is never retried silently.")}</p> : null}
         {request.status === "CANCELLED" ? <p className={styles.notice} data-tone="warning"><AlertTriangle size={17}/>{t("Esta solicitud fue cancelada y no puede continuar a ofertas o booking. Crea una solicitud nueva si la operación sigue vigente.", "This request was cancelled and cannot continue to offers or booking. Create a new request if the operation is still needed.")}</p> : null}
         {request.status === "DRAFT" ? <><p className={styles.notice} data-tone="warning"><AlertTriangle size={17}/>{t("Enviar bloquea la versión esperada. Un conflicto 409 debe recargarse, no ocultarse.", "Submit uses the expected version. A 409 conflict must be reloaded, not hidden.")}</p><Button disabled={phase!=="idle" || readIncomplete} isLoading={phase === "submitting"} onClick={() => void submit()}><Send size={16}/>{t("Enviar solicitud", "Submit request")}</Button></> : null}
-        {!readIncomplete && request.status !== "DRAFT" && !ranking ? <p className={styles.notice}><CalendarClock size={17}/>{t("La solicitud está enviada. Las alternativas y ofertas aparecerán cuando el backend las persista.", "The request is submitted. Alternatives and offers appear when the backend persists them.")}</p> : null}
+        {!readIncomplete && contract.canRequestQuotes && request.status !== "DRAFT" && !ranking ? <p className={styles.notice}><CalendarClock size={17}/>{t("La solicitud está enviada. Las alternativas y ofertas aparecerán cuando el backend las persista.", "The request is submitted. Alternatives and offers appear when the backend persists them.")}</p> : null}
         {!readIncomplete && ranking && !decision ? <Button disabled={phase!=="idle" || commercialReadBlocked || !inspectRankedOption(selectedOption, commercialContext).available} onClick={() => setDecisionOpen(true)}><FileCheck2 size={16}/>{t("Revisar selección", "Review selection")}</Button> : null}
         {!readIncomplete && decision && bookingsStillNeeded(decision.data.selectedOfferIds, activeBookings, decision.id).length ? <Button disabled={phase!=="idle" || commercialReadBlocked} onClick={() => { setBookingConsent(false); setBookingOpen(true); }}><PackageCheck size={16}/>{t("Autorizar booking", "Authorize booking")}</Button> : null}
         {activeBookings.length ? <Link className={styles.primary} href="/bookings"><Truck size={16}/>{t("Ver reservas", "View bookings")}</Link> : null}

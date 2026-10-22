@@ -80,9 +80,4 @@ export function formatMass(weightKg: number, locale = "es-PE") {
     : `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(weightKg)} kg`;
 }
 
-export function formatDateTime(value: string | null | undefined, locale = "es-PE") {
-  if (!value) return locale.startsWith("es") ? "Desconocido" : "Unknown";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return locale.startsWith("es") ? "Desconocido" : "Unknown";
-  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(parsed);
-}
+export {formatDateTime} from '@/shared/lib/date-time';

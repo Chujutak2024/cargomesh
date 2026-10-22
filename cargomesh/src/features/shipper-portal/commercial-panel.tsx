@@ -3,7 +3,8 @@ import { AlertTriangle, ArrowRight, FileCheck2, ShieldCheck, Truck } from "lucid
 import { Button } from "@/components/ui";
 import type { WorkflowRecordV2 } from "./shipper-model";
 import { formatDateTime } from "./shipper-model";
-import { bookingsStillNeeded, money } from "./commercial-view";
+import { bookingsStillNeeded, money, resolveBookingOffer } from "./commercial-view";
+import {requestContractState} from './contract-state';
 import { inspectOffer, inspectRankedOption, type CommercialContext, type Offer } from "./commercial-context";
 import type { CommercialCatalog } from "./commercial-catalog";
 import { carrierLabel } from "./opportunity-panel";
@@ -34,6 +35,17 @@ export function CommercialPanel({ context, catalog, selectedOptionIndex, setSele
   decision: Decision | null; bookings: Booking[]; onDecide: () => void; onBook: () => void; t: Translate; localeTag: string; busy?: boolean;
 }) {
   const { offers, ranking } = context, option = ranking?.data.options[selectedOptionIndex] ?? null;
+  const contract=requestContractState(context.request,bookings);
+  if(contract.active.length&&decision&&!bookingsStillNeeded(decision.data.selectedOfferIds,bookings,decision.id).length){
+    const bookedOffers=[...new Map(contract.active.flatMap(booking=>{const offer=resolveBookingOffer(booking,decision?[decision]:[],offers);return offer?[[offer.id,offer] as const]:[];})).values()];
+    const history=offers.filter(offer=>!bookedOffers.some(booked=>booked.id===offer.id));
+    return <section className={styles.panel} aria-labelledby="commercial-title"><header className={styles.panelHeader}><h2 id="commercial-title">{t('Contratación','Contract')}</h2><FileCheck2 size={18}/></header><div className={styles.section}>
+      <p className={styles.notice}><ShieldCheck size={16}/>{contract.phase==='CONFIRMED'?t('Booking confirmado.','Booking confirmed.'):t('Autorización registrada; revisa su confirmación en Reservas.','Authorization recorded; check confirmation in Bookings.')}</p>
+      {bookedOffers.map(offer=><OfferDetails key={offer.id} offer={offer} context={context} catalog={catalog} t={t} localeTag={localeTag} contracted/>)}
+      {!bookedOffers.length?<p>{t('Consulta la referencia de la oferta en la reserva vinculada.','Review the offer reference in the linked booking.')}</p>:null}
+      {history.length?<details className={styles.offerArchive}><summary>{t('Historial de cotizaciones','Quote history')} ({history.length})</summary>{history.map(offer=><OfferDetails key={offer.id} offer={offer} context={context} catalog={catalog} t={t} localeTag={localeTag}/>)}</details>:null}
+    </div></section>;
+  }
   const state = inspectRankedOption(option, context);
   const decisionBookings = bookings.filter(row => row.data.decisionId === decision?.id);
   const rejected = decisionBookings.length > 0 && decisionBookings.every(row => ["REJECTED", "CANCELLED"].includes(row.data.carrierConfirmationStatus));
@@ -82,17 +94,17 @@ export function CommercialPanel({ context, catalog, selectedOptionIndex, setSele
   </section>;
 }
 
-function OfferDetails({ offer, context, catalog, t, localeTag }: { offer: Offer; context: CommercialContext; catalog: CommercialCatalog; t: Translate; localeTag: string }) {
+function OfferDetails({ offer, context, catalog, t, localeTag, contracted=false }: { offer: Offer; context: CommercialContext; catalog: CommercialCatalog; t: Translate; localeTag: string; contracted?:boolean }) {
   const state = inspectOffer(offer, context), identity = offer.carrierId ? catalog.carriers[offer.carrierId] : null;
   const status = state.availability === "AVAILABLE" ? t("Vigente", "Current") : commercialReason(state.availability, t);
   return <article className={styles.offerDetail}><header className={styles.offerHead}><div className={comparison.identity}>
     <span className={styles.eyebrow}>{t("Oferta", "Offer")} v{offer.data.offerVersion}</span><h3>{carrierLabel(offer.carrierId, catalog, t)}</h3>
     <small>{t("Referencia de cotización", "Quote reference")}: {offer.data.carrierReference}</small>{identity?.state !== "AVAILABLE" ? <small>{t("Nombre comercial no disponible", "Commercial name unavailable")} · {identity?.state ?? "NOT_LOADED"}</small> : null}
     </div><strong className={styles.price}>{money(offer.data.price.amount, offer.data.price.currency, localeTag)}</strong></header>
-    <span className={styles.status} data-tone={state.current ? "positive" : "pending"}>{status}{!state.linked ? ` · ${t("atribución sin verificar", "unverified attribution")}` : ""}</span>
-    {!state.current ? <ul className={comparison.issues}>{state.reasons.map(reason => <li key={reason}>{commercialReason(reason, t)}</li>)}</ul> : null}
+    <span className={styles.status} data-tone={contracted||state.current ? "positive" : "pending"}>{contracted?t('Oferta contratada','Contracted offer'):status}{!state.linked ? ` · ${t("atribución sin verificar", "unverified attribution")}` : ""}</span>
+    {!contracted&&!state.current ? <ul className={comparison.issues}>{state.reasons.map(reason => <li key={reason}>{commercialReason(reason, t)}</li>)}</ul> : null}
     <dl className={comparison.metadata}>
-      <Fact label={t("Vigencia", "Validity")} value={`${formatDateTime(offer.data.validity.startsAt, localeTag)} → ${formatDateTime(offer.data.validity.endsAt, localeTag)}`}/>
+      <Fact label={contracted?t('Vigencia para nuevas contrataciones','Validity for new bookings'):t("Vigencia", "Validity")} value={`${formatDateTime(offer.data.validity.startsAt, localeTag)} → ${formatDateTime(offer.data.validity.endsAt, localeTag)}`}/>
       <Fact label={t("Recojo estimado", "Estimated pickup")} value={formatDateTime(offer.data.estimatedPickupAt, localeTag)}/><Fact label={t("Entrega estimada", "Estimated delivery")} value={formatDateTime(offer.data.estimatedDeliveryAt, localeTag)}/>
       <Fact label={t("Servicios", "Services")} value={offer.data.coveredServiceIds.map(id => { const row = catalog.services[id]; return row?.state === "AVAILABLE" ? `${row.mode} · ${row.serviceClass}` : `${t("Servicio", "Service")} ${id.slice(0, 8)}`; }).join(" / ")}/>
       <Fact label={t("Tránsito declarado", "Declared transit")} value={offer.data.transitDurationSeconds === null ? t("Desconocido", "Unknown") : `${(offer.data.transitDurationSeconds / 3600).toLocaleString(localeTag, { maximumFractionDigits: 1 })} h`}/>

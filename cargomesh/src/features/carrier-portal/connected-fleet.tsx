@@ -78,6 +78,7 @@ export function ConnectedFleet({register,section,onNavigate,carrierContext}:{reg
   {current?.visualGaps.length?<p role="status" className={c.notice}>Pending operational records: {current.visualGaps.join(', ')}. Missing history is not represented as zero activity.</p>:null}
   {message?<p role="status" className={c.notice}>{message}</p>:null}
   {current&&services.length===0?<section className={s.panel}><h2>No road service recorded</h2><p>Service setup is pending connection in this screen.</p></section>:null}
+  {current&&services.length>0&&!service&&!loading&&!error?<section className={s.empty}><Truck size={30} aria-hidden="true"/><h2>Select a service</h2><p>Choose a road service above to view its trucks and scheduling.</p></section>:null}
   {current&&service&&!loading?<>
    {!vehicle&&!driverRow&&!register&&!editing?<div className={s.sectionNavigation}><div className={s.viewSwitch} role="group" aria-label="Fleet sections">
     <Button variant="secondary" size="compact" aria-pressed={view==='vehicles'} onClick={()=>{setDirectory('vehicles');setManageDrivers(false);}}><Truck size={17}/>Trucks</Button>
