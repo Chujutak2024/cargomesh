@@ -1,8 +1,0 @@
-.loading { display:grid; min-height:18rem; place-content:center; justify-items:center; gap:.75rem; color:var(--cm-color-muted); font-size:.875rem; }
-.loading svg { color:var(--cm-color-logistics); animation:rotate 1.4s linear infinite; }
-.error { display:grid; max-width:38rem; justify-items:start; gap:.85rem; margin:3rem auto; border-block:1px solid var(--cm-color-line); padding:1.5rem 0; color:var(--cm-color-muted); line-height:1.6; }
-.error > svg { color:var(--cm-color-danger); }
-.error strong { color:var(--cm-color-heading); font-size:1.125rem; }
-.error span { font-size:.875rem; }
-@keyframes rotate { to { transform:rotate(360deg); } }
-@media (prefers-reduced-motion:reduce) { .loading svg { animation:none; } }

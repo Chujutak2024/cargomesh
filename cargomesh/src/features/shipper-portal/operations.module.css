@@ -1,10 +1,10 @@
 .navigation { display: grid; min-width: 0; gap: .65rem; }
-.tabs { display: flex; flex-wrap: wrap; width: fit-content; max-width: 100%; gap: 1rem; padding: 0; border-bottom: 1px solid var(--cm-color-line); }
-.tabs a { display: inline-flex; flex: 1 1 auto; align-items: center; justify-content: center; gap: .5rem; min-height: 2.75rem; padding: .6rem 1rem; color: var(--cm-color-muted); font-size: .85rem; font-weight: 750; text-decoration: none; transition: background .16s ease, color .16s ease; border: 0; border-bottom: 2px solid transparent; border-radius: 0; }
+.tabs { display: flex; flex-wrap: wrap; gap: .35rem; width: fit-content; max-width: 100%; padding: .3rem; border: 1px solid var(--cm-color-line); border-radius: .9rem; background: var(--cm-color-surface); }
+.tabs a { display: inline-flex; flex: 1 1 auto; align-items: center; justify-content: center; gap: .5rem; min-height: 2.75rem; padding: .6rem 1rem; border: 1px solid transparent; border-radius: .65rem; color: var(--cm-color-muted); font-size: .85rem; font-weight: 750; text-decoration: none; transition: background .16s ease, color .16s ease; }
 .tabs a:hover { background: var(--cm-color-surface-tint); }
-.tabs a[aria-current="page"] { color: var(--cm-color-logistics); border-bottom-color: var(--cm-color-logistics); }
+.tabs a[aria-current="page"] { border-color: var(--cm-color-line); color: var(--cm-color-logistics); background: var(--cm-color-positive-surface); }
 .back { display: inline-flex; align-items: center; gap: .5rem; width: fit-content; min-height: 2.5rem; color: var(--cm-color-logistics); font-size: .85rem; font-weight: 750; text-decoration: none; }
-.readNotice { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .75rem; padding: 1rem; color: var(--cm-color-warning-ink); background: var(--cm-color-warning-surface); border-block: 1px solid var(--cm-color-line); }
+.readNotice { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .75rem; padding: 1rem; border: 1px solid var(--cm-color-line); border-radius: .9rem; color: var(--cm-color-warning-ink); background: var(--cm-color-warning-surface); }
 .readNotice > div { flex: 1 1 18rem; min-width: 0; }
 .readNotice strong { font-size: .9rem; }
 .readNotice p, .collectionNotice p { margin: .3rem 0 0; font-size: .8rem; line-height: 1.6; overflow-wrap: anywhere; }
@@ -12,13 +12,13 @@
 .readNotice button:disabled { opacity: .6; cursor: wait; }
 .collectionNotice { padding: .8rem 1rem; color: var(--cm-color-muted); border-bottom: 1px solid var(--cm-color-line); background: var(--cm-color-surface-tint); }
 .pagination { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .7rem; }
-.selected { background: var(--cm-color-positive-surface); }
+.selected { background: var(--cm-color-positive-surface); box-shadow: inset 3px 0 var(--cm-color-logistics); }
 .reset { min-height: 2.5rem; padding: .4rem .7rem; border: 1px solid var(--cm-color-line); border-radius: .6rem; color: var(--cm-color-logistics); background: var(--cm-color-surface); font: inherit; font-size: .8rem; cursor: pointer; }
 .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin: 0; }
 .factsDisclosure summary { cursor: pointer; color: var(--cm-color-heading); font-weight: 750; }
 .factsDisclosure[open] summary > svg { transform: rotate(180deg); }
 .factsDisclosure summary:focus-visible { outline: 3px solid var(--cm-color-focus); outline-offset: -3px; }
-.facts div { min-width: 0; padding: .85rem; border-bottom: 1px solid var(--cm-color-line); }
+.facts div { min-width: 0; padding: .85rem; border: 1px solid var(--cm-color-line); border-radius: .7rem; background: var(--cm-color-surface-tint); }
 .facts dt { margin-bottom: .3rem; color: var(--cm-color-muted); font-size: .72rem; }
 .facts dd { margin: 0; overflow-wrap: anywhere; color: var(--cm-color-heading); font-size: .82rem; line-height: 1.6; }
 .tabs a:focus-visible, .back:focus-visible, .readNotice button:focus-visible, .pagination a:focus-visible, .reset:focus-visible { outline: 3px solid var(--cm-color-focus); outline-offset: 2px; }
