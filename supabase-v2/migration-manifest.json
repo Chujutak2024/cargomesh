@@ -679,6 +679,17 @@
       "dependencies": [
         "20261021203000"
       ]
+    },
+    {
+      "issue": "CLIENT-CARRIER-CLOSEOUT",
+      "path": "supabase-v2/supabase/migrations/20261022100000_client_execution_preparation.sql",
+      "version": "20261022100000",
+      "sha256": "9c7ed19e000d20d27400bd9896eae258ff833c39fc384310e344aa80febd9d63",
+      "type": "schema",
+      "profile": "v2-clean",
+      "dependencies": [
+        "20261022090000"
+      ]
     }
   ]
 }

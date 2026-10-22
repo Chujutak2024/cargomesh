@@ -1,4 +1,5 @@
 import type { WorkflowRecordV2 } from "./shipper-model";
+import type {ExecutionPreparation} from '@/shared/schemas/v2/execution-preparation';
 
 export type Execution = Extract<WorkflowRecordV2, { kind: "executions" }>;
 export type ExecutionEvent = Extract<WorkflowRecordV2, { kind: "execution-events" }>;
@@ -10,12 +11,13 @@ export type Route = Extract<WorkflowRecordV2, { kind: "routes" }>;
 
 export type JourneyStageKey = "booking" | "preparation" | "pickup" | "departure" | "transit" | "checkpoint" | "arrival" | "reception" | "delivery";
 export type JourneyStageState = "completed" | "current" | "future" | "unknown" | "blocked";
-export type JourneyStage = { key: JourneyStageKey; state: JourneyStageState; at: string | null; evidence: "booking" | "execution" | "event" | "none" };
+export type JourneyStage = { key: JourneyStageKey; state: JourneyStageState; at: string | null; evidence: "booking" | "execution" | "event" | "none" | "assignments" };
 
 const stageKeys: JourneyStageKey[] = ["booking", "preparation", "pickup", "departure", "transit", "checkpoint", "arrival", "reception", "delivery"];
 
 /** Only persisted transitions advance the UI. Unmodeled physical milestones stay unknown. */
-export function buildTrackingJourney(execution: Execution, booking: Booking | null, events: ExecutionEvent[], incidents: Incident[]) {
+export function buildTrackingJourney(execution: Execution, booking: Booking | null, events: ExecutionEvent[], incidents: Incident[], preparation?:ExecutionPreparation|null) {
+  const scopedPreparation=preparation?.executionId===execution.id&&preparation.organizationId===execution.organizationId&&preparation.requestId===execution.requestId?preparation:null;
   const action = (name: ExecutionEvent["data"]["action"]) => events.filter((event) => event.data.action === name)
     .sort((a, b) => Date.parse(b.data.at) - Date.parse(a.data.at))[0] ?? null;
   const started = action("executions.start");
@@ -35,6 +37,8 @@ export function buildTrackingJourney(execution: Execution, booking: Booking | nu
   const bookingBlocked = booking?.data.carrierConfirmationStatus === "REJECTED" || booking?.data.carrierConfirmationStatus === "CANCELLED";
 
   const stages: JourneyStage[] = stageKeys.map((key) => {
+    if(key==='preparation'&&scopedPreparation&&scopedPreparation.status!=='UNKNOWN')
+      return {key,state:scopedPreparation.status==='ASSIGNED'?'current':'future',at:null,evidence:'assignments'};
     if (["preparation", "pickup", "checkpoint", "arrival", "reception"].includes(key))
       return { key, state: "unknown", at: null, evidence: "none" };
     if (key === "booking") return { key, state: bookingConfirmed ? "completed" : bookingBlocked ? "blocked" : booking ? "current" : "unknown",
@@ -47,7 +51,7 @@ export function buildTrackingJourney(execution: Execution, booking: Booking | nu
       at: completed?.data.at ?? execution.data.actualCompletedAt, evidence: completed ? "event" : done ? "execution" : "none" };
   });
   const lastReportedStage: JourneyStageKey | null = done ? "delivery" : hasReportedPosition ? "transit" : hasReportedStart ? "departure" : bookingConfirmed ? "booking" : null;
-  return { stages, lastReportedStage, criticalOpen, openIncidents, latestEvent, lastUpdatedAt, bookingBlocked, cancelled, completed: done, latestPositionAt: positioned?.data.at ?? null,
+  return { stages, preparation:scopedPreparation, lastReportedStage, criticalOpen, openIncidents, latestEvent, lastUpdatedAt, bookingBlocked, cancelled, completed: done, latestPositionAt: positioned?.data.at ?? null,
     positionReports: events.filter((event) => event.data.action === "executions.position").length,
     lastKnownPosition: execution.data.lastKnownPosition };
 }

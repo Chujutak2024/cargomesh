@@ -84,5 +84,5 @@ export function formatDateTime(value: string | null | undefined, locale = "es-PE
   if (!value) return locale.startsWith("es") ? "Desconocido" : "Unknown";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return locale.startsWith("es") ? "Desconocido" : "Unknown";
-  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(parsed);
+  return `${new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone: "America/Lima" }).format(parsed)} PET (UTC−05:00)`;
 }

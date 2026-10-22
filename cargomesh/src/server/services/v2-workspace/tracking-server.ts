@@ -6,6 +6,8 @@ import { WorkflowServiceV2 } from "@/server/modules/workflow/application/workflo
 import { workflowRepositoryV2 } from "@/server/modules/workflow/infrastructure/supabase-workflow-repository";
 import { OperationsReadContractError } from "./operations-collection";
 import { collectTrackingDetail, collectTrackingItem, TrackingScopeError, type TrackingSource } from "@/features/shipper-portal/tracking-data";
+import {ExecutionPreparationSchema} from '@/shared/schemas/v2/execution-preparation';
+import {quoteRpc} from '@/server/modules/commercial/infrastructure/supabase-quotes';
 async function trackingReader() {
   const reader=await operationsReader(), actor=reader.actor;
   const service=new WorkflowServiceV2(await workflowRepositoryV2());
@@ -22,7 +24,19 @@ async function trackingReader() {
   return {source,actor,service};
 }
 export async function readOperationsTrackingDetail(id:string) {
-  const {source,actor}=await trackingReader();return collectTrackingDetail(id,actor.organizationId,source);
+  const {source,actor}=await trackingReader();const result=await collectTrackingDetail(id,actor.organizationId,source);
+  let preparation=null;
+  try{
+    const value=ExecutionPreparationSchema.parse(await quoteRpc('read_v2_execution_preparation',{
+      p_organization_id:actor.organizationId,p_member_id:actor.memberId,p_execution_id:id}));
+    if(value.organizationId!==actor.organizationId||value.executionId!==id||value.requestId!==result.request.id)
+      throw new TrackingScopeError('Preparation scope mismatch.');
+    preparation=value;
+  }catch(error){
+    if(error instanceof TrackingScopeError)throw error;
+    result.issues.push({resource:'execution-preparation',reason:'unavailable'});
+  }
+  return {...result,item:{...result.item,preparation}};
 }
 export async function readOperationsTrackingList(offset=0) {
   if(!Number.isInteger(offset)||offset<0||offset>100000)throw new OperationsReadContractError("Invalid tracking offset.");

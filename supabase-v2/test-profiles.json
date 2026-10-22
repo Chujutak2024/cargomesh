@@ -49,6 +49,7 @@
     "supabase/tests/44_v2_dispatch_schedule.test.sql",
     "supabase/tests/45_v2_operating_costs.test.sql",
     "supabase/tests/46_v2_route_admission.test.sql",
-    "supabase/tests/47_v2_incident_recovery.test.sql"
+    "supabase/tests/47_v2_incident_recovery.test.sql",
+    "supabase/tests/48_v2_client_execution_preparation.test.sql"
   ]
 }
