@@ -92,13 +92,19 @@ test("loaders render distinct decorative variants with bilingual loading copy an
     }
   }
 });
-test("reduced motion disables repeated motion; route and session loading reuse the same visual", () => {
+test("reduced motion disables repeated motion; route skeletons stay separate from workspace entry loading", () => {
   const css = readFileSync(new URL("./workspace-loader.module.css", import.meta.url), "utf8");
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /animation: none/);
   assert.match(css, /@media \(max-height: 560px\)/);
-  for (const [path, workspace] of [["../../app/clients/loading.tsx", "client"], ["../../app/carriers/loading.tsx", "carrier"]]) {
-    assert.ok(readFileSync(new URL(path, import.meta.url), "utf8").includes(`workspace="${workspace}"`));
+  for (const [file, dependency, component] of [
+    ["../../app/clients/loading.tsx", "@/features/shipper-portal/client-continuity", "ClientRouteLoading"],
+    ["../../app/carriers/loading.tsx", "@/features/carrier-navigation/carrier-loading", "CarrierSkeleton"],
+  ]) {
+    const { default: Loading } = load(file, { [dependency]: { [component]: component } });
+    const tree = Loading({});
+    assert.equal(tree.type, component);
+    assert.equal(tree.props.shape, "dashboard");
   }
   const demo = readFileSync(new URL("../workspace-demo/workspace-demo-controls.tsx", import.meta.url), "utf8");
   assert.ok(demo.includes("<WorkspaceLoader workspace={pendingSwitch.workspace}"));

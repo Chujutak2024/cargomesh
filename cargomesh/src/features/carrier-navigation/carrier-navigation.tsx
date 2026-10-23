@@ -8,6 +8,7 @@ import { Activity, Building2, ClipboardCheck, CircleHelp, ChevronRight, LayoutDa
 import { carrierActiveItem, carrierNavigation, type CarrierNavIcon } from './navigation-model';
 import s from './carrier-navigation.module.css';
 import { lockDocumentScroll } from "@/shared/browser/scroll-lock";
+import { CarrierPageMotion } from '@/features/product-motion/carrier-page-motion';
 
 const icons: Record<CarrierNavIcon, typeof Truck> = { dashboard: LayoutDashboard, activity: Activity, package: Package, route: Route, truck: Truck, review: ClipboardCheck, building: Building2, register: Plus, request: Package, help: CircleHelp };
 const NavigationContext = createContext<{ toggle: () => void; expanded: boolean; mobile: boolean; sidebarId: string; locale: 'es' | 'en' } | null>(null);
@@ -98,7 +99,7 @@ export function CarrierNavigation({ children, current, locale, workspaceHref = '
         <div className={s.identity}><span className={s.avatar}><UserRound size={19} aria-hidden="true" /></span><div><strong>{t('Espacio carrier', 'Carrier workspace')}</strong><span>{sourceLabel}</span></div></div>
       </aside>
       {mobile && open ? <button className={s.backdrop} type="button" aria-label={t('Cerrar menú carrier', 'Close carrier menu')} onClick={close} tabIndex={-1} /> : null}
-      <div className={s.content} data-carrier-scroll tabIndex={-1} inert={mobile && open}>{children}</div>
+      <CarrierPageMotion identity={pathname.startsWith('/carriers') ? pathname : pathname + (hash || '#/' + current)} className={s.content} data-carrier-scroll tabIndex={-1} inert={mobile && open}>{children}</CarrierPageMotion>
     </div>
   </NavigationContext.Provider>;
 }
