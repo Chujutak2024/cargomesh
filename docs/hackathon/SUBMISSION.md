@@ -11,7 +11,7 @@ Submission closes **23 October 2026, 12:00 PDT = 14:00 America/Lima (19:00 UTC)*
 | Material | Location in repository | Delivery through Devpost |
 |---|---|---|
 | Product narrative and technical setup | Root README, product/setup/architecture guides | Text description, repository URL and testing instructions |
-| Working demo | [Judge guide](JUDGE_GUIDE.md) | Demo URL and any private testing credentials through the intended judge instructions |
+| Working demo | [Judge guide](JUDGE_GUIDE.md) | Public demo URL; Explore Shipper / Explore Carrier without entered credentials; see the dated access record for remaining checks |
 | Video | Public YouTube/Vimeo upload | Video URL; keep it under three minutes |
 | Alexa+ path | [Alexa+ guide](ALEXA_PLUS.md) | Select primary track and identify real MCP/client path or explicit Web simulation |
 | Kiro/AWS usage | [AWS Builder/Kiro](AWS_BUILDER_KIRO.md) and linked evidence | Select AWS Builder; explain use in Product Feedback and provide accessible evidence links |
