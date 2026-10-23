@@ -1,4 +1,4 @@
-export type DateClarification={alternatives:string[];timeZone:string;referenceDate:string};
+export type DateClarification={alternatives:string[];timeZone:string;referenceDate:string;role?:"pickup"|"delivery";startTime?:string;endTime?:string};
 export function sessionDate(now:number,timeZone:string){
  const parts=new Intl.DateTimeFormat("en-CA",{timeZone,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date(now));
  const part=(type:string)=>parts.find(p=>p.type===type)!.value;

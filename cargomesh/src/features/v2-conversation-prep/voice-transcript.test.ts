@@ -31,3 +31,15 @@ test("an in-turn correction does not prefill the rejected city", () => {
     text: "from Lima to Piura no sorry sorry I need to go from Lima Peru to Santiago Chile" }]),
   "I need to go from Lima Peru to Santiago Chile");
 });
+
+
+test("renewal retains early cargo facts and recent assistant questions within the existing envelope",()=>{
+ const turns=[{speaker:"user" as const,text:"2 boxes with one robot inside each, 500kg each",contentId:"nova:1:product"}];
+ for(let i=0;i<20;i++)turns.push({speaker:"user",text:`detail ${i}`,contentId:`nova:1:u${i}`});
+ const dialogue=[...turns,{speaker:"assistant" as const,text:"Pickup is November 10. When should it arrive in Arequipa?",contentId:"nova:1:a21"},{speaker:"user" as const,text:"December 10 afternoon",contentId:"nova:1:u21"}];
+ const context=recentVoiceContext(dialogue);
+ assert.ok(context.some(value=>value.includes("one robot")));
+ assert.equal(context.at(-2),"Assistant: Pickup is November 10. When should it arrive in Arequipa?");
+ assert.equal(context.at(-1),"Customer: December 10 afternoon");
+ assert.ok(context.length<=16);assert.ok(context.every(value=>value.length<=320));
+});

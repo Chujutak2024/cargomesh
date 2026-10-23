@@ -37,5 +37,13 @@ class VoiceGuidanceTests(unittest.TestCase):
         prompt=voice_prompt({"role":"carrier","opportunity":{"route":"A to B","cargo":"GENERAL"}})
         self.assertIn("ask them to state their own proposed total",prompt)
 
+    def test_product_and_date_roles_remain_distinct_after_renewal(self):
+        prompt=voice_prompt({"role":"shipper","draftContext":{"cargoDescription":"robot","pendingDates":["2026-12-10"],"pendingWindow":{"role":"delivery","startTime":"14:00"}}})
+        self.assertIn("Never restart intake or ask for a known product",prompt)
+        self.assertIn("December 10 afternoon describes delivery, never pickup",prompt)
+        self.assertIn("pendingWindow",prompt)
+        self.assertIn("robot",prompt)
+        self.assertIn("not saving, booking, hazard clearance",prompt)
+
 if __name__ == '__main__':
     unittest.main()
