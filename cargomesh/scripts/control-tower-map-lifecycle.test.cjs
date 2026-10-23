@@ -1,10 +1,21 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),ts=require('typescript');
+// Keep presentation imports real; only provider/DOM dependencies are adapted below.
+function loadDisplayIdentity(){
+ const options={compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}};
+ const presentationSource=path.resolve(__dirname,'../src/shared/lib/demo-presentation.ts'),presentation={};
+ vm.runInNewContext(ts.transpileModule(fs.readFileSync(presentationSource,'utf8'),options).outputText,{exports:presentation},{filename:presentationSource});
+ const identitySource=path.resolve(__dirname,'../src/shared/lib/display-identity.ts'),identity={};
+ vm.runInNewContext(ts.transpileModule(fs.readFileSync(identitySource,'utf8'),options).outputText,{exports:identity,require:name=>{
+  if(name==='@/shared/lib/demo-presentation')return presentation;
+  throw Error('Unexpected presentation import '+name);
+ }},{filename:identitySource});
+ return identity;
+}
 // Execute the actual component with inert SDK/DOM adapters; no browser or provider request.
 function setup({deferLibrary=false,markerError=false,cleanupError=false}={}){
  const source=path.resolve(__dirname,'../src/features/carrier-control-tower/google-operation-map.tsx');
  const code=ts.transpileModule(fs.readFileSync(source,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
- const identitySource=path.resolve(__dirname,'../src/shared/lib/display-identity.ts'),displayIdentity={};
- vm.runInNewContext(ts.transpileModule(fs.readFileSync(identitySource,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText,{exports:displayIdentity},{filename:identitySource});
+ const displayIdentity=loadDisplayIdentity();
  const slots=[],effects=[],maps=[],markers=[],events=[],authListeners=new Set(),timers=new Map();let index=0,authFailed=false,resolveLibrary,timer=0;
  const same=(a,b)=>a&&b&&a.length===b.length&&a.every((v,i)=>Object.is(v,b[i]));
  const hooks={Component:class{},useRef(value){const i=index++;return slots[i]??(slots[i]={current:value});},useState(value){const i=index++;if(!(i in slots))slots[i]=value;return[slots[i],next=>slots[i]=typeof next==='function'?next(slots[i]):next];},useEffect(run,deps){const i=index++;if(!same(slots[i]?.deps,deps)){const old=slots[i];slots[i]={deps,cleanup:old?.cleanup};effects.push(()=>{slots[i].cleanup?.();slots[i].cleanup=run();});}}};
@@ -24,6 +35,12 @@ function setup({deferLibrary=false,markerError=false,cleanupError=false}={}){
  return{render,maps,markers,failAuth(){authFailed=true;for(const cb of authListeners)cb();},finishLibrary(){resolveLibrary();},tiles(){for(const e of events.filter(e=>e.name==='tilesloaded'&&!e.removed))e.callback();},timeout(){for(const cb of [...timers.values()])cb();},unmount(){for(const slot of slots)slot?.cleanup?.();},text(tree){let output='';walk(tree,node=>{for(const child of [node.props.children].flat())if(typeof child==='string')output+=child+' ';});return output;}};
 }
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
+
+test('map labels resolve the real demo presentation dependency',()=>{
+ const identity=loadDisplayIdentity();
+ assert.equal(identity.locationDisplayLabel('[SYNTHETIC] Lima'),'Lima');
+ assert.equal(identity.displayReference('OP-12','OP'),'OP-12');
+});
 test('auth rejection while marker library loads cannot create a stale map',async()=>{
  const app=setup({deferLibrary:true});app.render();await settle();app.failAuth();app.finishLibrary();await settle();
  assert.equal(app.maps.length,0);assert.match(app.text(app.render()),/authorization failed/);app.unmount();
