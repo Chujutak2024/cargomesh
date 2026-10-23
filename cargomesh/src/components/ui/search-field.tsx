@@ -9,13 +9,14 @@ type SearchFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "o
   value: string;
   onValueChange: (value: string) => void;
   clearLabel?: string;
+  floatingLabel?: string;
   hideLabel?: boolean;
   shortcut?: boolean;
   fieldClassName?: string;
 };
 
 /** Local filtering stays immediate; remote search owns its request/debounce policy. */
-export function SearchField({ label, value, onValueChange, clearLabel = "Clear search", hideLabel = false, shortcut = false, fieldClassName, className, id, disabled, ...props }: SearchFieldProps) {
+export function SearchField({ label, value, onValueChange, clearLabel = "Clear search", hideLabel = false, shortcut = false, fieldClassName, className, id, disabled, floatingLabel, ...props }: SearchFieldProps) {
   const generatedId = useId(), inputId = id ?? generatedId;
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -33,10 +34,11 @@ export function SearchField({ label, value, onValueChange, clearLabel = "Clear s
   }, [shortcut, disabled]);
   return <div className={[styles.field, styles.searchField, fieldClassName].filter(Boolean).join(" ")} data-cm-search>
     <label className={hideLabel ? styles.visuallyHidden : styles.fieldLabel} htmlFor={inputId}>{label}</label>
-    <div className={styles.searchControl}>
+    <div className={styles.searchControl} data-cm-search-control data-filled={value.length>0} data-floating={!!floatingLabel}>
       <Search size={17} aria-hidden="true" />
       <input {...props} ref={input} id={inputId} type="search" value={value} disabled={disabled} onChange={event => onValueChange(event.target.value)} className={className} aria-keyshortcuts={shortcut ? "/" : undefined} />
-      {value ? <button type="button" disabled={disabled} aria-label={clearLabel} onClick={() => { onValueChange(""); input.current?.focus(); }}><X size={16} aria-hidden="true" /></button> : shortcut ? <kbd aria-hidden="true">/</kbd> : null}
+      <span className={styles.searchFloatingLabel} data-cm-search-label aria-hidden="true">{floatingLabel??props.placeholder??label}</span>
+      {value ? <button data-cm-search-clear type="button" disabled={disabled} aria-label={clearLabel} onClick={() => { onValueChange(""); input.current?.focus(); }}><X size={16} aria-hidden="true" /></button> : shortcut ? <kbd aria-hidden="true">/</kbd> : null}
     </div>
   </div>;
 }

@@ -1,6 +1,6 @@
 import s from './carrier-kpis.module.css';
 
-type Kpi={id:string;label:string;value:number|null;tone:'blue'|'teal'|'violet'|'indigo';art:'opportunities'|'response-window'|'accepted'|'fleet-truck'|'fleet-shield'|'fleet-wrench'|'fleet-calendar';format?:'percent';description?:string};
+type Kpi={id:string;label:string;value:number|null;tone:'blue'|'teal'|'violet'|'indigo';art:'opportunities'|'response-window'|'accepted'|'fleet-truck'|'fleet-shield'|'fleet-wrench'|'fleet-calendar'|'fleet-incidents';format?:'percent';description?:string};
 const numbers=new Intl.NumberFormat('en-US');
 const percentages=new Intl.NumberFormat('en-US',{maximumFractionDigits:1});
 

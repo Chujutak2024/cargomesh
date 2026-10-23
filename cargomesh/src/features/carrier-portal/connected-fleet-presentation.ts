@@ -25,7 +25,7 @@ export function connectedVehiclePresentation(snapshot:ConnectedFleetSnapshot,ser
   const displayedDriver=driver??regularDriver;
   const road=asset.roadVehicle as {bodyType:string;model:string|null;variant:string|null};
   const visual=associateAssetVisual({equipmentType:String(asset.equipmentType),bodyType:road.bodyType,modelName:road.model,designHint:road.variant,referenceKey:vehicle.id});
-  return {...vehicle,serviceId:assetServiceId,visual,...(visual?{variant:visual.family}:{}),carrierId:snapshot.carrierId,siteId:typeof asset.homeDepotId==='string'?asset.homeDepotId:undefined,
+  return {...vehicle,referencesPending:snapshot.referencesPending===true,driverEvidenceUnavailable:snapshot.regularDriversUnavailable===true,serviceId:assetServiceId,visual,...(visual?{variant:visual.family}:{}),carrierId:snapshot.carrierId,siteId:typeof asset.homeDepotId==='string'?asset.homeDepotId:undefined,
    ...(typeof asset.usableVolumeM3==='number'?{volumeM3:asset.usableVolumeM3}:{}),driverProfile:displayedDriver?connectedDriver(displayedDriver,vehicle):null,driverProfileRole:driver?'assigned':regularDriver?'regular':null,regularDriverId:regularDriver?.id??null,regularDriverProfile:regularDriver?connectedDriver(regularDriver,vehicle):null,
    maintenanceHistory:snapshot.visualGaps.includes('maintenances')?null:snapshot.operational.maintenances.filter(r=>{
     const v=recordData(r);return v.assetId===vehicle.id&&v.serviceId===assetServiceId&&v.status==='COMPLETED';

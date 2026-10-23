@@ -5,16 +5,26 @@ import { parseCatalogRecordV2 } from '@/shared/schemas/v2/catalog';
 import { portalRequest, PortalApiError } from './api';
 import { readFleetResource } from './fleet-client';
 import { recordData, validCarrierId, type PortalRecord } from './records';
+import type {RegularDriverRecordV2} from '@/shared/schemas/v2/regular-driver';
+
+export type FleetReadSnapshot={carrierId:string;assets:PortalRecord[];services:PortalRecord[];depots:PortalRecord[];drivers:PortalRecord[];partners:PortalRecord[];regularDrivers:RegularDriverRecordV2[];regularDriversUnavailable:boolean;referencesPending?:boolean;operational:Record<'vehicle-assignments'|'driver-assignments'|'executions'|'maintenances',PortalRecord[]>;visualGaps:string[];partial:boolean;readAt:string};
 
 export async function readFleetAccess(signal: AbortSignal, fetcher: typeof fetch = fetch) {
   const response = await portalRequest('/api/v2/carrier-portal/access', { signal }, fetcher);
   try { return CarrierPortalAccessListV2Schema.parse(response.data); }
   catch { throw new PortalApiError(502, 'INVALID_RESPONSE'); }
 }
-export async function readConnectedFleet(carrierId: string, signal: AbortSignal, fetcher: typeof fetch = fetch) {
+export async function readConnectedFleet(carrierId: string, signal: AbortSignal, fetcher: typeof fetch = fetch, onPrimary?:(snapshot:FleetReadSnapshot)=>void):Promise<FleetReadSnapshot> {
   const keys = ['assets', 'services', 'depots', 'drivers', 'partners'] as const;
   const optional=['vehicle-assignments','driver-assignments','executions','maintenances'] as const;
-  const [rows,details,regular]=await Promise.all([Promise.all(keys.map(key=>readFleetResource(carrierId,key,signal,fetcher))),
+  const primary=keys.map(key=>readFleetResource(carrierId,key,signal,fetcher));
+  // Primary records can paint before operational references finish. Partial never enables writes.
+  const early=Promise.all(primary.slice(0,2)).then(rows=>{
+    if(!signal.aborted)onPrimary?.({carrierId,assets:rows[0].records,services:rows[1].records,depots:[],drivers:[],partners:[],regularDrivers:[],regularDriversUnavailable:true,referencesPending:true,
+      operational:{'vehicle-assignments':[],'driver-assignments':[],executions:[],maintenances:[]},visualGaps:[...optional,'regular-drivers','drivers','depots'],partial:true,readAt:new Date().toISOString()});
+  });
+  const publish=Promise.all([Promise.all(primary),early]).then(([rows])=>rows);
+  const [rows,details,regular]=await Promise.all([publish,
     Promise.allSettled(optional.map(key=>readFleetResource(carrierId,key,signal,fetcher))),
     Promise.allSettled([readRegularDrivers(carrierId,signal,fetcher)]).then(rows=>rows[0])]);
   const denied=details.find(r=>r.status==='rejected'&&r.reason instanceof PortalApiError&&[401,403].includes(r.reason.status));

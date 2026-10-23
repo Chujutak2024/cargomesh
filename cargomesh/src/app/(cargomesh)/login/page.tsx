@@ -1,5 +1,4 @@
-import {AssignedDemoEntry} from '@/components/assigned-demo-entry';
-import {workspaceDemoEnabled,automaticWorkspaceDemoEntry} from '@/server/auth/workspace-demo';
+import {workspaceDemoEnabled} from '@/server/auth/workspace-demo';
 import {LocalClientLogin} from '@/components/local-client-login';
 import {hasLocalClientPreviewSession,localClientPreviewEnabled,localClientFrontendPreviewEnabled} from '@/server/auth/local-client-preview';
 import {PasswordLogin} from "@/components/password-login";
@@ -10,10 +9,12 @@ import styles from "./page.module.css";
 export const dynamic="force-dynamic";
 export default async function LoginPage({searchParams}:{searchParams:Promise<{returnTo?:string;connected?:string}>}){
  const query=await searchParams,returnTo=safeLoginReturnTo(query.returnTo);
- if(query.connected!=='1'&&await workspaceDemoEnabled()){
-  const automatic=await automaticWorkspaceDemoEntry();
-  if(returnTo==='/clients')return <AssignedDemoEntry workspace="client" automatic={automatic}/>;
-  if(returnTo==='/carriers'||returnTo==='/carriers/fleet'||returnTo==='/v2-workspace#/fleet')return <AssignedDemoEntry workspace="carrier" automatic={automatic}/>;
+ if(await workspaceDemoEnabled()){
+  // Workspace entry establishes the configured native demo session and enforces access.
+  if(!returnTo)redirect('/');
+  if(['/carriers','/carriers/fleet','/v2-workspace#/fleet','/v2-workspace','/carrier-portal'].includes(returnTo))
+   redirect(returnTo==='/carriers/fleet'?returnTo:'/carriers');
+  redirect('/clients');
  }
  const frontendPreview=await localClientFrontendPreviewEnabled();
  const clientPreview=returnTo==='/clients'&&(query.connected!=='1'||frontendPreview)&&await localClientPreviewEnabled();

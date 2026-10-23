@@ -12,6 +12,7 @@ export type FleetJourney = { origin: string; destination: string; facility: stri
 export type FleetMaintenanceEvent = { id: string; kind: string; startsAt: string; endsAt: string; status: string };
 export type FleetVehicle = {
   serviceId?: string;
+  referencesPending?:boolean;driverEvidenceUnavailable?:boolean;
   visual?: import("@/features/logistics-3d/asset-visual").AssetVisualReference | null;
   carrierId?:string;siteId?:string;modelYear?:number;photoDataUrl?:string|null;volumeM3?:number;insuranceUntil?:string;inspectionUntil?:string;
   id: string; code: string; source: "EXAMPLE" | "SERVICE"; status: FleetStatus;

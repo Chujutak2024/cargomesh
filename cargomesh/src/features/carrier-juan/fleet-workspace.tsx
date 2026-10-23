@@ -1,4 +1,8 @@
 "use client";
+import {SearchField} from "@/components/ui";
+import {useFleetIncidents} from './use-fleet-incidents';
+import {CarrierSkeleton,CarrierUpdating} from "@/features/carrier-navigation/carrier-loading";
+import {useCarrierMemoryState} from "@/features/carrier-navigation/carrier-continuity";
 import {carrierDisplayName} from '@/shared/lib/display-identity';
 import {readJuanHash,navigateJuanHash,subscribeJuanRoute,juanHref} from "./juan-navigation";
 
@@ -126,18 +130,18 @@ function VehicleCard({ vehicle, open, openDriver, openScheduling, openRegularDri
         <span className={s.capacityBadge} aria-label={t('Capacidad de carga: ', 'Load capacity: ') + capacity}><Package size={15} aria-hidden="true"/>{capacity}</span>
       </div>
       <div className={s.cardDriverPanel}>
-        {driver ? <>
+        {vehicle.referencesPending?<span className={s.cardDriverMissing}><CarrierUpdating>{t('Consultando conductor…','Loading driver…')}</CarrierUpdating></span>:driver ? <>
           <button type="button" className={s.cardDriverProfile} onClick={openDriver} aria-label={t('Ver conductor: ', 'View driver: ') + driver.name}>
             <DriverPortrait driver={driver}/><span><strong>{driver.name}</strong><small>{driverRole}{experience ? ' · ' + experience : ''}</small></span>
           </button>
-          {vehicle.source === 'SERVICE' && canManageRegularDriver ? <button type="button" className={s.cardDriverChange} onClick={openRegularDriver} aria-label={t('Cambiar conductor habitual de ', 'Change usual driver for ') + identity.title}>{t('Cambiar', 'Change')}</button> : null}
+          {vehicle.source === 'SERVICE' && canManageRegularDriver ? <button data-cm-action type="button" className={s.cardDriverChange} onClick={openRegularDriver} aria-label={t('Cambiar conductor habitual de ', 'Change usual driver for ') + identity.title}>{t('Cambiar', 'Change')}</button> : null}
         </> : <>
           <span className={s.cardDriverEmpty}><UsersRound size={21} aria-hidden="true"/></span>
-          <span className={s.cardDriverMissing}><strong>{t('Sin conductor habitual', 'No usual driver')}</strong></span>
-          {vehicle.source === 'SERVICE' ? <button type="button" className={s.cardDriverChange} onClick={canManageRegularDriver ? openRegularDriver : openScheduling}>{canManageRegularDriver ? t('Asignar', 'Assign') : t('Ver agenda', 'Schedule')}</button> : null}
+          <span className={s.cardDriverMissing}><strong>{vehicle.driverEvidenceUnavailable?t('Conductor sin verificar','Driver unverified'):t('Sin conductor habitual', 'No usual driver')}</strong></span>
+          {vehicle.source === 'SERVICE' ? <button data-cm-action type="button" className={s.cardDriverChange} onClick={canManageRegularDriver ? openRegularDriver : openScheduling}>{canManageRegularDriver ? t('Asignar', 'Assign') : t('Ver agenda', 'Schedule')}</button> : null}
         </>}
       </div>
-      <button type="button" className={s.cardDetailsButton} ref={buttonRef} onClick={open} aria-label={t('Ver detalles de ', 'View details for ') + identity.title} aria-describedby={`fleet-model-${vehicle.id}`}>{t('Ver detalles del camión', 'View truck details')}<ArrowRight size={17} aria-hidden="true"/></button>
+      <button data-cm-action type="button" className={s.cardDetailsButton} ref={buttonRef} onClick={open} aria-label={t('Ver detalles de ', 'View details for ') + identity.title} aria-describedby={`fleet-model-${vehicle.id}`}>{t('Ver detalles del camión', 'View truck details')}<ArrowRight size={17} aria-hidden="true"/></button>
     </div>
   </article>;
 }
@@ -145,7 +149,8 @@ function VehicleCard({ vehicle, open, openDriver, openScheduling, openRegularDri
 
 export function FleetWorkspace({access=[],headerTarget=null}:{access?:CarrierPortalAccessV2[];headerTarget?:HTMLDivElement|null}) {
   const { t, locale, localeTag } = useLocale();
-  const [source, setSource] = useState<"example" | "service">("service"), [filter, setFilter] = useState<FleetFilter>("all"), [search, setSearch] = useState(""), [sort, setSort] = useState<FleetSort>("attention"), [layout, setLayout] = useState<"grid" | "list">("grid");
+  const [filterCarrier]=useCarrierMemoryState('fleet:carrier',access.length===1?access[0].carrierId:'');
+  const [source, setSource] = useState<"example" | "service">("service"), [filter, setFilter] = useCarrierMemoryState<FleetFilter>("fleet:filter:"+filterCarrier,"all"), [search, setSearch] = useCarrierMemoryState("fleet:search:"+filterCarrier,""), [sort, setSort] = useCarrierMemoryState<FleetSort>("fleet:sort:"+filterCarrier,"attention"), [layout, setLayout] = useCarrierMemoryState<"grid"|"list">("fleet:layout:"+filterCarrier,"grid");
   const [selected, setSelected] = useState<string | null>(null);
   const [inspectionId,setInspectionId]=useState<string|null>(null);
   const [driverView,setDriverView]=useState(false),[driverFromDetail,setDriverFromDetail]=useState(false);
@@ -156,7 +161,7 @@ export function FleetWorkspace({access=[],headerTarget=null}:{access?:CarrierPor
   const [editing,setEditing]=useState<PortalRecord|null>(null),[savedMessage,setSavedMessage]=useState(''),[saving,setSaving]=useState(false);
   const [standaloneDriverId,setStandaloneDriverId]=useState<string|null>(null),[manageDrivers,setManageDrivers]=useState(false);
   const [regularAssetId,setRegularAssetId]=useState<string|null>(null);
-  const [capacity,setCapacity]=useState<FleetCapacityFilter>('all'),[truckType,setTruckType]=useState('all');
+  const [capacity,setCapacity]=useCarrierMemoryState<FleetCapacityFilter>('fleet:capacity:'+filterCarrier,'all'),[truckType,setTruckType]=useCarrierMemoryState('fleet:type:'+filterCarrier,'all');
   const localView=source==='example';
   const result=connected.current?{vehicles:connected.vehicles,readAt:connected.current.readAt,truncated:connected.current.partial,gaps:connected.current.visualGaps.length}:null;
   const loading=connected.loading,error=connected.error,checkedAt=Date.parse(connected.current?.readAt??new Date().toISOString());
@@ -184,10 +189,11 @@ export function FleetWorkspace({access=[],headerTarget=null}:{access?:CarrierPor
   const truckTypes=Array.from(new Set(vehicles.map(fleetTruckType))).sort((a,b)=>t(...fleetTruckTypeLabel(a)).localeCompare(t(...fleetTruckTypeLabel(b)),localeTag));
   const vehicle = selected ? vehicles.find(value => value.id === selected) : null;
   const summary = fleetSummary(vehicles, now);
+  const incidentCount=useFleetIncidents(connected.carrierId,connected.current?.operational.executions,!!connected.current&&!connected.current.referencesPending&&!connected.current.partial&&!connected.current.visualGaps.includes('executions'),connected.current?.readAt??'',!localView&&view==='vehicles');
   const driverRows=connected.current?.drivers.filter(row=>row.carrierId===connected.carrierId&&connected.services.some(service=>service.id===recordData(row).serviceId))??[];
-  const canManageCrew=connected.carrier?.role==='ADMIN'&&!!connected.current&&!connected.current.partial;
+  const canManageCrew=!connected.error&&connected.carrier?.role==='ADMIN'&&!!connected.current&&!connected.current.partial&&!connected.loading;
   const regularAsset=connected.vehicles.find(row=>row.id===regularAssetId);
-  const canWriteService=(serviceId?:string)=>!!serviceId&&connected.carrier?.role==='ADMIN'&&!!connected.current&&!connected.current.partial&&connected.services.some(row=>row.id===serviceId&&recordData(row).status==='ACTIVE');
+  const canWriteService=(serviceId?:string)=>!!serviceId&&!connected.error&&!connected.loading&&connected.carrier?.role==='ADMIN'&&!!connected.current&&!connected.current.partial&&connected.services.some(row=>row.id===serviceId&&recordData(row).status==='ACTIVE');
   const inspectionRecord=connected.current?.assets.find(row=>row.id===inspectionId);
   const canManageInspection=!localView&&!!inspectionRecord&&canWriteService(inspected?.serviceId);
   const standaloneDriver=driverRows.find(row=>row.id===standaloneDriverId),driverVehicle=vehicles.find(row=>row.driverId===standaloneDriverId||row.regularDriverId===standaloneDriverId);
@@ -199,7 +205,7 @@ export function FleetWorkspace({access=[],headerTarget=null}:{access?:CarrierPor
   const back = () => { setSelected(null);setStandaloneDriverId(null); if(readJuanHash().includes("/vehicle/")) navigateJuanHash("/fleet/"+(source==="service"?"service/":"")+"vehicles"); };
   const contextControls = !localView ? <div className={s.contextControls}>
     <label><select aria-label="Carrier" disabled={loading||saving} value={connected.carrierId} onChange={e=>{resetScope();connected.setCarrierId(e.target.value);}}><option value="">Select Carrier</option>{access.map(row=><option key={row.carrierId} value={row.carrierId}>{carrierDisplayName(row.carrierName,row.carrierId)}</option>)}</select></label>
-    <button type="button" className={s.contextRefresh} disabled={loading||saving||!connected.carrier} aria-label={view==='carriers'?'Refresh sites and coverage':'Refresh fleet'} title={loading?'Loading…':view==='carriers'?'Refresh sites and coverage':'Refresh fleet'} onClick={connect}><RefreshCw size={17} aria-hidden="true"/></button>
+    <button data-cm-action type="button" className={s.contextRefresh} disabled={loading||saving||!connected.carrier} aria-label={view==='carriers'?'Refresh sites and coverage':'Refresh fleet'} title={loading?'Loading…':view==='carriers'?'Refresh sites and coverage':'Refresh fleet'} onClick={connect}><RefreshCw size={17} aria-hidden="true"/></button>
   </div> : null;
   const fleetHref=(section:string)=>juanHref('#/fleet/'+(localView?'':'service/')+section);
   const primaryView=view==='drivers'?'drivers':view==='assignment'?'assignment':'vehicles';
@@ -228,22 +234,24 @@ export function FleetWorkspace({access=[],headerTarget=null}:{access?:CarrierPor
       <CarrierLink href={fleetHref('assignment')} aria-current={primaryView==='assignment'?'page':undefined} aria-disabled={schedulingDisabled||undefined} onClick={event=>{if(schedulingDisabled)event.preventDefault();}}><CalendarDays size={17} aria-hidden="true"/>Scheduling</CarrierLink>
     </nav>{needsService?serviceSelector:truckDirectory||view==='coverage'?directoryFilters:null}</div>:null}
     {headerTarget?createPortal(contextControls,headerTarget):contextControls}
+    {loading&&result&&!localView?<CarrierUpdating/>:null}
     {error&&!localView?<div className={s.error} role="alert"><ShieldCheck size={20}/><p>{error}</p><button onClick={connect}>Retry</button></div>:null}
     {!access.length&&!localView?<p role="status">No authorized Carrier membership. Local examples are not used as a fallback.</p>:null}
-    {result?.truncated&&!localView?<p className={s.sourceNote} role="status">Partial catalog: counts cover loaded records and saving is disabled.</p>:null}
-    {connected.current?.visualGaps.length&&!localView?<p className={s.sourceNote}>Pending operational sources: {connected.current.visualGaps.join(', ')}. Missing evidence does not confirm availability.</p>:null}
+    {result?.truncated&&!localView&&!loading?<p className={s.sourceNote} role="status">Partial catalog: counts cover loaded records and saving is disabled.</p>:null}
+    {connected.current?.visualGaps.length&&!localView&&!loading?<p className={s.sourceNote}>Pending operational sources: {connected.current.visualGaps.join(', ')}. Missing evidence does not confirm availability.</p>:null}
     {savedMessage&&!localView?<p role="status" className={s.sourceNote}>{savedMessage}</p>:null}
-    {truckDirectory&&(localView||result)&&!loading?<CarrierKpis label="Fleet overview, loaded records" metrics={[
+    {truckDirectory&&(localView||result)?<CarrierKpis label="Fleet overview, loaded records" metrics={[
       {id:'trucks',label:t("Total de camiones","Total trucks"),value:!localView&&!result?null:summary.total,tone:'blue',art:'fleet-truck',description:localView?'Local example truck records.':'Truck records loaded across authorized road services.'},
       {id:'normal',label:t("Estado normal","Normal operating state"),value:!localView&&!result?null:summary.normal,tone:'teal',art:'fleet-shield',description:'Recorded as available or in service. Operating state does not confirm booking availability.'},
       {id:'maintenance',label:t("En mantenimiento","In maintenance"),value:!localView&&!result?null:summary.maintenance,tone:'violet',art:'fleet-wrench',description:'Current recorded maintenance state.'},
-      {id:'annual',label:t("Mantenimiento · último año","Maintenance · past year"),value:!localView&&!result?null:summary.annualPercent,format:'percent',tone:'indigo',art:'fleet-calendar',description:summary.annualPercent===null?'Annual history unavailable.':`${summary.maintained} of ${summary.total} loaded trucks with completed maintenance, ${new Date(summary.startsAt).toLocaleDateString(localeTag)} — ${new Date(summary.endsAt).toLocaleDateString(localeTag)}.`},
+      {id:'incidents',label:t('Incidencias reportadas','Reported incidents'),value:incidentCount,tone:'indigo',art:'fleet-incidents',description:t('Incidencias registradas de las operaciones del Carrier. — indica lectura pendiente o incompleta.','Reported incidents across Carrier operations. — means pending or incomplete data.')},
     ]}/>:null}
     {view==='carriers'?<div className={s.contextBar}>{serviceSelector}</div>:null}
-    <ContentMotion identity={standaloneDriver?'driver:'+standaloneDriver.id:editing?'edit:'+editing.id:selected?`${selected}:${driverView?"driver":"truck"}`:view} focusOnChange>
-      {view==='carriers'?<CarrierSites example={localView} context={connected}/>:editing&&!localView&&connected.current&&connected.carrier?<ConnectedTruckRegistration key={editing.id} carrierId={connected.carrierId} carrierName={connected.carrier.carrierName} serviceId={String(recordData(editing).serviceId)} depots={connected.current.depots} partners={connected.current.partners} record={editing} canWrite={canWriteService(String(recordData(editing).serviceId))} onBusyChange={setSaving} back={()=>setEditing(null)} saved={saved}/>:standaloneDriver?<DriverProfile profile={connectedDriver(standaloneDriver,driverVehicle)} vehicle={driverVehicle} back={()=>setStandaloneDriverId(null)} openTruck={()=>{if(driverVehicle){setStandaloneDriverId(null);setSelected(driverVehicle.id);}}}/>:vehicle ? driverView&&vehicle.driverProfile?<DriverProfile vehicle={vehicle} back={()=>driverFromDetail?setDriverView(false):back()} openTruck={()=>setDriverView(false)}/>:<><VehicleDetail vehicle={vehicle} back={back} openDriver={()=>openDriver(vehicle.id,true)} />{!localView&&canWriteService(vehicle.serviceId)?<button onClick={()=>setEditing(connected.current?.assets.find(row=>row.id===vehicle.id)??null)}>Edit recorded truck</button>:null}</> : !localView && !result ? (error||!access.length?null:<section className={s.empty} aria-busy={loading}><Truck size={32} aria-hidden="true" /><h2>{loading ? t("Consultando la flota…", "Fetching the fleet…") : !connected.carrier?t("Selecciona un transportista", "Select a carrier"):t("Sin vehículos registrados", "No registered vehicles")}</h2></section>)
+    <ContentMotion animateOnMount enabled={view!=='carriers'} identity={(result?"ready:":"loading:")+(standaloneDriver?'driver:'+standaloneDriver.id:editing?'edit:'+editing.id:selected?`${selected}:${driverView?"driver":"truck"}`:view)} focusOnChange>
+      {view==='carriers'?<CarrierSites example={localView} context={connected}/>:editing&&!localView&&connected.current&&connected.carrier?<ConnectedTruckRegistration key={editing.id} carrierId={connected.carrierId} carrierName={connected.carrier.carrierName} serviceId={String(recordData(editing).serviceId)} depots={connected.current.depots} partners={connected.current.partners} record={editing} canWrite={canWriteService(String(recordData(editing).serviceId))} onBusyChange={setSaving} back={()=>setEditing(null)} saved={saved}/>:standaloneDriver?<DriverProfile profile={connectedDriver(standaloneDriver,driverVehicle)} vehicle={driverVehicle} back={()=>setStandaloneDriverId(null)} openTruck={()=>{if(driverVehicle){setStandaloneDriverId(null);setSelected(driverVehicle.id);}}}/>:vehicle ? driverView&&vehicle.driverProfile?<DriverProfile vehicle={vehicle} back={()=>driverFromDetail?setDriverView(false):back()} openTruck={()=>setDriverView(false)}/>:<><VehicleDetail vehicle={vehicle} back={back} openDriver={()=>openDriver(vehicle.id,true)} />{!localView&&canWriteService(vehicle.serviceId)?<button onClick={()=>setEditing(connected.current?.assets.find(row=>row.id===vehicle.id)??null)}>Edit recorded truck</button>:null}</> : !localView && !result ? (error||!access.length?null:loading?<CarrierSkeleton shape={view==='drivers'||view==='assignment'?'agenda':'cards'}/>:<section className={s.empty}><h2>{t("Sin vehículos registrados","No registered vehicles")}</h2></section>)
         :needsService&&!connected.service?<section className={s.empty} aria-busy={connected.services.length>0&&view!=='register'}><Truck size={28} aria-hidden="true"/><h2>{!connected.services.length?t('No hay servicios de carretera registrados','No road services registered'):view==='register'?t('Selecciona un servicio','Select a service'):t('Cargando recursos…','Loading resources…')}</h2>{view==='register'&&connected.services.length?<p>{t('Elige el servicio para registrar el camión.','Choose the service for the truck registration.')}</p>:null}</section>
-         :view==='register'&&!localView&&connected.current&&connected.carrier?<ConnectedTruckRegistration key={connected.carrierId+connected.serviceId} carrierId={connected.carrierId} carrierName={connected.carrier.carrierName} serviceId={connected.serviceId} depots={connected.current.depots} partners={connected.current.partners} canWrite={connected.canWrite} onBusyChange={setSaving} back={()=>changeView('vehicles')} saved={saved}/>
+         :!localView&&loading&&connected.current?.referencesPending&&['drivers','assignment'].includes(view)?<CarrierSkeleton shape="agenda"/>
+        :view==='register'&&!localView&&connected.current&&connected.carrier?<ConnectedTruckRegistration key={connected.carrierId+connected.serviceId} carrierId={connected.carrierId} carrierName={connected.carrier.carrierName} serviceId={connected.serviceId} depots={connected.current.depots} partners={connected.current.partners} canWrite={connected.canWrite} onBusyChange={setSaving} back={()=>changeView('vehicles')} saved={saved}/>
         : view==="register"&&localView?<TruckRegistration back={()=>changeView("vehicles")} registered={id=>{navigateJuanHash("/fleet/vehicle/"+id);}}/>
 
         : view==='drivers'&&!localView&&connected.current?<>
@@ -251,13 +259,13 @@ export function FleetWorkspace({access=[],headerTarget=null}:{access?:CarrierPor
          {manageDrivers?<section className={s.panel}><button type="button" onClick={()=>setManageDrivers(false)}><ArrowLeft size={16} aria-hidden="true"/>Back to drivers</button><ConnectedCrew carrierId={connected.carrierId} serviceId="" allServices references={connected.current} canWrite={canManageCrew} initialSection="drivers" onCatalogChanged={connected.refresh}/></section>:null}
         </>
         :view==='assignment'&&!localView&&connected.current?<ConnectedCrew carrierId={connected.carrierId} serviceId="" allServices references={connected.current} canWrite={canManageCrew} initialSection="operations" onCatalogChanged={connected.refresh}/>
-        : view === "coverage" ? <><div className={s.coverageActions}><button disabled={saving} onClick={()=>changeView('vehicles')}><ArrowLeft size={16} aria-hidden="true"/>Vehicle directory</button><button className={s.primary} disabled={registrationDisabled} onClick={()=>changeView('register')}><Plus size={16} aria-hidden="true"/>New truck</button></div><FleetCoverage vehicles={directoryVehicles} open={open} registerButton={registerButton} /></>
+        : view === "coverage" ? <><div className={s.coverageActions}><button disabled={saving} onClick={()=>changeView('vehicles')}><ArrowLeft size={16} aria-hidden="true"/>Vehicle directory</button><button data-cm-action className={s.primary} disabled={registrationDisabled} onClick={()=>changeView('register')}><Plus size={16} aria-hidden="true"/>New truck</button></div><FleetCoverage vehicles={directoryVehicles} open={open} registerButton={registerButton} /></>
         : view === "assignment" && localView ? <FleetAssignmentBoard state={demo} vehicles={vehicles} command={command} reset={() => setDemo(createFleetDemo(operations.inventory))} ready={ready} storageAvailable={storageAvailable} open={open} registerButton={registerButton} /> : <>
         <div className={`${s.toolbar} ${s.unifiedToolbar}`}>
-          <label className={s.search}><span className={s.srOnly}>{t("Buscar camión, conductor o ubicación", "Search truck, driver or location")}</span><div><Search size={18} aria-hidden="true" /><input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder={t("Buscar camión, conductor o ubicación…", "Search truck, driver or location…")} /></div></label>
+          <SearchField fieldClassName={s.search} hideLabel floatingLabel={t("Buscar", "Search")} label={t("Buscar camión, conductor o ubicación", "Search truck, driver or location")} placeholder={t("Buscar camión, conductor o ubicación…", "Search truck, driver or location…")} value={search} onValueChange={setSearch}/>
           <label className={s.stateFilter}><span className={s.srOnly}>{t("Filtro de vehículos", "Vehicle filter")}</span><select value={filter} data-active={filter!=='all'} onChange={event=>setFilter(event.target.value as FleetFilter)}>{filters.map(value=><option key={value.id} value={value.id}>{t(value.es,value.en)} · {directoryVehicles.filter(vehicle=>matchesFleetFilter(vehicle,value.id,now)).length}</option>)}</select></label>
           <label className={s.sort}><span className={s.srOnly}>{t("Ordenar por", "Sort by")}</span><select value={sort} onChange={event => setSort(event.target.value as FleetSort)}><option value="attention">{t("Atención necesaria", "Attention needed")}</option><option value="code">{t("Código del vehículo", "Vehicle code")}</option><option value="fuel">{t("Menor combustible", "Lowest fuel")}</option></select></label>
-          <div className={s.directoryActions}><button disabled={saving} onClick={()=>changeView('coverage')}><MapPin size={16} aria-hidden="true"/>Areas and destinations</button><button className={s.primary} disabled={registrationDisabled} onClick={()=>changeView('register')}><Plus size={16} aria-hidden="true"/>New truck</button><div className={s.layoutSwitch} role="group" aria-label={t("Vista de vehículos", "Vehicle view")}><button aria-label={t("Tarjetas", "Cards")} aria-pressed={layout === "grid"} onClick={() => setLayout("grid")}><LayoutGrid size={18} aria-hidden="true" /></button><button aria-label={t("Lista", "List")} aria-pressed={layout === "list"} onClick={() => setLayout("list")}><List size={18} aria-hidden="true" /></button></div></div>
+          <div className={s.directoryActions}><button data-cm-action className={s.primary} disabled={registrationDisabled} onClick={()=>changeView('register')}><Plus size={16} aria-hidden="true"/>New truck</button><div className={s.layoutSwitch} role="group" aria-label={t("Vista de vehículos", "Vehicle view")}><button aria-label={t("Tarjetas", "Cards")} aria-pressed={layout === "grid"} onClick={() => setLayout("grid")}><LayoutGrid size={18} aria-hidden="true" /></button><button aria-label={t("Lista", "List")} aria-pressed={layout === "list"} onClick={() => setLayout("list")}><List size={18} aria-hidden="true" /></button></div></div>
         </div>
         <span className={s.srOnly} role="status" aria-live="polite">{visible.length} {t("vehículos mostrados", "vehicles shown")}</span>
         {visible.length ? <div className={layout === "grid" ? s.vehicleGrid : s.vehicleList}>{visible.map(vehicle => <VehicleCard key={vehicle.id} vehicle={vehicle} list={layout === "list"} open={() => setInspectionId(vehicle.id)} openDriver={()=>openDriver(vehicle.id)} openScheduling={()=>{if(vehicle.serviceId)connected.setServiceId(vehicle.serviceId);changeView('assignment');}} canManageRegularDriver={!localView&&canWriteService(vehicle.serviceId)&&!connected.current?.regularDriversUnavailable} openRegularDriver={()=>setRegularAssetId(vehicle.id)} buttonRef={node => registerButton(vehicle.id, node)} />)}</div>

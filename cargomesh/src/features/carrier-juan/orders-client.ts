@@ -7,8 +7,12 @@ import {validCarrierId,type PortalRecord} from '@/features/carrier-portal/record
 import type {CarrierPortalRole} from '@/features/carrier-portal/permissions';
 import {orderActionAllowed,sameOrderScope,type OrdersSnapshot,type OrderAction,type ActionTarget,type Hold,type ExecutionEvent} from './orders-model';
 const keys=['holds','services','assets','vehicle-combinations','capacity-pools','calendars','drivers','vehicle-assignments','driver-assignments'] as const;
-export async function readOrders(carrierId:string,signal:AbortSignal,fetcher:typeof fetch=fetch):Promise<OrdersSnapshot>{
- const [commercial,results]=await Promise.all([readCommercial(carrierId,signal,fetcher),Promise.allSettled(keys.map(key=>readFleetResource(carrierId,key,signal,fetcher)))]);
+export async function readOrders(carrierId:string,signal:AbortSignal,fetcher:typeof fetch=fetch,onCommercial?:(snapshot:OrdersSnapshot)=>void):Promise<OrdersSnapshot>{
+ const commercialRead=readCommercial(carrierId,signal,fetcher).then(commercial=>{
+  if(!signal.aborted)onCommercial?.({...commercial,carrierId,holds:[],resources:{},issues:['RESOURCE_REFERENCES_LOADING'],partial:true});
+  return commercial;
+ });
+ const [commercial,results]=await Promise.all([commercialRead,Promise.allSettled(keys.map(key=>readFleetResource(carrierId,key,signal,fetcher)))]);
  if(signal.aborted)throw new DOMException('Aborted','AbortError');
  const denied=results.find(r=>r.status==='rejected'&&r.reason instanceof PortalApiError&&[401,403].includes(r.reason.status));if(denied?.status==='rejected')throw denied.reason;
  const resources:Record<string,PortalRecord[]>={},issues:string[]=[];let holds:Hold[]=[];

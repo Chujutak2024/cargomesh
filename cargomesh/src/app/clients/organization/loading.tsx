@@ -1,1 +1,2 @@
-export {default} from '@/app/(cargomesh)/organization/loading';
+import {WorkspaceSkeleton} from '@/features/product-motion/workspace-skeleton';
+export default function Loading(){return <WorkspaceSkeleton shape="form" label="Cargando organización / Loading organization"/>;}

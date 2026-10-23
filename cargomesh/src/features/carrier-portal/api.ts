@@ -17,6 +17,8 @@ export async function portalRequest(path: string, options: RequestInit = {}, fet
   let body: unknown;
   try { body = await response.json(); } catch { throw new PortalApiError(response.status, "INVALID_RESPONSE"); }
   if (!response.ok) {
+    if ((response.status === 401 || response.status === 403) && typeof window !== 'undefined')
+      window.dispatchEvent(new Event('cm-carrier-access-revoked'));
     const error = z.object({ error: z.object({ code: z.string() }) }).safeParse(body);
     throw new PortalApiError(response.status, error.success ? error.data.error.code : "API_ERROR");
   }

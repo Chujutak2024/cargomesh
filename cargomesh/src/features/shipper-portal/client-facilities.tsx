@@ -4,7 +4,13 @@ import {Button,Checkbox,Input,Select} from '@/components/ui';
 import {FacilityInputV2Schema,FacilityV2Schema,type FacilityInputV2,type FacilityV2} from '@/shared/schemas/v2/facilities';
 import {ClientSettingsError,collectionSchema,recordSchema,settingsRequest,settingsCommand,sendSettingsCommand,settingsError,type SettingsCommand} from './client-settings-api';
 import styles from './client-settings.module.css';
-import {ClientFacilityVisual,type FacilityVisualControllers} from './client-facility-visual';
+import dynamic from 'next/dynamic';
+import type {FacilityVisualControllers} from './client-facility-visual';
+import {ContentMotion} from '@/features/product-motion/content-motion';
+import {WorkspaceSkeleton,WorkspaceUpdating} from '@/features/product-motion/workspace-skeleton';
+import {DeferredRegion} from '@/features/carrier-navigation/deferred-region';
+import {useLocale} from '@/features/i18n/locale-provider';
+const ClientFacilityVisual=dynamic(()=>import('./client-facility-visual').then(module=>module.ClientFacilityVisual),{ssr:false,loading:()=> <WorkspaceSkeleton shape="detail"/>});
 
 const blank:FacilityInputV2={schemaVersion:'2.0',code:'',name:'',facilityType:'SHIPPER_SITE',active:true,
   location:{label:'',city:'',region:null,countryCode:'PE',lat:null,lng:null},accessRestrictions:[],operatingHours:null};
@@ -12,44 +18,57 @@ const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunda
 const single=recordSchema(FacilityV2Schema),list=collectionSchema(FacilityV2Schema);
 type Role='OWNER'|'SUPERVISOR'|'REQUESTER';
 export function ClientFacilities({role,initialId}:{role:Role;initialId?:string}){
+  const {t}=useLocale();
   const [items,setItems]=useState<FacilityV2[]>([]),[offset,setOffset]=useState(0),[next,setNext]=useState<number|null>(null);
   const [selected,setSelected]=useState<FacilityV2|null>(null),[creating,setCreating]=useState(false);
-  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[message,setMessage]=useState('');
-  const selection=useRef(0);
+  const [loading,setLoading]=useState(true),[loaded,setLoaded]=useState(false),[openingId,setOpeningId]=useState('');
+  const [error,setError]=useState(''),[message,setMessage]=useState('');
+  const selection=useRef(0),pageRead=useRef(0);
   const visualControllers=useRef<FacilityVisualControllers>(new Map());
   const editable=role==='OWNER'||role==='SUPERVISOR';
+  function failed(e:unknown){
+    setError(settingsError(e));
+    if(e instanceof ClientSettingsError&&[401,403].includes(e.status)){
+      selection.current++;pageRead.current++;setItems([]);setSelected(null);setCreating(false);setOpeningId('');setLoading(false);setLoaded(false);visualControllers.current.clear();
+    }
+  }
   async function loadPage(at=offset){
-    setLoading(true);setError('');
-    try{const page=await settingsRequest('/facilities?limit=25&offset='+at,list);setItems(page.data);setOffset(at);setNext(page.meta.nextOffset);}
-    catch(e){setError(settingsError(e));}finally{setLoading(false);}
+    const ticket=++pageRead.current;setLoading(true);setError('');
+    try{const page=await settingsRequest('/facilities?limit=25&offset='+at,list);if(ticket!==pageRead.current)return;setItems(page.data);setOffset(at);setNext(page.meta.nextOffset);setLoaded(true);}
+    catch(e){if(ticket===pageRead.current)failed(e);}finally{if(ticket===pageRead.current)setLoading(false);}
   }
   async function open(id:string){
-    const ticket=++selection.current;setError('');setCreating(false);setSelected(null);
+    const ticket=++selection.current;setError('');setCreating(false);setOpeningId(id);
     try{const result=await settingsRequest('/facilities/'+id,single);if(ticket!==selection.current)return;
+      if(result.data.id!==id)throw new Error('FACILITY_IDENTITY_MISMATCH');
       setSelected(result.data);window.history.replaceState(null,'','?facility='+result.data.id);
-    }catch(e){if(ticket===selection.current)setError(settingsError(e));}
+    }catch(e){if(ticket===selection.current)failed(e);}finally{if(ticket===selection.current)setOpeningId('');}
   }
-  useEffect(()=>{void loadPage(0);if(initialId)void open(initialId);return()=>{selection.current++;};},[]);
-  async function saved(record:FacilityV2){setSelected(record);setCreating(false);setMessage('Facility saved. Values below were read back from the database.');await loadPage(offset);}
-  return <div className={styles.page}><header className={styles.header}><div><span className={styles.label}>Connected Client · persisted data</span><h1>Facilities</h1><p>Manage your pickup and delivery addresses, local operating hours and access requirements.</p></div>
-    {editable&&<Button type="button" onClick={()=>{selection.current++;setSelected(null);setCreating(true);setMessage('');window.history.replaceState(null,'','?new=1');}}>Create facility</Button>}</header>
-    {error&&<div className={styles.error} role="alert">{error} <Button variant="secondary" onClick={()=>{void loadPage();if(initialId)void open(initialId);}}>Retry</Button></div>}
+  useEffect(()=>{void loadPage(0);if(initialId)void open(initialId);return()=>{selection.current++;pageRead.current++;};},[]);
+  async function saved(record:FacilityV2){setSelected(record);setCreating(false);setMessage(t('Sede guardada.','Facility saved.'));await loadPage(offset);}
+  return <div className={styles.page}><header className={styles.header}><div><h1>{t('Sedes','Facilities')}</h1><p>{t('Direcciones de recojo y entrega.','Pickup and delivery addresses.')}</p></div>
+    {editable&&<Button type="button" onClick={()=>{selection.current++;setOpeningId('');setSelected(null);setCreating(true);setMessage('');window.history.replaceState(null,'','?new=1');}}>{t('Nueva sede','New facility')}</Button>}</header>
+    {error&&<div className={styles.error} role="alert">{error} <Button variant="secondary" onClick={()=>{void loadPage();if(selected)void open(selected.id);else if(initialId)void open(initialId);}}>{t('Reintentar','Retry')}</Button></div>}
     {message&&<p className={styles.success} role="status">{message}</p>}
-    <div className={styles.columns}><section className={styles.panel} aria-label="Facility list"><h2>Your facilities</h2>
-      {loading?<p role="status">Loading facilities…</p>:items.length?<div className={styles.list}>{items.map(item=><button key={item.id} className={styles.item} type="button" aria-pressed={selected?.id===item.id} onClick={()=>void open(item.id)}><strong>{item.value.name}</strong><span className={styles.muted}>{item.value.code} · {item.value.location.city}, {item.value.location.countryCode}</span><span className={styles.muted}>{item.value.active?'Active':'Inactive'} · v{item.version}</span></button>)}</div>:<p className={styles.empty}>No facilities yet. {editable?'Create your first pickup or delivery address.':'Ask an organization manager to add an address.'}</p>}
-      <div className={styles.actions}><Button variant="secondary" disabled={loading||offset===0} onClick={()=>void loadPage(Math.max(0,offset-25))}>Previous</Button><Button variant="secondary" disabled={loading||next===null} onClick={()=>void loadPage(next!)}>Next</Button></div>
-    {selected&&<ClientFacilityVisual key={selected.organizationId+':'+selected.id} facility={selected} editable={editable} controllers={visualControllers.current}/>}
-    </section><section className={styles.panel} aria-label="Facility details">{selected||creating?<FacilityEditor key={selected?selected.id+':'+selected.version:'new'} record={selected} editable={editable} onSaved={saved} onReload={()=>selected&&void open(selected.id)}/>:<div className={styles.empty}>Select a facility to view its saved details.</div>}</section></div>
+    <div className={styles.columns}><section className={styles.panel} aria-label={t('Directorio de sedes','Facility list')}><h2>{t('Tus sedes','Your facilities')}</h2>
+      {loading&&loaded?<WorkspaceUpdating>{t('Actualizando sedes…','Updating facilities…')}</WorkspaceUpdating>:null}
+      {loading&&!loaded?<WorkspaceSkeleton shape="table" label={t('Cargando sedes','Loading facilities')}/>:items.length?<div className={styles.list}>{items.map(item=><button key={item.id} className={styles.item} type="button" aria-pressed={selected?.id===item.id} aria-busy={openingId===item.id} onClick={()=>void open(item.id)}><strong>{item.value.name}</strong><span className={styles.muted}>{item.value.code} · {item.value.location.city}, {item.value.location.countryCode}</span><span className={styles.muted}>{item.value.active?t('Activa','Active'):t('Inactiva','Inactive')}</span></button>)}</div>:!error?<p className={styles.empty}>{t('No hay sedes registradas.','No facilities recorded.')}</p>:null}
+      <div className={styles.actions}><Button variant="secondary" disabled={loading||offset===0} onClick={()=>void loadPage(Math.max(0,offset-25))}>{t('Anterior','Previous')}</Button><Button variant="secondary" disabled={loading||next===null} onClick={()=>void loadPage(next!)}>{t('Siguiente','Next')}</Button></div>
+      {selected?<DeferredRegion minHeight={240}><ClientFacilityVisual key={selected.organizationId+':'+selected.id} facility={selected} editable={editable&&!openingId} controllers={visualControllers.current}/></DeferredRegion>:null}
+    </section><ContentMotion identity={creating?'new':selected?.id??'empty'} className={styles.panel}>
+      {openingId?<WorkspaceUpdating>{t('Abriendo sede…','Opening facility…')}</WorkspaceUpdating>:null}
+      {selected||creating?<FacilityEditor key={selected?selected.id+':'+selected.version:'new'} record={selected} editable={editable} blocked={!!openingId} onSaved={saved} onReload={()=>selected&&void open(selected.id)}/>:openingId?<WorkspaceSkeleton shape="form" label={t('Cargando sede','Loading facility')}/>:<div className={styles.empty}>{t('Selecciona una sede para ver sus datos.','Select a facility to view its details.')}</div>}
+    </ContentMotion></div>
   </div>;
 }
-function FacilityEditor({record,editable,onSaved,onReload}:{record:FacilityV2|null;editable:boolean;onSaved:(record:FacilityV2)=>Promise<void>;onReload:()=>void}){
+function FacilityEditor({record,editable,blocked=false,onSaved,onReload}:{record:FacilityV2|null;editable:boolean;blocked?:boolean;onSaved:(record:FacilityV2)=>Promise<void>;onReload:()=>void}){
   const initial=record?.value??blank;
   const [hours,setHours]=useState(initial.operatingHours??{timezone:'America/Lima',weekly:[] as NonNullable<FacilityInputV2['operatingHours']>['weekly']});
   const [known,setKnown]=useState(initial.operatingHours!==null),[rules,setRules]=useState(initial.accessRestrictions);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[conflict,setConflict]=useState(false);
   const pending=useRef<SettingsCommand|null>(null);
   async function save(event:FormEvent<HTMLFormElement>){
-    event.preventDefault();if(busy||conflict)return;
+    event.preventDefault();if(!editable||blocked||busy||conflict)return;
     const form=new FormData(event.currentTarget),text=(key:string)=>String(form.get(key)??'').trim();
     const optional=(key:string)=>text(key)||null,coordinate=(key:string)=>text(key)===''?null:Number(text(key));
     setError('');
@@ -66,7 +85,7 @@ function FacilityEditor({record,editable,onSaved,onReload}:{record:FacilityV2|nu
   }
   return <form className={styles.form} onSubmit={save}><div><h2>{record?'Facility details':'New facility'}</h2>{record&&<p className={styles.muted}>{record.id} · version {record.version}</p>}</div>
     {!editable&&<p className={styles.notice}>Your role can view facilities. An owner or supervisor can edit them.</p>}
-    <fieldset disabled={!editable||busy||conflict}><div className={styles.grid}>
+    <fieldset disabled={!editable||blocked||busy||conflict}><div className={styles.grid}>
       <Input label="Facility name" name="name" defaultValue={initial.name} maxLength={200} required/>
       <Input label="Facility code" name="code" defaultValue={initial.code} maxLength={100} required/>
       <Select label="Facility type" name="facilityType" defaultValue={initial.facilityType}>{['SHIPPER_SITE','WAREHOUSE','DISTRIBUTION_CENTER','OTHER'].map(value=><option key={value} value={value}>{value.replaceAll('_',' ')}</option>)}</Select>
@@ -92,7 +111,7 @@ function FacilityEditor({record,editable,onSaved,onReload}:{record:FacilityV2|nu
         <Input label="Evidence reference (optional)" value={rule.evidenceReference??''} maxLength={500} onChange={e=>setRules(rules.map((r,i)=>i===index?{...r,evidenceReference:e.target.value||null}:r))}/><Button type="button" variant="ghost" onClick={()=>setRules(rules.filter((_,i)=>i!==index))}>Remove restriction</Button></div>)}
       <Button type="button" variant="secondary" disabled={rules.length>=100} onClick={()=>setRules([...rules,{code:'',description:'',evidenceReference:null}])}>Add restriction</Button></div>
     </fieldset>{error&&<p className={styles.error} role="alert">{error}</p>}
-    <div className={styles.actions}>{editable&&<Button type="submit" disabled={conflict} isLoading={busy} loadingLabel="Saving…">{error&&!conflict?'Retry save':record?'Save changes':'Create facility'}</Button>}
+    <div className={styles.actions}>{editable&&<Button type="submit" disabled={conflict||blocked} isLoading={busy} loadingLabel="Saving…">{error&&!conflict?'Retry save':record?'Save changes':'Create facility'}</Button>}
       {record&&<Button type="button" variant="secondary" disabled={busy} onClick={onReload}>Reload latest (discard edits)</Button>}</div>
   </form>;
 }

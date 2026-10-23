@@ -76,7 +76,7 @@ export function CarrierNavigation({ children, current, locale, workspaceHref = '
     if (mobile) { trigger.current = document.activeElement as HTMLElement; setOpen(value => !value); }
     else setCollapsed(value => !value);
   } }}>
-    <div className={s.frame} data-cm-select-scope data-collapsed={collapsed} data-open={open}>
+    <div className={s.frame} data-carrier-ui data-cm-select-scope data-collapsed={collapsed} data-open={open}>
       <a className={s.skip} href={current === 'tower' ? '#tower-main' : '#coordinator-content'}>{t('Saltar al contenido', 'Skip to content')}</a>
       <aside ref={sidebar} id={sidebarId} className={s.sidebar} role={mobile && open ? 'dialog' : undefined} aria-modal={mobile && open ? true : undefined} aria-labelledby={titleId} inert={mobile && !open}>
         <div className={s.brandRow}>

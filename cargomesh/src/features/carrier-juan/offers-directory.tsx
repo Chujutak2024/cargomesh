@@ -1,5 +1,6 @@
 "use client";
-import {ArrowRight,ChevronRight,LayoutGrid,List,Package,Search} from 'lucide-react';
+import {SearchField} from '@/components/ui';
+import {ArrowRight,ChevronRight,LayoutGrid,List,Package} from 'lucide-react';
 import {useLocale} from '@/features/i18n/locale-provider';
 import {displayReference} from '@/shared/lib/display-identity';
 import {offerState,type Offer,type Opportunity} from '@/features/carrier-portal/commercial-model';
@@ -36,7 +37,7 @@ export function OffersDirectory({offers,opportunities,ready,busy,now,query,onQue
  };
  return <section className={s.directory} aria-label={t('Ofertas','Offers')}>
   <div className={s.toolbar}>
-   <label className={s.search}><Search size={16} aria-hidden="true"/><span className={s.srOnly}>{t('Buscar referencia o solicitud','Search reference or request')}</span><input type="search" value={query} onChange={event=>onQueryChange(event.target.value)} placeholder={t('Buscar referencia o solicitud','Search reference or request')}/></label>
+   <SearchField fieldClassName={s.search} hideLabel label={t('Buscar referencia o solicitud','Search reference or request')} placeholder={t('Buscar referencia o solicitud','Search reference or request')} value={query} onValueChange={onQueryChange}/>
    <div className={s.segments} role="group" aria-label={t('Estado de la oferta','Offer state')}>{filterIds.map(id=><button type="button" key={id} aria-pressed={status===id} onClick={()=>onStatusChange(id)}>{id==='all'?t('Todas','All'):stateLabel(id)}<span>{ready?(id==='all'?rows.length:rows.filter(row=>row.state===id).length):'—'}</span></button>)}</div>
    <div className={s.viewToggle} role="group" aria-label={t('Vista de ofertas','Offer view')}><button type="button" aria-label={t('Vista de lista','List view')} aria-pressed={layout==='list'} onClick={()=>onLayoutChange('list')}><List size={16} aria-hidden="true"/></button><button type="button" aria-label={t('Vista de tarjetas','Card view')} aria-pressed={layout==='cards'} onClick={()=>onLayoutChange('cards')}><LayoutGrid size={16} aria-hidden="true"/></button></div>
   </div>
