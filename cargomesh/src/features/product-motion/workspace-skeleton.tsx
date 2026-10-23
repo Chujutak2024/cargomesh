@@ -1,4 +1,5 @@
 import s from './workspace-skeleton.module.css';
+import {BackgroundRefreshStatus} from '@/features/carrier-navigation/background-refresh';
 
 export type WorkspaceShape='table'|'detail'|'sites'|'dashboard'|'form';
 /** Presentation only: skeletons never stand in for records or business state. */
@@ -15,5 +16,5 @@ export function WorkspaceSkeleton({shape='table',variant='default',label='Cargan
  </section>;
 }
 export function WorkspaceUpdating({children='Actualizando… / Updating…'}:{children?:string}){
- return <span className={s.updating} role="status"><i aria-hidden="true"/>{children}</span>;
+ return <BackgroundRefreshStatus label={children}><span className={s.updating} role="status"><i aria-hidden="true"/>{children}</span></BackgroundRefreshStatus>;
 }

@@ -1,0 +1,16 @@
+/* The shell stays anchored. Every control inside the page joins the same shot. */
+#coordinator-content { view-transition-name: carrier-page; }
+html[data-carrier-page-transition]::view-transition { pointer-events: none; }
+html[data-carrier-page-transition]::view-transition-group(root),
+html[data-carrier-page-transition]::view-transition-new(root) { animation: none; }
+html[data-carrier-page-transition]::view-transition-old(root) { animation: none; opacity: 0; }
+html[data-carrier-page-transition]::view-transition-group(carrier-page) { animation-duration: 260ms; animation-timing-function: cubic-bezier(.2,.8,.2,1); }
+html[data-carrier-page-transition]::view-transition-old(carrier-page) { animation: carrier-page-out 120ms ease-out both; mix-blend-mode: normal; }
+html[data-carrier-page-transition]::view-transition-new(carrier-page) { animation: carrier-page-in 220ms 40ms cubic-bezier(.2,.8,.2,1) both; mix-blend-mode: normal; }
+@keyframes carrier-page-out { to { opacity: 0; transform: translateY(-4px); } }
+@keyframes carrier-page-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  html[data-carrier-page-transition]::view-transition-group(carrier-page),
+  html[data-carrier-page-transition]::view-transition-old(carrier-page),
+  html[data-carrier-page-transition]::view-transition-new(carrier-page) { animation: none; }
+}

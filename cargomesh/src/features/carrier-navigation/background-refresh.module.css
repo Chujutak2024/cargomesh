@@ -1,0 +1,9 @@
+.source { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+.notice { position: fixed; z-index: 1000; right: max(20px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); display: flex; align-items: flex-start; gap: 12px; width: min(320px, calc(100vw - 32px)); padding: 16px 18px; border: 1px solid #cfe3e7; border-radius: 14px; background: #fff; color: #183f50; box-shadow: 0 8px 32px #183f501c; pointer-events: none; animation: refresh-notice-in 180ms ease-out both; }
+.notice strong { display: block; font-size: 13px; font-weight: 650; line-height: 1.5; }
+.notice p { margin: 3px 0; font-size: 12px; line-height: 1.5; color: #526d7c; }
+.notice small { font-size: 11px; color: #526d7c; }
+.spinner { flex: 0 0 auto; margin-top: 2px; color: #00858c; animation: refresh-spin 1s linear infinite; }
+@keyframes refresh-spin { to { transform: rotate(360deg); } }
+@keyframes refresh-notice-in { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .notice, .spinner { animation: none; } }

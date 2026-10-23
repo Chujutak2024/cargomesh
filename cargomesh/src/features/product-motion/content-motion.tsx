@@ -13,6 +13,7 @@ export function ContentMotion({ identity, children, className, label, focusOnCha
   useLayoutEffect(() => {
     const changed = previous.current !== identity;
     const revealed = ready && !previousReady.current;
+    const pageTransition = document.documentElement.hasAttribute('data-carrier-page-transition');
     controls.stop();
     controls.set({ opacity: 1, y: 0 });
     if (changed && focusOnChange) {
@@ -20,10 +21,10 @@ export function ContentMotion({ identity, children, className, label, focusOnCha
       title?.focus({ preventScroll: true });
       if (title) { const rect = title.getBoundingClientRect(); if (rect.top < 0 || rect.bottom > window.innerHeight) title.scrollIntoView({ block: "nearest", behavior: "instant" }); }
     }
-    if (enabled && !reduced && revealed) {
+    if (enabled && !reduced && !pageTransition && revealed) {
       controls.set({ opacity: 0, y: 0 });
       void controls.start({ opacity: 1, y: 0, transition: { duration: PRODUCT_MOTION.interaction, ease: PRODUCT_MOTION.ease } });
-    } else if (enabled && !reduced && ((animateOnChange && changed) || (!mounted.current && animateOnMount))) {
+    } else if (enabled && !reduced && !pageTransition && ((animateOnChange && changed) || (!mounted.current && animateOnMount))) {
       controls.set({ opacity: 1, y: 6 });
       void controls.start({ opacity: 1, y: 0, transition: { duration: PRODUCT_MOTION.content, ease: PRODUCT_MOTION.ease } });
     }

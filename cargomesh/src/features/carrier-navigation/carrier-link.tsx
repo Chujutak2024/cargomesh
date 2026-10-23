@@ -2,14 +2,17 @@
 import Link from 'next/link';
 import type { ComponentProps } from 'react';
 import {carrierContextHref} from './carrier-context';
+import {transitionCarrierPage} from './carrier-page-transitions';
 
 /** Same Carrier document: preserve shell, authorized context and loaded panels. */
 export function navigateCarrier(href: string, replace = false) {
   const target = carrierContextHref(href, window.location.href);
   if (target === null) return false;
-  if (replace) window.history.replaceState(null, '', target);
-  else window.history.pushState(null, '', target);
-  window.dispatchEvent(new Event('cm-carrier-route'));
+  transitionCarrierPage(() => {
+    if (replace) window.history.replaceState(null, '', target);
+    else window.history.pushState(null, '', target);
+    window.dispatchEvent(new Event('cm-carrier-route'));
+  });
   return true;
 }
 export function CarrierLink(props: ComponentProps<typeof Link>) {
