@@ -51,6 +51,14 @@ function setup({ storage = new Map<string, string>(), api = {} as Partial<typeof
       }
     },
   };
+  const timers = new Map<number, { callback: () => void; delay: number }>();
+  let timerId = 0;
+  const feedbackExports: { useAssistantChangeFeedback: typeof import("./use-assistant-change-feedback").useAssistantChangeFeedback } = {} as never;
+  const feedbackCode = ts.transpileModule(readFileSync(new URL("./use-assistant-change-feedback.ts", import.meta.url), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  vm.runInNewContext(feedbackCode, { exports: feedbackExports, require: (name: string) => { assert.equal(name, "react"); return hooks; },
+    setTimeout: (callback: () => void, delay: number) => { const id = ++timerId; timers.set(id, { callback, delay }); return id; },
+    clearTimeout: (id: number) => timers.delete(id),
+  });
   const options = catalog.getIntakeOptionsFixture();
   const native = { ...client, loadIntakeOptions: async () => ({ options: structuredClone(options), source: "api", fixtureReason: null }), ...api };
   const exports: { useIntakeController: typeof useIntakeController } = {} as never;
@@ -60,6 +68,7 @@ function setup({ storage = new Map<string, string>(), api = {} as Partial<typeof
   } }, require: (name: string) => {
     if (name === "react") return hooks;
     if (name.includes("locale-provider")) return { useLocale: () => ({ locale: "es", t: (es: string) => es }) };
+    if (name === "./use-assistant-change-feedback") return feedbackExports;
     if (name === "./prototype-model") return prototype;
     if (name === "./cargo-groups") return groups;
     if (name === "./intake-options") return catalog;
@@ -80,7 +89,7 @@ function setup({ storage = new Map<string, string>(), api = {} as Partial<typeof
   async function settle() { for (let i = 0; i < 5; i++) { await new Promise(setImmediate); render(); } return state; }
   const unmount = () => { mounted = false; for (const slot of slots) (slot as Effect)?.cleanup?.(); };
   render();
-  return { render, settle, storage, unmount, get state() { return state; } };
+  return { render, settle, storage, timers, unmount, get state() { return state; } };
 }
 const loaded = () => ({ data: structuredClone(ROAD_REQUEST_FIXTURE) });
 const evaluation = (version = 1) => ({ data: { ...structuredClone(ELIGIBLE_UNKNOWN_EVALUATION_FIXTURE), evaluatedDraftVersion: version } });
@@ -221,4 +230,46 @@ test("version conflict preserves corrections and retries the same revision inten
   assert.equal(app.state.dirtyAfterCreate, true);
   await app.state.createDraftAndEvaluate(); await app.settle();
   assert.equal(keys.length, 2); assert.equal(keys[0], keys[1]); assert.equal(app.state.request?.id, ROAD_REQUEST_FIXTURE.id);
+});
+
+
+test("assistant feedback marks only committed changes, including derived totals, without saving", async () => {
+  const app = setup(); await app.settle();
+  assert.equal(app.state.assistantChange, null);
+  app.state.updateFromChat([{ field: "originFacilityId", value: "lima" }, { field: "destinationFacilityId", value: "germany" }]); app.render();
+  assert.deepEqual(Array.from(app.state.assistantChange!.fields).sort(), ["destinationFacilityId", "originFacilityId"]);
+  assert.equal(app.state.request, null); assert.equal(app.timers.size, 1);
+  app.state.updateFromChat([{ field: "unitQuantity", value: "12" }, { field: "unitWeightPerUnitKg", value: "100" }, { field: "unitVolumePerUnitM3", value: "1" }]); app.render();
+  assert.ok(app.state.assistantChange!.fields.includes("unitQuantity"));
+  assert.ok(app.state.assistantChange!.fields.includes("totalWeightKg"));
+  assert.equal(app.state.draft.totalWeightKg, "1200"); app.unmount();
+});
+
+test("no-op turns and manual edits do not produce an assistant success cue", async () => {
+  const app = setup(); await app.settle();
+  app.state.update("originFacilityId", "lima"); app.render(); assert.equal(app.state.assistantChange, null);
+  app.state.updateFromChat([{ field: "originFacilityId", value: "lima" }]); app.render(); assert.equal(app.state.assistantChange, null);
+  app.state.updateFromChat([{ field: "destinationFacilityId", value: "germany" }]); app.render();
+  app.state.update("destinationFacilityId", "peru"); app.render(); assert.equal(app.state.assistantChange, null); app.unmount();
+});
+
+test("new corrections restart feedback and an old timer cannot clear the latest change", async () => {
+  const app = setup(); await app.settle();
+  app.state.updateFromChat([{ field: "unitQuantity", value: "10" }]); app.render();
+  const first = app.state.assistantChange!.sequence, oldTimer = [...app.timers.values()][0];
+  app.state.updateFromChat([{ field: "unitQuantity", value: "12" }]); app.render();
+  assert.ok(app.state.assistantChange!.sequence > first); assert.equal(app.timers.size, 1);
+  oldTimer.callback(); app.render(); assert.ok(app.state.assistantChange);
+  const current = [...app.timers.values()][0]; assert.equal(current.delay, 4500);
+  current.callback(); app.render(); assert.equal(app.state.assistantChange, null); app.unmount();
+});
+
+test("batched assistant facts retain each changed field and reset releases feedback", async () => {
+  const app = setup(); await app.settle();
+  app.state.updateFromChat([{ field: "originFacilityId", value: "lima" }]);
+  app.state.updateFromChat([{ field: "destinationFacilityId", value: "germany" }]); app.render();
+  assert.equal(app.state.assistantChange!.fields.length, 2);
+  app.state.reset(); app.render(); assert.equal(app.state.assistantChange, null); assert.equal(app.timers.size, 0);
+  app.state.updateFromChat([{ field: "cargoDescription", value: "pallets" }]); app.render();
+  app.unmount(); assert.equal(app.timers.size, 0);
 });
