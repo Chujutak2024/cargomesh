@@ -7,7 +7,7 @@ import {Button,SearchField,Select} from '@/components/ui';
 import type {CarrierPortalAccessV2} from '@/shared/schemas/v2/carrier-portal';
 import {readCommercialDetail} from '@/features/carrier-portal/commercial-client';
 import type {Opportunity} from '@/features/carrier-portal/commercial-model';
-import {portalErrorCopy} from '@/features/carrier-portal/api';
+import {portalErrorCopy,PortalApiError} from '@/features/carrier-portal/api';
 import {canPrepareOffer} from './offers-model';
 import {CarrierKpis} from './carrier-kpis';
 import {OpportunityListCard} from './opportunity-list-card';
