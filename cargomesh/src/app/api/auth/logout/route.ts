@@ -10,5 +10,5 @@ export async function POST(request: Request) {
   const demoSession=await assignedDemoEnabled()||await workspaceDemoEnabled();
   const { error } = await db.auth.signOut(demoSession?{scope:'local'}:undefined);
   if (error) return Response.json({ ok: false }, { status: 503, headers });
-  return new Response(null, { status: 303, headers: { ...headers, Location: "/login" } });
+  return new Response(null, { status: 303, headers: { ...headers, Location: "/" } });
 }

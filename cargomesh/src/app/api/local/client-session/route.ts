@@ -2,7 +2,7 @@ import {assignedDemoConfig} from '@/server/auth/assigned-demo';
 import {assignedDemoAllowed} from '@/server/auth/assigned-demo-policy';
 import {cookies} from 'next/headers';
 import {hasSessionOrigin} from '@/server/auth/session-origin';
-import {clientPreviewConfig,localClientFrontendPreviewEnabled} from '@/server/auth/local-client-preview';
+import {clientPreviewConfig} from '@/server/auth/local-client-preview';
 import {CLIENT_PREVIEW_COOKIE,CLIENT_PREVIEW_TTL,localClientPreviewAllowed,signClientPreview} from '@/server/auth/local-client-preview-policy';
 export const dynamic='force-dynamic';
 export async function POST(request:Request){
@@ -13,6 +13,5 @@ export async function POST(request:Request){
  const input=await request.formData().catch(()=>null);const exit=input?.get('action')==='exit';
  const jar=await cookies();
  jar.set(CLIENT_PREVIEW_COOKIE,exit?'':signClientPreview(config.secret!),{httpOnly:true,sameSite:'strict',secure:hosted,path:'/',maxAge:exit?0:CLIENT_PREVIEW_TTL});
- const exitLocation=hosted?'/':'/login?returnTo=%2Fclients'+(await localClientFrontendPreviewEnabled()?'':'&connected=1');
- return new Response(null,{status:303,headers:{...noStore,Location:exit?exitLocation:'/clients'}});
+ return new Response(null,{status:303,headers:{...noStore,Location:exit?'/':'/clients'}});
 }
