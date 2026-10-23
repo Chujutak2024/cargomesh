@@ -1,4 +1,5 @@
 "use client";
+import {ContentMotion} from "@/features/product-motion/content-motion";
 import {CarrierSkeleton,CarrierUpdating} from "@/features/carrier-navigation/carrier-loading";
 import {useCarrierMemoryState} from "@/features/carrier-navigation/carrier-continuity";
 import {displayReference} from '@/shared/lib/display-identity';
@@ -66,7 +67,7 @@ export function OffersWorkspace({carrier,active=true,commercial=false,routeHash,
  const afterSave=(f:Offer)=>{setEditing(false);setWithdrawing(false);setMessage((f.status==='WITHDRAWN'?'Offer withdrawn':'Offer issued')+' · '+displayReference(f.data.carrierReference,'OFE',f.id));setSelection({kind:'offers',id:f.id});if(commercial)navigateOffer('#/desk/details/'+f.id);state.refresh();onSaved?.();};
  const rows=current?(tab==='offers'?current.offers:current.opportunities):[];
  const filtered=rows.filter(row=>{const label=row.kind==='offers'?displayReference(row.data.carrierReference,'OFE',row.id):opportunityReference(row);const state=row.kind==='offers'?offerState(row,now):row.status;return (status==='all'||state===status)&&[label,row.id,row.requestId,row.kind==='opportunities'?opportunityFacts(row).origin:'',row.kind==='opportunities'?opportunityFacts(row).destination:''].join(' ').toLowerCase().includes(search.trim().toLowerCase());});
- return <div className={d.directory} aria-label="Carrier commercial offers">
+ return <ContentMotion className={d.directory} identity="offers-data" ready={!!current&&(!selection||!!offer||!!opportunity)} animateOnChange={false} enabled={active&&!busy} label="Carrier commercial offers">
 
  {message?<p className={p.notice} role="status">{message}</p>:null}
  {state.error?<p className={p.error} role="alert">{state.error} <button data-cm-action disabled={busy} onClick={refresh}>Refresh records</button></p>:state.loading?(current?<CarrierUpdating/>:<CarrierSkeleton shape="table"/>):null}
@@ -96,5 +97,5 @@ export function OffersWorkspace({carrier,active=true,commercial=false,routeHash,
  {withdrawing&&offer?<OfferWithdrawalForm key={offer.id+':'+offer.version} carrier={carrier} row={offer} allowed={mayWithdraw} onSaved={afterSave} onClose={()=>setWithdrawing(false)} onBusyChange={changeBusy}/>:null}
  </>:null}</>}
  </>:state.denied?<p>Access could not be confirmed. Previous Carrier records and forms are hidden.</p>:null}
- </div>;
+ </ContentMotion>;
 }

@@ -1,4 +1,5 @@
 "use client";
+import {ContentMotion} from "@/features/product-motion/content-motion";
 import {CarrierSkeleton,CarrierUpdating} from "@/features/carrier-navigation/carrier-loading";
 import {useCarrierMemoryState} from "@/features/carrier-navigation/carrier-continuity";
 import {useEffect,useRef,useState,useSyncExternalStore} from 'react';
@@ -52,7 +53,7 @@ export function ConnectedOpportunities({carrier,active=true,routeHash,refreshTok
  const [changeBusy]=useState(()=>(value:boolean)=>busyCallback.current(value));
  useEffect(()=>()=>onBusyChange(false),[onBusyChange]);
  const retry=()=>setRefresh(value=>value+1),back=()=>navigateJuanHash('#/shipments');
- return <div className={s.directory} aria-label="Carrier opportunities">
+ return <ContentMotion className={s.directory} identity="opportunities-data" ready={id?!!row:!!current} animateOnChange={false} enabled={active&&!busy} label="Carrier opportunities">
   {message?<p role="status" className={p.notice}>{message}</p>:null}
   {error?<p role="alert" className={p.error}>{error} <button data-cm-action disabled={busy} onClick={retry}>Retry</button></p>:!current?<CarrierSkeleton shape={id?'detail':'cards'}/>:refreshing?<CarrierUpdating/>:null}
   {current?.partial?<p role="status" className={p.notice}>Partial opportunity list. Counts cover loaded records and response actions are disabled until the list is complete.</p>:null}
@@ -84,5 +85,5 @@ export function ConnectedOpportunities({carrier,active=true,routeHash,refreshTok
    <div className={cards.grid}>{filtered.map(item=><OpportunityListCard key={item.id} row={item} busy={busy} onOpen={()=>navigateJuanHash('#/shipments/details/'+item.id)}/>)}</div>
    {!filtered.length?<section className={`${p.card} ${s.noResults}`}><Search size={24}/><h2>{rows.length?'No matches':'No opportunities received'}</h2><p>{rows.length?'Try another search or status.':'No local examples are substituted for an empty Carrier inbox.'}</p><button data-cm-action onClick={()=>{setSearch('');setStatus('all');}}>Clear filters</button></section>:null}
   </>:null}
- </div>;
+ </ContentMotion>;
 }

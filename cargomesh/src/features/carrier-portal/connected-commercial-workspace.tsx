@@ -1,4 +1,5 @@
 "use client";
+import {ContentMotion} from "@/features/product-motion/content-motion";
 import {CarrierSkeleton,CarrierUpdating} from "@/features/carrier-navigation/carrier-loading";
 import {useCarrierMemoryState} from "@/features/carrier-navigation/carrier-continuity";
 import {displayReference} from "@/shared/lib/display-identity";
@@ -79,7 +80,7 @@ function CommercialWorkspace({carrier,view,active=true,refreshToken=0,onBusyChan
  const estimateBasis=detail?.kind==='opportunities'?carrierEstimateBasis(detail,selectedAssignments):null;
  const estimatedAmount=estimateBasis?carrierPriceEstimate(estimateBasis.distanceKm,Number(ratePerKm)):null;
  function saved(){setBusy(false);setAction(null);setRefresh(n=>n+1);}
- return <div className={s.workspace}>
+ return <ContentMotion className={s.workspace} identity="pipeline-data" ready={!!snapshot} animateOnChange={false} enabled={active&&!busy}>
  {view==='desk'&&carrier.role==='ADMIN'?<QuotePolicyPanel key={carrier.carrierId} carrier={carrier}/>:null}
  <div className={s.toolbar}><SearchField label="Search loaded records" value={search} onValueChange={setSearch}/>{view!=='pipeline'?<Button variant="secondary" disabled={busy} onClick={()=>setRefresh(n=>n+1)}>Refresh</Button>:null}{view==='pipeline'?<Select label="Pipeline stage" value={filter} onChange={e=>setFilter(e.target.value)}><option>All</option>{stages.map(stage=><option key={stage}>{stage}</option>)}</Select>:null}{view!=='pipeline'&&snapshot?<small>Updated {date(snapshot.readAt)}</small>:null}</div>
  {error?<p role="alert">{error}</p>:null}
@@ -126,5 +127,5 @@ function CommercialWorkspace({carrier,view,active=true,refreshToken=0,onBusyChan
  {detail?.kind==='bookings'?<><BookingConfirmationWindow bookingId={detail.id} carrierId={carrier.carrierId} canAct={carrier.role!=="DISPATCHER"&&!busy} onChanged={saved}/><h2>{detail.data.carrierReference??'Order '+short(detail.id)}</h2><p>Customer authorization: {detail.data.authorizationStatus} · Carrier confirmation: {detail.data.carrierConfirmationStatus}</p><p>Customer organization {short(detail.organizationId)} · request {short(detail.requestId)} · revision {detail.version}</p>{snapshot&&bookingOffer(detail,snapshot)?<Button variant="secondary" onClick={()=>open('offers',bookingOffer(detail,snapshot)!.id)}>View selected offer</Button>:<p className={s.notice}>The selected offer reference is unavailable in this environment. Booking remains visible; price and route are not guessed.</p>}<details open><summary>Authorization and capacity evidence</summary><DataValue value={detail.data} es={false}/></details><Button disabled={!allowed('bookings.confirm',detail.status)} onClick={()=>setAction({kind:'confirm-booking',row:detail})}>Respond to booking</Button></>:null}
  {action?<><p className={s.notice}>Review before sending. Commercial changes are attributed to your account and revalidated by the backend. Use the evidence provenance that matches your data. Customer selection and booking consent remain separate.</p><CommercialActionForm key={action.kind+action.row.id+('issuedAt' in action?action.issuedAt:'')} carrierId={carrier.carrierId} action={action} onSaved={saved} onBusyChange={setBusy} onClose={()=>{setBusy(false);setAction(null);}}/></>:null}
  </CommercialRecordFrame></section>:null}
- </div>;
+ </ContentMotion>;
 }

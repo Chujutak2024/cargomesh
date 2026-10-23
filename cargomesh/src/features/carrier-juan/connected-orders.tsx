@@ -39,9 +39,9 @@ function OrdersViews(props:Props){
  useEffect(()=>{if(tab==='orders'){setRoute(hash);setVisited(true);}},[hash,tab]);
  const changeBusy=useCallback((value:boolean)=>{setBusy(value);props.onBusyChange(value);},[props.onBusyChange]);
  const saved=useCallback(()=>{setRevision(value=>value+1);props.onSaved?.();},[props.onSaved]);
- return <ContentMotion className={views.workspace} identity={tab+":"+hash} animateOnMount enabled={!busy}>{!orderSelectionFromHash(hash)?<nav className={views.views} aria-label="Orders views"><CarrierLink href={juanHref(route)} aria-current={tab==='orders'?'page':undefined} aria-disabled={busy||undefined} onClick={e=>{if(busy)e.preventDefault();}}><List size={17} aria-hidden="true"/>Orders</CarrierLink><CarrierLink href="/carriers/orders/incidents" aria-current={tab==='incidents'?'page':undefined} aria-disabled={busy||undefined} onClick={e=>{if(busy)e.preventDefault();}}><AlertCircle size={17} aria-hidden="true"/>Incidents</CarrierLink></nav>:null}
+ return <div className={views.workspace}>{!orderSelectionFromHash(hash)?<nav className={views.views} aria-label="Orders views"><CarrierLink href={juanHref(route)} aria-current={tab==='orders'?'page':undefined} aria-disabled={busy||undefined} onClick={e=>{if(busy)e.preventDefault();}}><List size={17} aria-hidden="true"/>Orders</CarrierLink><CarrierLink href="/carriers/orders/incidents" aria-current={tab==='incidents'?'page':undefined} aria-disabled={busy||undefined} onClick={e=>{if(busy)e.preventDefault();}}><AlertCircle size={17} aria-hidden="true"/>Incidents</CarrierLink></nav>:null}
  {(visited||tab==='orders')?<section hidden={tab!=='orders'}><OrdersWorkspace {...props} routeHash={tab==='orders'?hash:route} active={tab==='orders'} refreshToken={(props.refreshToken??0)+revision} onBusyChange={changeBusy} onSaved={saved}/></section>:null}
- <section hidden={tab!=='incidents'}><ConnectedIncidents carrier={props.carrier} active={tab==='incidents'} refreshToken={(props.refreshToken??0)+revision} onBusyChange={changeBusy} onSaved={saved}/></section></ContentMotion>;
+ <section hidden={tab!=='incidents'}><ConnectedIncidents carrier={props.carrier} active={tab==='incidents'} refreshToken={(props.refreshToken??0)+revision} onBusyChange={changeBusy} onSaved={saved}/></section></div>;
 }
 export function OrdersWorkspace({carrier,refreshToken=0,initialBookingId='',embedded=false,routeHash,active=true,onBusyChange,onSaved}:Props){
  const {t,localeTag,locale}=useLocale();
@@ -74,7 +74,7 @@ export function OrdersWorkspace({carrier,refreshToken=0,initialBookingId='',embe
  const rows=snapshot?.bookings.filter(b=>{const stageValue=orderRelationships(b,snapshot).stage;return (stage==='All'||stageValue===stage)&&[b.id,b.requestId,b.data.carrierReference,displayReference(b.data.carrierReference,'BKG',b.id)].join(' ').toLowerCase().includes(search.trim().toLowerCase());})??[];
  const orphanExecutions=snapshot?.executions.filter(e=>!bookingFromExecution(e,snapshot))??[],orphanHolds=snapshot?.holds.filter(h=>!bookingFromHold(h,snapshot))??[];
  const commands={can,begin,busy};
- return <div className={d.directory} aria-label="Carrier Orders workspace">
+ return <ContentMotion className={d.directory} identity="orders-data" ready={selection?!!row:!!snapshot} animateOnChange={false} enabled={active&&!busy} label="Carrier Orders workspace">
 
  <div className={s.row}>{embedded?<button data-cm-action disabled={busy||state.loading} onClick={refresh}>Refresh Orders</button>:null}{embedded?<CarrierLink href={'/carriers/orders'+(selection?'/details/'+selection:'')}>Open full Orders screen</CarrierLink>:null}{!selection?<CarrierLink href="/carriers/pipeline">{t('Tablero comercial','Commercial board')}</CarrierLink>:null}</div>
  {message?<p role="status" className={p.notice}>{message}</p>:null}
@@ -94,5 +94,5 @@ export function OrdersWorkspace({carrier,refreshToken=0,initialBookingId='',embe
  </>:null}</>:null}
  {!embedded&&!selection&&!state.loading?<><h3>{t('Registros por vincular','Unlinked records')}</h3>{orphanExecutions.map(e=><ExecutionRecord key={e.id} row={e} snapshot={snapshot} commands={commands} revision={state.revision+refreshToken} onDenied={()=>setDenied(true)}/>)}{orphanHolds.map(h=><ReservationRecord key={h.id} row={h} snapshot={snapshot} commands={commands}/>)}{!orphanExecutions.length&&!orphanHolds.length?<p>No orphaned records in this read.{snapshot.partial?' Other records may exist.':''}</p>:null}</>:null}
  </>:null}
- </div>;
+ </ContentMotion>;
 }
