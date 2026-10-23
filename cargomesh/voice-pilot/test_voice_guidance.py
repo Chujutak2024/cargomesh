@@ -31,6 +31,8 @@ class VoiceGuidanceTests(unittest.TestCase):
         self.assertIn("recorded offer USD 361.20",prompt)
         self.assertIn("not a newly calculated quote",prompt)
         self.assertIn("native web review and consent",prompt)
+        self.assertIn("state all three in the load summary",prompt)
+        self.assertIn("not arithmetic from the deadline label",prompt)
         self.assertNotIn("ask them to state their own proposed total",prompt)
 
     def test_legacy_carrier_grant_remains_compatible(self):

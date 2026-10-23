@@ -35,6 +35,17 @@ def carrier_context(opportunity, now=None):
     facts = (f"Authoritative session time: {clock} UTC; {peru} Peru (America/Lima). "
              f"Recorded opportunity status: {context.get('opportunityStatus', 'unknown')}. "
              "These facts describe a snapshot, not command authorization. ")
+    if deadline is not None:
+        # Derive both representations from the same signed instant, never from model arithmetic.
+        deadline_utc = datetime.fromtimestamp(deadline, timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        deadline_peru = datetime.fromtimestamp(deadline, PET).strftime("%Y-%m-%d %H:%M")
+        facts += (f"Authoritative response deadline in Peru: {deadline_peru} PET "
+                  f"(America/Lima, UTC-05:00). Same deadline in UTC: {deadline_utc}. "
+                  "When stating the deadline, read the precomputed Peru date and hour first, then UTC. "
+                  "Use those dates and clock values literally; do not convert them again, "
+                  "substitute the session clock or infer a different time zone. ")
+    else:
+        facts += "The response deadline is unknown; do not invent a deadline date or clock time. "
     if expired:
         facts += ("The response deadline has already passed. Say clearly that it is expired. "
                   "Do not invite preparing, accepting, adjusting a price, or issuing a new offer for it. "
@@ -49,4 +60,6 @@ def carrier_context(opportunity, now=None):
     return facts, max(0, min(240, until-current, deadline-current if open_now else 240))
 
 def carrier_opening():
-    return "Summarize the recorded opportunity and its verified deadline state. Suggest only an allowed next step."
+    return ("Summarize the recorded opportunity and its verified deadline state. "
+            "State the precomputed Peru deadline and UTC equivalent if available, without recalculating. "
+            "Suggest only an allowed next step.")
