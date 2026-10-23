@@ -32,3 +32,22 @@ Automated checks: conversation 103 + 26 passed; chat workflow 91 passed; intake 
 The tests reproduce the supplied transcript and reject ambiguous dates, invalid dates, ungrounded total-as-per-unit weights, unsupported equipment and hazardous-category shortcuts. Prompt tests check instructions, not model compliance.
 
 Publish the web changes and rebuild the existing AWS gateway image from the accepted source to apply the new model instructions. Preserve existing URL, origin, port, IAM, secret and infrastructure. A web-only rollout improves local capture but does not change the running gateway prompt. No AWS/Vercel deployment or live human conversation was performed for this correction. After both rollouts, repeat the authenticated conversation and renewal test; do not infer deployment from health alone.
+
+
+## Integration review: signed renewal context
+
+The integration review reproduced a boundary defect: the browser retained four early
+cargo anchors plus twelve recent turns, but the session API signed only the last twelve.
+The route now keeps the bounded sixteen-turn intake envelope (180 characters per turn).
+Shipper offer sessions still use six turns of 160 characters; Carrier grants do not accept
+browser transcript hints. No consent, identity or commercial data behavior changes.
+
+The regression calls the native session POST in isolated local-preview mode, verifies
+the JWT signature, and asserts the initial robot product and latest delivery exchange
+survive together. It fails against the previous route. Separate checks retain role budgets,
+reject seventeen turns and oversized strings, and preserve no-store headers.
+
+Combined with main 4f2a286: TypeScript, 292 conversation/intake/briefing tests, nine
+navigation/motion tests and 36 gateway tests passed locally. No new authenticated visual
+or live-audio acceptance is claimed. Rebuild the existing AWS gateway after the accepted
+web merge for the updated instructions; publishing the web does not update ECS.

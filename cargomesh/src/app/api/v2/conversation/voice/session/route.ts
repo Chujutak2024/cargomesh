@@ -11,6 +11,7 @@ import { VoiceDraftContextSchema, type VoiceDraftContext } from "@/features/v2-c
 import { carrierVoiceOpportunity, voiceFact } from "@/server/conversation/carrier-voice-scope";
 import { readCarrierBriefing } from "@/server/conversation/carrier-briefing";
 import { readShipperOfferBriefing } from "@/server/conversation/shipper-offer-context";
+import { voiceSessionContext } from "@/server/conversation/voice-session-context";
 
 export const runtime = "nodejs";
 
@@ -124,8 +125,8 @@ export async function POST(request: Request) {
   }
   voiceScope = { ...voiceScope, language };
   if (!carrierScope && !offerRequestId && draftContext) voiceScope = { ...voiceScope, draftContext };
-  if (!carrierScope && voiceContext.length) voiceScope = { ...voiceScope,
-    voiceContext: voiceContext.slice(offerRequestId ? -6 : -12).map((turn) => turn.slice(0, offerRequestId ? 160 : 180)) };
+  const transcriptContext = voiceSessionContext(voiceContext, carrierScope ? "carrier" : offerRequestId ? "shipper_offers" : "shipper");
+  if (transcriptContext.length) voiceScope = { ...voiceScope, voiceContext: transcriptContext };
   if (!carrierScope && !offerRequestId) {
     try {
       const catalog = voicePreview
