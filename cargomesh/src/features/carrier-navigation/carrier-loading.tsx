@@ -1,5 +1,6 @@
 "use client";
 import {useLocale} from '@/features/i18n/locale-provider';
+import {BackgroundRefreshStatus} from './background-refresh';
 import s from './carrier-loading.module.css';
 type Shape='cards'|'table'|'detail'|'dashboard'|'agenda';
 export function CarrierSkeleton({shape='cards',label}:{shape?:Shape;label?:string}){
@@ -12,5 +13,5 @@ export function CarrierSkeleton({shape='cards',label}:{shape?:Shape;label?:strin
  </section>;
 }
 export function CarrierUpdating({children}:{children?:string}){
- const {t}=useLocale();return <span className={s.updating} role="status"><i aria-hidden="true"/>{children??t('Actualizando…','Updating…')}</span>;
+ const {t}=useLocale(),label=children??t('Actualizando…','Updating…');return <BackgroundRefreshStatus label={label}><span className={s.updating} role="status"><i aria-hidden="true"/>{label}</span></BackgroundRefreshStatus>;
 }

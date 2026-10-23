@@ -1,6 +1,8 @@
 "use client";
 import {createContext,useCallback,useContext,useEffect,useRef,useState,useSyncExternalStore,type Dispatch,type ReactNode,type SetStateAction} from 'react';
 import {useLocale} from '@/features/i18n/locale-provider';
+import {BackgroundRefreshProvider} from './background-refresh';
+import {CarrierPageTransitions} from './carrier-page-transitions';
 type Store={values:Map<string,unknown>;listeners:Set<()=>void>;clear:()=>void};
 const Context=createContext<Store|null>(null);
 /** Memory belongs to this mounted authorized workspace, never browser storage. */
@@ -14,7 +16,7 @@ export function CarrierContinuityProvider({children}:{children:ReactNode}){
   const clear=()=>{store.clear();setRevoked(true);};window.addEventListener('cm-carrier-access-revoked',clear);
   return()=>{window.removeEventListener('cm-carrier-access-revoked',clear);store.values.clear();};
  },[store]);
- return <Context.Provider value={store}>{revoked?<section role="alert"><h2>{t('El acceso cambió','Access changed')}</h2><p>{t('Actualiza para consultar el espacio autorizado.','Refresh to read the authorized workspace.')}</p><button type="button" onClick={()=>window.location.reload()}>{t('Actualizar','Refresh')}</button></section>:children}</Context.Provider>;
+ return <Context.Provider value={store}><BackgroundRefreshProvider><CarrierPageTransitions/>{revoked?<section role="alert"><h2>{t('El acceso cambió','Access changed')}</h2><p>{t('Actualiza para consultar el espacio autorizado.','Refresh to read the authorized workspace.')}</p><button type="button" onClick={()=>window.location.reload()}>{t('Actualizar','Refresh')}</button></section>:children}</BackgroundRefreshProvider></Context.Provider>;
 }
 /** Last reads are presentation; a fresh read still gates commands. */
 export function useCarrierMemoryState<T>(key:string,initial:T|(()=>T)):[T,Dispatch<SetStateAction<T>>]{
