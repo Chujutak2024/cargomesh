@@ -46,3 +46,10 @@ test("renewal carries the product and pending delivery clock without leaking con
  assert.equal(voiceDraftContext({...draft,cargoDescription:"Contact private@example.test"},null).cargoDescription,undefined);
  assert.equal(voiceDraftContext({...draft,cargoDescription:"call +51999111222"},null).cargoDescription,undefined);
 });
+
+
+test("voice renewal follows validated form sections instead of optional-field order",()=>{
+ const context=voiceDraftContext({...EMPTY_PROTOTYPE_DRAFT,originFacilityId:"origin",destinationFacilityId:"destination"},null);
+ assert.equal(context.formProgress?.step,2);assert.ok(context.formProgress?.pendingFields.includes("categoryCode"));
+ assert.ok(!context.formProgress?.pendingFields.includes("urgency"));
+});

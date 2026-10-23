@@ -25,6 +25,8 @@ import { voiceDraftContext } from "@/features/v2-conversation-prep/voice-draft-c
 import { readCargoReadiness, summarizeCargoReadiness } from "./workflow-chat-client";
 import { wantsQuoteSearch } from "./chat-quote-action";
 import { DateClarificationPanel, CargoClassificationPanel } from "./capture-clarification-panel";
+import { assistantNextField } from "./assistant-form-guide";
+import { AssistantChangeNotice } from "./assistant-field-feedback";
 import {spokenCategoryAcceptance} from "./spoken-category-acceptance";
 import {spokenCaptureClarification} from "./spoken-capture-clarification";
 import { dateClarification, needsCargoClassification, type DateClarification } from "./capture-clarification";
@@ -59,8 +61,8 @@ function conversationAcknowledgment(value: string | undefined): string | undefin
 
 const positive = /^(yes|yes,? (?:create|save) (?:the )?(?:draft|revision)|(?:create|save) (?:the )?(?:draft|revision)|confirm|go ahead|s[ií]|s[ií],? (?:crea(?:r)?|guarda(?:r)?) (?:el |la )?(?:borrador|revisi[oó]n)|(?:crea(?:r)?|guarda(?:r)?) (?:el |la )?(?:borrador|revisi[oó]n)|confirmo|confirmar|adelante)$/i;
 
-function missingField(draft: V2IntakePrototypeDraft, filled: Set<ConversationField> = new Set()): GuidedConversationField | null {
-  return CONVERSATION_FIELDS.find((field) => !filled.has(field) && !String(draft[field] ?? "").trim()) ?? null;
+function missingField(draft: V2IntakePrototypeDraft): GuidedConversationField | null {
+  return assistantNextField(draft);
 }
 
 function locationName(id: string, options: IntakeOptionsData) {
@@ -798,6 +800,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         </div>
       </header>
       <ChatStructuredSummary draft={draft} options={options} request={request} dirty={draftDirty} onEdit={onEdit ? goToFormStep : undefined} t={t} />
+      {catalogStatus === "ready" && <AssistantChangeNotice chat />}
       {busy && <p className={styles.catalogNotice} role="status">{busyLabel ?? t("Actualizando el borrador…", "Updating the draft…")}</p>}
       {catalogStatus !== "ready" && <div className={styles.catalogNotice} role="status"><strong>{catalogStatus === "loading" ? t("Preparando los datos de tu organización…", "Loading your organization's catalog…") : t("No se pudo preparar el asistente", "The assistant needs your catalog")}</strong>{catalogError && <span>{catalogError}</span>}{catalogStatus === "empty" && <span>{t("Faltan sedes u opciones compatibles. Revisa el catálogo de tu organización.", "Facilities or supported options are missing. Review your organization's catalog.")}</span>}{catalogStatus !== "loading" && onRetryCatalog && <button type="button" onClick={onRetryCatalog}>{t("Reintentar", "Retry")}</button>}</div>}
       <div className={styles.conversationContent}>

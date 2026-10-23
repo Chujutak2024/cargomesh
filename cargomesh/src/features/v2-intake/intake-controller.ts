@@ -3,6 +3,7 @@ import {replaceCargoGroups,type DraftCargoGroup} from "./cargo-groups";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAssistantChangeFeedback } from "./use-assistant-change-feedback";
+import { assistantNextStep, ASSISTANT_ADVANCE_MS } from "./assistant-form-guide";
 import { useLocale } from "@/features/i18n/locale-provider";
 import type { ConversationField } from "./conversation-fields";
 import type { FreightRequestV2Data, IntakeOptionsData, RoadServiceabilityEvaluationV2Data } from "./contracts";
@@ -19,7 +20,13 @@ export function useIntakeController() {
   const { locale, t } = useLocale();
   const [draft, setDraft] = useState<V2IntakePrototypeDraft>(EMPTY_PROTOTYPE_DRAFT);
   const { assistantChange, trackAssistantFields, clearAssistantChange } = useAssistantChangeFeedback(draft);
-  const [step, setStep] = useState<PrototypeStep>(1);
+  const [step, setStepState] = useState<PrototypeStep>(1);
+  const [assistantNavigation, setAssistantNavigation] = useState(false);
+  const setStep = (next: PrototypeStep | ((current: PrototypeStep) => PrototypeStep)) => { setAssistantNavigation(false); setStepState(next); };
+  const consumedAdvance = useRef(0);
+  const advanceGeneration = useRef(0);
+  const [formInteractionEpoch, setFormInteractionEpoch] = useState(0);
+  const pauseAssistantAdvance = () => setFormInteractionEpoch(n => n + 1);
   const [maxVisited, setMaxVisited] = useState<PrototypeStep>(1);
   const [issues, setIssues] = useState<PrototypeValidationIssue[]>([]);
   const [options, setOptions] = useState<IntakeOptionsData | null>(null);
@@ -131,6 +138,23 @@ export function useIntakeController() {
       setSelectedCandidateId,
     );
   }, [evaluation, request, selectedCandidateId]);
+
+  const draftFingerprint = JSON.stringify(draft);
+  // Pause briefly so the receipt/glow is visible. Any edit, navigation, reset or new turn cancels it.
+  useEffect(() => {
+    if (!assistantChange || assistantChange.sequence === consumedAdvance.current) return;
+    consumedAdvance.current = assistantChange.sequence;
+    if (["creating", "revising", "reading", "evaluating"].includes(submitPhase)) return;
+    const next = assistantNextStep(step, draft, options);
+    if (next === step) return;
+    const generation = ++advanceGeneration.current;
+    const timer = setTimeout(() => {
+      if (generation !== advanceGeneration.current) return;
+      setAssistantNavigation(true); setStepState(next);
+      setMaxVisited(current => Math.max(current, next) as PrototypeStep); setIssues([]);
+    }, ASSISTANT_ADVANCE_MS);
+    return () => { advanceGeneration.current += 1; clearTimeout(timer); };
+  }, [assistantChange?.sequence, draftFingerprint, step, options, submitPhase, formInteractionEpoch]);
 
   const update = <K extends keyof V2IntakePrototypeDraft>(field: K, value: V2IntakePrototypeDraft[K]) => {
     draftRevisionRef.current += 1;
@@ -379,7 +403,7 @@ export function useIntakeController() {
     evaluating: t("Consultando ROAD para la versión guardada…", "Checking ROAD for the saved version…"),
   } as Partial<Record<SubmitPhase, string>>)[submitPhase];
 
-  return { locale, t, draft, assistantChange, step, maxVisited, issues, options, optionsSource, optionsError, submitPhase, submitLabel, submitError,
+  return { locale, t, draft, assistantChange, assistantNavigation, pauseAssistantAdvance, step, maxVisited, issues, options, optionsSource, optionsError, submitPhase, submitLabel, submitError,
     request, evaluation, selectedCandidateId, dirtyAfterCreate, errorRef, activeOptions, origin, destination, optionCoverage,
     mapProps, update, updateCargoGroups, errorFor, enterReview, goNext, loadExample, reset, createDraftAndEvaluate, retryAfterCreate,
     reloadPersisted, updateFromChat, setStep, setMaxVisited, setIssues, setOptionsAttempt, setSelectedCandidateId };

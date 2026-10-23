@@ -7,3 +7,21 @@
 .notice > svg { flex-shrink: 0; }
 @keyframes appliedGlow { from { box-shadow: 0 0 0 3px #2dd4bf66, 0 0 22px #14b8a64d; } to { box-shadow: 0 0 0 0 transparent, 0 0 0 transparent; } }
 @media (prefers-reduced-motion: reduce) { .glow { animation: none; } }
+
+.guide { margin: .35rem 0 .8rem; padding: .7rem; border: 1px solid #d8e8e4; border-radius: .85rem; background: #f8fcfb; color: #23453e; font-size: .76rem; }
+.guideHeading { display: flex; align-items: center; gap: .4rem; }
+.guideHeading > span { margin-left: auto; font-variant-numeric: tabular-nums; }
+.guideSteps { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .5rem; }
+.guideSteps > span { border-radius: .35rem; background: #e8edeb; padding: .2rem .35rem; color: #455b55; font-size: .65rem; }
+.guideSteps > span[data-complete="true"] { background: #ccf2e8; color: #075f55; }
+.receipt { position: relative; margin-top: .65rem; padding: .55rem .65rem; border: 1px solid #91dacf; border-radius: .65rem; background: #ecfdf5; animation: appliedGlow 900ms ease-out both; }
+.receipt > strong { display: flex; gap: .3rem; align-items: center; }
+.receipt dl { margin: .3rem 0 0; }
+.receipt dl > div { margin-top: .3rem; }
+.receipt dt { font-size: .65rem; color: #44675d; }
+.receipt dd { margin: .05rem 0 0; overflow-wrap: anywhere; font-weight: 600; }
+.nextQuestion { margin: .55rem 0 0; line-height: 1.5; }
+.guide > small { display: block; margin-top: .4rem; }
+@media (prefers-reduced-motion: reduce) { .receipt { animation: none; } }
+
+.chatGuide { flex-shrink: 0; max-height: min(13rem, 28dvh); overflow-y: auto; margin: .35rem .75rem; }
