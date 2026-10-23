@@ -11,7 +11,6 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
-  PackagePlus,
   Search,
   UserRound,
   X,
@@ -110,7 +109,6 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     ] },
     { id: "operations", label: t("Operaciones de transporte", "Transport operations"), items: [
-      { href: "/freight-request/new", label: t("Nueva carga", "New shipment"), icon: PackagePlus },
       { href: "/requests", label: t("Mis cargas", "My shipments"), icon: ClipboardList },
       { href: "/tracking", label: t("Seguimiento", "Tracking"), icon: MapPinned },
     ] },
