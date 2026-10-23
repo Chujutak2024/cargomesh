@@ -93,3 +93,16 @@
 /* Report the loaded site coverage without inventing missing coordinates. */
 .mapLegend{flex-wrap:wrap;max-width:calc(100% - 100px)}
 .mapLegend a{color:var(--cm-color-primary);text-underline-offset:3px}
+
+.listView{gap:14px;overflow:auto}
+.listView>.shipmentRow{display:grid;grid-template-columns:34px minmax(0,1fr) auto 16px;flex:0 0 auto;min-width:0;width:100%;height:auto;padding:16px;gap:12px;line-height:1.5}
+.listView>.shipmentRow>span:nth-child(2){display:grid;gap:4px;overflow-wrap:anywhere}
+.listView .shipmentRow strong{flex-wrap:wrap;line-height:1.5}
+.listView .statusBadge{min-width:0;max-width:140px;white-space:normal;overflow-wrap:anywhere}
+.listView>.shipmentRow>svg{flex-shrink:0}
+@media(max-width:600px){
+  .listView>.shipmentRow{grid-template-columns:34px minmax(0,1fr) 16px;padding:14px;gap:8px 10px}
+  .listView .vehicleIcon{align-self:start}
+  .listView .statusBadge{grid-column:2;justify-self:start;max-width:100%}
+  .listView>.shipmentRow>svg{display:block;grid-column:3;grid-row:1 / span 2}
+}

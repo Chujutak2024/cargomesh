@@ -5,3 +5,13 @@
 .compact .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 .compact { border-color: var(--cm-color-line, #dde3e0); background: #fff; color: var(--cm-color-muted, #52605e); }
 .switcher:focus-within { border-color: var(--cm-color-focus, #13aeb7); outline: 3px solid rgb(38 123 208 / 30%); outline-offset: 2px; }
+
+/* Override the shared form-select rules in both workspaces.
+   The outer switcher provides the visible keyboard-focus indicator. */
+html body .switcher.switcher.switcher select:not([multiple]):not([size]),
+html body .switcher.switcher.switcher select:not([multiple]):not([size]):is(:hover, :focus, :focus-visible, :open) {
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}

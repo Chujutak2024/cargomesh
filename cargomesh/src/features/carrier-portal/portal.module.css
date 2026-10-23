@@ -181,6 +181,8 @@
 
 @media(max-width:480px){.topbar>div:first-child>strong{display:none}.topbar{flex-wrap:nowrap;min-height:70px}.topbar>div{gap:8px}}
 
+.fieldGroup>select{margin-block:8px 16px}
+
 /* Carrier context is selected once in the workspace header when needed. */
 .topbar .carrierContextPicker{display:flex;align-items:center;gap:8px;min-width:0;max-width:280px}
 .topbar .carrierContextPicker>span:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
