@@ -50,4 +50,3 @@ AWS rollout documentation: https://github.com/Chujutak2024/cargomesh/pull/147
 Frontend streaming fix: https://github.com/Chujutak2024/cargomesh/pull/149
 
 Scope: Kiro/AWS feedback for this package. Consolidate feedback for other tools in the main submission. Nova voice is not proof of a live Alexa+ invocation. Historical counts and October 22 probes are dated observations, not certification of today's runtime.
-

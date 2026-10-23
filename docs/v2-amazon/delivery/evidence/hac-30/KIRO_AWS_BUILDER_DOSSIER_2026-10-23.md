@@ -59,4 +59,3 @@ The October 22 deployment/probe records identify source `92ec4704b759db6f8104aaa
 - Video, repository/testing access and feedback for other tools remain part of the main submission.
 
 No Linear issue is declared Done and no submission confirmation is claimed.
-
