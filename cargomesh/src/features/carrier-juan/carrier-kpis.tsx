@@ -7,7 +7,7 @@ const percentages=new Intl.NumberFormat('en-US',{maximumFractionDigits:1});
 /** Read-only metric presentation. Counts and scope belong to the connected reader. */
 export function CarrierKpis({metrics,partial=false,label='Commercial overview, loaded records'}:{metrics:Kpi[];partial?:boolean;label?:string}){
  return <div className={s.overview}>
-  <dl className={s.grid} data-columns={metrics.length===4?4:3} aria-label={label}>
+  <dl className={s.grid} data-carrier-motion-group data-columns={metrics.length===4?4:3} aria-label={label}>
    {metrics.map(metric=><div className={s.card} data-tone={metric.tone} key={metric.id} title={metric.description}>
     <dt>{metric.label}</dt>
     <dd><span className={s.value} aria-label={metric.value===null?'Not available':undefined}>{metric.value===null?'—':(metric.format==='percent'?percentages.format(metric.value)+'%':numbers.format(metric.value))+(partial?'+':'')}</span>

@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CLIENT_ENTRY_MOTION, clientEntryBlocks, startClientPageMotion } from './client-page-motion-controller';
+import { pageEntryBlocks, startPageMotion, type PageMotionScope } from './page-motion-controller';
 
 // A minimal DOM/animation adapter exercises the real observer and cleanup policy.
-function page(reduced = false) {
+function page(reduced = false, scope: PageMotionScope = 'client') {
   let mutation: MutationCallback;
   let disconnected = false;
   const frames = new Map<number, FrameRequestCallback>();
@@ -57,8 +58,8 @@ function page(reduced = false) {
   const root = node();
   return {
     root, node, document, media, listeners, frames,
-    start: () => startClientPageMotion(root as unknown as HTMLElement),
-    blocks: () => clientEntryBlocks(root as unknown as HTMLElement),
+    start: () => scope === 'client' ? startClientPageMotion(root as unknown as HTMLElement) : startPageMotion(root as unknown as HTMLElement, scope),
+    blocks: () => scope === 'client' ? clientEntryBlocks(root as unknown as HTMLElement) : pageEntryBlocks(root as unknown as HTMLElement, false, scope),
     change(target: Element, addedNodes: Element[] = [], type = 'childList') {
       if (!disconnected) mutation!([{ target, addedNodes, type } as unknown as MutationRecord], {} as MutationObserver);
     },
@@ -155,4 +156,43 @@ test('navigation cleanup cancels frames/listeners and leaves the same subtree us
   assert.equal(card.calls[0].animation.canceled, true);
   assert.equal(p.frames.size, 0); assert.equal(p.listeners.size, 0);
   assert.equal(p.root.children[0], card);
+});
+
+test('Carrier uses the identical timing and staggers its KPI and operation groups', () => {
+  const p = page(false, 'carrier'), group = p.node('div', { 'data-carrier-motion-group': '' }),
+    first = p.node('button'), second = p.node('button');
+  group.add(first, second); p.root.add(group);
+  assert.deepEqual(p.blocks(), [first, second]);
+  p.start();
+  assert.equal(first.calls[0].options.duration, CLIENT_ENTRY_MOTION.duration);
+  assert.equal(second.calls[0].options.delay, CLIENT_ENTRY_MOTION.stagger);
+  assert.equal(first.calls[0].keyframes[0].translate, '0 22px');
+});
+
+test('Carrier waits for loaded regions and reveals retained tabs when unhidden', () => {
+  const p = page(false, 'carrier'), region = p.node('div', { 'data-motion-ready': 'false' }),
+    card = p.node('section'), tab = p.node('div', { hidden: '' }), retained = p.node('article');
+  region.add(card); tab.add(retained); p.root.add(region, tab); p.start();
+  assert.equal(card.calls.length + retained.calls.length, 0);
+  region.attrs['data-motion-ready'] = 'true'; p.change(region, [], 'attributes');
+  delete tab.attrs.hidden; p.change(tab, [], 'attributes'); p.flush();
+  assert.equal(card.calls.length, 1); assert.equal(retained.calls.length, 1);
+});
+
+test('Carrier edit input and shared Client scopes remain independent', () => {
+  const p = page(false, 'carrier'), form = p.node('form'), input = p.node('input'),
+    skipped = p.node('section', { 'data-carrier-motion': 'off' });
+  input.value = 'Unsent carrier offer'; form.add(input); p.root.add(form, skipped); p.document.activeElement = input;
+  const stop = p.start();
+  assert.equal(form.calls.length + skipped.calls.length, 0);
+  stop(); assert.equal(input.value, 'Unsent carrier offer');
+  assert.equal(pageEntryBlocks(p.root as unknown as HTMLElement, false, 'client').includes(skipped as unknown as HTMLElement), true);
+});
+
+test('Carrier reduced-motion startup and preference changes never leave hidden content', () => {
+  const p = page(true, 'carrier'), card = p.node('section'); p.root.add(card); p.start();
+  assert.equal(card.calls.length, 0);
+  p.media.matches = false;
+  const added = p.node('section'); p.root.add(added); p.change(p.root, [added]); p.flush();
+  p.reduce(); assert.equal(added.calls[0].animation.canceled, true);
 });
