@@ -77,6 +77,12 @@ function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps
     t("Ventanas y contactos", "Windows & contacts"),
     t("Crear y evaluar", "Create & evaluate"),
   ];
+  const stepDescriptions = [
+    t("Selecciona las sedes de retiro y entrega.", "Select the pickup and delivery facilities."),
+    t("Describe la carga, sus medidas y las condiciones de transporte.", "Describe the cargo, its measurements and transport requirements."),
+    t("Define los horarios disponibles, el equipo y los contactos.", "Set the available windows, equipment and contacts."),
+    t("Revisa los datos antes de crear el borrador y consultar su elegibilidad.", "Review the details before creating the draft and checking serviceability."),
+  ];
   const ActiveStepIcon = STEP_ICONS[step - 1];
   const submitting = ["creating", "revising", "reading", "evaluating"].includes(submitPhase);
   useEffect(() => { if (request) onPersisted?.(request); }, [request, onPersisted]);
@@ -86,13 +92,12 @@ function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps
   }, [request, evaluation, selectedCandidateId, onEvaluation]);
 
   return (
-    <div className={`${styles.page} ${embedded?styles.embedded:""}`}>
+    <div className={`${styles.page} ${embedded ? styles.embedded : styles.standalone}`} data-intake-layout={embedded ? "embedded" : "standalone"}>
       <div className={styles.frame}>
         <header className={styles.hero}>
           <div className={styles.heroMain}>
-            {!embedded ? <span className={styles.heroIcon} aria-hidden="true"><Package size={24} /></span> : null}
             <div className={styles.heroCopy}>
-              {embedded?<h2>{t("Datos de la solicitud", "Request details")}</h2>:<h1>{t("Crea tu solicitud de transporte", "Create your freight request")}</h1>}
+              {embedded?<h2>{t("Datos de la solicitud", "Request details")}</h2>:<h1>{t("Nueva carga", "New shipment")}</h1>}
               {embedded ? <p>{t("Prepara el borrador y comprueba sus datos antes de enviarlo.", "Prepare the draft and check its details before saving it.")}</p> : null}
             </div>
           </div>
@@ -148,18 +153,18 @@ function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps
                 setIssues([]);
               }}
             >
-              <span className={styles.stepNumber}>{complete ? <Check size={15} aria-hidden="true" /> : <Icon size={15} aria-hidden="true" />}</span>
-              <span className={styles.stepCopy}><small>{t(`Paso ${number}`, `Step ${number}`)}</small><strong>{label}</strong></span>
+              <span className={styles.stepNumber}>{complete ? <Check size={15} aria-hidden="true" /> : embedded ? <Icon size={15} aria-hidden="true" /> : number}</span>
+              <span className={styles.stepCopy}>{embedded ? <small>{t(`Paso ${number}`, `Step ${number}`)}</small> : null}<strong>{label}</strong></span>
             </button>
           );
         })}</nav>
-        <div className={styles.stepProgress} aria-hidden="true"><span style={{width:`${step/4*100}%`}}/></div>
+        {embedded ? <div className={styles.stepProgress} aria-hidden="true"><span style={{width:`${step/4*100}%`}}/></div> : null}
 
         <div className={styles.workspace}>
           <ContentMotion identity={step} focusOnChange className={styles.stepMotion}><section className={styles.card} aria-labelledby={`prototype-step-${step}`}>
             <header className={styles.cardHeader}>
-              <span className={styles.stepHeaderIcon} aria-hidden="true"><ActiveStepIcon size={20} /></span>
-              <div><span className={styles.eyebrow}>{t(`Paso ${step} de 4`, `Step ${step} of 4`)}</span><h2 tabIndex={-1} id={`prototype-step-${step}`}>{stepLabels[step - 1]}</h2></div>
+              {embedded ? <span className={styles.stepHeaderIcon} aria-hidden="true"><ActiveStepIcon size={20} /></span> : null}
+              <div>{embedded ? <span className={styles.eyebrow}>{t(`Paso ${step} de 4`, `Step ${step} of 4`)}</span> : null}<h2 tabIndex={-1} id={`prototype-step-${step}`}>{stepLabels[step - 1]}</h2>{!embedded ? <p>{stepDescriptions[step - 1]}</p> : null}</div>
             </header>
             <div className={styles.cardBody}>
               <AssistantChangeNotice />

@@ -36,3 +36,34 @@
 }
 
 @media (prefers-reduced-motion: reduce) { .option { transition: none; } .option:hover { transform: none; } }
+
+/* The shared picker stays unchanged in Carrier's embedded intake. */
+:global([data-intake-layout="standalone"]) .picker { gap: 1rem; border: 0; border-radius: 0; padding: 0; background: transparent; box-shadow: none; }
+:global([data-intake-layout="standalone"]) .header { grid-template-columns: auto minmax(0, 1fr) auto; gap: .5rem; }
+:global([data-intake-layout="standalone"]) .header > :nth-child(3) { grid-column: auto; }
+:global([data-intake-layout="standalone"]) .header h3 { font-size: 1rem; }
+:global([data-intake-layout="standalone"]) .kindIcon { width: 1.5rem; height: 1.5rem; border-radius: 0; background: transparent; color: var(--cm-color-logistics); }
+:global([data-intake-layout="standalone"]) .searchWrap { grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; }
+:global([data-intake-layout="standalone"]) .searchWrap > svg { display: none; }
+:global([data-intake-layout="standalone"]) .resultCount { min-width: 1.5rem; height: 44px; margin: 0; background: transparent; font-size: .75rem; }
+:global([data-intake-layout="standalone"]) .list { gap: 0; max-height: 24rem; border-top: 1px solid var(--cm-color-line); padding: .25rem; scrollbar-color: var(--cm-color-logistics) var(--cm-color-surface-subtle); }
+:global([data-intake-layout="standalone"]) .option { grid-template-columns: minmax(0, 1fr) auto; gap: .375rem .75rem; min-height: 6rem; border: 0; border-bottom: 1px solid var(--cm-color-line); border-radius: 0; padding: 1rem 2.25rem 1rem .5rem; background: transparent; box-shadow: none; transition: background var(--cm-motion-interaction) var(--cm-motion-ease); }
+:global([data-intake-layout="standalone"]) .option:hover { transform: none; background: var(--cm-color-surface-subtle); }
+:global([data-intake-layout="standalone"]) .option[data-selected="true"] { background: var(--cm-color-selected); box-shadow: none; }
+:global([data-intake-layout="standalone"]) .option:focus-visible { outline: 2px solid var(--cm-color-logistics); outline-offset: -2px; }
+:global([data-intake-layout="standalone"]) .facilityIcon { display: none; }
+:global([data-intake-layout="standalone"]) .optionCopy { gap: .25rem; }
+:global([data-intake-layout="standalone"]) .optionCopy strong { font-size: .875rem; font-weight: 600; }
+:global([data-intake-layout="standalone"]) .optionCopy small { font-size: .75rem; line-height: 1.45; }
+:global([data-intake-layout="standalone"]) .code { font-size: .6875rem; font-weight: 600; letter-spacing: .02em; }
+:global([data-intake-layout="standalone"]) .geo { grid-column: auto; font-size: .6875rem; padding: .25rem .375rem; }
+:global([data-intake-layout="standalone"]) .check { right: .5rem; width: 1.25rem; height: 1.25rem; }
+:global([data-intake-layout="standalone"]) .empty { border: 0; border-radius: 0; padding: 1.5rem .5rem; }
+:global([data-intake-layout="standalone"]) .empty strong { font-size: .875rem; }
+:global([data-intake-layout="standalone"]) .empty span, :global([data-intake-layout="standalone"]) .error { font-size: .8125rem; line-height: 1.5; }
+:global([data-intake-layout="standalone"]) .error { border-left-width: 1px; }
+@container facility (max-width: 380px) {
+  :global([data-intake-layout="standalone"]) .option { grid-template-columns: minmax(0, 1fr); }
+  :global([data-intake-layout="standalone"]) .geo { grid-column: 1; justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) { :global([data-intake-layout="standalone"]) .option { transition: none; } }

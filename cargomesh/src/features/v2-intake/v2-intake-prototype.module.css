@@ -267,3 +267,157 @@
 @container intake (max-width: 680px) { .embedded .stepCopy { display: block; } .embedded .stepCopy small { display: none; } .embedded .stepCopy strong { font-size: 0.58rem; white-space: normal; } .embedded .stepButton { flex-direction: column; } }
 
 .cargoGroup{border:1px solid var(--cm-border,#d8e4ed);border-radius:12px;padding:12px;margin:12px 0;min-width:0}.cargoGroup legend{font-size:14px;font-weight:600;padding:0 6px}.cargoGroupHeading{display:flex;justify-content:flex-end;margin-bottom:8px}
+
+/* Standalone intake shares the shell palette, without changing embedded Carrier. */
+.standalone {
+  --cm-color-primary: var(--cm-color-logistics);
+  --cm-color-primary-hover: var(--cm-color-heading);
+  --cm-color-focus: var(--cm-color-logistics);
+  --cm-color-action: var(--cm-color-logistics);
+  --cm-color-action-hover: var(--cm-color-heading);
+  --cm-control-height: 44px;
+  caret-color: var(--cm-color-logistics);
+}
+.standalone ::selection { background: var(--cm-color-selected); color: var(--cm-color-heading); }
+.standalone .frame { border: 1px solid var(--cm-color-line); border-radius: 16px; padding: 1.5rem 2rem 2rem; background: var(--cm-color-surface); }
+.standalone .hero { flex-direction: row; align-items: center; gap: 1rem; margin-bottom: 1.5rem; border: 0; border-radius: 0; padding: 0; background: transparent; box-shadow: none; overflow: visible; }
+.standalone .hero::after { display: none; }
+.standalone .hero h1 { font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.03em; }
+.standalone .heroActions { justify-content: flex-end; }
+.standalone .stepper { gap: 1rem; margin: 0 0 2rem; border: 0; border-bottom: 1px solid var(--cm-color-line); border-radius: 0; padding: 0 0 1rem; background: transparent; box-shadow: none; }
+.standalone .stepButton { display: flex; justify-content: flex-start; gap: .75rem; min-height: 44px; border: 0; border-radius: 8px; padding: .5rem; background: transparent; color: var(--cm-color-muted); box-shadow: none; }
+.standalone .stepButton::after { display: none; }
+.standalone .stepButton:disabled { opacity: 1; }
+.standalone .stepButton:hover:not(:disabled) { background: var(--cm-color-surface-subtle); }
+.standalone .stepButtonActive { background: var(--cm-color-selected); color: var(--cm-color-heading); }
+.standalone .stepButtonComplete { color: var(--cm-color-logistics); }
+.standalone .stepNumber { flex: 0 0 auto; width: 2rem; height: 2rem; font-size: .8125rem; font-weight: 700; box-shadow: none; }
+.standalone .stepCopy { display: block; }
+.standalone .stepCopy strong { font-size: .875rem; line-height: 1.4; overflow-wrap: normal; }
+.standalone .workspace { grid-template-columns: minmax(0, 1fr) 16rem; gap: 2rem; }
+.standalone .card { overflow: visible; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.standalone .cardHeader { display: block; border: 0; padding: 0 0 1.5rem; background: transparent; }
+.standalone .cardHeader > div { gap: .5rem; }
+.standalone .cardHeader h2 { font-size: 1.25rem; line-height: 1.35; }
+.standalone .cardHeader p { max-width: 65ch; font-size: .875rem; line-height: 1.5; }
+.standalone .cardBody { gap: 1.5rem; padding: 0; }
+/* Keep the mounted live region available to announce Nova changes, without an empty grid row. */
+.standalone .cardBody > [role="status"][aria-live="polite"]:empty { position: absolute; min-height: 0; height: 0; width: 0; margin: 0; padding: 0; }
+.standalone .facilityGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+.standalone .formSection { gap: 1rem; border: 0; border-radius: 0; padding: 0; background: transparent; }
+.standalone .cardBody > .formSection ~ .formSection { border-top: 1px solid var(--cm-color-line); padding-top: 1.5rem; }
+.standalone .formSectionHeader { align-items: center; flex-wrap: wrap; gap: .75rem; }
+.standalone .formSectionHeader h3, .standalone .sectionTitle { font-size: 1rem; line-height: 1.4; }
+.standalone .formSection > p, .standalone .choiceHeading p { max-width: 65ch; margin: 0; color: var(--cm-color-muted); font-size: .8125rem; line-height: 1.6; }
+.standalone .formGrid { gap: 1rem; align-items: start; }
+.standalone label > span:first-child, .standalone label strong { font-size: .8125rem; font-weight: 600; }
+.standalone label > span:not(:first-child), .standalone label small { font-size: .75rem; line-height: 1.5; }
+.standalone :is(input:not([type="checkbox"]), select, textarea) { min-width: 0; max-width: 100%; font-size: .875rem; }
+.standalone input[type="datetime-local"] { width: 100%; min-width: 0; padding-inline: .5rem; font-variant-numeric: tabular-nums; }
+.standalone label:has(> input[type="checkbox"]) { min-height: 44px; border-color: transparent; border-radius: 0; padding: .5rem 0; background: transparent; }
+.standalone label:has(> input[type="checkbox"]) input { width: 1.125rem; height: 1.125rem; }
+.standalone button, .standalone summary, .standalone .requestLink { min-height: 44px; }
+.standalone button[data-cm-button] { font-size: .8125rem; }
+.standalone :is(button, summary, a):focus-visible { outline: 2px solid var(--cm-color-logistics); outline-offset: 3px; }
+.standalone :is(.choiceFieldset, .contactCard, .windowCard, .cargoGroup) { border: 0; border-radius: 0; padding: 0; background: transparent; }
+.standalone :is(.choiceFieldset, .contactCard, .windowCard, .cargoGroup) > legend { margin-bottom: .75rem; padding: 0; color: var(--cm-color-heading); font-size: .875rem; font-weight: 600; }
+.standalone .choiceHeading { gap: 1rem; flex-wrap: wrap; }
+.standalone .checkboxGrid { gap: .5rem 1.5rem; }
+.standalone .guidanceDisclosure { border-inline: 0; border-radius: 0; background: transparent; }
+.standalone .guidanceDisclosure > summary { padding: .75rem 0; font-size: .8125rem; }
+.standalone .optionEvidence { border: 0; padding: 1rem; background: var(--cm-color-warning-surface); }
+.standalone .optionEvidence > small { font-size: .75rem; letter-spacing: 0; text-transform: none; }
+.standalone .guidanceList { gap: 1rem; }
+.standalone .guidanceList dt, .standalone .guidanceList dd { font-size: .75rem; line-height: 1.5; }
+.standalone .cargoGroup { margin: 0; border-top: 1px solid var(--cm-color-line); padding-top: 1rem; }
+.standalone .cargoGroup > legend { margin-bottom: 0; padding-right: .75rem; }
+.standalone .cargoGroupHeading { margin-bottom: .5rem; }
+.standalone .cargoGroup .formGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.standalone .cargoGroup .formGrid > :first-child { grid-column: span 2; }
+.standalone .computedTotals { gap: 1.5rem; border-top: 1px solid var(--cm-color-line); padding-top: 1rem; }
+.standalone .computedTotals > div { gap: .375rem; border: 0; border-radius: 0; padding: 0; background: transparent; }
+.standalone .computedTotals span { font-size: .8125rem; }
+.standalone .computedTotals strong { font-size: 1.125rem; font-variant-numeric: tabular-nums; }
+.standalone .windowGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 1.5rem; }
+.standalone .windowCard { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+.standalone .windowCard > div:has(> button) { display: grid; min-width: 0; gap: .75rem; }
+.standalone .windowCard > div:has(> button) + div:has(> button) { border-top: 1px solid var(--cm-color-line); padding-top: 1rem; }
+.standalone .windowCard > button { justify-self: start; }
+.standalone .windowArrow { display: none; }
+.standalone .contactGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+.standalone .contactFields { gap: 1rem; }
+.standalone .equipmentGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.standalone .equipmentCard { min-height: 4.5rem; border-radius: 8px; box-shadow: none; transition: background var(--cm-motion-interaction) var(--cm-motion-ease), border-color var(--cm-motion-interaction) var(--cm-motion-ease); }
+.standalone .equipmentCard:hover { transform: none; box-shadow: none; }
+.standalone .equipmentIcon { width: 2rem; height: 2rem; border-radius: 0; background: transparent; }
+.standalone .equipmentCard small { font-size: .75rem; }
+.standalone .equipmentCard > :nth-child(3):not(.equipmentCheck) { grid-column: 2; }
+.standalone .footer { gap: 1rem; margin-top: 2rem; padding: 1rem 0 0; background: transparent; }
+.standalone .footerRight { gap: .75rem; }
+/* Shared brand controls use important colors; keep this one primary action distinct. */
+:global(html body) .standalone .footer .footerRight button[data-cm-button][data-variant="primary"] { border-color: var(--cm-color-logistics) !important; background: var(--cm-color-logistics) !important; color: white !important; }
+:global(html body) .standalone .footer .footerRight button[data-cm-button][data-variant="primary"]::before { display: none; }
+:global(html body) .standalone .footer .footerRight button[data-cm-button][data-variant="primary"]:hover:not(:disabled) { border-color: var(--cm-color-heading) !important; background: var(--cm-color-heading) !important; }
+.standalone .summary { position: sticky; top: 5.5rem; border-left: 1px solid var(--cm-color-line); padding-left: 1.5rem; }
+.standalone .summary .cardHeader { display: flex; align-items: center; gap: .5rem; padding-bottom: 1rem; }
+.standalone .summary .cardHeader h2 { font-size: 1rem; }
+.standalone .summary .stepHeaderIcon { width: auto; height: auto; border-radius: 0; background: transparent; }
+.standalone .summaryRoute { gap: .5rem; padding: .75rem 0 1.25rem; background: transparent; }
+.standalone .routeDot { box-shadow: none; }
+.standalone .summaryRoute small { font-size: .75rem; text-transform: none; }
+.standalone .summaryRoute strong { font-size: .875rem; white-space: normal; overflow-wrap: anywhere; }
+.standalone .summaryBody { grid-template-columns: minmax(0, 1fr); }
+.standalone .summaryRow { gap: .5rem; border-right: 0; padding: 1rem 0; }
+.standalone .summaryRow > span { font-size: .75rem; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.standalone .summaryValue { flex-wrap: wrap; align-items: start; gap: .5rem; }
+.standalone .summaryRow strong { font-size: .8125rem; font-weight: 600; }
+.standalone .reviewGrid { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+.standalone .reviewSection { gap: .75rem; border: 0; border-bottom: 1px solid var(--cm-color-line); border-radius: 0; padding: 0 0 1.5rem; background: transparent; }
+.standalone .reviewSection header { flex-wrap: wrap; }
+.standalone .reviewSection header > div { justify-content: flex-start; flex-wrap: wrap; }
+.standalone .reviewSection h3 { font-size: 1rem; }
+.standalone .reviewSection header button { font-size: .8125rem; }
+.standalone .reviewList { grid-template-columns: minmax(0, 1fr); gap: .75rem; }
+.standalone .reviewItem { grid-template-columns: minmax(8rem, 1fr) minmax(0, 2fr); gap: 1rem; }
+.standalone .reviewItem span, .standalone .reviewItem strong { font-size: .875rem; line-height: 1.5; }
+.standalone .reviewItem strong { font-weight: 500; }
+.standalone :is(.persistedNotice, .boundaryNotice) { border-left-width: 1px; font-size: .875rem; }
+.standalone .notice { grid-template-columns: auto minmax(0, 1fr); gap: .75rem; margin-bottom: 1.5rem; padding: .75rem 1rem; overflow-wrap: anywhere; }
+.standalone .notice > div { min-width: 0; }
+.standalone :is(.notice, .optionsState, .optionsError, .apiError) strong { font-size: .8125rem; }
+.standalone :is(.notice, .optionsState, .optionsError, .apiError) :is(span, small), .standalone .pendingState { font-size: .75rem; line-height: 1.5; }
+.standalone .integrationArea { margin-top: 2rem; border: 0; border-top: 1px solid var(--cm-color-line); border-radius: 0; padding: 1.5rem 0 0; box-shadow: none; }
+.standalone .requestLink { font-size: .8125rem; }
+
+@container intake (max-width: 1080px) {
+  .standalone .frame { padding: 1.5rem; }
+  .standalone .workspace { grid-template-columns: minmax(0, 1fr); }
+  .standalone .summary { position: static; border-left: 0; border-top: 1px solid var(--cm-color-line); padding: 1.5rem 0 0; }
+  .standalone .summaryBody { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1.5rem; }
+  .standalone .summaryRoute { max-width: 28rem; }
+  .standalone .stepper { gap: .5rem; }
+}
+@container intake (max-width: 680px) {
+  .standalone .frame { border-radius: 12px; padding: 1rem; }
+  .standalone .hero { align-items: flex-start; flex-direction: column; }
+  .standalone .heroActions { justify-content: flex-start; }
+  .standalone .heroActions > * { flex: 0 1 auto; }
+  .standalone .stepper { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-bottom: 1.5rem; }
+  .standalone .stepButton { align-items: center; padding: .5rem .25rem; }
+  .standalone .stepCopy strong { font-size: .8125rem; }
+  .standalone .cardHeader { padding-bottom: 1rem; }
+  .standalone .cardBody { padding: 0; }
+  .standalone :is(.facilityGrid, .formGrid, .contactGrid, .windowGrid, .equipmentGrid, .summaryBody) { grid-template-columns: minmax(0, 1fr); }
+  .standalone .facilityGrid > :nth-child(2), .standalone .contactCard + .contactCard, .standalone .windowCard + .windowCard { border-top: 1px solid var(--cm-color-line); padding-top: 1.5rem; }
+  .standalone .cargoGroup .formGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .standalone .cargoGroup .formGrid > :first-child { grid-column: 1 / -1; }
+  .standalone .computedTotals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .standalone .formSectionHeader { align-items: flex-start; }
+  .standalone .footerRight { grid-template-columns: minmax(0, 1fr); }
+  .standalone .reviewItem { grid-template-columns: minmax(0, 1fr); gap: .25rem; }
+}
+@container intake (max-width: 400px) {
+  .standalone .cargoGroup .formGrid { grid-template-columns: minmax(0, 1fr); }
+  .standalone .hero h1 { font-size: 1.5rem; }
+}
+@media (prefers-reduced-motion: reduce) { .standalone .equipmentCard { transition: none; } }
