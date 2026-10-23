@@ -61,7 +61,7 @@ export function ControlTower({embedded=false,dashboard=false,carrier,refreshToke
    <SearchField fieldClassName={s.search} label="Search operations, vehicles or cities" placeholder="Search operations, vehicles or cities…" value={query} onValueChange={setQuery} hideLabel shortcut/>
    <div className={s.headerActions}><span><Globe2 size={14}/>EN</span><span className={s.alertIndicator} aria-label="Incidents are read for the selected operation"><Bell size={18}/></span></div>
   </header>:null}
-  <main id="tower-main" className={s.main}><ContentMotion identity="tower" animateOnMount>
+  <main id="tower-main" className={s.main}><ContentMotion identity="tower" animateOnMount={!embedded} ready={!!snapshot} animateOnChange={false}>
    {!dashboard?<div className={s.pageHeading}><div>{!embedded?<><div className={s.eyebrow}><Activity size={13}/>OPERATIONS OVERVIEW</div><h1 tabIndex={-1}>Control tower</h1></>:null}<p>{carrier?carrierDisplayName(carrier.carrierName,carrier.carrierId):'Select an authorized Carrier'} · Operations, assigned resources and recorded sites.</p></div><Button variant="secondary" disabled={!carrier} onClick={()=>setRefresh(n=>n+1)}><RefreshCw size={15}/>Refresh</Button></div>:null}
    {!dashboard?<><div className={s.demoNotice}><ShieldCheck size={16}/><span><strong>Authorized Carrier records.</strong> Positions are last recorded reports, not live GPS. Vehicle availability and road access require separate validation.</span></div>
    <CarrierLink className={s.routePreviewLink} href={CARRIER_ROUTE_LAB}>Explore calculated road routes<ArrowUpRight size={14}/><span>Separate calculation preview</span></CarrierLink></>:null}
