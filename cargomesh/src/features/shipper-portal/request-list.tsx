@@ -68,7 +68,7 @@ export function RequestList({ requests }: { requests: FreightRequestV2Data[]; in
         <button className={operationsStyles.reset} type="button" onClick={() => update({ q: "", status: "ALL", sort: "UPDATED_DESC", from: "", to: "" })}>{t("Limpiar filtros", "Clear filters")}</button>
         <span role="status">{visible.length} / {requests.length} {t("solicitudes cargadas", "loaded requests")}</span></div>
     </div>
-    {visible.length ? <div className={styles.list}>{visible.map((request) => <Link className={`${styles.row} ${query.selected === request.id ? operationsStyles.selected : ""}`}
+    {visible.length ? <div className={styles.list} data-client-motion-group>{visible.map((request) => <Link className={`${styles.row} ${query.selected === request.id ? operationsStyles.selected : ""}`}
       ref={query.selected === request.id ? selectedRow : undefined} aria-current={query.selected === request.id ? "true" : undefined}
       onClick={() => update({ selected: request.id })} href={operationDetailHref(request.id, query, view)} key={request.id}>
       <span className={styles.stack}><strong>{displayReference(request.referenceCode,'PED',request.id)}</strong><small>{t("Actualizada", "Updated")} {formatDateTime(request.updatedAt, localeTag)} · v{request.draftVersion}</small><small>{t("Creada", "Created")} {formatDateTime(request.createdAt, localeTag)}</small></span>

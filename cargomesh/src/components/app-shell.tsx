@@ -23,7 +23,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { LanguageSwitcher } from "./language-switcher";
 import { useLocale } from "@/features/i18n/locale-provider";
-import { ContentMotion } from "@/features/product-motion/content-motion";
+import { ClientPageMotion } from "@/features/product-motion/client-page-motion";
 import styles from "./app-shell.module.css";
 import navStyles from "@/features/carrier-navigation/carrier-navigation.module.css";
 import { lockDocumentScroll } from "@/shared/browser/scroll-lock";
@@ -218,7 +218,7 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
           </div>
         </header>
         <main id="main-content" className={styles.main}>
-          <ContentMotion animateOnMount identity={pathname} className={styles.motionRegion}>{children}</ContentMotion>
+          <ClientPageMotion identity={currentPath} className={styles.motionRegion}>{children}</ClientPageMotion>
         </main>
       </div>
       <ClientAssistant onDockedChange={setAssistantDocked} />

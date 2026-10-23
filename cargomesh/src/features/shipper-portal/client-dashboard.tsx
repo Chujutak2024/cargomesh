@@ -33,7 +33,7 @@ export function ClientDashboard({ requests, complete, unavailable, counts, local
       <ConversationEntry/>
       <section className={s.card} aria-labelledby="dashboard-pipeline-title">
         <header className={s.panelHeader}><div><h2 id="dashboard-pipeline-title">{t("Tus cargas, de la solicitud al seguimiento", "Your shipments, from request to tracking")}</h2><p>{t("Registros de tu organización", "Your organization's records")}</p></div></header>
-        <div className={s.stages}>{stages.map(({ label, value, Icon, href }) => <Link key={label} href={href} className={s.stage}><span className={s.stageIcon}><Icon size={18} aria-hidden="true"/></span><span><strong>{value}</strong><small>{label}</small></span></Link>)}</div>
+        <div className={s.stages} data-client-motion-group>{stages.map(({ label, value, Icon, href }) => <Link key={label} href={href} className={s.stage}><span className={s.stageIcon}><Icon size={18} aria-hidden="true"/></span><span><strong>{value}</strong><small>{label}</small></span></Link>)}</div>
       </section>
       <DashboardActivity items={recent} complete={complete} unavailable={unavailable}/>
     </div>
@@ -46,7 +46,7 @@ export function ClientDashboard({ requests, complete, unavailable, counts, local
         <div className={s.draftContent}><span className={s.draftReference} title={draft.fullReference}>{draft.reference}</span><strong>{draft.route}</strong><p>{draft.cargo}</p><small>{draft.description}</small><OperationRequestLink requestId={draft.id} className={s.outlineButton}>{t("Revisar borrador", "Review draft")}<ArrowRight size={16} aria-hidden="true"/></OperationRequestLink></div>
       </section>}
       <section className={s.card}><header className={s.panelHeader}><div><h2>{t("Accesos rápidos", "Quick access")}</h2></div></header>
-        <div className={s.quickGrid}>{quick.map(({ label, detail, Icon, href }) => <Link key={href} href={href} className={s.quickCard}><Icon size={20} aria-hidden="true"/><strong>{label}</strong><small>{detail}</small></Link>)}</div>
+        <div className={s.quickGrid} data-client-motion-group>{quick.map(({ label, detail, Icon, href }) => <Link key={href} href={href} className={s.quickCard}><Icon size={20} aria-hidden="true"/><strong>{label}</strong><small>{detail}</small></Link>)}</div>
       </section>
     </aside>
   </div></div>;
