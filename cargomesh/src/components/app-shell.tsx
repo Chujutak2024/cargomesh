@@ -4,7 +4,6 @@ import {
   Building2,
   CircleHelp,
   ClipboardList,
-  History,
   Headphones,
   LayoutDashboard,
   LogOut,
@@ -13,7 +12,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   PackagePlus,
-  Route,
   Search,
   UserRound,
   X,
@@ -114,9 +112,7 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
     { id: "operations", label: t("Operaciones de transporte", "Transport operations"), items: [
       { href: "/freight-request/new", label: t("Nueva carga", "New shipment"), icon: PackagePlus },
       { href: "/requests", label: t("Mis cargas", "My shipments"), icon: ClipboardList },
-      { href: "/bookings", label: t("Reservas", "Bookings"), icon: Route },
       { href: "/tracking", label: t("Seguimiento", "Tracking"), icon: MapPinned },
-      { href: "/history", label: t("Historial", "History"), icon: History },
     ] },
     { id: "management", label: t("Administración", "Administration"), items: [
       { href: "/facilities", label: t("Sedes y perfiles", "Facilities & profiles"), icon: Building2 },
@@ -168,7 +164,8 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
               <h2 id={`${sidebarId}-${section.id}`} className={navStyles.groupLabel}>{section.label}</h2>
               {section.items.map(({ href, label, icon: Icon }) => {
                 const hrefPath = href.split("?")[0];
-                const active = pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
+                const active = pathname === hrefPath || pathname.startsWith(`${hrefPath}/`)
+                  || (hrefPath === "/requests" && ["/bookings", "/history"].includes(pathname));
                 return (
                   <Link key={href} href={href} title={collapsed && !mobile ? label : undefined} aria-label={label} aria-current={active ? "page" : undefined} className={`${navStyles.item} ${styles.navItem}`} onClick={closeNavigation}>
                     <Icon size={18} strokeWidth={1.5} aria-hidden="true" />

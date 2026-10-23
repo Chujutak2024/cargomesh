@@ -94,3 +94,15 @@ test("per-unit weight never becomes a contradictory shipment total in the voice 
  const review=buildSpokenRequestReview([{speaker:'user',contentId:'nova:weight:1',text:'10 pallets de 100 kg cada uno'}],options,EMPTY_PROTOTYPE_DRAFT);
  assert.equal(review.weight,'');
 });
+
+test("a destination-only correction supersedes the earlier complete route without changing pickup", () => {
+  for (const correction of ["cambia el destino a Arequipa", "change the destination to Arequipa"]) {
+    const review = buildSpokenRequestReview([
+      { speaker: "user", contentId: "nova:route:1", text: "from Lima to Piura" },
+      { speaker: "user", contentId: "nova:route:2", text: correction },
+    ], options, { ...EMPTY_PROTOTYPE_DRAFT, originFacilityId: "lima", destinationFacilityId: "arequipa" });
+    assert.equal(review.pickup, "Lima");
+    assert.equal(review.destination, "Arequipa");
+    assert.equal(spokenRouteConflictsWithDraft(review, options, { ...EMPTY_PROTOTYPE_DRAFT, originFacilityId: "lima", destinationFacilityId: "arequipa" }), false);
+  }
+});

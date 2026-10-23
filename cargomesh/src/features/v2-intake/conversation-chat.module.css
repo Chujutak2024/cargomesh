@@ -52,7 +52,7 @@
 .launcherSend:hover:not(:disabled) { background: #5340bf; }
 .panelPosition { position: fixed; z-index: 85; top: 0; right: 0; width: 27rem; height: 100dvh; max-height: var(--chat-visual-height,100dvh); }
 .panelPosition[data-mode="detached"] { top: auto; right: 1.25rem; bottom: max(1.25rem,env(safe-area-inset-bottom)); width: min(29rem,calc(100vw - 24px)); height: min(44rem,calc(100dvh - 3rem)); }
-.panel { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; overflow: hidden; border-left: 1px solid #e1e5ef; background: #fff; box-shadow: -10px 0 38px #283e6514; }
+.panel { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; overflow: clip; border-left: 1px solid #e1e5ef; background: #fff; box-shadow: -10px 0 38px #283e6514; }
 .panelPosition[data-mode="detached"] .panel { border: 1px solid #e4e5ef; border-radius: 1.3rem; box-shadow: 0 18px 70px #283e652b,0 3px 12px #283e6512; }
 .panelPosition[inert] { pointer-events: none; }
 .panel :is(.header,.structuredSummary,.composerDock) { animation: chatContentReveal .42s cubic-bezier(.22,1,.36,1) both; }
@@ -107,6 +107,7 @@
 .choiceList button:hover, .actions button:hover:not(:disabled), .retry:hover { background: #f4f0ff; }
 .retry { margin-top: .6rem; }
 .confirmation button:first-child, .reviewAction { background: #6550d8; color: #fff; border-color: #6550d8; }
+.confirmation > :is(button,a) { display: flex; align-items: center; justify-content: center; width: 100%; margin-top: .65rem; line-height: 1.5; text-align: center; text-decoration: none; white-space: normal; overflow-wrap: anywhere; }
 .notice, .reviewPending { margin: .7rem 0; color: var(--chat-muted); font-size: .72rem; line-height: 1.6; }
 .loading { display: flex; align-items: center; gap: .5rem; color: #8770bb; font-size: .73rem; margin: 1rem 0; }
 .loading::before { content: ""; width: .75rem; height: .75rem; border: 2px solid #e3dbf6; border-top-color: #8770bb; border-radius: 50%; animation: chatSpin .8s linear infinite; }
@@ -134,10 +135,10 @@
 .spokenReview { margin-top: 1rem; border: 1px solid #e2ddec; border-radius: .8rem; padding: .9rem; background: #fbfaff; }
 .spokenReview header strong { color: var(--chat-ink); font-size: .9rem; }
 .spokenReview header p { margin: .4rem 0; color: var(--chat-muted); font-size: .75rem; line-height: 1.6; }
-.spokenReview dl { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .5rem; }
-.spokenReview dl > div { padding: .6rem; border: 1px solid #e8e3f2; border-radius: .5rem; background: #fff; }
-.spokenReview dt { color: var(--chat-muted); font-size: .65rem; font-weight: 700; }
-.spokenReview dd { margin: .3rem 0 0; font-size: .75rem; line-height: 1.5; overflow-wrap: anywhere; }
+.spokenReview dl, .confirmation dl { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,9rem),1fr)); gap: .5rem; }
+.spokenReview dl > div, .confirmation dl > div { min-width: 0; padding: .65rem; border: 1px solid #e8e3f2; border-radius: .6rem; background: #fff; }
+.spokenReview dt, .confirmation dt { color: var(--chat-muted); font-size: .72rem; font-weight: 700; }
+.spokenReview dd, .confirmation dd { margin: .3rem 0 0; font-size: .8rem; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-line; }
 .spokenReview dd small { display: block; color: var(--chat-muted); font-size: .65rem; }
 .reviewMore summary { color: #7560ac; cursor: pointer; font-size: .75rem; }
 .reviewJson { max-height: 16rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .65rem; }

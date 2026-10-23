@@ -36,7 +36,10 @@ export function useIntakeController() {
   const recoveryAttemptedRef = useRef(false);
   const flowSequenceRef = useRef(0);
   const draftRevisionRef = useRef(0);
+  const persistedDraftRevisionRef = useRef<number | null>(null);
   const submitInFlightRef = useRef(false);
+
+  useEffect(() => () => { flowSequenceRef.current += 1; }, []);
 
   useEffect(() => {
     let active = true;
@@ -60,36 +63,55 @@ export function useIntakeController() {
   useEffect(() => {
     if (!options || recoveryAttemptedRef.current) return;
     recoveryAttemptedRef.current = true;
-    const requestId = window.sessionStorage.getItem(CHAT_REQUEST_SESSION_KEY);
+    const requestId = recoveredRequestId();
     if (!requestId) return;
-    let active = true;
+    let active = true, settled = false;
+    const flowSequence = ++flowSequenceRef.current;
+    const submittedDraftRevision = draftRevisionRef.current;
+    const baseline = draft;
+    submitInFlightRef.current = true;
     setSubmitPhase("reading");
+    setSubmitError(null);
     void getFreightRequestV2(requestId).then(async (loaded) => {
-      if (!active) return;
+      if (!active || flowSequence !== flowSequenceRef.current) return;
+      if (loaded.data.id !== requestId) throw new V2IntakeApiError({ code: "REQUEST_CORRELATION_MISMATCH", message: "The saved request ID does not match the recovered request.", status: 502, retryable: false });
       const restored = requestToPrototypeDraft(loaded.data);
       setRequest(loaded.data);
-      if (restored && options.facilities.some((facility) => facility.facilityId === restored.originFacilityId)
-        && options.facilities.some((facility) => facility.facilityId === restored.destinationFacilityId)) {
-        setDraft(restored);
-        setStep(4);
-        setMaxVisited(4);
-        setDirtyAfterCreate(false);
-      } else {
-        setSubmitError(new V2IntakeApiError({ code: "REQUEST_NOT_EDITABLE_IN_INTAKE", message: "This saved request has locations or units this guided intake cannot edit without losing data. Open its request workspace.", status: 422, retryable: false }));
+      if (!restored || !options.facilities.some((facility) => facility.facilityId === restored.originFacilityId)
+        || !options.facilities.some((facility) => facility.facilityId === restored.destinationFacilityId)) {
+        throw new V2IntakeApiError({ code: "REQUEST_NOT_EDITABLE_IN_INTAKE", message: "This saved request has locations or units this guided intake cannot edit without losing data. Open its request workspace.", status: 422, retryable: false });
       }
+      persistedDraftRevisionRef.current = submittedDraftRevision;
+      setDraft(current => mergeRecoveredDraft(restored, baseline, current));
+      setStep(4);
+      setMaxVisited(4);
+      setDirtyAfterCreate(draftRevisionRef.current !== submittedDraftRevision);
+      if (draftRevisionRef.current !== submittedDraftRevision) { setSubmitPhase("success"); return; }
+      setSubmitPhase("evaluating");
       const result = await getRoadServiceabilityV2(loaded.data.id, loaded.data.draftVersion);
-      if (!active) return;
+      if (!active || flowSequence !== flowSequenceRef.current) return;
       assertServiceabilityCorrelation(loaded.data, result.data);
-      setEvaluation(result.data);
-      setSelectedCandidateId(reconcileCandidateSelection(null, result.data));
-      if (restored && options.facilities.some((facility) => facility.facilityId === restored.originFacilityId)
-        && options.facilities.some((facility) => facility.facilityId === restored.destinationFacilityId)) setSubmitPhase("success");
+      if (draftRevisionRef.current === submittedDraftRevision) {
+        setEvaluation(result.data);
+        setSelectedCandidateId(reconcileCandidateSelection(null, result.data));
+      }
+      setSubmitPhase("success");
     }).catch((error: unknown) => {
-      if (!active) return;
+      if (!active || flowSequence !== flowSequenceRef.current) return;
       setSubmitError(normalizeApiError(error));
       setSubmitPhase("error");
+    }).finally(() => {
+      settled = true;
+      if (flowSequence === flowSequenceRef.current) submitInFlightRef.current = false;
     });
-    return () => { active = false; };
+    return () => {
+      active = false;
+      if (!settled && flowSequence === flowSequenceRef.current) {
+        flowSequenceRef.current += 1;
+        submitInFlightRef.current = false;
+        recoveryAttemptedRef.current = false;
+      }
+    };
   }, [options]);
 
 
@@ -188,8 +210,9 @@ export function useIntakeController() {
     submitInFlightRef.current = false;
     idempotencyRef.current = null;
     revisionKeyRef.current = null;
+    persistedDraftRevisionRef.current = null;
     recoveryAttemptedRef.current = true;
-    window.sessionStorage.removeItem(CHAT_REQUEST_SESSION_KEY);
+    try { window.sessionStorage.removeItem(CHAT_REQUEST_SESSION_KEY); } catch { /* Storage is optional; never block the current draft. */ }
   };
 
   const readAndEvaluate = async (
@@ -202,13 +225,20 @@ export function useIntakeController() {
     if (flowSequence !== flowSequenceRef.current) return;
     assertFreightRequestRoundTrip(created, roundTrip.data);
     setRequest(roundTrip.data);
-    window.sessionStorage.setItem(CHAT_REQUEST_SESSION_KEY, roundTrip.data.id);
+    try { window.sessionStorage.setItem(CHAT_REQUEST_SESSION_KEY, roundTrip.data.id); } catch { /* The authorized request is still saved. */ }
+    const savedRevision = submittedDraftRevision ?? persistedDraftRevisionRef.current;
+    if (savedRevision !== draftRevisionRef.current) {
+      setEvaluation(null); setSelectedCandidateId(null); setSubmitPhase("success");
+      return;
+    }
     setSubmitPhase("evaluating");
     const result = await getRoadServiceabilityV2(roundTrip.data.id, roundTrip.data.draftVersion);
     if (flowSequence !== flowSequenceRef.current) return;
     assertServiceabilityCorrelation(roundTrip.data, result.data);
-    setEvaluation(result.data);
-    setSelectedCandidateId((current) => reconcileCandidateSelection(current, result.data));
+    if (savedRevision === draftRevisionRef.current) {
+      setEvaluation(result.data);
+      setSelectedCandidateId((current) => reconcileCandidateSelection(current, result.data));
+    } else { setEvaluation(null); setSelectedCandidateId(null); }
     setSubmitPhase("success");
     if (submittedDraftRevision !== undefined) {
       setDirtyAfterCreate(draftRevisionRef.current !== submittedDraftRevision);
@@ -258,7 +288,8 @@ export function useIntakeController() {
       }
       if (flowSequence !== flowSequenceRef.current) return;
       setRequest(created.data);
-      window.sessionStorage.setItem(CHAT_REQUEST_SESSION_KEY, created.data.id);
+      persistedDraftRevisionRef.current = submittedDraftRevision;
+      try { window.sessionStorage.setItem(CHAT_REQUEST_SESSION_KEY, created.data.id); } catch { /* The authorized request is still saved. */ }
       setDirtyAfterCreate(draftRevisionRef.current !== submittedDraftRevision);
       await readAndEvaluate(created.data, flowSequence, submittedDraftRevision);
     } catch (error) {
@@ -266,7 +297,7 @@ export function useIntakeController() {
       setSubmitError(normalizeApiError(error));
       setSubmitPhase("error");
     } finally {
-      submitInFlightRef.current = false;
+      if (flowSequence === flowSequenceRef.current) submitInFlightRef.current = false;
     }
   };
   const retryAfterCreate = async () => {
@@ -287,7 +318,7 @@ export function useIntakeController() {
       setSubmitError(normalizeApiError(error));
       setSubmitPhase("error");
     } finally {
-      submitInFlightRef.current = false;
+      if (flowSequence === flowSequenceRef.current) submitInFlightRef.current = false;
     }
   };
 
@@ -295,6 +326,7 @@ export function useIntakeController() {
     if (!request || submitInFlightRef.current) return;
     submitInFlightRef.current = true;
     const flowSequence = ++flowSequenceRef.current;
+    const baseline = draft, localRevision = draftRevisionRef.current;
     setSubmitPhase("reading");
     setSubmitError(null);
     setEvaluation(null);
@@ -302,15 +334,20 @@ export function useIntakeController() {
     try {
       const loaded = await getFreightRequestV2(request.id);
       if (flowSequence !== flowSequenceRef.current) return;
+      if (loaded.data.id !== request.id || loaded.data.organizationId !== request.organizationId) {
+        throw new V2IntakeApiError({ code: "REQUEST_CORRELATION_MISMATCH", message: "The refreshed request does not match the current request and organization.", status: 502, retryable: false });
+      }
       const restored = requestToPrototypeDraft(loaded.data);
       if (!restored || !activeOptions.facilities.some((facility) => facility.facilityId === restored.originFacilityId)
         || !activeOptions.facilities.some((facility) => facility.facilityId === restored.destinationFacilityId)) {
         throw new V2IntakeApiError({ code: "REQUEST_NOT_EDITABLE_IN_INTAKE", message: "This request cannot be represented safely in the guided intake. Open its request workspace.", status: 422, retryable: false });
       }
+      const changedDuringRead = draftRevisionRef.current !== localRevision;
       draftRevisionRef.current += 1;
-      setDraft(restored);
+      persistedDraftRevisionRef.current = changedDuringRead ? localRevision : draftRevisionRef.current;
+      setDraft(current => mergeRecoveredDraft(restored, baseline, current));
       setRequest(loaded.data);
-      setDirtyAfterCreate(false);
+      setDirtyAfterCreate(changedDuringRead);
       setIssues([]);
       revisionKeyRef.current = null;
       await readAndEvaluate(loaded.data, flowSequence);
@@ -319,7 +356,7 @@ export function useIntakeController() {
       setSubmitError(normalizeApiError(error));
       setSubmitPhase("error");
     } finally {
-      submitInFlightRef.current = false;
+      if (flowSequence === flowSequenceRef.current) submitInFlightRef.current = false;
     }
   };
 
@@ -330,11 +367,28 @@ export function useIntakeController() {
     setIssues((current) => current.filter((issue) => !fields.some((item) => item.field === issue.field)));
     if (request) { setDirtyAfterCreate(true); setEvaluation(null); setSelectedCandidateId(null); }
   };
+  const submitLabel = ({
+    creating: t("Guardando tu borrador…", "Saving your draft…"),
+    revising: t("Guardando la revisión del mismo borrador…", "Saving the revision to the same draft…"),
+    reading: t("Recuperando el borrador guardado…", "Loading the saved draft…"),
+    evaluating: t("Consultando ROAD para la versión guardada…", "Checking ROAD for the saved version…"),
+  } as Partial<Record<SubmitPhase, string>>)[submitPhase];
 
-  return { locale, t, draft, step, maxVisited, issues, options, optionsSource, optionsError, submitPhase, submitError,
+  return { locale, t, draft, step, maxVisited, issues, options, optionsSource, optionsError, submitPhase, submitLabel, submitError,
     request, evaluation, selectedCandidateId, dirtyAfterCreate, errorRef, activeOptions, origin, destination, optionCoverage,
     mapProps, update, updateCargoGroups, errorFor, enterReview, goNext, loadExample, reset, createDraftAndEvaluate, retryAfterCreate,
     reloadPersisted, updateFromChat, setStep, setMaxVisited, setIssues, setOptionsAttempt, setSelectedCandidateId };
+}
+
+function recoveredRequestId() {
+  try { return window.sessionStorage.getItem(CHAT_REQUEST_SESSION_KEY); }
+  catch { return null; }
+}
+
+/** Retain edits made during recovery, deriving totals against the restored units. */
+function mergeRecoveredDraft(restored: V2IntakePrototypeDraft, baseline: V2IntakePrototypeDraft, current: V2IntakePrototypeDraft) {
+  return (Object.keys(current) as Array<keyof V2IntakePrototypeDraft>).reduce((next, field) =>
+    JSON.stringify(current[field]) === JSON.stringify(baseline[field]) ? next : updatePrototypeDraftField(next, field, current[field]), restored);
 }
 
 function normalizeApiError(error: unknown) {

@@ -65,7 +65,7 @@ export function V2IntakePrototype(props: IntakeProps = {}) {
 }
 
 function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps) {
-  const { locale, t, draft, step, maxVisited, issues, options, optionsSource, optionsError, submitPhase, submitError,
+  const { locale, t, draft, step, maxVisited, issues, options, optionsSource, optionsError, submitPhase, submitLabel, submitError,
     request, evaluation, selectedCandidateId, dirtyAfterCreate, errorRef, activeOptions, origin, destination, optionCoverage,
     mapProps, update, errorFor, enterReview, goNext, loadExample, reset, createDraftAndEvaluate, retryAfterCreate,
     reloadPersisted, updateFromChat, setStep, setMaxVisited, setIssues, setOptionsAttempt, setSelectedCandidateId } = useIntakeSession();
@@ -76,6 +76,7 @@ function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps
     t("Crear y evaluar", "Create & evaluate"),
   ];
   const ActiveStepIcon = STEP_ICONS[step - 1];
+  const submitting = ["creating", "revising", "reading", "evaluating"].includes(submitPhase);
   useEffect(() => { if (request) onPersisted?.(request); }, [request, onPersisted]);
   useEffect(() => {
     if (request && evaluation && request.id === evaluation.freightRequestId && request.draftVersion === evaluation.evaluatedDraftVersion)
@@ -100,7 +101,7 @@ function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps
                 : t("Error de opciones", "Options error")}
             </Badge> : null}
             {!embedded ? <>
-              <Button variant="secondary" type="button" disabled={!options || options.facilities.length < 2 || !optionCoverage.complete} onClick={loadExample}><Sparkles size={16} aria-hidden="true" />{t("Cargar ejemplo V2", "Load V2 example")}</Button>
+              <Button variant="secondary" type="button" disabled={submitting || !options || options.facilities.length < 2 || !optionCoverage.complete} onClick={loadExample}><Sparkles size={16} aria-hidden="true" />{t("Cargar ejemplo V2", "Load V2 example")}</Button>
             </> : null}
           </div> : null}
         </header>
@@ -165,12 +166,13 @@ function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps
               {step === 3 ? <ScheduleAndContactsStep draft={draft} options={activeOptions} update={update} errorFor={errorFor} t={t} /> : null}
               {step === 4 ? <ReviewStep draft={draft} options={activeOptions} request={request} dirtyAfterCreate={dirtyAfterCreate} t={t} locale={locale} onEdit={(target) => { setStep(target); setIssues([]); }} /> : null}
               {submitError ? <ApiErrorState error={submitError} requestExists={Boolean(request)} dirty={dirtyAfterCreate} retry={dirtyAfterCreate ? createDraftAndEvaluate : retryAfterCreate} reload={request ? reloadPersisted : undefined} t={t} embedded={embedded} /> : null}
+              {submitting && <p className={styles.pendingState} role="status">{submitLabel}</p>}
             </div>
             <footer className={styles.footer}>
-              <Button variant="ghost" type="button" onClick={reset}><RotateCcw size={16} aria-hidden="true" />{t("Reiniciar", "Reset")}</Button>
+              <Button variant="ghost" type="button" disabled={submitting} onClick={reset}><RotateCcw size={16} aria-hidden="true" />{t("Reiniciar", "Reset")}</Button>
               <div className={styles.footerRight}>
-                {step > 1 ? <Button variant="secondary" type="button" onClick={() => { setStep((step - 1) as PrototypeStep); setIssues([]); }}><ArrowLeft size={16} aria-hidden="true" />{t("Anterior", "Back")}</Button> : null}
-                {step < 4 ? <Button type="button" onClick={goNext}>{t("Continuar", "Continue")}<ArrowRight size={16} aria-hidden="true" /></Button> : (
+                {step > 1 ? <Button variant="secondary" type="button" disabled={submitting} onClick={() => { setStep((step - 1) as PrototypeStep); setIssues([]); }}><ArrowLeft size={16} aria-hidden="true" />{t("Anterior", "Back")}</Button> : null}
+                {step < 4 ? <Button type="button" disabled={submitting} onClick={goNext}>{t("Continuar", "Continue")}<ArrowRight size={16} aria-hidden="true" /></Button> : (
                   <Button variant={embedded ? "accent" : "primary"} type="button" isLoading={["creating", "revising", "reading", "evaluating"].includes(submitPhase)} loadingLabel={phaseLabel(submitPhase, t)} onClick={createDraftAndEvaluate}>
                     <ClipboardCheck size={16} aria-hidden="true" />{request && dirtyAfterCreate ? t("Guardar revisión y reevaluar", "Save revision & reevaluate") : request ? t("Consultar evaluación", "Refresh evaluation") : t("Crear DRAFT y evaluar", "Create DRAFT & evaluate")}
                   </Button>
@@ -199,6 +201,7 @@ function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps
         </> : null}
       </div>
       {embedded ? <ConversationChat draft={draft} options={activeOptions} optionsSource={optionsSource === "fixture" ? "fixture" : "api"} request={request} evaluation={evaluation} error={submitError ?? optionsError} draftDirty={dirtyAfterCreate}
+        busyLabel={submitLabel}
         canRevise={Boolean(request && requestToPrototypeDraft(request) && request.status === "DRAFT")}
         busy={["creating", "revising", "reading", "evaluating"].includes(submitPhase)} onFields={updateFromChat} onSave={() => { void createDraftAndEvaluate(); }}
         onRead={() => { void retryAfterCreate(); }} onEvaluate={() => { void retryAfterCreate(); }}

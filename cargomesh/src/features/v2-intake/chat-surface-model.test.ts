@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import { ASSISTANT_INTRO_TIMING, assistantWelcomeMotion, assistantEyeOffset, clampFloatingPoint, keyboardFloatingPoint } from "./chat-surface-model";
+
+test("long draft reviews scroll inside the conversation without displacing the header and composer", () => {
+  const css = readFileSync(new URL("./conversation-chat.module.css", import.meta.url), "utf8");
+  const panel = css.match(/\.panel\s*\{([^}]+)\}/)?.[1] ?? "";
+  assert.match(panel, /overflow:\s*clip/);
+  assert.doesNotMatch(panel, /overflow:\s*(?:auto|scroll|hidden)/);
+  assert.match(css, /\.scrollArea\s*\{[^}]*min-height:\s*0[^}]*overflow-y:\s*auto/);
+  assert.match(css, /\.spokenReview dl, \.confirmation dl\s*\{[^}]*auto-fit/);
+});
 
 test("the welcome rises in order: mascot, heading, then the first greeting", () => {
   const stages = (["mascot", "title", "greeting"] as const).map(stage => assistantWelcomeMotion(stage, false));

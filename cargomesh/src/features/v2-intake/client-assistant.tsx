@@ -30,6 +30,7 @@ export function ClientAssistant({ onDockedChange }: { onDockedChange: (docked: b
     evaluation={session.evaluation} error={session.submitError} draftDirty={session.dirtyAfterCreate}
     canRevise={Boolean(session.request && requestToPrototypeDraft(session.request) && session.request.status === "DRAFT")}
     busy={["creating", "revising", "reading", "evaluating"].includes(session.submitPhase)}
+    busyLabel={session.submitLabel}
     catalogStatus={catalogStatus} catalogError={session.optionsError?.message}
     onRetryCatalog={() => session.setOptionsAttempt((attempt) => attempt + 1)} onDockedChange={onDockedChange}
     onFields={session.updateFromChat} onSave={() => { void session.createDraftAndEvaluate(); }}

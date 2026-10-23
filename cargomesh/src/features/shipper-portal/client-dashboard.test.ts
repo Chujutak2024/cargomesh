@@ -71,6 +71,19 @@ test("mockup layout is container-responsive, not the fixed 1440 by 1000 artboard
   assert.ok(!view.includes("Reorder this shipment"));
   assert.match(view, /draft &&/);
 });
+
+test("Client sidebar keeps My shipments and Tracking; bookings/history remain internal tabs", () => {
+  const shell = readFileSync(new URL("../../components/app-shell.tsx", import.meta.url), "utf8");
+  const navigation = shell.slice(shell.indexOf("const navigation ="), shell.indexOf("const contexts ="));
+  const links = [...navigation.matchAll(/href: "([^"]+)"/g)].map(match => match[1]);
+  assert.ok(links.includes("/requests"));
+  assert.ok(links.includes("/tracking"));
+  assert.ok(!links.includes("/bookings"));
+  assert.ok(!links.includes("/history"));
+  assert.ok(shell.includes('hrefPath === "/requests" && ["/bookings", "/history"].includes(pathname)'));
+  const tabs = readFileSync(new URL("./operations-navigation.tsx", import.meta.url), "utf8");
+  for (const view of ["requests", "bookings", "history"]) assert.ok(tabs.includes(`view: "${view}" as const`));
+});
 test("dashboard AI input still dispatches the shared assistant event, trims/bounds text and never saves a request", () => {
   const source = readFileSync(new URL("../v2-intake/conversation-entry.tsx", import.meta.url), "utf8");
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;

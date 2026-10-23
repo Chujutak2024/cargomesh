@@ -18,5 +18,7 @@ test('response permissions use role, actual status and response deadline',()=>{
 test('details accept only valid API identities and do not reinterpret local example references',()=>{
  assert.equal(opportunityIdFromHash('#/shipments/details/'+id(10)),id(10));
  for(const hash of ['#/shipments','#/shipments/details/SOL-0001','#/shipments/details/%','#/shipments/details/foreign'])assert.equal(opportunityIdFromHash(hash),null);
- assert.notEqual(opportunityReference({...opportunity(),id:id(10)}),opportunityReference({...opportunity(),id:id(11)}));
+ // The display reference belongs to the parent request; opportunity identity remains separate.
+ assert.equal(opportunityReference({...opportunity(),id:id(10)}),opportunityReference({...opportunity(),id:id(11)}));
+ assert.notEqual(opportunityReference({...opportunity(),requestId:id(10)}),opportunityReference({...opportunity(),requestId:id(11)}));
 });

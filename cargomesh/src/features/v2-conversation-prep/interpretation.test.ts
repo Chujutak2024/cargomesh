@@ -118,6 +118,26 @@ test("a named correction changes the requested field, not the current prompt", (
   assert.deepEqual(turn, { intent: "CORRECT", fields: [{ field: "originFacilityId", value: "Piura" }] });
 });
 
+test("explicit Spanish per-unit corrections strip compatible units and punctuation without changing another field", () => {
+  for (const [text, field, value] of [
+    ["Corrige el peso por unidad a 700 kg.", "unitWeightPerUnitKg", "700"],
+    ["Cambia el volumen por unidad a 2.5 m³.", "unitVolumePerUnitM3", "2.5"],
+    ["Corrige el largo a 120 cm.", "unitLengthCm", "120"],
+    ["Cambia la cantidad a 10 unidades.", "unitQuantity", "10"],
+    ["Cambia el destino a Piura.", "destinationFacilityId", "Piura"],
+  ]) {
+    const result = interpretDeterministically({ schemaVersion: "2.0", text, currentField: "urgency", language: "es" });
+    assert.equal(result.intent, "CORRECT");
+    assert.deepEqual(result.fields, [{ field, value }]);
+  }
+  const total = interpretDeterministically({ schemaVersion: "2.0", text: "Corrige el peso total a 700 kg.", currentField: "unitWeightPerUnitKg" });
+  assert.equal(total.fields.length, 0, "a total must never silently become a per-unit weight");
+  assert.equal(guardExplicitCorrection("Corrige el peso total a 700 kg.", "unitWeightPerUnitKg", {
+    intent: "CORRECT", fields: [{ field: "unitWeightPerUnitKg", value: "700" }],
+  }).fields.length, 0);
+  assert.equal(interpretDeterministically({ schemaVersion: "2.0", text: "Corrige el peso por unidad a 700 m³.", currentField: null }).fields.length, 0);
+});
+
 test("a natural Spanish turn captures only explicit cargo and route facts", () => {
   const turn = interpretDeterministically({ schemaVersion: "2.0", text: "Necesito enviar 10 pallets desde nuestra sede de Callao hasta Santiago el próximo viernes", currentField: "originFacilityId" });
   assert.deepEqual(turn.fields, [

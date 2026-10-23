@@ -113,9 +113,27 @@ export function interpretDeterministically(input: InterpretationRequest): Interp
   const correcting = /^(?:correct|change|update|corregir|cambiar|actualizar|cambia|corrige)\b/i.test(text)
     || /^(?:son|it's|it is)\s+\d+\s+(?:pallets?|palets?|cajas?|boxes?)\s*,?\s+(?:no|not)\s+\d+/i.test(text);
   if (correcting) {
-    const correction = /^(?:correct|change|update|corregir|cambiar|actualizar|cambia|corrige)\s+(?:the\s+|el\s+|la\s+)?(pickup|origin|delivery|destination|cargo category|packaging|quantity|weight|volume|equipment|origen|destino|cantidad|equipo|embalaje)\s+(?:to|as|a|por)\s+(.+)$/i.exec(text);
-    const fieldsByName = { pickup: "originFacilityId", origin: "originFacilityId", delivery: "destinationFacilityId", destination: "destinationFacilityId", "cargo category": "categoryCode", packaging: "packaging", quantity: "unitQuantity", weight: "unitWeightPerUnitKg", volume: "unitVolumePerUnitM3", equipment: "requiredEquipment", origen: "originFacilityId", destino: "destinationFacilityId", cantidad: "unitQuantity", equipo: "requiredEquipment", embalaje: "packaging" } as const;
-    if (correction) return { intent: "CORRECT", fields: [{ field: fieldsByName[correction[1].toLowerCase() as keyof typeof fieldsByName], value: correction[2].trim() }] };
+    if (/\b(?:peso total|total weight|volumen total|total volume)\b/i.test(text)) return { intent: "CORRECT", fields: [], acknowledgment: input.language === "es" ? "Indica también el peso o volumen de cada unidad. No repartiré el total entre las unidades sin esa aclaración." : "Please give each unit's weight or volume as well. I will not distribute the total between units without that clarification." };
+    const correction = /^(?:correct|change|update|corregir|cambiar|actualizar|cambia|corrige)\s+(?:the\s+|el\s+|la\s+)?(pickup|origin|delivery|destination|cargo category|packaging|quantity|weight per unit|weight|volume per unit|volume|length|width|height|equipment|origen|destino|cantidad|peso por unidad|volumen por unidad|largo|ancho|alto|equipo|embalaje)\s+(?:to|as|a|por)\s+(.+)$/i.exec(text);
+    const fieldsByName = { pickup: "originFacilityId", origin: "originFacilityId", delivery: "destinationFacilityId", destination: "destinationFacilityId", "cargo category": "categoryCode", packaging: "packaging", quantity: "unitQuantity", weight: "unitWeightPerUnitKg", "weight per unit": "unitWeightPerUnitKg", "peso por unidad": "unitWeightPerUnitKg", volume: "unitVolumePerUnitM3", "volume per unit": "unitVolumePerUnitM3", "volumen por unidad": "unitVolumePerUnitM3", length: "unitLengthCm", largo: "unitLengthCm", width: "unitWidthCm", ancho: "unitWidthCm", height: "unitHeightCm", alto: "unitHeightCm", equipment: "requiredEquipment", origen: "originFacilityId", destino: "destinationFacilityId", cantidad: "unitQuantity", equipo: "requiredEquipment", embalaje: "packaging" } as const;
+    if (correction) {
+      const field = fieldsByName[correction[1].toLowerCase() as keyof typeof fieldsByName];
+      let value = correction[2].trim().replace(/[.!?]+$/, "");
+      const units: Partial<Record<typeof field, RegExp>> = {
+        unitQuantity: /^(\d+)\s*(?:units?|unidades?|pallets?|palets?|cajas?|boxes?)?$/i,
+        unitWeightPerUnitKg: /^(\d+(?:\.\d+)?)\s*(?:kg|kilograms?|kilogramos?)?$/i,
+        unitVolumePerUnitM3: /^(\d+(?:\.\d+)?)\s*(?:m3|m³|cubic meters?|metros c[uú]bicos?)?$/i,
+        unitLengthCm: /^(\d+(?:\.\d+)?)\s*(?:cm|centimeters?|cent[ií]metros?)?$/i,
+        unitWidthCm: /^(\d+(?:\.\d+)?)\s*(?:cm|centimeters?|cent[ií]metros?)?$/i,
+        unitHeightCm: /^(\d+(?:\.\d+)?)\s*(?:cm|centimeters?|cent[ií]metros?)?$/i,
+      };
+      if (units[field]) {
+        const numeric = units[field]!.exec(value);
+        if (!numeric) return { intent: "CORRECT", fields: [], acknowledgment: input.language === "es" ? "Indica un valor por unidad con su medida: kg, m³ o cm. No convertiré el peso total en peso por unidad." : "Give an explicit per-unit value in kg, m³ or cm. I will not turn total weight into unit weight." };
+        value = numeric[1];
+      }
+      return { intent: "CORRECT", fields: [{ field, value }] };
+    }
     const correctedCount = /^(?:son|it's|it is)\s+(\d+)\s+(pallets?|palets?|cajas?|boxes?)\s*,?\s+(?:no|not)\s+\d+/i.exec(text);
     if (correctedCount) return { intent: "CORRECT", fields: [{ field: "unitQuantity", value: correctedCount[1] }] };
     return { intent: "CORRECT", fields: [] };

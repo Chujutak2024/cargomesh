@@ -55,15 +55,26 @@ function spokenClause(value: string): string {
   return value.split(/\s+(?=(?:i|we)\s+(?:like|want|need|have|am|would|got|can|will|should)\b|(?:and|but|then)\s+(?:i|we)\b)/i)[0].trim();
 }
 
+function latestSpokenRoute(turns: VoiceTurn[]) {
+  let pickup = "", destination = "";
+  for (const turn of turns) {
+    const text = spokenUserDetails([turn]);
+    if (!text) continue;
+    const route = [...text.matchAll(/\b(?:from|desde|de)\s+([^;,.]+?)\s+(?:to|a|hasta|i (?:want|wanna|need) to go to)\s+([^;,.]+)/gi)].at(-1);
+    const originOnly = lastCapture(text, /\b(?:origen|origin|pickup)\s+(?:a|to|en|in|at|es|is)\s+([^;,.]+)/gi)
+      || lastCapture(text, /\bhere\s+in\s+([^;,.]+?)(?=\s+(?:i|we|and|but|would|want|need)\b|[;,.]|$)/gi);
+    const destinationOnly = lastCapture(text, /\b(?:destino|destination)\s+(?:a|to|en|in|es|is)\s+([^;,.]+)/gi)
+      || lastCapture(text, /\b(?:going|go|ship|send|deliver(?:ing)?)\s+to\s+([^;,.]+)/gi);
+    if (route?.[1] || originOnly) pickup = spokenClause(route?.[1]?.trim() || originOnly);
+    if (route?.[2] || destinationOnly) destination = spokenClause(route?.[2]?.trim() || destinationOnly);
+  }
+  return { pickup, destination };
+}
+
 /** Speech supplies provisional facts. Only catalog-matched fields can enter the draft. */
 export function buildSpokenRequestReview(turns: VoiceTurn[], options: IntakeOptionsData, draft: V2IntakePrototypeDraft): SpokenRequestReview {
   const text = spokenUserDetails(turns);
-  const route = [...text.matchAll(/\b(?:from|desde|de)\s+([^;,.]+?)\s+(?:to|a|hasta|i (?:want|wanna|need) to go to)\s+([^;,.]+)/gi)].at(-1);
-  const pickup = spokenClause(route?.[1]?.trim() ?? "")
-    || lastCapture(text, /\b(?:pickup|origin)\s+(?:in|at|is)\s+([^;,.]+)/gi)
-    || lastCapture(text, /\bhere\s+in\s+([^;,.]+?)(?=\s+(?:i|we|and|but|would|want|need)\b|[;,.]|$)/gi);
-  const destination = spokenClause(route?.[2]?.trim() ?? "")
-    || lastCapture(text, /\b(?:going|go|ship|send|deliver(?:ing)?)\s+to\s+([^;,.]+)/gi);
+  const { pickup, destination } = latestSpokenRoute(turns);
   const cargo = spokenClause(lastCapture(text, /\b(?:i(?:'m| am)\s+shipping|shipping|transporting|(?:i|we)\s+(?:like|want|need|would like)\s+to\s+(?:send|ship|transport))\s+([^;,.]+)/gi))
     || lastCapture(text, /\bin\s+(?:the\s+)?boxes\s+i\s+have\s+([^;,.]+?)(?=\s+(?:and|with|i need)\b|[;,.]|$)/gi)
     || lastCapture(text, /\b(?:boxes|pallets|crates)\s+of\s+([^;,.]+)/gi);
