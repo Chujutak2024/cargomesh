@@ -1,6 +1,6 @@
 # Current verification status
 
-Reviewed **23 October 2026**, against `main` at `5f37cb2c8e5340f2dc8a5c252c7817005c66e415`. PR #149 (typed-only continuous input) and PR #151 (map fallback and booked-route facts) are integrated. The [dated browser observation](hackathon/JUDGE_ACCESS_2026-10-23.md) checks public entry and selected reads only. This is a source/deployment boundary, not a live monitoring dashboard.
+Reviewed **23 October 2026**, against `main` at `795c973e89993f7c76bf18a3c768049d8e65c6e2`, including PR #158's Kiro/AWS evidence package. PR #149 (typed-only continuous input) and PR #151 (map fallback and booked-route facts) are integrated. The [dated browser observation](hackathon/JUDGE_ACCESS_2026-10-23.md) checks public entry and selected reads only. This is a source/deployment boundary, not a live monitoring dashboard.
 
 | Area | Evidence-backed state | Still requires verification |
 |---|---|---|

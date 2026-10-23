@@ -2,6 +2,8 @@
 
 Owner: Jean. Expert browser walkthrough, approximately 00:25–00:27 America/Lima (05:25–05:27 UTC). Documentation base: `main` at `5f37cb2c8e5340f2dc8a5c252c7817005c66e415`. The production deployment SHA was not exposed/verified by this observation.
 
+Before delivery, the branch was synchronized with `origin/main` at `795c973e89993f7c76bf18a3c768049d8e65c6e2` (PR #158), with Jean's explicit authorization. That delta changes Kiro/AWS documentation only; its evidence and attribution were retained. This does not turn the earlier browser observation into a new runtime test.
+
 ## Browser and scope
 
 The session's in-app browser inventory contained no tabs before a new tab was opened. No credentials were entered or supplied. A separate Chrome profile was unavailable; the browser interface did not support the attempted origin-storage reset. Therefore the strict **clean-profile requirement is pending confirmation — Jean**, using a fresh private/profile window before handoff. No storage change was applied. This record verifies the observed direct-entry behavior, not profile isolation or a fresh-checkout run.
