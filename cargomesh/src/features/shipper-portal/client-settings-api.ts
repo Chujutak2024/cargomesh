@@ -19,7 +19,10 @@ export async function settingsRequest<T>(route:string,schema:z.ZodType<T>,init:R
   const response=await fetcher('/api/v2'+route,{...init,credentials:'same-origin',cache:'no-store',
     signal:init.signal??AbortSignal.timeout(20000),headers:{'Content-Type':'application/json',...init.headers}});
   const raw=await response.json().catch(()=>null);
-  if(!response.ok)throw new ClientSettingsError(raw?.error?.code??'UNAVAILABLE',response.status,raw?.error?.message??'The request could not be completed.');
+  if(!response.ok){
+    if(typeof window!=='undefined'&&[401,403].includes(response.status)&&(init.method??'GET').toUpperCase()==='GET')window.dispatchEvent(new Event('cm-client-access-revoked'));
+    throw new ClientSettingsError(raw?.error?.code??'UNAVAILABLE',response.status,raw?.error?.message??'The request could not be completed.');
+  }
   return schema.parse(raw);
 }
 export function collectionSchema<T>(schema:z.ZodType<T>){return z.object({schemaVersion:z.literal('2.0'),data:z.array(schema),

@@ -6,6 +6,24 @@ import {getIntakeOptionsFixture} from "./intake-options";
 import {spokenReviewCommand} from "./spoken-request-review";
 import {lastSpokenQuestionField,checkedSpokenField} from "./spoken-field-guard";
 const options=getIntakeOptionsFixture().data,zone="America/Lima",now=Date.parse("2026-10-21T12:00:00Z");
+test("numeric dates retain pickup range and delivery deadline without inventing clocks",()=>{
+ const first=spokenCaptureClarification('Recojo del 26/10/2026 hasta el 27/10/2026, entrega máxima hasta el 30/10/2026',{date:null,classification:false},options,zone,now);
+ assert.deepEqual(first.fields,[]);
+ assert.deepEqual(first.pendingDate?.windows,{pickup:{startsOn:'2026-10-26',endsOn:'2026-10-27'},delivery:{endsOn:'2026-10-30'}});
+ const pickup=spokenCaptureClarification('Recojo de 08:00 a 10:00',{date:first.pendingDate,classification:false},options,zone,now);
+ assert.deepEqual(pickup.fields,[{field:'pickupWindowStartsAt',value:'2026-10-26T08:00'},{field:'pickupWindowEndsAt',value:'2026-10-27T10:00'}]);
+ assert.deepEqual(pickup.pendingDate?.windows,{delivery:{endsOn:'2026-10-30'}});
+ const deadline=spokenCaptureClarification('Entrega de 14:00 a 18:00',{date:pickup.pendingDate,classification:false},options,zone,now);
+ assert.deepEqual(deadline.fields,[],'a deadline alone does not establish the earliest receiving date');
+ const delivery=spokenCaptureClarification('Entrega el 29/10/2026 de 14:00 a 18:00',{date:deadline.pendingDate,classification:false},options,zone,now);
+ assert.equal(delivery.fields[0]?.value,'2026-10-29T14:00');assert.equal(delivery.fields[1]?.value,'2026-10-30T18:00');
+ assert.equal(delivery.pendingDate,null);
+});
+
+test("a date alone and an impossible numeric date never become midnight windows",()=>{
+ for(const text of ['Recojo el 26/10/2026','Recojo el 31/02/2026 de 08:00 a 10:00'])assert.deepEqual(spokenCaptureClarification(text,{date:null,classification:false},options,zone,now).fields,[]);
+ assert.deepEqual(spokenCaptureClarification('Recojo el 26/10/2026 o 27/10/2026 de 08:00 a 10:00',{date:null,classification:false},options,zone,now).fields,[]);
+});
 test("a voiced date clarification needs role, exact day and an unambiguous clock",()=>{
  const pending={date:dateClarification("mañana",zone,now),classification:false};
  const accepted=spokenCaptureClarification("Recojo de nueve a once de la mañana",pending,options,zone,now);

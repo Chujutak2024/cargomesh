@@ -1,3 +1,4 @@
+import { displayDemoText } from "@/shared/lib/demo-presentation";
 import type { MapPresentation } from "@/features/v2-road-map/road-map-model";
 import { validCoordinate } from "@/features/v2-road-map/road-map-model";
 import type { WorkflowRecordV2 } from "./shipper-model";
@@ -10,8 +11,8 @@ export function routeRecordToPresentation(route: RouteRecord | null): MapPresent
   const firstEndpoint = route.data.origin ?? legs[0]?.origin;
   const lastEndpoint = route.data.destination ?? legs.at(-1)?.destination;
   const markers: MapPresentation["markers"] = [];
-  if (firstEndpoint && validCoordinate(firstEndpoint.lat, firstEndpoint.lng)) markers.push({ kind: "origin", point: { lat: firstEndpoint.lat!, lng: firstEndpoint.lng! }, label: firstEndpoint.label });
-  if (lastEndpoint && validCoordinate(lastEndpoint.lat, lastEndpoint.lng)) markers.push({ kind: "destination", point: { lat: lastEndpoint.lat!, lng: lastEndpoint.lng! }, label: lastEndpoint.label });
+  if (firstEndpoint && validCoordinate(firstEndpoint.lat, firstEndpoint.lng)) markers.push({ kind: "origin", point: { lat: firstEndpoint.lat!, lng: firstEndpoint.lng! }, label: displayDemoText(firstEndpoint.label) });
+  if (lastEndpoint && validCoordinate(lastEndpoint.lat, lastEndpoint.lng)) markers.push({ kind: "destination", point: { lat: lastEndpoint.lat!, lng: lastEndpoint.lng! }, label: displayDemoText(lastEndpoint.label) });
   const points = legs.map((leg) => [leg.origin, ...leg.waypoints.map((waypoint) => waypoint.location), leg.destination]);
   const complete = points.length > 0 && points.every((leg) => leg.length >= 2 && leg.every((point) =>
     validCoordinate(point.lat, point.lng)));

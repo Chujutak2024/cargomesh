@@ -1,7 +1,8 @@
+import { displayDemoText } from "@/shared/lib/demo-presentation";
 import type { IntakeOptionsData } from "./contracts";
 import type { V2IntakePrototypeDraft } from "./prototype-model";
 
-export type ConversationField = Exclude<keyof V2IntakePrototypeDraft,'primaryGroupId'|'primaryOriginalIndex'|'additionalUnits'|'pickupAlternatives'|'deliveryAlternatives'|'planningTimeZone'>;
+export type ConversationField = Exclude<keyof V2IntakePrototypeDraft,'primaryGroupId'|'primaryOriginalIndex'|'additionalUnits'|'pickupAlternatives'|'deliveryAlternatives'|'planningTimeZone'|'reviewedConversationFields'>;
 const ENGLISH_EQUIPMENT_LABELS: Record<string, string> = {
   BOX_TRUCK: "Box truck", REFRIGERATED_TRUCK: "Refrigerated truck", SECURE_BOX_TRUCK: "Secure box truck",
   HAZMAT_TRUCK: "Hazmat truck", FLATBED: "Flatbed truck", DUMP_TRUCK: "Dump truck",
@@ -15,11 +16,11 @@ export const CONVERSATION_FIELDS = [
   "urgency", "loadSize",
   "originFacilityId", "destinationFacilityId", "categoryCode", "packaging", "cargoDescription",
   "unitQuantity", "unitWeightPerUnitKg", "unitVolumePerUnitM3", "unitLengthCm", "unitWidthCm",
-  "unitHeightCm", "pickupWindowStartsAt", "pickupWindowEndsAt", "deliveryWindowStartsAt",
+  "unitHeightCm", "divisible", "unitIndivisible", "unitStackable", "requirements", "temperatureMinCelsius", "temperatureMaxCelsius", "pickupWindowStartsAt", "pickupWindowEndsAt", "deliveryWindowStartsAt",
   "deliveryWindowEndsAt", "requiredEquipment", "pickupContactName", "pickupContactPhoneE164",
-  "pickupContactEmail", "recipientContactName", "recipientContactPhoneE164", "recipientContactEmail",
+  "recipientContactName", "recipientContactPhoneE164",
 ] as const satisfies readonly ConversationField[];
-export type GuidedConversationField = (typeof CONVERSATION_FIELDS)[number];
+export type GuidedConversationField = (typeof CONVERSATION_FIELDS)[number] | "pickupContactEmail" | "recipientContactEmail";
 
 export function resolveConversationSuggestions(
   suggestions: Array<{ field: GuidedConversationField; value: string }>,
@@ -57,6 +58,7 @@ export const FIELD_QUESTION: Record<ConversationField, string> = {
 };
 
 const ENGLISH_QUESTION: Record<GuidedConversationField, string> = {
+  divisible:"May the shipment be split between trucks?", unitIndivisible:"Must each package travel whole?", unitStackable:"Can the packages be stacked?", requirements:"Does the cargo need special handling, such as refrigeration, dry storage or fragile handling?", temperatureMinCelsius:"What is the minimum temperature in Celsius?", temperatureMaxCelsius:"What is the maximum temperature in Celsius?",
   urgency:"Is this urgent or can it be scheduled flexibly?",loadSize:"Is this a light, medium or heavy shipment? We will also need its weight and volume.",
   originFacilityId: "Where should the cargo be picked up?",
   destinationFacilityId: "Where should the cargo be delivered?",
@@ -90,7 +92,7 @@ export function choicesForField(field: ConversationField, options: IntakeOptions
   if(field==="urgency")return [{value:"URGENT",label:"Urgente / Urgent"},{value:"SCHEDULED",label:"Sin urgencia / Not urgent"}];
   if(field==="loadSize")return [{value:"LIGHT",label:"Liviana / Light"},{value:"MEDIUM",label:"Mediana / Medium"},{value:"HEAVY",label:"Pesada / Heavy"}];
   if (field === "originFacilityId" || field === "destinationFacilityId") {
-    return options.facilities.map((facility) => ({ value: facility.facilityId, label: facility.label }));
+    return options.facilities.map((facility) => ({ value: facility.facilityId, label: displayDemoText(facility.label) }));
   }
   const list = field === "categoryCode" ? options.cargoCategories
     : field === "packaging" ? options.packagingOptions
@@ -107,8 +109,7 @@ export function matchingConversationChoices(field: ConversationField, input: str
   if (field === "originFacilityId" || field === "destinationFacilityId") {
     return options.facilities.filter((facility) => [facility.facilityId, facility.code, facility.label, facility.city]
       .some((value) => value?.toLowerCase() === search || value?.toLowerCase().includes(search)))
-      .map((facility) => ({ value: facility.facilityId, label: facility.label.includes("[SYNTHETIC]")
-        ? `${facility.city} · synthetic test facility (${facility.code})` : `${facility.label} · ${facility.city}` }));
+      .map((facility) => ({ value: facility.facilityId, label: `${displayDemoText(facility.label)} · ${facility.city}` }));
   }
   const singular = search.endsWith("s") ? search.slice(0, -1) : search;
   const spanishAliases: Record<string, string[]> = {
@@ -125,6 +126,17 @@ export function parseConversationField(field: ConversationField, input: string, 
   if (!value) return null;
   if(field==='urgency')return /^(?:sin urgencia|no urgente|no es urgente|programad[oa]|flexible|scheduled|not urgent|SCHEDULED)$/i.test(value)?'SCHEDULED':/^(?:urgente|urgent|URGENT)$/i.test(value)?'URGENT':null;
   if(field==='loadSize')return /^(?:livian[oa]|liger[oa]|light)$/i.test(value)?'LIGHT':/^(?:median[oa]|media|medium)$/i.test(value)?'MEDIUM':/^(?:pesad[oa]|heavy)$/i.test(value)?'HEAVY':null;
+  if (["divisible", "unitIndivisible", "unitStackable"].includes(field)) {
+    if (/^(?:true|s[ií]|yes|se puede|permitido)[.!]?$/i.test(value)) return "true";
+    if (/^(?:false|no|no se puede|no permitido)[.!]?$/i.test(value)) return "false";
+    return null;
+  }
+  if (field === "requirements") {
+    if (/^(?:NONE|no|ningun[oa]|ninguno especial|sin requisitos especiales|none|no special requirements)[.!]?$/i.test(value)) return "NONE";
+    return options.requirementOptions.some(option => option.code === value.replace(/^!/, "")) ? value : null;
+  }
+  if (["temperatureMinCelsius","temperatureMaxCelsius"].includes(field)) return Number.isFinite(Number(value)) ? String(Number(value)) : null;
+  if (field.endsWith("Email") && /^(?:NONE|no tiene (?:correo|email)|sin correo|no email|none)[.!]?$/i.test(value)) return "NONE";
   const choices = choicesForField(field, options);
   if (choices.length) {
     const byNumber = choices[Number(value) - 1];

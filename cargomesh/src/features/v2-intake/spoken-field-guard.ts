@@ -7,6 +7,12 @@ export function lastSpokenQuestionField(turns: VoiceTurn[]): GuidedConversationF
   if (!fullQuestion.includes("?")) return null;
   const question = fullQuestion.match(/[^.!?]*\?/g)?.at(-1)?.trim() || fullQuestion;
   const rules: Array<[RegExp, GuidedConversationField]> = [
+    [/\b(?:split|divid|repart)[\p{L}]*\b.*\b(?:cargo|carga|shipment|truck|cami[oó]n)|\b(?:divisible|divisibilidad)\b/iu,"divisible"],
+    [/\b(?:indivisible|whole|enter[oa])\b.*\b(?:unit|package|pallet|bulto)|\b(?:unidad|bulto|unit|package)\b.*\b(?:indivisible|whole|enter[oa])\b/i,"unitIndivisible"],
+    [/\b(?:apila[\p{L}]*|stack[\p{L}]*)\b/iu,"unitStackable"],
+    [/\b(?:requisitos|condiciones|cuidados|requirements|handling)\b.*\b(?:especiales|special)|\b(?:special handling|special requirements)\b/i,"requirements"],
+    [/\b(?:temperatura|temperature)\b.*\b(?:m[ií]nima|minimum)\b/i,"temperatureMinCelsius"],
+    [/\b(?:temperatura|temperature)\b.*\b(?:m[aá]xima|maximum)\b/i,"temperatureMaxCelsius"],
     [/\b(?:categor(?:y|ize)|classification|cargo category|type of cargo)\b/i, "categoryCode"],
     [/\b(?:pickup|collection|picked up|collected)\b.*\b(?:end|until)\b|\b(?:end|until)\b.*\b(?:pickup|collection)\b/i, "pickupWindowEndsAt"],
     [/\b(?:delivery|delivered|arrive|arrival)\b.*\b(?:end|until)\b|\b(?:end|until)\b.*\b(?:delivery|arrival)\b/i, "deliveryWindowEndsAt"],

@@ -1,3 +1,2 @@
-import { WorkspaceLoadingScreen } from "@/features/landing/workspace-loader";
-
-export default function Loading() { return <WorkspaceLoadingScreen workspace="client"/>; }
+import {ClientRouteLoading} from '@/features/shipper-portal/client-continuity';
+export default function Loading(){return <ClientRouteLoading shape="dashboard"/>;}

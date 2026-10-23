@@ -1,2 +1,2 @@
-import {WorkspaceSkeleton} from '@/features/product-motion/workspace-skeleton';
-export default function Loading(){return <WorkspaceSkeleton shape="table" label="Cargando reservas / Loading bookings"/>;}
+import {ClientRouteLoading} from '@/features/shipper-portal/client-continuity';
+export default function Loading(){return <ClientRouteLoading shape="table" label="Cargando reservas / Loading bookings"/>;}

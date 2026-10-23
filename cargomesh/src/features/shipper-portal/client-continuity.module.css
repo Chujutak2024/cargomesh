@@ -1,0 +1,4 @@
+.region{position:relative;min-width:0;min-height:180px}
+.updating{position:sticky;top:8px;z-index:5;display:flex;justify-content:flex-end;height:0;overflow:visible;pointer-events:none}
+.updating>span{padding:4px 10px;border:1px solid var(--cm-color-line);border-radius:20px;background:var(--cm-color-surface,#fff);box-shadow:0 2px 8px #1633490d}
+.previous{pointer-events:none;user-select:none}

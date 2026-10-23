@@ -1,4 +1,6 @@
 "use client";
+import { displayDemoText, isHiddenClientFacility } from "@/shared/lib/demo-presentation";
+
 
 import { Building2, Check, LocateFixed, MapPin, Search } from "lucide-react";
 import { useId, useMemo, useState } from "react";
@@ -30,7 +32,7 @@ export function FacilityPicker({
   const [query, setQuery] = useState("");
   const listId = useId();
   const visible = useMemo(
-    () => filterIntakeFacilities(facilities, query, excludedFacilityId),
+    () => filterIntakeFacilities(facilities.filter(f => !isHiddenClientFacility(f.code, f.facilityId)), query, excludedFacilityId),
     [excludedFacilityId, facilities, query],
   );
   const selected = facilities.find((facility) => facility.facilityId === value) ?? null;
@@ -65,7 +67,7 @@ export function FacilityPicker({
       {visible.map((facility) => {
         const active = facility.facilityId === value;
         const area = [facility.city, facility.region, facility.countryCode].filter(Boolean).join(" · ");
-        const displayLabel = facility.label.replace(/\s*\[SYNTHETIC\].*$/i, "").trim() || facility.city;
+        const displayLabel = displayDemoText(facility.label) || facility.city;
         return <button
           className={styles.option}
           data-selected={active ? "true" : "false"}

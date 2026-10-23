@@ -10,6 +10,7 @@ export function conversationContext(
 ): NonNullable<InterpretationRequest["context"]> {
   const knownFields = CONVERSATION_FIELDS.flatMap((field) => {
     if (!ConversationContextFieldSchema.safeParse(field).success) return [];
+    if (["divisible","unitIndivisible","unitStackable","requirements"].includes(field) && !draft.reviewedConversationFields?.includes(field)) return [];
     const value = String(draft[field] ?? "").trim();
     return value && value.length <= 100 ? [{ field: field as (typeof ConversationContextFieldSchema.options)[number], value }] : [];
   });

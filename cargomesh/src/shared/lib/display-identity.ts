@@ -1,3 +1,4 @@
+import { displayDemoText } from "@/shared/lib/demo-presentation";
 /** UI labels only. Never use these aliases as API IDs, permissions or storage keys. */
 const demoCodes:Record<string,string>={
  '46f90b3df18b45abab7070220b10605f':'004',
@@ -70,7 +71,7 @@ export function displayReference(value:string|null|undefined,prefix:string,fallb
 }
 export function carrierDisplayName(name:string,id?:string|null):string{
  if((id==='e4440000-0000-4000-8000-000000000001'&&/HAC\s*-?44/i.test(name))||/^\[SYNTHETIC\]\s*HAC\s*-?44\s*ROAD$/i.test(name))return 'Transportes Costa Sur · Demo';
- return name;
+ return displayDemoText(name);
 }
 export function vehicleDisplayName(id:string,code:string,plate?:string|null):string{
  return demoVehicles[id]??displayReference(plate?.trim()||code,'CAM',id);
@@ -101,13 +102,13 @@ export function driverLicenseLabel(value:string|null|undefined,t:(es:string,en:s
 /** Human labels for synthetic locations; never invent a real city or geometry. */
 export function locationDisplayLabel(value:string|null|undefined):string{
  const aliases:Record<string,string>={C01_SIM_A:'Punto C01-A',C01_SIM_B:'Punto C01-B'};
- return value?aliases[value]??value:'—';
+ const clean=displayDemoText(value);return clean?aliases[clean]??clean:'—';
 }
 /** Preserve actual cargo content while removing fixture/test harness labels. */
 export function cargoDisplayDescription(value:string|null|undefined,categoryCode?:string|null):string{
  const description=value?.trim()??'';
  const category=['GENERAL','GENERAL_CARGO','HAC50_SCENARIO_GENERAL'].includes(categoryCode??'')?'General cargo':'Cargo details not recorded';
  if(!description||/^\[(?:SYNTHETIC|SIMULATED)\]\s*(?:HAC\d+|Inbox)(?:\b|_)/i.test(description))return category;
- const clean=description.replace(/^\[(?:SYNTHETIC|SIMULATED)\]\s*/i,'').replace(/^C-01-SIM\s+v\d+\s*/i,'').trim();
+ const clean=displayDemoText(description).replace(/^C-01-SIM\s+v\d+\s*/i,'').trim();
  return clean?clean[0].toUpperCase()+clean.slice(1):category;
 }

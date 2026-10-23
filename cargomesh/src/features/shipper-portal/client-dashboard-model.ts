@@ -1,6 +1,7 @@
+import { displayDemoText } from "@/shared/lib/demo-presentation";
 import type { FreightRequestV2Data } from "@/features/v2-intake/contracts";
 import { localeTag, type Locale } from "@/features/i18n/config";
-import { displayReference } from "@/shared/lib/display-identity";
+import { displayReference, locationDisplayLabel } from "@/shared/lib/display-identity";
 import { formatDateTime, formatMass, requestStatusLabel, requestStatusTone } from "./shipper-model";
 
 export type DashboardActivityItem = {
@@ -15,10 +16,10 @@ export function dashboardRequests(requests: FreightRequestV2Data[], locale: Loca
   const ordered = [...requests].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt) || a.id.localeCompare(b.id));
   const project = (request: FreightRequestV2Data): DashboardActivityItem => ({
     id: request.id, reference: displayReference(request.referenceCode, "PED", request.id), fullReference: request.referenceCode,
-    date: formatDateTime(request.updatedAt, tag), route: `${request.origin.city} → ${request.destination.city}`,
-    facilities: `${request.origin.label} → ${request.destination.label}`,
+    date: formatDateTime(request.updatedAt, tag), route: `${locationDisplayLabel(request.origin.city)} → ${locationDisplayLabel(request.destination.city)}`,
+    facilities: `${locationDisplayLabel(request.origin.label)} → ${locationDisplayLabel(request.destination.label)}`,
     cargo: `${formatMass(request.cargoSpecification.totalWeightKg, tag)} · ${request.cargoSpecification.totalVolumeM3.toLocaleString(tag)} m³`,
-    description: request.cargoSpecification.description, status: request.status,
+    description: displayDemoText(request.cargoSpecification.description), status: request.status,
     statusLabel: requestStatusLabel(request.status, locale), tone: requestStatusTone(request.status),
   });
   const draft = ordered.find(request => request.status === "DRAFT");

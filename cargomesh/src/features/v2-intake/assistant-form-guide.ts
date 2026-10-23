@@ -1,3 +1,4 @@
+import { displayDemoText } from "@/shared/lib/demo-presentation";
 import type { IntakeOptionsData } from "./contracts";
 import { questionForField, CONVERSATION_FIELDS, type GuidedConversationField } from "./conversation-fields";
 import { validatePrototypeStep, type PrototypeStep, type V2IntakePrototypeDraft } from "./prototype-model";
@@ -19,8 +20,12 @@ export function assistantFormProgress(draft: V2IntakePrototypeDraft, options?: I
 }
 export function assistantNextField(draft: V2IntakePrototypeDraft): GuidedConversationField | null {
   const progress = assistantFormProgress(draft);
+  if (progress.nextStep >= 3) {
+    const unanswered = (["divisible","unitIndivisible","unitStackable","requirements"] as const).find(field => !draft.reviewedConversationFields?.includes(field));
+    if (unanswered) return unanswered;
+  }
   const issues = progress.sections.find(section => section.step === progress.nextStep)?.issues ?? [];
-  return issues.map(issue => issue.field).find(field => (CONVERSATION_FIELDS as readonly string[]).includes(field)) as GuidedConversationField | undefined ?? null;
+  return issues.map(issue => issue.field).find(field => (CONVERSATION_FIELDS as readonly string[]).includes(field)||field==='pickupContactEmail'||field==='recipientContactEmail') as GuidedConversationField | undefined ?? null;
 }
 export function assistantNextStep(step: PrototypeStep, draft: V2IntakePrototypeDraft, options: IntakeOptionsData | null): PrototypeStep {
   if (!options || step === 4 || !options.facilities.some(f => f.facilityId === draft.originFacilityId)
@@ -30,9 +35,11 @@ export function assistantNextStep(step: PrototypeStep, draft: V2IntakePrototypeD
 }
 export function assistantNextQuestion(draft: V2IntakePrototypeDraft, t: Translate, options?: IntakeOptionsData) {
   const { sections, nextStep } = assistantFormProgress(draft, options);
+  const next=assistantNextField(draft);
+  if(next&&["divisible","unitIndivisible","unitStackable","requirements"].includes(next))return questionForField(next,t("es","en")==="es"?"es-PE":"en-US");
   if (nextStep === 4) return t("Revisa el resumen y confirma cuando estés listo para guardar.", "Review the summary and confirm when you are ready to save.");
   const field = sections.find(section => section.step === nextStep)!.issues[0].field;
-  if ((CONVERSATION_FIELDS as readonly string[]).includes(field)) return questionForField(field as GuidedConversationField, t("es", "en") === "es" ? "es-PE" : "en-US");
+  if ((CONVERSATION_FIELDS as readonly string[]).includes(field)||field==='pickupContactEmail'||field==='recipientContactEmail') return questionForField(field as GuidedConversationField, t("es", "en") === "es" ? "es-PE" : "en-US");
   if (field === "additionalUnits") return t("Revisa las cantidades y medidas de todos los grupos de carga.", "Review quantities and measurements for every cargo group.");
   if (field === "pickupAlternatives" || field === "deliveryAlternatives") return t("Aclaremos las fechas y las ventanas de recojo y entrega.", "Let's clarify pickup and delivery dates and time windows.");
   if (field === "temperatureMinCelsius" || field === "temperatureMaxCelsius") return t("¿Qué rango de temperatura necesita la carga?", "What temperature range does the cargo need?");
@@ -44,10 +51,10 @@ export function assistantAppliedDetails(draft: V2IntakePrototypeDraft, fields: r
   const changed = new Set(fields), rows: Array<{ label: string; value: string }> = [];
   const add = (label: string, value: string) => { if (value) rows.push({ label, value }); };
   if (changed.has("originFacilityId") || changed.has("destinationFacilityId")) {
-    const place = (id: string) => { const f = options.facilities.find(f => f.facilityId === id); return f ? `${f.city} · ${f.code}${f.label.includes("[SYNTHETIC]") ? t(" (sintético)", " (synthetic)") : ""}` : t("Por elegir", "Not selected"); };
+    const place = (id: string) => { const f = options.facilities.find(f => f.facilityId === id); return f ? `${f.city} · ${f.code}` : t("Por elegir", "Not selected"); };
     add(t("Ruta anotada", "Route noted"), `${place(draft.originFacilityId)} → ${place(draft.destinationFacilityId)}`);
   }
-  if (changed.has("cargoDescription")) add(t("Producto", "Product"), draft.cargoDescription);
+  if (changed.has("cargoDescription")) add(t("Producto", "Product"), displayDemoText(draft.cargoDescription));
   if (changed.has("categoryCode")) add(t("Categoría", "Category"), options.cargoCategories.find(c => c.code === draft.categoryCode)?.[t("es", "en") === "es" ? "labelEs" : "labelEn"] ?? draft.categoryCode);
   if (fields.some(f => /unit|total|packaging/i.test(f))) add(t("Carga anotada", "Cargo noted"), [draft.unitQuantity && `${draft.unitQuantity} × ${options.packagingOptions.find(p=>p.code===draft.packaging)?.[t("es", "en") === "es" ? "labelEs" : "labelEn"] ?? draft.packaging ?? t("unidades", "units")}`, draft.unitWeightPerUnitKg && `${draft.unitWeightPerUnitKg} kg/${t("unidad", "unit")}`, [draft.unitLengthCm,draft.unitWidthCm,draft.unitHeightCm].every(Boolean) && `${draft.unitLengthCm} × ${draft.unitWidthCm} × ${draft.unitHeightCm} cm/${t("unidad", "unit")}`, draft.totalVolumeM3 && `${draft.totalVolumeM3} m³ ${t("total", "total")}`].filter(Boolean).join(" · "));
   for (const [role, label] of [["pickup", t("Recojo", "Pickup")], ["delivery", t("Entrega", "Delivery")]] as const) {

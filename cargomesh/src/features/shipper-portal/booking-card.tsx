@@ -1,3 +1,4 @@
+import { displayDemoText } from "@/shared/lib/demo-presentation";
 import {displayReference} from '@/shared/lib/display-identity';
 import type { ReactNode } from "react";
 import { CalendarDays, CircleAlert, Clock3, PackageCheck, ShieldCheck } from "lucide-react";
@@ -22,7 +23,7 @@ export function BookingCard({ booking, offer, reference, carrier, locale, childr
         <span className={styles.status} data-tone={presentation.tone}>{presentation.label}</span>
         <span className={styles.version}>{t("Versión", "Version")} {booking.version}</span>
       </div>
-      <h3>{carrier}</h3>
+      <h3>{displayDemoText(carrier)}</h3>
       <div className={styles.reference}><span>{t("Reserva", "Booking")}</span><code>{displayReference(reference,'BKG',booking.id)}</code></div>
     </header>
     <div className={styles.price}>

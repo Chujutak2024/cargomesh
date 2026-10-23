@@ -1,4 +1,6 @@
 "use client";
+import { displayDemoText } from "@/shared/lib/demo-presentation";
+
 import {ContentMotion} from "@/features/product-motion/content-motion";
 import {WorkspaceSkeleton} from "@/features/product-motion/workspace-skeleton";
 import {displayReference,locationDisplayLabel} from '@/shared/lib/display-identity';
@@ -374,8 +376,8 @@ function EditDialog({ open, edit, setEdit, request, confirmed, setConfirmed, onR
   const field = (key: keyof EditState) => (value: string) => setEdit({ ...edit, [key]: value });
   const placeChanged = edit.originLabel !== request.origin.label || edit.originCity !== request.origin.city || edit.destinationLabel !== request.destination.label || edit.destinationCity !== request.destination.city;
   return <Dialog open={open} title={t("Editar borrador versionado", "Edit versioned draft")} description={t(`Se guardará contra draftVersion ${request.draftVersion} y después se reevaluará.`, `It will save against draftVersion ${request.draftVersion} and then reevaluate.`)} closeLabel={t("Cerrar", "Close")} onClose={onClose}>
-    <div className={styles.editGrid}><Input label={t("Referencia de origen", "Origin reference")} value={edit.originLabel} onChange={(e) => field("originLabel")(e.target.value)}/><Input label={t("Ciudad de origen", "Origin city")} value={edit.originCity} onChange={(e) => field("originCity")(e.target.value)}/>
-      <Input label={t("Referencia de destino", "Destination reference")} value={edit.destinationLabel} onChange={(e) => field("destinationLabel")(e.target.value)}/><Input label={t("Ciudad de destino", "Destination city")} value={edit.destinationCity} onChange={(e) => field("destinationCity")(e.target.value)}/>
+    <div className={styles.editGrid}><Input label={t("Referencia de origen", "Origin reference")} value={displayDemoText(edit.originLabel)} onChange={(e) => field("originLabel")(e.target.value)}/><Input label={t("Ciudad de origen", "Origin city")} value={edit.originCity} onChange={(e) => field("originCity")(e.target.value)}/>
+      <Input label={t("Referencia de destino", "Destination reference")} value={displayDemoText(edit.destinationLabel)} onChange={(e) => field("destinationLabel")(e.target.value)}/><Input label={t("Ciudad de destino", "Destination city")} value={edit.destinationCity} onChange={(e) => field("destinationCity")(e.target.value)}/>
       <LocationResolver
   label={t("Buscar origen autorizado", "Search authorized origin")}
   onConfirmed={onResolveOrigin}
@@ -401,7 +403,7 @@ function EditDialog({ open, edit, setEdit, request, confirmed, setConfirmed, onR
 />
       <Input label={t("Inicio recojo", "Pickup start")} type="datetime-local" value={edit.pickupStartsAt} onChange={(e) => field("pickupStartsAt")(e.target.value)}/><Input label={t("Fin recojo", "Pickup end")} type="datetime-local" value={edit.pickupEndsAt} onChange={(e) => field("pickupEndsAt")(e.target.value)}/>
       <Input label={t("Inicio entrega", "Delivery start")} type="datetime-local" value={edit.deliveryStartsAt} onChange={(e) => field("deliveryStartsAt")(e.target.value)}/><Input label={t("Fin entrega", "Delivery end")} type="datetime-local" value={edit.deliveryEndsAt} onChange={(e) => field("deliveryEndsAt")(e.target.value)}/>
-      <Textarea fieldClassName={styles.wide} label={t("Descripción", "Description")} value={edit.description} onChange={(e) => field("description")(e.target.value)}/>
+      <Textarea fieldClassName={styles.wide} label={t("Descripción", "Description")} value={displayDemoText(edit.description)} onChange={(e) => field("description")(e.target.value)}/>
       <Select label={t("Equipo ROAD", "ROAD equipment")} value={edit.equipment} onChange={(e) => field("equipment")(e.target.value)}><option value="">UNKNOWN</option>{["BOX_TRUCK", "REEFER_TRUCK", "FLATBED", "TANKER_TRUCK", "TRACTOR_TRAILER"].map((code) => <option key={code}>{code}</option>)}</Select>
       <Input label={t("Cantidad primera unidad", "First unit quantity")} type="number" min="1" step="1" value={edit.quantity} onChange={(e) => field("quantity")(e.target.value)}/><Input label={t("Kg por unidad", "Kg per unit")} type="number" min="0.001" step="0.001" value={edit.weightPerUnitKg} onChange={(e) => field("weightPerUnitKg")(e.target.value)}/><Input label={t("m³ por unidad", "m³ per unit")} type="number" min="0.001" step="0.001" value={edit.volumePerUnitM3} onChange={(e) => field("volumePerUnitM3")(e.target.value)}/>
       {placeChanged ? <label className={`${styles.confirm} ${styles.wide}`}><input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)}/><span>{t("Confirmo que estas referencias manuales serán los nuevos extremos operativos. La selección no confirma ruta, cobertura ni capacidad.", "I confirm that these manual references will become the new operational endpoints. Selection does not confirm route, coverage, or capacity.")}</span></label> : null}

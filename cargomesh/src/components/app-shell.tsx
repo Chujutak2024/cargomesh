@@ -1,4 +1,6 @@
 "use client";
+import { displayDemoText } from "@/shared/lib/demo-presentation";
+
 
 import {
   Building2,
@@ -6,13 +8,12 @@ import {
   ClipboardList,
   Headphones,
   LayoutDashboard,
-  LogOut,
   MapPinned,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
   Search,
-  UserRound,
+  Sparkles,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -27,10 +28,20 @@ import { ClientPageMotion } from "@/features/product-motion/client-page-motion";
 import styles from "./app-shell.module.css";
 import navStyles from "@/features/carrier-navigation/carrier-navigation.module.css";
 import { lockDocumentScroll } from "@/shared/browser/scroll-lock";
-import { IntakeSessionProvider } from "@/features/v2-intake/intake-session";
+import { IntakeSessionProvider, useIntakeSession } from "@/features/v2-intake/intake-session";
+import { Button } from "./ui";
+import { ClientAccountMenu } from "./client-account-menu";
 import { ClientAssistant } from "@/features/v2-intake/client-assistant";
+import {ClientContinuityProvider} from '@/features/shipper-portal/client-continuity';
 
-type ShellIdentity = { organizationName: string; displayName: string; role: string } | null;
+type ShellIdentity = { organizationName: string; displayName: string; role: string; continuityScope?:string } | null;
+
+function IntakeHeaderAction(){
+  const {t,submitPhase,options,optionCoverage,loadExample,roadTransportSelected}=useIntakeSession();
+  const busy=["creating","revising","reading","evaluating"].includes(submitPhase);
+  if(!roadTransportSelected)return null;
+  return <Button className={styles.exampleAction} variant="secondary" type="button" disabled={busy||!options||options.facilities.length<2||!optionCoverage.complete} onClick={loadExample} aria-label={t("Cargar ejemplo V2","Load V2 example")} title={t("Cargar ejemplo V2","Load V2 example")}><Sparkles size={16} aria-hidden="true"/><span>{t("Cargar ejemplo V2","Load V2 example")}</span></Button>;
+}
 
 export function AppShell({ children, identity, preview=false }: { children: ReactNode; identity: ShellIdentity; preview?:boolean }) {
   const currentPath=usePathname(),legacyDemo=isShipperDemoPath(currentPath),demo=legacyDemo||preview;
@@ -120,7 +131,7 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
     ] },
   ];
   const contexts = [
-    ["/freight-request/new", t("Nueva carga V2", "New shipment V2"), t("Intake cliente · DRAFT y elegibilidad ROAD", "Client intake · DRAFT and ROAD serviceability")],
+    ["/freight-request/new", t("Nueva carga", "New shipment"), ""],
     ["/bookings", t("Reservas V2", "V2 bookings"), t("Compromisos persistidos", "Persisted commitments")],
     ["/requests", t("Mis cargas", "My shipments"), t("Solicitudes de la organización", "Organization requests")],
     ["/tracking", t("Seguimiento", "Tracking"), t("Eventos reportados por carriers", "Carrier-reported events")],
@@ -134,14 +145,17 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
   const pageContext = match
     ? { title: match[1], subtitle: match[2] }
     : { title: "Dashboard", subtitle: "" };
-  const initials = identity?.displayName.split(/\s+/).slice(0, 2).map((word) => word[0]).join("").toUpperCase() || "CM";
+  const displayName = displayDemoText(identity?.displayName) || "CargoMesh";
+  const organizationName = displayDemoText(identity?.organizationName) || "CargoMesh";
+  const demoIdentity = /\[(?:SYNTHETIC|SIMULATED)\]/i.test(identity?.organizationName ?? "");
+  const initials = displayName.split(/\s+/).slice(0, 2).map((word) => word[0]).join("").toUpperCase() || "CM";
 
   if (pathname === "/login") {
     return <>{children}</>;
   }
 
   return (
-    <IntakeSessionProvider><div className={`${navStyles.frame} ${styles.shell}`} data-collapsed={collapsed} data-open={open} data-assistant-docked={assistantDocked} data-cm-client-preview={preview?"true":undefined}>
+    <ClientContinuityProvider enabled={identity!==null} key={JSON.stringify([identity?.continuityScope??identity,preview,demo])}><IntakeSessionProvider><div className={`${navStyles.frame} ${styles.shell}`} data-collapsed={collapsed} data-open={open} data-assistant-docked={assistantDocked} data-cm-client-preview={preview?"true":undefined}>
       <a className={navStyles.skip} href="#main-content">{t("Saltar al contenido", "Skip to content")}</a>
 
       <aside ref={sidebarRef} id={sidebarId} className={navStyles.sidebar} role={mobile && open ? "dialog" : undefined} aria-modal={mobile && open ? true : undefined} aria-labelledby={sidebarTitleId} inert={mobile && !open}>
@@ -175,10 +189,10 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
           ))}
         </nav>
 
-        <div className={navStyles.identity} title={identity?.organizationName ?? "CargoMesh"}>
-          <span className={navStyles.avatar} aria-hidden="true"><UserRound size={19} /></span>
-          <div><strong>{t("Espacio cliente", "Shipper workspace")}</strong><span>{demo ? t("Demo visual · solo lectura", "Visual demo · read only") : identity?.organizationName ?? "CargoMesh"}</span></div>
-        </div>
+        <ClientAccountMenu name={displayName} organization={`${organizationName}${demoIdentity ? " · Demo" : ""}`}
+          role={identity?.role ?? t("Invitado", "Guest")} initials={initials} collapsed={collapsed} preview={preview}
+          demo={demo} routeKey={currentPath} onNavigate={closeNavigation}/>
+
       </aside>
 
       {mobile && open ? <button className={navStyles.backdrop} type="button" aria-label={t("Cerrar menú cliente", "Close shipper menu")} onClick={closeNavigation} tabIndex={-1} /> : null}
@@ -189,7 +203,7 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
             {mobile ? <Menu size={18} aria-hidden="true" /> : collapsed ? <PanelLeftOpen size={18} aria-hidden="true" /> : <PanelLeftClose size={18} aria-hidden="true" />}
           </button>
           <div className={styles.context}>
-            <strong>{pageContext.title}</strong>
+            <strong role="heading" aria-level={1}>{pageContext.title}</strong>
             {pageContext.subtitle ? <span className={styles.contextSubtitle}>{pageContext.subtitle}</span> : null}
           </div>
           <div className={styles.topbarActions}>
@@ -199,22 +213,9 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
               <input name="q" type="search" aria-label={t("Buscar operación", "Search operation")} placeholder={t("Buscar operación", "Search operation")} />
               <kbd>↵</kbd>
             </form>
+            {pathname==="/freight-request/new"?<IntakeHeaderAction/>:null}
             <LanguageSwitcher compact />
-            <div className={styles.avatar} aria-hidden="true">{initials}</div>
-            <div className={styles.userCopy}>
-              <strong>{identity?.displayName ?? "CargoMesh"}</strong>
-              <span>{identity?.role ?? t("Invitado", "Guest")}</span>
-            </div>
-            {preview ? (
-              <form className={styles.signOut} action="/api/local/client-session" method="post">
-                <input type="hidden" name="action" value="exit" />
-                <button type="submit" aria-label={t("Salir de la sesión de prueba", "Exit test session")}><LogOut size={16} aria-hidden="true" /><span>{t("Salir de prueba", "Exit test session")}</span></button>
-              </form>
-            ) : demo ? (
-              <Link className={`${styles.signOut} ${styles.signOutLink}`} href="/" aria-label={t("Salir de demo", "Exit demo")}><LogOut size={16} aria-hidden="true" /><span>{t("Salir de demo", "Exit demo")}</span></Link>
-            ) : (
-              <form className={styles.signOut} action="/api/auth/logout" method="post"><button type="submit" aria-label={t("Cerrar sesión", "Sign out")}><LogOut size={16} aria-hidden="true"/><span>{t("Salir", "Sign out")}</span></button></form>
-            )}
+
           </div>
         </header>
         <main id="main-content" className={styles.main}>
@@ -222,6 +223,6 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
         </main>
       </div>
       <ClientAssistant onDockedChange={setAssistantDocked} />
-    </div></IntakeSessionProvider>
+    </div></IntakeSessionProvider></ClientContinuityProvider>
   );
 }

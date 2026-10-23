@@ -1,4 +1,6 @@
 "use client";
+import { displayDemoText, isHiddenClientFacility } from "@/shared/lib/demo-presentation";
+
 
 import { Clock3, MapPin, Search, Warehouse } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
@@ -21,7 +23,7 @@ export function FacilityDirectory({ facilities, visualReferences = [] }: { facil
   const scene = visual ? facilityVisualController(controllers.current, visual) : null;
   const visible = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase(localeTag);
-    return facilities.filter((facility) => (!activeOnly || facility.value.active) && (!needle || [
+    return facilities.filter((facility) => !isHiddenClientFacility(facility.value.code, facility.id) && (!activeOnly || facility.value.active) && (!needle || [
       facility.value.name, facility.value.code, facility.value.facilityType, facility.value.location.label,
       facility.value.location.city, facility.value.location.region, facility.value.location.countryCode,
     ].some((value) => value?.toLocaleLowerCase(localeTag).includes(needle))));
@@ -33,10 +35,10 @@ export function FacilityDirectory({ facilities, visualReferences = [] }: { facil
     <div className={styles.filters}><button className={styles.filter} type="button" aria-pressed={!activeOnly} onClick={() => setActiveOnly(false)}>{t("Todas", "All")}</button>
       <button className={styles.filter} type="button" aria-pressed={activeOnly} onClick={() => setActiveOnly(true)}>{t("Sólo activas", "Active only")}</button></div>
   </div>
-  {visible.length ? <div className={styles.facilityGrid}>{visible.map((facility) => <article className={styles.facility} key={facility.id}><div className={styles.facilityHead}><div><h2>{facility.value.name}</h2><p>{facility.value.code} · {facility.value.facilityType}</p></div><span className={styles.status} data-tone={facility.value.active ? "positive" : "neutral"}>{facility.value.active ? t("Activa", "Active") : t("Inactiva", "Inactive")}</span></div>
-    <p><MapPin size={14}/> {facility.value.location.label}, {facility.value.location.city}</p>
+  {visible.length ? <div className={styles.facilityGrid}>{visible.map((facility) => <article className={styles.facility} key={facility.id}><div className={styles.facilityHead}><div><h2>{displayDemoText(facility.value.name)}</h2><p>{facility.value.code} · {facility.value.facilityType}</p></div><span className={styles.status} data-tone={facility.value.active ? "positive" : "neutral"}>{facility.value.active ? t("Activa", "Active") : t("Inactiva", "Inactive")}</span></div>
+    <p><MapPin size={14}/> {displayDemoText(facility.value.location.label)}, {displayDemoText(facility.value.location.city)}</p>
     <div className={styles.metaLine}><span><Clock3 size={13}/> {facility.value.operatingHours?.timezone ?? t("Horario desconocido", "Schedule unknown")}</span><span>v{facility.version}</span></div>
-    {facility.value.accessRestrictions.length ? <p>{facility.value.accessRestrictions.map((rule) => rule.description).join(" · ")}</p> : <p>{t("Sin restricciones de acceso registradas.", "No access restrictions recorded.")}</p>}
+    {facility.value.accessRestrictions.length ? <p>{facility.value.accessRestrictions.map((rule) => displayDemoText(rule.description)).join(" · ")}</p> : <p>{t("Sin restricciones de acceso registradas.", "No access restrictions recorded.")}</p>}
     {visualFor(facility) ? <button className={styles.filter} type="button" aria-pressed={selected === facility.id} onClick={() => setSelected(selected === facility.id ? null : facility.id)}>{t('Ver referencia 3D', 'View 3D reference')}</button> : null}</article>)}</div>
   : <div className={styles.empty} role="status"><span className={styles.emptyIcon}><Warehouse size={22}/></span><strong>{t("No hay sedes que coincidan", "No matching facilities")}</strong><p>{t("Cambia la búsqueda o el filtro. Nunca se inventa un facilityId.", "Change the search or filter. A facilityId is never invented.")}</p></div>}
   {visual && scene ? <FacilityReference key={scene.key} reference={visual} controller={scene.controller}/> : null}</>;

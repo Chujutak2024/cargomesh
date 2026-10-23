@@ -8,6 +8,8 @@ import { shouldRenewVoiceSession } from "./voice-session-renewal";
 import styles from "./nova-voice-preview.module.css";
 
 export type NovaTextSender = (text: string) => Promise<void>;
+export type NovaMicrophoneState = {active:boolean;listening:boolean;disabled:boolean;status:string};
+export type NovaMicrophoneControl = {toggle:()=>void};
 
 type Grant = { wsUrl: string; token: string };
 type VoiceEvent =
@@ -19,7 +21,10 @@ type VoiceEvent =
   | { type: "session_limit" }
   | { type: "error"; message: string };
 
-export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId, autoStart = false, audioReplies = true, externalSpeaking = false, voiceContext = [], language, draftContext, textInputRef, onResponseFinished, onPlaybackStateChange, onTurn }: {
+export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId, autoStart = false, audioReplies = true, externalSpeaking = false, voiceContext = [], language, draftContext, textInputRef, microphoneControlRef, onMicrophoneStateChange, compact = false, onResponseFinished, onPlaybackStateChange, onTurn }: {
+  microphoneControlRef?: {current:NovaMicrophoneControl|null};
+  onMicrophoneStateChange?: (state:NovaMicrophoneState)=>void;
+  compact?:boolean;
   textInputRef?: { current: NovaTextSender | null };
   preview?: boolean;
   carrierScope?: { carrierId: string; opportunityId: string };
@@ -396,6 +401,24 @@ export function NovaVoicePreview({ preview = false, carrierScope, offerRequestId
     const timer = window.setTimeout(() => { void start(); }, 0);
     return () => window.clearTimeout(timer);
   }, [autoStart]);
+
+  function toggleMicrophone(){
+    if(finishing||externalSpeaking)return;
+    if(!active){void start();return;}
+    if(listening){pauseCapture();return;}
+    const socket=socketRef.current;
+    if(socket?.readyState===WebSocket.OPEN&&readyRef.current)void startCapture(socket).catch(()=>{stop();setStatus(es?"Micrófono no disponible. Continúa por texto.":"Microphone unavailable. Continue by text.");});
+    else{listeningRef.current=true;setListening(true);setStatus(es?"Conectando con Nova…":"Connecting to Nova…");}
+  }
+  const microphoneStateCallback=useRef(onMicrophoneStateChange);microphoneStateCallback.current=onMicrophoneStateChange;
+  const toggleRef=useRef(toggleMicrophone);toggleRef.current=toggleMicrophone;
+  useEffect(()=>{
+    if(microphoneControlRef)microphoneControlRef.current={toggle:()=>toggleRef.current()};
+    return ()=>{if(microphoneControlRef)microphoneControlRef.current=null;};
+  },[microphoneControlRef]);
+  useEffect(()=>{microphoneStateCallback.current?.({active,listening,disabled:finishing||externalSpeaking,status});},[active,listening,finishing,externalSpeaking,status]);
+
+  if(compact)return <div className={styles.compact}>{(active||status!==(es?"Voz Nova lista.":"Nova voice ready."))&&<p role="status">{status}</p>}</div>;
 
   return <div className={styles.preview}>
     <button type="button" disabled={finishing || externalSpeaking} className={active && listening ? styles.active : styles.start} aria-label={active ? (listening ? "Turn off Nova microphone" : "Resume Nova microphone") : "Start Nova voice"}

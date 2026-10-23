@@ -1,4 +1,4 @@
-import { dateClarification, sessionDate, validExplicitWindow, type DateClarification } from "./capture-clarification";
+import { dateClarification, explicitDates, sessionDate, validExplicitWindow, type DateClarification } from "./capture-clarification";
 import type { ConversationField } from "./conversation-fields";
 type Role = "pickup" | "delivery";
 const monthNames = ["january|enero", "february|febrero", "march|marzo", "april|abril", "may|mayo", "june|junio", "july|julio", "august|agosto", "september|septiembre", "october|octubre", "november|noviembre", "december|diciembre"];
@@ -9,7 +9,7 @@ const pad = (n: number | string) => String(n).padStart(2, "0");
 
 function dayFrom(text: string, pending: DateClarification | null, zone: string, now: number): string | null {
   if (/\b(?:or|o)\b/i.test(text) && (text.match(new RegExp(monthPattern, "gi"))?.length || 0) > 1) return null;
-  const iso = /\b(\d{4}-\d{2}-\d{2})\b/.exec(text); if (iso) return iso[1];
+  const numeric = explicitDates(text); if (numeric.length) return numeric[0];
   const english = new RegExp(`\\b(${monthPattern})\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(\\d{4}))?\\b`, "i").exec(text);
   const spanish = new RegExp(`\\b(\\d{1,2})\\s+(?:de\\s+)?(${monthPattern})(?:\\s+(?:de\\s+|del\\s+)?(\\d{4}))?\\b`, "i").exec(text);
   const match = english || spanish;
@@ -50,25 +50,31 @@ export function resolveSpokenDateWindow(text: string, pending: DateClarification
     const switches = roles.filter((match, i) => i === 0 || roleOf(match[0]) !== roleOf(roles[i-1][0]));
     if (switches.length !== 2 || /\b(?:no|not|maybe|quiz[aá]s|tal vez)\b/i.test(text)) return { fields, pendingDate: pending, dateResolved: false };
     const parts = switches.map((match, i) => text.slice(match.index!, switches[i+1]?.index ?? text.length));
-    const results = parts.map((part, i) => resolveSpokenDateWindow(part, null, zone, now, roleOf(switches[i][0])));
-    if (results.every(result => result.dateResolved)) return { fields: results.flatMap(result => result.fields), pendingDate: null, dateResolved: true };
-    return { fields, pendingDate: pending, dateResolved: false };
+    const results = parts.map((part, i) => resolveSpokenDateWindow(part, pending, zone, now, roleOf(switches[i][0])));
+    const windows=Object.assign({},...results.map(r=>r.pendingDate?.windows??{}));
+    const unresolved=results.find(r=>!r.dateResolved)?.pendingDate;
+    return { fields:results.flatMap(r=>r.fields),pendingDate:unresolved?{...unresolved,windows}:null,dateResolved:results.every(r=>r.dateResolved) };
   }
   const explicit = roles.length ? roleOf(roles[0][0]) : undefined;
   const samePending = !explicit || !pending?.role || explicit === pending.role ? pending : null;
   const role = explicit || samePending?.role || roleHint;
   // Alternatives require a choice; never silently commit the first named day.
-  if (/\b(?:or|o)\b/i.test(text) && new RegExp(`\\b(?:${monthPattern})\\b|\\d{4}-\\d{2}-\\d{2}`, "i").test(text)) return { fields, pendingDate: pending, dateResolved: false };
-  const day = dayFrom(text, samePending, zone, now), time = times(text);
-  const dateMentioned = new RegExp(`\\b(?:${monthPattern}|today|tomorrow|hoy|ma[nñ]ana)\\b|\\d{4}-\\d{2}-\\d{2}`, "i").test(text);
+  if (/\b(?:or|o)\b/i.test(text) && (explicitDates(text).length>1 || new RegExp(`\\b(?:${monthPattern})\\b|\\d{4}-\\d{2}-\\d{2}`, "i").test(text))) return { fields, pendingDate: pending, dateResolved: false };
+  const roleWindow=role?pending?.windows?.[role]:undefined;
+  const days=explicitDates(text);
+  const day = dayFrom(text, samePending, zone, now)??roleWindow?.startsOn??null, time = times(text);
+  const dateMentioned = new RegExp(`\\b(?:${monthPattern}|today|tomorrow|hoy|ma[nñ]ana)\\b|\\d{4}-\\d{2}-\\d{2}|\\d{1,2}[/.]\\d{1,2}[/.]\\d{4}`, "i").test(text);
   if (!role || /\b(?:no|not|maybe|quiz[aá]s|tal vez)\b/i.test(text) || (!dateMentioned && !time.start && !time.single)) return { fields, pendingDate: pending, dateResolved: false };
   // A newly named day may not inherit a different day's clock.
   const sameDay = !day || !samePending?.alternatives.length || samePending.alternatives.includes(day);
   let start = time.start || (sameDay ? samePending?.startTime : undefined), end = time.end || (sameDay ? samePending?.endTime : undefined);
   if (time.single) { if (!start) start = time.single; else end = time.single; }
-  if (day && start && end && validExplicitWindow(`${day}T${start}`, `${day}T${end}`)) {
-    fields.push({ field: role === "pickup" ? "pickupWindowStartsAt" : "deliveryWindowStartsAt", value: `${day}T${start}` }, { field: role === "pickup" ? "pickupWindowEndsAt" : "deliveryWindowEndsAt", value: `${day}T${end}` });
-    return { fields, pendingDate: null, dateResolved: true };
+  const deadlineOnly=days.length===1&&/\b(?:hasta|m[aá]xima|deadline|by|until)\b/i.test(text)&&!time.start;
+  const window=days.length>1?{startsOn:days[0],endsOn:days[1]}:deadlineOnly?{endsOn:days[0]}:day?{startsOn:day,endsOn:roleWindow?.endsOn??day}:roleWindow;
+  if (window?.startsOn && window.endsOn && start && end && validExplicitWindow(`${window.startsOn}T${start}`, `${window.endsOn}T${end}`)) {
+    fields.push({ field: role === "pickup" ? "pickupWindowStartsAt" : "deliveryWindowStartsAt", value: `${window.startsOn}T${start}` }, { field: role === "pickup" ? "pickupWindowEndsAt" : "deliveryWindowEndsAt", value: `${window.endsOn}T${end}` });
+    const remaining={...pending?.windows};delete remaining[role];
+    return { fields, pendingDate: Object.keys(remaining).length?{alternatives:[],timeZone:zone,referenceDate:sessionDate(now,zone),windows:remaining}:null, dateResolved: true };
   }
-  return { fields, pendingDate: { alternatives: day ? [day] : [], timeZone: zone, referenceDate: sessionDate(now, zone), role, ...(start ? {startTime:start}:{}), ...(end ? {endTime:end}:{}) } as DateClarification, dateResolved: false };
+  return { fields, pendingDate: { alternatives: day ? [day] : [], timeZone: zone, referenceDate: sessionDate(now, zone), role, ...(start ? {startTime:start}:{}), ...(end ? {endTime:end}:{}),...(window?{windows:{...pending?.windows,[role]:window}}:{}) } as DateClarification, dateResolved: false };
 }

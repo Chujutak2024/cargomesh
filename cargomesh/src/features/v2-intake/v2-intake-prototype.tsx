@@ -1,4 +1,6 @@
 "use client";
+import { displayDemoText } from "@/shared/lib/demo-presentation";
+
 import {displayReference} from '@/shared/lib/display-identity';
 
 import {
@@ -29,7 +31,8 @@ import {WorkspaceLink as Link} from "@/features/workspace-mode/workspace-link";
 import { Badge, Button, Checkbox, Input } from "@/components/ui";
 import { CandidateResults } from "./components/candidate-results";
 import { FacilityPicker } from "./components/facility-picker";
-import { AssistantFieldFeedback, AssistantChangeNotice, FeedbackInput, FeedbackSelect, FeedbackTextarea, FeedbackCheckbox } from "./assistant-field-feedback";
+import { FacilitySelectionWorkspace } from "./components/facility-selection-workspace";
+import { AssistantFieldFeedback, FeedbackInput, FeedbackSelect, FeedbackTextarea, FeedbackCheckbox } from "./assistant-field-feedback";
 import type { DraftField } from "./use-assistant-change-feedback";
 import { ConversationChat } from "./conversation-chat";
 import { RoadCandidateMapBoundary } from "./components/road-candidate-map-boundary";
@@ -55,6 +58,7 @@ import {CargoGroupsEditor} from './components/cargo-groups-editor';
 import {cargoGroups} from './cargo-groups';
 
 import { intakeStepLabels } from "./assistant-form-guide";
+import {ShipmentTransportGate} from './shipment-transport-gate';
 
 const STEP_ICONS = [MapPinned, Package, CalendarDays, ClipboardCheck] as const;
 
@@ -65,13 +69,14 @@ type IntakeProps = { embedded?: boolean; onPersisted?: (request: FreightRequestV
 
 export function V2IntakePrototype(props: IntakeProps = {}) {
   const session = useOptionalIntakeSession();
-  return session && !props.embedded ? <IntakeForm {...props} /> : <IntakeSessionProvider><IntakeForm {...props} /></IntakeSessionProvider>;
+  const content=props.embedded?<IntakeForm {...props}/>:<ShipmentTransportGate><IntakeForm {...props}/></ShipmentTransportGate>;
+  return session && !props.embedded ? content : <IntakeSessionProvider>{content}</IntakeSessionProvider>;
 }
 
 function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps) {
   const { locale, t, draft, assistantNavigation, pauseAssistantAdvance, step, maxVisited, issues, options, optionsSource, optionsError, submitPhase, submitLabel, submitError,
     request, evaluation, selectedCandidateId, dirtyAfterCreate, errorRef, activeOptions, origin, destination, optionCoverage,
-    mapProps, update, errorFor, enterReview, goNext, loadExample, reset, createDraftAndEvaluate, retryAfterCreate,
+    mapProps, update, errorFor, enterReview, goNext, reset, createDraftAndEvaluate, retryAfterCreate,
     reloadPersisted, updateFromChat, setStep, setMaxVisited, setIssues, setOptionsAttempt, setSelectedCandidateId } = useIntakeSession();
   const stepLabels = [
     t("Sedes", "Facilities"),
@@ -96,24 +101,21 @@ function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps
   return (
     <div className={`${styles.page} ${embedded ? styles.embedded : styles.standalone}`} data-intake-layout={embedded ? "embedded" : "standalone"}>
       <div className={styles.frame}>
-        <header className={styles.hero}>
-          <div className={styles.heroMain}>
+        {embedded || optionsSource !== "api" ? <header className={styles.hero}>
+          {embedded ? <div className={styles.heroMain}>
             <div className={styles.heroCopy}>
-              {embedded?<h2>{t("Datos de la solicitud", "Request details")}</h2>:<h1>{t("Nueva carga", "New shipment")}</h1>}
+              <h2>{t("Datos de la solicitud", "Request details")}</h2>
               {embedded ? <p>{t("Prepara el borrador y comprueba sus datos antes de enviarlo.", "Prepare the draft and check its details before saving it.")}</p> : null}
             </div>
-          </div>
+          </div> : null}
           {(!embedded || optionsSource !== "api") ? <div className={styles.heroActions}>
             {optionsSource !== "api" ? <Badge tone={optionsSource === "error" ? "unknown" : "preliminary"}>
               {optionsSource === "loading" ? t("Consultando opciones", "Loading options")
                 : optionsSource === "fixture" ? t("Fixture dev explícito", "Explicit dev fixture")
                 : t("Error de opciones", "Options error")}
             </Badge> : null}
-            {!embedded ? <>
-              <Button variant="secondary" type="button" disabled={submitting || !options || options.facilities.length < 2 || !optionCoverage.complete} onClick={loadExample}><Sparkles size={16} aria-hidden="true" />{t("Cargar ejemplo V2", "Load V2 example")}</Button>
-            </> : null}
           </div> : null}
-        </header>
+        </header> : null}
 
 
 
@@ -162,16 +164,15 @@ function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps
         })}</nav>
         {embedded ? <div className={styles.stepProgress} aria-hidden="true"><span style={{width:`${step/4*100}%`}}/></div> : null}
 
-        <div className={styles.workspace}>
+        <div className={`${styles.workspace} ${!embedded&&step===1?styles.facilitiesWorkspace:""}`}>
           <ContentMotion identity={step} focusOnChange={!assistantNavigation} className={styles.stepMotion}><section className={styles.card} onPointerDownCapture={pauseAssistantAdvance} onFocusCapture={pauseAssistantAdvance} aria-labelledby={`prototype-step-${step}`}>
-            <header className={styles.cardHeader}>
+            {!embedded&&step===1?<h2 className={styles.srOnly} tabIndex={-1} id={`prototype-step-${step}`}>{stepLabels[step-1]}</h2>:<header className={styles.cardHeader}>
               {embedded ? <span className={styles.stepHeaderIcon} aria-hidden="true"><ActiveStepIcon size={20} /></span> : null}
               <div>{embedded ? <span className={styles.eyebrow}>{t(`Paso ${step} de 4`, `Step ${step} of 4`)}</span> : null}<h2 tabIndex={-1} id={`prototype-step-${step}`}>{stepLabels[step - 1]}</h2>{!embedded ? <p>{stepDescriptions[step - 1]}</p> : null}</div>
-            </header>
+            </header>}
             <div className={styles.cardBody}>
-              <AssistantChangeNotice />
               {issues.length ? <div className={styles.errorSummary} role="alert" tabIndex={-1} ref={errorRef}><strong>{t("Revisa los campos marcados", "Review the marked fields")}</strong><span>{t(`Hay ${issues.length} dato(s) pendiente(s) en este paso.`, `There are ${issues.length} pending field(s) in this step.`)}</span></div> : null}
-              {step === 1 ? <FacilityStep draft={draft} options={activeOptions} update={update} errorFor={errorFor} t={t} /> : null}
+              {step === 1 ? embedded?<FacilityStep draft={draft} options={activeOptions} update={update} errorFor={errorFor} t={t} />:<FacilitySelectionWorkspace facilities={activeOptions.facilities} originId={draft.originFacilityId} destinationId={draft.destinationFacilityId} originError={errorFor('originFacilityId')} destinationError={errorFor('destinationFacilityId')} onChange={(role,id)=>update(role==='origin'?'originFacilityId':'destinationFacilityId',id)} t={t}/> : null}
               {step === 2 ? <CargoStep draft={draft} options={activeOptions} update={update} errorFor={errorFor} t={t} /> : null}
               {step === 3 ? <ScheduleAndContactsStep draft={draft} options={activeOptions} update={update} errorFor={errorFor} t={t} /> : null}
               {step === 4 ? <ReviewStep draft={draft} options={activeOptions} request={request} dirtyAfterCreate={dirtyAfterCreate} t={t} locale={locale} onEdit={(target) => { setStep(target); setIssues([]); }} /> : null}
@@ -191,7 +192,7 @@ function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps
             </footer>
           </section></ContentMotion>
 
-          <LiveSummary draft={draft} options={activeOptions} request={request} evaluation={evaluation} dirtyAfterCreate={dirtyAfterCreate} t={t} />
+          {embedded||step!==1?<LiveSummary draft={draft} options={activeOptions} request={request} evaluation={evaluation} dirtyAfterCreate={dirtyAfterCreate} t={t} />:null}
         </div>
 
         {request ? (
@@ -264,7 +265,7 @@ function CargoStep({ draft, options, update, errorFor, t }: FieldHelpers) {
         <FeedbackSelect field="loadSize" label={t("Tamaño de la carga", "Load size")} hint={t("Orientativo. El peso y las medidas determinan los camiones necesarios.", "For guidance. Weight and dimensions determine the trucks needed.")} value={draft.loadSize ?? ""} onChange={e=>update("loadSize",e.target.value)}><option value="">{t("Sin clasificar", "Unclassified")}</option><option value="LIGHT">{t("Liviana", "Light")}</option><option value="MEDIUM">{t("Mediana", "Medium")}</option><option value="HEAVY">{t("Pesada", "Heavy")}</option></FeedbackSelect>
         <OptionSelect field="categoryCode" label={t("Categoría de carga", "Cargo category")} placeholder={t("Seleccionar categoría", "Select category")} options={options.cargoCategories} value={draft.categoryCode} error={errorFor("categoryCode")} onChange={(value) => update("categoryCode", value)} t={t} />
         <OptionSelect field="packaging" label={t("Embalaje principal", "Primary packaging")} placeholder={t("Seleccionar embalaje", "Select packaging")} options={options.packagingOptions} value={draft.packaging} error={errorFor("packaging")} onChange={(value) => { update("packaging", value); if (!draft.unitPackageType) update("unitPackageType", value); }} t={t} />
-        <FeedbackTextarea field="cargoDescription" fieldClassName={styles.wide} label={t("Descripción operativa", "Operational description")} hint={t("Describe el contenido sin incluir precio, carrier o supuestos de cobertura.", "Describe the contents without price, carrier, or coverage assumptions.")} rows={3} value={draft.cargoDescription} error={errorFor("cargoDescription")} onChange={(event) => update("cargoDescription", event.target.value)} />
+        <FeedbackTextarea field="cargoDescription" fieldClassName={styles.wide} label={t("Descripción operativa", "Operational description")} hint={t("Describe el contenido sin incluir precio, carrier o supuestos de cobertura.", "Describe the contents without price, carrier, or coverage assumptions.")} rows={3} value={displayDemoText(draft.cargoDescription)} error={errorFor("cargoDescription")} onChange={(event) => update("cargoDescription", event.target.value)} />
         <FeedbackCheckbox field="divisible" label={t("La carga puede dividirse", "Cargo may be split")} hint={t("Dato declarado; no implica que un carrier pueda fraccionarla.", "Declared fact; it does not imply a carrier can split it.")} checked={draft.divisible} onChange={(event) => update("divisible", event.target.checked)} />
       </div>
       {category ? <details className={styles.guidanceDisclosure}><summary><span>{t("Ver guía recomendada por la categoría", "View category guidance")}</span><ChevronDown size={16} aria-hidden="true" /></summary><CategoryGuidanceEvidence guidance={category.guidance} t={t} /></details> : null}
@@ -315,14 +316,14 @@ function ContactFields({ kind, draft, update, errorFor, t }: Pick<FieldHelpers, 
   const name = pickup ? "pickupContactName" : "recipientContactName";
   const phone = pickup ? "pickupContactPhoneE164" : "recipientContactPhoneE164";
   const email = pickup ? "pickupContactEmail" : "recipientContactEmail";
-  return <fieldset className={styles.contactCard}><legend>{pickup ? t("Contacto de retiro", "Pickup contact") : t("Destinatario", "Recipient")}</legend><div className={styles.contactFields}><FeedbackInput field={name} label={t("Nombre", "Name")} autoComplete="name" value={draft[name]} error={errorFor(name)} onChange={(event) => update(name, event.target.value)} /><FeedbackInput field={phone} label={t("Teléfono E.164", "E.164 phone")} autoComplete="tel" type="tel" placeholder="+51987654321" value={draft[phone]} error={errorFor(phone)} onChange={(event) => update(phone, event.target.value)} /><FeedbackInput field={email} label={t("Correo", "Email")} autoComplete="email" type="email" value={draft[email]} error={errorFor(email)} onChange={(event) => update(email, event.target.value)} /></div></fieldset>;
+  return <fieldset className={styles.contactCard}><legend>{pickup ? t("Contacto de retiro", "Pickup contact") : t("Destinatario", "Recipient")}</legend><div className={styles.contactFields}><FeedbackInput field={name} label={t("Nombre", "Name")} autoComplete="name" value={draft[name]} error={errorFor(name)} onChange={(event) => update(name, event.target.value)} /><FeedbackInput field={phone} label={t("Teléfono E.164", "E.164 phone")} autoComplete="tel" type="tel" placeholder="+51987654321" value={draft[phone]} error={errorFor(phone)} onChange={(event) => update(phone, event.target.value)} /><FeedbackInput field={email} label={t("Correo (opcional)", "Email (optional)")} autoComplete="email" type="email" value={draft[email]} error={errorFor(email)} onChange={(event) => update(email, event.target.value)} /></div></fieldset>;
 }
 
 function ReviewStep({ draft, options, request, dirtyAfterCreate, t, locale, onEdit }: { draft: V2IntakePrototypeDraft; options: IntakeOptionsData; request: FreightRequestV2Data | null; dirtyAfterCreate: boolean; t: Translate; locale: "es" | "en"; onEdit: (step: PrototypeStep) => void }) {
   const origin = findIntakeFacility(options, draft.originFacilityId);
   const destination = findIntakeFacility(options, draft.destinationFacilityId);
   return <div className={styles.reviewGrid}>
-    <ReviewSection title={t("Corredor", "Lane")} editLabel={t("Editar sedes", "Edit facilities")} onEdit={() => onEdit(1)} items={[[t("Origen", "Origin"), origin ? `${origin.label} · ${origin.city}` : "—"], [t("Destino", "Destination"), destination ? `${destination.label} · ${destination.city}` : "—"]]} />
+    <ReviewSection title={t("Corredor", "Lane")} editLabel={t("Editar sedes", "Edit facilities")} onEdit={() => onEdit(1)} items={[[t("Origen", "Origin"), origin ? `${displayDemoText(origin.label)} · ${displayDemoText(origin.city)}` : "—"], [t("Destino", "Destination"), destination ? `${displayDemoText(destination.label)} · ${displayDemoText(destination.city)}` : "—"]]} />
     <ReviewSection title={t("Carga y grupos", "Cargo and groups")} editLabel={t("Editar carga", "Edit cargo")} onEdit={()=>onEdit(2)} items={[[t('Categoría','Category'),draft.categoryCode],[t('Peso / volumen','Weight / volume'),`${draft.totalWeightKg} kg · ${draft.totalVolumeM3} m³`],...cargoGroups(draft).map((g,i)=>[t('Grupo ','Group ')+(i+1),`${g.unitQuantity} × ${g.unitPackageType} · ${g.unitWeightPerUnitKg} kg · ${g.unitVolumePerUnitM3} m³ · ${g.unitLengthCm} × ${g.unitWidthCm} × ${g.unitHeightCm} cm`]),[t('Requisitos comunes','Shared requirements'),draft.requirements.join(', ')||t('Sin requisitos','No requirements')]]}/>
 
     <ReviewSection title={t("Agenda y equipo", "Schedule and equipment")} editLabel={t("Editar agenda", "Edit schedule")} onEdit={() => onEdit(3)} items={[[t("Retiro", "Pickup"), formatLocalRange(draft.pickupWindowStartsAt, draft.pickupWindowEndsAt, locale)], [t("Entrega", "Delivery"), formatLocalRange(draft.deliveryWindowStartsAt, draft.deliveryWindowEndsAt, locale)], [t("Equipo", "Equipment"), draft.requiredEquipment], [t("Prioridad", "Priority"), draft.urgency==="URGENT"?t("Urgente", "Urgent"):t("Sin urgencia", "Not urgent")], ...(["pickupAlternatives","deliveryAlternatives"] as const).flatMap(field=>(draft[field]??[]).map((w,i)=>[t(field==="pickupAlternatives"?"Retiro alternativo ":"Recepción alternativa ",field==="pickupAlternatives"?"Alternative pickup ":"Alternative delivery ")+(i+1),formatLocalRange(w.startsAt,w.endsAt,locale)]))]} />
@@ -339,9 +340,9 @@ function LiveSummary({ draft, options, request, evaluation, dirtyAfterCreate, t 
   const origin = findIntakeFacility(options, draft.originFacilityId);
   const destination = findIntakeFacility(options, draft.destinationFacilityId);
   return <aside className={`${styles.card} ${styles.summary}`} aria-label={t("Resumen de la solicitud", "Request summary")}><header className={styles.cardHeader}><span className={styles.stepHeaderIcon} aria-hidden="true"><Route size={19} /></span><div><h2>{t("Tu solicitud", "Your request")}</h2></div></header><div className={styles.summaryRoute}><span className={styles.routeDot}/><div><small>{t("Origen", "Origin")}</small><strong>{origin?.city ?? "—"}</strong></div><span className={styles.routeDash}/><span className={styles.routeDot}/><div><small>{t("Destino", "Destination")}</small><strong>{destination?.city ?? "—"}</strong></div></div><div className={styles.summaryBody}>
-    <SummaryRow field="originFacilityId" label={t("Origen", "Origin")} value={origin?.label ?? t("Sin seleccionar", "Not selected")} tone={origin ? "preliminary" : "neutral"} status={origin ? t("Local", "Local") : t("Pendiente", "Pending")} />
-    <SummaryRow field="destinationFacilityId" label={t("Destino", "Destination")} value={destination?.label ?? t("Sin seleccionar", "Not selected")} tone={destination ? "preliminary" : "neutral"} status={destination ? t("Local", "Local") : t("Pendiente", "Pending")} />
-    <SummaryRow field={["cargoDescription","categoryCode","packaging","unitQuantity","totalWeightKg","totalVolumeM3"]} label={t("Carga", "Cargo")} value={draft.cargoDescription || t("Sin describir", "Not described")} tone={draft.cargoDescription ? "preliminary" : "neutral"} status={draft.cargoDescription ? t("Local", "Local") : t("Pendiente", "Pending")} />
+    <SummaryRow field="originFacilityId" label={t("Origen", "Origin")} value={origin ? displayDemoText(origin.label) : t("Sin seleccionar", "Not selected")} tone={origin ? "preliminary" : "neutral"} status={origin ? t("Local", "Local") : t("Pendiente", "Pending")} />
+    <SummaryRow field="destinationFacilityId" label={t("Destino", "Destination")} value={destination ? displayDemoText(destination.label) : t("Sin seleccionar", "Not selected")} tone={destination ? "preliminary" : "neutral"} status={destination ? t("Local", "Local") : t("Pendiente", "Pending")} />
+    <SummaryRow field={["cargoDescription","categoryCode","packaging","unitQuantity","totalWeightKg","totalVolumeM3"]} label={t("Carga", "Cargo")} value={displayDemoText(draft.cargoDescription) || t("Sin describir", "Not described")} tone={draft.cargoDescription ? "preliminary" : "neutral"} status={draft.cargoDescription ? t("Local", "Local") : t("Pendiente", "Pending")} />
     <SummaryRow label={t("Persistencia", "Persistence")} value={request ? `${displayReference(request.referenceCode,'PED',request.id)} · v${request.draftVersion}` : t("Aún no creada", "Not created yet")} tone={request ? "confirmed" : "unknown"} status={request ? request.status : "UNKNOWN"} hint={dirtyAfterCreate ? t("Cambios locales sin autosave", "Local changes without autosave") : undefined} />
     <SummaryRow label={t("Elegibilidad", "Serviceability")} value={evaluation ? `${evaluation.summaryCounts.totalEvaluated} ${t("evaluados", "evaluated")}` : t("Aún no consultada", "Not queried yet")} tone={evaluation?.overallStatus === "eligible" ? "confirmed" : "unknown"} status={evaluation?.overallStatus.toUpperCase() ?? "UNKNOWN"} />
   </div></aside>;

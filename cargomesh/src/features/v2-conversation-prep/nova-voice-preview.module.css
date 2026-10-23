@@ -3,3 +3,6 @@
 .preview .active{background:#a34035;border-color:#a34035}
 .preview p{margin:.4rem 0 0;line-height:1.4}
 .limit{color:#4e6964}
+.compact { color:#6c5a99; font-size:.75rem; }
+.compact:empty { display:none; }
+.compact p { margin:.45rem .25rem 0; line-height:1.45; }

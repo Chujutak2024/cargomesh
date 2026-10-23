@@ -14,6 +14,7 @@ async function getShellIdentity() {
     const org = organization as unknown as { name: string } | null;
     const person = profile as unknown as { display_name: string } | null;
     return {
+      continuityScope: [member.userId,member.organizationId,member.memberId,member.role].join(':'),
       organizationName: org?.name ?? "CargoMesh",
       displayName: person?.display_name ?? member.userEmail,
       role: member.role,

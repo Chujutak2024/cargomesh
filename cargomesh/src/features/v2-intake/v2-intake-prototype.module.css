@@ -300,11 +300,14 @@
 .standalone .stepCopy { display: block; }
 .standalone .stepCopy strong { font-size: .875rem; line-height: 1.4; overflow-wrap: normal; }
 .standalone .workspace { grid-template-columns: minmax(0, 1fr) 16rem; gap: 2rem; }
+.standalone .facilitiesWorkspace { grid-template-columns:minmax(0,1fr); }
 .standalone .card { overflow: visible; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .standalone .cardHeader { display: block; border: 0; padding: 0 0 1.5rem; background: transparent; }
 .standalone .cardHeader > div { gap: .5rem; }
 .standalone .cardHeader h2 { font-size: 1.25rem; line-height: 1.35; }
 .standalone .cardHeader p { max-width: 65ch; font-size: .875rem; line-height: 1.5; }
+.standalone .cardHeader:has(> button) { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+.standalone .cardHeader:has(> button)>button { flex:none; }
 .standalone .cardBody { gap: 1.5rem; padding: 0; }
 /* Keep the mounted live region available to announce Nova changes, without an empty grid row. */
 .standalone .cardBody > [role="status"][aria-live="polite"]:empty { position: absolute; min-height: 0; height: 0; width: 0; margin: 0; padding: 0; }
@@ -427,3 +430,4 @@
   .standalone .hero h1 { font-size: 1.5rem; }
 }
 @media (prefers-reduced-motion: reduce) { .standalone .equipmentCard { transition: none; } }
+.srOnly { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }

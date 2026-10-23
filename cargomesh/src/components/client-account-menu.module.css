@@ -1,0 +1,20 @@
+.account { position: relative; flex: none; min-width: 0; margin-top: 8px; border-top: 1px solid var(--cm-color-line); padding: 12px 4px 0; }
+.trigger { display: flex; width: 100%; min-height: 48px; align-items: center; gap: 10px; padding: 6px 8px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--cm-color-heading); font: inherit; text-align: left; cursor: pointer; transition: background 140ms ease; }
+.trigger:hover, .trigger[aria-expanded="true"] { background: var(--cm-color-selected, rgba(8, 124, 131, 0.08)); }
+.avatar { display: grid; width: 36px; height: 36px; flex: none; place-items: center; border-radius: 50%; background: #26292b; color: #fff; font-size: 13px; font-weight: 650; }
+.userMeta { display: flex; flex-direction: column; min-width: 0; flex: 1; text-align: left; line-height: 1.25; }
+.companyName { font-size: 13px; font-weight: 600; color: var(--cm-color-heading, #143744); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.userRole { font-size: 11px; font-weight: 500; color: var(--cm-color-muted, #607783); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.chevron { flex: none; color: var(--cm-color-muted); }
+.panel { position: absolute; bottom: calc(100% + 8px); left: 4px; right: 4px; z-index: 60; max-height: min(22rem, 65dvh); overflow-y: auto; padding: 6px; border: 1px solid var(--cm-color-line); border-radius: 12px; background: var(--cm-color-surface); box-shadow: 0 10px 32px rgb(16 42 59 / 14%); animation: account-enter 160ms ease-out; }
+.panel form { margin: 0; }
+.item { display: flex; width: 100%; min-height: 40px; align-items: center; gap: 9px; padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--cm-color-heading); font: inherit; font-size: 12px; text-decoration: none; text-align: left; cursor: pointer; }
+.item:hover { background: var(--cm-color-selected, rgba(8, 124, 131, 0.08)); text-decoration: none; }
+.trigger:focus-visible, .item:focus-visible { outline: 2px solid var(--cm-color-logistics); outline-offset: 2px; }
+@media (min-width: 768px) {
+  .account[data-collapsed="true"] .trigger { justify-content: center; padding-inline: 0; }
+  .account[data-collapsed="true"] .userMeta, .account[data-collapsed="true"] .chevron { display: none; }
+  .account[data-collapsed="true"] .panel { left: calc(100% + 8px); right: auto; bottom: 0; width: min(248px, calc(100vw - 6rem)); }
+}
+@keyframes account-enter { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .panel { animation: none; } }

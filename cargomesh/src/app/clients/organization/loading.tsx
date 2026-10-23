@@ -1,2 +1,2 @@
-import {WorkspaceSkeleton} from '@/features/product-motion/workspace-skeleton';
-export default function Loading(){return <WorkspaceSkeleton shape="form" label="Cargando organización / Loading organization"/>;}
+import {ClientRouteLoading} from '@/features/shipper-portal/client-continuity';
+export default function Loading(){return <ClientRouteLoading shape="form" label="Cargando organización / Loading organization"/>;}

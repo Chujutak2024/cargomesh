@@ -5,9 +5,10 @@ import type {IntakeOptionsData} from "./contracts";
 import type {DateClarification} from "./capture-clarification";
 import {validExplicitWindow} from "./capture-clarification";
 export function DateClarificationPanel({pending,language,onConfirm,onDiscard}:{pending:DateClarification;language:"es"|"en";onConfirm:(role:"pickup"|"delivery",start:string,end:string)=>void;onDiscard:()=>void}){
- const [role,setRole]=useState<"pickup"|"delivery"|"">(''),[start,setStart]=useState(''),[end,setEnd]=useState('');const es=language==='es';
+ const [role,setRole]=useState<"pickup"|"delivery"|"">(pending.role??''),[start,setStart]=useState(''),[end,setEnd]=useState('');const es=language==='es';
  return <section className={styles.actionReview} aria-label={es?'Aclarar fechas':'Clarify dates'}><h3>{es?'Confirma una ventana concreta':'Confirm an exact window'}</h3>
   <p>{es?'Fecha de referencia':'Reference date'}: {pending.referenceDate} · {pending.timeZone}. {pending.alternatives.join(' / ')}</p>
+  {pending.windows&&<ul>{Object.entries(pending.windows).map(([key,window])=><li key={key}>{key==='pickup'?(es?'Recojo':'Pickup'):(es?'Entrega':'Delivery')}: {window.startsOn??(es?'inicio por precisar':'start not provided')} → {window.endsOn??(es?'fin por precisar':'end not provided')}. {es?'Faltan horas por confirmar.':'Times still need confirmation.'}</li>)}</ul>}
   <label>{es?'Estas fechas corresponden a':'These dates are for'}<select value={role} onChange={e=>setRole(e.target.value as typeof role)}><option value="">{es?'Elige el propósito':'Choose purpose'}</option><option value="pickup">{es?'Recojo':'Pickup'}</option><option value="delivery">{es?'Entrega':'Delivery'}</option></select></label>
   <label>{es?'Desde (hora de la sesión)':'From (session time)'}<input type="datetime-local" value={start} onChange={e=>setStart(e.target.value)}/></label>
   <label>{es?'Hasta (hora de la sesión)':'Until (session time)'}<input type="datetime-local" value={end} onChange={e=>setEnd(e.target.value)}/></label>

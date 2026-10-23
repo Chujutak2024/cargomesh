@@ -11,6 +11,9 @@ import * as formGuide from "./assistant-form-guide";
 import { ROAD_REQUEST_FIXTURE, ELIGIBLE_UNKNOWN_EVALUATION_FIXTURE } from "./fixtures/contract-flow.fixture";
 import type { FreightRequestV2Data } from "./contracts";
 import type { useIntakeController } from "./intake-controller";
+import { groundedCargoSuggestions } from "./explicit-cargo-facts";
+import { spokenCaptureClarification } from "./spoken-capture-clarification";
+import { proposeDraftReview,canApproveDraftReview } from "./draft-review";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -332,13 +335,15 @@ test("receipts show authorized route values and form guidance identifies actual 
   const options = catalog.getIntakeOptionsFixture().data, t = (_es:string, en:string) => en;
   let draft = prototype.applyChatFieldsToDraft(prototype.EMPTY_PROTOTYPE_DRAFT, routeFields());
   const receipt = formGuide.assistantAppliedDetails(draft,["originFacilityId","destinationFacilityId"],options,t);
-  assert.match(receipt[0].value,/Lima.*→.*Arequipa/); assert.match(receipt[0].value,/synthetic/);
+  assert.match(receipt[0].value,/Lima.*→.*Arequipa/); assert.doesNotMatch(receipt[0].value,/\[(?:SYNTHETIC|SIMULATED)\]/i);
   assert.equal(formGuide.assistantFormProgress(draft).nextStep, 2);
   assert.equal(formGuide.assistantNextField(draft),"categoryCode");
   assert.match(formGuide.assistantNextQuestion(draft,t),/cargo/i);
   draft = prototype.buildPrototypeExample(options);
   assert.equal(formGuide.assistantFormProgress(draft).nextStep,4);
-  assert.equal(formGuide.assistantNextField(draft),null);
+  assert.equal(formGuide.assistantNextField(draft),"divisible");
+  assert.match(formGuide.assistantNextQuestion(draft,t),/split/i);
+  draft=prototype.applyChatFieldsToDraft(draft,[{field:'divisible',value:'false'},{field:'unitIndivisible',value:'true'},{field:'unitStackable',value:'false'},{field:'requirements',value:'NONE'}]);
   assert.match(formGuide.assistantNextQuestion(draft,t),/confirm.*save/i);
   const invalid = {...draft,recipientContactEmail:"invalid"};
   assert.equal(formGuide.assistantFormProgress(invalid).nextStep,3);
@@ -355,7 +360,7 @@ test("touching the form pauses the pending automatic move without discarding rec
 
 test("cargo must be valid before moving to windows and incomplete contacts keep review blocked", async () => {
  const app=setup();await app.settle();app.state.loadExample();app.render();
- app.state.update("recipientContactEmail","");app.state.update("unitLengthCm","0");app.state.setStep(2);app.render();
+ app.state.update("recipientContactPhoneE164","");app.state.update("unitLengthCm","0");app.state.setStep(2);app.render();
  app.state.updateFromChat([{field:"cargoDescription",value:"robots"}]);app.render();
  assert.ok(![...app.timers.values()].some(t=>t.delay===formGuide.ASSISTANT_ADVANCE_MS));
  app.state.updateFromChat([{field:"unitLengthCm",value:"50"}]);app.render();advance(app);
@@ -368,4 +373,35 @@ test("repeated transcript facts do not cancel an already valid automatic transit
  const sequence=app.state.assistantChange!.sequence;
  app.state.updateFromChat(routeFields());app.render();
  assert.equal(app.state.assistantChange!.sequence,sequence);advance(app);assert.equal(app.state.step,2);app.unmount();
+});
+
+test("simple Nova prompts pass through the real controller, save one ID and reopen the corrected version",async()=>{
+ let persisted=structuredClone(ROAD_REQUEST_FIXTURE),creates=0,revisions=0;
+ const api:Partial<typeof client>={
+  createFreightRequestV2:async payload=>{creates++;persisted={...persisted,...payload,origin:persisted.origin,destination:persisted.destination} as FreightRequestV2Data;return {data:structuredClone(persisted)} as never;},
+  reviseFreightRequestV2:async(id,version,payload)=>{assert.equal(id,persisted.id);assert.equal(version,1);revisions++;persisted={...persisted,...payload,draftVersion:2,origin:persisted.origin,destination:persisted.destination} as FreightRequestV2Data;return {data:structuredClone(persisted)} as never;},
+  getFreightRequestV2:async()=>({data:structuredClone(persisted)}) as never,
+  getRoadServiceabilityV2:async(_id,version)=>evaluation(version) as never,
+ };
+ const app=setup({api});await app.settle();const options=catalog.getIntakeOptionsFixture().data;
+ for(const text of ['Necesito enviar 10 pallets de artículos del hogar de Lima a Arequipa.','Cada pallet pesa 100 kg, cada pallet tiene largo 100 cm, ancho 100 cm y alto 100 cm.','Se puede dividir la carga, cada pallet es indivisible, se pueden apilar, sin requisitos especiales.','El remitente es Elena con teléfono +51900000101, sin correo. El destinatario es Pablo con teléfono +51900000102, sin correo.']){
+  app.state.updateFromChat(groundedCargoSuggestions(text,app.state.draft,options,null,[]));app.render();
+ }
+ app.state.updateFromChat([{field:'requiredEquipment',value:'REEFER_TRUCK'}]);app.render();
+ for(const text of ['Recojo el 26 de octubre de 2026 de 08:00 a 10:00','Entrega el 27 de octubre de 2026 de 14:00 a 18:00']){
+  const result=spokenCaptureClarification(text,{date:null,classification:false},options,'America/Lima',Date.parse('2026-10-23T12:00Z'));
+  app.state.updateFromChat(result.fields);app.render();
+ }
+ assert.equal(creates,0);assert.equal(app.state.enterReview(),true);
+ const approval=proposeDraftReview(app.state.draft);assert.ok(canApproveDraftReview(approval,app.state.draft));
+ await app.state.createDraftAndEvaluate();await app.settle();
+ const id=app.state.request?.id;assert.ok(id);assert.equal(creates,1);assert.equal(app.state.request?.cargoSpecification.totalWeightKg,1000);
+ app.state.updateFromChat(groundedCargoSuggestions('Son 12 pallets, no 10',app.state.draft,options,null,[]));app.render();
+ assert.equal(canApproveDraftReview(approval,app.state.draft),false);assert.equal(revisions,0);assert.equal(app.state.evaluation,null);
+ await app.state.createDraftAndEvaluate();await app.settle();
+ assert.equal(app.state.request?.id,id);assert.equal(app.state.request?.draftVersion,2);assert.equal(creates,1);assert.equal(revisions,1);
+ assert.equal(app.state.request?.cargoSpecification.totalWeightKg,1200);assert.equal(app.state.request?.contacts.pickup.email,null);
+ const storage=app.storage;app.unmount();const reopened=setup({storage,api});await reopened.settle();
+ assert.equal(reopened.state.request?.id,id);assert.equal(reopened.state.draft.totalWeightKg,'1200');assert.equal(reopened.state.draft.unitQuantity,'12');
+ assert.equal(reopened.state.draft.pickupContactPhoneE164,'+51900000101');assert.equal(creates,1);assert.equal(revisions,1);reopened.unmount();
 });

@@ -1,4 +1,6 @@
 'use client';
+import { displayDemoText, isHiddenClientFacility, retainOriginalDisplayText } from "@/shared/lib/demo-presentation";
+
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import {Button,Checkbox,Input,Select} from '@/components/ui';
 import {FacilityInputV2Schema,FacilityV2Schema,type FacilityInputV2,type FacilityV2} from '@/shared/schemas/v2/facilities';
@@ -10,6 +12,7 @@ import {ContentMotion} from '@/features/product-motion/content-motion';
 import {WorkspaceSkeleton,WorkspaceUpdating} from '@/features/product-motion/workspace-skeleton';
 import {DeferredRegion} from '@/features/carrier-navigation/deferred-region';
 import {useLocale} from '@/features/i18n/locale-provider';
+import {useClientMemoryState} from './client-continuity';
 const ClientFacilityVisual=dynamic(()=>import('./client-facility-visual').then(module=>module.ClientFacilityVisual),{ssr:false,loading:()=> <WorkspaceSkeleton shape="detail"/>});
 
 const blank:FacilityInputV2={schemaVersion:'2.0',code:'',name:'',facilityType:'SHIPPER_SITE',active:true,
@@ -19,9 +22,9 @@ const single=recordSchema(FacilityV2Schema),list=collectionSchema(FacilityV2Sche
 type Role='OWNER'|'SUPERVISOR'|'REQUESTER';
 export function ClientFacilities({role,initialId}:{role:Role;initialId?:string}){
   const {t}=useLocale();
-  const [items,setItems]=useState<FacilityV2[]>([]),[offset,setOffset]=useState(0),[next,setNext]=useState<number|null>(null);
-  const [selected,setSelected]=useState<FacilityV2|null>(null),[creating,setCreating]=useState(false);
-  const [loading,setLoading]=useState(true),[loaded,setLoaded]=useState(false),[openingId,setOpeningId]=useState('');
+  const [items,setItems]=useClientMemoryState<FacilityV2[]>('facilities:items',[]),[offset,setOffset]=useClientMemoryState('facilities:offset',0),[next,setNext]=useClientMemoryState<number|null>('facilities:next',null);
+  const [selected,setSelected]=useClientMemoryState<FacilityV2|null>('facilities:selected',null),[creating,setCreating]=useState(false);
+  const [loading,setLoading]=useState(true),[loaded,setLoaded]=useClientMemoryState('facilities:loaded',false),[openingId,setOpeningId]=useState('');
   const [error,setError]=useState(''),[message,setMessage]=useState('');
   const selection=useRef(0),pageRead=useRef(0);
   const visualControllers=useRef<FacilityVisualControllers>(new Map());
@@ -34,7 +37,7 @@ export function ClientFacilities({role,initialId}:{role:Role;initialId?:string})
   }
   async function loadPage(at=offset){
     const ticket=++pageRead.current;setLoading(true);setError('');
-    try{const page=await settingsRequest('/facilities?limit=25&offset='+at,list);if(ticket!==pageRead.current)return;setItems(page.data);setOffset(at);setNext(page.meta.nextOffset);setLoaded(true);}
+    try{const page=await settingsRequest('/facilities?limit=25&offset='+at,list);if(ticket!==pageRead.current)return;setItems(page.data.filter(item=>!isHiddenClientFacility(item.value.code,item.id)));setOffset(at);setNext(page.meta.nextOffset);setLoaded(true);}
     catch(e){if(ticket===pageRead.current)failed(e);}finally{if(ticket===pageRead.current)setLoading(false);}
   }
   async function open(id:string){
@@ -44,7 +47,7 @@ export function ClientFacilities({role,initialId}:{role:Role;initialId?:string})
       setSelected(result.data);window.history.replaceState(null,'','?facility='+result.data.id);
     }catch(e){if(ticket===selection.current)failed(e);}finally{if(ticket===selection.current)setOpeningId('');}
   }
-  useEffect(()=>{void loadPage(0);if(initialId)void open(initialId);return()=>{selection.current++;pageRead.current++;};},[]);
+  useEffect(()=>{void loadPage(offset);const id=initialId??selected?.id;if(id)void open(id);return()=>{selection.current++;pageRead.current++;};},[]);
   async function saved(record:FacilityV2){setSelected(record);setCreating(false);setMessage(t('Sede guardada.','Facility saved.'));await loadPage(offset);}
   return <div className={styles.page}><header className={styles.header}><div><h1>{t('Sedes','Facilities')}</h1><p>{t('Direcciones de recojo y entrega.','Pickup and delivery addresses.')}</p></div>
     {editable&&<Button type="button" onClick={()=>{selection.current++;setOpeningId('');setSelected(null);setCreating(true);setMessage('');window.history.replaceState(null,'','?new=1');}}>{t('Nueva sede','New facility')}</Button>}</header>
@@ -52,7 +55,7 @@ export function ClientFacilities({role,initialId}:{role:Role;initialId?:string})
     {message&&<p className={styles.success} role="status">{message}</p>}
     <div className={styles.columns}><section className={styles.panel} aria-label={t('Directorio de sedes','Facility list')}><h2>{t('Tus sedes','Your facilities')}</h2>
       {loading&&loaded?<WorkspaceUpdating>{t('Actualizando sedes…','Updating facilities…')}</WorkspaceUpdating>:null}
-      {loading&&!loaded?<WorkspaceSkeleton shape="table" label={t('Cargando sedes','Loading facilities')}/>:items.length?<div className={styles.list} data-client-motion-group>{items.map(item=><button key={item.id} className={styles.item} type="button" aria-pressed={selected?.id===item.id} aria-busy={openingId===item.id} onClick={()=>void open(item.id)}><strong>{item.value.name}</strong><span className={styles.muted}>{item.value.code} · {item.value.location.city}, {item.value.location.countryCode}</span><span className={styles.muted}>{item.value.active?t('Activa','Active'):t('Inactiva','Inactive')}</span></button>)}</div>:!error?<p className={styles.empty}>{t('No hay sedes registradas.','No facilities recorded.')}</p>:null}
+      {loading&&!loaded?<WorkspaceSkeleton shape="table" label={t('Cargando sedes','Loading facilities')}/>:items.length?<div className={styles.list} data-client-motion-group>{items.map(item=><button key={item.id} className={styles.item} type="button" aria-pressed={selected?.id===item.id} aria-busy={openingId===item.id} onClick={()=>void open(item.id)}><strong>{displayDemoText(item.value.name)}</strong><span className={styles.muted}>{item.value.code} · {item.value.location.city}, {item.value.location.countryCode}</span><span className={styles.muted}>{item.value.active?t('Activa','Active'):t('Inactiva','Inactive')}</span></button>)}</div>:!error?<p className={styles.empty}>{t('No hay sedes registradas.','No facilities recorded.')}</p>:null}
       <div className={styles.actions}><Button variant="secondary" disabled={loading||offset===0} onClick={()=>void loadPage(Math.max(0,offset-25))}>{t('Anterior','Previous')}</Button><Button variant="secondary" disabled={loading||next===null} onClick={()=>void loadPage(next!)}>{t('Siguiente','Next')}</Button></div>
       {selected?<DeferredRegion minHeight={240}><ClientFacilityVisual key={selected.organizationId+':'+selected.id} facility={selected} editable={editable&&!openingId} controllers={visualControllers.current}/></DeferredRegion>:null}
     </section><ContentMotion identity={creating?'new':selected?.id??'empty'} className={styles.panel}>
@@ -73,8 +76,8 @@ function FacilityEditor({record,editable,blocked=false,onSaved,onReload}:{record
     const optional=(key:string)=>text(key)||null,coordinate=(key:string)=>text(key)===''?null:Number(text(key));
     setError('');
     try{
-      const value=FacilityInputV2Schema.parse({schemaVersion:'2.0',code:text('code'),name:text('name'),facilityType:text('facilityType'),active:form.has('active'),
-        location:{label:text('address'),city:text('city'),region:optional('region'),countryCode:text('countryCode').toUpperCase(),lat:coordinate('lat'),lng:coordinate('lng')},
+      const value=FacilityInputV2Schema.parse({schemaVersion:'2.0',code:text('code'),name:retainOriginalDisplayText(text('name'),initial.name),facilityType:text('facilityType'),active:form.has('active'),
+        location:{label:retainOriginalDisplayText(text('address'),initial.location.label),city:text('city'),region:optional('region'),countryCode:text('countryCode').toUpperCase(),lat:coordinate('lat'),lng:coordinate('lng')},
         accessRestrictions:rules,operatingHours:known?hours:null});
       const route=record?'/facilities/'+record.id+'/revisions':'/facilities';
       pending.current=settingsCommand(route,record?{expectedVersion:record.version,value}:value,pending.current);
@@ -86,11 +89,11 @@ function FacilityEditor({record,editable,blocked=false,onSaved,onReload}:{record
   return <form className={styles.form} onSubmit={save}><div><h2>{record?'Facility details':'New facility'}</h2>{record&&<p className={styles.muted}>{record.id} · version {record.version}</p>}</div>
     {!editable&&<p className={styles.notice}>Your role can view facilities. An owner or supervisor can edit them.</p>}
     <fieldset disabled={!editable||blocked||busy||conflict}><div className={styles.grid}>
-      <Input label="Facility name" name="name" defaultValue={initial.name} maxLength={200} required/>
+      <Input label="Facility name" name="name" defaultValue={displayDemoText(initial.name)} maxLength={200} required/>
       <Input label="Facility code" name="code" defaultValue={initial.code} maxLength={100} required/>
       <Select label="Facility type" name="facilityType" defaultValue={initial.facilityType}>{['SHIPPER_SITE','WAREHOUSE','DISTRIBUTION_CENTER','OTHER'].map(value=><option key={value} value={value}>{value.replaceAll('_',' ')}</option>)}</Select>
       <Checkbox label="Active facility" name="active" defaultChecked={initial.active}/>
-      <Input label="Street address" name="address" defaultValue={initial.location.label} required fieldClassName={styles.wide}/>
+      <Input label="Street address" name="address" defaultValue={displayDemoText(initial.location.label)} required fieldClassName={styles.wide}/>
       <Input label="City" name="city" defaultValue={initial.location.city} required/>
       <Input label="Region" name="region" defaultValue={initial.location.region??''}/>
       <Input label="Country code" hint="Two-letter country code, for example PE, BO or CL." name="countryCode" defaultValue={initial.location.countryCode} required pattern="[A-Za-z]{2}" maxLength={2}/>

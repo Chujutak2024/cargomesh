@@ -12,11 +12,13 @@ export function ClientAssistant({ onDockedChange }: { onDockedChange: (docked: b
   const session = useIntakeSession();
   const pathname = usePathname();
   const router = useRouter();
+  const choosingTransport=pathname.endsWith('/freight-request/new')&&!session.roadTransportSelected;
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("assistant") === "open")
       window.dispatchEvent(new CustomEvent("cargomesh:open-assistant"));
-  }, [pathname]);
+  }, [pathname,choosingTransport]);
   const edit = (step: PrototypeStep) => {
+    session.selectRoadTransport();
     session.setStep(step);
     session.setMaxVisited((current) => Math.max(current, step) as PrototypeStep);
     session.setIssues([]);
@@ -26,8 +28,9 @@ export function ClientAssistant({ onDockedChange }: { onDockedChange: (docked: b
   const catalogStatus = session.optionsSource === "loading" ? "loading" : session.optionsSource === "error" ? "error"
     : !session.optionCoverage.complete || session.optionCoverage.emptyFacilities ? "empty" : "ready";
   return <ConversationChat presentation="workspace" draft={session.draft} options={session.activeOptions}
-    optionsSource={session.optionsSource === "fixture" ? "fixture" : "api"} request={session.request}
-    evaluation={session.evaluation} error={session.submitError} draftDirty={session.dirtyAfterCreate}
+    transportSelectionRequired={choosingTransport} onSelectRoad={session.selectRoadTransport}
+    optionsSource={session.optionsSource === "fixture" ? "fixture" : "api"} request={choosingTransport?null:session.request}
+    evaluation={choosingTransport?null:session.evaluation} error={choosingTransport?null:session.submitError} draftDirty={session.dirtyAfterCreate}
     canRevise={Boolean(session.request && requestToPrototypeDraft(session.request) && session.request.status === "DRAFT")}
     busy={["creating", "revising", "reading", "evaluating"].includes(session.submitPhase)}
     busyLabel={session.submitLabel}

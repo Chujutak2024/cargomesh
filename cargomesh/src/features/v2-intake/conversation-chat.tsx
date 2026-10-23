@@ -1,4 +1,6 @@
 "use client";
+import { displayDemoText, isHiddenClientFacility } from "@/shared/lib/demo-presentation";
+
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -6,7 +8,7 @@ import { workspaceHref } from "@/features/workspace-mode/paths";
 import {workspaceFetch} from "@/features/workspace-mode/workspace-fetch";
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
-import { ArrowUp, ChevronDown, GripVertical, MessageSquareText, Mic, PanelRightClose, PanelRightOpen, SquarePen, X } from "lucide-react";
+import { MicOff, ArrowUp, ChevronDown, GripVertical, MessageSquareText, Mic, PanelRightClose, PanelRightOpen, SquarePen, X } from "lucide-react";
 import { useReducedMotionPreference } from "@/features/product-motion/use-motion-preference";
 import { ASSISTANT_TRANSITION, AssistantLiveContent, AssistantMascot, AssistantSurface, useAssistantEntrance } from "./assistant-motion";
 import { assistantWelcomeMotion } from "./chat-surface-model";
@@ -17,7 +19,7 @@ import type { PrototypeStep, V2IntakePrototypeDraft } from "./prototype-model";
 import { applyChatFieldsToDraft, validatePrototypeReview, validatePrototypeStep } from "./prototype-model";
 import { CONVERSATION_FIELDS, choicesForField, matchingConversationChoices, questionForField, resolveConversationSuggestions, type ConversationField, type GuidedConversationField } from "./conversation-fields";
 import { useConversationVoice } from "@/features/v2-conversation-prep/voice-controls";
-import { NovaVoicePreview, type NovaTextSender } from "@/features/v2-conversation-prep/nova-voice-preview";
+import { NovaVoicePreview, type NovaTextSender, type NovaMicrophoneControl, type NovaMicrophoneState } from "@/features/v2-conversation-prep/nova-voice-preview";
 import { applyVoiceTranscript, recentVoiceContext, spokenUserDetails, type VoiceTurn } from "@/features/v2-conversation-prep/voice-transcript";
 import { InterpretationResponseSchema, guardExplicitCorrection, helpTopic, isHelpFollowUp, type Interpretation } from "@/features/v2-conversation-prep/interpretation";
 import { conversationLanguage, type ConversationLanguage } from "@/features/v2-conversation-prep/conversation-language";
@@ -25,11 +27,12 @@ import { voiceDraftContext } from "@/features/v2-conversation-prep/voice-draft-c
 import { readCargoReadiness, summarizeCargoReadiness } from "./workflow-chat-client";
 import { wantsQuoteSearch } from "./chat-quote-action";
 import { DateClarificationPanel, CargoClassificationPanel } from "./capture-clarification-panel";
-import { assistantNextField } from "./assistant-form-guide";
-import { AssistantChangeNotice } from "./assistant-field-feedback";
+import { explicitCargoFacts, groundedCargoSuggestions } from "./explicit-cargo-facts";
+import { assistantNextField, assistantNextQuestion } from "./assistant-form-guide";
+import { NovaHelpHint } from "./nova-help-hint";
 import {spokenCategoryAcceptance} from "./spoken-category-acceptance";
 import {spokenCaptureClarification} from "./spoken-capture-clarification";
-import { dateClarification, needsCargoClassification, type DateClarification } from "./capture-clarification";
+import { remainingDateClarification, dateClarification, needsCargoClassification, type DateClarification } from "./capture-clarification";
 import { ChatCommercialPanel } from "./chat-commercial-panel";
 import { commercialChatIntent } from "./chat-commercial-action";
 import { ChatQuotePanel } from "./chat-quote-panel";
@@ -68,7 +71,7 @@ function missingField(draft: V2IntakePrototypeDraft): GuidedConversationField | 
 function locationName(id: string, options: IntakeOptionsData) {
   const facility = options.facilities.find((item) => item.facilityId === id);
   if (!facility) return "not selected";
-  return facility.label.includes("[SYNTHETIC]") ? `${facility.city} (synthetic test facility)` : `${facility.label}, ${facility.city}`;
+  return `${displayDemoText(facility.label)}, ${facility.city}`;
 }
 
 function draftSummary(draft: V2IntakePrototypeDraft, options: IntakeOptionsData, request: FreightRequestV2Data | null, language:"es"|"en") {
@@ -76,7 +79,7 @@ function draftSummary(draft: V2IntakePrototypeDraft, options: IntakeOptionsData,
   return `Review the structured details below. ${locationName(draft.originFacilityId, options)} → ${locationName(draft.destinationFacilityId, options)}; ${draft.unitQuantity} unit(s) of ${draft.categoryCode.toLowerCase()}. ${request ? `Saving will revise ${request.referenceCode} from version ${request.draftVersion}.` : "Saving will create a DRAFT for your authorized organization."} Confirm explicitly or tell me what to change.`;
 }
 
-export function ConversationChat({ draft, options, optionsSource = "api", request, evaluation, error = null, draftDirty = false, busy, busyLabel, presentation = "floating", canRevise = false, catalogStatus = "ready", catalogError, onRetryCatalog, onDockedChange, onFields, onSave, onRead, onEvaluate, onEdit, onReload, onStartOver }: {
+export function ConversationChat({ draft, options, optionsSource = "api", request, evaluation, error = null, draftDirty = false, busy, busyLabel, presentation = "floating", canRevise = false, catalogStatus = "ready", catalogError, onRetryCatalog, onDockedChange, onFields, onSave, onRead, onEvaluate, onEdit, onReload, onStartOver,transportSelectionRequired=false,onSelectRoad }: {
   draft: V2IntakePrototypeDraft;
   options: IntakeOptionsData;
   optionsSource?: "api" | "fixture";
@@ -99,6 +102,8 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   onEdit?: (step: PrototypeStep) => void;
   onReload?: () => void;
   onStartOver?: () => void;
+  transportSelectionRequired?:boolean;
+  onSelectRoad?:()=>void;
 }) {
   const { locale, t } = useLocale();
   const pathname = usePathname();
@@ -128,6 +133,10 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const [voiceMode,setVoiceMode]=useState(false);
   const [novaSpeaking,setNovaSpeaking]=useState(false);
   const novaTextSenderRef = useRef<NovaTextSender | null>(null);
+  const novaMicrophoneRef=useRef<NovaMicrophoneControl|null>(null);
+  const [novaMicrophone,setNovaMicrophone]=useState<NovaMicrophoneState|null>(null);
+  const startNovaOnOpenRef=useRef(false);
+  useEffect(()=>{if(open&&startNovaOnOpenRef.current&&novaMicrophoneRef.current){startNovaOnOpenRef.current=false;novaMicrophoneRef.current.toggle();}},[open,novaMicrophone]);
   const [novaTextPending, setNovaTextPending] = useState(false);
   const chatMountedRef = useRef(true);
   const currentTextScope = JSON.stringify([pathname, optionsSource, request?.id ?? null, request?.draftVersion ?? null]);
@@ -153,9 +162,9 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   const [quotePanelOpen, setQuotePanelOpen] = useState(false);
   const [workflowBusy, setWorkflowBusy] = useState(false);
   const novaVoiceEnabled = process.env.NEXT_PUBLIC_CARGOMESH_NOVA_VOICE_PREVIEW === "true";
-  const [audioReplies, setAudioReplies] = useState(true);
+  const audioReplies = true;
   const voiceLanguage = language === "es" ? "es-PE" as const : "en-US" as const;
-  const [voiceRate, setVoiceRate] = useState(0.96);
+  const voiceRate = 0.96;
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const confirmationRef = useRef<{ review: DraftReview; requestId: string | null; version: number | null } | null>(null);
   const measurementPendingRef = useRef<PendingMeasurement | null>(null);
@@ -221,6 +230,23 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   }, [open, surfaceMode, presentation, onDockedChange]);
   useEffect(() => { if (launcherExpanded && !open) launcherInputRef.current?.focus(); }, [launcherExpanded, open]);
   const nextField = missingField(draft);
+  const transportHelp=language==='es'?'Esta pantalla elige el transporte. Terrestre está disponible; aéreo y marítimo aún no. ¿Continuamos con terrestre?':'This screen selects transport. Road is available; Air and Sea are not available yet. Shall we continue with Road?';
+  const screenVoiceContext=transportSelectionRequired?'ASSISTANT: Current screen: choose transport. Only ROAD is available; AIR and SEA unavailable. Ask to select Road before pickup/cargo questions. Do not save or book.':'ASSISTANT: Current screen: ROAD shipment form. Follow the shared draft and its next missing field. AIR and SEA unavailable. Review and confirm before saving.';
+  const voiceTurns=recentVoiceContext(history);
+  const contextualVoiceTurns=[...voiceTurns.slice(0,4),...voiceTurns.slice(Math.max(4,voiceTurns.length-11)),screenVoiceContext];
+  useEffect(()=>{if(transportSelectionRequired)setHistory(previous=>previous.length===1?[{speaker:'assistant',text:transportHelp}]:previous);},[transportSelectionRequired,transportHelp]);
+  function handleTransportSelection(value:string,user:string|null){
+    if(!transportSelectionRequired)return false;
+    const text=value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    const turnLanguage=conversationLanguage(value,language);setLanguage(turnLanguage);
+    const road=/\b(road|terrestre|carretera|camion|truck)\b/.test(text),other=/\b(air|sea|aereo|avion|maritimo|barco)\b/.test(text);
+    const denied=/\b(no|not|dont|don't|sin)\b.{0,24}\b(road|terrestre|carretera|camion|truck)\b/.test(text);
+    const question=/\b(what|why|que|como|cual|explain|explica)\b/.test(text);
+    const affirmative=/^(si|yes|ok|okay|dale|continuar|continue|adelante|vamos)(\s+(por favor|please))?[.!]*$/.test(text);
+    if((road||affirmative)&&!other&&!denied&&!question){onSelectRoad?.();add(user,turnLanguage==='es'?'Elegimos transporte terrestre. Ahora selecciona el origen y el destino, o dime dónde recoger la carga.':'Road selected. Now choose origin and destination, or tell me where to pick up the cargo.');}
+    else add(user,turnLanguage==='es'?'Terrestre está disponible; aéreo y marítimo aún no. ¿Continuamos con terrestre?':'Road is available; Air and Sea are not available yet. Shall we continue with Road?');
+    return true;
+  }
   const ask = (field: GuidedConversationField) => questionForField(field, voiceLanguage);
 
 
@@ -352,10 +378,11 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     const category = !capturePendingRef.current.classification ? spokenCategoryAcceptance(value,voiceHistoryRef.current,options) : [];
     if(category.length){voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,category);onFields(category);return true;}
     const prompted=lastSpokenQuestionField(voiceHistoryRef.current);
+    const clearFields=explicitCargoFacts(value,voiceDraftRef.current,options,prompted);
     const roleHint=prompted?.startsWith("pickupWindow")?"pickup":prompted?.startsWith("deliveryWindow")?"delivery":undefined;
     const resolved=spokenCaptureClarification(value,capturePendingRef.current,options,Intl.DateTimeFormat().resolvedOptions().timeZone,Date.now(),roleHint);
     if(resolved.fields.length){
-      voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,resolved.fields);onFields(resolved.fields);
+      voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,[...clearFields,...resolved.fields]);onFields([...clearFields,...resolved.fields]);
       setCaptureClarification({date:resolved.pendingDate,classification:resolved.classificationResolved?false:capturePendingRef.current.classification});
       add(user,language==='es'?'Apliqué tu aclaración al borrador local. Puedes seguir hablando y corregir cualquier dato.':'Applied your clarification to the local draft. Keep speaking and correct any detail.');return true;
     }
@@ -363,10 +390,9 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     const classification=needsCargoClassification(value);
     if(!date&&!classification)return false;
     setCaptureClarification({date:date??capturePendingRef.current.date,classification:classification||capturePendingRef.current.classification});
-    const explicit=interpretDeterministically({schemaVersion:'2.0',text:value,currentField:null}).fields;
     const measures=measurementTurn(value,measurementPendingRef.current,voiceDraftRef.current);
     if(measures.handled){measurementPendingRef.current=measures.pending;setMeasurementPending(measures.pending);}
-    const fields=[...measures.fields,...resolveConversationSuggestions(explicit.filter(f=>['unitQuantity','unitWeightPerUnitKg','packaging','originFacilityId','destinationFacilityId'].includes(f.field)),options).flatMap(f=>f.parsed===null?[]:[{field:f.field,value:f.parsed}])];
+    const fields=[...clearFields.filter(f=>(!capturePendingRef.current.classification||f.field!=="categoryCode")&&(!measures.pending||!["unitLengthCm","unitWidthCm","unitHeightCm","unitVolumePerUnitM3"].includes(f.field))),...measures.fields];
     if(fields.length){voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,fields);onFields(fields);}
     add(user,conversationLanguage(value,language)==='es'?'Conservé los datos claros. Aclara por voz la fecha, si es recojo o entrega y el horario; para mercancía, indica el producto y la categoría revisada. No elegiré por mi cuenta.':'I kept the explicit facts. Clarify the date, pickup or delivery and time range by voice, or the product and reviewed category. I will not choose for you.');
     return true;
@@ -382,9 +408,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     confirmationRef.current = null;
     setAwaitingConfirmation(false);
     // Keep explicit count/weight/route facts from mixed turns; never let a model apply ambiguous dimensions.
-    const explicit = interpretDeterministically({schemaVersion:"2.0",text:value,currentField:null}).fields;
-    const preserved = resolveConversationSuggestions(explicit.filter(item => ["unitQuantity","unitWeightPerUnitKg","packaging","originFacilityId","destinationFacilityId"].includes(item.field)),options)
-      .flatMap(item=>item.parsed===null?[]:[{field:item.field,value:item.parsed}]);
+    const preserved = explicitCargoFacts(value,current,options,lastSpokenQuestionField(voiceHistoryRef.current)).filter(f=>!result.pending||!["unitLengthCm","unitWidthCm","unitHeightCm","unitVolumePerUnitM3"].includes(f.field));
     const fields = [...preserved,...result.fields];
     if (fields.length) { voiceDraftRef.current = applyChatFieldsToDraft(current,fields); onFields(fields); }
     const reply = measurementReply(result,conversationLanguage(value,language));
@@ -394,13 +418,14 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   }
 
   function prepareConfirmation(nextDraft: V2IntakePrototypeDraft, user: string | null = null) {
+    if(transportSelectionRequired){add(user,transportHelp);return;}
     if (busy || interpretationBusy || voiceInterpretCountRef.current > 0) { add(user, t("Espera a que termine la actualización antes de revisar.", "Wait for the update to finish before reviewing.")); return; }
     if (hasCaptureClarification()) { add(user,language==='es'?'Revisa primero las fechas o la clasificación pendientes.':'Review pending dates or classification first.'); return; }
     if (measurementPendingRef.current) { add(user, language === "es" ? "Antes de confirmar, aclara si las medidas son por unidad o del conjunto y su unidad de medida. Si son del conjunto, necesito además las de cada unidad." : "Before confirming, clarify the measurement unit and whether these dimensions are per unit or for the whole shipment. For a shipment total I still need each unit’s dimensions."); return; }
     const validation = validatePrototypeReview(nextDraft);
     if (!validation.valid) {
       const field = validation.issues[0]?.field;
-      const question = field && CONVERSATION_FIELDS.includes(field as GuidedConversationField)
+      const question = field && (CONVERSATION_FIELDS as readonly string[]).includes(field)
         ? ask(field as GuidedConversationField)
         : "Complete the highlighted detail in the request form.";
       add(user, t(`Falta completar un dato antes de guardar. ${question}`, `I still need a valid detail before saving. ${question}`));
@@ -420,6 +445,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   }
 
   function confirmSave(user: string | null) {
+    if(transportSelectionRequired){add(user,transportHelp);return;}
     if (busy || interpretationBusy || workflowBusy || voiceInterpretCountRef.current > 0) { add(user, t("Espera a que termine la corrección; después revisa y confirma los datos actuales.", "Wait for the correction to finish, then review and confirm the current details.")); return; }
     if (optionsSource === "fixture") {
       confirmationRef.current = null;
@@ -532,6 +558,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   }
 
   async function interpretSpokenDetail(value: string, turns: Message[]) {
+    if(transportSelectionRequired)return;
     if (optionsSource === "fixture" || spokenReviewCommand(value)) return;
     const currentDraft = voiceDraftRef.current;
     if (handleCaptureClarification(value,null) || handleMeasurement(value, null)) return;
@@ -541,12 +568,13 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       const proposal = guardExplicitCorrection(value, expectedField, interpretation);
       if (proposal.intent !== "PROVIDE" && proposal.intent !== "CORRECT") return;
       if(voiceDraftRef.current.categoryCode!=='CHEMICAL'&&proposal.fields.some(f=>f.field==='categoryCode'&&f.value.toUpperCase()==='CHEMICAL'))setCaptureClarification({...capturePendingRef.current,classification:true});
-      const fields = resolveConversationSuggestions(proposal.fields, options)
+      const fields = resolveConversationSuggestions(groundedCargoSuggestions(value,currentDraft,options,expectedField,proposal.fields), options)
         .filter(f=>(!capturePendingRef.current.date||!f.field.endsWith("At"))&&(!capturePendingRef.current.classification||f.field!=="categoryCode"))
         .filter(item => !measurementPendingRef.current || !["unitLengthCm","unitWidthCm","unitHeightCm","unitVolumePerUnitM3"].includes(item.field))
         .filter(({ field }) => JSON.stringify(voiceDraftRef.current[field]) === JSON.stringify(currentDraft[field]))
         .flatMap(({ field, parsed }) => {
-          const checked = parsed === null ? null : checkedSpokenField(field, parsed, value, turns);
+          const local = explicitCargoFacts(value,currentDraft,options,expectedField).find(f=>f.field===field&&f.value===parsed);
+          const checked = parsed === null ? null : local ? parsed : checkedSpokenField(field, parsed, value, turns);
           return checked === null ? [] : [{ field, value: checked }];
         });
       if (!fields.length) return;
@@ -560,6 +588,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
 
   async function send(value = text) {
     setOpen(true); setLauncherExpanded(false);
+    if(transportSelectionRequired){setText('');handleTransportSelection(value,value);return;}
     if (catalogStatus !== "ready") {
       setText(value);
       setSendNotice(t("Espera a que estén disponibles los datos de tu organización para enviar el mensaje.", "Wait for your organization's catalog before sending this message."));
@@ -586,6 +615,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
   }
 
   async function processMessage(submitted: string) {
+    if(handleTransportSelection(submitted,submitted))return;
     const gate = chatSendGate(submitted, busy || interpretationBusy || workflowBusy, voice.speaking);
     if (gate.kind === "wait") {
       if (gate.notice) setSendNotice(gate.notice);
@@ -646,7 +676,9 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     setInterpretationBusy(true);
     try {
       const { interpretation: received, mode } = await interpret(value);
-      const proposal = guardExplicitCorrection(value, nextField, received);
+      const guarded = guardExplicitCorrection(value, nextField, received);
+      const localFacts = explicitCargoFacts(value,draft,options,nextField);
+      const proposal = guarded.intent === "HELP" && localFacts.length ? {...guarded,intent:"PROVIDE" as const} : guarded;
       if (proposal.intent === "PRICE" || proposal.intent === "BOOKING") {
         add(value, turnLanguage === "es" ? "Puedo consultar ofertas de una solicitud guardada. La selección y la autorización se revisan en Operaciones; una consulta de precio no contrata transporte." : unavailable); return;
       }
@@ -689,7 +721,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       const applied: Array<{ field: ConversationField; value: string }> = [];
       let clarification: string | null = null;
       if(voiceDraftRef.current.categoryCode!=='CHEMICAL'&&proposal.fields.some(f=>f.field==='categoryCode'&&f.value.toUpperCase()==='CHEMICAL'))setCaptureClarification({...capturePendingRef.current,classification:true});
-      for (const suggestion of resolveConversationSuggestions(proposal.fields, options).filter(f=>(!capturePendingRef.current.date||!f.field.endsWith('At'))&&(!capturePendingRef.current.classification||f.field!=='categoryCode')).filter(item => !measurementPendingRef.current || !["unitLengthCm","unitWidthCm","unitHeightCm","unitVolumePerUnitM3"].includes(item.field))) {
+      for (const suggestion of resolveConversationSuggestions(groundedCargoSuggestions(value,draft,options,nextField,proposal.fields), options).filter(f=>(!capturePendingRef.current.date||!f.field.endsWith('At'))&&(!capturePendingRef.current.classification||f.field!=='categoryCode')).filter(item => !measurementPendingRef.current || !["unitLengthCm","unitWidthCm","unitHeightCm","unitVolumePerUnitM3"].includes(item.field))) {
         const field = suggestion.field;
         const parsed = suggestion.parsed;
         if (parsed === null) {
@@ -703,7 +735,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
             continue;
           }
           const matches = matchingConversationChoices(field, suggestion.value, options);
-          if (matches.length > 1) {
+          if (matches.length > 1 && (field === "originFacilityId" || field === "destinationFacilityId")) {
             if (!clarification) {
               setChoices(matches.map((choice) => ({ ...choice, field })));
               clarification = "I found more than one authorized location. Please confirm one of the labeled choices below. No location has been saved yet.";
@@ -770,13 +802,14 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
       </div>
     </div>}
     <div className={styles.launcherPosition} ref={launcherPosition.ref} style={launcherPosition.style} hidden={open} data-intro={intro} data-expanded={launcherExpanded}>
+      <NovaHelpHint key={transportSelectionRequired?'transport':'request'} hintId={transportSelectionRequired?'transport':'request'} pathname={pathname??''} visible={!open&&!intro&&!launcherExpanded&&(transportSelectionRequired||catalogStatus==='ready')} language={language} question={transportSelectionRequired?transportHelp:assistantNextQuestion(draft,(es,en)=>language==='es'?es:en,options)} onTalk={()=>setOpen(true)} />
       <button type="button" className={styles.dragHandle} {...launcherPosition.handle} aria-label={t("Mover asistente. Usa las flechas; Inicio restaura la posición.", "Move assistant. Use arrow keys; Home resets its position.")} title={t("Arrastra para mover", "Drag to move")}><GripVertical size={18} aria-hidden="true" /></button>
       {launcherExpanded ? <form className={styles.launcherComposer} onSubmit={(event) => { event.preventDefault(); void send(); }}>
         <AssistantMascot active={!open} />
         <label className={styles.srOnly} htmlFor="assistant-launcher-text">{t("Mensaje para CargoMesh", "Message CargoMesh")}</label>
         <input id="assistant-launcher-text" ref={launcherInputRef} value={text} onChange={(event) => setText(event.target.value)} maxLength={4096} placeholder={t("¿Qué necesitas transportar?", "What do you need to ship?")} autoComplete="off" onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); setLauncherExpanded(false); requestAnimationFrame(() => launcherRef.current?.focus()); } }} />
         <button type="button" className={styles.launcherAction} title={t("Abrir panel", "Open sidebar")} aria-label={t("Abrir panel del asistente", "Open assistant sidebar")} onClick={() => { setOpen(true); setLauncherExpanded(false); }}><PanelRightOpen size={18}/></button>
-        <button type="button" className={styles.launcherAction} title={t("Hablar con CargoMesh", "Talk to CargoMesh")} aria-label={t("Hablar con CargoMesh", "Talk to CargoMesh")} onClick={() => { setOpen(true); setLauncherExpanded(false); if (!novaVoiceEnabled && catalogStatus === "ready") voice.start(); }}><Mic size={18}/></button>
+        <button type="button" className={styles.launcherAction} title={t("Hablar con CargoMesh", "Talk to CargoMesh")} aria-label={t("Hablar con CargoMesh", "Talk to CargoMesh")} onClick={() => { setOpen(true); setLauncherExpanded(false); if (novaVoiceEnabled) startNovaOnOpenRef.current=true; else if (catalogStatus === "ready") voice.start(); }}><Mic size={18}/></button>
         <button type="submit" className={styles.launcherSend} disabled={!text.trim() || busy || interpretationBusy || workflowBusy || novaTextPending || novaSpeaking || voice.speaking} aria-label={t("Enviar mensaje y abrir panel", "Send message and open sidebar")}><ArrowUp size={18}/></button>
       </form> : <div className={styles.launcherPill}>
         <button ref={launcherRef} type="button" className={styles.launcher} onClick={() => setOpen(true)} aria-label={launcherLabel} aria-expanded={false} aria-controls="v2-chat-panel">
@@ -799,8 +832,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
           <button type="button" className={styles.iconButton} aria-label={t("Cerrar asistente", "Close assistant")} title={t("Cerrar asistente", "Close assistant")} onClick={closePanel}><X size={19}/></button>
         </div>
       </header>
-      <ChatStructuredSummary draft={draft} options={options} request={request} dirty={draftDirty} onEdit={onEdit ? goToFormStep : undefined} t={t} />
-      {catalogStatus === "ready" && <AssistantChangeNotice chat />}
+      {transportSelectionRequired?<div className={styles.notice} role="status"><p>{transportHelp}</p><button type="button" className={styles.suggestion} onClick={onSelectRoad}>{t('Continuar con terrestre','Continue with Road')}</button></div>:<ChatStructuredSummary draft={draft} options={options} request={request} dirty={draftDirty} onEdit={onEdit ? goToFormStep : undefined} t={t} />}
       {busy && <p className={styles.catalogNotice} role="status">{busyLabel ?? t("Actualizando el borrador…", "Updating the draft…")}</p>}
       {catalogStatus !== "ready" && <div className={styles.catalogNotice} role="status"><strong>{catalogStatus === "loading" ? t("Preparando los datos de tu organización…", "Loading your organization's catalog…") : t("No se pudo preparar el asistente", "The assistant needs your catalog")}</strong>{catalogError && <span>{catalogError}</span>}{catalogStatus === "empty" && <span>{t("Faltan sedes u opciones compatibles. Revisa el catálogo de tu organización.", "Facilities or supported options are missing. Review your organization's catalog.")}</span>}{catalogStatus !== "loading" && onRetryCatalog && <button type="button" onClick={onRetryCatalog}>{t("Reintentar", "Retry")}</button>}</div>}
       <div className={styles.conversationContent}>
@@ -823,13 +855,13 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
             {...(history.length === 1 && message.speaker === "assistant" ? assistantWelcomeMotion("greeting", reducedMotion) : {
               initial: reducedMotion ? false as const : { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 },
               transition: { duration: reducedMotion ? 0 : .36, ease: ASSISTANT_TRANSITION.ease },
-            })}><p className={message.speaker === "user" ? styles.user : styles.assistant}><span className={styles.speaker}>{message.speaker === "user" ? "You" : "CargoMesh"}</span>{message.text}</p></motion.div>)}
+            })}><p className={message.speaker === "user" ? styles.user : styles.assistant}><span className={styles.speaker}>{message.speaker === "user" ? "You" : "CargoMesh"}</span>{displayDemoText(message.text)}</p></motion.div>)}
         </div>
         <div className={styles.srOnly} role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
-        {choices.length > 0 && <div className={styles.choiceList} aria-label="Confirm a location">{choices.map((choice) => <button key={choice.value} type="button" onClick={() => { const field = { field: choice.field, value: choice.value }; onFields([field]); setChoices([]); add(null, `Confirmed ${choice.label}. ${ask(missingField(applyChatFieldsToDraft(draft, [field])) ?? "categoryCode")}`); }}>{choice.label}</button>)}</div>}
+        {choices.length > 0 && <div className={styles.choiceList} aria-label="Confirm a location">{choices.filter(choice => { const facility = options.facilities.find(f=>f.facilityId===choice.value); return !facility || !isHiddenClientFacility(facility.code,facility.facilityId); }).map((choice) => <button key={choice.value} type="button" onClick={() => { const field = { field: choice.field, value: choice.value }; onFields([field]); setChoices([]); add(null, `Confirmed ${choice.label}. ${ask(missingField(applyChatFieldsToDraft(draft, [field])) ?? "categoryCode")}`); }}>{choice.label}</button>)}</div>}
         {voiceReviewOpen && <section ref={reviewRef} className={styles.spokenReview} aria-label={language==='es'?'Confirmar solicitud por voz':'Review spoken freight request'}>
           <header><strong>{language==='es'?'Revisa y confirma tu solicitud':'Review and confirm your request'}</strong><p>{language==='es'?'Puedes corregir cualquier dato hablando. El resumen se actualiza; no se guarda automáticamente.':'Correct any detail by voice. The summary updates; it is not saved automatically.'}</p></header>
-          <dl>{reviewRows(draft,options,language).map(row=><div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl>
+          <dl>{reviewRows(draft,options,language).map(row=><div key={row.label}><dt>{row.label}</dt><dd>{displayDemoText(row.value)}</dd></div>)}</dl>
           {voiceReviewNotice&&<p role="status" className={styles.reviewPending}>{voiceReviewNotice}</p>}
           {(reviewIssues.length>0||spokenRouteConflict||spokenWeightConflict||hasCaptureClarification()||measurementPending)&&<p className={styles.reviewPending}>{language==='es'?`Quedan datos pendientes o contradictorios. Sigue respondiendo por voz. ${nextField?ask(nextField):''}`:`Some details need clarification. Keep answering by voice. ${nextField?ask(nextField):''}`}</p>}
           <p className={styles.reviewPending}>{language==='es'?'Di «quiero corregir» para continuar o «confirmo guardar el borrador» después de revisar todos los datos. Un «sí» no crea una solicitud ni reserva transporte.':'Say “keep editing” to continue, or “confirm and save my draft” after reviewing every detail. A bare yes never creates a request or books transport.'}</p>
@@ -839,7 +871,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
             {voicePayload&&<button type="button" className={styles.reviewAction} disabled={novaSpeaking||busy||voiceInterpretPending||optionsSource==='fixture'||Boolean(measurementPending)||hasCaptureClarification()||!canApproveDraftReview(voiceConfirmationRef.current?.review??null,draft)} onClick={confirmSpokenDraft}>{language==='es'?'Confirmar y guardar borrador':'Confirm and save draft'}</button>}
           </div>
         </section>}
-        {!voiceMode&&capturePending.date && <DateClarificationPanel key={JSON.stringify(capturePending.date)} pending={capturePending.date} language={language} onDiscard={()=>setCaptureClarification({...capturePendingRef.current,date:null})} onConfirm={(role,start,end)=>{const fields=[{field:role==='pickup'?'pickupWindowStartsAt' as const:'deliveryWindowStartsAt' as const,value:start},{field:role==='pickup'?'pickupWindowEndsAt' as const:'deliveryWindowEndsAt' as const,value:end}];voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,fields);onFields(fields);setCaptureClarification({...capturePendingRef.current,date:null});add(null,language==='es'?'Ventana aplicada al borrador local. Revisa el resumen antes de guardar.':'Window applied to the local draft. Review before saving.');}}/>}
+        {!voiceMode&&capturePending.date && <DateClarificationPanel key={JSON.stringify(capturePending.date)} pending={capturePending.date} language={language} onDiscard={()=>setCaptureClarification({...capturePendingRef.current,date:null})} onConfirm={(role,start,end)=>{const fields=[{field:role==='pickup'?'pickupWindowStartsAt' as const:'deliveryWindowStartsAt' as const,value:start},{field:role==='pickup'?'pickupWindowEndsAt' as const:'deliveryWindowEndsAt' as const,value:end}];voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,fields);onFields(fields);setCaptureClarification({...capturePendingRef.current,date:remainingDateClarification(capturePendingRef.current.date,role)});add(null,language==='es'?'Ventana aplicada al borrador local. Revisa el resumen antes de guardar.':'Window applied to the local draft. Review before saving.');}}/>}
         {!voiceMode&&capturePending.classification && <CargoClassificationPanel options={options} language={language} onConfirm={(code,product)=>{const fields=[{field:'categoryCode' as const,value:code},{field:'cargoDescription' as const,value:product}];voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,fields);onFields(fields);setCaptureClarification({...capturePendingRef.current,classification:false});add(null,language==='es'?'Apliqué tu clasificación revisada; los requisitos y documentos todavía deben validarse.':'Applied your reviewed classification; requirements and documents still need validation.');}}/>}
         {commercialCommand && request && optionsSource!=='fixture' && <ChatCommercialPanel key={`${request.id}:${request.draftVersion}`} requestId={request.id} organizationId={request.organizationId} version={request.draftVersion} command={commercialCommand} blocked={busy||draftDirty||Boolean(measurementPending || capturePending.date || capturePending.classification)} language={language} onChanged={onRead}/>}
         {quotePanelOpen && request && optionsSource !== "fixture" && <ChatQuotePanel key={`${request.id}:${request.draftVersion}:${request.status}`} request={request}
@@ -854,11 +886,11 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
           </Link>
         </div>}
         {measurementPending && <p className={styles.notice} role="alert">{language === "es" ? "Medidas pendientes de aclaración. La confirmación desde el asistente está bloqueada." : "Measurements need clarification. Assistant confirmation is blocked."}</p>}
-        {!awaitingConfirmation && !busy && (!request || draftDirty) && <button type="button" className={styles.suggestion} disabled={interpretationBusy || voiceInterpretPending} onClick={() => prepareConfirmation(draft)}>{request ? t("Revisar cambios antes de guardar", "Review changes before saving") : t("Revisar borrador antes de crear", "Review draft before creating")}</button>}
+        {!transportSelectionRequired && !awaitingConfirmation && !busy && (!request || draftDirty) && <button type="button" className={styles.suggestion} disabled={interpretationBusy || voiceInterpretPending} onClick={() => prepareConfirmation(draft)}>{request ? t("Revisar cambios antes de guardar", "Review changes before saving") : t("Revisar borrador antes de crear", "Review draft before creating")}</button>}
         {awaitingConfirmation && <div ref={saveReviewRef} className={styles.confirmation} role="group" aria-label={t("Confirmar guardado de solicitud", "Confirm request save")}>
           <strong>{language === "es" ? (request ? "Guardar revisión del borrador" : "Crear borrador") : (request ? "Save DRAFT revision" : "Create DRAFT")}</strong>
           <p>{request ? t(`Se actualizará este mismo borrador desde la versión ${request.draftVersion}.`, `This same draft will be updated from version ${request.draftVersion}.`) : t("Se creará un borrador en tu organización.", "A draft will be created for your organization.")} {t("Revisa los datos. La confirmación vence en 5 minutos y no reserva transporte.", "Review the details. Confirmation expires in 5 minutes and does not book transport.")}</p>
-          <dl>{reviewRows(draft, options,language).map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl>
+          <dl>{reviewRows(draft, options,language).map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{displayDemoText(row.value)}</dd></div>)}</dl>
           <div><button type="button" onClick={() => confirmSave(null)} disabled={busy || interpretationBusy || workflowBusy || voiceInterpretPending || Boolean(measurementPending || capturePending.date || capturePending.classification)}>{language === "es" ? (request ? "Confirmar revisión" : "Confirmar creación") : (request ? "Confirm revision" : "Confirm creation")}</button><button type="button" onClick={() => { confirmationRef.current = null; setAwaitingConfirmation(false); add(null, t("No se guardó nada. Puedes seguir editando.", "Nothing was saved. You can keep editing.")); }}>{language === "es" ? "Seguir editando" : "Keep editing"}</button></div>
         </div>}
         {draftDirty && <p className={styles.notice} role="status">{t("Hay cambios locales sin guardar. Confirma la revisión para volver a evaluar ROAD.", "Local changes are unsaved. Confirm the revision before checking ROAD again.")}</p>}
@@ -877,13 +909,14 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         <form onSubmit={(event) => { event.preventDefault(); void send(); }} className={styles.composer}>
           <label className={styles.srOnly} htmlFor="v2-chat-text">Your message or editable voice transcript</label>
           <textarea rows={2} maxLength={4096} className={styles.messageInput} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.nativeEvent.isComposing){event.preventDefault();event.currentTarget.form?.requestSubmit();}}} ref={inputRef} id="v2-chat-text" value={text} onChange={(event) => setText(event.target.value)} placeholder={t("Describe tu carga o corrige un dato…", "Describe cargo or correct a detail…")} autoComplete="off" disabled={busy || interpretationBusy || workflowBusy || novaTextPending} />
+          {novaVoiceEnabled && <button type="button" className={styles.novaMic} data-listening={Boolean(novaMicrophone?.active&&novaMicrophone.listening)} aria-pressed={Boolean(novaMicrophone?.active&&novaMicrophone.listening)} aria-label={novaMicrophone?.active&&novaMicrophone.listening?t("Apagar micrófono de Nova","Turn off Nova microphone"):t("Hablar con Nova","Talk to Nova")} title={novaMicrophone?.active&&novaMicrophone.listening?t("Apagar micrófono de Nova","Turn off Nova microphone"):t("Hablar con Nova","Talk to Nova")} disabled={catalogStatus!=="ready"||!novaMicrophone||novaMicrophone.disabled||busy||interpretationBusy||workflowBusy} onClick={()=>novaMicrophoneRef.current?.toggle()}>{novaMicrophone?.active&&novaMicrophone.listening?<MicOff size={18} aria-hidden="true"/>:<Mic size={18} aria-hidden="true"/>}</button>}
           {!novaVoiceEnabled && (voice.state === "listening" || voice.state === "requesting_permission")
             ? <button type="button" className={styles.micActive} aria-label="Stop listening" title="Stop listening" onClick={voice.stop}>■</button>
             : !novaVoiceEnabled && <button type="button" className={styles.mic} aria-label={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} title={voice.state === "unsupported" ? "Speech recognition unavailable" : "Dictate message"} disabled={catalogStatus !== "ready" || voice.state === "unsupported" || voice.state === "checking" || voice.state === "processing" || voice.speaking || busy || interpretationBusy || workflowBusy} onClick={voice.start}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-4 0h8" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>}
           <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || workflowBusy || novaTextPending || novaSpeaking || voice.speaking}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
         {novaVoiceEnabled && catalogStatus === "ready" && <>
-          <AssistantLiveContent><NovaVoicePreview externalSpeaking={voice.speaking} audioReplies={audioReplies} textInputRef={novaTextSenderRef} key={conversationEpoch} preview={optionsSource === "fixture"} language={language} draftContext={voiceDraftContext(draft, request?.draftVersion ?? null, [...(measurementPending ? ["MEASUREMENT_SCOPE_PENDING" as const] : []),...(capturePending.date ? ["DATE_WINDOW_PENDING" as const] : []),...(capturePending.classification ? ["CLASSIFICATION_PENDING" as const] : [])], measurementPending, {timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,pendingDates:capturePending.date?.alternatives??[],pendingWindow:capturePending.date??undefined})} voiceContext={recentVoiceContext(history)} onPlaybackStateChange={speaking=>{setNovaSpeaking(speaking);if(speaking)setVoiceMode(true);}} onResponseFinished={()=>{awaitVoiceReplyRef.current=false;setResponseFinishedEpoch(n=>n+1);}} onTurn={(update) => {
+          <AssistantLiveContent><NovaVoicePreview compact microphoneControlRef={novaMicrophoneRef} onMicrophoneStateChange={setNovaMicrophone} externalSpeaking={voice.speaking} audioReplies={audioReplies} textInputRef={novaTextSenderRef} key={String(conversationEpoch)+':'+(transportSelectionRequired?'transport':'road')} preview={optionsSource === "fixture"} language={language} draftContext={transportSelectionRequired?undefined:voiceDraftContext(draft, request?.draftVersion ?? null, [...(measurementPending ? ["MEASUREMENT_SCOPE_PENDING" as const] : []),...(capturePending.date ? ["DATE_WINDOW_PENDING" as const] : []),...(capturePending.classification ? ["CLASSIFICATION_PENDING" as const] : [])], measurementPending, {timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,pendingDates:capturePending.date?.alternatives??[],pendingWindow:capturePending.date??undefined})} voiceContext={contextualVoiceTurns} onPlaybackStateChange={speaking=>{setNovaSpeaking(speaking);if(speaking)setVoiceMode(true);}} onResponseFinished={()=>{awaitVoiceReplyRef.current=false;setResponseFinishedEpoch(n=>n+1);}} onTurn={(update) => {
             const nextHistory = applyVoiceTranscript(voiceHistoryRef.current, update);
             voiceHistoryRef.current = nextHistory;
             setHistory(nextHistory);
@@ -891,6 +924,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
             if (update.final && update.role === "user") setLanguage(current => conversationLanguage(update.text, current));
             if (update.final && update.role === "user" && !appliedVoiceTurnsRef.current.has(update.contentId)) {
               appliedVoiceTurnsRef.current.add(update.contentId);setVoiceMode(true);
+              if(handleTransportSelection(update.text,null))return;
               const reviewCommand=spokenReviewCommand(update.text);
               if(reviewCommand){
                 if(processedVoiceCommandsRef.current.has(update.contentId))return;
@@ -911,7 +945,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
                 return;
               }
               if (!spokenReviewCommand(update.text)) {
-                const fields = buildSpokenRequestReview([{speaker:"user",text:update.text,contentId:update.contentId,provisional:false}], options, voiceDraftRef.current).fields.filter(f=>(!capturePendingRef.current.date||!f.field.endsWith("At"))&&(!capturePendingRef.current.classification||f.field!=="categoryCode")&&(!measurementPendingRef.current||!["unitLengthCm","unitWidthCm","unitHeightCm","unitVolumePerUnitM3"].includes(f.field)));
+                const fields = groundedCargoSuggestions(update.text,voiceDraftRef.current,options,lastSpokenQuestionField(nextHistory),buildSpokenRequestReview([{speaker:"user",text:update.text,contentId:update.contentId,provisional:false}], options, voiceDraftRef.current).fields).filter(f=>(!capturePendingRef.current.date||!f.field.endsWith("At"))&&(!capturePendingRef.current.classification||f.field!=="categoryCode")&&(!measurementPendingRef.current||!["unitLengthCm","unitWidthCm","unitHeightCm","unitVolumePerUnitM3"].includes(f.field)));
                 if (fields.length) {
                   voiceDraftRef.current = applyChatFieldsToDraft(voiceDraftRef.current, fields);
                   onFields(fields);
@@ -928,10 +962,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
 
           }} /></AssistantLiveContent>
           {spokenDetails && <button type="button" className={styles.retry} onClick={() => requestVoiceReview()}>{language==="es"?"Revisar datos de voz":"Review spoken request details"}</button>}
-          {onEdit && <button type="button" className={styles.retry} disabled={novaSpeaking} onClick={() => goToFormStep(1)}>{language==="es"?"Ir al formulario":"Go to request form"}</button>}
         </>}
-        {novaVoiceEnabled && <div className={styles.audioActions}><button type="button" aria-pressed={audioReplies} onClick={() => { setAudioReplies(enabled => !enabled); if (audioReplies) voice.stopResponse(); }}>{audioReplies ? t("Respuestas con voz activadas", "Voice replies on") : t("Respuestas con voz desactivadas", "Voice replies off")}</button></div>}
-        {!novaVoiceEnabled && <div className={styles.audioActions}><button type="button" onClick={() => { setAudioReplies((enabled) => !enabled); if (audioReplies) voice.stopResponse(); }} aria-pressed={audioReplies}>{audioReplies ? "Voice replies on" : "Voice replies off"}</button><button type="button" onClick={() => voice.readResponse()} disabled={!voice.canRead || voice.speaking}>Replay</button><button type="button" onClick={voice.stopResponse} disabled={!voice.speaking}>Stop audio</button><label>Voice <select aria-label="Voice for spoken replies" value={voice.selectedVoiceURI} onChange={(event) => voice.setSelectedVoiceURI(event.target.value)}><option value="">Automatic · Zira preferred</option>{voice.availableVoices.map((option) => <option key={option.voiceURI} value={option.voiceURI}>{option.name} ({option.lang}){option.localService ? " · device" : ""}</option>)}</select></label><label>Pace <select aria-label="Voice pace" value={voiceRate} onChange={(event) => setVoiceRate(Number(event.target.value))}><option value={0.88}>Relaxed</option><option value={0.96}>Natural</option><option value={1.06}>Brisk</option></select></label><button type="button" onClick={() => voice.readResponse("Hello, I'm CargoMesh. Tell me what you need to ship, and I'll help you step by step.")} disabled={voice.speaking}>Test voice</button></div>}
       </div>
     </section></AssistantSurface>}
     </AnimatePresence>
@@ -953,7 +984,7 @@ function ChatStructuredSummary({ draft, options, request, dirty, onEdit, t }: { 
   return <details className={styles.structuredSummary}>
     <summary><span className={styles.draftIcon} aria-hidden="true"><MessageSquareText size={17}/></span><span className={styles.draftLabel}><strong>{t("Borrador compartido", "Shared draft")}</strong><small>{dirty ? t("Cambios sin guardar", "Unsaved changes") : request ? t(`Guardado · versión ${request.draftVersion}`, `Saved · version ${request.draftVersion}`) : t("Aún sin guardar", "Not saved yet")}</small></span><span className={styles.draftCount} aria-label={t(`${completed} de 6 datos principales`, `${completed} of 6 main details`)}>{completed}/6</span><ChevronDown size={16} aria-hidden="true" /></summary>
     {request && <p className={styles.summaryReference}>{request.referenceCode}</p>}
-    <dl>{rows.map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd>{onEdit ? <button type="button" onClick={() => onEdit(row.step)} aria-label={`${t("Editar", "Edit")} ${row.label}`}>{t("Editar", "Edit")}</button> : null}</div>)}</dl>
+    <dl>{rows.map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{displayDemoText(row.value)}</dd>{onEdit ? <button type="button" onClick={() => onEdit(row.step)} aria-label={`${t("Editar", "Edit")} ${row.label}`}>{t("Editar", "Edit")}</button> : null}</div>)}</dl>
     <p className={styles.summaryStatus}>{validation.valid ? t("Listo para revisión humana; no hay booking automático.", "Ready for human review; no automatic booking.") : t(`${validation.issues.length} dato(s) pendiente(s) antes de guardar.`, `${validation.issues.length} detail(s) needed before saving.`)}</p>
   </details>;
 }

@@ -179,7 +179,7 @@ html body [data-carrier-ui] [data-cm-search-control]:has(input[aria-invalid=true
 }
 
 /* Selects share the action/search palette; browser pickers remain native. */
-html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]) {
+html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):not([data-cm-language-select]) {
   border: 1.5px solid var(--cm-color-action-line) !important;
   border-radius: 8px !important;
   background-color: var(--cm-color-surface, #fff) !important;
@@ -188,24 +188,24 @@ html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-sty
   font-weight: 500;
   transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
 }
-html body [data-carrier-ui] select:not(.gm-style select):not([multiple]):not([size]) {
+html body [data-carrier-ui] select:not(.gm-style select):not([multiple]):not([size]):not([data-cm-language-select]) {
   min-height: var(--cm-control-height);
 }
-html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):hover:not(:disabled) {
+html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):not([data-cm-language-select]):hover:not(:disabled) {
   border-color: var(--cm-color-action) !important;
 }
-html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):is(:focus-visible, :open) {
+html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):not([data-cm-language-select]):is(:focus-visible, :open) {
   border-color: var(--cm-color-action) !important;
   outline: 2px solid color-mix(in srgb, var(--cm-color-action) 18%, transparent) !important;
   outline-offset: 2px;
 }
-html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):disabled {
+html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):not([data-cm-language-select]):disabled {
   background-color: var(--cm-color-surface-subtle) !important;
   color: var(--cm-color-muted) !important;
   opacity: .65;
   cursor: not-allowed;
 }
-html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size])[aria-invalid=true] {
+html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):not([data-cm-language-select])[aria-invalid=true] {
   border-color: var(--cm-color-danger) !important;
 }
 @media(prefers-reduced-motion:reduce) {
@@ -238,7 +238,7 @@ html body [data-carrier-ui] :is(a[href], button[aria-pressed], button[role=tab])
 html body [data-carrier-ui] {
   --cm-control-height: 44px;
 }
-html body [data-carrier-ui] :is(button[data-cm-action], button[data-cm-button]:not([data-size=compact]), select:not([multiple]):not([size]), input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden])):not(.gm-style *) {
+html body [data-carrier-ui] :is(button[data-cm-action], button[data-cm-button]:not([data-size=compact]), select:not([multiple]):not([size]):not([data-cm-language-select]), input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden])):not(.gm-style *) {
   box-sizing: border-box;
   height: var(--cm-control-height) !important;
   min-height: var(--cm-control-height) !important;

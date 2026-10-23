@@ -1,3 +1,3 @@
-import { WorkspaceLoadingScreen } from "@/features/landing/workspace-loader";
+import {CarrierSkeleton} from '@/features/carrier-navigation/carrier-loading';
 
-export default function Loading() { return <WorkspaceLoadingScreen workspace="carrier"/>; }
+export default function Loading() { return <CarrierSkeleton shape="dashboard"/>; }

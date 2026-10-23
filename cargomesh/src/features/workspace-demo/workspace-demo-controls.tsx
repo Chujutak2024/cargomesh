@@ -99,6 +99,7 @@ export function DemoWorkspaceProvider({ enabled, children }: { enabled: boolean;
       if (received.current.size >= 32) received.current.clear();
       received.current.add(message.id);
       sessionChanged.current = message.workspace;
+      window.dispatchEvent(new Event('cm-client-access-revoked'));
       const active = approval.current;
       approval.current = null;
       active?.resolve(false);

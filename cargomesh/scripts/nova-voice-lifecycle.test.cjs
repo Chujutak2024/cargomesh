@@ -5,7 +5,7 @@ const path=require('node:path');
 const vm=require('node:vm');
 const ts=require('typescript');
 // Component lifecycle test with inert media/socket adapters. No browser, audio or AWS is used.
-function setup({deferGrant=false,deferMicrophone=false}={}) {
+function setup({deferGrant=false,deferMicrophone=false,compact=false}={}) {
  const source=process.env.NOVA_VOICE_COMPONENT_SOURCE??path.resolve(__dirname,'../src/features/v2-conversation-prep/nova-voice-preview.tsx');
  const code=ts.transpileModule(fs.readFileSync(source,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
  const slots=[],effects=[],sockets=[],audio=[],contexts=[],worklets=[],playback=[],finished=[],turns=[],grantRequests=[];let mediaRequests=0;let index=0,nonce=0;let resolveGrant,resolveMicrophone;
@@ -30,12 +30,29 @@ function setup({deferGrant=false,deferMicrophone=false}={}) {
  const exports={};const response={ok:true,json:async()=>({wsUrl:'wss://voice.test/voice',token:'test-not-a-real-grant'})};
  const globals={exports,require:name=>name==='react'?hooks:name==='react/jsx-runtime'?{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})}:name.includes('locale-provider')?{useLocale:()=>({locale:'es'})}:name.includes('voice-session-renewal')?{shouldRenewVoiceSession:(...args)=>{renewalChecks.push(args);return false;}}:name.endsWith('.css')?{__esModule:true,default:{}}:(()=>{throw new Error('Unexpected import '+name);})(),navigator:{mediaDevices:{getUserMedia:async()=>{mediaRequests++;return deferMicrophone?new Promise(resolve=>{resolveMicrophone=()=>resolve(media);}):media;}}},window:{AudioWorkletNode:Worklet,setTimeout,clearTimeout},AudioWorkletNode:Worklet,AudioContext:Context,atob,WebSocket:Socket,crypto:{randomUUID:()=>String(++nonce)},fetch:(_url,init)=>{grantRequests.push(JSON.parse(init.body));return deferGrant?new Promise(resolve=>{resolveGrant=()=>resolve(response);}):Promise.resolve(response);},setTimeout,clearTimeout,setInterval:scheduleInterval,clearInterval:cancelInterval,Date:Clock,console};
  vm.runInNewContext(code,globals,{filename:source});
- const sender={current:null};
- let props={textInputRef:sender,language:'es',draftContext:{knownFields:[],missingFields:['unitQuantity'],savedVersion:null},onTurn:turn=>turns.push(turn),onPlaybackStateChange:value=>playback.push(value),onResponseFinished:()=>finished.push(true)};
+ const sender={current:null},microphone={current:null},microphoneStates=[];
+ let props={compact,microphoneControlRef:microphone,onMicrophoneStateChange:state=>microphoneStates.push(state),textInputRef:sender,language:'es',draftContext:{knownFields:[],missingFields:['unitQuantity'],savedVersion:null},onTurn:turn=>turns.push(turn),onPlaybackStateChange:value=>playback.push(value),onResponseFinished:()=>finished.push(true)};
  function render(next={}){props={...props,...next};index=0;const tree=exports.NovaVoicePreview(props);while(effects.length)effects.shift()();return tree;}
- return {render,sockets,track,audio,contexts,worklets,playback,finished,turns,grantRequests,intervals,renewalChecks,clock:()=>clockNow,advanceClock:ms=>{clockNow+=ms;},microphoneReady:()=>resolveMicrophone(),tickSilence:()=>{for(const tick of [...intervals.values()])tick.callback();},mediaRequests:()=>mediaRequests,write:text=>{render();return sender.current(text);},event:event=>sockets.at(-1).onmessage({data:JSON.stringify(event)}),grant:()=>resolveGrant(),start:()=>render().props.children[0].props.onClick(),unmount:()=>{for(const slot of slots)slot?.cleanup?.();}};
+ return {render,sockets,track,audio,contexts,worklets,playback,finished,turns,grantRequests,intervals,renewalChecks,microphone,microphoneStates,clock:()=>clockNow,advanceClock:ms=>{clockNow+=ms;},microphoneReady:()=>resolveMicrophone(),tickSilence:()=>{for(const tick of [...intervals.values()])tick.callback();},mediaRequests:()=>mediaRequests,write:text=>{render();return sender.current(text);},event:event=>sockets.at(-1).onmessage({data:JSON.stringify(event)}),grant:()=>resolveGrant(),start:()=>render().props.children[0].props.onClick(),unmount:()=>{for(const slot of slots)slot?.cleanup?.();}};
 }
 const settle=async()=>{for(let i=0;i<5;i++)await new Promise(setImmediate);};
+
+test('compact composer control starts only after an explicit click, pauses and resumes the same session',async()=>{
+ const app=setup({compact:true});const tree=app.render();
+ assert.equal(app.mediaRequests(),0);assert.equal(app.grantRequests.length,0);
+ assert.equal(tree.props.children,false,'no ready label or duplicated start button');
+ app.microphone.current.toggle();await settle();app.event({type:'ready'});await settle();app.render();
+ assert.equal(app.mediaRequests(),1);assert.equal(app.microphoneStates.at(-1).listening,true);
+ app.microphone.current.toggle();app.render();assert.equal(app.microphoneStates.at(-1).listening,false);assert.equal(app.track.stopped,1);
+ app.microphone.current.toggle();await settle();app.render();assert.equal(app.microphoneStates.at(-1).listening,true);assert.equal(app.sockets.length,1);
+ app.unmount();assert.equal(app.microphone.current,null);
+});
+test('compact microphone stays blocked during playback and keeps connection errors visible',async()=>{
+ const app=setup({compact:true});app.render({externalSpeaking:true});app.microphone.current.toggle();await settle();
+ assert.equal(app.grantRequests.length,0);
+ app.render({externalSpeaking:false});app.microphone.current.toggle();await settle();app.sockets[0].onerror();
+ const tree=app.render();assert.equal(tree.props.children.props.role,'status');assert.match(tree.props.children.props.children,/conexión|connection/i);app.unmount();
+});
 test('recognized fields and pending clarifications update the draft without closing voice',async()=>{
  const app=setup();app.start();await settle();assert.equal(app.sockets.length,1);
  app.render();app.render({draftContext:{knownFields:[{field:'unitQuantity',value:'10'}],missingFields:['categoryCode'],savedVersion:null}});

@@ -5,7 +5,7 @@ export const ConversationFieldNameSchema = z.enum([
   "urgency", "loadSize",
   "originFacilityId", "destinationFacilityId", "categoryCode", "packaging", "cargoDescription",
   "unitQuantity", "unitWeightPerUnitKg", "unitVolumePerUnitM3", "unitLengthCm", "unitWidthCm",
-  "unitHeightCm", "pickupWindowStartsAt", "pickupWindowEndsAt", "deliveryWindowStartsAt",
+  "unitHeightCm", "divisible", "unitIndivisible", "unitStackable", "requirements", "temperatureMinCelsius", "temperatureMaxCelsius", "pickupWindowStartsAt", "pickupWindowEndsAt", "deliveryWindowStartsAt",
   "deliveryWindowEndsAt", "requiredEquipment", "pickupContactName", "pickupContactPhoneE164",
   "pickupContactEmail", "recipientContactName", "recipientContactPhoneE164", "recipientContactEmail",
 ]);

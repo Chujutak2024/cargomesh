@@ -11,6 +11,8 @@ import {cargoGroups,groupTotals,cargoGroupInput,type DraftCargoGroup} from './ca
 export type PrototypeStep = 1 | 2 | 3 | 4;
 
 export type V2IntakePrototypeDraft = {
+  /** Local conversation progress; never serialized as commercial data. */
+  reviewedConversationFields?: string[];
   urgency?: string;
   loadSize?: string;
   pickupAlternatives?: Array<{startsAt:string;endsAt:string}>;
@@ -62,7 +64,7 @@ export function updatePrototypeDraftField<K extends keyof V2IntakePrototypeDraft
   field: K,
   value: V2IntakePrototypeDraft[K],
 ): V2IntakePrototypeDraft {
-  const next = { ...draft, [field]: value };
+  const next = { ...draft, [field]: value, ...(["divisible","unitIndivisible","unitStackable","requirements"].includes(field) ? {reviewedConversationFields:[...new Set([...(draft.reviewedConversationFields ?? []),field])]} : {}) };
   if (field === "unitQuantity" || field === "unitWeightPerUnitKg" || field === "unitVolumePerUnitM3" || field === "additionalUnits") {
     return withDerivedCargoTotals(next);
   }
@@ -71,7 +73,17 @@ export function updatePrototypeDraftField<K extends keyof V2IntakePrototypeDraft
 
 /** Apply one provisional chat field against the latest draft, including canonical UI totals. */
 export function applyChatFieldToDraft(draft: V2IntakePrototypeDraft, field: keyof V2IntakePrototypeDraft, value: string): V2IntakePrototypeDraft {
-  if (field === "requirements") return { ...draft, requirements: [...new Set([...draft.requirements, value])] };
+  if (field === "requirements") {
+    const requirements = value === "NONE" ? [] : value.startsWith("!")
+      ? draft.requirements.filter(code => code !== value.slice(1)) : [...new Set([...draft.requirements, value])];
+    return updatePrototypeDraftField(draft, "requirements", requirements);
+  }
+  if (field === "divisible" || field === "unitIndivisible" || field === "unitStackable") {
+    if (value !== "true" && value !== "false") return draft;
+    return updatePrototypeDraftField(draft, field, value === "true");
+  }
+  if ((field === "pickupContactEmail" || field === "recipientContactEmail") && value === "NONE")
+    return updatePrototypeDraftField(draft, field, "");
   const next = updatePrototypeDraftField(draft, field, value as never);
   if (field === "packaging") next.unitPackageType = value;
   return next;
@@ -405,8 +417,8 @@ export function validatePrototypeStep(
     const ids=cargoGroups(draft).map(g=>g.id);if(new Set(ids).size!==ids.length)issues.push({field:'additionalUnits',code:'required'});
     const requiredFields: Array<keyof V2IntakePrototypeDraft> = [
       "pickupWindowStartsAt", "pickupWindowEndsAt", "deliveryWindowStartsAt", "deliveryWindowEndsAt",
-      "requiredEquipment", "pickupContactName", "pickupContactPhoneE164", "pickupContactEmail",
-      "recipientContactName", "recipientContactPhoneE164", "recipientContactEmail",
+      "requiredEquipment", "pickupContactName", "pickupContactPhoneE164",
+      "recipientContactName", "recipientContactPhoneE164",
     ];
     requiredFields.forEach(required);
     const dateFields: Array<keyof V2IntakePrototypeDraft> = [
@@ -561,12 +573,12 @@ export function mapDraftToCreateFreightRequestV2Input(
       pickup: {
         name: draft.pickupContactName.trim(),
         phoneE164: draft.pickupContactPhoneE164.trim(),
-        email: draft.pickupContactEmail.trim(),
+        email: draft.pickupContactEmail.trim() || null,
       },
       recipient: {
         name: draft.recipientContactName.trim(),
         phoneE164: draft.recipientContactPhoneE164.trim(),
-        email: draft.recipientContactEmail.trim(),
+        email: draft.recipientContactEmail.trim() || null,
       },
     },
   };

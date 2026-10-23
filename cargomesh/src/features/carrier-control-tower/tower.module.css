@@ -106,3 +106,42 @@
   .listView .statusBadge{grid-column:2;justify-self:start;max-width:100%}
   .listView>.shipmentRow>svg{display:block;grid-column:3;grid-row:1 / span 2}
 }
+
+/* Directory rows keep their content height inside the scrolling viewport. */
+.listView{gap:20px;padding:16px;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.directoryGroup{display:grid;gap:12px;flex:none;min-width:0}
+.directoryGroup>h3{margin:2px 2px 0;font-size:12px;line-height:1.5;color:var(--muted);font-weight:600}
+.listView .shipmentRow{width:100%;height:auto;min-height:92px;flex:none;gap:14px;padding:16px;line-height:1.5}
+.listView .shipmentCopy{display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}
+.listView .shipmentCopy strong{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;line-height:1.5}
+.listView .shipmentCopy small{display:block;margin:0;line-height:1.5}
+.listView .vehicleIcon,.listView .shipmentRow>svg{flex:none}
+.listView .statusBadge{flex:none;white-space:nowrap}
+.siteAction{flex:none;color:var(--primary);font-size:11px;font-weight:600;white-space:nowrap}
+.noMatches{position:static;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 16px 0;padding:10px 12px;background:#f5f9fb;line-height:1.5}
+.noMatches button{flex:none}
+.mapLegend a{pointer-events:auto}
+.mapSurface button.depotPin{position:relative;display:grid;place-items:center;width:36px;height:36px;min-height:36px;padding:0;border:2px solid white;border-radius:10px;background:#e0f6ef;color:#147d88;overflow:visible;cursor:pointer}
+.mapSurface button.depotPin:hover,.mapSurface button.depotPin:focus-visible{background:#c7eee5;z-index:30}
+.depotLabel{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);max-width:220px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink);font-size:11px;font-weight:600;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 3px 12px #16334918;pointer-events:none}
+dialog.siteDialog{width:min(1100px,calc(100vw - 32px));max-width:1100px}
+.sitePreviewHeading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;font-size:12px;color:var(--muted)}
+.siteDesign{display:grid;gap:6px;max-width:360px;margin-bottom:20px;font-size:12px;color:var(--ink)}
+.siteDesign select{min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:white;color:var(--ink)}
+@media(max-width:700px){.listView{padding:12px}.listView .shipmentRow{padding:14px;gap:10px}.listView .statusBadge,.siteAction{font-size:9px}.noMatches{flex-wrap:wrap;margin-inline:12px}.depotLabel{max-width:160px}.sitePreviewHeading{align-items:flex-start}}
+
+.simulationToolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:0 18px 14px;font-size:11px}
+.simulationToolbar>button{flex:none}
+.simulationToolbar>button[aria-pressed=true]{background:#f2edff;border-color:#b9a2e8;color:#6741a5}
+.simulationCaption{color:#6741a5;line-height:1.5}
+.simulationCaption small{display:block;font-size:10px;color:var(--muted)}
+.simulationTimeline{display:flex;align-items:center;gap:8px;flex:1;min-width:180px;max-width:300px;font-size:10px;white-space:nowrap}
+.simulationTimeline input[type=range]{width:100%;min-width:60px;min-height:32px;border:0;padding:0;background:transparent;accent-color:#7954b9}
+.simulationTimeline output{min-width:30px;font-variant-numeric:tabular-nums;color:#6741a5}
+.mapSurface button.simulatedPin{position:relative;display:grid;place-items:center;width:36px;height:36px;min-height:36px;padding:0;border:2px solid white;border-radius:11px;background:#7954b9;color:white;box-shadow:0 3px 10px #42276b38;overflow:visible}
+.mapSurface button.simulatedPin[aria-pressed=true]{background:#55308f;outline:3px solid #c4ade9;outline-offset:2px}
+.simulatedPinLabel{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);padding:4px 7px;border:1px solid #dacaf1;border-radius:6px;background:#f8f4ff;color:#55308f;font-size:10px;font-weight:600;white-space:nowrap;pointer-events:none}
+.simulationLegend{display:inline-flex;align-items:center;gap:5px;color:#6741a5;font-weight:600}
+.simulationLegend i{width:7px;height:7px;border-radius:50%;background:#7954b9}
+.mapDetail .simulationHint{margin:10px 0;padding:8px;border-radius:7px;background:#f2edff;color:#6741a5;line-height:1.5}
+@media(max-width:700px){.simulationToolbar{margin-inline:14px}.simulationTimeline{max-width:none;flex-basis:100%}.simulationCaption{flex:1}}

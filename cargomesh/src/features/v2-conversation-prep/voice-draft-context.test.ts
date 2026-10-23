@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { voiceDraftContext, VoiceDraftContextSchema } from "./voice-draft-context";
 import { conversationLanguage } from "./conversation-language";
-import { EMPTY_PROTOTYPE_DRAFT, applyChatFieldsToDraft } from "@/features/v2-intake/prototype-model";
+import { EMPTY_PROTOTYPE_DRAFT, applyChatFieldsToDraft, buildPrototypeExample } from "@/features/v2-intake/prototype-model";
+import {getIntakeOptionsFixture} from "@/features/v2-intake/intake-options";
 
 test("language survives numeric turns and changes only on clear language evidence", () => {
   assert.equal(conversationLanguage("Necesito enviar diez pallets", "en"), "es");
@@ -52,4 +53,14 @@ test("voice renewal follows validated form sections instead of optional-field or
  const context=voiceDraftContext({...EMPTY_PROTOTYPE_DRAFT,originFacilityId:"origin",destinationFacilityId:"destination"},null);
  assert.equal(context.formProgress?.step,2);assert.ok(context.formProgress?.pendingFields.includes("categoryCode"));
  assert.ok(!context.formProgress?.pendingFields.includes("urgency"));
+});
+
+test("Nova renewal keeps split as a pending question until it is explicitly answered",()=>{
+ let draft=buildPrototypeExample(getIntakeOptionsFixture().data);
+ let context=voiceDraftContext(draft,null);
+ assert.equal(context.missingFields[0],'divisible');assert.equal(context.formProgress?.pendingFields[0],'divisible');
+ assert.equal(context.knownFields.some(f=>f.field==='divisible'),false);
+ draft=applyChatFieldsToDraft(draft,[{field:'divisible',value:'false'}]);context=voiceDraftContext(draft,null);
+ assert.deepEqual(context.knownFields.find(f=>f.field==='divisible'),{field:'divisible',value:'false'});
+ assert.equal(context.missingFields[0],'unitIndivisible');
 });

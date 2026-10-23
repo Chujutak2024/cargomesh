@@ -1,4 +1,4 @@
-import { assistantFormProgress } from "@/features/v2-intake/assistant-form-guide";
+import { assistantFormProgress, assistantNextField } from "@/features/v2-intake/assistant-form-guide";
 import { sessionDate, type DateClarification } from "@/features/v2-intake/capture-clarification";
 import { z } from "zod";
 import {DispatchPreferencesSchema} from "@/shared/schemas/v2/dispatch";
@@ -35,16 +35,17 @@ function voiceCargoDescription(draft: V2IntakePrototypeDraft) {
 
 export function voiceDraftContext(draft: V2IntakePrototypeDraft, savedVersion: number | null, ambiguities: Array<"MEASUREMENT_SCOPE_PENDING"|"DATE_WINDOW_PENDING"|"CLASSIFICATION_PENDING"> = [], pendingMeasurement: VoiceDraftContext["pendingMeasurement"] = null, session:{timeZone:string;pendingDates:string[];pendingWindow?:DateClarification} = {timeZone:"UTC",pendingDates:[]}): VoiceDraftContext {
   const progress = assistantFormProgress(draft);
+  const nextField=assistantNextField(draft);
   let planningPreferences;try{planningPreferences=draftDispatchPreferences(draft);}catch{/* Partial dates remain pending until the user clarifies them. */}
   return VoiceDraftContextSchema.parse({
     ...(planningPreferences?{planningPreferences}:{}),
     knownFields: conversationContext(draft, null, 0).knownFields,
-    missingFields: [...new Set(progress.sections.flatMap(section=>section.issues.map(issue=>issue.field)))].filter(field=>ConversationContextFieldSchema.safeParse(field).success).slice(0,24),
+    missingFields: [...new Set([...(nextField?[nextField]:[]),...progress.sections.flatMap(section=>section.issues.map(issue=>issue.field))])].filter(field=>ConversationContextFieldSchema.safeParse(field).success).slice(0,24),
     savedVersion,
     timeZone:session.timeZone,
     pendingDates:session.pendingDates,
     ...(voiceCargoDescription(draft)?{cargoDescription:voiceCargoDescription(draft)}:{}),
-    formProgress:{step:progress.nextStep,pendingFields:[...new Set(progress.sections.find(s=>s.step===progress.nextStep)?.issues.map(i=>i.field)??[])]},
+    formProgress:{step:progress.nextStep,pendingFields:[...new Set([...(nextField?[nextField]:[]),...(progress.sections.find(s=>s.step===progress.nextStep)?.issues.map(i=>i.field)??[])])]},
     referenceDate:sessionDate(Date.now(),session.timeZone),
     ...(session.pendingWindow ? {pendingWindow:{role:session.pendingWindow.role,startTime:session.pendingWindow.startTime,endTime:session.pendingWindow.endTime}} : {}),
     ambiguities,
