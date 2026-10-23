@@ -1,0 +1,9 @@
+.field { position: relative; min-width: 0; border-radius: .75rem; }
+.field[data-assistant-updated="true"] { outline: 2px solid #18a899; outline-offset: 3px; background: #f0fdfa; }
+.glow { position: absolute; inset: -4px; z-index: 1; border-radius: inherit; pointer-events: none; animation: appliedGlow 900ms ease-out both; }
+.badge { position: absolute; top: -.6rem; right: .45rem; z-index: 2; display: inline-flex; align-items: center; gap: .2rem; border: 1px solid #91dacf; border-radius: 999px; padding: .12rem .4rem; color: #075f55; background: #ecfdf5; font-size: .62rem; font-weight: 750; line-height: 1.35; pointer-events: none; }
+.noticeSlot { min-height: 2.6rem; margin-bottom: .5rem; }
+.notice { display: flex; align-items: center; gap: .5rem; padding: .55rem .7rem; border: 1px solid #b9e3dc; border-radius: .65rem; background: #f0fdfa; color: #075f55; font-size: .75rem; line-height: 1.5; }
+.notice > svg { flex-shrink: 0; }
+@keyframes appliedGlow { from { box-shadow: 0 0 0 3px #2dd4bf66, 0 0 22px #14b8a64d; } to { box-shadow: 0 0 0 0 transparent, 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .glow { animation: none; } }
