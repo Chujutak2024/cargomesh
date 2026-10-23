@@ -4,7 +4,7 @@
 .table td { max-width: 16rem; padding: .85rem .75rem; border-top: 1px solid var(--cm-color-line); vertical-align: top; overflow-wrap: anywhere; }
 .table td strong, .table td small { display: block; }
 .table td small { margin-top: .25rem; color: var(--cm-color-muted); font-size: .72rem; }
-.table tr[data-selected="true"] { background: var(--cm-color-positive-surface); box-shadow: inset 3px 0 var(--cm-color-logistics); }
+.table tr[data-selected="true"] { background: var(--cm-color-selected); box-shadow: inset 3px 0 var(--cm-color-logistics); }
 .table button { min-height: 2.5rem; padding: .5rem .7rem; border: 1px solid var(--cm-color-line); border-radius: .6rem; background: var(--cm-color-surface); color: var(--cm-color-logistics); font: inherit; font-weight: 750; cursor: pointer; }
 .table button:disabled { cursor: wait; opacity: .6; }
 .table button:focus-visible, .tableRegion:focus-visible { outline: 3px solid var(--cm-color-focus); outline-offset: -3px; }

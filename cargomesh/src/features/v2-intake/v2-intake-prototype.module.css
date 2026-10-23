@@ -270,11 +270,15 @@
 
 /* Standalone intake shares the shell palette, without changing embedded Carrier. */
 .standalone {
-  --cm-color-primary: var(--cm-color-logistics);
-  --cm-color-primary-hover: var(--cm-color-heading);
-  --cm-color-focus: var(--cm-color-logistics);
-  --cm-color-action: var(--cm-color-logistics);
-  --cm-color-action-hover: var(--cm-color-heading);
+  --cm-color-primary: #2b59ff;
+  --cm-color-primary-hover: #234bdc;
+  --cm-color-logistics: var(--cm-color-primary);
+  --cm-color-logistics-hover: var(--cm-color-primary-hover);
+  --cm-color-focus: #617fff;
+  --cm-color-selected: #eef2ff;
+  --cm-color-action: var(--cm-color-primary);
+  --cm-color-action-hover: var(--cm-color-primary-hover);
+  --cm-color-action-tint: var(--cm-color-selected);
   --cm-control-height: 44px;
   caret-color: var(--cm-color-logistics);
 }
@@ -282,6 +286,7 @@
 .standalone .frame { border: 1px solid var(--cm-color-line); border-radius: 16px; padding: 1.5rem 2rem 2rem; background: var(--cm-color-surface); }
 .standalone .hero { flex-direction: row; align-items: center; gap: 1rem; margin-bottom: 1.5rem; border: 0; border-radius: 0; padding: 0; background: transparent; box-shadow: none; overflow: visible; }
 .standalone .hero::after { display: none; }
+.standalone .heroIcon { background: linear-gradient(145deg, var(--cm-color-primary-hover), var(--cm-color-primary)); }
 .standalone .hero h1 { font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.03em; }
 .standalone .heroActions { justify-content: flex-end; }
 .standalone .stepper { gap: 1rem; margin: 0 0 2rem; border: 0; border-bottom: 1px solid var(--cm-color-line); border-radius: 0; padding: 0 0 1rem; background: transparent; box-shadow: none; }
@@ -348,7 +353,8 @@
 .standalone .contactFields { gap: 1rem; }
 .standalone .equipmentGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
 .standalone .equipmentCard { min-height: 4.5rem; border-radius: 8px; box-shadow: none; transition: background var(--cm-motion-interaction) var(--cm-motion-ease), border-color var(--cm-motion-interaction) var(--cm-motion-ease); }
-.standalone .equipmentCard:hover { transform: none; box-shadow: none; }
+.standalone .equipmentCard:hover { transform: none; box-shadow: none; background: var(--cm-color-surface-tint); }
+.standalone .equipmentCard[data-selected="true"] { background: var(--cm-color-selected); }
 .standalone .equipmentIcon { width: 2rem; height: 2rem; border-radius: 0; background: transparent; }
 .standalone .equipmentCard small { font-size: .75rem; }
 .standalone .equipmentCard > :nth-child(3):not(.equipmentCheck) { grid-column: 2; }

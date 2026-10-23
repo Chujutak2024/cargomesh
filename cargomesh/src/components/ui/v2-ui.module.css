@@ -86,9 +86,9 @@ select.control { appearance: auto; }
   font-weight: 820;
   line-height: 1.25;
 }
-.preliminary { border-color: #b8dfe1; background: #e9f7f8; color: var(--cm-color-logistics); }
+.preliminary { border-color: var(--cm-color-preliminary-line, #b8dfe1); background: var(--cm-color-preliminary-surface, #e9f7f8); color: var(--cm-color-logistics); }
 .unknown { border-color: #ead6a8; background: var(--cm-color-warning-surface); color: var(--cm-color-warning-ink); }
-.confirmed { border-color: #b9dfd1; background: var(--cm-color-positive-surface); color: var(--cm-color-logistics); }
+.confirmed { border-color: #b9dfd1; background: var(--cm-color-positive-surface); color: var(--cm-color-confirmed-ink, var(--cm-color-logistics)); }
 .neutral { border-color: var(--cm-color-line); background: var(--cm-color-surface-subtle); color: var(--cm-color-muted); }
 
 .dialog {

@@ -18,7 +18,7 @@
 .row span { color: var(--cm-color-ink); font-size: 0.7rem; }
 .row small { color: var(--cm-color-muted); font-size: 0.8rem; }
 .stack { display: grid; gap: 0.22rem; }
-.status { justify-self: end; border-radius: 999px; padding: 0.3rem 0.5rem; background: var(--cm-color-positive-surface); color: var(--cm-color-logistics); font-size: 0.58rem; font-weight: 800; }
+.status { justify-self: end; border-radius: 999px; padding: 0.3rem 0.5rem; background: var(--cm-color-positive-surface); color: var(--cm-color-positive); font-size: 0.58rem; font-weight: 800; }
 .empty { display: grid; justify-items: center; gap: 0.55rem; padding: 3rem 1rem; color: var(--cm-color-muted); text-align: center; }
 .empty strong { color: var(--cm-color-heading); font-size: 0.95rem; }
 .empty p { max-width: 30rem; margin: 0; font-size: 0.8rem; line-height: 1.55; }
@@ -28,7 +28,7 @@
 .info h2 { color: var(--cm-color-heading); font-size: 1rem; }
 .info p { color: var(--cm-color-muted); font-size: 0.8rem; line-height: 1.55; }
 .identity { display: flex; align-items: center; gap: 0.85rem; padding: 1.25rem; border-bottom: 1px solid var(--cm-color-line); }
-.identityIcon { display: grid; width: 3rem; height: 3rem; flex: none; place-items: center; border-radius: var(--cm-radius-md); color: var(--cm-color-logistics); background: var(--cm-color-positive-surface); }
+.identityIcon { display: grid; width: 3rem; height: 3rem; flex: none; place-items: center; border-radius: var(--cm-radius-md); color: var(--cm-color-logistics); background: var(--cm-color-selected); }
 .identity h2 { margin: 0; color: var(--cm-color-heading); font-size: 1.15rem; overflow-wrap: anywhere; }
 .identity p { margin: 0.25rem 0 0; color: var(--cm-color-muted); font-size: 0.8rem; }
 .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin: 0; padding: 1.25rem; }
@@ -37,7 +37,7 @@
 .facts dd { margin: 0; color: var(--cm-color-heading); font-size: 0.9rem; font-weight: 800; }
 .guideList { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; counter-reset: guide; }
 .guideList li { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 0.8rem; padding: 1.05rem 1.25rem; border-bottom: 1px solid var(--cm-color-line); color: var(--cm-color-ink); font-size: 0.85rem; line-height: 1.5; counter-increment: guide; }
-.guideList li::before { content: counter(guide); display: grid; width: 1.8rem; height: 1.8rem; place-items: center; border-radius: 50%; color: var(--cm-color-logistics); background: var(--cm-color-positive-surface); font-size: 0.72rem; font-weight: 850; }
+.guideList li::before { content: counter(guide); display: grid; width: 1.8rem; height: 1.8rem; place-items: center; border-radius: 50%; color: var(--cm-color-logistics); background: var(--cm-color-selected); font-size: 0.72rem; font-weight: 850; }
 .guideList a { color: var(--cm-color-primary); font-weight: 750; text-underline-offset: 0.16rem; }
 .guideList a:focus-visible { outline: 3px solid var(--cm-color-focus); outline-offset: 2px; }
 .callout { display: flex; align-items: flex-start; gap: 0.55rem; margin: 1rem 1.25rem; border-left: 3px solid var(--cm-color-accent); border-radius: var(--cm-radius-sm); padding: 0.8rem; background: var(--cm-color-warning-surface); color: var(--cm-color-warning-ink); font-size: 0.78rem; line-height: 1.5; }

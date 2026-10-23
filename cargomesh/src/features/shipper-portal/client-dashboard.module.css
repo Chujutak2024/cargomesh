@@ -60,7 +60,7 @@
 .quickGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; padding: 0 16px 16px; }
 .quickCard { display: grid; align-content: start; min-width: 0; gap: 5px; padding: 14px 12px; border: 1px solid #e8edf4; border-radius: 12px; color: inherit; text-decoration: none; transition: background .18s, border-color .18s; }
 .quickCard:hover { border-color: #b9d2dc; background: #f6fafc; }
-.quickCard svg { margin-bottom: 5px; color: #0f6b6b; }
+.quickCard svg { margin-bottom: 5px; color: var(--cm-color-logistics); }
 .quickCard strong { color: #213548; font-size: 13px; line-height: 1.5; font-weight: 650; }
 .quickCard small { color: #64748b; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
 .empty { display: grid; justify-items: center; gap: 10px; padding: 36px 22px; border-top: 1px solid #edf1f6; color: #64748b; text-align: center; }

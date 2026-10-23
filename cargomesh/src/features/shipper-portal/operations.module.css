@@ -2,7 +2,7 @@
 .tabs { display: flex; flex-wrap: wrap; gap: .35rem; width: fit-content; max-width: 100%; padding: .3rem; border: 1px solid var(--cm-color-line); border-radius: .9rem; background: var(--cm-color-surface); }
 .tabs a { display: inline-flex; flex: 1 1 auto; align-items: center; justify-content: center; gap: .5rem; min-height: 2.75rem; padding: .6rem 1rem; border: 1px solid transparent; border-radius: .65rem; color: var(--cm-color-muted); font-size: .85rem; font-weight: 750; text-decoration: none; transition: background .16s ease, color .16s ease; }
 .tabs a:hover { background: var(--cm-color-surface-tint); }
-.tabs a[aria-current="page"] { border-color: var(--cm-color-line); color: var(--cm-color-logistics); background: var(--cm-color-positive-surface); }
+.tabs a[aria-current="page"] { border-color: var(--cm-color-line); color: var(--cm-color-logistics); background: var(--cm-color-selected); }
 .back { display: inline-flex; align-items: center; gap: .5rem; width: fit-content; min-height: 2.5rem; color: var(--cm-color-logistics); font-size: .85rem; font-weight: 750; text-decoration: none; }
 .readNotice { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .75rem; padding: 1rem; border: 1px solid var(--cm-color-line); border-radius: .9rem; color: var(--cm-color-warning-ink); background: var(--cm-color-warning-surface); }
 .readNotice > div { flex: 1 1 18rem; min-width: 0; }
@@ -12,7 +12,7 @@
 .readNotice button:disabled { opacity: .6; cursor: wait; }
 .collectionNotice { padding: .8rem 1rem; color: var(--cm-color-muted); border-bottom: 1px solid var(--cm-color-line); background: var(--cm-color-surface-tint); }
 .pagination { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .7rem; }
-.selected { background: var(--cm-color-positive-surface); box-shadow: inset 3px 0 var(--cm-color-logistics); }
+.selected { background: var(--cm-color-selected); box-shadow: inset 3px 0 var(--cm-color-logistics); }
 .reset { min-height: 2.5rem; padding: .4rem .7rem; border: 1px solid var(--cm-color-line); border-radius: .6rem; color: var(--cm-color-logistics); background: var(--cm-color-surface); font: inherit; font-size: .8rem; cursor: pointer; }
 .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin: 0; }
 .factsDisclosure summary { cursor: pointer; color: var(--cm-color-heading); font-weight: 750; }
