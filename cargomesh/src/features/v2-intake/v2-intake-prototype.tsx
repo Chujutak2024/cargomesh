@@ -54,6 +54,8 @@ import styles from "./v2-intake-prototype.module.css";
 import {CargoGroupsEditor} from './components/cargo-groups-editor';
 import {cargoGroups} from './cargo-groups';
 
+import { intakeStepLabels } from "./assistant-form-guide";
+
 const STEP_ICONS = [MapPinned, Package, CalendarDays, ClipboardCheck] as const;
 
 type Translate = (spanish: string, english: string) => string;
@@ -67,16 +69,11 @@ export function V2IntakePrototype(props: IntakeProps = {}) {
 }
 
 function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps) {
-  const { locale, t, draft, step, maxVisited, issues, options, optionsSource, optionsError, submitPhase, submitLabel, submitError,
+  const { locale, t, draft, assistantNavigation, pauseAssistantAdvance, step, maxVisited, issues, options, optionsSource, optionsError, submitPhase, submitLabel, submitError,
     request, evaluation, selectedCandidateId, dirtyAfterCreate, errorRef, activeOptions, origin, destination, optionCoverage,
     mapProps, update, errorFor, enterReview, goNext, loadExample, reset, createDraftAndEvaluate, retryAfterCreate,
     reloadPersisted, updateFromChat, setStep, setMaxVisited, setIssues, setOptionsAttempt, setSelectedCandidateId } = useIntakeSession();
-  const stepLabels = [
-    t("Sedes", "Facilities"),
-    t("Carga y unidades", "Cargo & units"),
-    t("Ventanas y contactos", "Windows & contacts"),
-    t("Crear y evaluar", "Create & evaluate"),
-  ];
+  const stepLabels = intakeStepLabels(t);
   const ActiveStepIcon = STEP_ICONS[step - 1];
   const submitting = ["creating", "revising", "reading", "evaluating"].includes(submitPhase);
   useEffect(() => { if (request) onPersisted?.(request); }, [request, onPersisted]);
@@ -156,7 +153,7 @@ function IntakeForm({ embedded = false, onPersisted, onEvaluation }: IntakeProps
         <div className={styles.stepProgress} aria-hidden="true"><span style={{width:`${step/4*100}%`}}/></div>
 
         <div className={styles.workspace}>
-          <ContentMotion identity={step} focusOnChange className={styles.stepMotion}><section className={styles.card} aria-labelledby={`prototype-step-${step}`}>
+          <ContentMotion identity={step} focusOnChange={!assistantNavigation} className={styles.stepMotion}><section className={styles.card} onPointerDownCapture={pauseAssistantAdvance} onFocusCapture={pauseAssistantAdvance} aria-labelledby={`prototype-step-${step}`}>
             <header className={styles.cardHeader}>
               <span className={styles.stepHeaderIcon} aria-hidden="true"><ActiveStepIcon size={20} /></span>
               <div><span className={styles.eyebrow}>{t(`Paso ${step} de 4`, `Step ${step} of 4`)}</span><h2 tabIndex={-1} id={`prototype-step-${step}`}>{stepLabels[step - 1]}</h2></div>

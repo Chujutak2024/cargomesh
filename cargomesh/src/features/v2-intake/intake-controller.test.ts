@@ -7,6 +7,7 @@ import * as prototype from "./prototype-model";
 import * as catalog from "./intake-options";
 import * as client from "./v2-intake-client";
 import * as groups from "./cargo-groups";
+import * as formGuide from "./assistant-form-guide";
 import { ROAD_REQUEST_FIXTURE, ELIGIBLE_UNKNOWN_EVALUATION_FIXTURE } from "./fixtures/contract-flow.fixture";
 import type { FreightRequestV2Data } from "./contracts";
 import type { useIntakeController } from "./intake-controller";
@@ -62,7 +63,9 @@ function setup({ storage = new Map<string, string>(), api = {} as Partial<typeof
   const options = catalog.getIntakeOptionsFixture();
   const native = { ...client, loadIntakeOptions: async () => ({ options: structuredClone(options), source: "api", fixtureReason: null }), ...api };
   const exports: { useIntakeController: typeof useIntakeController } = {} as never;
-  vm.runInNewContext(code, { exports, crypto, requestAnimationFrame: (run: () => void) => run(), window: { sessionStorage: {
+  vm.runInNewContext(code, { exports, crypto,
+    setTimeout: (callback: () => void, delay: number) => { const id = ++timerId; timers.set(id, { callback, delay }); return id; },
+    clearTimeout: (id: number) => timers.delete(id), requestAnimationFrame: (run: () => void) => run(), window: { sessionStorage: {
     getItem: (name: string) => storage.get(name) ?? null,
     setItem: (name: string, value: string) => storage.set(name, value), removeItem: (name: string) => storage.delete(name),
   } }, require: (name: string) => {
@@ -71,6 +74,7 @@ function setup({ storage = new Map<string, string>(), api = {} as Partial<typeof
     if (name === "./use-assistant-change-feedback") return feedbackExports;
     if (name === "./prototype-model") return prototype;
     if (name === "./cargo-groups") return groups;
+    if (name === "./assistant-form-guide") return formGuide;
     if (name === "./intake-options") return catalog;
     if (name === "./v2-intake-client") return native;
     if (name.includes("road-map-props.mapper")) return { mapServiceabilityToMapViewProps: () => ({}) };
@@ -272,4 +276,96 @@ test("batched assistant facts retain each changed field and reset releases feedb
   app.state.reset(); app.render(); assert.equal(app.state.assistantChange, null); assert.equal(app.timers.size, 0);
   app.state.updateFromChat([{ field: "cargoDescription", value: "pallets" }]); app.render();
   app.unmount(); assert.equal(app.timers.size, 0);
+});
+
+
+const advance = (app: ReturnType<typeof setup>) => {
+  const timer = [...app.timers.values()].find(t => t.delay === formGuide.ASSISTANT_ADVANCE_MS);
+  assert.ok(timer, "expected a validated automatic transition"); timer.callback(); app.render();
+};
+const routeFields = () => catalog.getIntakeOptionsFixture().data.facilities.slice(0, 2).map((f, i) => ({ field: i ? "destinationFacilityId" as const : "originFacilityId" as const, value: f.facilityId }));
+
+test("assistant completes facilities then advances after showing feedback, never saves", async () => {
+  let writes = 0;
+  const app = setup({ api: { createFreightRequestV2: async () => { writes++; throw Error("No automatic save"); } } }); await app.settle();
+  app.state.updateFromChat([routeFields()[0]]); app.render();
+  assert.equal(app.state.step, 1); assert.ok(![...app.timers.values()].some(t => t.delay === formGuide.ASSISTANT_ADVANCE_MS));
+  app.state.updateFromChat([routeFields()[1]]); app.render();
+  assert.equal(app.state.step, 1); assert.equal(app.state.assistantChange!.fields[0], "destinationFacilityId");
+  advance(app); assert.equal(app.state.step, 2); assert.equal(app.state.maxVisited, 2);
+  assert.equal(app.state.assistantNavigation, true); assert.equal(writes, 0); assert.equal(app.state.request, null); app.unmount();
+});
+
+test("manual navigation and reset cancel scheduled assistant advancement", async () => {
+  const app = setup(); await app.settle();
+  app.state.updateFromChat(routeFields()); app.render();
+  app.state.setStep(2); app.render();
+  assert.equal(app.state.assistantNavigation, false); assert.ok(![...app.timers.values()].some(t => t.delay === formGuide.ASSISTANT_ADVANCE_MS));
+  app.state.setStep(1); app.render(); app.state.updateFromChat([{field:"cargoDescription",value:"robots"}]); app.render();
+  assert.ok([...app.timers.values()].some(t => t.delay === formGuide.ASSISTANT_ADVANCE_MS));
+  const stale = [...app.timers.values()].find(t => t.delay === formGuide.ASSISTANT_ADVANCE_MS)!;
+  app.state.reset(); app.render(); stale.callback(); app.render(); assert.equal(app.timers.size, 0); assert.equal(app.state.step, 1); app.unmount();
+});
+
+test("manual edits and unsupported or same-facility routes cannot trigger advancement", async () => {
+  const app = setup(); await app.settle();
+  for (const f of routeFields()) app.state.update(f.field, f.value); app.render();
+  assert.equal(app.timers.size, 0); assert.equal(app.state.step, 1);
+  app.state.reset(); app.render();
+  app.state.updateFromChat([routeFields()[0],{field:"destinationFacilityId",value:routeFields()[0].value}]); app.render();
+  assert.ok(![...app.timers.values()].some(t => t.delay === formGuide.ASSISTANT_ADVANCE_MS));
+  app.state.updateFromChat([{field:"destinationFacilityId",value:"unknown-facility"}]); app.render();
+  assert.ok(![...app.timers.values()].some(t => t.delay === formGuide.ASSISTANT_ADVANCE_MS)); app.unmount();
+});
+
+test("complete cargo and contacts advance to review only after form validation", async () => {
+  const app = setup(); await app.settle(); app.state.loadExample(); app.render();
+  app.state.setStep(2); app.render(); app.state.updateFromChat([{field:"cargoDescription",value:"robots"}]); app.render();
+  advance(app); assert.equal(app.state.step, 4); assert.equal(app.state.request, null);
+  app.state.setStep(3); app.render(); app.state.updateFromChat([{field:"recipientContactEmail",value:"invalid"}]); app.render();
+  assert.ok(![...app.timers.values()].some(t => t.delay === formGuide.ASSISTANT_ADVANCE_MS)); assert.equal(app.state.step, 3);
+  app.state.updateFromChat([{field:"recipientContactEmail",value:"receiver@example.test"}]); app.render(); advance(app);
+  assert.equal(app.state.step, 4); assert.equal(app.state.request, null); app.unmount();
+});
+
+test("receipts show authorized route values and form guidance identifies actual missing data", () => {
+  const options = catalog.getIntakeOptionsFixture().data, t = (_es:string, en:string) => en;
+  let draft = prototype.applyChatFieldsToDraft(prototype.EMPTY_PROTOTYPE_DRAFT, routeFields());
+  const receipt = formGuide.assistantAppliedDetails(draft,["originFacilityId","destinationFacilityId"],options,t);
+  assert.match(receipt[0].value,/Lima.*→.*Arequipa/); assert.match(receipt[0].value,/synthetic/);
+  assert.equal(formGuide.assistantFormProgress(draft).nextStep, 2);
+  assert.equal(formGuide.assistantNextField(draft),"categoryCode");
+  assert.match(formGuide.assistantNextQuestion(draft,t),/cargo/i);
+  draft = prototype.buildPrototypeExample(options);
+  assert.equal(formGuide.assistantFormProgress(draft).nextStep,4);
+  assert.equal(formGuide.assistantNextField(draft),null);
+  assert.match(formGuide.assistantNextQuestion(draft,t),/confirm.*save/i);
+  const invalid = {...draft,recipientContactEmail:"invalid"};
+  assert.equal(formGuide.assistantFormProgress(invalid).nextStep,3);
+  assert.match(formGuide.assistantNextQuestion(invalid,t),/email/i);
+});
+
+
+test("touching the form pauses the pending automatic move without discarding recorded facts", async () => {
+ const app=setup();await app.settle();app.state.updateFromChat(routeFields());app.render();
+ app.state.pauseAssistantAdvance();app.render();
+ assert.ok(![...app.timers.values()].some(t=>t.delay===formGuide.ASSISTANT_ADVANCE_MS));
+ assert.equal(app.state.step,1);assert.equal(app.state.draft.originFacilityId,routeFields()[0].value);app.unmount();
+});
+
+test("cargo must be valid before moving to windows and incomplete contacts keep review blocked", async () => {
+ const app=setup();await app.settle();app.state.loadExample();app.render();
+ app.state.update("recipientContactEmail","");app.state.update("unitLengthCm","0");app.state.setStep(2);app.render();
+ app.state.updateFromChat([{field:"cargoDescription",value:"robots"}]);app.render();
+ assert.ok(![...app.timers.values()].some(t=>t.delay===formGuide.ASSISTANT_ADVANCE_MS));
+ app.state.updateFromChat([{field:"unitLengthCm",value:"50"}]);app.render();advance(app);
+ assert.equal(app.state.step,3);assert.equal(app.state.request,null);app.unmount();
+});
+
+
+test("repeated transcript facts do not cancel an already valid automatic transition",async()=>{
+ const app=setup();await app.settle();app.state.updateFromChat(routeFields());app.render();
+ const sequence=app.state.assistantChange!.sequence;
+ app.state.updateFromChat(routeFields());app.render();
+ assert.equal(app.state.assistantChange!.sequence,sequence);advance(app);assert.equal(app.state.step,2);app.unmount();
 });

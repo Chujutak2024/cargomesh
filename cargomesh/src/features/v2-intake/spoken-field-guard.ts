@@ -3,11 +3,18 @@ import type { VoiceTurn } from "@/features/v2-conversation-prep/voice-transcript
 import {normalizeSpokenQuantities} from '@/features/v2-conversation-prep/spoken-quantities';
 
 export function lastSpokenQuestionField(turns: VoiceTurn[]): GuidedConversationField | null {
-  const question = [...turns].reverse().find((turn) => turn.speaker === "assistant" && !turn.provisional)?.text ?? "";
-  if (!question.includes("?")) return null;
+  const fullQuestion = [...turns].reverse().find((turn) => turn.speaker === "assistant" && !turn.provisional)?.text ?? "";
+  if (!fullQuestion.includes("?")) return null;
+  const question = fullQuestion.match(/[^.!?]*\?/g)?.at(-1)?.trim() || fullQuestion;
   const rules: Array<[RegExp, GuidedConversationField]> = [
+    [/\b(?:categor(?:y|ize)|classification|cargo category|type of cargo)\b/i, "categoryCode"],
+    [/\b(?:pickup|collection|picked up|collected)\b.*\b(?:end|until)\b|\b(?:end|until)\b.*\b(?:pickup|collection)\b/i, "pickupWindowEndsAt"],
+    [/\b(?:delivery|delivered|arrive|arrival)\b.*\b(?:end|until)\b|\b(?:end|until)\b.*\b(?:delivery|arrival)\b/i, "deliveryWindowEndsAt"],
+    [/\b(?:when|date|time|window)\b.*\b(?:pickup|collection|picked up|collected)\b|\b(?:pickup|collection)\b.*\b(?:date|time|window)\b/i, "pickupWindowStartsAt"],
+    [/\b(?:when|date|time|window)\b.*\b(?:delivery|delivered|arrive|arrival)\b|\b(?:delivery|arrival)\b.*\b(?:date|time|window)\b/i, "deliveryWindowStartsAt"],
+    [/\b(?:what.*(?:contain|inside)|what.*(?:planning to ship|going to ship)|what kind of product)\b/i, "cargoDescription"],
     [/\b(?:urgente|urgencia|urgent|urgency|priority|prioridad)\b/i,"urgency"],
-    [/\b(?:liviana|mediana|pesada|light|medium|heavy)\b/i,"loadSize"],
+    [/\b(?:carga|load|shipment)\b.*\b(?:liviana|mediana|pesada|light|medium|heavy)\b/i,"loadSize"],
     [/\b(?:recojo|retiro)\b.*\b(?:hasta|termina|finaliza)\b|\b(?:hasta|termina|finaliza)\b.*\b(?:recojo|retiro)\b/i,"pickupWindowEndsAt"],
     [/\bentrega\b.*\b(?:hasta|termina|finaliza)\b|\b(?:hasta|termina|finaliza)\b.*\bentrega\b/i,"deliveryWindowEndsAt"],
     [/\b(?:recojo|retiro)\b.*\b(?:fecha|hora|desde|inicia)\b|\b(?:fecha|hora|desde|inicia)\b.*\b(?:recojo|retiro)\b/i,"pickupWindowStartsAt"],
@@ -46,7 +53,10 @@ export function lastSpokenQuestionField(turns: VoiceTurn[]): GuidedConversationF
     [/\b(?:where)\b.*\b(?:picked up|pickup)\b/i, "originFacilityId"],
     [/\b(?:where)\b.*\b(?:delivered|destination)\b/i, "destinationFacilityId"],
   ];
-  return rules.find(([pattern]) => pattern.test(question))?.[1] ?? null;
+  const matched = rules.find(([pattern]) => pattern.test(question))?.[1];
+  if (matched) return matched;
+  if (/\bwhich one\b/i.test(question) && /\b(?:flatbed|tractor trailer|box truck|refrigerated truck)\b/i.test(fullQuestion)) return "requiredEquipment";
+  return null;
 }
 
 /** The voice model proposes data; the app accepts only values grounded in the latest turn. */
@@ -55,7 +65,7 @@ export function checkedSpokenField(field: ConversationField, parsed: string, utt
   const promptedField = lastSpokenQuestionField(turns);
   const prompt = [...turns].reverse().find((turn) => turn.speaker === "assistant" && !turn.provisional)?.text ?? "";
   const asked = (pattern: RegExp) => pattern.test(prompt);
-  if (field === "unitWeightPerUnitKg" && promptedField !== field && !/\b(?:per|each|every|cada|por)\s+(?:unit|box|package|pallet|crate|unidad|caja)\b|\b(?:unit|box|package|pallet|crate)\s+weighs\b/i.test(spoken)) return null;
+  if (field === "unitWeightPerUnitKg" && promptedField !== field && !/\d\s*(?:kg|kilograms?|kilogramos?)\s+(?:each|cada uno|cada una)\b|\b(?:per|each|every|cada|por)\s+(?:unit|box|package|pallet|crate|unidad|caja)\b|\b(?:unit|box|package|pallet|crate)\s+weighs\b/i.test(spoken)) return null;
   if (field === "unitQuantity" && ((promptedField !== field && !/\b(?:units?|boxes?|packages?|pallets?|crates?|cajas?|palets?)\b/i.test(spoken)) || (/\b(?:kg|kilograms?|tons?|tonnes?)\b/i.test(spoken)&&!/\b\d+\s*(?:units?|boxes?|packages?|pallets?|crates?|cajas?|palets?)\b/i.test(spoken)))) return null;
   if (field === "unitVolumePerUnitM3" && promptedField !== field && !/\b(?:m3|m³|cubic met(?:er|re)s?)\b/i.test(spoken)) return null;
   if (["unitLengthCm", "unitWidthCm", "unitHeightCm"].includes(field) && !/\b(?:cm|centimet(?:er|re)s?)\b/i.test(spoken)) return null;

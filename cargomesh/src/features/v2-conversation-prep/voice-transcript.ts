@@ -24,8 +24,10 @@ export function spokenUserDetails(turns: VoiceTurn[]): string {
 }
 
 export function recentVoiceContext(turns: VoiceTurn[]): string[] {
-  return turns.filter((turn) => turn.speaker === "user" && turn.contentId?.startsWith("nova:") && !turn.provisional)
-    .slice(-16).map((turn) => `Customer: ${turn.text.trim().slice(0, 300)}`);
+  const complete = turns.filter(turn => turn.contentId?.startsWith("nova:") && !turn.provisional);
+  const recent = complete.slice(-12);
+  const anchors = complete.filter(turn => turn.speaker === "user" && !recent.includes(turn)).slice(0, 4);
+  return [...anchors, ...recent].slice(-16).map(turn => `${turn.speaker === "user" ? "Customer" : "Assistant"}: ${turn.text.trim().slice(0, 300)}`);
 }
 
 export function applyVoiceTranscript(

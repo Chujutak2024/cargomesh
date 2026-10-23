@@ -25,6 +25,9 @@ import { voiceDraftContext } from "@/features/v2-conversation-prep/voice-draft-c
 import { readCargoReadiness, summarizeCargoReadiness } from "./workflow-chat-client";
 import { wantsQuoteSearch } from "./chat-quote-action";
 import { DateClarificationPanel, CargoClassificationPanel } from "./capture-clarification-panel";
+import { assistantNextField } from "./assistant-form-guide";
+import { AssistantChangeNotice } from "./assistant-field-feedback";
+import {spokenCategoryAcceptance} from "./spoken-category-acceptance";
 import {spokenCaptureClarification} from "./spoken-capture-clarification";
 import { dateClarification, needsCargoClassification, type DateClarification } from "./capture-clarification";
 import { ChatCommercialPanel } from "./chat-commercial-panel";
@@ -58,8 +61,8 @@ function conversationAcknowledgment(value: string | undefined): string | undefin
 
 const positive = /^(yes|yes,? (?:create|save) (?:the )?(?:draft|revision)|(?:create|save) (?:the )?(?:draft|revision)|confirm|go ahead|s[ií]|s[ií],? (?:crea(?:r)?|guarda(?:r)?) (?:el |la )?(?:borrador|revisi[oó]n)|(?:crea(?:r)?|guarda(?:r)?) (?:el |la )?(?:borrador|revisi[oó]n)|confirmo|confirmar|adelante)$/i;
 
-function missingField(draft: V2IntakePrototypeDraft, filled: Set<ConversationField> = new Set()): GuidedConversationField | null {
-  return CONVERSATION_FIELDS.find((field) => !filled.has(field) && !String(draft[field] ?? "").trim()) ?? null;
+function missingField(draft: V2IntakePrototypeDraft): GuidedConversationField | null {
+  return assistantNextField(draft);
 }
 
 function locationName(id: string, options: IntakeOptionsData) {
@@ -346,15 +349,17 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
     capturePendingRef.current=next;setCapturePending(next);confirmationRef.current=null;setAwaitingConfirmation(false);
   }
   function handleCaptureClarification(value:string,user:string|null):boolean {
+    const category = !capturePendingRef.current.classification ? spokenCategoryAcceptance(value,voiceHistoryRef.current,options) : [];
+    if(category.length){voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,category);onFields(category);return true;}
     const prompted=lastSpokenQuestionField(voiceHistoryRef.current);
     const roleHint=prompted?.startsWith("pickupWindow")?"pickup":prompted?.startsWith("deliveryWindow")?"delivery":undefined;
     const resolved=spokenCaptureClarification(value,capturePendingRef.current,options,Intl.DateTimeFormat().resolvedOptions().timeZone,Date.now(),roleHint);
     if(resolved.fields.length){
       voiceDraftRef.current=applyChatFieldsToDraft(voiceDraftRef.current,resolved.fields);onFields(resolved.fields);
-      setCaptureClarification({date:resolved.dateResolved?null:capturePendingRef.current.date,classification:resolved.classificationResolved?false:capturePendingRef.current.classification});
+      setCaptureClarification({date:resolved.pendingDate,classification:resolved.classificationResolved?false:capturePendingRef.current.classification});
       add(user,language==='es'?'Apliqué tu aclaración al borrador local. Puedes seguir hablando y corregir cualquier dato.':'Applied your clarification to the local draft. Keep speaking and correct any detail.');return true;
     }
-    const date=dateClarification(value,Intl.DateTimeFormat().resolvedOptions().timeZone);
+    const date=(resolved.pendingDate!==capturePendingRef.current.date?resolved.pendingDate:null)??dateClarification(value,Intl.DateTimeFormat().resolvedOptions().timeZone);
     const classification=needsCargoClassification(value);
     if(!date&&!classification)return false;
     setCaptureClarification({date:date??capturePendingRef.current.date,classification:classification||capturePendingRef.current.classification});
@@ -795,6 +800,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         </div>
       </header>
       <ChatStructuredSummary draft={draft} options={options} request={request} dirty={draftDirty} onEdit={onEdit ? goToFormStep : undefined} t={t} />
+      {catalogStatus === "ready" && <AssistantChangeNotice chat />}
       {busy && <p className={styles.catalogNotice} role="status">{busyLabel ?? t("Actualizando el borrador…", "Updating the draft…")}</p>}
       {catalogStatus !== "ready" && <div className={styles.catalogNotice} role="status"><strong>{catalogStatus === "loading" ? t("Preparando los datos de tu organización…", "Loading your organization's catalog…") : t("No se pudo preparar el asistente", "The assistant needs your catalog")}</strong>{catalogError && <span>{catalogError}</span>}{catalogStatus === "empty" && <span>{t("Faltan sedes u opciones compatibles. Revisa el catálogo de tu organización.", "Facilities or supported options are missing. Review your organization's catalog.")}</span>}{catalogStatus !== "loading" && onRetryCatalog && <button type="button" onClick={onRetryCatalog}>{t("Reintentar", "Retry")}</button>}</div>}
       <div className={styles.conversationContent}>
@@ -807,7 +813,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
         if (following || !metrics || (metrics.height === area.clientHeight && metrics.contentHeight === area.scrollHeight)) followLatestRef.current = following;
         if (following) setNewMessages(false);
       }}>
-        <p role="status">{providerMode==="BEDROCK"?(language==="es"?"Texto interpretado con Amazon Bedrock. Las acciones requieren confirmación.":"Text interpreted with Amazon Bedrock. Actions require confirmation."):providerMode==="DETERMINISTIC"?(language==="es"?"Modo guiado por reglas: interpretación de texto sin modelo generativo.":"Rule-guided mode: text interpretation without a generative model."):null}</p>
+        {!novaVoiceEnabled && <p role="status">{providerMode==="BEDROCK"?(language==="es"?"Texto interpretado con Amazon Bedrock. Las acciones requieren confirmación.":"Text interpreted with Amazon Bedrock. Actions require confirmation."):providerMode==="DETERMINISTIC"?(language==="es"?"Modo guiado por reglas: interpretación de texto sin modelo generativo.":"Rule-guided mode: text interpretation without a generative model."):null}</p>}
         {history.length === 1 && history[0]?.speaker === "assistant" && <div key={`welcome:${conversationEpoch}`} className={styles.welcome}>
           <motion.div className={styles.welcomeMascot} {...assistantWelcomeMotion("mascot", reducedMotion)}><AssistantMascot large /></motion.div>
           <motion.h2 {...assistantWelcomeMotion("title", reducedMotion)}>{t("Planifiquemos tu envío", "Let's plan your shipment")}</motion.h2>
@@ -877,7 +883,7 @@ export function ConversationChat({ draft, options, optionsSource = "api", reques
           <button type="submit" className={styles.send} aria-label="Send message" title="Send message" disabled={!text.trim() || busy || interpretationBusy || workflowBusy || novaTextPending || novaSpeaking || voice.speaking}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 12 15-8-3 16-4-6-8-2Zm8 2 7-10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></button>
         </form>
         {novaVoiceEnabled && catalogStatus === "ready" && <>
-          <AssistantLiveContent><NovaVoicePreview externalSpeaking={voice.speaking} audioReplies={audioReplies} textInputRef={novaTextSenderRef} key={conversationEpoch} preview={optionsSource === "fixture"} language={language} draftContext={voiceDraftContext(draft, request?.draftVersion ?? null, [...(measurementPending ? ["MEASUREMENT_SCOPE_PENDING" as const] : []),...(capturePending.date ? ["DATE_WINDOW_PENDING" as const] : []),...(capturePending.classification ? ["CLASSIFICATION_PENDING" as const] : [])], measurementPending, {timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,pendingDates:capturePending.date?.alternatives??[]})} voiceContext={recentVoiceContext(history)} onPlaybackStateChange={speaking=>{setNovaSpeaking(speaking);if(speaking)setVoiceMode(true);}} onResponseFinished={()=>{awaitVoiceReplyRef.current=false;setResponseFinishedEpoch(n=>n+1);}} onTurn={(update) => {
+          <AssistantLiveContent><NovaVoicePreview externalSpeaking={voice.speaking} audioReplies={audioReplies} textInputRef={novaTextSenderRef} key={conversationEpoch} preview={optionsSource === "fixture"} language={language} draftContext={voiceDraftContext(draft, request?.draftVersion ?? null, [...(measurementPending ? ["MEASUREMENT_SCOPE_PENDING" as const] : []),...(capturePending.date ? ["DATE_WINDOW_PENDING" as const] : []),...(capturePending.classification ? ["CLASSIFICATION_PENDING" as const] : [])], measurementPending, {timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,pendingDates:capturePending.date?.alternatives??[],pendingWindow:capturePending.date??undefined})} voiceContext={recentVoiceContext(history)} onPlaybackStateChange={speaking=>{setNovaSpeaking(speaking);if(speaking)setVoiceMode(true);}} onResponseFinished={()=>{awaitVoiceReplyRef.current=false;setResponseFinishedEpoch(n=>n+1);}} onTurn={(update) => {
             const nextHistory = applyVoiceTranscript(voiceHistoryRef.current, update);
             voiceHistoryRef.current = nextHistory;
             setHistory(nextHistory);
