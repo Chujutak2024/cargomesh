@@ -145,3 +145,10 @@ dialog.siteDialog{width:min(1100px,calc(100vw - 32px));max-width:1100px}
 .simulationLegend i{width:7px;height:7px;border-radius:50%;background:#7954b9}
 .mapDetail .simulationHint{margin:10px 0;padding:8px;border-radius:7px;background:#f2edff;color:#6741a5;line-height:1.5}
 @media(max-width:700px){.simulationToolbar{margin-inline:14px}.simulationTimeline{max-width:none;flex-basis:100%}.simulationCaption{flex:1}}
+
+/* Site preview stays inside the map; keep the map mounted to retain its camera. */
+.siteMapLayer{height:100%;min-height:360px}.siteMapLayer[inert]{visibility:hidden}
+.siteInline{position:absolute;inset:0;z-index:8;display:flex;flex-direction:column;min-width:0;overflow:hidden;background:#e4edf0;border-radius:inherit;animation:siteEnter 220ms ease-out}
+.siteInlineHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#ffffffed;border-bottom:1px solid #d6e2e8;flex-shrink:0}.siteInlineHeader>div{min-width:0}.siteInlineHeader strong{display:block;font-size:14px;color:#143e4c;overflow-wrap:anywhere}.siteInlineHeader small{display:block;font-size:11px;color:#526e7c;margin-top:3px}.siteInlineHeader button{flex-shrink:0}
+@keyframes siteEnter{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.siteInline{animation:none}}

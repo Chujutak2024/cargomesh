@@ -9,7 +9,7 @@ import {CarrierLink} from '@/features/carrier-navigation/carrier-link';
 import {useLocale} from '@/features/i18n/locale-provider';
 import type {SimulatedVehiclePosition} from './tower-simulation';
 import s from './tower.module.css';
-type Props={items:TowerItem[];sites:TowerSite[];selected:TowerItem|null;onSelect:(id:string)=>void;onSelectSite?:(id:string)=>void;showSites:boolean;road?:RoadDisplay|null;simulation?:readonly SimulatedVehiclePosition[]};
+type Props={items:TowerItem[];sites:TowerSite[];selected:TowerItem|null;onSelect:(id:string)=>void;onSelectSite?:(id:string)=>void;showSites:boolean;road?:RoadDisplay|null;simulation?:readonly SimulatedVehiclePosition[];demoPath?:readonly {lat:number;lng:number}[]};
 const noSimulation:readonly SimulatedVehiclePosition[]=[];
 const operationSvg='<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M1 3h14v14H1zM15 8h4l3 4v5h-7"/><circle cx="5.5" cy="18" r="2.5"/><circle cx="18.5" cy="18" r="2.5"/></svg>';
 const depotSvg='<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m3 9 9-6 9 6v12H3zM8 21v-9h8v9M8 15h8M8 18h8"/></svg>';
@@ -25,15 +25,16 @@ class OperationMapBoundary extends Component<{children:ReactNode},{failed:boolea
  render(){return this.state.failed?<div className={s.mapSurface}><div className={s.mapState} role="alert"><MapPin size={27}/><strong>Map unavailable</strong><p>The operation list remains available.</p><button type="button" onClick={()=>this.setState({failed:false})}>Retry map</button></div></div>:this.props.children;}
 }
 export function GoogleOperationMap(props:Props){return <OperationMapBoundary><OperationMap {...props}/></OperationMapBoundary>;}
-export function OperationMap({items,sites,selected,onSelect,onSelectSite,showSites,road=null,simulation=noSimulation}:Props){
+export function OperationMap({items,sites,selected,onSelect,onSelectSite,showSites,road=null,simulation=noSimulation,demoPath}:Props){
  const {t}=useLocale(),locatedSites=sites.filter(site=>site.position!==null),unlocatedSites=sites.filter(site=>site.position===null);
  const host=useRef<HTMLDivElement>(null),map=useRef<google.maps.Map|null>(null),fit=useRef(false),markers=useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
+ const demoMarkers=useRef(new Map<string,google.maps.marker.AdvancedMarkerElement>());
  const [ready,setReady]=useState(false),[error,setError]=useState(''),[retry,setRetry]=useState(0),[cameraTick,setCameraTick]=useState(0);
  const attempt=useRef<{closed:boolean;fail:(message?:string)=>void}|null>(null);
  const simulationActive=simulation.length>0,focusPosition=selected?.position??simulation.find(vehicle=>vehicle.itemId===selected?.id)?.position??null;
  useEffect(()=>{const listeners:google.maps.MapsEventListener[]=[];setReady(false);setError('');let timeout:ReturnType<typeof setTimeout>|undefined;
   const current={closed:false,fail:(_message?:string)=>{}};attempt.current=current;
-  const dispose=()=>{clearTimeout(timeout);listeners.splice(0).forEach(listener=>safely(()=>listener.remove()));markers.current.splice(0).forEach(marker=>safely(()=>{marker.map=null;}));if(map.current)safely(()=>google.maps.event.clearInstanceListeners(map.current!));map.current=null;};
+  const dispose=()=>{demoMarkers.current.forEach(marker=>safely(()=>{marker.map=null;}));demoMarkers.current.clear();clearTimeout(timeout);listeners.splice(0).forEach(listener=>safely(()=>listener.remove()));markers.current.splice(0).forEach(marker=>safely(()=>{marker.map=null;}));if(map.current)safely(()=>google.maps.event.clearInstanceListeners(map.current!));map.current=null;};
   current.fail=(message='Google Maps is unavailable. Use the operation list.')=>{if(current.closed)return;current.closed=true;dispose();setReady(false);setError(message);};
   const off=onGoogleMapsAuthFailure(()=>current.fail('Google Maps authorization failed. The operation list remains available.'));
   const key=process.env.NEXT_PUBLIC_GOOGLE_MAPS_JS_API_KEY?.trim();
@@ -77,18 +78,34 @@ export function OperationMap({items,sites,selected,onSelect,onSelectSite,showSit
    else pin.disabled=true;
    markers.current.push(marker);fittedPoints.push(site.position!);
   });
-  simulation.forEach(vehicle=>{
-   const chosen=selected?.id===vehicle.itemId,pin=document.createElement('button');pin.type='button';pin.className=s.simulatedPin;pin.innerHTML=operationSvg;
-   const title=vehicle.label+' · '+t('Posición simulada · sin GPS','Simulated position · no GPS');pin.setAttribute('aria-label',title);pin.setAttribute('aria-pressed',String(chosen));
-   const label=document.createElement('span');label.className=s.simulatedPinLabel;label.textContent=vehicle.label;pin.appendChild(label);
-   const marker=new google.maps.marker.AdvancedMarkerElement({map:map.current!,position:vehicle.position,content:pin,title,zIndex:chosen?40:30});
-   listeners.push(marker.addListener('click',()=>onSelect(vehicle.itemId)));pin.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onSelect(vehicle.itemId);}});
-   markers.current.push(marker);fittedPoints.push(vehicle.position);
-  });
   if(!fit.current&&fittedPoints.length){framePoints(map.current,fittedPoints,75);fit.current=true;}
   }catch{attempt.current?.fail();}
   return()=>{listeners.forEach(listener=>safely(()=>listener.remove()));markers.current.splice(0).forEach(marker=>safely(()=>{marker.map=null;}));};
- },[ready,items,sites,selected?.id,onSelect,onSelectSite,showSites,cameraTick,t,simulation]);
+ },[ready,items,sites,selected?.id,onSelect,onSelectSite,showSites,cameraTick,t]);
+ // Keep the same marker DOM while positions advance; do not rebuild every map marker per tick.
+ useEffect(()=>{
+  if(!ready||!map.current||attempt.current?.closed)return;
+  const ids=new Set(simulation.map(v=>v.assetId));
+  demoMarkers.current.forEach((marker,id)=>{if(!ids.has(id)){marker.map=null;demoMarkers.current.delete(id);}});
+  for(const vehicle of simulation){
+   let marker=demoMarkers.current.get(vehicle.assetId);
+   if(!marker){
+    const pin=document.createElement('button');pin.type='button';pin.className=s.simulatedPin;pin.innerHTML=operationSvg;
+    const label=document.createElement('span');label.className=s.simulatedPinLabel;label.textContent=vehicle.label;pin.appendChild(label);
+    pin.addEventListener('click',()=>onSelect(vehicle.itemId));
+    marker=new google.maps.marker.AdvancedMarkerElement({map:map.current,position:vehicle.position,content:pin,zIndex:30});demoMarkers.current.set(vehicle.assetId,marker);
+   }
+   const chosen=selected?.id===vehicle.itemId,title=vehicle.label+' · '+t('Demo sin GPS','Demo, no GPS')+' · '+(vehicle.moving?t('En movimiento','Moving'):t('Detenido','Stopped'));
+   marker.position=vehicle.position;marker.title=title;marker.zIndex=chosen?40:30;
+   const pin=marker.content as HTMLElement;pin.setAttribute('aria-label',title);pin.setAttribute('aria-pressed',String(chosen));
+  }
+ },[ready,simulation,selected?.id,onSelect,t]);
+ useEffect(()=>{
+  if(!ready||!map.current||!demoPath?.length||attempt.current?.closed)return;
+  const line=new google.maps.Polyline({map:map.current,path:[...demoPath],geodesic:false,strokeColor:'#7662b5',strokeOpacity:.65,strokeWeight:4,zIndex:2});
+  if(!selectedRoad(road))framePoints(map.current,[...demoPath,...(showSites?sites.flatMap(site=>site.position?[site.position]:[]):[])],65);
+  return()=>line.setMap(null);
+ },[ready,demoPath,road]);
  // Draw only the provider's ordered points. No smoothing, geodesic shortcuts or endpoint connectors.
  useEffect(()=>{if(!ready||!map.current||attempt.current?.closed||googleMapsAuthFailed())return;const routes=roadAlternatives(road),selected=selectedRoad(road),paths:google.maps.Polyline[]=[],stopPins:google.maps.marker.AdvancedMarkerElement[]=[];
   try{

@@ -11,3 +11,6 @@
 .designControls{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin:0 0 20px}.designControls label{display:grid;gap:7px;font-size:11px;color:#526e7c;min-width:200px}.designControls select{min-height:42px;border:1px solid #c7dade;background:#fff;color:#244455;border-radius:8px;padding:8px;font:inherit;font-size:13px}.designControls select:focus-visible{outline:3px solid #16848b;outline-offset:3px}.designControls p{font-size:11px;line-height:1.6;max-width:48ch;margin:0 0 5px;color:#526e7c}@media(max-width:760px){.designControls{gap:10px}.designControls label{min-width:0;flex:1 0 100%}}
 
 .referenceLayout{display:grid;grid-template-columns:minmax(0,1fr)}
+
+/* Minimal embedded map scene. Other depot viewers retain their controls. */
+.compact{padding:0;flex:1;min-height:0;position:relative;display:flex;flex-direction:column;background:#e4edf0}.compact .referenceLayout,.compact .viewer{height:100%;min-height:0;flex:1}.compact .viewer{position:relative}.compact .stage{height:100%;min-height:260px;border-radius:0}.compact .toolbar{position:absolute;right:14px;top:14px;z-index:2;padding:0}.compact .toolbar button{background:#fff;box-shadow:0 3px 12px #193e4f18}.compact .sceneLegend{bottom:12px;left:12px;font-size:10px}

@@ -6,8 +6,10 @@ import {displayReference,carrierDisplayName} from '@/shared/lib/display-identity
 import {RoadPlanner} from './road-planner';
 import {selectedRoad,type RoadDisplay} from './road-plan-client';
 import {useCallback,useEffect,useMemo,useState} from 'react';
-import {Activity,ArrowRight,ArrowUpRight,Bell,Building2,ChevronRight,Clock3,Globe2,List,Map,MapPinned,Pause,Play,RefreshCw,Route,Search,ShieldCheck,Truck,X} from 'lucide-react';
+import {Activity,ArrowRight,ArrowUpRight,Bell,Building2,ChevronRight,Clock3,Globe2,List,Map,MapPinned,RefreshCw,Route,Search,ShieldCheck,Truck,X} from 'lucide-react';
 import {simulatedVehiclePositions} from './tower-simulation';
+import {useTowerDemoRoute} from './tower-demo-route';
+import {useReducedMotionPreference} from '@/features/product-motion/use-motion-preference';
 import {Button,SearchField} from '@/components/ui';
 import {CarrierLink} from '@/features/carrier-navigation/carrier-link';
 import {CarrierNavigation,CarrierMenuButton,CarrierBreadcrumb} from '@/features/carrier-navigation/carrier-navigation';
@@ -34,20 +36,24 @@ export function ControlTower({embedded=false,dashboard=false,carrier,refreshToke
  const sites=useMemo(()=>snapshot?towerSites(snapshot):[],[snapshot]);
  const [selectedSiteId,setSelectedSiteId]=useState<string|null>(null);
  const selectedSite=sites.find(site=>site.id===selectedSiteId)??null;
- const selectSite=useCallback((id:string)=>setSelectedSiteId(id),[]);
+ const selectSite=useCallback((id:string)=>{setSelectedSiteId(id);setView('map');},[setView]);
+ const closeSite=useCallback(()=>setSelectedSiteId(null),[]);
+ useEffect(()=>{setSelectedSiteId(null);},[carrier?.carrierId,carrier?.operatorId]);
  const visible=useMemo(()=>filterTower(items,query,status),[items,query,status]);
  const selected=visible.find(item=>item.id===selectedId)??null;
- const [simulationEnabled,setSimulationEnabled]=useCarrierMemoryState('tower:simulation:'+carrier?.carrierId,false);
- const [simulationProgress,setSimulationProgress]=useCarrierMemoryState('tower:simulation-progress:'+carrier?.carrierId,0);
- const [simulationPlaying,setSimulationPlaying]=useState(false);
- const simulation=useMemo(()=>simulationEnabled?simulatedVehiclePositions(snapshot,visible,simulationProgress):[],[simulationEnabled,snapshot,visible,simulationProgress]);
+ const simulationEnabled=true;
+ const [simulationProgress,setSimulationProgress]=useState(0);
+ const reducedMotion=useReducedMotionPreference();
+ const demo=useTowerDemoRoute(view==='map');
+ const simulation=useMemo(()=>simulatedVehiclePositions(snapshot,visible,simulationProgress,demo.path),[snapshot,visible,simulationProgress,demo.path]);
  const selectedSimulation=simulation.find(vehicle=>vehicle.itemId===selected?.id);
- useEffect(()=>{setSimulationPlaying(false);},[carrier?.carrierId,simulationEnabled]);
+ useEffect(()=>{setSimulationProgress(0);},[carrier?.carrierId,carrier?.operatorId]);
  useEffect(()=>{
-  if(!simulationEnabled||!simulationPlaying||!simulation.length)return;
-  const timer=window.setInterval(()=>{if(!document.hidden)setSimulationProgress(value=>(value+1)%101);},1000);
+  if(view!=='map'||selectedSite||reducedMotion||!demo.path||!simulation.length)return;
+  let last=performance.now();
+  const timer=window.setInterval(()=>{const now=performance.now();if(!document.hidden)setSimulationProgress(value=>value+Math.min(.5,(now-last)/1000));last=now;},250);
   return()=>window.clearInterval(timer);
- },[simulationEnabled,simulationPlaying,simulation.length,setSimulationProgress]);
+ },[view,selectedSite,reducedMotion,demo.path,simulation.length]);
  const incidents=useTowerIncidents(carrier?.carrierId,selected,refresh+refreshToken);
  useEffect(()=>{if(incidents.denied)invalidate(incidents.error);},[incidents.denied,incidents.error,invalidate]);
  const displayedIncidents=incidents.rows.filter(row=>incidentFilter==='All'||row.status==='OPEN');
@@ -97,18 +103,16 @@ export function ControlTower({embedded=false,dashboard=false,carrier,refreshToke
      {operationFilterControls}
      <label className={s.sitesToggle}><input type="checkbox" checked={showSites} onChange={e=>setShowSites(e.target.checked)}/><Building2 size={13}/>{t('Sedes','Sites')}</label>
     </div>
-    <div className={s.simulationToolbar}>
-     <Button variant="secondary" size="compact" disabled={!snapshot?.loaded.assets||!resources.length} aria-pressed={simulationEnabled} onClick={()=>setSimulationEnabled(value=>!value)}><MapPinned size={15}/>{simulationEnabled?t('Simulación activa','Simulation on'):t('Simular posiciones','Simulate positions')}</Button>
-     {simulationEnabled?<><span className={s.simulationCaption}>{t('Demo Lima–Arequipa · sin GPS','Lima–Arequipa demo · no GPS')}<small>{simulation.length} {t('vehículos · no cambia operaciones','vehicles · operations unchanged')}</small></span><Button variant="secondary" size="compact" disabled={!simulation.length} aria-pressed={simulationPlaying} onClick={()=>setSimulationPlaying(value=>!value)}>{simulationPlaying?<Pause size={14}/>:<Play size={14}/>} {simulationPlaying?t('Pausar','Pause'):t('Reproducir','Play')}</Button><label className={s.simulationTimeline}>{t('Tiempo de demo','Demo timeline')}<input type="range" min="0" max="100" step="1" value={simulationProgress} onChange={event=>setSimulationProgress(Number(event.target.value))}/><output>{simulationProgress}%</output></label></>:null}
-    </div>
-    <ContentMotion identity={view} className={s.visualFrame}>{view==='map'?<DeferredRegion minHeight={360}><GoogleOperationMap key={carrier?.operatorId+':'+carrier?.carrierId} items={visible} sites={sites} selected={selected} onSelect={select} onSelectSite={selectSite} showSites={showSites} road={road} simulation={simulation}/></DeferredRegion>:null}
+    <ContentMotion identity={view} className={s.visualFrame}>{view==='map'?<div className={s.siteMapLayer} inert={!!selectedSite} aria-hidden={selectedSite?true:undefined}><DeferredRegion minHeight={360}><GoogleOperationMap key={carrier?.operatorId+':'+carrier?.carrierId} items={visible} sites={sites} selected={selected} onSelect={select} onSelectSite={selectSite} showSites={showSites} road={road} demoPath={demo.path?.points} simulation={simulation}/></DeferredRegion></div>:null}
      {view==='list'?<div className={s.listView} data-carrier-motion-group aria-label={t('Operaciones, vehículos y sedes autorizadas','Authorized operations, vehicles and sites')}>
       {showSites&&sites.length?<section className={s.directoryGroup}><h3>{t('Sedes','Sites')}</h3>{sites.map(site=><button type="button" className={s.shipmentRow} key={site.id} onClick={()=>selectSite(site.id)}><span className={s.vehicleIcon}><Building2 size={18}/></span><span className={s.shipmentCopy}><strong>{site.name}</strong><span>{site.location}</span><small>{site.position?t('Coordenadas registradas','Coordinates recorded'):t('Sin coordenadas · vista 3D disponible','No coordinates · 3D view available')}</small></span><span className={s.siteAction}>{t('Ver en 3D','View in 3D')}</span><ChevronRight size={16}/></button>)}</section>:null}
       <section className={s.directoryGroup}><h3>{t('Operaciones y vehículos','Operations & vehicles')}</h3>{visible.map(item=><button type="button" className={s.shipmentRow} key={item.id} onClick={()=>select(item.id)} aria-pressed={selected?.id===item.id}><span className={s.vehicleIcon}><Truck size={18}/></span><span className={s.shipmentCopy}><strong>{item.vehicle}<small>{item.operationId?displayReference(item.operationId,'OP'):t('Registro de vehículo','Vehicle record')}</small></strong><span>{item.origin} → {item.destination}</span><small>{simulation.some(vehicle=>vehicle.itemId===item.id)?t('Posición simulada · sin GPS','Simulated position · no GPS'):item.position?'Last recorded position · '+item.provenance:item.positionIssue}</small></span><span className={s.statusBadge}>{carrierStatusLabel(item.status,locale==='es')}</span><ChevronRight size={16}/></button>)}{!visible.length?<div className={s.empty}><Search size={26}/><strong>{error?'Records unavailable':snapshot?'No matching records':'Waiting for authorized records'}</strong></div>:null}</section>
      </div>:null}
-     {selected&&view==='map'?<article className={s.mapDetail} aria-label="Selected operation"><div><span className={s.detailIcon}><Truck size={18}/></span><span><strong>{selected.vehicle}</strong><small>{carrierStatusLabel(selected.status,locale==='es')}</small></span><Button variant="secondary" size="compact" onClick={()=>setSelectedId(null)} aria-label="Close selected operation"><X size={16}/></Button></div><h3>{selected.origin}<ArrowRight size={14}/>{selected.destination}</h3>{selectedSimulation?<p className={s.simulationHint}>{t("Posición simulada · escenario Lima–Arequipa, independiente de esta operación.","Simulated position · Lima–Arequipa scenario, separate from this operation.")}</p>:null}<p>{selected.cargo}</p><div className={s.detailFacts}><span>Planned end<strong>{towerDate(selected.plannedEnd)}</strong></span><span>Position source<strong>{selectedSimulation?t("Simulación visual","Visual simulation"):selected.position?selected.provenance:selected.positionIssue}</strong></span></div><small className={s.detailSource}>{selectedSimulation?t("Sin reporte GPS; no es una ubicación real.","No GPS report; this is not a real location."):<>Observed: {towerDate(selected.observedAt)} · Accuracy unknown</>}</small></article>:null}
+     {selected&&!selectedSite&&view==='map'?<article className={s.mapDetail} aria-label="Selected operation"><div><span className={s.detailIcon}><Truck size={18}/></span><span><strong>{selected.vehicle}</strong><small>{carrierStatusLabel(selected.status,locale==='es')}</small></span><Button variant="secondary" size="compact" onClick={()=>setSelectedId(null)} aria-label="Close selected operation"><X size={16}/></Button></div><h3>{selected.origin}<ArrowRight size={14}/>{selected.destination}</h3>{selectedSimulation?<p className={s.simulationHint}>{t("Posición simulada · escenario Lima–Arequipa, independiente de esta operación.","Simulated position · Lima–Arequipa scenario, separate from this operation.")}</p>:null}<p>{selected.cargo}</p><div className={s.detailFacts}><span>Planned end<strong>{towerDate(selected.plannedEnd)}</strong></span><span>Position source<strong>{selectedSimulation?t("Simulación visual","Visual simulation"):selected.position?selected.provenance:selected.positionIssue}</strong></span></div><small className={s.detailSource}>{selectedSimulation?t("Sin reporte GPS; no es una ubicación real.","No GPS report; this is not a real location."):<>Observed: {towerDate(selected.observedAt)} · Accuracy unknown</>}</small></article>:null}
+     {selectedSite&&view==='map'?<TowerSitePreview key={carrier?.operatorId+':'+carrier?.carrierId} site={selectedSite} onClose={closeSite}/>:null}
     </ContentMotion>
     {view==='map'&&snapshot&&!positions&&!simulation.length&&!selectedRoad(road)?<div className={s.noMatches} role="status"><span>{simulationEnabled?t('No hay vehículos para simular con estos filtros.','No vehicles to simulate with these filters.'):showSites&&sites.some(site=>site.position)?t('Se muestran las sedes. Aún no hay posiciones de vehículos reportadas.','Showing sites. No vehicle positions have been reported yet.'):t('Aún no hay posiciones de vehículos reportadas.','No vehicle positions have been reported yet.')}</span><Button variant="secondary" size="compact" onClick={()=>setView('list')}>{t('Ver lista','View list')}</Button></div>:null}
+    {view==='map'?<p className={s.simulationCaption} role="status">{!demo.loaded?t('Preparando carretera de la demo…','Preparing demo road…'):!demo.path?t('Demo de carretera no disponible; no se inventan posiciones.','Road demo unavailable; no invented positions.'):t('Demo Lima–Arequipa · carretera Google · tiempo ×180 · sin GPS','Lima–Arequipa demo · Google road · time ×180 · no GPS')}</p>:null}
     <div className={s.mapFooter}><span role="status" aria-live="polite">{visible.length} loaded records · {positions} plotted positions{simulation.length?` · ${simulation.length} ${t("simulados","simulated")}`:null}</span><span>{selectedRoad(road)?t('Ruta de planificación · sin guardar','Planning route · not saved'):t('Sin ruta calculada','No calculated route')}</span></div>
    </section>
    <div className={dashboard?s.dashboardRail:undefined}>
@@ -122,6 +126,6 @@ export function ControlTower({embedded=false,dashboard=false,carrier,refreshToke
     <article className={s.contextCard}><div><Truck size={17}/><h2>Fleet operating conditions</h2></div><div className={s.fleetBar}>{resources.map(row=><span key={row.id} className={recordData(row).operatingStatus==='MAINTENANCE'?s.maintenance:s.assigned} title={String(recordData(row).code)+' · '+String(recordData(row).operatingStatus)}/>)}</div><dl style={{flexWrap:'wrap'}}>{conditions.map(value=><div key={value}><dt>{carrierStatusLabel(value,locale==='es')}</dt><dd>{snapshot?.loaded.assets?resources.filter(row=>recordData(row).operatingStatus===value).length:'—'}</dd></div>)}</dl><p>Catalog condition does not establish availability for a date or physical location.</p></article>
     <article className={s.contextCard}><div><Building2 size={17}/><h2>Network context</h2></div>{sites.map(site=><div key={site.id} className={s.hubRow}><span className={s.hubIcon}><Building2 size={16}/></span><span><strong>{site.name}</strong><small>{site.location} · {site.active?'Active':'Inactive'} · {site.position?'Coordinates recorded':'Coordinates unavailable'}</small></span></div>)}{snapshot?.loaded.depots&&!sites.length?<p>No Carrier sites recorded.</p>:null}<p>A site is not evidence of coverage or truck presence.</p><CarrierLink href="/carriers/sites">Open Sites & coverage</CarrierLink></article>
    </section></details>:null}{snapshot?<p className={s.queueNote}>Read at {towerDate(snapshot.readAt)}. Counts cover loaded records.</p>:null}
-  </>:null}</ContentMotion><TowerSitePreview site={selectedSite} onClose={()=>setSelectedSiteId(null)}/></main></div></div>;
+  </>:null}</ContentMotion></main></div></div>;
  return embedded?content:<CarrierNavigation current="tower" locale="en" workspaceHref="/carriers" towerHref={CARRIER_TOWER} sourceLabel={carrier?carrierDisplayName(carrier.carrierName,carrier.carrierId):'Authorized records required'}>{content}</CarrierNavigation>;
 }
