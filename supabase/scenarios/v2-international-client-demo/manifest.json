@@ -3,8 +3,13 @@
   "synthetic": true,
   "organizationId": "52000000-0000-4000-8000-000000000001",
   "existingPeruFacilities": 3,
+  "existingFacilities": 5,
+  "allowedExistingC01Facilities": [
+    {"id":"ec63f447-95ab-46ca-85c1-e9b8953ed475","code":"C01_SIM_V1_A","organizationId":"52000000-0000-4000-8000-000000000001"},
+    {"id":"2c967237-69d6-4e5b-9586-c825d64c993d","code":"C01_SIM_V1_B","organizationId":"52000000-0000-4000-8000-000000000001"}
+  ],
   "addedFacilities": 32,
-  "totalFacilities": 35,
+  "totalFacilities": 37,
   "totalCountries": 17,
   "coordinates": "APPROXIMATE_CITY_CENTRES",
   "coverageConfirmed": false,
