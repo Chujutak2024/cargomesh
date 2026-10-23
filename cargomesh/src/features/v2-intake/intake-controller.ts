@@ -2,6 +2,7 @@
 import {replaceCargoGroups,type DraftCargoGroup} from "./cargo-groups";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAssistantChangeFeedback } from "./use-assistant-change-feedback";
 import { useLocale } from "@/features/i18n/locale-provider";
 import type { ConversationField } from "./conversation-fields";
 import type { FreightRequestV2Data, IntakeOptionsData, RoadServiceabilityEvaluationV2Data } from "./contracts";
@@ -17,6 +18,7 @@ export type SubmitPhase = "idle" | "creating" | "revising" | "reading" | "evalua
 export function useIntakeController() {
   const { locale, t } = useLocale();
   const [draft, setDraft] = useState<V2IntakePrototypeDraft>(EMPTY_PROTOTYPE_DRAFT);
+  const { assistantChange, trackAssistantFields, clearAssistantChange } = useAssistantChangeFeedback(draft);
   const [step, setStep] = useState<PrototypeStep>(1);
   const [maxVisited, setMaxVisited] = useState<PrototypeStep>(1);
   const [issues, setIssues] = useState<PrototypeValidationIssue[]>([]);
@@ -187,6 +189,7 @@ export function useIntakeController() {
     setMaxVisited((current) => Math.max(current, next) as PrototypeStep);
   };
   const loadExample = () => {
+    clearAssistantChange();
     draftRevisionRef.current += 1;
     setDraft(buildPrototypeExample(activeOptions));
     setIssues([]);
@@ -195,6 +198,7 @@ export function useIntakeController() {
     if (request) { setEvaluation(null); setSelectedCandidateId(null); }
   };
   const reset = () => {
+    clearAssistantChange();
     flowSequenceRef.current += 1;
     draftRevisionRef.current += 1;
     setDraft(EMPTY_PROTOTYPE_DRAFT);
@@ -362,6 +366,7 @@ export function useIntakeController() {
 
   const updateFromChat = (fields: ReadonlyArray<{ field: ConversationField; value: string }>) => {
     if (!fields.length) return;
+    trackAssistantFields(fields);
     draftRevisionRef.current += 1;
     setDraft((current) => applyChatFieldsToDraft(current, fields));
     setIssues((current) => current.filter((issue) => !fields.some((item) => item.field === issue.field)));
@@ -374,7 +379,7 @@ export function useIntakeController() {
     evaluating: t("Consultando ROAD para la versión guardada…", "Checking ROAD for the saved version…"),
   } as Partial<Record<SubmitPhase, string>>)[submitPhase];
 
-  return { locale, t, draft, step, maxVisited, issues, options, optionsSource, optionsError, submitPhase, submitLabel, submitError,
+  return { locale, t, draft, assistantChange, step, maxVisited, issues, options, optionsSource, optionsError, submitPhase, submitLabel, submitError,
     request, evaluation, selectedCandidateId, dirtyAfterCreate, errorRef, activeOptions, origin, destination, optionCoverage,
     mapProps, update, updateCargoGroups, errorFor, enterReview, goNext, loadExample, reset, createDraftAndEvaluate, retryAfterCreate,
     reloadPersisted, updateFromChat, setStep, setMaxVisited, setIssues, setOptionsAttempt, setSelectedCandidateId };

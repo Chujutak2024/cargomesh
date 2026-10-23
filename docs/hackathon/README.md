@@ -7,7 +7,7 @@
 | Primary track: Alexa+ | [Alexa+](ALEXA_PLUS.md) | Working MCP path or clearly shown Web simulation; never imply untested Echo access |
 | AWS Builder mini challenge | [AWS Builder and Kiro](AWS_BUILDER_KIRO.md) | Actual AWS integration/development use described in Product Feedback |
 | Open Source mini challenge | [Open Source](OPEN_SOURCE.md) | Additional qualifying project or separate public contribution |
-| Testing | [Judge guide](JUDGE_GUIDE.md) | Reproducible access, honest synthetic data and supported actions |
+| Testing | [Judge guide](JUDGE_GUIDE.md), [23 October access record](JUDGE_ACCESS_2026-10-23.md) | Direct public demo entries without entered credentials; clean-profile repetition still pending |
 | Narrative/video outline | [Project description](PROJECT_DESCRIPTION.md) | English draft; adapt to the actually recorded build |
 | Entry form | [Submission checklist](SUBMISSION.md) | Required URLs, video, description, feedback and final access check |
 | Feedback/bonus | [Product Feedback and friction](PRODUCT_FEEDBACK.md) | Genuine results, workarounds and suggestions |

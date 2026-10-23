@@ -14,7 +14,7 @@ Built for **Build, Ship, Shape: Amazon Developer Hackathon 2026**. Submission-fa
 | Carrier | `/carriers` | Native dashboard, opportunities, offer preparation, quote automation, orders, fleet, sites and control tower |
 | MCP client | `/mcp` | Authenticated intake, routing, workflow reads and prepared/confirmed commercial commands |
 
-The connected workspace requires an authorized Supabase identity. Assigned synthetic demo access is optional and controlled by server configuration; opening a page does not grant membership. Browser-only visual examples and connected records are different data sources.
+For the public judge demo, open the application and choose **Explore Shipper** or **Explore Carrier**. Both entries opened their workspaces without entering credentials on 23 October 2026. The server supplies the scoped demo identity; this does not grant arbitrary tenant membership. See the [read-only access record](docs/hackathon/JUDGE_ACCESS_2026-10-23.md) for observations and the remaining clean-profile check. Browser-only visual examples and connected records are different data sources.
 
 Nova can answer questions and capture/correct details. Typed turns can receive Nova audio when the deployed gateway advertises `textInput`. Commercial actions use application validation and explicit confirmation. Nova does not independently create offers or book transport.
 

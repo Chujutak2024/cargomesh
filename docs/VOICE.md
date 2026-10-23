@@ -12,7 +12,7 @@ Response completion waits for pending speech playback; finishing an intake step 
 
 ## Typed-only Web acceptance
 
-The deployed revision 5 advertises textInput and has passed a real typed-to-audio turn **with a continuous digital-silence stream**. Nova cross-modal input needs continuous streaming even when the user types. The current Web text-only path still lacks that stream; without it, the accepted typed turn can wait without audio. This is separate from spoken quantity parsing. See [deployment evidence](v2-amazon/delivery/evidence/nova/GATEWAY_92EC470_2026-10-22.md) and [the required Web correction](v2-amazon/delivery/friction-logs/NOVA_TEXT_STREAMING_2026-10-22.md). No microphone permission should be required merely to type.
+The 22 October deployment record reports revision 5 advertising textInput and a completed typed-to-audio turn **with a continuous digital-silence stream**. Nova cross-modal input needs continuous streaming even when the user types. Integrated PR #149 now supplies that stream in the Web source; without it, the accepted typed turn can wait without audio. Final production browser acceptance and the currently running AWS revision are **pending confirmation — Axel**, coordinated by Cristhian. This is separate from spoken quantity parsing. See [deployment evidence](v2-amazon/delivery/evidence/nova/GATEWAY_92EC470_2026-10-22.md), [the original friction](v2-amazon/delivery/friction-logs/NOVA_TEXT_STREAMING_2026-10-22.md) and [the integrated correction/acceptance script](v2-amazon/delivery/NOVA_TYPED_SILENT_STREAM_2026-10-22.md). No microphone permission should be required merely to type.
 
 ## Local gateway
 

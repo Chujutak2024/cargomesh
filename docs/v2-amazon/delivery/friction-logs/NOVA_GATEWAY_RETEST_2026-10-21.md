@@ -1,31 +1,39 @@
-# Nova gateway: repetición controlada en AWS
+# Nova gateway: accepted short auth, rejected expanded context
 
-Fecha observada: 21 octubre 2026, 12:19 America/Lima (17:19 UTC).
-Checkout local: `f8da07678cdd1a27190affdce24794c48c38bdc1`.
+Observed: 21 October 2026, 12:19 America/Lima (17:19 UTC). Source checkout: `f8da07678cdd1a27190affdce24794c48c38bdc1`. **Severity: Important** for the expanded-context rollout; no production business-data incident was established.
 
-## Resultado real
+## Task and reproduction steps
 
-Se abrió una sesión Client mediante el endpoint de demostración nativo del sitio. Los permisos se obtuvieron con `preview=false` desde `https://cargomesh.vercel.app` y se enviaron al gateway público configurado, con el mismo Origin HTTPS.
+Task: verify that the existing AWS voice gateway accepts both the baseline and expanded authenticated context from the native Client demo at `https://cargomesh.vercel.app`.
 
-| Caso | Grant HTTP | Sobre auth UTF-8 | ready | Cierre |
-| --- | --- | --- | --- | --- |
-| Sin historial | 200 | 2057 bytes | Sí | 1000, cierre voluntario |
-| 12 turnos diagnósticos sintéticos acotados | 200 | 5007 bytes | No | 1008 antes de ready |
+1. Enter the native Client demo and obtain a fresh voice grant with `preview=false`.
+2. Connect to the configured public gateway using the same authorized HTTPS Origin.
+3. Send the baseline authentication envelope; wait for ready and close voluntarily.
+4. Repeat with a fresh grant and bounded synthetic history of 12 diagnostic turns. Do not send audio or commercial commands. Keep all grants/cookies in memory and out of logs.
 
-Esto reproduce el defecto descrito en PR #140. La autenticación del cliente y el acceso inicial funcionan; el gateway desplegado todavía rechaza el sobre ampliado. No se considera superada la aceptación del rollout de 64 KiB. El resultado es compatible con el límite anterior, pero no identifica por sí solo el digest de la imagen.
+## Expected and actual result
 
-No se enviaron frames de audio ni comandos comerciales. No se crearon pedidos, cotizaciones o reservas. Cookies y tokens permanecieron solo en memoria y no se imprimieron ni guardaron. El historial diagnóstico no contenía datos de usuario.
+Expected: both valid envelopes reach ready under the approved 64 KiB transport contract.
 
-## Identidad y bloqueo de inspección AWS
+| Case | Grant HTTP | Auth envelope, UTF-8 | Ready | Close |
+|---|---|---|---|---|
+| No history — positive control | 200 | 2,057 bytes | Yes | 1000, voluntary |
+| Bounded synthetic diagnostic history | 200 | 5,007 bytes | No | 1008 before ready |
 
-La renovación fue correcta: el perfil `cargomesh-bedrock` tiene sesión válida en la cuenta prevista. `ecs:DescribeServices` devuelve AccessDenied porque la identidad no tiene una política que permita esa acción sobre `service/default/cargomesh-nova-staging`.
+The same session path succeeded with the smaller envelope and failed with expanded context. This reproduced the PR #140 transport defect. It was compatible with the earlier limit but did not identify the deployed image digest. No requests, offers or bookings were created. No audio was sent; no token/cookie was printed or saved.
 
-No se cambió IAM ni se intentó ampliar permisos. La imagen, digest y revisión actualmente ejecutados siguen sin verificarse por ECS. No se construyó/publicó imagen ni se actualizó el servicio durante esta prueba. No se modificaron variables ni despliegues de Vercel.
+## Workaround and inspection limit
 
-## Siguiente aceptación
+Retain the bounded baseline context until an authorized rollout and large-envelope retest pass. This is a transport workaround, not permission to weaken grant validation.
 
-Con un acceso autorizado al servicio ECS existente, desplegar la imagen del corte aprobado que incluya los tres archivos del Dockerfile.gateway. Mantener IAM, secreto, origen, puerto e infraestructura existentes. Registrar task definition, imagen por SHA y digest real.
+The existing AWS session was valid, but `ecs:DescribeServices` returned AccessDenied for the target service. The identity lacked an allowing policy. No IAM changes or permission expansion were attempted, and this retest did not build/publish an image or change AWS/Vercel deployment settings. The then-running revision/digest remained unverified by ECS during this observation.
 
-Después del rollout, repetir este diagnóstico: tanto 2057 bytes como un sobre mayor a 4096 bytes deben alcanzar ready y permitir cierre voluntario 1000. Solo después corresponde habilitar el catálogo extendido en Vercel y verificarlo. La prueba humana de voz y Alexa+ live siguen separadas de esta aceptación de transporte.
+## Actionable suggestion
 
-Evidencia sin secretos: `nova-hosted-transport-result.json`, junto a este documento. Script reproducible: `nova_hosted_transport_probe.py`, en la misma carpeta.
+Expose the supported authentication-envelope limit as a documented capability and return a safe size-specific failure. Provide an authorized read-only way to match a running gateway to its source SHA/digest before testing, and keep a positive baseline alongside the expanded-context case.
+
+## Later evidence and owner
+
+The [22 October rollout record](../evidence/nova/GATEWAY_92EC470_2026-10-22.md) separately reports revision 5 accepting 5,085- and 8,035-byte contexts. That later observation resolves the original size blocker at its recorded deployment; it is not a current-version claim or human audio acceptance. Current AWS identity and browser acceptance are **pending confirmation — Axel**, coordinated by Cristhian.
+
+The former reference to a colocated result JSON/probe was removed because neither artifact is present in this checkout. The table preserves the recorded observation; no missing artifact is presented as accessible evidence.
