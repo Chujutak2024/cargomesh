@@ -36,3 +36,20 @@ test('voice receives accepted availability without collapsing alternatives or gr
  const context=voiceDraftContext(draft,null);assert.equal(context.planningPreferences?.pickupWindows.length,2);assert.equal(context.planningPreferences?.urgency,'URGENT');assert.equal('consent' in context,false);
  assert.equal(voiceDraftContext({...draft,pickupWindowStartsAt:''},null).planningPreferences,undefined);
 });
+
+
+test("renewal carries the product and pending delivery clock without leaking contact values",()=>{
+ const draft={...EMPTY_PROTOTYPE_DRAFT,cargoDescription:"one robot in each box",pickupContactEmail:"private@example.test",pickupWindowStartsAt:"2026-11-10T09:00",pickupWindowEndsAt:"2026-11-10T17:00"};
+ const context=voiceDraftContext(draft,null,["DATE_WINDOW_PENDING"],null,{timeZone:"America/Lima",pendingDates:["2026-12-10"],pendingWindow:{alternatives:["2026-12-10"],referenceDate:"2026-10-21",timeZone:"America/Lima",role:"delivery",startTime:"14:00"}});
+ assert.equal(context.cargoDescription,"one robot in each box");assert.deepEqual(context.pendingWindow,{role:"delivery",startTime:"14:00",endTime:undefined});
+ assert.match(context.referenceDate!,/^\d{4}-\d{2}-\d{2}$/);assert.equal(JSON.stringify(context).includes("private@example.test"),false);
+ assert.equal(voiceDraftContext({...draft,cargoDescription:"Contact private@example.test"},null).cargoDescription,undefined);
+ assert.equal(voiceDraftContext({...draft,cargoDescription:"call +51999111222"},null).cargoDescription,undefined);
+});
+
+
+test("voice renewal follows validated form sections instead of optional-field order",()=>{
+ const context=voiceDraftContext({...EMPTY_PROTOTYPE_DRAFT,originFacilityId:"origin",destinationFacilityId:"destination"},null);
+ assert.equal(context.formProgress?.step,2);assert.ok(context.formProgress?.pendingFields.includes("categoryCode"));
+ assert.ok(!context.formProgress?.pendingFields.includes("urgency"));
+});

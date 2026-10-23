@@ -62,3 +62,74 @@ test("a contradictory or alternative day never inherits a previously proposed da
 });
 
 test("morning describes a clock period and is not tomorrow",()=>{assert.equal(dateClarification('Recojo de nueve a once de la mañana',zone,now),null);});
+
+
+import {spokenCategoryAcceptance} from "./spoken-category-acceptance";
+import {buildSpokenRequestReview} from "./spoken-request-review";
+import {applyChatFieldsToDraft,EMPTY_PROTOTYPE_DRAFT} from "./prototype-model";
+import {interpretDeterministically} from "@/features/v2-conversation-prep/interpretation";
+import {parseConversationField} from "./conversation-fields";
+
+test("English scheduling answers bind to the latest question rather than an earlier pickup recap",()=>{
+ const assistant=(text:string)=>[{speaker:"assistant" as const,text}];
+ assert.equal(lastSpokenQuestionField(assistant("When would you like the cargo to be picked up? Please give the date and time window.")),"pickupWindowStartsAt");
+ assert.equal(lastSpokenQuestionField(assistant("Pickup is November 10. Now, when does the shipment need to be delivered in Arequipa?")),"deliveryWindowStartsAt");
+ assert.equal(lastSpokenQuestionField(assistant("I have the start time as two pm. What time should the delivery window end?")),"deliveryWindowEndsAt");
+ assert.equal(lastSpokenQuestionField(assistant("Since you are shipping robots, would you categorize this as Machinery and Heavy Industrial, or does another category fit better?")),"categoryCode");
+ assert.equal(lastSpokenQuestionField(assistant("I recommend a flatbed or a tractor trailer. Which one would you prefer?")),"requiredEquipment");
+});
+
+test("reported November pickup and December delivery retain separate partial dates and clocks",()=>{
+ let pending={date:null as ReturnType<typeof dateClarification>,classification:false};
+ let draft={...EMPTY_PROTOTYPE_DRAFT,cargoDescription:"robot",categoryCode:"MACHINERY"};
+ const turn=(text:string,role:"pickup"|"delivery")=>{
+  const result=spokenCaptureClarification(text,pending,options,zone,now,role);
+  pending={...pending,date:result.pendingDate};draft=applyChatFieldsToDraft(draft,result.fields);return result;
+ };
+ assert.equal(turn("November, any day is ok but between 9am to 5pm","pickup").dateResolved,false);
+ assert.equal(turn("yes in lima time zone, november 10 will be ok","pickup").dateResolved,true);
+ assert.equal(draft.pickupWindowStartsAt,"2026-11-10T09:00");assert.equal(draft.pickupWindowEndsAt,"2026-11-10T17:00");
+ turn("December 10 afternoon","delivery");assert.equal(pending.date?.role,"delivery");
+ // A mistaken model pickup question cannot relabel a pending delivery answer.
+ turn("2pm","pickup");assert.equal(pending.date?.startTime,"14:00");
+ assert.equal(turn("8pm","pickup").dateResolved,true);
+ assert.equal(draft.deliveryWindowStartsAt,"2026-12-10T14:00");assert.equal(draft.deliveryWindowEndsAt,"2026-12-10T20:00");
+ turn("i already told you december 10 from 2pm to 9pm","delivery");
+ assert.equal(draft.deliveryWindowEndsAt,"2026-12-10T21:00");assert.equal(draft.pickupWindowStartsAt,"2026-11-10T09:00");
+ const both=turn("it should arrive in arequipa in december 10 at 2pm to 9pm and it go out from lima at november 10 at 8am to 5pm","delivery");
+ assert.equal(both.dateResolved,true);assert.equal(both.fields.length,4);
+ assert.equal(draft.pickupWindowStartsAt,"2026-11-10T08:00");assert.equal(draft.pickupWindowEndsAt,"2026-11-10T17:00");
+ assert.equal(draft.deliveryWindowStartsAt,"2026-12-10T14:00");assert.equal(draft.deliveryWindowEndsAt,"2026-12-10T21:00");
+ assert.equal(draft.cargoDescription,"robot");assert.equal(draft.categoryCode,"MACHINERY");
+});
+
+test("a new day cannot inherit another day's clocks and unsupported dates never produce a window",()=>{
+ const pending={date:{alternatives:["2026-11-10"],timeZone:zone,referenceDate:"2026-10-21",role:"delivery" as const,startTime:"14:00"},classification:false};
+ const changed=spokenCaptureClarification("December 10 afternoon",pending,options,zone,now,"delivery");
+ assert.equal(changed.pendingDate?.startTime,undefined);assert.equal(changed.dateResolved,false);
+ for(const value of ["delivery February 30 2027 from 2pm to 9pm","delivery January 10 from 2pm to 9pm","pickup and delivery tomorrow from 9am to 5pm","delivery November 10 or December 10 from 2pm to 9pm","delivery November 10 or 11 from 2pm to 9pm"])assert.equal(spokenCaptureClarification(value,{date:null,classification:false},options,zone,now).dateResolved,false,value);
+ assert.equal(spokenCaptureClarification("tractor",pending,options,zone,now,"delivery").pendingDate,pending.date);
+});
+
+test("robots in each box and weight each survive compound quantity answers",()=>{
+ const text="2 boxes with one robot inside of each one, it weights 500kg each";
+ const turns=[{speaker:"user" as const,text,contentId:"nova:test:robots",provisional:false}];
+ const review=buildSpokenRequestReview(turns,options,EMPTY_PROTOTYPE_DRAFT);
+ assert.ok(review.fields.some(f=>f.field==="cargoDescription"&&f.value==="robot"));
+ const proposal=interpretDeterministically({schemaVersion:"2.0",text,currentField:"unitQuantity"});
+ assert.ok(proposal.fields.some(f=>f.field==="unitQuantity"&&f.value==="2"));
+ assert.equal(checkedSpokenField("unitWeightPerUnitKg","500",text,[{speaker:"assistant",text:"How many boxes are you shipping, and what do they contain?"}]),"500");
+ assert.equal(checkedSpokenField("unitWeightPerUnitKg","500","500 kg total",[]),null);
+});
+
+test("short category acceptance selects only one named catalog category, never consent or hazardous clearance",()=>{
+ const prompt=[{speaker:"assistant" as const,text:"Would you categorize this as Machinery and Heavy Industrial, or does another category fit better?"}];
+ assert.deepEqual(spokenCategoryAcceptance("yes that one is good",prompt,options),[{field:"categoryCode",value:"MACHINERY"}]);
+ assert.deepEqual(spokenCategoryAcceptance("no",prompt,options),[]);
+ assert.deepEqual(spokenCategoryAcceptance("yes",[{speaker:"assistant",text:"Machinery or general cargo: which category?"}],options),[]);
+ assert.deepEqual(spokenCategoryAcceptance("yes",[{speaker:"assistant",text:"Confirm Chemical category?"}],options),[]);
+ assert.deepEqual(spokenCategoryAcceptance("yes",[{speaker:"assistant",text:"Confirm and save your draft?"}],options),[]);
+ assert.equal(parseConversationField("requiredEquipment","tractor",options),null);
+ const withTractor={...options,equipmentOptions:[...options.equipmentOptions,{code:"TRACTOR_TRAILER",labelEs:"Tractocamión",labelEn:"Tractor trailer",verification:"CAPTURE_ONLY" as const}]};
+ assert.equal(parseConversationField("requiredEquipment","tractor",withTractor),"TRACTOR_TRAILER");
+});

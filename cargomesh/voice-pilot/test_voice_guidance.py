@@ -38,5 +38,15 @@ class VoiceGuidanceTests(unittest.TestCase):
         self.assertIn("Current commercial status is unverified",prompt)
         self.assertNotIn("can populate an editable offer draft",prompt)
 
+    def test_product_and_date_roles_remain_distinct_after_renewal(self):
+        prompt=voice_prompt({"role":"shipper","draftContext":{"cargoDescription":"robot","pendingDates":["2026-12-10"],"pendingWindow":{"role":"delivery","startTime":"14:00"}}})
+        self.assertIn("Never restart intake or ask for a known product",prompt)
+        self.assertIn("December 10 afternoon describes delivery, never pickup",prompt)
+        self.assertIn("pendingWindow",prompt)
+        self.assertIn("Facilities; Cargo and units; Windows and contacts; Review",prompt)
+        self.assertIn("section completion is never consent to save or book",prompt)
+        self.assertIn("robot",prompt)
+        self.assertIn("not saving, booking, hazard clearance",prompt)
+
 if __name__ == '__main__':
     unittest.main()

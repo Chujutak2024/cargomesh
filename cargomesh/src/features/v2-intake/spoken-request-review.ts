@@ -75,7 +75,8 @@ function latestSpokenRoute(turns: VoiceTurn[]) {
 export function buildSpokenRequestReview(turns: VoiceTurn[], options: IntakeOptionsData, draft: V2IntakePrototypeDraft): SpokenRequestReview {
   const text = spokenUserDetails(turns);
   const { pickup, destination } = latestSpokenRoute(turns);
-  const cargo = spokenClause(lastCapture(text, /\b(?:i(?:'m| am)\s+shipping|shipping|transporting|(?:i|we)\s+(?:like|want|need|would like)\s+to\s+(?:send|ship|transport))\s+([^;,.]+)/gi))
+  const cargo = lastCapture(text, /\b(?:boxes?|pallets?|crates?)\s+with\s+(?:one|a|an|\d+)\s+([^;,.]+?)\s+(?:inside(?: of)? each|in each)/gi)
+    || spokenClause(lastCapture(text, /\b(?:i(?:'m| am)\s+shipping|shipping|transporting|(?:i|we)\s+(?:like|want|need|would like)\s+to\s+(?:send|ship|transport))\s+([^;,.]+)/gi))
     || lastCapture(text, /\bin\s+(?:the\s+)?boxes\s+i\s+have\s+([^;,.]+?)(?=\s+(?:and|with|i need)\b|[;,.]|$)/gi)
     || lastCapture(text, /\b(?:boxes|pallets|crates)\s+of\s+([^;,.]+)/gi);
   const latestWeightTurn=[...turns].reverse().find(turn=>turn.speaker==="user"&&/\b(?:kg|kilograms?|kilogramos?|tons?|tonnes?|toneladas?)\b/i.test(turn.text))?.text??"";
