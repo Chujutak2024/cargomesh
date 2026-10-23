@@ -6,11 +6,12 @@ import { pageEntryBlocks, startPageMotion, type PageMotionScope } from './page-m
 // A minimal DOM/animation adapter exercises the real observer and cleanup policy.
 function page(reduced = false, scope: PageMotionScope = 'client') {
   let mutation: MutationCallback;
+  let snapshotMutation: MutationCallback | undefined;
   let disconnected = false;
   const frames = new Map<number, FrameRequestCallback>();
   const listeners = new Set<() => void>();
   const media = { matches: reduced, addEventListener: (_: string, fn: () => void) => listeners.add(fn), removeEventListener: (_: string, fn: () => void) => listeners.delete(fn) };
-  const document = { defaultView: {} as unknown, activeElement: null as Element | null, hidden: false };
+  const document = { defaultView: {} as unknown, activeElement: null as Element | null, hidden: false, documentElement: null as unknown as Element };
   class Element {
     children: Element[] = [];
     parentElement: Element | null = null;
@@ -24,6 +25,7 @@ function page(reduced = false, scope: PageMotionScope = 'client') {
     get textContent(): string { return this.text + this.children.map(child => child.textContent).join(''); }
     add(...nodes: Element[]) { nodes.forEach(node => { node.parentElement = this; this.children.push(node); }); return this; }
     getAttribute(name: string) { return this.attrs[name] ?? null; }
+    hasAttribute(name: string) { return name in this.attrs; }
     matches(selector: string): boolean {
       return selector.split(',').some(part => {
         const choice = part.trim();
@@ -50,18 +52,23 @@ function page(reduced = false, scope: PageMotionScope = 'client') {
   }
   document.defaultView = {
     HTMLElement: Element, innerHeight: 900, matchMedia: () => media,
-    MutationObserver: class { constructor(callback: MutationCallback) { mutation = callback; } observe() {} disconnect() { disconnected = true; } },
+    MutationObserver: class {
+      constructor(private callback: MutationCallback) {}
+      observe(target: Element) { if (target === document.documentElement) snapshotMutation = this.callback; else mutation = this.callback; }
+      disconnect() { disconnected = true; }
+    },
     requestAnimationFrame: (fn: FrameRequestCallback) => { frames.set(1, fn); return 1; },
     cancelAnimationFrame: (id: number) => frames.delete(id),
   };
   const node = (tag = 'DIV', attrs = {}) => Object.assign(new Element(tag.toUpperCase()), { attrs });
   const root = node();
+  document.documentElement = node('html');
   return {
     root, node, document, media, listeners, frames,
     start: () => scope === 'client' ? startClientPageMotion(root as unknown as HTMLElement) : startPageMotion(root as unknown as HTMLElement, scope),
     blocks: () => scope === 'client' ? clientEntryBlocks(root as unknown as HTMLElement) : pageEntryBlocks(root as unknown as HTMLElement, false, scope),
     change(target: Element, addedNodes: Element[] = [], type = 'childList') {
-      if (!disconnected) mutation!([{ target, addedNodes, type } as unknown as MutationRecord], {} as MutationObserver);
+      if (!disconnected) (target === document.documentElement ? snapshotMutation : mutation)?.([{ target, addedNodes, type } as unknown as MutationRecord], {} as MutationObserver);
     },
     flush() { const batch = [...frames.values()]; frames.clear(); batch.forEach(fn => fn(0)); },
     reduce() { media.matches = true; listeners.forEach(fn => fn()); },
@@ -195,4 +202,31 @@ test('Carrier reduced-motion startup and preference changes never leave hidden c
   p.media.matches = false;
   const added = p.node('section'); p.root.add(added); p.change(p.root, [added]); p.flush();
   p.reduce(); assert.equal(added.calls[0].animation.canceled, true);
+});
+
+test('Carrier navigation snapshots own the entrance without hiding or replaying their blocks', () => {
+  const p = page(false, 'carrier'), card = p.node('article'); p.root.add(card);
+  p.document.documentElement.attrs['data-carrier-page-transition'] = '';
+  const stop = p.start();
+  assert.equal(card.calls.length, 0);
+  delete p.document.documentElement.attrs['data-carrier-page-transition'];
+  p.change(p.document.documentElement, [], 'attributes'); p.flush();
+  assert.equal(card.calls.length, 0);
+  const added = p.node('article'); p.root.add(added); p.change(p.root, [added]); p.flush();
+  assert.equal(added.calls.length, 1);
+  stop();
+});
+
+test('starting a Carrier snapshot cancels active block motion without affecting Client entrances', () => {
+  const p = page(false, 'carrier'), card = p.node('article'); p.root.add(card);
+  const stop = p.start();
+  p.document.documentElement.attrs['data-carrier-page-transition'] = '';
+  p.change(p.document.documentElement, [], 'attributes');
+  assert.equal(card.calls[0].animation.canceled, true);
+  stop();
+  const client = page(), clientCard = client.node('article'); client.root.add(clientCard);
+  client.document.documentElement.attrs['data-carrier-page-transition'] = '';
+  const stopClient = client.start();
+  assert.equal(clientCard.calls.length, 1);
+  stopClient();
 });

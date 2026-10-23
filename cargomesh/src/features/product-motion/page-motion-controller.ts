@@ -42,6 +42,7 @@ export function startPageMotion(root: HTMLElement, scope: PageMotionScope = 'cli
   const view = root.ownerDocument.defaultView;
   if (!view || typeof root.animate !== 'function') return () => {};
   const preference = view.matchMedia('(prefers-reduced-motion: reduce)');
+  const snapshotActive = () => scope === 'carrier' && root.ownerDocument.documentElement.hasAttribute('data-carrier-page-transition');
   const seen = new WeakSet<HTMLElement>();
   const running = new Map<HTMLElement, Animation>();
   const pending = new Map<HTMLElement, boolean>();
@@ -60,7 +61,9 @@ export function startPageMotion(root: HTMLElement, scope: PageMotionScope = 'cli
         if ((!repeat && seen.has(element)) || !root.contains(element)) continue;
         seen.add(element);
         const rect = element.getBoundingClientRect();
-        if (preference.matches || root.ownerDocument.hidden || !rect.width || !rect.height || rect.bottom <= 0 || rect.top >= view.innerHeight) continue;
+        // Native navigation snapshots already own this frame; never capture hidden blocks
+        // or replay a second entrance when the page shot finishes.
+        if (preference.matches || snapshotActive() || root.ownerDocument.hidden || !rect.width || !rect.height || rect.bottom <= 0 || rect.top >= view.innerHeight) continue;
         // Do not move a field the user has already focused, or double-animate a child.
         if (element.contains(root.ownerDocument.activeElement) || [...running.keys()].some(parent => parent !== element && parent.contains(element))) continue;
         running.get(element)?.cancel();
@@ -106,12 +109,15 @@ export function startPageMotion(root: HTMLElement, scope: PageMotionScope = 'cli
     if (pending.size && !frame) frame = view.requestAnimationFrame(flush);
   });
   const onPreference = () => { if (preference.matches) stop(); };
+  const snapshotObserver = scope === 'carrier' ? new view.MutationObserver(() => { if (snapshotActive()) stop(); }) : null;
+  snapshotObserver?.observe(root.ownerDocument.documentElement, { attributes: true, attributeFilter: ['data-carrier-page-transition'] });
   preference.addEventListener('change', onPreference);
   reveal(new Map([[root, false]]));
   observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-motion-region', 'data-motion-ready', 'aria-busy', ...(scope === 'carrier' ? ['hidden'] : [])] });
   return () => {
     disposed = true;
     observer.disconnect();
+    snapshotObserver?.disconnect();
     preference.removeEventListener('change', onPreference);
     view.cancelAnimationFrame(frame);
     pending.clear();
