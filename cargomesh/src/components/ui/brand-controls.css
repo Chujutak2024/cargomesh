@@ -1,0 +1,267 @@
+/* CargoMesh adaptation of the supplied Uiverse button (cssbuttons-io)
+   and floating search field (antonypjohnson). Shared palette, existing sizing. */
+:root {
+  --cm-color-action: var(--cm-color-primary);
+  --cm-color-action-hover: var(--cm-color-primary-hover);
+  --cm-color-action-tint: var(--cm-color-selected);
+  --cm-color-action-line: var(--cm-color-line-strong);
+}
+
+/* Explicit actions only: navigation, map controls and clickable record cards
+   keep their own geometry and selection treatment. */
+:is(html body button[data-cm-button], html body button[data-cm-action], html body [data-carrier-ui] form button:not([aria-label]):not([aria-haspopup]):not([role])) {
+  --cm-action-tone: var(--cm-color-action);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1.5px solid var(--cm-color-action-line) !important;
+  border-radius: 8px !important;
+  background: var(--cm-color-surface, #fff) !important;
+  color: var(--cm-color-heading) !important;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color .35s ease, border-color .2s ease, box-shadow .2s ease;
+}
+:is(html body button[data-cm-button], html body button[data-cm-action], html body [data-carrier-ui] form button:not([aria-label]):not([aria-haspopup]):not([role]))::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  top: 50%;
+  left: 50%;
+  width: max(220%, 12rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--cm-color-selected);
+  transform: translate(35%, 35%);
+  transition: transform .55s var(--cm-motion-ease, ease), background .16s ease;
+}
+:is(html body button[data-cm-button], html body button[data-cm-action], html body [data-carrier-ui] form button:not([aria-label]):not([aria-haspopup]):not([role])):is(:hover, :focus-visible):not(:disabled) {
+  color: var(--cm-color-heading) !important;
+  border-color: var(--cm-color-action) !important;
+}
+:is(html body button[data-cm-button], html body button[data-cm-action], html body [data-carrier-ui] form button:not([aria-label]):not([aria-haspopup]):not([role])):is(:hover, :focus-visible):not(:disabled)::before {
+  transform: translate(-50%, -50%);
+}
+:is(html body button[data-cm-button], html body button[data-cm-action], html body [data-carrier-ui] form button:not([aria-label]):not([aria-haspopup]):not([role])):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--cm-color-action) 18%, transparent) !important;
+  outline-offset: 3px;
+}
+:is(html body button[data-cm-button], html body button[data-cm-action]):active:not(:disabled)::before {
+  background: var(--cm-color-sidebar);
+  transition-duration: 0s;
+}
+:is(html body button[data-cm-button], html body button[data-cm-action])[aria-pressed=true]:not(:hover):not(:focus-visible) {
+  background: var(--cm-color-action-tint) !important;
+  box-shadow: inset 0 -2px var(--cm-color-action);
+}
+:is(html body button[data-cm-button], html body button[data-cm-action], html body [data-carrier-ui] form button:not([aria-label]):not([aria-haspopup]):not([role])):disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+:is(html body button[data-cm-button], html body button[data-cm-action], html body [data-carrier-ui] form button:not([aria-label]):not([aria-haspopup]):not([role])):disabled::before {
+  display: none;
+}
+
+/* Floating label is a visual copy; the original associated label remains
+   accessible. The input retains its filtering, clearing and shortcut logic. */
+html body [data-carrier-ui] [data-cm-search] {
+  display: block !important;
+  min-width: 0;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+html body [data-carrier-ui] [data-cm-search] > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+html body [data-carrier-ui] [data-cm-search] [data-cm-search-control] {
+  position: relative;
+  display: flex;
+  min-height: var(--cm-control-height);
+  width: 100%;
+  padding: 0;
+  border: 1.5px solid var(--cm-color-action-line);
+  border-radius: 8px;
+  background: var(--cm-color-surface, #fff);
+  color: var(--cm-color-ink);
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+html body [data-carrier-ui] [data-cm-search-control]:hover {
+  border-color: var(--cm-color-action);
+}
+html body [data-carrier-ui] [data-cm-search-control]:focus-within {
+  border-color: var(--cm-color-action);
+  outline: 2px solid color-mix(in srgb, var(--cm-color-action) 20%, transparent);
+  outline-offset: 2px;
+}
+html body [data-carrier-ui] [data-cm-search-control] > input {
+  width: 100%;
+  min-height: calc(var(--cm-control-height) - 3px);
+  padding: 12px 52px 12px 16px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--cm-color-ink);
+  font: inherit;
+  font-size: 14px;
+  text-overflow: ellipsis;
+}
+html body [data-carrier-ui] [data-cm-search-control][data-filled=true] > input {
+  padding-inline-end: 86px;
+}
+html body [data-carrier-ui] [data-cm-search-control] > input::placeholder { color: transparent; }
+html body [data-carrier-ui] [data-cm-search-control] > svg {
+  position: absolute;
+  inset-inline-end: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  color: var(--cm-color-action);
+  pointer-events: none;
+}
+html body [data-carrier-ui] [data-cm-search-control] [data-cm-search-label] {
+  display: block;
+  position: absolute;
+  top: 50%;
+  inset-inline-start: 12px;
+  max-width: calc(100% - 65px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 4px;
+  background: var(--cm-color-surface, #fff);
+  color: var(--cm-color-muted);
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 400;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transform-origin: left center;
+  transition: top .2s ease, transform .2s ease, color .2s ease;
+}
+html body [data-carrier-ui] [data-cm-search-control]:is(:focus-within, [data-filled=true]) [data-cm-search-label] {
+  top: 0;
+  color: var(--cm-color-action);
+  transform: translateY(-50%) scale(.82);
+}
+html body [data-carrier-ui] [data-cm-search-control] > button[data-cm-search-clear] {
+  position: absolute;
+  inset-inline-end: 42px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cm-color-muted);
+}
+html body [data-carrier-ui] [data-cm-search-control] > kbd { display: none; }
+html body [data-carrier-ui] [data-cm-search-control]:has(input:disabled) { background: var(--cm-color-surface-subtle); opacity: .65; }
+html body [data-carrier-ui] [data-cm-search-control]:has(input:disabled) [data-cm-search-label] { background: var(--cm-color-surface-subtle); }
+html body [data-carrier-ui] [data-cm-search-control]:has(input[aria-invalid=true]) { border-color: var(--cm-color-danger); }
+html body [data-carrier-ui] [data-cm-search-control]:has(input[aria-invalid=true]) [data-cm-search-label] { color: var(--cm-color-danger); }
+
+@media(prefers-reduced-motion:reduce) {
+  :is(html body button[data-cm-button], html body button[data-cm-action], html body [data-carrier-ui] form button)::before,
+  :is(html body button[data-cm-button], html body button[data-cm-action], html body [data-carrier-ui] form button),
+  html body [data-carrier-ui] [data-cm-search-control],
+  html body [data-carrier-ui] [data-cm-search-label] { transition: none !important; }
+}
+
+/* Selects share the action/search palette; browser pickers remain native. */
+html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]) {
+  border: 1.5px solid var(--cm-color-action-line) !important;
+  border-radius: 8px !important;
+  background-color: var(--cm-color-surface, #fff) !important;
+  color: var(--cm-color-ink) !important;
+  font-family: var(--cm-font-sans, inherit);
+  font-weight: 500;
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+}
+html body [data-carrier-ui] select:not(.gm-style select):not([multiple]):not([size]) {
+  min-height: var(--cm-control-height);
+}
+html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):hover:not(:disabled) {
+  border-color: var(--cm-color-action) !important;
+}
+html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):is(:focus-visible, :open) {
+  border-color: var(--cm-color-action) !important;
+  outline: 2px solid color-mix(in srgb, var(--cm-color-action) 18%, transparent) !important;
+  outline-offset: 2px;
+}
+html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size]):disabled {
+  background-color: var(--cm-color-surface-subtle) !important;
+  color: var(--cm-color-muted) !important;
+  opacity: .65;
+  cursor: not-allowed;
+}
+html body :is(select[data-cm-select], [data-cm-select-scope] select):not(.gm-style select):not([multiple]):not([size])[aria-invalid=true] {
+  border-color: var(--cm-color-danger) !important;
+}
+@media(prefers-reduced-motion:reduce) {
+  html body :is(select[data-cm-select], [data-cm-select-scope] select) { transition: none !important; }
+}
+
+/* The sidebar is the palette source, including lightweight hover surfaces. */
+:is(html body button[data-cm-button], html body button[data-cm-action], html body [data-carrier-ui] form button:not([aria-label]):not([aria-haspopup]):not([role])):is(:hover, :focus-visible):not(:disabled) {
+  color: var(--cm-color-heading) !important;
+  border-color: var(--cm-color-line-strong) !important;
+}
+:is(html body button[data-cm-button], html body button[data-cm-action], html body [data-carrier-ui] form button:not([aria-label]):not([aria-haspopup]):not([role])):active:not(:disabled)::before {
+  background: var(--cm-color-sidebar);
+}
+html body [data-carrier-ui] :is(a[href], button[aria-pressed], button[role=tab]):not(.gm-style *):not([aria-disabled=true]):not(:disabled):hover {
+  background-color: var(--cm-color-selected) !important;
+  color: var(--cm-color-heading) !important;
+}
+html body [data-carrier-ui] :is(button[aria-pressed=true], button[role=tab][aria-selected=true]):not(.gm-style *) {
+  background-color: var(--cm-color-selected) !important;
+  color: var(--cm-color-primary-hover) !important;
+  border-color: var(--cm-color-line-strong) !important;
+}
+html body [data-carrier-ui] :is(a[href], button[aria-pressed], button[role=tab]):not(.gm-style *):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--cm-color-primary) 22%, transparent) !important;
+  outline-offset: 2px;
+}
+
+/* One regular control height for actions, fields and pickers. */
+html body [data-carrier-ui] {
+  --cm-control-height: 44px;
+}
+html body [data-carrier-ui] :is(button[data-cm-action], button[data-cm-button]:not([data-size=compact]), select:not([multiple]):not([size]), input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden])):not(.gm-style *) {
+  box-sizing: border-box;
+  height: var(--cm-control-height) !important;
+  min-height: var(--cm-control-height) !important;
+  padding-block: 0 !important;
+}
+html body [data-carrier-ui] [data-cm-search] [data-cm-search-control] {
+  box-sizing: border-box;
+  height: var(--cm-control-height) !important;
+  min-height: var(--cm-control-height) !important;
+}
+html body [data-carrier-ui] [data-cm-search-control] > input {
+  height: calc(var(--cm-control-height) - 3px) !important;
+  min-height: 0 !important;
+  padding-block: 0 !important;
+}
+
+/* Keep long search guidance inside the field; only a short label floats. */
+html body [data-carrier-ui] [data-cm-search-control][data-floating=false] [data-cm-search-label] { display:none; }
+html body [data-carrier-ui] [data-cm-search-control][data-floating=false] > input::placeholder { color:var(--cm-color-muted); opacity:1; }
+html body [data-carrier-ui] [data-cm-search-control][data-floating=true]:focus-within > input::placeholder { color:var(--cm-color-muted); opacity:.7; }
+html body [data-carrier-ui] [data-cm-search-control]:focus-within {
+  outline:2px solid color-mix(in srgb,var(--cm-color-primary) 14%,transparent) !important;
+  outline-offset:1px;
+  box-shadow:none !important;
+}
+html body [data-carrier-ui] [data-cm-search-control] [data-cm-search-label] { font-size:13px; }

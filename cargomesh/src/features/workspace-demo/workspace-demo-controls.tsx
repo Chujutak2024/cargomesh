@@ -254,8 +254,7 @@ export function DemoWorkspaceEntry({ workspace, automatic = false }: { workspace
         {enabled ? <button type="button" className={s.primaryButton} onClick={() => { void switchTo(workspace, true); }}>
           {t("Continuar", "Continue")}<ArrowRight size={17} aria-hidden="true" />
         </button> : <a className={s.primaryButton} href={loginHref}>{t("Iniciar sesión", "Sign in")}<ArrowRight size={17} aria-hidden="true" /></a>}
-        {enabled ? <a className={s.textLink} href={loginHref}>{t("Usar mi cuenta", "Use my account")}</a>
-          : <a className={s.textLink} href={destinationFor(workspace === "client" ? "carrier" : "client")}>{t("Volver", "Back")}</a>}
+        {!enabled ? <a className={s.textLink} href={destinationFor(workspace === "client" ? "carrier" : "client")}>{t("Volver", "Back")}</a> : null}
       </div>
     </section>
   </main>;

@@ -1,7 +1,9 @@
 "use client";
+import {ContentMotion} from "@/features/product-motion/content-motion";
+import {WorkspaceSkeleton} from "@/features/product-motion/workspace-skeleton";
 import {displayReference,locationDisplayLabel} from '@/shared/lib/display-identity';
 
-import { AlertTriangle, CalendarClock, CheckCircle2, Edit3, FileCheck2, Loader2, MapPin, PackageCheck, RefreshCw, Send, ShieldCheck, Truck } from "lucide-react";
+import { AlertTriangle, CalendarClock, CheckCircle2, Edit3, FileCheck2, MapPin, PackageCheck, RefreshCw, Send, ShieldCheck, Truck } from "lucide-react";
 import {WorkspaceLink as Link} from "@/features/workspace-mode/workspace-link";
 import { useEffect, useRef, useState } from "react";
 import { Button, Dialog, Input, Select, Textarea } from "@/components/ui";
@@ -294,12 +296,12 @@ export function RequestWorkspace({ initialRequest, initialWorkflow, initialCatal
 
     <div className={styles.detailGrid}><div className={styles.page}>
       <section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Factibilidad y mapa", "Serviceability and map")}</h2></div><MapPin size={18}/></header>
-        {phase === "evaluating" ? <div className={styles.empty} role="status"><Loader2 className="animate-spin"/><strong>{t("Consultando evaluación vigente…", "Loading current evaluation…")}</strong></div>
+        <ContentMotion identity={phase==='evaluating'?'reading':evaluation?'evaluated:'+selectedCandidateId:'empty'}>{phase === "evaluating" ? <WorkspaceSkeleton shape="detail" label={t("Consultando evaluación vigente…", "Loading current evaluation…")}/>
           : evaluation ? <div className={styles.section}><CandidateResults evaluation={evaluation} selectedCandidateId={selectedCandidateId} onSelectCandidate={setSelectedCandidateId} t={t}/>{mapProps ? <RoadCandidateMapBoundary props={mapProps} t={t}/> : null}</div>
-          : <div className={styles.empty}><span className={styles.emptyIcon}><MapPin size={22}/></span><strong>{t("Evaluación aún no cargada", "Evaluation not loaded yet")}</strong><p>{t("Reevaluar consulta el servicio V2; no usa una ruta anterior mientras carga.", "Reevaluate queries the V2 service; it does not keep an old route while loading.")}</p><Button disabled={phase!=="idle"} onClick={() => void evaluate()}>{t("Evaluar ahora", "Evaluate now")}</Button></div>}
+          : <div className={styles.empty}><span className={styles.emptyIcon}><MapPin size={22}/></span><strong>{t("Evaluación aún no cargada", "Evaluation not loaded yet")}</strong><p>{t("Reevaluar consulta el servicio V2; no usa una ruta anterior mientras carga.", "Reevaluate queries the V2 service; it does not keep an old route while loading.")}</p><Button disabled={phase!=="idle"} onClick={() => void evaluate()}>{t("Evaluar ahora", "Evaluate now")}</Button></div>}</ContentMotion>
       </section>
-      {!readIncomplete ? <CommercialPanel context={commercialContext} catalog={catalog} selectedOptionIndex={selectedOptionIndex} setSelectedOptionIndex={setSelectedOptionIndex}
-        decision={decision} bookings={activeBookings} busy={phase!=="idle" || commercialReadBlocked} onDecide={() => {if(phase==="idle" && !commercialReadBlocked)setDecisionOpen(true);}} onBook={() => { if(phase!=="idle" || commercialReadBlocked)return; setBookingConsent(false); setBookingOpen(true); }} t={t} localeTag={localeTag}/> : <section className={styles.panel}><div className={styles.section}><strong>{t("Alternativas pendientes de lectura completa", "Options await a complete read")}</strong><p>{t("Reintenta la lectura superior. Selección y reserva permanecen bloqueadas hasta recuperar los registros necesarios.", "Retry the read above. Selection and booking stay blocked until the required records are loaded.")}</p></div></section>}
+      {!readIncomplete ? <ContentMotion identity={ranking?.id??'no-ranking'}><CommercialPanel context={commercialContext} catalog={catalog} selectedOptionIndex={selectedOptionIndex} setSelectedOptionIndex={setSelectedOptionIndex}
+        decision={decision} bookings={activeBookings} busy={phase!=="idle" || commercialReadBlocked} onDecide={() => {if(phase==="idle" && !commercialReadBlocked)setDecisionOpen(true);}} onBook={() => { if(phase!=="idle" || commercialReadBlocked)return; setBookingConsent(false); setBookingOpen(true); }} t={t} localeTag={localeTag}/></ContentMotion> : <section className={styles.panel}><div className={styles.section}><strong>{t("Alternativas pendientes de lectura completa", "Options await a complete read")}</strong><p>{t("Reintenta la lectura superior. Selección y reserva permanecen bloqueadas hasta recuperar los registros necesarios.", "Retry the read above. Selection and booking stay blocked until the required records are loaded.")}</p></div></section>}
     </div>
       <aside className={styles.page}><section className={styles.panel}><header className={styles.panelHeader}><div><h2>{t("Siguiente acción", "Next action")}</h2></div><Send size={18}/></header><div className={styles.section}>
         {request.status === "FAILED" ? <p className={styles.notice} data-tone="danger"><AlertTriangle size={17}/>{t("La solicitud falló. Revisa la trazabilidad y los datos persistidos; corrige mediante una revisión permitida o crea una nueva solicitud. No se reintenta en silencio.", "The request failed. Review traceability and persisted data; correct it through an allowed revision or create a new request. It is never retried silently.")}</p> : null}

@@ -1,4 +1,5 @@
 "use client";
+import {CarrierContinuityProvider,useCarrierScrollMemory} from "@/features/carrier-navigation/carrier-continuity";
 import {carrierDisplayName} from '@/shared/lib/display-identity';
 import dynamic from 'next/dynamic';
 import {usePathname} from 'next/navigation';
@@ -22,7 +23,7 @@ import { getFreightRequestV2, getRoadServiceabilityV2, assertServiceabilityCorre
 import type { RoadServiceabilityEvaluationV2Data, FreightRequestV2Data } from "@/features/v2-intake/contracts";
 import { GuidanceImage } from "./guidance-image";
 import { ContentMotion } from "@/features/product-motion/content-motion";
-import { LogisticsTruck } from "@/features/logistics-3d/logistics-truck";
+const LogisticsTruck=dynamic(()=>import("@/features/logistics-3d/logistics-truck").then(module=>module.LogisticsTruck),{ssr:false});
 import { RequestSummary } from "./request-summary";
 import { LocalDraftWorkspace, LocalDraftRecovery } from "./local-draft-workspace";
 import { useLocalDraft } from "./use-local-draft";
@@ -50,7 +51,12 @@ const navigation=[
 ] as const;
 type View=typeof navigation[number]["id"];
 function viewFromHash():View{const name=readJuanHash().replace(/^#\/?/,"").split("/")[0];return navigation.some(v=>v.id===name)?name as View:"fleet";}
-export function JuanCarrierWorkspace({previewEnabled=false,initialAccess=[]}:{previewEnabled?:boolean;initialAccess?:CarrierPortalAccessV2[]}){
+type WorkspaceProps={previewEnabled?:boolean;initialAccess?:CarrierPortalAccessV2[]};
+export function JuanCarrierWorkspace(props:WorkspaceProps){
+ const scope=(props.initialAccess??[]).map(row=>row.operatorId+":"+row.carrierId+":"+row.role).sort().join("|");
+ return <CarrierContinuityProvider key={scope}><CarrierWorkspaceBody {...props}/></CarrierContinuityProvider>;
+}
+function CarrierWorkspaceBody({previewEnabled=false,initialAccess=[]}:WorkspaceProps){
  const [requestsBusy,setRequestsBusy]=useState(false);
  const [fleetHeaderTarget,setFleetHeaderTarget]=useState<HTMLDivElement|null>(null);
  const [pipelineViews,setPipelineViews]=useState<Record<string,PipelineViewState>>({});
@@ -86,7 +92,7 @@ export function JuanCarrierWorkspace({previewEnabled=false,initialAccess=[]}:{pr
   const links=(event:MouseEvent)=>{if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;const anchor=(event.target as Element).closest?.('a[href]');const href=anchor?.getAttribute('href');if(href?.startsWith('#/')&&anchor?.closest('[data-juan-front]')){event.preventDefault();navigateCarrier(juanHref(href));}};
   document.addEventListener('click',links);return()=>{unsubscribe();document.removeEventListener('click',links);};
  },[pathname]);
- useEffect(()=>{document.querySelector<HTMLElement>('[data-carrier-scroll]')?.scrollTo({top:0});},[view]);
+ useCarrierScrollMemory(headingRoute,pipelineCarrierId);
  useEffect(()=>{const controller=new AbortController();
   if(isCommercial||source==="local"||view==="fleet"||view==="help"||view==="desk"||view==="tracking"||view==="pipeline"||view==="tower"){setLoading(false);return()=>controller.abort();}
   setLoading(true);setError("");setRequests([]);setNext(null);setSelected(null);setEvaluation(null);setCandidate(null);setEvaluating(false);generation.current++;
@@ -123,8 +129,8 @@ export function JuanCarrierWorkspace({previewEnabled=false,initialAccess=[]}:{pr
   <div className={s.pagination}><small>{t("Hasta 25 registros por consulta. No es el total histórico.","Up to 25 records per query. This is not the historical total.")}</small><div><button disabled={!offset||loading} onClick={()=>setOffset(Math.max(0,offset-25))}>{t("Anterior","Previous")}</button><button disabled={next===null||loading} onClick={()=>next!==null&&setOffset(next)}>{t("Siguiente","Next")}</button></div></div></>;
  return <CarrierNavigation current={view==="tracking"?"orders":view} locale={locale} towerHref="/carriers/control-tower" previewEnabled={previewEnabled} editRequest={!!local.record && source === "local"} sourceLabel={(view==="dashboard"||view==="pipeline"||view==="shipments"||view==="desk"||view==="tracking"||view==="tower")?(pipelineCarrier?carrierDisplayName(pipelineCarrier.carrierName,pipelineCarrier.carrierId):undefined)??"Carrier workspace":view==="fleet"?"Carrier fleet · source shown in the page":"Juan visual examples · no GPS"}><div data-juan-front className={`${s.shell} ${navStyles.workspaceSurface}`}>
  <div className={s.main}>
- <header className={[s.topbar,view==='fleet'?s.fleetTopbar:''].join(' ')}><div><CarrierMenuButton/><h1 className={s.workspaceTitle} ref={headerTitle} tabIndex={-1}>{pageTitle}</h1></div><div>{view==='fleet'?<div className={s.fleetHeaderSlot} ref={setFleetHeaderTarget}/>:null}{(view==='dashboard'||view==='pipeline'||view==='shipments'||view==='desk'||view==='tracking'||view==='tower')&&initialAccess.length>1?<label><select aria-label="Carrier" value={pipelineCarrierId} disabled={requestsBusy} onChange={e=>{const carrier=e.target.value;setPipelineCarrierId(carrier);navigateCarrier(juanHref('#/'+view)+'?carrier='+encodeURIComponent(carrier));}}>{initialAccess.map(row=><option key={row.carrierId} value={row.carrierId}>{carrierDisplayName(row.carrierName,row.carrierId)}</option>)}</select></label>:null}{(isCommercial||view==='tracking'||view==='dashboard'||view==='tower')?<button type="button" className={s.headerRefresh} disabled={requestsBusy||!pipelineCarrier} aria-label={isCommercial?"Refresh Commercial":view==="tracking"?"Refresh Orders":"Refresh Dashboard"} title={isCommercial?"Refresh Commercial":view==="tracking"?"Refresh Orders":"Refresh Dashboard"} onClick={()=>setRefresh(value=>value+1)}><RefreshCw size={17} aria-hidden="true"/></button>:null}<LanguageSwitcher compact/><form action="/api/auth/logout" method="post"><button type="submit">{t("Cerrar sesión", "Sign out")}</button></form></div></header>
- <main className={s.content} id="coordinator-content"><ContentMotion identity={view}>{!useLocal&&!isCommercial&&view!=="dashboard"&&view!=="tower"&&view!=="fleet"&&view!=="tracking"?<div className={s.pageIntro}><p>{viewDescription}</p>{view!=="request"?<button onClick={()=>setRefresh(x=>x+1)} disabled={loading||requestsBusy}><RefreshCw size={16} aria-hidden="true"/>{t("Actualizar","Refresh")}</button>:null}</div>:null}
+ <header className={[s.topbar,view==='fleet'?s.fleetTopbar:''].join(' ')}><div><CarrierMenuButton/><h1 className={s.workspaceTitle} ref={headerTitle} tabIndex={-1}>{pageTitle}</h1></div><div>{view==='fleet'?<div className={s.fleetHeaderSlot} ref={setFleetHeaderTarget}/>:null}{(view==='dashboard'||view==='pipeline'||view==='shipments'||view==='desk'||view==='tracking'||view==='tower')&&initialAccess.length>1?<label><select aria-label="Carrier" value={pipelineCarrierId} disabled={requestsBusy} onChange={e=>{const carrier=e.target.value;setPipelineCarrierId(carrier);navigateCarrier(juanHref('#/'+view)+'?carrier='+encodeURIComponent(carrier));}}>{initialAccess.map(row=><option key={row.carrierId} value={row.carrierId}>{carrierDisplayName(row.carrierName,row.carrierId)}</option>)}</select></label>:null}{(isCommercial||view==='tracking'||view==='dashboard'||view==='tower')?<button data-cm-action type="button" className={s.headerRefresh} disabled={requestsBusy||!pipelineCarrier} aria-label={isCommercial?"Refresh Commercial":view==="tracking"?"Refresh Orders":"Refresh Dashboard"} title={isCommercial?"Refresh Commercial":view==="tracking"?"Refresh Orders":"Refresh Dashboard"} onClick={()=>setRefresh(value=>value+1)}><RefreshCw size={17} aria-hidden="true"/></button>:null}<LanguageSwitcher compact/><form action="/api/auth/logout" method="post"><button type="submit">{t("Cerrar sesión", "Sign out")}</button></form></div></header>
+ <main className={s.content} id="coordinator-content"><ContentMotion identity={view} enabled={!['shipments','desk','pipeline','fleet','tracking','dashboard','tower'].includes(view)}>{!useLocal&&!isCommercial&&view!=="dashboard"&&view!=="tower"&&view!=="fleet"&&view!=="tracking"?<div className={s.pageIntro}><p>{viewDescription}</p>{view!=="request"?<button onClick={()=>setRefresh(x=>x+1)} disabled={loading||requestsBusy}><RefreshCw size={16} aria-hidden="true"/>{t("Actualizar","Refresh")}</button>:null}</div>:null}
  {!["dashboard","pipeline","tower","route-lab","fleet","shipments","desk","tracking"].includes(view)?<p className={s.sourceNote}>Illustrative local examples. Changes here stay on this device; they do not create connected requests, offers or bookings.</p>:null}
  {local.enabled&&view!=="fleet"&&view!=="shipments"&&view!=="desk"&&view!=="tracking"&&!["dashboard","pipeline","tower","route-lab"].includes(view)?<><div className={s.localSourceBar}><span><span className={s.localDot} aria-hidden="true"/>{source==="service"?t("Datos del servicio","Service data"):local.record?t("Guardado en este dispositivo","Saved on this device"):t("Espacio local","Local workspace")}</span></div>{local.phase!=="ready"||view==="help"?<LocalDraftRecovery phase={local.phase} retry={local.retry} save={local.save}/>:null}</>:null}
  {useLocal&&localRequests.selected&&view!=="shipments"&&view!=="dashboard"?<div className={s.localRequestContext}><span><FileText size={15} aria-hidden="true"/><strong>{localRequestReference(localRequests.selected.id)}</strong></span><a href="#/shipments">{t("Ver las solicitudes","View requests")}<ArrowRight size={15} aria-hidden="true"/></a></div>:null}

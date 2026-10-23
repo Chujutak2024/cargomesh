@@ -223,7 +223,7 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
           </div>
         </header>
         <main id="main-content" className={styles.main}>
-          <ContentMotion identity={pathname} className={styles.motionRegion}>{children}</ContentMotion>
+          <ContentMotion animateOnMount identity={pathname} className={styles.motionRegion}>{children}</ContentMotion>
         </main>
       </div>
       <ClientAssistant onDockedChange={setAssistantDocked} />

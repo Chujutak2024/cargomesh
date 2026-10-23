@@ -1,4 +1,6 @@
 "use client";
+import {CarrierSkeleton,CarrierUpdating} from "@/features/carrier-navigation/carrier-loading";
+import {useCarrierMemoryState} from "@/features/carrier-navigation/carrier-continuity";
 import {displayReference} from "@/shared/lib/display-identity";
 import {OperatingCostCalculation} from './operating-cost-calculation';
 import {PipelineConnections} from '@/features/carrier-juan/pipeline-connections';
@@ -32,9 +34,9 @@ export type PipelineViewState={search:string;filter:string;selection:Selection|n
 type Props={carrier:CarrierPortalAccessV2;view:View;active?:boolean;refreshToken?:number;onBusyChange?:(busy:boolean)=>void;initialViewState?:PipelineViewState;onViewStateChange?:(state:PipelineViewState)=>void};
 export function ConnectedCommercialWorkspace(props:Props){return <CommercialWorkspace key={props.carrier.operatorId+':'+props.carrier.carrierId} {...props}/>;}
 function CommercialWorkspace({carrier,view,active=true,refreshToken=0,onBusyChange,initialViewState,onViewStateChange}:Props){
- const [snapshot,setSnapshot]=useState<CommercialSnapshot|null>(null),[error,setError]=useState(''),[refresh,setRefresh]=useState(0),[search,setSearch]=useState(initialViewState?.search??''),[filter,setFilter]=useState(initialViewState?.filter??'All');
+ const [snapshot,setSnapshot]=useCarrierMemoryState<CommercialSnapshot|null>('board:read:'+carrier.operatorId+':'+carrier.carrierId,null),[error,setError]=useState(''),[refresh,setRefresh]=useState(0),[reading,setReading]=useState(true),[search,setSearch]=useState(initialViewState?.search??''),[filter,setFilter]=useState(initialViewState?.filter??'All');
  const [featuredId,setFeaturedId]=useState('');
- const [selection,setSelection]=useState<Selection|null>(initialViewState?.selection??null),[detail,setDetail]=useState<Opportunity|Offer|Booking|null>(null),[detailError,setDetailError]=useState('');
+ const [selection,setSelection]=useState<Selection|null>(initialViewState?.selection??null),[detail,setDetail]=useState<Opportunity|Offer|Booking|null>(null),[detailError,setDetailError]=useState(''),[detailReading,setDetailReading]=useState(false);
  const [busy,setBusy]=useState(false);const detailPanel=useRef<HTMLElement|null>(null);
  const [action,setAction]=useState<CommercialAction|null>(null),[selectedAssignments,setSelectedAssignments]=useState<string[]>([]),[now,setNow]=useState(Date.now());
  const [voiceTurns,setVoiceTurns]=useState<{id:string;role:string;text:string}[]>([]);
@@ -47,11 +49,12 @@ function CommercialWorkspace({carrier,view,active=true,refreshToken=0,onBusyChan
  useEffect(()=>{onBusyChange?.(busy);},[busy,onBusyChange]);
  useEffect(()=>()=>onBusyChange?.(false),[onBusyChange]);
  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),30000);return()=>clearInterval(timer);},[]);
- useEffect(()=>{const controller=new AbortController();setSnapshot(null);setError('');setDetail(null);setAction(null);setDetailError('');
-  void readCommercial(carrier.carrierId,controller.signal).then(value=>{if(!controller.signal.aborted)setSnapshot(value);}).catch(e=>{if(!controller.signal.aborted)setError(portalErrorCopy(e,false));});return()=>controller.abort();
+ useEffect(()=>{const controller=new AbortController();setReading(true);setError('');setAction(null);setDetailError('');
+  void readCommercial(carrier.carrierId,controller.signal).then(value=>{if(!controller.signal.aborted)setSnapshot(value);}).catch(e=>{if(!controller.signal.aborted){if(e instanceof PortalApiError&&[401,403].includes(e.status))setSnapshot(null);setError(portalErrorCopy(e,false));}}).finally(()=>{if(!controller.signal.aborted)setReading(false);});return()=>controller.abort();
  },[carrier.carrierId,carrier.operatorId,refresh,refreshToken]);
- useEffect(()=>{const controller=new AbortController();setDetail(null);setAction(null);setDetailError('');setSelectedAssignments([]);setVoiceTurns([]);setSpokenAmount(null);setRatePerKm('');setUseEstimate(false);
-  if(selection&&snapshot&&!(view==='pipeline'&&selection.kind==='bookings'))void readCommercialDetail(carrier.carrierId,selection.kind,selection.id,controller.signal).then(row=>{if(!controller.signal.aborted){setDetail(row);if(row.kind==='opportunities')setSelectedAssignments(row.data.assignmentIds);}}).catch(e=>{if(!controller.signal.aborted){setDetailError(portalErrorCopy(e,false));if(e instanceof PortalApiError&&[401,403].includes(e.status))setSnapshot(null);}});return()=>controller.abort();
+ useEffect(()=>{const controller=new AbortController();setDetail(previous=>selection&&previous?.id===selection.id&&previous.kind===selection.kind?previous:null);setDetailReading(!!selection);setAction(null);setDetailError('');setSelectedAssignments([]);setVoiceTurns([]);setSpokenAmount(null);setRatePerKm('');setUseEstimate(false);
+  if(!selection||!snapshot||(view==='pipeline'&&selection.kind==='bookings')){setDetailReading(false);return()=>controller.abort();}
+  void readCommercialDetail(carrier.carrierId,selection.kind,selection.id,controller.signal).then(row=>{if(!controller.signal.aborted){setDetail(row);if(row.kind==='opportunities')setSelectedAssignments(row.data.assignmentIds);}}).catch(e=>{if(!controller.signal.aborted){setDetailError(portalErrorCopy(e,false));if(e instanceof PortalApiError&&[401,403].includes(e.status))setSnapshot(null);}}).finally(()=>{if(!controller.signal.aborted)setDetailReading(false);});return()=>controller.abort();
  },[carrier.carrierId,carrier.operatorId,selection,!!snapshot,refresh,refreshToken,view]);
  useEffect(()=>{if(!snapshot||!active||busy)return;let live=true,inFlight=false;const controller=new AbortController();
   const timer=setInterval(()=>{if(!live||inFlight||document.visibilityState!=='visible')return;
@@ -71,7 +74,7 @@ function CommercialWorkspace({carrier,view,active=true,refreshToken=0,onBusyChan
  const pipeline=snapshot?pipelineItems(snapshot,now).filter(p=>opportunities.some(o=>o.id===p.opportunity.id)&&(filter==='All'||p.stage===filter)):[];
  const pending=snapshot?pendingCarrierOpportunities(snapshot,now):[];
  const open=(kind:Selection['kind'],id:string,autoVoice=false)=>{if(busy)return;setSelection({kind,id});setAction(null);setAutoVoiceOpportunityId(autoVoice&&kind==='opportunities'?id:null);};
- const allowed=(name:string,status:string)=>!busy&&!!snapshot&&!snapshot.partial&&canCarrierAction(carrier.role,name,status);
+ const allowed=(name:string,status:string)=>!busy&&!error&&!detailError&&!detailReading&&!reading&&!!snapshot&&!snapshot.partial&&canCarrierAction(carrier.role,name,status);
  function beginOffer(o:Opportunity,old:Offer|null=null,voicePrice?:number,estimated=false){if(busy)return;const ids=old?.data.coveredAssignmentIds??selectedAssignments;try{const issuedAt=new Date().toISOString();offerContext(o,ids,old,issuedAt);const basis=estimated?carrierEstimateBasis(o,ids):null;setAction({kind:'offer',row:o,assignmentIds:ids,supersedes:old,issuedAt,voicePrice,estimateBasis:basis?{...basis,usdPerKm:Number(ratePerKm)}:undefined});setDetailError('');}catch{setDetailError('Select recorded assignments with complete service references.');}}
  const estimateBasis=detail?.kind==='opportunities'?carrierEstimateBasis(detail,selectedAssignments):null;
  const estimatedAmount=estimateBasis?carrierPriceEstimate(estimateBasis.distanceKm,Number(ratePerKm)):null;
@@ -79,7 +82,9 @@ function CommercialWorkspace({carrier,view,active=true,refreshToken=0,onBusyChan
  return <div className={s.workspace}>
  {view==='desk'&&carrier.role==='ADMIN'?<QuotePolicyPanel key={carrier.carrierId} carrier={carrier}/>:null}
  <div className={s.toolbar}><SearchField label="Search loaded records" value={search} onValueChange={setSearch}/>{view!=='pipeline'?<Button variant="secondary" disabled={busy} onClick={()=>setRefresh(n=>n+1)}>Refresh</Button>:null}{view==='pipeline'?<Select label="Pipeline stage" value={filter} onChange={e=>setFilter(e.target.value)}><option>All</option>{stages.map(stage=><option key={stage}>{stage}</option>)}</Select>:null}{view!=='pipeline'&&snapshot?<small>Updated {date(snapshot.readAt)}</small>:null}</div>
- {error?<p role="alert">{error}</p>:!snapshot?<p role="status">Loading authorized opportunities, offers, bookings and operations…</p>:<>
+ {error?<p role="alert">{error}</p>:null}
+ {!snapshot?(error?null:<CarrierSkeleton shape="table"/>):<>
+ {reading?<CarrierUpdating/>:null}
  {snapshot.partial?<p role="status" className={s.notice}>Partial read. Counts cover loaded records; commercial actions are disabled. Missing relationships remain unconfirmed.</p>:null}
  {pending.length?<section className={s.notice} role="status" aria-label="New freight opportunities"><strong>{pending.length} freight {pending.length===1?'opportunity needs':'opportunities need'} your review.</strong> <Button variant="secondary" onClick={()=>open('opportunities',pending[0].id,true)}>Hear and review newest request</Button></section>:null}
 

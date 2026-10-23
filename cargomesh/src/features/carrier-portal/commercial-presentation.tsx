@@ -1,9 +1,13 @@
 "use client";
+import {useLocale} from '@/features/i18n/locale-provider';
+import {carrierStatusLabel} from '@/features/carrier-navigation/carrier-status';
 import type {ReactNode} from 'react';
 import {ArrowRight,Building2,CalendarDays,ClipboardCheck,ClipboardList,Clock3,MapPin,Package,Route,Truck} from 'lucide-react';
 import {Button,Select} from '@/components/ui';
 import {CarrierLink} from '@/features/carrier-navigation/carrier-link';
-import {LogisticsTruck} from '@/features/logistics-3d/logistics-truck';
+import dynamic from 'next/dynamic';
+import {DeferredRegion} from '@/features/carrier-navigation/deferred-region';
+const LogisticsTruck=dynamic(()=>import('@/features/logistics-3d/logistics-truck').then(module=>module.LogisticsTruck),{ssr:false});
 import {offerState,type CommercialSnapshot,type Opportunity} from './commercial-model';
 import {opportunityCard,displayCommercialDate,type CommercialCard} from './commercial-presentation-model';
 import j from './journey.module.css';
@@ -21,22 +25,23 @@ export function CommercialOverview({snapshot,featuredId,onSelect,onOpen,busy,now
   <div className={`${p.metrics} ${d.metrics}`}>{metrics.map(([label,value,detail])=><div className={p.metric} key={label}><small>{label}</small><strong>{value}{snapshot.partial?'+':''}</strong><small>{detail}</small></div>)}</div>
   <CommercialJourneyPending/>
   <section className={`${p.card} ${d.requestSummary}`}  aria-label="Selected opportunity summary">
-   <div className={d.summaryMain}><div className={d.summaryOverview}><div className={d.summaryText}><span className={p.status}>{featured?.status??'No opportunity selected'}</span><h2><Truck size={21}/>{featured?.origin??'Origin pending'}<ArrowRight size={18}/>{featured?.destination??'Destination pending'}</h2><p>{featured?.description??'New customer opportunities will appear here once they are authorized for this Carrier.'}</p><div className={d.summaryFacts}><span><Package size={15}/>{featured?.weightKg==null?'Cargo weight pending':featured.weightKg.toLocaleString('en-US')+' kg'}</span><span><Building2 size={15}/>Carrier opportunity</span></div><dl className={d.schedule}><div><dt><CalendarDays size={15}/>Response deadline</dt><dd>{displayCommercialDate(featured?.date??null)}</dd></div><div><dt>Recorded operations in progress</dt><dd>{snapshot.executions.filter(e=>e.status==='IN_PROGRESS').length}</dd></div><div><dt>Equipment and timing</dt><dd>{row?'Review recorded assigned legs':'Pending opportunity data'}</dd></div></dl></div><div className={d.truckVisual}><LogisticsTruck compact label="Illustrative reference truck" caption="Illustrative truck - no vehicle assignment or live tracking implied"/></div></div></div>
+   <div className={d.summaryMain}><div className={d.summaryOverview}><div className={d.summaryText}><span className={p.status}>{featured?.status??'No opportunity selected'}</span><h2><Truck size={21}/>{featured?.origin??'Origin pending'}<ArrowRight size={18}/>{featured?.destination??'Destination pending'}</h2><p>{featured?.description??'New customer opportunities will appear here once they are authorized for this Carrier.'}</p><div className={d.summaryFacts}><span><Package size={15}/>{featured?.weightKg==null?'Cargo weight pending':featured.weightKg.toLocaleString('en-US')+' kg'}</span><span><Building2 size={15}/>Carrier opportunity</span></div><dl className={d.schedule}><div><dt><CalendarDays size={15}/>Response deadline</dt><dd>{displayCommercialDate(featured?.date??null)}</dd></div><div><dt>Recorded operations in progress</dt><dd>{snapshot.executions.filter(e=>e.status==='IN_PROGRESS').length}</dd></div><div><dt>Equipment and timing</dt><dd>{row?'Review recorded assigned legs':'Pending opportunity data'}</dd></div></dl></div><div className={d.truckVisual}><DeferredRegion minHeight={180}><LogisticsTruck compact label="Illustrative reference truck" caption="Illustrative truck - no vehicle assignment or live tracking implied"/></DeferredRegion></div></div></div>
    <aside className={d.nextAction}><span className={d.nextIcon}><ClipboardCheck size={22}/></span><span className={p.eyebrow}>Next action</span><h3>{row?'Review the opportunity':'Await a customer opportunity'}</h3><p>Check cargo, recorded resources and windows before issuing your Carrier offer. Customer selection and booking consent remain separate.</p><Button disabled={!row||busy} onClick={()=>row&&onOpen('opportunities',row.id)}>Review opportunity <ArrowRight size={16}/></Button><CarrierLink className={p.localButton} href="/carriers/orders">View Orders <ArrowRight size={16}/></CarrierLink></aside>
   </section>
  </div>;
 }
 export function CommercialDirectory({cards,title,busy,onOpen,partial=false,children}:{cards:CommercialCard[];title:string;busy:boolean;onOpen:Open;partial?:boolean;children?:ReactNode}){
+ const {t,locale}=useLocale();
  const known=cards.every(c=>c.weightKg!==null),weight=cards.reduce((sum,c)=>sum+(c.weightKg??0),0);
  return <section className={r.directory} aria-label={title}>
   <dl className={r.summary}><div><dt><ClipboardList size={18}/>{title}</dt><dd>{cards.length}{partial?'+':''}</dd><small>Loaded records matching your filters</small></div><div><dt><Package size={18}/>Cargo weight</dt><dd>{known&&cards.length?weight.toLocaleString('en-US'):'-'} <span>kg</span></dd><small>{known&&cards.length?'Across these records - not unique shipments':'Pending linked cargo data'}</small></div><div><dt><CalendarDays size={18}/>Source</dt><dd>Carrier</dd><small>Authorized records - no live GPS</small></div></dl>
-  <div className={r.directoryHeading}><div><h2>{title} directory</h2><p>Open a record to inspect its details and available Carrier actions.</p></div></div>{children}
+  {children}
   <div className={r.requestGrid}>{cards.map(card=><article key={card.id} className={r.directoryCard} aria-label={card.reference}>
    <header><strong>{card.reference}</strong><span className={r.originBadge}>{card.kind==='offers'?'Carrier offer':card.kind==='bookings'?'Customer booking':'Customer opportunity'}</span></header>
    <div className={r.cardRoute}><div><small>Origin</small><h3>{card.origin??'Pending source data'}</h3></div><ArrowRight size={16}/><div><small>Destination</small><h3>{card.destination??'Pending source data'}</h3></div></div>
    <div className={r.cargoPreview}><div><Package size={15}/><p>{card.description}</p><small>{card.price??(card.volumeM3===null?'Volume pending':card.volumeM3.toLocaleString('en-US')+' m3')}</small></div><img src="/v2-workspace/cargomesh-truck-poster.webp" width={120} height={78} alt="" loading="lazy"/></div>
    <dl className={r.cardFacts}><div><dt>{card.price?'Quoted price':'Total weight'}</dt><dd>{card.price??(card.weightKg===null?'Pending data':card.weightKg.toLocaleString('en-US')+' kg')}</dd></div><div><dt>{card.dateLabel}</dt><dd>{displayCommercialDate(card.date)}</dd></div></dl>
-   <div className={r.cardProgress}><span className={r.reviewState}>{card.status}</span><small>{card.note}</small></div>
+   <div className={r.cardProgress}><span className={r.reviewState}>{carrierStatusLabel(card.status,locale==='es')}</span>{card.note?<details><summary>{t('Detalles','Details')}</summary><small>{card.note}</small></details>:null}</div>
    <footer><Button variant="secondary" disabled={busy} onClick={()=>onOpen(card.kind,card.id)}>Open {card.kind==='bookings'?'order':card.kind==='offers'?'offer':'opportunity'} <ArrowRight size={15}/></Button></footer>
   </article>)}</div>
   {!cards.length?<section className={`${p.card} ${r.noResults}`}><ClipboardList size={24}/><h2>No matching {title.toLowerCase()}</h2><p>No records are substituted from the local simulation. Try another search or refresh.</p></section>:null}
