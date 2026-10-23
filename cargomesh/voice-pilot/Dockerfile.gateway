@@ -9,7 +9,7 @@ COPY requirements-gateway.txt ./
 RUN pip install --no-cache-dir -r requirements-gateway.txt \
     && useradd --system --uid 10001 --home /nonexistent cmvoice
 
-COPY nova_voice_gateway.py cargomesh_voice_prompt.py voice_transport_limits.py ./
+COPY nova_voice_gateway.py cargomesh_voice_prompt.py carrier_voice_context.py voice_transport_limits.py ./
 USER cmvoice
 EXPOSE 8765
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s \

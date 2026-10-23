@@ -92,11 +92,12 @@ export async function POST(request: Request) {
         carrierId: actor.carrierId, requestId: null, parentId: null, id: carrierScope.opportunityId,
       }, { limit: 1, offset: 0 });
       const row = carrierVoiceOpportunity(result.data, actor.carrierId, carrierScope.opportunityId);
+      const context = await readCarrierBriefing(actor,row);
       voiceScope = { role: "carrier", opportunity: {
         route: `${voiceFact(row.data.origin.city ?? row.data.origin.label)} to ${voiceFact(row.data.destination.city ?? row.data.destination.label)}`,
         cargo: voiceFact(row.data.cargoSpecification.categoryCode),
         responseDeadline: voiceFact(row.data.responseDeadline),
-        briefing: await readCarrierBriefing(actor,row),
+        ...context,
       } };
       identity = { userId: actor.userId, organizationId: actor.carrierId, memberId: actor.operatorId };
     } catch {

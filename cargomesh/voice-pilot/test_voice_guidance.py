@@ -35,7 +35,8 @@ class VoiceGuidanceTests(unittest.TestCase):
 
     def test_legacy_carrier_grant_remains_compatible(self):
         prompt=voice_prompt({"role":"carrier","opportunity":{"route":"A to B","cargo":"GENERAL"}})
-        self.assertIn("ask them to state their own proposed total",prompt)
+        self.assertIn("Current commercial status is unverified",prompt)
+        self.assertNotIn("can populate an editable offer draft",prompt)
 
 if __name__ == '__main__':
     unittest.main()

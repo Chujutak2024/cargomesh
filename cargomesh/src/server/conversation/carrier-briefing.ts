@@ -4,6 +4,7 @@ import {QuotePolicyRecordSchema} from '@/shared/schemas/v2/quote-automation';
 import {TimeWindowV2Schema} from '@/shared/schemas/v2/freight-request';
 import {CarrierCostCalculationRecordSchema} from '@/shared/schemas/v2/operating-costs';
 import {carrierVoiceOpportunity} from './carrier-voice-scope';
+import {carrierVoiceTime} from './carrier-voice-time';
 
 const clean=(value:unknown)=>String(value??'unknown').replace(/[\r\n<>]/g,' ').slice(0,160);
 const amount=(value:unknown)=>typeof value==='number'&&Number.isFinite(value)&&value>=0?String(value):'unknown';
@@ -69,5 +70,6 @@ export async function readCarrierBriefing(actor:import('@/server/auth/carrier').
  const now=Date.now();let calculation:unknown;
  const currentOffer=offers.rows.filter(r=>r.kind==='offers'&&r.data.opportunityId===row.id&&r.data.planCandidateId===row.data.planId&&r.status==='RECEIVED'&&Date.parse(r.data.validity.startsAt)<=now&&Date.parse(r.data.validity.endsAt)>now).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
  if(role==='ADMIN'&&currentOffer)try{const {quoteRpc}=await import('@/server/modules/commercial/infrastructure/supabase-quotes');calculation=await quoteRpc('read_v2_carrier_cost_calculation',{p_carrier_id:actor.carrierId,p_operator_id:actor.operatorId,p_offer_id:currentOffer.id});}catch{/* Native offer remains readable when private calculation is unavailable. */}
- return buildCarrierBriefing({opportunity:row,carrierId:actor.carrierId,opportunityId:row.id,role,offers:offers.rows,offersComplete:offers.complete,policies:policies.rows,policiesAvailable:policies.available,calculation,now});
+ return {briefing:buildCarrierBriefing({opportunity:row,carrierId:actor.carrierId,opportunityId:row.id,role,offers:offers.rows,offersComplete:offers.complete,policies:policies.rows,policiesAvailable:policies.available,calculation,now}),
+  temporal:carrierVoiceTime(row,actor.carrierId,row.id,role,Date.now())};
 }

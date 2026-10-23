@@ -37,3 +37,40 @@ class ResponseFinishTests(unittest.IsolatedAsyncioTestCase):
         with patch("nova_voice_gateway.boto3.Session"),patch("nova_voice_gateway.BedrockNovaSonicModel"),patch("nova_voice_gateway.BidiAgent",return_value=Agent()),patch("nova_voice_gateway.SESSION_SECONDS",.01):
             await handle(socket,SECRET,None)
         self.assertEqual(socket.messages,["response_start","session_limit","response_end","close"])
+
+
+    async def test_carrier_snapshot_limit_cancels_an_inflight_answer_without_grace(self):
+        from datetime import datetime, timezone, timedelta
+        now=datetime.now(timezone.utc)
+        claims={'role':'carrier','opportunity':{'route':'A to B','cargo':'GENERAL','temporal':{
+            'schemaVersion':'1.0','timeZone':'America/Lima','asOf':now.isoformat(),
+            'validUntil':(now+timedelta(seconds=240)).isoformat(),
+            'responseDeadline':(now+timedelta(days=1)).isoformat(),
+            'deadlineState':'OPEN','opportunityStatus':'SENT','requestReviewable':True,'mayPrepareOffer':True}}}
+        class Socket:
+            request=SimpleNamespace(path='/voice')
+            state=SimpleNamespace(name='OPEN')
+            def __init__(self):self.messages=[]
+            async def recv(self):return json.dumps({'type':'auth','token':'signed-token-checked-by-mock'})
+            async def send(self,value):self.messages.append(json.loads(value)['type'])
+            async def close(self,code=1000,reason=''):self.messages.append('close');self.state=SimpleNamespace(name='CLOSED')
+        class Agent:
+            async def run(self,outputs,**kwargs):
+                await outputs[0]({'type':'bidi_response_start'})
+                await asyncio.sleep(.2)
+                await outputs[0]({'type':'bidi_response_stop'})
+            def cancel(self):pass
+        socket=Socket()
+        with patch('nova_voice_gateway.verify_grant',return_value=claims),patch('nova_voice_gateway.boto3.Session'),patch('nova_voice_gateway.BedrockNovaSonicModel'),patch('nova_voice_gateway.BidiAgent',return_value=Agent()),patch('nova_voice_gateway.SESSION_SECONDS',.01):
+            await handle(socket,SECRET,None)
+        self.assertEqual(socket.messages,['response_start','session_limit','close'])
+
+    async def test_carrier_missing_time_snapshot_closes_before_constructing_aws_agent(self):
+        class Socket:
+            request=SimpleNamespace(path='/voice')
+            async def recv(self):return json.dumps({'type':'auth','token':'verified-test-token'})
+            async def close(self,code=1000,reason=''):self.closed=(code,reason)
+        socket=Socket()
+        with patch('nova_voice_gateway.verify_grant',return_value={'role':'carrier','opportunity':{}}),patch('nova_voice_gateway.boto3.Session') as aws:
+            await handle(socket,SECRET,None)
+        aws.assert_not_called();self.assertEqual(socket.closed,(1008,'Refresh Carrier context'))

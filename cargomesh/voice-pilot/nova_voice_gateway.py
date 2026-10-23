@@ -23,6 +23,7 @@ from websockets.asyncio.server import ServerConnection, serve
 from websockets.exceptions import ConnectionClosed
 
 from cargomesh_voice_prompt import voice_prompt
+from carrier_voice_context import carrier_context, carrier_opening
 from voice_transport_limits import MAX_AUTH_BYTES, valid_auth_frame
 
 ISSUER = "cargomesh-web"
@@ -143,6 +144,14 @@ async def handle(socket: ServerConnection, secret: str, profile: str | None) -> 
         await socket.close(code=1008, reason="Invalid voice session")
         return
 
+    snapshot_started = time.monotonic()
+    carrier_limit = None
+    if claims.get("role") == "carrier":
+        _, carrier_limit = carrier_context(claims.get("opportunity", {}))
+        if carrier_limit <= 0:
+            await socket.close(code=1008, reason="Refresh Carrier context")
+            return
+
     if _slots.locked():
         await socket.close(code=1013, reason="Voice capacity reached")
         return
@@ -153,12 +162,16 @@ async def handle(socket: ServerConnection, secret: str, profile: str | None) -> 
             system_prompt=voice_prompt(claims),
         )
         output = BrowserOutput(socket)
-        running = asyncio.create_task(agent.run(inputs=[BrowserInput(socket, "Brief me on this opportunity and ask if I want to prepare an offer." if claims.get("role") == "carrier" else "Tell me what offers arrived, which ranked option you recommend, and why." if claims.get("role") == "shipper_offers" else None)], outputs=[output]))
+        running = asyncio.create_task(agent.run(inputs=[BrowserInput(socket, carrier_opening() if claims.get("role") == "carrier" else "Tell me what offers arrived, which ranked option you recommend, and why." if claims.get("role") == "shipper_offers" else None)], outputs=[output]))
         try:
-            await asyncio.wait_for(asyncio.shield(running), timeout=SESSION_SECONDS)
+            await asyncio.wait_for(asyncio.shield(running), timeout=max(0, min(SESSION_SECONDS, carrier_limit - (time.monotonic()-snapshot_started))) if carrier_limit is not None else SESSION_SECONDS)
         except asyncio.TimeoutError:
             if socket.state.name == "OPEN":
                 await socket.send(json.dumps({"type": "session_limit"}))
+                # Carrier snapshots expire hard: never finish advice after the deadline.
+                if carrier_limit is not None:
+                    agent.cancel()
+                    return
                 # The normal bound is soft for an in-flight response, never unbounded.
                 try:
                     await asyncio.wait_for(output.response_idle.wait(), timeout=45)

@@ -84,8 +84,8 @@ class VoiceGrantTests(unittest.TestCase):
             "route": "Lima to Arequipa", "cargo": "GENERAL", "responseDeadline": "2026-10-20",
         }})
         self.assertIn("Lima to Arequipa", prompt)
-        self.assertIn("no verified tariff", prompt)
-        self.assertIn("review and submit it on screen", prompt)
+        self.assertIn("No verified price", prompt)
+        self.assertIn("Native web review and consent", prompt)
         with self.assertRaises(ValueError):
             voice_prompt({"role": "carrier"})
 
