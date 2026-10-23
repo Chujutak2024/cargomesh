@@ -39,4 +39,44 @@ class CarrierTimeTests(unittest.TestCase):
         self.assertEqual(carrier_context(item,NOW+10)[1],0)
         self.assertNotIn('prepare an offer',carrier_opening())
 
+class CarrierDeadlinePresentationTests(unittest.TestCase):
+    def test_live_c02_utc_midnight_is_19_in_peru_on_previous_day(self):
+        text, limit = carrier_context(context('2026-10-26T00:00:00Z'), NOW)
+        self.assertIn('Authoritative response deadline in Peru: 2026-10-25 19:00 PET (America/Lima, UTC-05:00)', text)
+        self.assertIn('Same deadline in UTC: 2026-10-26 00:00 UTC', text)
+        self.assertNotIn('2026-10-25 17:00', text)
+        self.assertEqual(limit, 240)
+
+    def test_live_c01_expiry_retains_exact_hour_and_prohibits_new_offers(self):
+        item = context('2026-10-22T23:00:00Z')
+        item['temporal']['deadlineState'] = 'EXPIRED'
+        text, limit = carrier_context(item, NOW)
+        self.assertIn('2026-10-22 18:00 PET', text)
+        self.assertIn('2026-10-22 23:00 UTC', text)
+        self.assertIn('already passed', text)
+        self.assertIn('Do not invite preparing', text)
+        self.assertEqual(limit, 240)
+
+    def test_date_boundaries_and_input_offsets_use_the_same_instant(self):
+        cases = [
+            ('2027-01-01T02:30:00Z', '2026-12-31 21:30 PET', '2027-01-01 02:30 UTC'),
+            ('2026-11-01T00:15:00Z', '2026-10-31 19:15 PET', '2026-11-01 00:15 UTC'),
+            ('2026-10-25T19:00:00-05:00', '2026-10-25 19:00 PET', '2026-10-26 00:00 UTC'),
+        ]
+        for deadline, peru, utc in cases:
+            with self.subTest(deadline=deadline):
+                text, _ = carrier_context(context(deadline), NOW)
+                self.assertIn(peru, text)
+                self.assertIn(utc, text)
+
+    def test_unknown_or_stale_snapshot_cannot_acquire_an_authoritative_deadline(self):
+        for invalid in [None, 'not-a-date', '2026-10-26T00:00:00']:
+            text, _ = carrier_context(context(invalid), NOW)
+            self.assertIn('deadline is unknown', text)
+            self.assertNotIn('Authoritative response deadline in Peru:', text)
+            self.assertNotIn('You may explain how', text)
+        text, limit = carrier_context(context(), NOW+241)
+        self.assertNotIn('Authoritative response deadline in Peru:', text)
+        self.assertEqual(limit, 0)
+
 if __name__=='__main__':unittest.main()
