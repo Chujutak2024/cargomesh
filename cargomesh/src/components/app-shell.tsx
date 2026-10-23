@@ -170,7 +170,7 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
                 const hrefPath = href.split("?")[0];
                 const active = pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
                 return (
-                  <Link key={href} href={href} title={collapsed && !mobile ? label : undefined} aria-label={label} aria-current={active ? "page" : undefined} className={navStyles.item} onClick={closeNavigation}>
+                  <Link key={href} href={href} title={collapsed && !mobile ? label : undefined} aria-label={label} aria-current={active ? "page" : undefined} className={`${navStyles.item} ${styles.navItem}`} onClick={closeNavigation}>
                     <Icon size={18} strokeWidth={1.5} aria-hidden="true" />
                     <span className={navStyles.itemLabel}>{label}</span>
                   </Link>
@@ -201,7 +201,7 @@ export function AppShell({ children, identity, preview=false }: { children: Reac
             <form className={styles.search} action={workspaceHref("/requests",currentPath)}>
               <Search size={17} aria-hidden="true" />
               <span className={styles.srOnly}>{t("Buscar en operaciones", "Search operations")}</span>
-              <input name="q" type="search" placeholder={t("Buscar operación", "Search operation")} />
+              <input name="q" type="search" aria-label={t("Buscar operación", "Search operation")} placeholder={t("Buscar operación", "Search operation")} />
               <kbd>↵</kbd>
             </form>
             <LanguageSwitcher compact />

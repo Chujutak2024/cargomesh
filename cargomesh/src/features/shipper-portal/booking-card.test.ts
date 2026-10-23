@@ -5,6 +5,7 @@ import vm from "node:vm";
 import ts from "typescript";
 import { localeTag, translate } from "../i18n/config";
 import { bookingStatusPresentation, formatDateTime } from "./shipper-model";
+import { displayReference } from "@/shared/lib/display-identity";
 
 type Node = { type: string; props: { children?: unknown; [key: string]: unknown } };
 const jsx = (type: string, props: Node["props"]) => ({ type, props });
@@ -16,6 +17,7 @@ vm.runInNewContext(code, { exports: moduleExports, require: (name: string) => {
   if (name === "lucide-react") return { CalendarDays: "icon", CircleAlert: "icon", Clock3: "icon", PackageCheck: "icon", ShieldCheck: "icon" };
   if (name.endsWith("i18n/config")) return { localeTag, translate };
   if (name === "./shipper-model") return { bookingStatusPresentation, formatDateTime };
+  if (name.endsWith("shared/lib/display-identity")) return { displayReference };
   if (name.endsWith(".css")) return { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) };
   throw new Error(`Unexpected presentation dependency: ${name}`);
 } });
@@ -25,12 +27,12 @@ const flatten = (value: unknown): string => {
   if (Array.isArray(value)) return value.map(flatten).join(" ");
   return value && typeof value === "object" && "props" in value ? flatten((value as Node).props.children) : "";
 };
-const booking = { version: 3, data: { carrierConfirmationStatus: "CONFIRMED", authorizedAt: "2026-10-21T12:00:00Z", confirmedAt: null, capacityEvidence: [] } };
+const booking = { id: "10000000-0000-4000-8000-000000000001", version: 3, data: { carrierConfirmationStatus: "CONFIRMED", authorizedAt: "2026-10-21T12:00:00Z", confirmedAt: null, capacityEvidence: [] } };
 const props = { booking, offer: null, reference: "V2-37bbd439cbb741bcb1a3ad57451ff12b", carrier: "A carrier with a very long authorized organization name", locale: "en", children: "linked resources", action: "review request" };
 
-test("booking presentation preserves the full reference, status and supplied action", () => {
+test("booking presentation uses the current public label and preserves status and supplied action", () => {
   const text = flatten(render(props));
-  assert.ok(text.includes(props.reference));
+  assert.ok(text.includes(displayReference(props.reference, "BKG", booking.id)));
   assert.ok(text.includes(props.carrier));
   assert.ok(text.includes("Carrier confirmed"));
   assert.match(text, /Version\s+3/);

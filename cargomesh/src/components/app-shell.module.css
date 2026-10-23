@@ -1,14 +1,20 @@
 .shell {
   color-scheme: light;
   font-family: var(--cm-font-sans);
-  /* Carrier-aligned presentation tokens, scoped to the shipper workspace. */
-  --cm-color-canvas: #e8eff4;
-  --cm-color-surface-subtle: #edf4f8;
-  --cm-color-surface-tint: #f1f8fb;
-  --cm-color-primary: #185be7;
-  --cm-color-primary-hover: #124cc6;
+  /* Client mockup tokens stay scoped: Carrier retains its own presentation. */
+  --cm-color-canvas: #e9eff6;
+  --cm-color-sidebar: #eef3f8;
+  --cm-color-line: #dce4ee;
+  --cm-color-surface-subtle: #f1f5f9;
+  --cm-color-surface-tint: #f6f8fc;
+  --cm-color-primary: #2b59ff;
+  --cm-color-primary-hover: #234bdc;
   --client-assistant-clearance: 5.5rem;
 }
+.shell[data-collapsed="false"] { --carrier-nav-width: 260px; }
+.shell .navItem { min-height: 44px; border-radius: 10px; font-size: 14px; color: #283b51; }
+.shell .navItem > svg { color: #0f6b6b; }
+.shell .navItem[aria-current="page"] { color: #172b42; border-color: #dce4ee; font-weight: 600; box-shadow: 0 1px 3px #0f172a08; }
 .shell:has([data-chat-open="true"]) { --client-assistant-clearance: 0rem; }
 
 .contentColumn {
@@ -26,11 +32,11 @@
   z-index: 30;
   top: 0;
   display: flex;
-  min-height: 4.75rem;
+  min-height: 4rem;
   align-items: center;
   gap: 0.8rem;
   border-bottom: 1px solid var(--cm-color-line);
-  padding: 0.65rem 1.25rem;
+  padding: 0.55rem 1.5rem;
   background: var(--cm-color-surface);
 }
 
@@ -43,7 +49,7 @@
 .context strong {
   overflow: hidden;
   color: var(--cm-color-heading);
-  font-size: 0.9rem;
+  font-size: 1rem;
   letter-spacing: -0.015em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -69,7 +75,7 @@
 
 .search {
   display: none;
-  min-width: min(21rem, 27vw);
+  min-width: min(18.75rem, 24vw);
   min-height: 2.8rem;
   align-items: center;
   gap: 0.58rem;
@@ -94,7 +100,7 @@
   background: transparent;
   color: var(--cm-color-ink);
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
 }
 
 .search input::placeholder { color: var(--cm-color-muted); }
@@ -103,8 +109,8 @@
 .avatar { display: grid; width: 2.55rem; height: 2.55rem; flex: 0 0 auto; place-items: center; border-radius: 0.7rem; background: var(--cm-color-heading); color: white; font-size: 0.66rem; font-weight: 800; }
 .userCopy { display: none; min-width: 0; }
 .userCopy strong, .userCopy span { display: block; overflow: hidden; max-width: 10rem; text-overflow: ellipsis; white-space: nowrap; }
-.userCopy strong { color: var(--cm-color-ink); font-size: 0.69rem; }
-.userCopy span { margin-top: 0.12rem; color: var(--cm-color-muted); font-size: 0.58rem; text-transform: capitalize; }
+.userCopy strong { color: var(--cm-color-ink); font-size: 0.75rem; }
+.userCopy span { margin-top: 0.12rem; color: var(--cm-color-muted); font-size: 0.65rem; text-transform: capitalize; }
 
 .signOut button, .signOutLink {
   display: inline-flex;
@@ -119,13 +125,13 @@
   background: var(--cm-color-surface);
   color: var(--cm-color-heading);
   font: inherit;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   cursor: pointer;
   text-decoration: none;
 }
 
 .signOut button:hover, .signOutLink:hover { border-color: var(--cm-color-line-strong); background: var(--cm-color-selected); }
-.main { min-width: 0; min-height: calc(100dvh - 4.75rem); padding: 1.75rem clamp(1rem, 2.5vw, 2.75rem) calc(4rem + var(--client-assistant-clearance)); background: linear-gradient(180deg, #eef5fa 0, var(--cm-color-canvas) 24rem); }
+.main { min-width: 0; min-height: calc(100dvh - 4rem); padding: 1.5rem clamp(1rem, 2.2vw, 2rem) calc(3rem + var(--client-assistant-clearance)); background: var(--cm-color-canvas); }
 .motionRegion { min-width: 0; }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 .shell :is(button, a, input, select):focus-visible { outline: 3px solid color-mix(in srgb, var(--cm-color-focus) 34%, transparent); outline-offset: 2px; }

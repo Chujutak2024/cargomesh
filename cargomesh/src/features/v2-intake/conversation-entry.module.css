@@ -1,9 +1,18 @@
-.entry{display:flex;gap:1.2rem;margin:0 0 1.5rem;padding:1.5rem;border:1px solid var(--cm-color-line);border-radius:var(--cm-radius-lg);background:linear-gradient(120deg,#fff 18%,var(--cm-color-surface-tint));box-shadow:0 14px 36px rgb(17 51 70 / 7%)}
-.icon{display:grid;place-items:center;flex:none;width:3rem;height:3rem;border-radius:.85rem;background:var(--cm-color-heading);color:white}
-.copy{min-width:0;flex:1}.eyebrow{color:var(--cm-color-logistics);font-size:.7rem;font-weight:800;letter-spacing:.13em}
-.copy h2{margin:.3rem 0 .35rem;color:var(--cm-color-heading);font-size:clamp(1.25rem,2vw,1.65rem);line-height:1.2}.copy p{max-width:57rem;margin:0 0 1rem;color:var(--cm-color-muted);font-size:.9rem;line-height:1.5}
-.form{display:flex;align-items:center;gap:.7rem;max-width:60rem;padding:.4rem;border:1px solid var(--cm-color-line-strong);border-radius:.8rem;background:white;color:var(--cm-color-logistics)}
-.form:focus-within{outline:2px solid var(--cm-color-focus);outline-offset:2px}.form>svg{margin-left:.55rem;flex:none}.form input{min-width:0;flex:1;min-height:2.5rem;border:0;outline:0;color:var(--cm-color-ink);font:inherit;font-size:.9rem}.form input::placeholder{color:var(--cm-color-muted)}
-.form button{display:flex;align-items:center;justify-content:center;gap:.35rem;min-height:2.5rem;padding:.5rem .85rem;border:0;border-radius:.55rem;background:var(--cm-color-primary);color:white;font:inherit;font-size:.83rem;font-weight:700;cursor:pointer}.form button:hover:not(:disabled){background:var(--cm-color-primary-hover)}.form button:disabled{opacity:.45;cursor:not-allowed}
-.copy small{display:block;margin-top:.55rem;color:var(--cm-color-muted);font-size:.73rem}.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-@media(max-width:680px){.entry{gap:.75rem;padding:1rem}.icon{width:2.4rem;height:2.4rem}.form{flex-wrap:wrap}.form input{flex-basis:calc(100% - 4rem)}.form button{width:100%}}
+.entry { min-width: 0; padding: 26px 28px; border: 1px solid #e0e7ef; border-radius: 16px; background: linear-gradient(180deg,#f2f6ff 0%,#fff 85%); box-shadow: 0 2px 5px #0f172a03; }
+.copy { min-width: 0; }
+.eyebrow { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 4px 10px; border-radius: 999px; background: #e9edff; color: #3d4bb8; font-size: 12px; font-weight: 650; }
+.copy h1 { margin: 14px 0 8px; color: #142b43; font-size: clamp(23px,2.3vw,29px); line-height: 1.25; font-weight: 700; letter-spacing: -.7px; }
+.copy p { max-width: 620px; margin: 0 0 20px; color: #536579; font-size: 14px; line-height: 1.75; text-wrap: pretty; }
+.form { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 56px; padding: 7px 8px 7px 16px; border: 1px solid #cbd5e1; border-radius: 14px; background: #fff; color: #64748b; box-shadow: 0 1px 2px #0f172a06; }
+.form:focus-within { outline: 3px solid #c8d5ff; outline-offset: 2px; border-color: #90aafa; }
+.form > svg { flex: none; }
+.form input { min-width: 0; flex: 1; min-height: 40px; border: 0; outline: 0; background: transparent; color: #1e293b; font: inherit; font-size: 14px; }
+.form input::placeholder { color: #748397; }
+.form button { display: inline-flex; align-items: center; justify-content: center; flex: none; gap: 8px; min-height: 42px; padding: 9px 15px; border: 0; border-radius: 10px; background: #2b59ff; color: #fff; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.form button:hover:not(:disabled) { background: #234bdc; }
+.form button:disabled { opacity: .5; cursor: not-allowed; }
+.shortcuts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.shortcuts a { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 6px 12px; border: 1px solid #e2e8f0; border-radius: 999px; background: #fff; color: #4f6076; text-decoration: none; font-size: 12px; line-height: 1.5; font-weight: 500; }
+.shortcuts a:hover { border-color: #b7c9ec; background: #f8faff; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+@container client-dashboard (max-width: 560px) { .entry { padding: 22px 18px; } .form { flex-wrap: wrap; padding: 10px; gap: 8px; } .form input { flex-basis: calc(100% - 35px); font-size: 16px; } .form button { width: 100%; } .copy h1 { font-size: 24px; } }
