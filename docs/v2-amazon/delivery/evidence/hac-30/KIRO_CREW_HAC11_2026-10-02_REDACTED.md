@@ -7,7 +7,7 @@
 - Tool: Kiro Crew local session at `C:\Users\AXEL\.kiro\crew\sessions\dashboard_chat-1-1789622832.jsonl`.
 - Source session SHA-256 at review: `E1B11203001D9E131C64A190AD0C28CB1ED09D1ADE8428814061106DC8CB1244`. The raw session is **not attached** because it has not been cleared for publication.
 - Session records on 2026-10-02 (Lima): at 16:16:44, Crew tool `edit` with purpose “Write the extended HAC-11 pgTAP test with the 5 missing assertion blocks”; at 16:20:06, tool `read` to verify the file; at 16:20:24 and 16:26:30, tool `execute` to stage and commit. The assistant report was recorded at 16:27:01.
-- Actual code artifact: `supabase/tests/12_hac11_mcp_account_links.test.sql`, commit `c212c627cf81e133b7bc1fe7e0761b3dd3ed53f` on `feat/be1-v2-mcp-account-linking`; 1 file, 119 insertions and 1 deletion. This is separate from earlier Codex commits `98b8707` and `ddd2a31`.
+- Actual code artifact: `supabase/tests/12_hac11_mcp_account_links.test.sql`, commit `c212c627cf81e133b7bc1cfe7e0761b3dd3ed53f` on `feat/be1-v2-mcp-account-linking`; 1 file, 119 insertions and 1 deletion. This is separate from earlier Codex commits `98b8707` and `ddd2a31`.
 - Review comparison: `git diff 98b8707 c212c62 -- supabase/tests/12_hac11_mcp_account_links.test.sql`. The file SHA-256 at review was `D9B5B9927D485ECD64BA1E54617314656C073563A49F6919E41171BCAC9611F5`.
 
 ## Actual task and result

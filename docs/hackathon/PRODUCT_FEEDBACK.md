@@ -2,7 +2,7 @@
 
 Product Feedback belongs in the Devpost submission. For each used developer tool/API/SDK state its purpose, what worked, onboarding, limitations/workarounds, and whether the team would use it again with reasons. [Official requirements](https://amazonappdev2026.devpost.com/rules).
 
-Use the [Kiro draft](AWS_BUILDER_KIRO.md) for authentic Crew attribution. Cover the actual Strands/Bedrock voice work and other tools used in the presented build separately. Do not report unmeasured latency, token savings or a tested deployment from configuration alone.
+Use the [reviewed Kiro/AWS feedback](AWS_BUILDER_PRODUCT_FEEDBACK.md) and [evidence guide](AWS_BUILDER_KIRO.md) for authentic Crew attribution. Cover the actual Strands/Bedrock voice work and other tools used in the presented build separately. Do not report unmeasured latency, token savings or a tested deployment from configuration alone.
 
 ## Evidence to select
 
